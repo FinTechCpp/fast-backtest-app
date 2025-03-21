@@ -44,7 +44,7 @@ class Initialisation():
             try:
                 self.counter += 1
                 # has 12000 api keys
-                fp = open("D:\Stock_Analysis\ig-markets-api-python-library-master\generate_api_keys\IG_api_keys_raw.txt")
+                fp = open("../generate_api_keys/IG_raw_api_keys.txt")
                 for i, line in enumerate(fp):
                     if i == self.counter:
                         key = line.split("\n")[0]

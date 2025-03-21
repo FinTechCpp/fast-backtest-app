@@ -31,6 +31,12 @@ def main():
     # config = IGServiceConfig()
 
     # no cache
+
+    print(config.username)
+    print(config.password)
+    print(config.api_key)
+    print(config.acc_type)
+
     ig_service = IGService(
         config.username, config.password, config.api_key, config.acc_type
     )

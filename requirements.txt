@@ -48,7 +48,6 @@ sphinxcontrib-jquery==4.1
 sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==2.0.0
 sphinxcontrib-serializinghtml==2.0.0
-trading-ig==0.0.22
 tzdata==2025.1
 urllib3==2.3.0
 yarl==1.18.3

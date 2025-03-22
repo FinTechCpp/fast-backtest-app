@@ -2,6 +2,7 @@ from trading_ig.rest import IGService
 from trading_ig.config import config
 
 
+
 ig_service = IGService(config.username, config.password, config.api_key, config.acc_type)
 ig = ig_service.create_session()
 

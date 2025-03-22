@@ -4,8 +4,13 @@ import time
 
 
 
-ig_service = IGService(config.username, config.password, config.api_key, config.acc_type)
-ig = ig_service.create_session()
+ig_service = IGService(
+    config.username, 
+    config.password, 
+    config.api_key, 
+    config.acc_type,
+    acc_number=config.acc_number)
+ig = ig_service.create_session(version='3')
 
 
 # Searching for a market
@@ -25,11 +30,11 @@ ig = ig_service.create_session()
 # print(result['prices'])
 
 
-EPIC = 'CS.D.EURUSD.MINI.IP'
+EPIC = 'IX.D.NASDAQ.IFE.IP'
 
 print("🔄 Récupération du prix EUR/USD en temps réel...")
 
-for i in range(10):
+for i in range(100):
     result = ig_service.fetch_market_by_epic(EPIC)
     
     if "snapshot" in result:
@@ -39,6 +44,6 @@ for i in range(10):
     else:
         print("⚠️ Impossible de récupérer les données.")
 
-    time.sleep(1)  # Pause d'une seconde
+    time.sleep(10)  # Pause d'une seconde
 
 print("✅ Fin de la récupération des prix.")

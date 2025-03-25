@@ -6,7 +6,35 @@ import sys
 import pandas as pd
 import readline
 import traceback
+from pick import pick
+import readchar
 
+direction_options = ["BUY", "SELL"]
+
+# Dictionnaire contenant les EPICs et leurs noms communs
+epics_dict = {
+    "CS.D.EURUSD.MINI.IP": "EUR/USD Mini",
+    "IX.D.NASDAQ.IFE.IP": "NASDAQ Index (1€)",
+    "IX.D.SPTRD.IFE.IP": "S&P 500 Index (1€)",
+    "IX.D.DAX.IFMM.IP": "DAX Index (1€)",
+    "IX.D.CAC.IMF.IP": "CAC 40 Index (1€)",
+    "CS.D.BITCOIN.CFE.IP": "Bitcoin (CFE)",
+    "CS.D.XRPUSD.CFD.IP": "Ripple (CFD)",
+    "UC.D.NVDA.CASH.IP": "NVIDIA (USD)",
+    "UA.D.AAPL.CASH.IP": "Apple (USD)",
+    "UA.D.AMZN.CASH.IP": "Amazon (USD)",
+    "EC.D.HOFP.CASH.IP": "Thales (EUR)",
+    "EC.D.RENA.CASH.IP": "Renault (EUR)",
+    "CS.D.CFEGOLD.CFE.IP": "Gold (1€)",
+}
+
+resolution_dict = {
+    "M": "Minute",
+    "H": "Hour",
+    "D": "Day",
+    "W": "Week",
+    "M": "Month"
+}
 
 #FUNCTIONS DEFINITIONS
 def prefill_input(prompt, text):
@@ -40,13 +68,54 @@ ig_service = IGService(
     acc_number=config.acc_number)
 ig = ig_service.create_session(version='3')
 
-def search_market(ig_service):
-    """Recherche un marché spécifique"""
-    search_term_default = "EUR/USD"
-    search_term = prefill_input(f"Entrez le terme de recherche (ex: {search_term_default}): ", search_term_default)
-    print(f"Recherche de '{search_term}'...")
+def select_from_dict(dict):
+    """Permet de sélectionner un id depuis le dictionnaire avec navigation par flèches"""
     try:
-        result = ig_service.search_markets(search_term)
+        
+        # Créer une liste de choix à partir du dictionnaire dict
+        options = []
+        dict_list = []
+        
+        for id, name in dict.items():
+            options.append(f"{name} ({id})")
+            dict_list.append(id)
+        
+        title = "Sélectionnez un marché avec les flèches ↑↓ puis Entrée pour confirmer:"
+        selected_option, index = pick(options, title)
+        
+        # Récupérer l'EPIC sélectionné
+        return dict_list[index], dict[dict_list[index]]
+        
+    except ImportError:
+        print("📦 Le module 'pick' n'est pas installé. Utilisation du mode de sélection basique.")
+        print("Pour une meilleure expérience, installez-le avec: pip install pick")
+        print("\nMarchés disponibles:")
+        
+        # Afficher les options numérotées
+        for i, (id, name) in enumerate(dict.items(), 1):
+            print(f"{i}. {name} ({id})")
+        
+        # Demander à l'utilisateur de choisir
+        while True:
+            try:
+                choice = int(input("\nEntrez le numéro du marché: "))
+                if 1 <= choice <= len(dict):
+                    # Récupérer l'EPIC correspondant au choix
+                    selected_id = list(dict.keys())[choice-1]
+                    return selected_id, dict[selected_id]
+                else:
+                    print("⚠️ Numéro invalide. Veuillez réessayer.")
+            except ValueError:
+                print("⚠️ Veuillez entrer un numéro valide.")
+                
+def search_market(ig_service):
+    """Recherche un marché spécifique en utilisant une sélection interactive"""
+
+    selected_epic, selected_name = select_from_dict(epics_dict)
+    print(f"Recherche de '{selected_epic}'...")
+    
+    try:
+        result = ig_service.search_markets(selected_epic)
         print("\nRésultats de la recherche:")
         
         # Vérifier le type de résultat et traiter en conséquence
@@ -67,11 +136,12 @@ def search_market(ig_service):
 
 def get_market_info(ig_service):
     """Obtient des informations sur un marché"""
-    epic_default = "CS.D.EURUSD.MINI.IP"   
-    epic = prefill_input(f"Entrez l'EPIC du marché : ", epic_default)
-    print(f"Récupération des informations pour '{epic}'...")
+        
+    selected_epic, selected_name = select_from_dict(epics_dict)    
+    print(f"Récupération des informations pour {selected_epic} alias {selected_name}...")
+    
     try:
-        market = ig_service.fetch_market_by_epic(epic)
+        market = ig_service.fetch_market_by_epic(selected_epic)
         print("\nInformations sur le marché:")
         print(f"Nom: {market['instrument']['name']}")
         
@@ -96,34 +166,29 @@ def get_market_info(ig_service):
     except Exception as e:
         print(f"⚠️ Erreur: {e}")
         # Afficher plus de détails sur l'erreur pour le débogage
-        import traceback
         traceback.print_exc()
     input("\nAppuyez sur Entrée pour continuer...")
 
 def get_historical_prices(ig_service):
     """Récupère les prix historiques d'un marché"""
-    epic_default = "CS.D.EURUSD.MINI.IP"
-    epic = prefill_input(f"Entrez l'EPIC du marché (ex: {epic_default}): ", epic_default)
-    resolution_default = "D"  # Daily resolution
-    resolution = input(f"Résolution (M, H, D, W, M): {resolution_default}") or f"{resolution_default}"
-    num_points_default = "10"
-    num_points = input(f"Nombre de points (1-100): {num_points_default}") or f"{num_points_default}"
+    selected_epic, selected_name = select_from_dict(epics_dict)
+    selected_resolution, selected_resolution_name = select_from_dict(resolution_dict)
     
-    print(f"Récupération des prix historiques pour '{epic}'...")
+    num_points_default = "10"
+    num_points = prefill_input(f"Nombre de points (1-100): ", num_points_default) 
+    
+    print(f"Récupération des prix historiques pour '{selected_epic}'...")
     try:
         # Convert num_points to integer
         num_points = int(num_points)
         
         # Fetch historical prices with parameters - using correct parameter 'numpoints'
         result = ig_service.fetch_historical_prices_by_epic(
-            epic=epic,
-            resolution=resolution,
+            epic=selected_epic,
+            resolution=selected_resolution,
             numpoints=num_points  # Changed from num_points to numpoints
         )
-        
-        # Debug information
-        #print(f"\nType de données reçu: {type(result)}")
-        
+                
         # Check if result is a DataFrame
         if isinstance(result, pd.DataFrame):
             print("\nDerniers prix historiques (DataFrame):")
@@ -150,15 +215,14 @@ def get_historical_prices(ig_service):
 
 def track_realtime_prices(ig_service):
     """Suit les prix d'un marché en temps réel"""
-    epic_default = "IX.D.NASDAQ.IFE.IP"
-    epic = prefill_input(f"Entrez l'EPIC du marché (ex: {epic_default}): ", epic_default)
-    iterations = int(input("Nombre d'itérations (1-100): "))
-    delay = int(input("Délai entre les mises à jour (secondes): "))
+    selected_epic, selected_name = select_from_dict(epics_dict)
+    iterations = int(prefill_input("Nombre d'itérations (1-100): ", "10"))
+    delay = int(prefill_input("Délai entre les itérations (en secondes): ", "5"))
     
-    print(f"🔄 Récupération des prix de {epic} en temps réel...")
+    print(f"🔄 Récupération des prix de {selected_epic} en temps réel...")
     for i in range(min(iterations, 100)):
         try:
-            result = ig_service.fetch_market_by_epic(epic)
+            result = ig_service.fetch_market_by_epic(selected_epic)
             if "snapshot" in result:
                 bid = result["snapshot"]["bid"]
                 ask = result["snapshot"]["offer"]
@@ -174,22 +238,65 @@ def track_realtime_prices(ig_service):
 
 def create_position(ig_service):
     """Crée une position d'achat ou de vente"""
-    epic_default = "CS.D.EURUSD.MINI.IP"
-    epic = prefill_input(f"Entrez l'EPIC du marché (ex: {epic_default}): ", epic_default)
-    direction = input("Direction (BUY/SELL): ").upper()
-    size = float(input("Taille de la position: "))
+    selected_epic, selected_name = select_from_dict(epics_dict)
+    # Create a binary selection for direction using the pick function
     
-    if direction not in ["BUY", "SELL"]:
-        print("⚠️ Direction invalide. Utilisez BUY ou SELL.")
-        input("\nAppuyez sur Entrée pour continuer...")
-        return
+    direction_title = "Choisissez la direction avec les flèches ↑↓ puis Entrée pour confirmer:"
+    try:
+        direction, _ = pick(direction_options, direction_title)
+    except Exception as e:
+        print(f"⚠️ Erreur lors de la sélection interactive: {e}")
+        direction = input("Direction (BUY/SELL): ").upper()
+        while direction not in ["BUY", "SELL"]:
+            print("⚠️ Direction invalide. Veuillez entrer BUY ou SELL.")
+            direction = input("Direction (BUY/SELL): ").upper()
+            
+    # Size selection with arrow keys to dynamically modify the value
+    try:
+        
+        size = 1.0  # Default value
+        min_size = 0.5
+        max_size = 100.0
+        step = 0.5
+        
+        print("\n📊 Taille de la position 📊")
+        print(f"[↑] Augmenter | [↓] Diminuer | [Enter] Confirmer")
+        print(f"{size:.1f}", end="", flush=True)
+        
+        while True:
+            key = readchar.readkey()
+            
+            if key == readchar.key.UP:
+                # Increase size
+                if size + step <= max_size:
+                    size += step
+            elif key == readchar.key.DOWN:
+                # Decrease size
+                if size - step >= min_size:
+                    size -= step
+            elif key == readchar.key.ENTER:
+                # Confirm selection
+                print()  # Move to next line
+                break
+            
+            # Clear the current value and reprint
+            print("\r" + " " * 20 + "\r", end="", flush=True)
+            print(f"{size:.1f}", end="", flush=True)
+            
+    except ImportError:
+        print("\n📦 Le module 'readchar' n'est pas installé. Utilisation du mode basique.")
+        print("Pour une meilleure expérience, installez-le avec: pip install readchar")
+        size = float(input("\nTaille de la position: "))
+    except Exception as e:
+        print(f"\n⚠️ Erreur lors de la sélection interactive: {e}")
+        size = float(input("Taille de la position: "))
     
-    print(f"Création d'une position {direction} sur {epic}...")
+    print(f"Création d'une position {direction} sur {selected_epic}...")
     try:
         resp = ig_service.create_open_position(
             currency_code='EUR',
             direction=direction,
-            epic=epic,
+            epic=selected_epic,
             order_type='MARKET',
             expiry='DFB',
             force_open='false',

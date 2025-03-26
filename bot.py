@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 from trading_ig.rest import IGService
 from trading_ig.config import config
+import utils
+import markets
 
 def calculate_ema(data, period):
     return data.ewm(span=period, adjust=False).mean()
@@ -21,15 +23,9 @@ def fetch_prices(ig_service, epic, resolution='1Min', num_points=50):
     return df[['close']]
 
 def main():
-    ig_service = IGService(
-        config.username, 
-        config.password, 
-        config.api_key, 
-        config.acc_type,
-        acc_number=config.acc_number)
-    ig_service.create_session(version='3')
+    ig_service = utils.initialize_service()
     
-    EPIC = 'CS.D.EURUSD.MINI.IP'  # EUR/USD Mini
+    EPIC, SELECTED_DATA = utils.select_from_dict(markets.epics_dict)
     TRADE_SIZE = 1  # Taille de la position
     SL = 0.002  # Stop Loss
     TP = 0.004  # Take Profit
@@ -52,26 +48,36 @@ def main():
         if ema_10 > ema_30 and rsi < 70:
             print("📈 Signal d'achat détecté!")
             response = ig_service.create_open_position(
-                currency_code='USD',
-                direction='BUY',
-                epic=EPIC,
-                size=TRADE_SIZE,
-                order_type='MARKET',
-                stop_distance=SL,
-                limit_distance=TP)
-            print("✅ Ordre d'achat exécuté: ", response)
-        
+                epic=EPIC, #epic sélectionné
+                direction='BUY', #ACHAT
+                size=TRADE_SIZE, #Quantité de la position
+                currency_code='EUR', #Devise
+                expiry='-', #Expiration
+                order_type='MARKET', #Achat au prix du marché ou prix limite
+                guaranteed_stop=False, #Stop garanti
+                force_open=True, #Ouverture forcée
+                trailing_stop=False, #Stop suiveur
+                time_in_force='FILL_OR_KILL', #Durée de vie de l'ordre
+                stop_distance=SL, #Distance du stop loss    
+                limit_distance=TP) #Distance du take profit
+            utils.postion_output(response)
+                 
         elif ema_10 < ema_30 and rsi > 30:
             print("📉 Signal de vente détecté!")
             response = ig_service.create_open_position(
-                currency_code='USD',
-                direction='SELL',
                 epic=EPIC,
+                direction='SELL',
                 size=TRADE_SIZE,
+                currency_code='EUR',
+                expiry='-',
                 order_type='MARKET',
+                guaranteed_stop=False,
+                force_open=True,
+                trailing_stop=False,
+                time_in_force='FILL_OR_KILL',
                 stop_distance=SL,
                 limit_distance=TP)
-            print("✅ Ordre de vente exécuté: ", response)
+            utils.postion_output(response)
         
         time.sleep(60)  # Rafraîchir toutes les minutes
 

@@ -29,17 +29,18 @@ from markets import epics_dict
 from pprint import pprint
 import curses
 from curses import wrapper
+import plotext as plt
 
 # Liste des options de direction pour les positions
 direction_options = ["BUY", "SELL"]
 
 # Dictionnaire contenant les résolutions et leurs noms
 resolution_dict = {
-    "M": "Minute",
+    "ME": "Minute",
     "H": "Hour",
     "D": "Day",
     "W": "Week",
-    "ME": "Month"
+    "M": "Month"
 }
 
 def is_market_open(trading_hours):
@@ -54,7 +55,7 @@ def is_market_open(trading_hours):
     """
     now = datetime.now(timezone.utc)
     current_day = now.strftime("%A")  # Ex: "Monday"
-    current_time = now.strftime("%H:%M")  # Ex: "14:30"
+    current_time = now.strftime("%H:%ME")  # Ex: "14:30"
 
     if current_day not in trading_hours:
         return False
@@ -102,46 +103,45 @@ def initialize_service():
     print(f"✅ Connexion réussie avec le compte de {config.username}")
     return ig_service
 
-# Initialisation du service IG
-ig_service = IGService(
-    config.username, 
-    config.password, 
-    config.api_key, 
-    config.acc_type,
-    acc_number=config.acc_number)
-ig = ig_service.create_session(version='3')
-
-def select_from_dict(dict):
+def select_from_dict(data_dict):
     """
-    Permet de sélectionner un élément depuis un dictionnaire imbriqué avec navigation par flèches.
+    Permet de sélectionner un élément depuis un dictionnaire imbriqué ou simple avec navigation par flèches.
 
     Args:
-        dict (dict): Le dictionnaire contenant les options.
+        data_dict (dict): Le dictionnaire contenant les options.
 
     Returns:
-        tuple: L'EPIC sélectionné et ses données associées.
+        tuple: La clé sélectionnée et sa valeur associée.
     """
     try:
         options = []
-        dict_list = []
-        for epic, data in dict.items():
-            options.append(f"{data['name']} ({epic})")
-            dict_list.append(epic)
-        title = "Sélectionnez un marché avec les flèches ↑↓ puis Entrée pour confirmer:"
+        keys = list(data_dict.keys())
+        
+        # Construire les options en fonction du type des valeurs
+        for key, value in data_dict.items():
+            if isinstance(value, dict):  # Cas d'un dictionnaire imbriqué
+                options.append(f"{value.get('name', key)} ({key})")
+            else:  # Cas d'un dictionnaire simple
+                options.append(f"{key}: {value}")
+        
+        title = "Sélectionnez une option avec les flèches ↑↓ puis Entrée pour confirmer:"
         selected_option, index = pick(options, title)
-        return dict_list[index], dict[dict_list[index]]
+        return keys[index], data_dict[keys[index]]
     except ImportError:
         print("📦 Le module 'pick' n'est pas installé. Utilisation du mode de sélection basique.")
         print("Pour une meilleure expérience, installez-le avec: pip install pick")
-        print("\nMarchés disponibles:")
-        for i, (epic, data) in enumerate(dict.items(), 1):
-            print(f"{i}. {data['name']} ({epic})")
+        print("\nOptions disponibles:")
+        for i, (key, value) in enumerate(data_dict.items(), 1):
+            if isinstance(value, dict):
+                print(f"{i}. {value.get('name', key)} ({key})")
+            else:
+                print(f"{i}. {key}: {value}")
         while True:
             try:
-                choice = int(input("\nEntrez le numéro du marché: "))
-                if 1 <= choice <= len(dict):
-                    selected_epic = list(dict.keys())[choice - 1]
-                    return selected_epic, dict[selected_epic]
+                choice = int(input("\nEntrez le numéro de l'option: "))
+                if 1 <= choice <= len(data_dict):
+                    selected_key = keys[choice - 1]
+                    return selected_key, data_dict[selected_key]
                 else:
                     print("⚠️ Numéro invalide. Veuillez réessayer.")
             except ValueError:
@@ -205,6 +205,30 @@ def get_market_info(ig_service):
         print(f"⚠️ Erreur: {e}")
         traceback.print_exc()
     input("\nAppuyez sur Entrée pour continuer...")
+    
+def plot_prices(prices_df):
+    """
+    Affiche un graphe des prix historiques dans le terminal.
+
+    Args:
+        prices_df (pd.DataFrame): Les données historiques des prix sous forme de DataFrame.
+    """
+    try:
+        # Extraire les dates et les prix de clôture
+        dates = list(prices_df.index.strftime('%d/%m/%Y'))  # Convertir les index en chaînes de caractères
+        close_prices = prices_df['bid']['Close']  # Utiliser les prix de clôture bid
+
+        # Configurer le graphe
+        plt.clear_data()
+        plt.title("Prix historiques (Clôture)")
+        plt.xlabel("Date")
+        plt.ylabel("Prix de clôture")
+        plt.plot(dates, close_prices, label="Clôture (Bid)")
+        plt.show()
+    except KeyError as e:
+        print(f"⚠️ Erreur : Clé manquante dans les données - {e}")
+    except Exception as e:
+        print(f"⚠️ Une erreur s'est produite lors de l'affichage du graphe : {e}")
 
 def get_historical_prices(ig_service):
     """
@@ -215,8 +239,8 @@ def get_historical_prices(ig_service):
     """
     selected_epic, selected_data = select_from_dict(epics_dict)
     selected_resolution, selected_resolution_data = select_from_dict(resolution_dict)
-    num_points_default = "10"
-    num_points = prefill_input(f"Nombre de points (1-100): ", num_points_default) 
+    num_points_default = "50"
+    num_points = prefill_input(f"Nombre de points (1-1000): ", num_points_default) 
     print(f"Récupération des prix historiques pour '{selected_epic}'...")
     try:
         num_points = int(num_points)
@@ -225,20 +249,11 @@ def get_historical_prices(ig_service):
             resolution=selected_resolution,
             numpoints=num_points
         )
-        if isinstance(result, pd.DataFrame):
-            print("\nDerniers prix historiques (DataFrame):")
-            print(result.head())
-        elif isinstance(result, dict) and 'prices' in result:
-            if isinstance(result['prices'], list):
-                print("\nDerniers prix historiques:")
-                for price in result['prices'][:5]:
-                    print(f"Date: {price['snapshotTime']}, Ouv: {price['openPrice']['ask']}, Ferm: {price['closePrice']['ask']}")
-            else:
-                print(result['prices'])
-        else:
-            print("\nStructure de la réponse inconnue:")
-            print(f"Type: {type(result)}")
-            print(result)
+
+        print(f"Type: {type(result['prices'])}")
+        print(result['prices'])
+        plot_prices(result['prices'])
+        
     except Exception as e:
         print(f"⚠️ Erreur: {e}")
         traceback.print_exc()
@@ -269,6 +284,17 @@ def track_realtime_prices(ig_service):
         time.sleep(delay)
     print("✅ Fin de la récupération des prix.")
     input("\nAppuyez sur Entrée pour continuer...")
+    
+def postion_output(result):                              
+    if(result['status'] == 'OPEN'):
+        print("\n✅ Position créée avec succès!")
+        print(f"Deal reference: {result['dealReference']}")
+        print(f"Deal ID: {result.get('dealId', 'N/A')}")
+        print(f"Status: {result.get('status', 'N/A')}")
+    else:
+        print("\n⚠️ Erreur lors de la création de la position:")
+        print(f"Raison: {result['reason']}")
+        print(f"Status: {result['status']}")
 
 def create_position(ig_service):
     """
@@ -278,254 +304,273 @@ def create_position(ig_service):
     Args:
         ig_service (IGService): Le service IG initialisé.
     """
-
-    # Fonction principale pour l'interface curses
-    def main_interface(stdscr):
-        # Initialiser l'écran
-        curses.curs_set(0)  # Cacher le curseur
+    def position_interface(stdscr):
+        # Configuration initiale de curses
+        curses.curs_set(0)  # Masquer le curseur
         stdscr.clear()
-        height, width = stdscr.getmaxyx()
+        stdscr.refresh()
+        curses.start_color()
+        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)  # Titre
+        curses.init_pair(2, curses.COLOR_GREEN, curses.COLOR_BLACK)  # Valeurs validées
+        curses.init_pair(3, curses.COLOR_RED, curses.COLOR_BLACK)    # Erreurs
+        curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Sélection
         
-        # Paramètres par défaut
+        # Paramètres de la position avec valeurs par défaut
+        position_params = {
+            "epic": {"value": "", "required":True, "editable":False, "desc": "Identifiant du marché"},
+            "direction": {"value": "BUY", "options": ["BUY", "SELL"], "required":True, "editable":True, "desc": "Direction de la position"},
+            "size": {"value": "1.0", "required":True, "editable":True, "desc": "Taille de la position"},
+            "currency_code": {"value": "EUR", "required":True, "editable":False, "desc": "Code de la devise"},
+            "expiry": {"value": "-", "required":True, "editable":True, "desc": "Date d'expiration ('DFB' pour aucune)"},
+            "order_type": {"value": "MARKET", "options": ["LIMIT", "MARKET"], "required":True, "editable":True, "desc": "Type d'ordre"},
+            "level": {"value": "", "required":False, "editable":True, "desc": "Niveau de prix (requis pour les ordres LIMIT)"},
+            "guaranteed_stop": {"value": "False", "options": ["True", "False"], "required":True, "editable":True, "desc": "Stop garanti"},
+            "stop_level": {"value": "", "required":False, "editable":True, "desc": "Niveau de stop-loss"},
+            "stop_distance": {"value": "", "required":False, "editable":True, "desc": "Distance du stop-loss"},
+            "limit_level": {"value": "", "required":False, "editable":True, "desc": "Niveau de take-profit"},
+            "limit_distance": {"value": "", "required":False, "editable":True, "desc": "Distance du take-profit"},
+            "force_open": {"value": "True", "options": ["True", "False"], "required":True, "editable":True, "desc": "Forcer l'ouverture"},
+            "trailing_stop": {"value": "False", "options": ["True", "False"], "required":True, "editable":True, "desc": "Stop suiveur"},
+            "trailing_stop_increment": {"value": "", "required":False, "editable":True, "desc": "Incrément du stop suiveur"},
+            "time_in_force": {"value": "FILL_OR_KILL", "options": ["FILL_OR_KILL", "EXECUTE_AND_ELIMINATE"], "required":False, "editable":True, "desc": "Validité de l'ordre"}
+        }
+        
+        # Sélection de l'EPIC
+        stdscr.clear()
+        stdscr.addstr(0, 0, "Création d'une nouvelle position", curses.A_BOLD)
+        stdscr.refresh()
+        curses.endwin()  # Sortir temporairement de curses
+        
         selected_epic, selected_data = select_from_dict(epics_dict)
-        params = {
-            "epic": selected_epic,
-            "direction": "BUY",
-            "size": 1.0,
-            "currency_code": "EUR",
-            "order_type": "MARKET",
-            "expiry": "DFB",
-            "force_open": "false",
-            "guaranteed_stop": "false",
-            "level": None,
-            "limit_distance": None,
-            "limit_level": None,
-            "stop_distance": None,
-            "stop_level": None,
-            "trailing_stop": "false",
-            "trailing_stop_increment": None
-        }
+        position_params["epic"]["value"] = selected_epic
         
-        # Options pour certains paramètres
-        options = {
-            "direction": ["BUY", "SELL"],
-            "order_type": ["MARKET", "LIMIT", "QUOTE"],
-            "expiry": ["DFB", "1", "2", "3", "7"],
-            "force_open": ["false", "true"],
-            "guaranteed_stop": ["false", "true"],
-            "trailing_stop": ["false", "true"],
-        }
+        # Reprendre l'interface curses
+        stdscr = curses.initscr()
+        curses.noecho()
+        curses.cbreak()
+        stdscr.keypad(True)
+
+        current_param = 1  # Index du paramètre actuel (commence à 1 car epic est déjà défini)
+        param_keys = list(position_params.keys())
+        max_y, max_x = stdscr.getmaxyx()
+        scroll_offset = 0
         
-        # Types pour chaque paramètre
-        param_types = {
-            "epic": "str",
-            "direction": "option",
-            "size": "float",
-            "currency_code": "str",
-            "order_type": "option",
-            "expiry": "option",
-            "force_open": "option",
-            "guaranteed_stop": "option",
-            "level": "float_nullable",
-            "limit_distance": "float_nullable",
-            "limit_level": "float_nullable",
-            "stop_distance": "float_nullable",
-            "stop_level": "float_nullable",
-            "trailing_stop": "option",
-            "trailing_stop_increment": "float_nullable",
-        }
-        
-        # Paramètres à afficher et leur description
-        display_params = [
-            ("epic", "Marché"),
-            ("direction", "Direction"),
-            ("size", "Taille"),
-            ("currency_code", "Devise"),
-            ("order_type", "Type d'ordre"),
-            ("expiry", "Expiration"),
-            ("force_open", "Forcer ouverture"),
-            ("guaranteed_stop", "Stop garanti"),
-            ("level", "Niveau (prix)"),
-            ("limit_distance", "Distance limite"),
-            ("limit_level", "Niveau limite"),
-            ("stop_distance", "Distance stop"),
-            ("stop_level", "Niveau stop"),
-            ("trailing_stop", "Stop suiveur"),
-            ("trailing_stop_increment", "Incrément stop suiveur")
-        ]
-        
-        current_param_index = 0
-        edit_mode = False
-        current_edit_value = ""
-        option_index = 0
-        confirm_position = False
-        
-        # Boucle principale
+        # Récupération des informations du marché pour afficher le prix actuel
+        market_info = ig_service.fetch_market_by_epic(selected_epic)
+        current_bid = market_info['snapshot']['bid']
+        current_ask = market_info['snapshot']['offer']
         while True:
+            
             stdscr.clear()
+            stdscr.addstr(0, 0, f"Configuration de la position - {selected_data['name']}", curses.color_pair(1) | curses.A_BOLD)
+            stdscr.addstr(1, 0, f"Prix actuel: Achat: {current_ask} | Vente: {current_bid}", curses.A_BOLD)
+            stdscr.addstr(2, 0, "Utilisez ↑↓ pour naviguer, Entrée pour modifier, Échap pour quitter", curses.A_ITALIC)
+            stdscr.addstr(3, 0, "-" * (max_x - 1))
             
-            # Titre
-            title = "CRÉATION DE POSITION - CONFIGURATION"
-            stdscr.addstr(1, (width - len(title)) // 2, title, curses.A_BOLD)
+            # Modifier cette section dans la fonction position_interface
             
-            # Instructions
-            instructions = [
-                "Utilisez ↑/↓ pour naviguer, Entrée pour modifier/confirmer",
-                "Tab pour passer au paramètre suivant, Échap pour annuler",
-                "F10 pour confirmer et créer la position"
-            ]
-            for i, instr in enumerate(instructions):
-                stdscr.addstr(3 + i, 2, instr)
-            
-            # Afficher les paramètres
-            for i, (param, desc) in enumerate(display_params):
-                y_pos = 7 + i
+            # Affichage des paramètres avec défilement
+            visible_rows = max_y - 7
+            for i in range(min(visible_rows, len(param_keys))):
+                idx = i + scroll_offset
+                if idx >= len(param_keys):
+                    break
                 
-                # Mise en évidence du paramètre sélectionné
-                if i == current_param_index:
-                    attr = curses.A_REVERSE
+                key = param_keys[idx]
+                param = position_params[key]
+                
+                # Vérifie si le paramètre est actuellement sélectionné
+                is_selected = idx == current_param
+                is_editable = param.get("editable", True)
+                
+                # Style basé sur l'état
+                if is_selected:
+                    attr = curses.color_pair(4)
+                elif param["required"] and not param["value"]:
+                    attr = curses.color_pair(3)
                 else:
-                    attr = curses.A_NORMAL
+                    attr = curses.color_pair(2) if param["value"] else curses.A_NORMAL
                 
-                # Afficher la description et la valeur
-                value = params[param]
-                if value is None:
-                    value_str = "Non défini"
+                # Formatage de la ligne (ajout d'un indicateur pour les champs non éditables)
+                if is_editable:
+                    prefix = "  "
                 else:
-                    value_str = str(value)
+                    prefix = "🔒"
                 
-                # Affichage du paramètre
-                stdscr.addstr(y_pos, 2, f"{desc:<20}: ", attr)
-                
-                # Si en mode édition et c'est le paramètre actuel
-                if edit_mode and i == current_param_index:
-                    if param_types[param] == "option":
-                        # Afficher l'option actuelle avec un indicateur de sélection
-                        option_list = " | ".join(options[param])
-                        stdscr.addstr(y_pos, 24, option_list)
-                        opt_pos = 24
-                        for j, opt in enumerate(options[param]):
-                            if opt == current_edit_value:
-                                stdscr.addstr(y_pos, opt_pos, opt, curses.A_REVERSE)
-                            opt_pos += len(opt) + 3  # +3 pour " | "
-                    else:
-                        # Afficher la valeur en cours d'édition
-                        stdscr.addstr(y_pos, 24, current_edit_value)
-                else:
-                    stdscr.addstr(y_pos, 24, value_str)
+                line = f"{prefix} {key:23} : {param['value']:15} - {param['desc']}"
+                stdscr.addstr(i + 4, 0, line, attr)
             
-            # Bouton de confirmation
-            confirmation_text = "[ CRÉER POSITION ]"
-            if confirm_position:
-                stdscr.addstr(7 + len(display_params) + 2, (width - len(confirmation_text)) // 2, 
-                             confirmation_text, curses.A_REVERSE)
-            else:
-                stdscr.addstr(7 + len(display_params) + 2, (width - len(confirmation_text)) // 2, 
-                             confirmation_text)
+            # Affichage des instructions en bas
+            stdscr.addstr(max_y-3, 0, "-" * (max_x - 1))
+            stdscr.addstr(max_y-2, 0, "Appuyez sur 'C' pour confirmer et créer la position")
             
-            # Rafraîchir l'écran
             stdscr.refresh()
             
             # Gestion des touches
             key = stdscr.getch()
             
-            if edit_mode:
-                # Mode édition
-                if key == 27:  # Échap
-                    edit_mode = False
-                elif key == 10:  # Entrée
-                    edit_mode = False
-                    param = display_params[current_param_index][0]
-                    if param_types[param] == "float" or param_types[param] == "float_nullable":
-                        try:
-                            if current_edit_value == "":
-                                params[param] = None
-                            else:
-                                params[param] = float(current_edit_value)
-                        except ValueError:
-                            # Ignorer les valeurs non numériques
-                            pass
-                    elif param_types[param] == "option":
-                        params[param] = current_edit_value
-                    else:
-                        params[param] = current_edit_value
-                elif param_types[display_params[current_param_index][0]] == "option":
-                    param = display_params[current_param_index][0]
-                    opts = options[param]
-                    if key == curses.KEY_RIGHT and opts.index(current_edit_value) < len(opts) - 1:
-                        current_edit_value = opts[opts.index(current_edit_value) + 1]
-                    elif key == curses.KEY_LEFT and opts.index(current_edit_value) > 0:
-                        current_edit_value = opts[opts.index(current_edit_value) - 1]
+            if key == curses.KEY_UP:
+                current_param = max(0, current_param - 1)
+                # Ajuster le défilement si nécessaire
+                if current_param < scroll_offset:
+                    scroll_offset = current_param
+                    
+            elif key == curses.KEY_DOWN:
+                current_param = min(len(param_keys) - 1, current_param + 1)
+                # Ajuster le défilement si nécessaire
+                if current_param >= scroll_offset + visible_rows:
+                    scroll_offset = current_param - visible_rows + 1
+                                
+            elif key == 10 or key == 13:  # Entrée
+                current_key = param_keys[current_param]
+                current_value = position_params[current_key]
+                
+                # Vérifier si le paramètre est éditable
+                if not current_value.get("editable", True):
+                    # Afficher un message indiquant que le paramètre n'est pas éditable
+                    stdscr.addstr(max_y-1, 0, f"Le paramètre '{current_key}' n'est pas éditable", curses.color_pair(3))
+                    stdscr.refresh()
+                    time.sleep(1)  # Afficher le message pendant 1 seconde
                 else:
-                    # Éditer la valeur
-                    if key == curses.KEY_BACKSPACE or key == 127:
-                        current_edit_value = current_edit_value[:-1]
-                    elif 32 <= key <= 126:  # Caractères ASCII imprimables
-                        current_edit_value += chr(key)
-            else:
-                # Mode navigation
-                if key == curses.KEY_UP:
-                    if current_param_index > 0:
-                        current_param_index -= 1
-                    elif confirm_position:
-                        confirm_position = False
-                        current_param_index = len(display_params) - 1
-                elif key == curses.KEY_DOWN:
-                    if current_param_index < len(display_params) - 1:
-                        current_param_index += 1
+                    # Si le paramètre a des options prédéfinies, utiliser pick
+                    if "options" in current_value:
+                        curses.endwin()  # Quitter curses temporairement
+                        options = current_value["options"]
+                        title = f"Sélectionnez une valeur pour '{current_key}':"
+                        selected, _ = pick(options, title)
+                        position_params[current_key]["value"] = selected
+                        stdscr = curses.initscr()  # Réinitialiser curses
+                        curses.noecho()
+                        curses.cbreak()
+                        stdscr.keypad(True)
                     else:
-                        confirm_position = True
-                elif key == 9:  # Tab
-                    if current_param_index < len(display_params) - 1:
-                        current_param_index += 1
-                    else:
-                        current_param_index = 0
-                elif key == 10:  # Entrée
-                    if confirm_position:
-                        # Créer la position
-                        return params
-                    else:
-                        edit_mode = True
-                        param = display_params[current_param_index][0]
-                        current_edit_value = str(params[param]) if params[param] is not None else ""
-                        if param_types[param] == "option":
-                            current_edit_value = params[param]
-                elif key == 27:  # Échap
-                    return None
-                elif key == curses.KEY_F10:
-                    # Créer la position
-                    return params
+                        # Sinon, demander une saisie manuelle
+                        stdscr.addstr(current_param + 4, 0, " " * (max_x - 1))
+                        prompt = f"{current_key}: "
+                        stdscr.addstr(current_param + 4, 0, prompt)
+                        
+                        # Activer le curseur et l'écho pour la saisie
+                        curses.echo()
+                        curses.curs_set(1)
+                        
+                        # Préparation de la zone de saisie
+                        input_y, input_x = current_param + 4, len(prompt)
+                        stdscr.move(input_y, input_x)
+                        
+                        # Récupération de la saisie
+                        input_str = ""
+                        while True:
+                            ch = stdscr.getch()
+                            if ch == 10 or ch == 13:  # Entrée
+                                break
+                            elif ch == 27:  # Échap
+                                input_str = position_params[current_key]["value"]  # Annuler
+                                break
+                            elif ch == 127 or ch == 8:  # Retour arrière
+                                if input_str:
+                                    input_str = input_str[:-1]
+                                    stdscr.addstr(input_y, input_x, " " * (max_x - input_x))
+                                    stdscr.addstr(input_y, input_x, input_str)
+                            else:
+                                input_str += chr(ch)
+                        
+                        position_params[current_key]["value"] = input_str
+                        curses.noecho()
+                        curses.curs_set(0)
+                    
+            elif key == ord('c') or key == ord('C'):  # Confirmer
+                # Vérifier les paramètres requis
+                missing_params = [k for k, v in position_params.items() 
+                                 if v["required"] and not v["value"]]
+                
+                if missing_params:
+                    stdscr.addstr(max_y-1, 0, f"Erreur: Paramètres obligatoires manquants: {', '.join(missing_params)}", 
+                                 curses.color_pair(3))
+                    stdscr.refresh()
+                    stdscr.getch()  # Attendre une touche
+                else:
+                    # Demander confirmation
+                    stdscr.addstr(max_y-1, 0, "Êtes-vous sûr de vouloir créer cette position? (O/N)", curses.A_BOLD)
+                    stdscr.refresh()
+                    
+                    while True:
+                        confirm = stdscr.getch()
+                        if confirm in [ord('o'), ord('O')]:
+                            # Créer la position
+                            try:
+                                # Préparer les paramètres à envoyer
+                                params = {}
+                                for k, v in position_params.items():
+                                    if v["value"] is not None:  # Inclure uniquement les paramètres définis
+                                        # Convertir les valeurs booléennes et numériques
+                                        if v["value"] in ["True", "False"]:
+                                            params[k] = v["value"] == "True"
+                                        elif k in ["size", "level", "limit_distance", "limit_level", 
+                                                   "stop_distance", "stop_level", "trailing_stop_increment"]:
+                                            try:
+                                                params[k] = float(v["value"]) if v["value"] else None
+                                            except ValueError:
+                                                params[k] = None
+                                        else:
+                                            params[k] = v["value"]
+                                
+                                # Ajouter les paramètres manquants avec des valeurs par défaut
+                                required_params = [
+                                    "level", "limit_distance", "limit_level", "quote_id", 
+                                    "stop_distance", "stop_level", "trailing_stop_increment"
+                                ]
+                                for param in required_params:
+                                    if param not in params:
+                                        params[param] = None  # Valeur par défaut
+                                
+                                # Sortir de curses pour afficher les résultats
+                                curses.endwin()
+                                
+                                # Appel de l'API pour créer la position
+                                result = ig_service.create_open_position(**params)
+                                print(result)
+                                
+                                postion_output(result)
+                                                               
+                                input("\nAppuyez sur Entrée pour continuer...")
+                                return  # Sortir de la fonction
+                                
+                            except Exception as e:
+                                curses.endwin()
+                                print(f"\n⚠️ Erreur lors de la création de la position: {e}")
+                                traceback.print_exc()
+                                input("\nAppuyez sur Entrée pour continuer...")
+                                return
+                                
+                        elif confirm in [ord('n'), ord('N')]:
+                            break  # Revenir à l'édition
+                        
+            elif key == 27:  # Échap
+                # Demander confirmation pour quitter
+                stdscr.addstr(max_y-1, 0, "Êtes-vous sûr de vouloir quitter sans créer de position? (O/N)", curses.A_BOLD)
+                stdscr.refresh()
+                
+                while True:
+                    confirm = stdscr.getch()
+                    if confirm in [ord('o'), ord('O')]:
+                        return  # Sortir de la fonction
+                    elif confirm in [ord('n'), ord('N')]:
+                        break  # Continuer l'édition
     
-    # Exécuter l'interface curses
+    # Exécuter l'interface interactive
     try:
-        position_params = wrapper(main_interface)
-        
-        if position_params is None:
-            print("❌ Création de position annulée.")
-            return
-        
-        print(f"Création d'une position {position_params['direction']} sur {position_params['epic']}...")
-        
-        # Filtrer les paramètres None
-        filtered_params = {k: v for k, v in position_params.items() if v is not None}
-        
-        try:
-            resp = ig_service.create_open_position(**filtered_params)
-            
-            if resp['dealStatus'] == 'ACCEPTED':
-                print("✅ Position créée avec succès. Détails de la réponse :")
-                pprint(resp, width=80, sort_dicts=False)
-            else:
-                print(f"⚠️ Échec de la création de la position:")
-                print(f"Raison : {resp['reason']}")
-        except Exception as e:
-            print(f"⚠️ Erreur lors de la création de la position: {e}")
-            traceback.print_exc()
+        wrapper(position_interface)
     except Exception as e:
-        print(f"⚠️ Erreur dans l'interface: {e}")
+        print(f"\n⚠️ Erreur dans l'interface: {e}")
         traceback.print_exc()
+    finally:
+        # S'assurer que le terminal est correctement restauré
+        try:
+            curses.endwin()
+        except:
+            pass
     
-    input("\nAppuyez sur Entrée pour continuer...")
+
 
 def display_menu():
     """

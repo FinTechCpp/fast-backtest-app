@@ -30,6 +30,7 @@ from pprint import pprint
 import curses
 from curses import wrapper
 import plotext as plt
+import numpy as np
 
 # Liste des options de direction pour les positions
 direction_options = ["BUY", "SELL"]
@@ -215,16 +216,36 @@ def plot_prices(prices_df):
     """
     try:
         # Extraire les dates et les prix de clôture
-        dates = list(prices_df.index.strftime('%d/%m/%Y'))  # Convertir les index en chaînes de caractères
-        close_prices = prices_df['bid']['Close']  # Utiliser les prix de clôture bid
+        dates = list(prices_df.index.strftime('%d/%m/%Y'))
+
+        timestamps = prices_df.index.astype(np.int64) // 10**9  # Convertir en secondes
+
+        
+        candlestick_data = pd.DataFrame({
+            "Date": dates,
+            "Open": prices_df[('bid', 'Open')].values,
+            "High": prices_df[('bid', 'High')].values,
+            "Low": prices_df[('bid', 'Low')].values,
+            "Close": prices_df[('bid', 'Close')].values,
+            "Volume": prices_df[('last', 'Volume')].fillna(0).values  # Remplir NaN par 0
+        })
+
 
         # Configurer le graphe
         plt.clear_data()
-        plt.title("Prix historiques (Clôture)")
+        plt.candlestick(candlestick_data["Date"], candlestick_data)
+        plt.title("Prix historiques (Bougies)")
         plt.xlabel("Date")
-        plt.ylabel("Prix de clôture")
-        plt.plot(dates, close_prices, label="Clôture (Bid)")
+        plt.ylabel("Prix")
+        plt.grid(horizontal=True)
+        plt.xticks(ticks = None, labels = None, xside = None)
         plt.show()
+
+        # plt.title("Prix historiques (Clôture)")
+        # plt.xlabel("Date")
+        # plt.ylabel("Prix de clôture")
+        # plt.plot(dates, close_prices, label="Clôture (Bid)")
+        # plt.show()
     except KeyError as e:
         print(f"⚠️ Erreur : Clé manquante dans les données - {e}")
     except Exception as e:

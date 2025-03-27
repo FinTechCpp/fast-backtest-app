@@ -37,11 +37,25 @@ direction_options = ["BUY", "SELL"]
 
 # Dictionnaire contenant les résolutions et leurs noms
 resolution_dict = {
-    "ME": "Minute",
-    "H": "Hour",
-    "D": "Day",
-    "W": "Week",
-    "M": "Month"
+    "1Min": "1Min",
+    # "2Min": "2Min",
+    # "3Min": "3Min",
+    "5Min": "5Min",
+    # "10Min": "10Min",
+    "15Min": "15Min",
+    # "30Min": "30Min",
+    "1H": "1H",
+    # "2H": "2H",
+    # "3H": "3H",
+    "4H": "4H",
+    "D": "D",
+    "W": "W",
+    "M": "M"
+    # "ME": "Minute",
+    # "H": "Hour",
+    # "D": "Day",
+    # "W": "Week",
+    # "M": "Month"
 }
 
 def is_market_open(trading_hours):
@@ -215,38 +229,41 @@ def plot_prices(prices_df):
         prices_df (pd.DataFrame): Les données historiques des prix sous forme de DataFrame.
     """
     try:
-        # Extraire les dates et les prix de clôture
-        dates = list(prices_df.index.strftime('%d/%m/%Y'))
+        # Vérifier la résolution des timestamps
+        date_diff = (prices_df.index[1] - prices_df.index[0]).days
+        
+        print(date_diff)
 
-        timestamps = prices_df.index.astype(np.int64) // 10**9  # Convertir en secondes
-
+        if date_diff > 0:
+            # Si plusieurs jours, utiliser la date complète
+            x_values = list(prices_df.index.strftime('%d/%m/%Y'))
+            x_labels = x_values
+        else:
+            # Sinon, afficher l'heure et les minutes sous forme décimale
+            x_values = prices_df.index.astype(np.int64)
+            x_labels = (prices_df.index.hour + prices_df.index.minute / 100.0).round(2)
         
         candlestick_data = pd.DataFrame({
-            "Date": dates,
+            "Date": x_values,
             "Open": prices_df[('bid', 'Open')].values,
             "High": prices_df[('bid', 'High')].values,
             "Low": prices_df[('bid', 'Low')].values,
-            "Close": prices_df[('bid', 'Close')].values,
-            "Volume": prices_df[('last', 'Volume')].fillna(0).values  # Remplir NaN par 0
+            "Close": prices_df[('bid', 'Close')].values
+            # "Volume": prices_df[('last', 'Volume')].fillna(0).values  # Remplir NaN par 0
         })
-
 
         # Configurer le graphe
         plt.clear_data()
         plt.candlestick(candlestick_data["Date"], candlestick_data)
         plt.title("Prix historiques (Bougies)")
-        plt.xlabel("Date")
+        plt.xlabel("Temps" if date_diff == 0 else "Date")
         plt.ylabel("Prix")
         plt.grid(horizontal=True)
-        step = max(1, len(dates) // 10)  # Afficher environ 10 labels max
-        plt.xticks(dates[::step], dates[::step])
+
+        step = max(1, len(x_labels) // 10)  # Afficher environ 10 labels max
+        plt.xticks(x_values[::step], x_labels[::step])  # Associer les valeurs continues aux labels lisibles
         plt.show()
 
-        # plt.title("Prix historiques (Clôture)")
-        # plt.xlabel("Date")
-        # plt.ylabel("Prix de clôture")
-        # plt.plot(dates, close_prices, label="Clôture (Bid)")
-        # plt.show()
     except KeyError as e:
         print(f"⚠️ Erreur : Clé manquante dans les données - {e}")
     except Exception as e:

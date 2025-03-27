@@ -18,19 +18,41 @@ def calculate_rsi(data, period=14):
 
 def fetch_prices(ig_service, epic, resolution='1Min', num_points=50):
     prices = ig_service.fetch_historical_prices_by_epic(epic, resolution=resolution, numpoints=num_points)
+    
+    # Debug: Print the structure of the returned data
+    #print("DEBUG: Fetched prices:", prices)
+    
+    if 'prices' not in prices:
+        raise KeyError("'prices' key not found in the API response.")
+    
+    # Convert the 'prices' data into a DataFrame
     df = pd.DataFrame(prices['prices'])
-    df['close'] = df['closePrice'].apply(lambda x: x['bid'])  # Prendre le prix "bid"
+    
+    # Check if the 'bid' column exists and contains the 'Close' sub-column
+    if 'bid' not in df.columns or 'Close' not in df['bid']:
+        raise KeyError("'Close' sub-column not found in the 'bid' column.")
+    
+    # Extract the 'Close' prices from the 'bid' column
+    df['close'] = df['bid']['Close']
+    
+    if df['close'].isnull().all():
+        raise ValueError("No valid 'Close' prices found in the 'bid' column.")
+    
     return df[['close']]
 
 def main():
     ig_service = utils.initialize_service()
     
+    # Paramètres de trading
     EPIC, SELECTED_DATA = utils.select_from_dict(markets.epics_dict)
-    TRADE_SIZE = 1  # Taille de la position
+    TRADE_SIZE = 0.5  # Taille de la position
     SL = 0.002  # Stop Loss
     TP = 0.004  # Take Profit
+    last_open_price = None
+    MIN_PRICE_DIFF = 5 # Différence minimale de prix pour éviter les faux signaux
     
     print("🔄 Démarrage du bot de trading...")
+    print(f"📊 Analyse des données pour l'EPIC: {EPIC}...")
     
     while True:
         df = fetch_prices(ig_service, EPIC)
@@ -44,9 +66,14 @@ def main():
         rsi = df['RSI'].iloc[-1]
         
         print(f"💹 Dernier prix: {last_price}, EMA10: {ema_10}, EMA30: {ema_30}, RSI: {rsi}")
+        # Calculate stop and limit distances
+        stop_distance = round(last_price * SL, 2)  # Ensure valid precision
+        limit_distance = round(last_price * TP, 2)  # Ensure valid precision
         
-        if ema_10 > ema_30 and rsi < 70:
+        if ema_10 > ema_30 and rsi < 70 and (last_open_price is None or abs(last_price - last_open_price) > MIN_PRICE_DIFF):
+            print("\n------------------------------------")
             print("📈 Signal d'achat détecté!")
+            print("------------------------------------")
             response = ig_service.create_open_position(
                 epic=EPIC, #epic sélectionné
                 direction='BUY', #ACHAT
@@ -58,12 +85,19 @@ def main():
                 force_open=True, #Ouverture forcée
                 trailing_stop=False, #Stop suiveur
                 time_in_force='FILL_OR_KILL', #Durée de vie de l'ordre
-                stop_distance=SL, #Distance du stop loss    
-                limit_distance=TP) #Distance du take profit
-            utils.postion_output(response)
+                stop_distance=stop_distance, #Distance du stop loss    
+                limit_distance=limit_distance,
+                level=None,
+                limit_level=None,
+                quote_id=None,
+                stop_level=None,
+                trailing_stop_increment=None) #Distance du take profit
+            utils.position_output(response)
                  
-        elif ema_10 < ema_30 and rsi > 30:
+        elif ema_10 < ema_30 and rsi > 30 and (last_open_price is None or abs(last_price - last_open_price) > MIN_PRICE_DIFF):
+            print("\n------------------------------------")
             print("📉 Signal de vente détecté!")
+            print("------------------------------------")
             response = ig_service.create_open_position(
                 epic=EPIC,
                 direction='SELL',
@@ -75,9 +109,14 @@ def main():
                 force_open=True,
                 trailing_stop=False,
                 time_in_force='FILL_OR_KILL',
-                stop_distance=SL,
-                limit_distance=TP)
-            utils.postion_output(response)
+                stop_distance=stop_distance,
+                limit_distance=limit_distance,
+                level=None,
+                limit_level=None,
+                quote_id=None,
+                stop_level=None,
+                trailing_stop_increment=None)
+            utils.position_output(response)
         
         time.sleep(60)  # Rafraîchir toutes les minutes
 

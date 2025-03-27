@@ -324,7 +324,7 @@ def track_realtime_prices(ig_service):
     print("✅ Fin de la récupération des prix.")
     input("\nAppuyez sur Entrée pour continuer...")
     
-def postion_output(result):                              
+def position_output(result):                              
     if(result['status'] == 'OPEN'):
         print("\n✅ Position créée avec succès!")
         print(f"Deal reference: {result['dealReference']}")
@@ -334,6 +334,7 @@ def postion_output(result):
         print("\n⚠️ Erreur lors de la création de la position:")
         print(f"Raison: {result['reason']}")
         print(f"Status: {result['status']}")
+        print("Détails : ", result)
 
 def create_position(ig_service):
     """

@@ -238,7 +238,7 @@ def plot_prices(prices_df):
         plt.xlabel("Date")
         plt.ylabel("Prix")
         plt.grid(horizontal=True)
-        plt.xticks(ticks = None, labels = None, xside = None)
+        # plt.xticks(ticks = None, labels = None, xside = None)
         plt.show()
 
         # plt.title("Prix historiques (Clôture)")

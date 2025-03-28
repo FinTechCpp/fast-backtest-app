@@ -169,20 +169,20 @@ def search_market(ig_service):
     Args:
         ig_service (IGService): Le service IG initialisé.
     """
-    selected_epic, selected_data = select_from_dict(epics_dict)
-    print(f"Recherche de '{selected_epic}'...")
+    search_query = prefill_input("Recherche d'un marché (ex: 'EURUSD'): ", "EURUSD")
     try:
-        result = ig_service.search_markets(selected_epic)
-        print("\nRésultats de la recherche:")
-        if isinstance(result, pd.DataFrame) and not result.empty:
-            print(f"Trouvé {len(result)} marchés:")
-            for index, row in result.iterrows():
-                print(f"- {row['epic']}: {row['instrumentName']}")
-        elif isinstance(result, dict) and 'markets' in result:
-            for item in result['markets']:
-                print(f"- {item['epic']}: {item['instrumentName']}")
-        else:
-            print("Aucun marché trouvé avec ce terme de recherche.")
+        result = ig_service.search_markets(search_query)
+        print(f"\nRésultats de la recherche pour '{search_query}':")
+        
+        # Configurer pandas pour afficher toutes les colonnes et éviter la troncature
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+            if isinstance(result, pd.DataFrame) and not result.empty:
+                print(result)
+            elif isinstance(result, dict) and 'markets' in result:
+                markets_df = pd.DataFrame(result['markets'])
+                print(markets_df)
+            else:
+                print("Aucun marché trouvé avec ce terme de recherche.")
     except Exception as e:
         print(f"\n⚠️ Erreur lors de la recherche: {e}")
     input("\nAppuyez sur Entrée pour continuer...")

@@ -169,8 +169,21 @@ def search_market(ig_service):
     Args:
         ig_service (IGService): Le service IG initialisé.
     """
+    input = prefill_input("Entrez le nom du marché à rechercher: ", "EUR/USD")
+    print(f"Recherche de '{input}'...")
     search_query = prefill_input("Recherche d'un marché (ex: 'EURUSD'): ", "EURUSD")
     try:
+        result = ig_service.search_markets(input)
+        print("\nRésultats de la recherche:")
+        if isinstance(result, pd.DataFrame) and not result.empty:
+            print(f"Trouvé {len(result)} marchés:")
+            for index, row in result.iterrows():
+                print(f"- {row['epic']}: {row['instrumentName']}")
+        elif isinstance(result, dict) and 'markets' in result:
+            for item in result['markets']:
+                print(f"- {item['epic']}: {item['instrumentName']}")
+        else:
+            print("Aucun marché trouvé avec ce terme de recherche.")
         result = ig_service.search_markets(search_query)
         print(f"\nRésultats de la recherche pour '{search_query}':")
         
@@ -269,6 +282,30 @@ def plot_prices(prices_df):
     except Exception as e:
         print(f"⚠️ Une erreur s'est produite lors de l'affichage du graphe : {e}")
 
+def fetch_prices(ig_service, epic, resolution='1Min', num_points=50):
+    prices = ig_service.fetch_historical_prices_by_epic(epic, resolution=resolution, numpoints=num_points)
+    
+    # Debug: Print the structure of the returned data
+    #print("DEBUG: Fetched prices:", prices)
+    
+    if 'prices' not in prices:
+        raise KeyError("'prices' key not found in the API response.")
+    
+    # Convert the 'prices' data into a DataFrame
+    df = pd.DataFrame(prices['prices'])
+    
+    # Check if the 'bid' column exists and contains the 'Close' sub-column
+    if 'bid' not in df.columns or 'Close' not in df['bid']:
+        raise KeyError("'Close' sub-column not found in the 'bid' column.")
+    
+    # Extract the 'Close' prices from the 'bid' column
+    df['close'] = df['bid']['Close']
+    
+    if df['close'].isnull().all():
+        raise ValueError("No valid 'Close' prices found in the 'bid' column.")
+    
+    return df[['close']]
+
 def get_historical_prices(ig_service):
     """
     Récupère les prix historiques d'un marché.
@@ -361,7 +398,7 @@ def create_position(ig_service):
             "direction": {"value": "BUY", "options": ["BUY", "SELL"], "required":True, "editable":True, "desc": "Direction de la position"},
             "size": {"value": "1.0", "required":True, "editable":True, "desc": "Taille de la position"},
             "currency_code": {"value": "EUR", "required":True, "editable":False, "desc": "Code de la devise"},
-            "expiry": {"value": "-", "required":True, "editable":True, "desc": "Date d'expiration ('DFB' pour aucune)"},
+            "expiry": {"value": "DFB", "required":True, "editable":True, "desc": "Date d'expiration ('DFB' pour aucune)"},
             "order_type": {"value": "MARKET", "options": ["LIMIT", "MARKET"], "required":True, "editable":True, "desc": "Type d'ordre"},
             "level": {"value": "", "required":False, "editable":True, "desc": "Niveau de prix (requis pour les ordres LIMIT)"},
             "guaranteed_stop": {"value": "False", "options": ["True", "False"], "required":True, "editable":True, "desc": "Stop garanti"},
@@ -565,12 +602,13 @@ def create_position(ig_service):
                                 
                                 # Sortir de curses pour afficher les résultats
                                 curses.endwin()
-                                
+                                # Debug: Afficher les paramètres avant l'appel à l'API
+                                print("DEBUG: Paramètres envoyés à l'API:", params)
                                 # Appel de l'API pour créer la position
                                 result = ig_service.create_open_position(**params)
                                 print(result)
                                 
-                                postion_output(result)
+                                position_output(result)
                                                                
                                 input("\nAppuyez sur Entrée pour continuer...")
                                 return  # Sortir de la fonction
@@ -609,9 +647,64 @@ def create_position(ig_service):
             curses.endwin()
         except:
             pass
+        
+# ------------Indicateurs techniques----------------
+def calculate_ema(data, period):
+    return data.ewm(span=period, adjust=False).mean()
+
+def calculate_rsi(data, period=14):
+    delta = data.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
+
+def calculate_atr(data, period=14):
+    # Debug: Affichez les colonnes disponibles pour vérifier la structure
+    #print("Colonnes disponibles dans le DataFrame:", data.columns)
     
+    # Vérifiez si les colonnes 'High', 'Low', et 'Close' existent
+    if ('High' in data.columns and 'Low' in data.columns and 'Close' in data.columns):
+        high = data['High']
+        low = data['Low']
+        close = data['Close']
+    elif ('close', '') in data.columns:  # Si seule la colonne 'close' est disponible
+        close = data[('close', '')]
+        high = close  # Approximation : utilisez 'close' comme 'high'
+        low = close   # Approximation : utilisez 'close' comme 'low'
+    else:
+        raise KeyError("Les colonnes 'High', 'Low', et 'Close' ou leurs équivalents ne sont pas disponibles dans les données.")
+    
+    # Calculez les plages vraies (True Range)
+    high_low = high - low
+    high_close = abs(high - close.shift())
+    low_close = abs(low - close.shift())
+    true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+    
+    # Calculez l'ATR
+    atr = true_range.rolling(window=period).mean()
+    return atr
 
+def should_open_position(direction, ema_10, ema_30, rsi, last_price, last_open_price, min_price_diff):
+    """
+    Détermine si une position doit être ouverte en fonction des conditions de trading.
 
+    :param direction: 'BUY' ou 'SELL'
+    :param ema_10: Valeur actuelle de l'EMA 10
+    :param ema_30: Valeur actuelle de l'EMA 30
+    :param rsi: Valeur actuelle du RSI
+    :param last_price: Dernier prix
+    :param last_open_price: Dernier prix d'ouverture
+    :param min_price_diff: Différence minimale de prix pour éviter les faux signaux
+    :return: True si une position doit être ouverte, False sinon
+    """
+    if direction == 'BUY':
+        return ema_10 > ema_30 and rsi < 70 and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
+    elif direction == 'SELL':
+        return ema_10 < ema_30 and rsi > 30 and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
+    return False
+
+# ------------Menu principal----------------
 def display_menu():
     """
     Affiche le menu principal.

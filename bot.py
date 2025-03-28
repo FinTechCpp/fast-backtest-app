@@ -6,40 +6,6 @@ from trading_ig.config import config
 import utils
 import markets
 
-def calculate_ema(data, period):
-    return data.ewm(span=period, adjust=False).mean()
-
-def calculate_rsi(data, period=14):
-    delta = data.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-    rs = gain / loss
-    return 100 - (100 / (1 + rs))
-
-def fetch_prices(ig_service, epic, resolution='1Min', num_points=50):
-    prices = ig_service.fetch_historical_prices_by_epic(epic, resolution=resolution, numpoints=num_points)
-    
-    # Debug: Print the structure of the returned data
-    #print("DEBUG: Fetched prices:", prices)
-    
-    if 'prices' not in prices:
-        raise KeyError("'prices' key not found in the API response.")
-    
-    # Convert the 'prices' data into a DataFrame
-    df = pd.DataFrame(prices['prices'])
-    
-    # Check if the 'bid' column exists and contains the 'Close' sub-column
-    if 'bid' not in df.columns or 'Close' not in df['bid']:
-        raise KeyError("'Close' sub-column not found in the 'bid' column.")
-    
-    # Extract the 'Close' prices from the 'bid' column
-    df['close'] = df['bid']['Close']
-    
-    if df['close'].isnull().all():
-        raise ValueError("No valid 'Close' prices found in the 'bid' column.")
-    
-    return df[['close']]
-
 def main():
     ig_service = utils.initialize_service()
     
@@ -55,22 +21,27 @@ def main():
     print(f"📊 Analyse des données pour l'EPIC: {EPIC}...")
     
     while True:
-        df = fetch_prices(ig_service, EPIC)
-        df['EMA_10'] = calculate_ema(df['close'], 10)
-        df['EMA_30'] = calculate_ema(df['close'], 30)
-        df['RSI'] = calculate_rsi(df['close'])
+        df = utils.fetch_prices(ig_service, EPIC)
+        df['EMA_10'] = utils.calculate_ema(df['close'], 10)
+        df['EMA_30'] = utils.calculate_ema(df['close'], 30)
+        df['RSI'] = utils.calculate_rsi(df['close'])
+        df['ATR'] = utils.calculate_atr(df, period=14)
         
         last_price = df['close'].iloc[-1]
         ema_10 = df['EMA_10'].iloc[-1]
         ema_30 = df['EMA_30'].iloc[-1]
         rsi = df['RSI'].iloc[-1]
+        atr = df['ATR'].iloc[-1]
+        
+        MIN_PRICE_DIFF = atr * 2  # Dynamically adjust min price diff based on ATR
         
         print(f"💹 Dernier prix: {last_price}, EMA10: {ema_10}, EMA30: {ema_30}, RSI: {rsi}")
+        print(f"MIN_PRICE_DIFF dynamique: {MIN_PRICE_DIFF}")
         # Calculate stop and limit distances
         stop_distance = round(last_price * SL, 2)  # Ensure valid precision
         limit_distance = round(last_price * TP, 2)  # Ensure valid precision
         
-        if ema_10 > ema_30 and rsi < 70 and (last_open_price is None or abs(last_price - last_open_price) > MIN_PRICE_DIFF):
+        if utils.should_open_position('BUY', ema_10, ema_30, rsi, last_price, last_open_price, MIN_PRICE_DIFF):
             print("\n------------------------------------")
             print("📈 Signal d'achat détecté!")
             print("------------------------------------")
@@ -93,8 +64,8 @@ def main():
                 stop_level=None,
                 trailing_stop_increment=None) #Distance du take profit
             utils.position_output(response)
-                 
-        elif ema_10 < ema_30 and rsi > 30 and (last_open_price is None or abs(last_price - last_open_price) > MIN_PRICE_DIFF):
+            last_open_price = last_price
+        elif utils.should_open_position('SELL', ema_10, ema_30, rsi, last_price, last_open_price, MIN_PRICE_DIFF):
             print("\n------------------------------------")
             print("📉 Signal de vente détecté!")
             print("------------------------------------")
@@ -117,7 +88,7 @@ def main():
                 stop_level=None,
                 trailing_stop_increment=None)
             utils.position_output(response)
-        
+            last_open_price = last_price
         time.sleep(60)  # Rafraîchir toutes les minutes
 
 if __name__ == "__main__":

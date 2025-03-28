@@ -169,8 +169,6 @@ def search_market(ig_service):
     Args:
         ig_service (IGService): Le service IG initialisé.
     """
-    input = prefill_input("Entrez le nom du marché à rechercher: ", "EUR/USD")
-    print(f"Recherche de '{input}'...")
     search_query = prefill_input("Recherche d'un marché (ex: 'EURUSD'): ", "EURUSD")
     try:
         result = ig_service.search_markets(input)

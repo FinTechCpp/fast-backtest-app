@@ -5,6 +5,8 @@ from trading_ig.rest import IGService
 from trading_ig.config import config
 import utils
 import markets
+import argparse
+from simple_backtesting import BacktestingEngine
 
 class Strategy:
     """
@@ -61,10 +63,13 @@ class TradingBot:
     """
     Classe mère pour un bot de trading.
     """
-    def __init__(self, strategy):
+    def __init__(self, strategy, backtest_mode=False):
         self.strategy = strategy
-        self.ig_service = utils.initialize_service()
-        self.epic, _ = utils.select_from_dict(markets.epics_dict)
+        self.backtest_mode = backtest_mode
+        if not backtest_mode:
+            self.ig_service = utils.initialize_service()
+            self.epic, _ = utils.select_from_dict(markets.epics_dict)
+        
         self.trade_size = 0.5
         self.sl = 0.002
         self.tp = 0.004
@@ -76,6 +81,10 @@ class TradingBot:
     
     def execute_trade(self, direction, last_price):
         """ Exécute un ordre d'achat ou de vente. """
+        if self.backtest_mode:
+            print(f"Simulation d'un trade {direction} à {last_price}")
+            return
+        
         stop_distance = round(last_price * self.sl, 2)
         limit_distance = round(last_price * self.tp, 2)
         
@@ -98,7 +107,12 @@ class TradingBot:
 
     def run(self):
         """ Boucle principale du bot. """
-        print("🔄 Démarrage du bot de trading...")
+        if self.backtest_mode:
+            print("🔄 Démarrage du bot de trading en mode backtest...")
+            return
+        else:
+            print("🔄 Démarrage du bot de trading en live...")
+            
         while True:
             df = self.fetch_market_data()
             signal = self.strategy.generate_signal(df, self.last_open_price, min_price_diff=5)
@@ -113,7 +127,65 @@ class TradingBot:
             
             time.sleep(60)
 
+    def run_backtest(self, symbol="EURUSD=X", period="1y", interval="1h", cash=10000, 
+                    commission=0.002, optimize=False, **kwargs):
+        """
+        Exécute un backtest de la stratégie actuelle
+        
+        :param symbol: Symbole du marché à tester
+        :param period: Période historique à analyser
+        :param interval: Intervalle des barres de prix
+        :param cash: Capital initial
+        :param commission: Frais de commission
+        :param optimize: Activer l'optimisation des paramètres
+        :param kwargs: Paramètres supplémentaires pour l'optimisation
+        """
+        print(f"🔄 Démarrage du backtesting pour {symbol}...")
+        
+        # Création du moteur de backtesting
+        engine = BacktestingEngine(cash=cash, commission=commission)
+        
+        # Chargement des données
+        data = engine.load_data(symbol, period=period, interval=interval)
+        
+        if data is not None:
+            # Exécution du backtest
+            bt, stats = engine.run_backtest(data, plot=True, optimize=optimize, **kwargs)
+            
+            # Sauvegarde des résultats
+            engine.save_results(stats, filename=f"backtest_{symbol.replace('=', '_')}_{period}_{interval}.csv")
+            
+            return bt, stats
+        
+        return None, None
+
+def parse_arguments():
+    """Parse les arguments de ligne de commande"""
+    parser = argparse.ArgumentParser(description="Bot de trading IG Markets")
+    parser.add_argument("--backtest", action="store_true", help="Exécuter en mode backtesting")
+    parser.add_argument("--symbol", type=str, default="EURUSD=X", help="Symbole à trader/tester")
+    parser.add_argument("--period", type=str, default="1y", help="Période pour le backtest")
+    parser.add_argument("--interval", type=str, default="1h", help="Intervalle des barres de prix")
+    parser.add_argument("--optimize", action="store_true", help="Optimiser les paramètres")
+    return parser.parse_args()
+    
 if __name__ == "__main__":
+    args = parse_arguments()
     strategy = MovingAverageStrategy()
-    bot = TradingBot(strategy)
-    bot.run()
+    if args.backtest:
+        bot = TradingBot(strategy, backtest_mode=True)
+        bt, stats = bot.run_backtest(
+            symbol=args.symbol,
+            period=args.period,
+            interval=args.interval,
+            optimize=args.optimize
+        )
+        if stats is not None:
+            print("🔄 Backtest terminé avec succès!")
+            print(f"Rendement: {stats['Return [%]']:.2f}%")
+            print(f"Ratio de Sharpe: {stats['Sharpe Ratio']:.2f}")
+            print(f"Max. Drawdown: {stats['Max. Drawdown [%]']:.2f}%")
+            print(f"Trades gagnants: {stats['# Trades']:d} ({stats['Win Rate [%]']:.1f}%)")
+        else:
+            bot = TradingBot(strategy)
+            bot.run()

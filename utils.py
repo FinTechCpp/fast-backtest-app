@@ -683,25 +683,6 @@ def calculate_atr(data, period=14):
     atr = true_range.rolling(window=period).mean()
     return atr
 
-def should_open_position(direction, ema_10, ema_30, rsi, last_price, last_open_price, min_price_diff):
-    """
-    Détermine si une position doit être ouverte en fonction des conditions de trading.
-
-    :param direction: 'BUY' ou 'SELL'
-    :param ema_10: Valeur actuelle de l'EMA 10
-    :param ema_30: Valeur actuelle de l'EMA 30
-    :param rsi: Valeur actuelle du RSI
-    :param last_price: Dernier prix
-    :param last_open_price: Dernier prix d'ouverture
-    :param min_price_diff: Différence minimale de prix pour éviter les faux signaux
-    :return: True si une position doit être ouverte, False sinon
-    """
-    if direction == 'BUY':
-        return ema_10 > ema_30 and rsi < 70 and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
-    elif direction == 'SELL':
-        return ema_10 < ema_30 and rsi > 30 and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
-    return False
-
 # ------------Menu principal----------------
 def display_menu():
     """

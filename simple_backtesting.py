@@ -4,9 +4,6 @@ from backtesting import Backtest, Strategy
 import yfinance as yf
 import matplotlib.pyplot as plt
 
-# Import de la stratégie existante
-from bot_v2 import MovingAverageStrategy
-
 class BacktestingAdapter(Strategy):
     """
     Adaptateur pour utiliser notre stratégie existante avec backtesting.py
@@ -17,48 +14,46 @@ class BacktestingAdapter(Strategy):
     
     def init(self):
         """Initialisation des indicateurs pour le backtesting"""
-        # Création d'une instance de notre stratégie
+        # Import différé pour éviter les imports circulaires
+        from bot_v2 import MovingAverageStrategy
         self.strategy = MovingAverageStrategy()
         
-        # Préparation du dataframe pour notre stratégie
-        self.price_data = self.data
-        
-        # Les indicateurs seront calculés dynamiquement dans next()
-        # car notre stratégie les calcule déjà
-    
     def next(self):
         """Exécuté à chaque barre de prix"""
         # Préparation des données pour notre stratégie
         df = pd.DataFrame({
-            'open': self.data.Open,
-            'high': self.data.High,
-            'low': self.data.Low,
-            'close': self.data.Close,
-            'volume': self.data.Volume if 'Volume' in self.data else 0
+            'Open': self.data.Open,
+            'High': self.data.High,
+            'Low': self.data.Low,
+            'Close': self.data.Close,
+            'Volume': self.data.Volume if hasattr(self.data, 'Volume') else np.zeros(len(self.data.Close))
         })
+        
+        # Afficher les colonnes pour débogage
+        #print(f"Colonnes du DataFrame dans next : {df.columns.tolist()}")
         
         # Récupération du dernier prix
         last_price = self.data.Close[-1]
         
         # Détermination du prix d'ouverture de la dernière position
         last_open_price = None
-        if self.position:
-            last_open_price = self.position.entry_price
+        if self.trades:  # Vérifie si une position est ouverte
+            last_open_price = self.trades[-1].entry_price # Utilise self.position.entry pour accéder au prix d'entrée
         
         # Génération du signal en utilisant notre stratégie existante
         signal = self.strategy.generate_signal(df, last_open_price, min_price_diff=None)
         
         # Traitement du signal
-        if signal == 'BUY' and not self.position:
+        if signal == 'BUY' and self.position.size == 0:  # Vérifie qu'aucune position n'est ouverte
             sl = last_price * (1 - self.sl_percent)
             tp = last_price * (1 + self.tp_percent)
             self.buy(sl=sl, tp=tp)
             
-        elif signal == 'SELL' and not self.position:
+        elif signal == 'SELL' and self.position.size == 0:  # Vérifie qu'aucune position n'est ouverte
             sl = last_price * (1 + self.sl_percent)
             tp = last_price * (1 - self.tp_percent)
             self.sell(sl=sl, tp=tp)
-
+            
 class BacktestingEngine:
     """
     Moteur de backtesting pour notre bot de trading
@@ -70,22 +65,51 @@ class BacktestingEngine:
     def load_data(self, symbol, period='1y', interval='1h', source='yahoo'):
         """
         Charge les données historiques pour le backtesting
-        
-        :param symbol: Symbole du marché (ex: 'EURUSD=X')
-        :param period: Période (ex: '1y', '6m', '1d')
-        :param interval: Intervalle (ex: '1h', '15m', '1d')
-        :param source: Source des données ('yahoo' ou 'custom')
-        :return: DataFrame avec les données OHLC
         """
         if source == 'yahoo':
             data = yf.download(symbol, period=period, interval=interval)
             print(f"Données chargées: {len(data)} barres de prix")
+            
+            # Aplatir les colonnes si elles sont des tuples
+            if isinstance(data.columns, pd.MultiIndex):
+                data.columns = [col[0] for col in data.columns]
+            
+            # Ajouter une colonne Volume si elle est absente
+            if 'Volume' not in data.columns:
+                data['Volume'] = 0
+            
+            # Utiliser Adj Close si Close est absent
+            if 'Close' not in data.columns and 'Adj Close' in data.columns:
+                data['Close'] = data['Adj Close']
+            
+            # Reformater les colonnes pour correspondre à ce que backtesting.py attend
+            data = data.rename(columns={
+                'Open': 'Open',
+                'High': 'High',
+                'Low': 'Low',
+                'Close': 'Close',
+                'Volume': 'Volume'
+            })
+            
+            # Réinitialiser l'index et convertir en DateTimeIndex
+            data = data.reset_index()
+            if 'Date' in data.columns:  # Vérifiez si une colonne Date existe après reset_index
+                data['Date'] = pd.DatetimeIndex(data['Date'])  # Convertir en datetime
+                data = data.set_index('Date')  # Définir la colonne Date comme index
+
+            # Supprimer les colonnes inutiles
+            data = data[['Open', 'High', 'Low', 'Close', 'Volume']]
+            
+            # Vérifier si des colonnes manquent
+            required_columns = {'Open', 'High', 'Low', 'Close', 'Volume'}
+            if not required_columns.issubset(data.columns):
+                raise ValueError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(data.columns)}")
+            
             return data
         else:
-            # Implémentez ici le chargement de vos propres données
             raise NotImplementedError("Source de données personnalisée non implémentée")
     
-    def run_backtest(self, data, plot=True, optimize=False, **kwargs):
+    def run_backtest(self, data, plot=True, optimize=True, **kwargs):
         """
         Exécute le backtest avec les données fournies
         
@@ -95,10 +119,30 @@ class BacktestingEngine:
         :param kwargs: Paramètres supplémentaires pour l'optimisation
         :return: Résultats du backtest
         """
+        if data.empty:
+            raise ValueError("Les données fournies sont vides.")
+        
+        # Vérifier que les colonnes nécessaires sont présentes
+        required_columns = {'Open', 'High', 'Low', 'Close', 'Volume'}
+        if not required_columns.issubset(data.columns):
+            raise ValueError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(data.columns)}")
+        
+        # Vérifier que l'index est simple
+        if isinstance(data.index, pd.MultiIndex):
+            raise ValueError("L'index des données ne doit pas être un MultiIndex. Réinitialisez l'index.")
+        
+        try:
+            data.index = pd.DatetimeIndex(data.index)
+        except Exception as e:
+            print(f"Erreur lors de la conversion de l'index en DateTimeIndex: {e}")
+            print("Tentative de conversion en utilisant to_datetime...")
+            data.index = pd.to_datetime(data.index)
+                
+        # Exécuter le backtest
         bt = Backtest(data, BacktestingAdapter, 
                       cash=self.cash, 
                       commission=self.commission)
-        
+                
         if optimize:
             # Paramètres par défaut pour l'optimisation
             optimization_params = {
@@ -117,13 +161,13 @@ class BacktestingEngine:
         else:
             # Exécuter le backtest avec les paramètres par défaut
             stats = bt.run()
-        
+                
         # Afficher les résultats
         print(stats)
-        
         if plot:
+            # Afficher le graphique
             bt.plot()
-        
+                
         return bt, stats
     
     def compare_strategies(self, data, strategies_params):
@@ -176,14 +220,12 @@ if __name__ == "__main__":
         engine.save_results(stats)
         
         # Optimisation (décommentez pour exécuter)
-        # bt_opt, stats_opt = engine.run_backtest(data, optimize=True)
+        bt_opt, stats_opt = engine.run_backtest(data, optimize=True)
         
         # Comparaison de différents paramètres
-        """
         strategies_to_compare = [
             {'sl_percent': 0.001, 'tp_percent': 0.002},
             {'sl_percent': 0.002, 'tp_percent': 0.004},
             {'sl_percent': 0.003, 'tp_percent': 0.006}
         ]
         results = engine.compare_strategies(data, strategies_to_compare)
-        """

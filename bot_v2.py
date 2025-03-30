@@ -22,7 +22,7 @@ class MovingAverageStrategy(Strategy):
     """
     Stratégie basée sur les moyennes mobiles et RSI.
     """
-    def should_open_position(direction, ema_10, ema_30, rsi, last_price, last_open_price, min_price_diff):
+    def should_open_position(self, direction, ema_10, ema_30, rsi, last_price, last_open_price, min_price_diff):
         """
         Détermine si une position doit être ouverte en fonction des conditions de trading.
 
@@ -42,12 +42,17 @@ class MovingAverageStrategy(Strategy):
         return False
 
     def generate_signal(self, df, last_open_price, min_price_diff):
-        df['EMA_10'] = utils.calculate_ema(df['close'], 10)
-        df['EMA_30'] = utils.calculate_ema(df['close'], 30)
-        df['RSI'] = utils.calculate_rsi(df['close'])
+        # Vérifier les colonnes nécessaires
+        required_columns = {'High', 'Low', 'Close'}  # Changé en majuscules
+        if not required_columns.issubset(df.columns):
+            raise KeyError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(df.columns)}")
+        
+        df['EMA_10'] = utils.calculate_ema(df['Close'], 10)  # Changé de 'close' à 'Close'
+        df['EMA_30'] = utils.calculate_ema(df['Close'], 30)  # Changé de 'close' à 'Close'
+        df['RSI'] = utils.calculate_rsi(df['Close'])         # Changé de 'close' à 'Close'
         df['ATR'] = utils.calculate_atr(df, period=14)
         
-        last_price = df['close'].iloc[-1]
+        last_price = df['Close'].iloc[-1]  # Changé de 'close' à 'Close'
         ema_10 = df['EMA_10'].iloc[-1]
         ema_30 = df['EMA_30'].iloc[-1]
         rsi = df['RSI'].iloc[-1]
@@ -185,7 +190,7 @@ if __name__ == "__main__":
             print(f"Rendement: {stats['Return [%]']:.2f}%")
             print(f"Ratio de Sharpe: {stats['Sharpe Ratio']:.2f}")
             print(f"Max. Drawdown: {stats['Max. Drawdown [%]']:.2f}%")
-            print(f"Trades gagnants: {stats['# Trades']:d} ({stats['Win Rate [%]']:.1f}%)")
+            print(f"Trades gagnants: {int(stats['# Trades'])} ({stats['Win Rate [%]']:.1f}%)")
         else:
             bot = TradingBot(strategy)
             bot.run()

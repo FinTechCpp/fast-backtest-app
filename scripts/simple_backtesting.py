@@ -15,8 +15,9 @@ class BacktestingAdapter(Strategy):
     def init(self):
         """Initialisation des indicateurs pour le backtesting"""
         # Import différé pour éviter les imports circulaires
-        from bot_v2 import MovingAverageStrategy
-        self.strategy = MovingAverageStrategy()
+        from scripts.bot_v2 import MovingAverageStrategy, TrendFollowingStrategy
+        #self.strategy = MovingAverageStrategy()
+        self.strategy = TrendFollowingStrategy()
         
     def next(self):
         """Exécuté à chaque barre de prix"""
@@ -58,17 +59,27 @@ class BacktestingEngine:
     """
     Moteur de backtesting pour notre bot de trading
     """
-    def __init__(self, cash=10000, commission=0.002):
+    def __init__(self, cash=10000, commission=0.002, spread=0.0):
         self.cash = cash
         self.commission = commission
+        self.spread = spread
         
     def load_data(self, symbol, period='1y', interval='1h', source='yahoo'):
         """
         Charge les données historiques pour le backtesting
         """
         if source == 'yahoo':
-            data = yf.download(symbol, period=period, interval=interval)
+            data = yf.download(symbol, period=period, interval=interval, auto_adjust=True)
             print(f"Données chargées: {len(data)} barres de prix")
+            
+            if not isinstance(data.index, pd.DatetimeIndex):
+                raise ValueError("L'index des données n'est pas un DateTimeIndex.")
+            
+            print(f"premiere date: {data.index[0]}")
+            print(f"derniere date: {data.index[-1]}")
+            
+            # Remove timezone information from the index
+            data.index = data.index.tz_localize(None)
             
             # Aplatir les colonnes si elles sont des tuples
             if isinstance(data.columns, pd.MultiIndex):
@@ -91,12 +102,6 @@ class BacktestingEngine:
                 'Volume': 'Volume'
             })
             
-            # Réinitialiser l'index et convertir en DateTimeIndex
-            data = data.reset_index()
-            if 'Date' in data.columns:  # Vérifiez si une colonne Date existe après reset_index
-                data['Date'] = pd.DatetimeIndex(data['Date'])  # Convertir en datetime
-                data = data.set_index('Date')  # Définir la colonne Date comme index
-
             # Supprimer les colonnes inutiles
             data = data[['Open', 'High', 'Low', 'Close', 'Volume']]
             
@@ -112,12 +117,6 @@ class BacktestingEngine:
     def run_backtest(self, data, plot=True, optimize=True, **kwargs):
         """
         Exécute le backtest avec les données fournies
-        
-        :param data: DataFrame avec les données OHLC
-        :param plot: Afficher le graphique des résultats
-        :param optimize: Optimiser les paramètres
-        :param kwargs: Paramètres supplémentaires pour l'optimisation
-        :return: Résultats du backtest
         """
         if data.empty:
             raise ValueError("Les données fournies sont vides.")
@@ -127,27 +126,25 @@ class BacktestingEngine:
         if not required_columns.issubset(data.columns):
             raise ValueError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(data.columns)}")
         
-        # Vérifier que l'index est simple
-        if isinstance(data.index, pd.MultiIndex):
-            raise ValueError("L'index des données ne doit pas être un MultiIndex. Réinitialisez l'index.")
+        # Vérifier que l'index est un DateTimeIndex
+        if not isinstance(data.index, pd.DatetimeIndex):
+            try:
+                data.index = pd.to_datetime(data.index)
+            except Exception as e:
+                raise ValueError(f"Erreur lors de la conversion de l'index en DateTimeIndex : {e}")
         
-        try:
-            data.index = pd.DatetimeIndex(data.index)
-        except Exception as e:
-            print(f"Erreur lors de la conversion de l'index en DateTimeIndex: {e}")
-            print("Tentative de conversion en utilisant to_datetime...")
-            data.index = pd.to_datetime(data.index)
-                
         # Exécuter le backtest
         bt = Backtest(data, BacktestingAdapter, 
                       cash=self.cash, 
-                      commission=self.commission)
-                
+                      commission=self.commission,
+                      spread=self.spread,
+                      )
+        
         if optimize:
             # Paramètres par défaut pour l'optimisation
             optimization_params = {
-                'sl_percent': np.arange(0.001, 0.005, 0.001),
-                'tp_percent': np.arange(0.002, 0.01, 0.002)
+                'sl_percent': list(np.arange(0.001, 0.005, 0.001)),  # Convertir en liste
+                'tp_percent': list(np.arange(0.002, 0.01, 0.002))    # Convertir en liste
             }
             
             # Ajouter les paramètres supplémentaires
@@ -161,15 +158,13 @@ class BacktestingEngine:
         else:
             # Exécuter le backtest avec les paramètres par défaut
             stats = bt.run()
-                
+        
         # Afficher les résultats
         print(stats)
         if plot:
-            # Afficher le graphique
-            bt.plot()
-                
+            bt.plot(superimpose=False, resample=False)
+        
         return bt, stats
-    
     def compare_strategies(self, data, strategies_params):
         """
         Compare plusieurs ensembles de paramètres pour la stratégie
@@ -217,7 +212,7 @@ if __name__ == "__main__":
         bt, stats = engine.run_backtest(data, plot=True)
         
         # Sauvegarde des résultats
-        engine.save_results(stats)
+        #engine.save_results(stats)
         
         # Optimisation (décommentez pour exécuter)
         bt_opt, stats_opt = engine.run_backtest(data, optimize=True)

@@ -1,12 +1,14 @@
 import time
 import pandas as pd
 import numpy as np
+import sys
+sys.path.insert(0, '/home/max/ig-trading-bot')
 from trading_ig.rest import IGService
 from trading_ig.config import config
-import utils
-import markets
+import scripts.utils as utils
+import scripts.markets as markets
 import argparse
-from simple_backtesting import BacktestingEngine
+from scripts.simple_backtesting import BacktestingEngine
 
 class Strategy:
     """
@@ -17,7 +19,60 @@ class Strategy:
         Analyse les données et retourne un signal ('BUY', 'SELL' ou None).
         """
         raise NotImplementedError("La méthode generate_signal doit être implémentée par une sous-classe.")
+    
+class TrendFollowingStrategy(Strategy):
+    """
+    Stratégie de suivi de tendance.
+    """
+    def should_open_position(self, direction, ema_300, stochastic, last_price, last_open_price, min_price_diff):
+        """
+        Détermine si une position doit être ouverte en fonction des conditions de trading.
 
+        :param direction: 'BUY' ou 'SELL'
+        :param ema_10: Valeur actuelle de l'EMA 10
+        :param ema_30: Valeur actuelle de l'EMA 30
+        :param rsi: Valeur actuelle du RSI
+        :param last_price: Dernier prix
+        :param last_open_price: Dernier prix d'ouverture
+        :param min_price_diff: Différence minimale de prix pour éviter les faux signaux
+        :return: True si une position doit être ouverte, False sinon
+        """
+        # Récupérer les valeurs actuelles et précédentes de %K et %D
+        k_current = stochastic['%K'].iloc[-1]
+        d_current = stochastic['%D'].iloc[-1]
+        k_previous = stochastic['%K'].iloc[-2]
+        d_previous = stochastic['%D'].iloc[-2]
+        
+        if direction == 'BUY':
+            return ema_300 < last_price and k_previous < d_previous and k_current > d_current and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
+        elif direction == 'SELL':
+            return ema_300 > last_price and k_previous > d_previous and k_current < d_current and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
+        return False
+
+    def generate_signal(self, df, last_open_price, min_price_diff):
+        # Vérifier les colonnes nécessaires
+        required_columns = {'High', 'Low', 'Close'}
+        if not required_columns.issubset(df.columns):
+            raise KeyError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(df.columns)}")
+    
+        # Calculer les indicateurs
+        df['EMA_300'] = utils.calculate_ema(df['Close'], 300)
+        stochastic = utils.calculate_stochastic(df, k_period=14, smoothing_period=3, d_period=3)
+        df['ATR'] = utils.calculate_atr(df, period=14)
+        last_price = df['Close'].iloc[-1]
+        ema_300 = df['EMA_300'].iloc[-1]
+        min_price_diff = df['ATR'].iloc[-1] * 2
+        
+        if len(stochastic) < 2:
+            return 'HOLD'  # Pas assez de données pour détecter un croisement
+    
+        # Détecter les signaux
+        if self.should_open_position('BUY', ema_300, stochastic, last_price, last_open_price, min_price_diff):
+            return 'BUY'
+        elif self.should_open_position('SELL', ema_300, stochastic, last_price, last_open_price, min_price_diff):
+            return 'SELL'
+        return None
+    
 class MovingAverageStrategy(Strategy):
     """
     Stratégie basée sur les moyennes mobiles et RSI.
@@ -52,7 +107,7 @@ class MovingAverageStrategy(Strategy):
         df['RSI'] = utils.calculate_rsi(df['Close'])         # Changé de 'close' à 'Close'
         df['ATR'] = utils.calculate_atr(df, period=14)
         
-        last_price = df['Close'].iloc[-1]  # Changé de 'close' à 'Close'
+        last_price = df['Close'].iloc[-1] # Changé de 'close' à 'Close'
         ema_10 = df['EMA_10'].iloc[-1]
         ema_30 = df['EMA_30'].iloc[-1]
         rsi = df['RSI'].iloc[-1]
@@ -75,7 +130,7 @@ class TradingBot:
             self.ig_service = utils.initialize_service()
             self.epic, _ = utils.select_from_dict(markets.epics_dict)
         
-        self.trade_size = 0.5
+        self.trade_size = 0.1
         self.sl = 0.002
         self.tp = 0.004
         self.last_open_price = None
@@ -133,7 +188,7 @@ class TradingBot:
             time.sleep(60)
 
     def run_backtest(self, symbol="EURUSD=X", period="1y", interval="1h", cash=10000, 
-                    commission=0.002, optimize=False, **kwargs):
+                    commission=0.002, leverage=10, optimize=False, **kwargs):
         """
         Exécute un backtest de la stratégie actuelle
         
@@ -148,7 +203,7 @@ class TradingBot:
         print(f"🔄 Démarrage du backtesting pour {symbol}...")
         
         # Création du moteur de backtesting
-        engine = BacktestingEngine(cash=cash, commission=commission)
+        engine = BacktestingEngine(cash=cash * leverage, commission=commission)
         
         # Chargement des données
         data = engine.load_data(symbol, period=period, interval=interval)
@@ -158,7 +213,7 @@ class TradingBot:
             bt, stats = engine.run_backtest(data, plot=True, optimize=optimize, **kwargs)
             
             # Sauvegarde des résultats
-            engine.save_results(stats, filename=f"backtest_{symbol.replace('=', '_')}_{period}_{interval}.csv")
+            #engine.save_results(stats, filename=f"backtest_{symbol.replace('=', '_')}_{period}_{interval}.csv")
             
             return bt, stats
         
@@ -177,6 +232,7 @@ def parse_arguments():
 if __name__ == "__main__":
     args = parse_arguments()
     strategy = MovingAverageStrategy()
+    #strategy = TrendFollowingStrategy()
     if args.backtest:
         bot = TradingBot(strategy, backtest_mode=True)
         bt, stats = bot.run_backtest(

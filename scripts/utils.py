@@ -15,6 +15,8 @@ Modules requis:
 - sys
 - time
 """
+import sys
+sys.path.insert(0, '/home/max/ig-trading-bot')
 from trading_ig.rest import IGService
 from trading_ig.config import config
 import readchar
@@ -22,10 +24,9 @@ import readline
 from pick import pick
 import pandas as pd
 import traceback
-import sys
 import time
 from datetime import datetime, timezone
-from markets import epics_dict
+from scripts.markets import epics_dict
 from pprint import pprint
 import curses
 from curses import wrapper
@@ -658,7 +659,7 @@ def calculate_rsi(data, period=14):
     return 100 - (100 / (1 + rs))
 
 def calculate_atr(data, period=14):
-    # Debug: Affichez les colonnes disponibles pour vérifier la structure
+    #Debug: Affichez les colonnes disponibles pour vérifier la structure
     #print("Colonnes disponibles dans le DataFrame:", data.columns)
     
     # Vérifiez si les colonnes 'High', 'Low', et 'Close' existent
@@ -672,7 +673,7 @@ def calculate_atr(data, period=14):
         low = close   # Approximation : utilisez 'close' comme 'low'
     else:
         raise KeyError("Les colonnes 'High', 'Low', et 'Close' ou leurs équivalents ne sont pas disponibles dans les données.")
-    
+        
     # Calculez les plages vraies (True Range)
     high_low = high - low
     high_close = abs(high - close.shift())
@@ -682,6 +683,33 @@ def calculate_atr(data, period=14):
     # Calculez l'ATR
     atr = true_range.rolling(window=period).mean()
     return atr
+
+def calculate_stochastic(data, k_period=10, smoothing_period=3, d_period=7):
+    if not {'High', 'Low', 'Close'}.issubset(data.columns):
+        raise KeyError("Les colonnes 'High', 'Low', et 'Close' sont requises dans les données.")
+
+    # Vérifier si les données sont suffisantes pour calculer les indicateurs
+    if len(data) < max(k_period, smoothing_period, d_period):
+        #print("Pas assez de données pour calculer le stochastique.")
+        return pd.DataFrame(columns=['%K', '%D'])
+
+    # Calcul du plus haut et du plus bas sur la période k_period
+    low_min = data['Low'].rolling(window=k_period).min()
+    high_max = data['High'].rolling(window=k_period).max()
+
+    # Calcul de %K
+    data['%K'] = 100 * ((data['Close'] - low_min) / (high_max - low_min))
+
+    # Lissage de %K
+    data['%K'] = data['%K'].rolling(window=smoothing_period).mean()
+
+    # Calcul de %D (moyenne mobile de %K)
+    data['%D'] = data['%K'].rolling(window=d_period).mean()
+
+    # Supprimer les lignes avec des NaN
+    data = data.dropna(subset=['%K', '%D'])
+
+    return data[['%K', '%D']]
 
 # ------------Menu principal----------------
 def display_menu():

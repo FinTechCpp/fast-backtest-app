@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 from trading_ig.rest import IGService
 from trading_ig.config import config
-import utils
-import markets
+import scripts.utils as utils
+import scripts.markets as markets
 
 def main():
     ig_service = utils.initialize_service()

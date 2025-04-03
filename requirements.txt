@@ -57,3 +57,5 @@ urllib3==2.3.0
 yarl==1.18.3
 yfinance==0.2.55
 ib_async==1.0.3
+pyarrow==19.0.1
+fastparquet==2024.11.0

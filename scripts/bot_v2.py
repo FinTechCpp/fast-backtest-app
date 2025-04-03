@@ -2,13 +2,15 @@ import time
 import pandas as pd
 import numpy as np
 import sys
-sys.path.insert(0, '/home/max/ig-trading-bot')
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from trading_ig.rest import IGService
 from trading_ig.config import config
 import scripts.utils as utils
 import scripts.markets as markets
 import argparse
 from scripts.simple_backtesting import BacktestingEngine
+import os
 
 class Strategy:
     """
@@ -130,7 +132,7 @@ class TradingBot:
             self.ig_service = utils.initialize_service()
             self.epic, _ = utils.select_from_dict(markets.epics_dict)
         
-        self.trade_size = 0.1
+        self.trade_size = 0.5
         self.sl = 0.002
         self.tp = 0.004
         self.last_open_price = None
@@ -187,7 +189,7 @@ class TradingBot:
             
             time.sleep(60)
 
-    def run_backtest(self, symbol="EURUSD=X", period="1y", interval="1h", cash=10000, 
+    def run_backtest(self, symbol="NDX", period="1y", interval="1 min", cash=10000, 
                     commission=0.002, leverage=10, optimize=False, **kwargs):
         """
         Exécute un backtest de la stratégie actuelle
@@ -223,9 +225,9 @@ def parse_arguments():
     """Parse les arguments de ligne de commande"""
     parser = argparse.ArgumentParser(description="Bot de trading IG Markets")
     parser.add_argument("--backtest", action="store_true", help="Exécuter en mode backtesting")
-    parser.add_argument("--symbol", type=str, default="EURUSD=X", help="Symbole à trader/tester")
+    parser.add_argument("--symbol", type=str, default="NDX", help="Symbole à trader/tester")
     parser.add_argument("--period", type=str, default="1y", help="Période pour le backtest")
-    parser.add_argument("--interval", type=str, default="1h", help="Intervalle des barres de prix")
+    parser.add_argument("--interval", type=str, default="1_min", help="Intervalle des barres de prix")
     parser.add_argument("--optimize", action="store_true", help="Optimiser les paramètres")
     return parser.parse_args()
     

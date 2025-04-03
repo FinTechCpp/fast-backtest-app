@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
 from backtesting import Backtest, Strategy
-import yfinance as yf
 import matplotlib.pyplot as plt
+import pyarrow.parquet as pq
 
 class BacktestingAdapter(Strategy):
     """
@@ -64,56 +64,74 @@ class BacktestingEngine:
         self.commission = commission
         self.spread = spread
         
-    def load_data(self, symbol, period='1y', interval='1h', source='yahoo'):
+    def load_data(self, symbol, period='', interval='', source='parquet'):
         """
-        Charge les données historiques pour le backtesting
+        Charge les données historiques pour le backtesting à partir d'un fichier Parquet
+        et filtre les données en fonction de la période spécifiée.
         """
-        if source == 'yahoo':
-            data = yf.download(symbol, period=period, interval=interval, auto_adjust=True)
-            print(f"Données chargées: {len(data)} barres de prix")
+        if source == 'parquet':
+            # Construire le chemin du fichier Parquet
+            save_path = f"../database/{symbol}_{interval}.parquet"
             
-            if not isinstance(data.index, pd.DatetimeIndex):
-                raise ValueError("L'index des données n'est pas un DateTimeIndex.")
+            # Calculer la période de début et de fin
+            end_date = pd.Timestamp.now(tz='US/Eastern')  # Ensure timezone matches the Parquet file
+            if period.endswith('y'):  # Années
+                start_date = end_date - pd.DateOffset(years=int(period[:-1]))
+            elif period.endswith('m'):  # Mois
+                start_date = end_date - pd.DateOffset(months=int(period[:-1]))
+            elif period.endswith('d'):  # Jours
+                start_date = end_date - pd.DateOffset(days=int(period[:-1]))
+            else:
+                raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
             
-            print(f"premiere date: {data.index[0]}")
-            print(f"derniere date: {data.index[-1]}")
+            print(f"Chargement des données pour la période {start_date.date()} à {end_date.date()}...")
             
-            # Remove timezone information from the index
-            data.index = data.index.tz_localize(None)
+            # Charger tout le fichier Parquet
+            try:
+                df = pd.read_parquet(save_path)
+                print(f"Données chargées depuis {save_path}: {len(df)} barres de prix")
+            except FileNotFoundError:
+                raise ValueError(f"Le fichier {save_path} est introuvable.")
+            except Exception as e:
+                raise ValueError(f"Erreur lors du chargement des données : {e}")
             
-            # Aplatir les colonnes si elles sont des tuples
-            if isinstance(data.columns, pd.MultiIndex):
-                data.columns = [col[0] for col in data.columns]
+            # Vérifier que l'index est un DateTimeIndex
+            if not isinstance(df.index, pd.DatetimeIndex):
+                try:
+                    df['date'] = pd.to_datetime(df['date'])  # Convertir la colonne 'date' en datetime
+                    df = df.set_index('date')  # Définir 'date' comme index
+                except Exception as e:
+                    raise ValueError(f"Erreur lors de la conversion de l'index en DateTimeIndex : {e}")
             
-            # Ajouter une colonne Volume si elle est absente
-            if 'Volume' not in data.columns:
-                data['Volume'] = 0
+            # S'assurer que les dates de filtrage sont dans le même fuseau horaire que l'index
+            start_date = start_date.tz_convert(df.index.tz)
+            end_date = end_date.tz_convert(df.index.tz)
             
-            # Utiliser Adj Close si Close est absent
-            if 'Close' not in data.columns and 'Adj Close' in data.columns:
-                data['Close'] = data['Adj Close']
+            # Filtrer les données en fonction de la période
+            df = df[(df.index >= start_date) & (df.index <= end_date)]
+            print(f"Données filtrées pour la période {start_date.date()} à {end_date.date()}: {len(df)} barres de prix")
             
-            # Reformater les colonnes pour correspondre à ce que backtesting.py attend
-            data = data.rename(columns={
-                'Open': 'Open',
-                'High': 'High',
-                'Low': 'Low',
-                'Close': 'Close',
-                'Volume': 'Volume'
+            # Vérifier les colonnes nécessaires
+            required_columns = {'open', 'high', 'low', 'close', 'barCount'}
+            if not required_columns.issubset(df.columns):
+                raise ValueError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(df.columns)}")
+            
+            # Renommer les colonnes pour correspondre au format attendu
+            df = df.rename(columns={
+                'open': 'Open',
+                'high': 'High',
+                'low': 'Low',
+                'close': 'Close',
+                'barCount': 'Volume'  # Utiliser 'barCount' comme substitut pour 'Volume'
             })
             
-            # Supprimer les colonnes inutiles
-            data = data[['Open', 'High', 'Low', 'Close', 'Volume']]
+            # Garder uniquement les colonnes nécessaires
+            df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
             
-            # Vérifier si des colonnes manquent
-            required_columns = {'Open', 'High', 'Low', 'Close', 'Volume'}
-            if not required_columns.issubset(data.columns):
-                raise ValueError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(data.columns)}")
-            
-            return data
+            return df
         else:
-            raise NotImplementedError("Source de données personnalisée non implémentée")
-    
+            raise NotImplementedError("Source de données non supportée. Utilisez 'parquet'.")
+        
     def run_backtest(self, data, plot=True, optimize=True, **kwargs):
         """
         Exécute le backtest avec les données fournies
@@ -135,10 +153,10 @@ class BacktestingEngine:
         
         # Exécuter le backtest
         bt = Backtest(data, BacktestingAdapter, 
-                      cash=self.cash, 
-                      commission=self.commission,
-                      spread=self.spread,
-                      )
+                    cash=self.cash, 
+                    commission=self.commission,
+                    spread=self.spread,
+                    )
         
         if optimize:
             # Paramètres par défaut pour l'optimisation
@@ -163,8 +181,8 @@ class BacktestingEngine:
         print(stats)
         if plot:
             bt.plot(superimpose=False, resample=False)
-        
         return bt, stats
+    
     def compare_strategies(self, data, strategies_params):
         """
         Compare plusieurs ensembles de paramètres pour la stratégie
@@ -205,7 +223,7 @@ if __name__ == "__main__":
     engine = BacktestingEngine(cash=10000, commission=0.002)
     
     # Chargement des données
-    data = engine.load_data("EURUSD=X", period='1y', interval='1h')
+    data = engine.load_data(symbol="NDX", period='1y', interval='1_min', source='parquet')
     
     if data is not None:
         # Exécution du backtest

@@ -26,14 +26,13 @@ ig-trading-bot/
 - Python 3.8 or higher
 - An IG Markets account (Demo or Live)
 - API key from IG Markets
-- [Poetry](https://python-poetry.org/) (recommended for dependency management)
 
 ## Installation
 
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/ig-trading-bot.git
+git clone http://10.8.0.1:9000/finance/ig-trading-bot.git
 cd ig-trading-bot
 ```
 

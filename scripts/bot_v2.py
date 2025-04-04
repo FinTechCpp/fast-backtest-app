@@ -189,7 +189,7 @@ class TradingBot:
             
             time.sleep(60)
 
-    def run_backtest(self, symbol="NDX", period="1y", interval="1 min", cash=10000, 
+    def run_backtest(self, symbol="NDX", period="1y", interval="1_min", cash=10000, 
                     commission=0.002, leverage=10, optimize=False, **kwargs):
         """
         Exécute un backtest de la stratégie actuelle

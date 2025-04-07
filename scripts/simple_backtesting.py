@@ -3,36 +3,31 @@ import numpy as np
 from backtesting import Backtest, Strategy
 import matplotlib.pyplot as plt
 import pyarrow.parquet as pq
+import os
+import glob
+import scripts.utils as utils
+import talib
+import time
 
 class BacktestingAdapter(Strategy):
     """
     Adaptateur pour utiliser notre stratégie existante avec backtesting.py
     """
     # Paramètres par défaut (peuvent être modifiés lors de l'optimisation)
-    sl_percent = 0.002
+    sl_percent = 0.003
     tp_percent = 0.004
+    #sl_absolute = 10
+    #tp_absolute = 10
     
     def init(self):
         """Initialisation des indicateurs pour le backtesting"""
         # Import différé pour éviter les imports circulaires
-        from scripts.bot_v2 import MovingAverageStrategy, TrendFollowingStrategy
-        #self.strategy = MovingAverageStrategy()
-        self.strategy = TrendFollowingStrategy()
+        from scripts.bot_v2 import TrendFollowingStrategy
+        self.strategy = TrendFollowingStrategy(direction=self.direction)
         
     def next(self):
         """Exécuté à chaque barre de prix"""
-        # Préparation des données pour notre stratégie
-        df = pd.DataFrame({
-            'Open': self.data.Open,
-            'High': self.data.High,
-            'Low': self.data.Low,
-            'Close': self.data.Close,
-            'Volume': self.data.Volume if hasattr(self.data, 'Volume') else np.zeros(len(self.data.Close))
-        })
-        
-        # Afficher les colonnes pour débogage
-        #print(f"Colonnes du DataFrame dans next : {df.columns.tolist()}")
-        
+
         # Récupération du dernier prix
         last_price = self.data.Close[-1]
         
@@ -40,26 +35,35 @@ class BacktestingAdapter(Strategy):
         last_open_price = None
         if self.trades:  # Vérifie si une position est ouverte
             last_open_price = self.trades[-1].entry_price # Utilise self.position.entry pour accéder au prix d'entrée
+            
+        index = len(self.data.Close) - 1
         
         # Génération du signal en utilisant notre stratégie existante
-        signal = self.strategy.generate_signal(df, last_open_price, min_price_diff=None)
+        signal = self.strategy.generate_signal(self.data, index, last_open_price, None)
         
         # Traitement du signal
         if signal == 'BUY' and self.position.size == 0:  # Vérifie qu'aucune position n'est ouverte
+            
             sl = last_price * (1 - self.sl_percent)
             tp = last_price * (1 + self.tp_percent)
-            self.buy(sl=sl, tp=tp)
+            
+            #sl = last_price - self.sl_absolute  # SL en valeur absolue
+            #tp = last_price + self.tp_absolute  # TP en valeur absolue
+            self.buy(size=0.5, sl=sl, tp=tp)
             
         elif signal == 'SELL' and self.position.size == 0:  # Vérifie qu'aucune position n'est ouverte
             sl = last_price * (1 + self.sl_percent)
             tp = last_price * (1 - self.tp_percent)
-            self.sell(sl=sl, tp=tp)
+            
+            #sl = last_price + self.sl_absolute  # SL en valeur absolue
+            #tp = last_price - self.tp_absolute  # TP en valeur absolue
+            self.sell(size=0.5, sl=sl, tp=tp)
             
 class BacktestingEngine:
     """
     Moteur de backtesting pour notre bot de trading
     """
-    def __init__(self, cash=10000, commission=0.002, spread=0.0):
+    def __init__(self, cash, commission, spread):
         self.cash = cash
         self.commission = commission
         self.spread = spread
@@ -70,8 +74,8 @@ class BacktestingEngine:
         et filtre les données en fonction de la période spécifiée.
         """
         if source == 'parquet':
-            # Construire le chemin du fichier Parquet
-            save_path = f"../database/{symbol}_{interval}.parquet"
+            chrono_load_data = time.time()
+            print(f"Chargement des données pour {symbol} et calcul des indicateurs techniques ...")
             
             # Calculer la période de début et de fin
             end_date = pd.Timestamp.now(tz='US/Eastern')  # Ensure timezone matches the Parquet file
@@ -83,8 +87,18 @@ class BacktestingEngine:
                 start_date = end_date - pd.DateOffset(days=int(period[:-1]))
             else:
                 raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
+            # Rechercher le fichier correspondant au symbole et à l'intervalle
+            pattern = f"../database/{symbol}_{interval.replace('_', '')}*.parquet"
+            matching_files = glob.glob(pattern)
             
-            print(f"Chargement des données pour la période {start_date.date()} à {end_date.date()}...")
+            if not matching_files:
+                raise ValueError(f"Aucun fichier trouvé correspondant à {pattern}")
+            
+            # Utiliser le fichier le plus récent si plusieurs fichiers correspondent
+            save_path = max(matching_files, key=os.path.getctime)
+            
+            print(f"Fichier trouvé: {save_path}")
+            print(f"Filtrage des données pour la période {start_date.date()} à {end_date.date()}...")
             
             # Charger tout le fichier Parquet
             try:
@@ -103,6 +117,10 @@ class BacktestingEngine:
                 except Exception as e:
                     raise ValueError(f"Erreur lors de la conversion de l'index en DateTimeIndex : {e}")
             
+            # Ajouter un fuseau horaire explicite si nécessaire
+            if df.index.tz is None:
+                df.index = df.index.tz_localize('UTC')  # Remplacez 'UTC' par le fuseau horaire approprié si nécessaire
+            
             # S'assurer que les dates de filtrage sont dans le même fuseau horaire que l'index
             start_date = start_date.tz_convert(df.index.tz)
             end_date = end_date.tz_convert(df.index.tz)
@@ -110,6 +128,8 @@ class BacktestingEngine:
             # Filtrer les données en fonction de la période
             df = df[(df.index >= start_date) & (df.index <= end_date)]
             print(f"Données filtrées pour la période {start_date.date()} à {end_date.date()}: {len(df)} barres de prix")
+            
+            df.index = df.index.tz_convert(None)  # Supprime le fuseau horaire explicite
             
             # Vérifier les colonnes nécessaires
             required_columns = {'open', 'high', 'low', 'close', 'barCount'}
@@ -128,6 +148,21 @@ class BacktestingEngine:
             # Garder uniquement les colonnes nécessaires
             df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
             
+            # Calcul des indicateurs techniques
+            df['EMA_200'] = talib.EMA(df['Close'].values, timeperiod=200)
+            df['EMA_50'] = talib.EMA(df['Close'].values, timeperiod=50)
+            df['ATR'] = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=14)
+            
+            # Stochastique
+            df['stoch_k'], df['stoch_d'] = talib.STOCH(
+                df['High'].values, df['Low'].values, df['Close'].values,
+                fastk_period=10, slowk_period=7, slowd_period=3
+            )
+            
+            st_result = utils.calculate_supertrend(df, atr_period=50, multiplier=3)
+            df['st_50_3'] = st_result['SuperTrend']
+            chrono_load_data = time.time() - chrono_load_data
+            print(f"Données chargées et prétraitées en {chrono_load_data:.2f} secondes")
             return df
         else:
             raise NotImplementedError("Source de données non supportée. Utilisez 'parquet'.")
@@ -150,7 +185,9 @@ class BacktestingEngine:
                 data.index = pd.to_datetime(data.index)
             except Exception as e:
                 raise ValueError(f"Erreur lors de la conversion de l'index en DateTimeIndex : {e}")
-        
+            
+        direction = kwargs.pop('direction', None)
+        BacktestingAdapter.direction = direction
         # Exécuter le backtest
         bt = Backtest(data, BacktestingAdapter, 
                     cash=self.cash, 

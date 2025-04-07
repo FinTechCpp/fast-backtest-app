@@ -4,14 +4,21 @@ import numpy as np
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from trading_ig.rest import IGService
-from trading_ig.config import config
 import scripts.utils as utils
 import scripts.markets as markets
 import argparse
 from scripts.simple_backtesting import BacktestingEngine
-import os
+import cProfile
+import pstats
+import threading
+'''
 
+1. Stochastic(10,7,3) : k croise d à la baisse
+2. Stochastic[d] > 50 
+3. prix de clôture < SuperTrend[50,100]
+4. prix de clôture < EMA(50)
+5. prix de clôture < EMA(200)
+'''
 class Strategy:
     """
     Classe mère pour les stratégies de trading.
@@ -26,98 +33,90 @@ class TrendFollowingStrategy(Strategy):
     """
     Stratégie de suivi de tendance.
     """
-    def should_open_position(self, direction, ema_300, stochastic, last_price, last_open_price, min_price_diff):
+    def __init__(self, direction=None):
         """
-        Détermine si une position doit être ouverte en fonction des conditions de trading.
-
-        :param direction: 'BUY' ou 'SELL'
-        :param ema_10: Valeur actuelle de l'EMA 10
-        :param ema_30: Valeur actuelle de l'EMA 30
-        :param rsi: Valeur actuelle du RSI
-        :param last_price: Dernier prix
-        :param last_open_price: Dernier prix d'ouverture
-        :param min_price_diff: Différence minimale de prix pour éviter les faux signaux
-        :return: True si une position doit être ouverte, False sinon
+        Initialise la stratégie avec une direction spécifique.
+        :param direction: 'buy', 'sell' ou None (pour les deux directions)
         """
-        # Récupérer les valeurs actuelles et précédentes de %K et %D
-        k_current = stochastic['%K'].iloc[-1]
-        d_current = stochastic['%D'].iloc[-1]
-        k_previous = stochastic['%K'].iloc[-2]
-        d_previous = stochastic['%D'].iloc[-2]
-        
+        self.direction = direction  
+              
+    def should_open_position(self, direction, values, last_open_price, min_price_diff):
+        """Version optimisée pour réduire les accès aux données"""
         if direction == 'BUY':
-            return ema_300 < last_price and k_previous < d_previous and k_current > d_current and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
+            # Exemples de conditions symétriques inversées par rapport à la logique de vente
+            if values['k_current'] <= values['d_current'] or values['k_previous'] >= values['d_previous']:
+                return False
+            if values['d_current'] >= 50:
+                return False
+            if values['last_price'] <= values['st_50_3']:
+                return False
+            if values['last_price'] <= values['ema_50']:
+                return False
+            if values['last_price'] <= values['ema_200']:
+                return False
+            
+            return (last_open_price is None or 
+                    abs(values['last_price'] - last_open_price) > min_price_diff)
+                
         elif direction == 'SELL':
-            return ema_300 > last_price and k_previous > d_previous and k_current < d_current and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
+            # Utiliser une formule booléenne simplifiée (éviter l'évaluation inutile)
+            # Vérifier d'abord les conditions qui échouent le plus souvent
+            if values['k_current'] >= values['d_current'] or values['k_previous'] <= values['d_previous']:
+                return False
+            if values['d_current'] <= 50:
+                return False
+            if values['last_price'] >= values['st_50_3']:
+                return False
+            if values['last_price'] >= values['ema_50']:
+                return False
+            if values['last_price'] >= values['ema_200']:
+                return False
+
+            # Dernière vérification sur last_open_price
+            return (last_open_price is None or 
+                    abs(values['last_price'] - last_open_price) > min_price_diff)
+        
         return False
 
-    def generate_signal(self, df, last_open_price, min_price_diff):
-        # Vérifier les colonnes nécessaires
-        required_columns = {'High', 'Low', 'Close'}
-        if not required_columns.issubset(df.columns):
-            raise KeyError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(df.columns)}")
-    
-        # Calculer les indicateurs
-        df['EMA_300'] = utils.calculate_ema(df['Close'], 300)
-        stochastic = utils.calculate_stochastic(df, k_period=14, smoothing_period=3, d_period=3)
-        df['ATR'] = utils.calculate_atr(df, period=14)
-        last_price = df['Close'].iloc[-1]
-        ema_300 = df['EMA_300'].iloc[-1]
-        min_price_diff = df['ATR'].iloc[-1] * 2
+    def generate_signal(self, data, index, last_open_price, min_price_diff):
+        if not hasattr(self, '_arrays') or index >= len(self._arrays.get('Close', [])):
+            # Précharger tous les arrays en une seule fois
+            self._arrays = {
+                'Close': data.Close,  
+                'EMA_200': data.EMA_200,
+                'EMA_50': data.EMA_50,
+                'st_50_3': data.st_50_3,
+                'ATR': data.ATR,
+                'stoch_k': data.stoch_k, 
+                'stoch_d': data.stoch_d
+            }
+            
+        # Mettre à jour les valeurs en cache pour l'index actuel
+        self._cached_values = {
+            'last_price': self._arrays['Close'][index],
+            'ema_200': self._arrays['EMA_200'][index],
+            'ema_50': self._arrays['EMA_50'][index],
+            'st_50_3': self._arrays['st_50_3'][index],
+            'atr': self._arrays['ATR'][index],
+            'k_current': self._arrays['stoch_k'][index],
+            'd_current': self._arrays['stoch_d'][index],
+            'k_previous': self._arrays['stoch_k'][index-1] if index > 0 else None,
+            'd_previous': self._arrays['stoch_d'][index-1] if index > 0 else None
+        }
         
-        if len(stochastic) < 2:
-            return 'HOLD'  # Pas assez de données pour détecter un croisement
-    
-        # Détecter les signaux
-        if self.should_open_position('BUY', ema_300, stochastic, last_price, last_open_price, min_price_diff):
+        # Utiliser les valeurs en cache
+        values = self._cached_values
+        min_price_diff = values['atr'] * 2
+        
+        # Code de détection de signal
+        if len(data.stoch_k) < 2:  # Utilisez data.stoch_k au lieu de data['stoch_k']
+            return 'HOLD'
+            
+        if ((self.direction is None or self.direction == 'buy') and 
+            self.should_open_position('BUY', values, last_open_price, min_price_diff)):
             return 'BUY'
-        elif self.should_open_position('SELL', ema_300, stochastic, last_price, last_open_price, min_price_diff):
-            return 'SELL'
-        return None
-    
-class MovingAverageStrategy(Strategy):
-    """
-    Stratégie basée sur les moyennes mobiles et RSI.
-    """
-    def should_open_position(self, direction, ema_10, ema_30, rsi, last_price, last_open_price, min_price_diff):
-        """
-        Détermine si une position doit être ouverte en fonction des conditions de trading.
-
-        :param direction: 'BUY' ou 'SELL'
-        :param ema_10: Valeur actuelle de l'EMA 10
-        :param ema_30: Valeur actuelle de l'EMA 30
-        :param rsi: Valeur actuelle du RSI
-        :param last_price: Dernier prix
-        :param last_open_price: Dernier prix d'ouverture
-        :param min_price_diff: Différence minimale de prix pour éviter les faux signaux
-        :return: True si une position doit être ouverte, False sinon
-        """
-        if direction == 'BUY':
-            return ema_10 > ema_30 and rsi < 70 and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
-        elif direction == 'SELL':
-            return ema_10 < ema_30 and rsi > 30 and (last_open_price is None or abs(last_price - last_open_price) > min_price_diff)
-        return False
-
-    def generate_signal(self, df, last_open_price, min_price_diff):
-        # Vérifier les colonnes nécessaires
-        required_columns = {'High', 'Low', 'Close'}  # Changé en majuscules
-        if not required_columns.issubset(df.columns):
-            raise KeyError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(df.columns)}")
-        
-        df['EMA_10'] = utils.calculate_ema(df['Close'], 10)  # Changé de 'close' à 'Close'
-        df['EMA_30'] = utils.calculate_ema(df['Close'], 30)  # Changé de 'close' à 'Close'
-        df['RSI'] = utils.calculate_rsi(df['Close'])         # Changé de 'close' à 'Close'
-        df['ATR'] = utils.calculate_atr(df, period=14)
-        
-        last_price = df['Close'].iloc[-1] # Changé de 'close' à 'Close'
-        ema_10 = df['EMA_10'].iloc[-1]
-        ema_30 = df['EMA_30'].iloc[-1]
-        rsi = df['RSI'].iloc[-1]
-        min_price_diff = df['ATR'].iloc[-1] * 2  # Dynamique
-        
-        if self.should_open_position('BUY', ema_10, ema_30, rsi, last_price, last_open_price, min_price_diff):
-            return 'BUY'
-        elif self.should_open_position('SELL', ema_10, ema_30, rsi, last_price, last_open_price, min_price_diff):
+        elif ((self.direction is None or self.direction == 'sell') and
+              self.should_open_position('SELL', values, last_open_price, min_price_diff)):
             return 'SELL'
         return None
 
@@ -129,12 +128,17 @@ class TradingBot:
         self.strategy = strategy
         self.backtest_mode = backtest_mode
         if not backtest_mode:
+            from trading_ig.rest import IGService
+            from trading_ig.config import config
             self.ig_service = utils.initialize_service()
             self.epic, _ = utils.select_from_dict(markets.epics_dict)
-        
+        else:
+            self.ig_service = None
+            self.epic = None
+            
         self.trade_size = 0.5
-        self.sl = 0.002
-        self.tp = 0.004
+        self.sl = 0.001
+        self.tp = 0.002
         self.last_open_price = None
     
     def fetch_market_data(self):
@@ -190,7 +194,7 @@ class TradingBot:
             time.sleep(60)
 
     def run_backtest(self, symbol="NDX", period="1y", interval="1_min", cash=10000, 
-                    commission=0.002, leverage=10, optimize=False, **kwargs):
+                    commission=0.0, leverage=10, spread=0.00, optimize=False, **kwargs):
         """
         Exécute un backtest de la stratégie actuelle
         
@@ -205,12 +209,12 @@ class TradingBot:
         print(f"🔄 Démarrage du backtesting pour {symbol}...")
         
         # Création du moteur de backtesting
-        engine = BacktestingEngine(cash=cash * leverage, commission=commission)
+        engine = BacktestingEngine(cash=cash * leverage, commission=commission, spread=spread)
         
         # Chargement des données
         data = engine.load_data(symbol, period=period, interval=interval)
         
-        if data is not None:
+        if data is not None:           
             # Exécution du backtest
             bt, stats = engine.run_backtest(data, plot=True, optimize=optimize, **kwargs)
             
@@ -220,6 +224,8 @@ class TradingBot:
             return bt, stats
         
         return None, None
+    
+
 
 def parse_arguments():
     """Parse les arguments de ligne de commande"""
@@ -229,24 +235,28 @@ def parse_arguments():
     parser.add_argument("--period", type=str, default="1y", help="Période pour le backtest")
     parser.add_argument("--interval", type=str, default="1_min", help="Intervalle des barres de prix")
     parser.add_argument("--optimize", action="store_true", help="Optimiser les paramètres")
+    parser.add_argument("--direction", type=str, choices=["buy", "sell"], help="Direction de la position")
     return parser.parse_args()
     
 if __name__ == "__main__":
     args = parse_arguments()
-    strategy = MovingAverageStrategy()
-    #strategy = TrendFollowingStrategy()
+    strategy = TrendFollowingStrategy(direction=args.direction)
     if args.backtest:
         bot = TradingBot(strategy, backtest_mode=True)
+        profiler = cProfile.Profile()
+        profiler.enable()
         bt, stats = bot.run_backtest(
             symbol=args.symbol,
             period=args.period,
             interval=args.interval,
-            optimize=args.optimize
+            optimize=args.optimize,
+            direction=args.direction,
         )
+        profiler.disable()
+        #stats = pstats.Stats(profiler).sort_stats('cumtime')
+        #stats.print_stats(20)
         if stats is not None:
             print("🔄 Backtest terminé avec succès!")
-            print(f"Rendement: {stats['Return [%]']:.2f}%")
-            print(f"Ratio de Sharpe: {stats['Sharpe Ratio']:.2f}")
             print(f"Max. Drawdown: {stats['Max. Drawdown [%]']:.2f}%")
             print(f"Trades gagnants: {int(stats['# Trades'])} ({stats['Win Rate [%]']:.1f}%)")
         else:

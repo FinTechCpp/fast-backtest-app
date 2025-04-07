@@ -32,6 +32,7 @@ import curses
 from curses import wrapper
 import plotext as plt
 import numpy as np
+import talib 
 
 # Liste des options de direction pour les positions
 direction_options = ["BUY", "SELL"]
@@ -648,15 +649,6 @@ def create_position(ig_service):
             pass
         
 # ------------Indicateurs techniques----------------
-def calculate_ema(data, period):
-    return data.ewm(span=period, adjust=False).mean()
-
-def calculate_rsi(data, period=14):
-    delta = data.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-    rs = gain / loss
-    return 100 - (100 / (1 + rs))
 
 def calculate_atr(data, period=14):
     #Debug: Affichez les colonnes disponibles pour vérifier la structure
@@ -710,6 +702,104 @@ def calculate_stochastic(data, k_period=10, smoothing_period=3, d_period=7):
     data = data.dropna(subset=['%K', '%D'])
 
     return data[['%K', '%D']]
+
+def calculate_supertrend(data, atr_period=50, multiplier=100):
+    """
+    Calcule l'indicateur technique Supertrend.
+    
+    Args:
+        data (pd.DataFrame): DataFrame contenant les données OHLC
+        atr_period (int): Période pour le calcul de l'ATR. Par défaut 14.
+        multiplier (float): Multiplicateur pour les bandes. Par défaut 3.
+    
+    Returns:
+        pd.DataFrame: DataFrame contenant les valeurs du Supertrend
+    """
+    # Extraire les colonnes high, low, close selon la structure du DataFrame
+    high, low, close = None, None, None
+    
+    # Vérifier différentes structures possibles de DataFrame
+    if {'High', 'Low', 'Close'}.issubset(data.columns):
+        high = data['High']
+        low = data['Low']
+        close = data['Close']
+    elif {('bid', 'High'), ('bid', 'Low'), ('bid', 'Close')}.issubset(data.columns):
+        high = data[('bid', 'High')]
+        low = data[('bid', 'Low')]
+        close = data[('bid', 'Close')]
+    else:
+        # Si on a uniquement le prix de clôture, on l'utilise comme approximation
+        if 'close' in data.columns:
+            close = data['close']
+            high = close
+            low = close
+        elif ('close', '') in data.columns:
+            close = data[('close', '')]
+            high = close
+            low = close
+        else:
+            raise KeyError("Les colonnes High, Low, Close ou une colonne close sont requises.")
+    
+    # Calcul de l'ATR
+    atr = calculate_atr(data, period=atr_period)
+    
+    # Calcul des bandes
+    hl2 = (high + low) / 2
+    upper_band = hl2 + (multiplier * atr)
+    lower_band = hl2 - (multiplier * atr)
+    
+    # Initialisation du DataFrame résultat
+    st = pd.DataFrame(index=data.index)
+    st['UpperBand'] = upper_band
+    st['LowerBand'] = lower_band
+    st['SuperTrend'] = np.nan
+    st['Direction'] = np.nan
+    
+    # Trouver l'index de départ (premier point non-NaN)
+    start_idx = 0
+    for i in range(len(data)):
+        if not np.isnan(atr.iloc[i]):
+            start_idx = i
+            break
+    
+    if np.isnan(atr).all():
+        return pd.DataFrame(index=data.index, columns=['UpperBand','LowerBand','SuperTrend', 'Direction'], data=np.nan)
+    
+    # Premier calcul
+    st.iloc[start_idx, 2] = lower_band.iloc[start_idx]  # Supertrend initial
+    st.iloc[start_idx, 3] = 1  # Direction initiale haussière
+    
+    # Calcul du Supertrend pour chaque point suivant
+    for i in range(start_idx + 1, len(data)):
+        prev_supertrend = st.iloc[i-1, 2]
+        prev_direction = st.iloc[i-1, 3]
+        
+        # Si la tendance précédente était haussière
+        if prev_direction == 1:
+            curr_lower_band = max(lower_band.iloc[i], prev_supertrend)
+            
+            if close.iloc[i] < curr_lower_band:
+                # Changement vers tendance baissière
+                st.iloc[i, 2] = upper_band.iloc[i]
+                st.iloc[i, 3] = -1
+            else:
+                # Maintien tendance haussière
+                st.iloc[i, 2] = curr_lower_band
+                st.iloc[i, 3] = 1
+        
+        # Si la tendance précédente était baissière
+        else:
+            curr_upper_band = min(upper_band.iloc[i], prev_supertrend)
+            
+            if close.iloc[i] > curr_upper_band:
+                # Changement vers tendance haussière
+                st.iloc[i, 2] = lower_band.iloc[i]
+                st.iloc[i, 3] = 1
+            else:
+                # Maintien tendance baissière
+                st.iloc[i, 2] = curr_upper_band
+                st.iloc[i, 3] = -1 
+    return st
 
 # ------------Menu principal----------------
 def display_menu():

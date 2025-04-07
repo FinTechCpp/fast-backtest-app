@@ -14,8 +14,8 @@ class BacktestingAdapter(Strategy):
     Adaptateur pour utiliser notre stratégie existante avec backtesting.py
     """
     # Paramètres par défaut (peuvent être modifiés lors de l'optimisation)
-    sl_percent = 0.003
-    tp_percent = 0.004
+    sl_percent = 0.002
+    tp_percent = 0.001
     #sl_absolute = 10
     #tp_absolute = 10
     
@@ -24,6 +24,28 @@ class BacktestingAdapter(Strategy):
         # Import différé pour éviter les imports circulaires
         from scripts.bot_v2 import TrendFollowingStrategy
         self.strategy = TrendFollowingStrategy(direction=self.direction)
+        
+        # Méthode améliorée: intégrer tous les composants dans un seul indicateur composite
+        def stochastic_indicators():
+            k = self.data.df['stoch_k']
+            d = self.data.df['stoch_d']
+            level_80 = np.full(len(self.data.df), 80)  # Niveau de surachat
+            level_20 = np.full(len(self.data.df), 20)  # Niveau de survente
+            return k, d, level_80, level_20
+        
+        self.stoch = self.I(stochastic_indicators, 
+                           name=['Stoch %K', 'Stoch %D', 'Surachat (80)', 'Survente (20)'], 
+                           overlay=False, 
+                           color=['green', 'orange', 'red', 'red'])
+        
+        # Déclaration des indicateurs pour l'affichage
+        self.ema200 = self.I(lambda: self.data.df['EMA_200'], name='EMA 200', overlay=True, color='blue')
+        self.ema50 = self.I(lambda: self.data.df['EMA_50'], name='EMA 50', overlay=True, color='red')
+        self.atr = self.I(lambda: self.data.df['ATR'], name='ATR', overlay=False, color='purple')
+        
+                
+        # SuperTrend (sur le graphique principal)
+        self.supertrend = self.I(lambda: self.data.df['st_50_3'], name='SuperTrend', overlay=True, color='magenta')
         
     def next(self):
         """Exécuté à chaque barre de prix"""
@@ -49,7 +71,7 @@ class BacktestingAdapter(Strategy):
             
             #sl = last_price - self.sl_absolute  # SL en valeur absolue
             #tp = last_price + self.tp_absolute  # TP en valeur absolue
-            self.buy(size=0.5, sl=sl, tp=tp)
+            self.buy(size=1, sl=sl, tp=tp)
             
         elif signal == 'SELL' and self.position.size == 0:  # Vérifie qu'aucune position n'est ouverte
             sl = last_price * (1 + self.sl_percent)
@@ -57,7 +79,7 @@ class BacktestingAdapter(Strategy):
             
             #sl = last_price + self.sl_absolute  # SL en valeur absolue
             #tp = last_price - self.tp_absolute  # TP en valeur absolue
-            self.sell(size=0.5, sl=sl, tp=tp)
+            self.sell(size=1, sl=sl, tp=tp)
             
 class BacktestingEngine:
     """
@@ -216,8 +238,10 @@ class BacktestingEngine:
         
         # Afficher les résultats
         print(stats)
+        
         if plot:
-            bt.plot(superimpose=False, resample=False)
+            bt.plot(superimpose=False, resample=False, show_legend=True,
+                    results=stats, plot_drawdown=False, plot_return=False, plot_volume=False, plot_pl=True)
         return bt, stats
     
     def compare_strategies(self, data, strategies_params):
@@ -267,7 +291,7 @@ if __name__ == "__main__":
         bt, stats = engine.run_backtest(data, plot=True)
         
         # Sauvegarde des résultats
-        #engine.save_results(stats)
+        engine.save_results(stats)
         
         # Optimisation (décommentez pour exécuter)
         bt_opt, stats_opt = engine.run_backtest(data, optimize=True)

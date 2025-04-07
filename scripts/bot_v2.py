@@ -136,9 +136,9 @@ class TradingBot:
             self.ig_service = None
             self.epic = None
             
-        self.trade_size = 0.5
-        self.sl = 0.001
-        self.tp = 0.002
+        self.trade_size = 1
+        self.sl = 0.002
+        self.tp = 0.001
         self.last_open_price = None
     
     def fetch_market_data(self):
@@ -194,7 +194,7 @@ class TradingBot:
             time.sleep(60)
 
     def run_backtest(self, symbol="NDX", period="1y", interval="1_min", cash=10000, 
-                    commission=0.0, leverage=10, spread=0.00, optimize=False, **kwargs):
+                    commission=0.0, leverage=10, spread=0.0002, optimize=False, **kwargs):
         """
         Exécute un backtest de la stratégie actuelle
         
@@ -219,14 +219,12 @@ class TradingBot:
             bt, stats = engine.run_backtest(data, plot=True, optimize=optimize, **kwargs)
             
             # Sauvegarde des résultats
-            #engine.save_results(stats, filename=f"backtest_{symbol.replace('=', '_')}_{period}_{interval}.csv")
+            engine.save_results(stats, filename=f"backtest_{symbol.replace('=', '_')}_{period}_{interval}.csv")
             
             return bt, stats
         
         return None, None
     
-
-
 def parse_arguments():
     """Parse les arguments de ligne de commande"""
     parser = argparse.ArgumentParser(description="Bot de trading IG Markets")

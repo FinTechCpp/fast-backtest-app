@@ -208,7 +208,7 @@ def get_market_info(ig_service):
         ig_service (IGService): Le service IG initialisé.
     """
     selected_epic, selected_data = select_from_dict(epics_dict)    
-    print(f"Récupération des informations pour {selected_epic} alias {selected_data["name"]}")
+    # print(f"Récupération des informations pour {selected_epic} alias {selected_data["name"]}")
     try:
         market = ig_service.fetch_market_by_epic(selected_epic)
         print("\nInformations sur le marché:")

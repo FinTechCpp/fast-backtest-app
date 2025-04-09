@@ -17,11 +17,12 @@ class Strategy(ABC):
         self.sell = None
         self.stop_loss = None
         self.take_profit = None
+        self.signal = None # TODO : à changer pour un dict avec des clés bien définies
 
         self._is_executing = False
 
         self.candles = pd.DataFrame(columns=[
-            'timestamp', 'open', 'high', 'low', 'close', 'volume'
+            'date', 'Open', 'High', 'Low', 'Close', 'Volume'
         ])
 
     def _reset(self) -> None:
@@ -30,6 +31,7 @@ class Strategy(ABC):
         self.sell = None
         self.stop_loss = None
         self.take_profit = None
+        self.signal = None
 
     def before(self) -> None:
         """ Get's executed BEFORE executing the strategy's logic """
@@ -98,7 +100,7 @@ class Strategy(ABC):
             return
         
         # Submit the buy order
-        self._submit_buy_order()
+        self.signal = self._generate_buy_signal()
 
     def _execute_short(self) -> None:
         self.go_short()
@@ -135,15 +137,40 @@ class Strategy(ABC):
             return
         
         # Submit the sell order
-        self._submit_sell_order()
+        self.signal = self._generate_sell_signal()
+    
+    def _generate_buy_signal(self) -> dict:
+        """
+        Prépare et retourne le signal d'achat.
+        
+        Le signal est un dictionnaire contenant par exemple :
+        - action: 'BUY'
+        - quantity: la quantité
+        - price: le prix auquel l'ordre doit être passé
+        - take_profit: niveau du take profit (optionnel)
+        - stop_loss: niveau du stop loss (optionnel)
+        """
+        signal = {
+            "action": "BUY",
+            "quantity": float(self.buy[0]),
+            "price": float(self.buy[1]),
+            "take_profit": float(self.take_profit[1]) if self.take_profit is not None else None,
+            "stop_loss": float(self.stop_loss[1]) if self.stop_loss is not None else None,
+        }
+        return signal
 
-    def _submit_buy_order(self) -> None:
-        """ Soumet l'ordre d'achat. """
-        pass
-
-    def _submit_sell_order(self) -> None:
-        """ Soumet l'ordre de vente. """
-        pass
+    def _generate_sell_signal(self) -> dict:
+        """
+        Prépare et retourne le signal de vente.
+        """
+        signal = {
+            "action": "SELL",
+            "quantity": float(self.sell[0]),
+            "price": float(self.sell[1]),
+            "take_profit": float(self.take_profit[1]) if self.take_profit is not None else None,
+            "stop_loss": float(self.stop_loss[1]) if self.stop_loss is not None else None,
+        }
+        return signal
     
     def _execute_filters(self) -> bool:
         """ Exécute les filtres et retourne True si tous les filtres passent. """
@@ -180,12 +207,12 @@ class Strategy(ABC):
         self._is_executing = False
 
 
-    def update_candle(self, candle: dict) -> None:
+    def update_candle(self, candle: dict) -> dict:
         """
         Ajoute la nouvelle bougie au DataFrame et déclenche l'exécution de la stratégie.
         
         :param candle: Un dictionnaire représentant la bougie avec les clefs:
-                       'timestamp', 'open', 'high', 'low', 'close', 'volume'
+                       'timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'
         """
         # On créé une nouvelle DataFrame à partir du dictionnaire et on concatène
         new_row = pd.DataFrame([candle])
@@ -200,8 +227,10 @@ class Strategy(ABC):
         # Déclenche l'exécution de la stratégie avec la nouvelle donnée
         self._execute()
 
+        return self.signal
+
 
     @property
     def price(self) -> float:
         """ Retourne le prix actuel de l'actif. """
-        return self.candles.iloc[-1]['close'] if not self.candles.empty else None
+        return self.candles.iloc[-1]['Close'] if not self.candles.empty else None

@@ -4,7 +4,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from scripts.Strategy import Strategy
 import talib
-from jesse.strategies import cached
 from backtesting import Strategy as BacktestingStrategy
 from backtesting import Backtest
 
@@ -241,3 +240,5 @@ bt = Backtest(data, BacktestingAdapter, cash=100000, commission=.00, exclusive_o
 stats = bt.run()
 print(stats)
 bt.plot()
+
+

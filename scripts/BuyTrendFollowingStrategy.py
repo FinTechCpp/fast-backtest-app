@@ -155,7 +155,7 @@ def load_data(symbol, interval='1min', period='1m'):
     else:
         raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
     # Rechercher le fichier correspondant au symbole et à l'intervalle
-    pattern = f"./database/{symbol}_{interval.replace('_', '')}*.parquet"
+    pattern = f"../database/{symbol}_{interval.replace('_', '')}_*.parquet"
     matching_files = glob.glob(pattern)
     
     if not matching_files:

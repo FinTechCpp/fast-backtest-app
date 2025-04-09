@@ -651,30 +651,55 @@ def create_position(ig_service):
 # ------------Indicateurs techniques----------------
 
 def calculate_atr(data, period=14):
-    #Debug: Affichez les colonnes disponibles pour vérifier la structure
-    #print("Colonnes disponibles dans le DataFrame:", data.columns)
+    """
+    Calcule l'Average True Range (ATR) pour une série de données OHLC.
     
-    # Vérifiez si les colonnes 'High', 'Low', et 'Close' existent
+    Args:
+        data (pd.DataFrame): Les données avec colonnes High, Low, Close
+        period (int): La période pour le calcul de l'ATR
+        
+    Returns:
+        pd.Series: La série ATR calculée
+    """
+    # Identifier les colonnes requises
     if ('High' in data.columns and 'Low' in data.columns and 'Close' in data.columns):
-        high = data['High']
-        low = data['Low']
-        close = data['Close']
+        high = data['High'].values
+        low = data['Low'].values
+        close = data['Close'].values
     elif ('close', '') in data.columns:  # Si seule la colonne 'close' est disponible
-        close = data[('close', '')]
+        close = data[('close', '')].values
         high = close  # Approximation : utilisez 'close' comme 'high'
         low = close   # Approximation : utilisez 'close' comme 'low'
     else:
         raise KeyError("Les colonnes 'High', 'Low', et 'Close' ou leurs équivalents ne sont pas disponibles dans les données.")
-        
-    # Calculez les plages vraies (True Range)
-    high_low = high - low
-    high_close = abs(high - close.shift())
-    low_close = abs(low - close.shift())
-    true_range = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
     
-    # Calculez l'ATR
-    atr = true_range.rolling(window=period).mean()
-    return atr
+    # Utiliser TA-Lib directement si disponible
+    try:
+        import talib
+        atr = talib.ATR(high, low, close, timeperiod=period)
+        return pd.Series(atr, index=data.index)
+    except ImportError:
+        # Implémentation manuelle si TA-Lib n'est pas disponible
+        import numpy as np
+        
+        # Calcul du True Range manuellement
+        true_range = np.zeros(len(close))
+        
+        for i in range(1, len(close)):
+            high_low = high[i] - low[i]
+            high_close = abs(high[i] - close[i-1])
+            low_close = abs(low[i] - close[i-1])
+            true_range[i] = max(high_low, high_close, low_close)
+        
+        # Calculer l'ATR comme moyenne mobile simple
+        atr = np.zeros_like(true_range)
+        for i in range(period, len(true_range)):
+            atr[i] = np.mean(true_range[i-period+1:i+1])
+        
+        # Marquer les premières valeurs comme NaN
+        atr[:period] = np.nan
+        
+        return pd.Series(atr, index=data.index)
 
 def calculate_stochastic(data, k_period=10, smoothing_period=3, d_period=7):
     if not {'High', 'Low', 'Close'}.issubset(data.columns):

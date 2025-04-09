@@ -22,7 +22,7 @@ class Strategy(ABC):
         self._is_executing = False
 
         self.candles = pd.DataFrame(columns=[
-            'date', 'Open', 'High', 'Low', 'Close', 'Volume'
+            'Open', 'High', 'Low', 'Close', 'Volume'
         ])
 
     def _reset(self) -> None:
@@ -214,15 +214,7 @@ class Strategy(ABC):
         :param candle: Un dictionnaire représentant la bougie avec les clefs:
                        'timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'
         """
-        # On créé une nouvelle DataFrame à partir du dictionnaire et on concatène
-        new_row = pd.DataFrame([candle])
-        self.candles = pd.concat([self.candles, new_row], ignore_index=True)
-
-        # Optionnel : limiter la taille du DataFrame pour ne garder que les N dernières bougies
-        # par exemple :
-        MAX_BUFFER_SIZE = 1000
-        if len(self.candles) > MAX_BUFFER_SIZE:
-            self.candles = self.candles.iloc[-MAX_BUFFER_SIZE:]
+        self.candles = candle.copy()
 
         # Déclenche l'exécution de la stratégie avec la nouvelle donnée
         self._execute()
@@ -233,4 +225,4 @@ class Strategy(ABC):
     @property
     def price(self) -> float:
         """ Retourne le prix actuel de l'actif. """
-        return self.candles.iloc[-1]['Close'] if not self.candles.empty else None
+        return self.candles['Close'] if self.candles is not None else None

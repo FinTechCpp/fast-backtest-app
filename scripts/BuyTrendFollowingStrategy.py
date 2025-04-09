@@ -32,26 +32,8 @@ class BuyTrendFollowingStrategy(Strategy):
         self.exchange = None
         self.timeframe = None
 
-
-    @property
-    def ema_50(self):
-        return talib.EMA(self.candles['Close'].values, timeperiod=50)
-    
-    @property
-    def ema_200(self):
-        return talib.EMA(self.candles['Close'].values, timeperiod=200)
-    
-    @property
-    def supertrend_50(self):
-        return talib.SMA(self.candles['Close'].values, timeperiod=50)
-    
-    @property
-    def stoch(self):
-        return talib.STOCH(
-            self.candles['High'].values,
-            self.candles['Low'].values,
-            self.candles['Close'].values,
-            fastk_period=10, slowk_period=7, slowd_period=3)
+        self.k_previous = None
+        self.d_previous = None
     
     def should_long(self):
         return True
@@ -69,32 +51,33 @@ class BuyTrendFollowingStrategy(Strategy):
     
     def ema_filter(self):
         # Vérifie si le prix est au-dessus des EMA
-        return self.price > self.ema_50[-1] and self.price > self.ema_200[-1]
+        return self.price > self.candles['ema_50'] and self.price > self.candles['ema_200']
         
     def supertrend_filter(self):
         # Vérifie si le prix est au-dessus du SuperTrend
-        return self.price > self.supertrend_50[-1]
+        return self.price > self.candles['st_50_3']
     
     def cross_stoch_filter(self):
         # Vérifie si le Stochastic %K croise au-dessus de %D
-        k, d = self.stoch[-1]
+        k_current, d_current = self.candles['stoch_k'], self.candles['stoch_d']
 
-        if len(k) < 2 or len(d) < 2:
+        if self.k_previous is None or self.d_previous is None:
+            self.k_previous = k_current
+            self.d_previous = d_current
             return False
         
-        k_current = k[-1]
-        d_current = d[-1]
-        k_previous = k[-2]
-        d_previous = d[-2]
-        return k_current > d_current and k_previous < d_previous
+        filt = k_current > d_current and self.k_previous < self.d_previous
+
+        # Mettre à jour les valeurs précédentes
+        self.k_previous = k_current
+        self.d_previous = d_current
+
+
+        return filt
     
     def stoch_sup_50_filter(self):
         # Vérifie si le Stochastic %D est supérieur à 50
-        d, _ = self.stoch
-        if len(d) < 1:
-            return False
-        d_current = d[-1]
-        return d_current > 50
+        return self.candles['stoch_d'] > 50
     
     def filters(self):
         return [
@@ -129,7 +112,14 @@ class BacktestingAdapter(BacktestingStrategy):
             'High':  self.data.High[-1],
             'Low':   self.data.Low[-1],
             'Close': self.data.Close[-1],
-            'Volume': self.data.Volume[-1]
+            'Volume': self.data.Volume[-1],
+
+            'ema_50': self.data.ema_50[-1],
+            'ema_200': self.data.ema_200[-1],
+            'st_50_3': self.data.st_50_3[-1],
+            'stoch_k': self.data.stoch_k[-1],
+            'stoch_d': self.data.stoch_d[-1],
+            'atr': self.data.atr[-1],
         }
 
         signal = self.my_strategy.update_candle(candle)
@@ -147,7 +137,7 @@ class BacktestingAdapter(BacktestingStrategy):
 
     
 
-def load_data(symbol, interval='1min', period='1y'):
+def load_data(symbol, interval='1min', period='1m'):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
     et filtre les données en fonction de la période spécifiée.
@@ -227,26 +217,27 @@ def load_data(symbol, interval='1min', period='1y'):
     df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
     
     # # Calcul des indicateurs techniques
-    # df['EMA_200'] = talib.EMA(df['Close'].values, timeperiod=200)
-    # df['EMA_50'] = talib.EMA(df['Close'].values, timeperiod=50)
-    # df['ATR'] = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=14)
-    
-    # # Stochastique
-    # df['stoch_k'], df['stoch_d'] = talib.STOCH(
-    #     df['High'].values, df['Low'].values, df['Close'].values,
-    #     fastk_period=10, slowk_period=7, slowd_period=3
-    # )
-    
-    # st_result = utils.calculate_supertrend(df, atr_period=50, multiplier=3)
-    # df['st_50_3'] = st_result['SuperTrend']
+    df['ema_200'] = talib.EMA(df['Close'].values, timeperiod=200)
+    df['ema_50'] = talib.EMA(df['Close'].values, timeperiod=50)
+    df['atr'] = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=14)
+    df['stoch_k'], df['stoch_d'] = talib.STOCH(
+        df['High'].values, df['Low'].values, df['Close'].values,
+        fastk_period=10, slowk_period=7, slowd_period=3)
+    df['st_50_3'] = utils.calculate_supertrend(df, atr_period=50, multiplier=3)['SuperTrend']
+
+
     chrono_load_data = time.time() - chrono_load_data
     print(f"Données chargées et prétraitées en {chrono_load_data:.2f} secondes")
     return df
     
 
-data = load_data(symbol='NDX', period='1y', interval='1min')
+data = load_data(symbol='NDX', period='1m', interval='1min')
 
-bt = Backtest(data, BacktestingAdapter, cash=10000, commission=.002, exclusive_orders=True)
+print(data.head())
+print(data.columns)
+print(data.tail())
+
+bt = Backtest(data, BacktestingAdapter, cash=100000, commission=.00, exclusive_orders=True)
 stats = bt.run()
 print(stats)
 bt.plot()

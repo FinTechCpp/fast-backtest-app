@@ -4,3 +4,12 @@ __pycache__/
 *.pyc
 *.csv
 *.html
+.bash_history
+.cache/conda/notices/notices.cache
+.cache/pip/*
+.conda/*
+.ipynb_checkpoints/*
+.local*
+.ipython*
+.npm*
+.jupyter*

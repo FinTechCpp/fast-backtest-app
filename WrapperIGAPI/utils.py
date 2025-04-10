@@ -16,7 +16,7 @@ Modules requis:
 - time
 """
 import sys
-sys.path.insert(0, '/home/max/ig-trading-bot')
+sys.path.insert(0, '..')
 from trading_ig.rest import IGService
 from trading_ig.config import config
 import readchar
@@ -26,7 +26,7 @@ import pandas as pd
 import traceback
 import time
 from datetime import datetime, timezone
-from scripts.markets import epics_dict
+from markets import epics_dict
 from pprint import pprint
 import curses
 from curses import wrapper

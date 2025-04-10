@@ -57,7 +57,9 @@ class BacktestingAdapter(BacktestingStrategy):
         if signal is None:
             return
         
-        if signal['action'] == 'BUY':
+        if signal['action'] == 'LIQUIDATE':
+            self.position.close()
+        elif signal['action'] == 'BUY':
             self.position.close()  # Fermer la position existante si elle existe
             self.buy(sl=signal['stop_loss'], tp=signal['take_profit'], size=signal['quantity'])
         elif signal['action'] == 'SELL':

@@ -1,9 +1,8 @@
-import os
-print(f"Current working directory (in BuySt): {os.getcwd()}")
 try:
     from Strategies.Strategy import Strategy
 except ImportError:
     from Strategy import Strategy
+from datetime import time
 
 
 class BuyTrendFollowingStrategy(Strategy):
@@ -23,6 +22,9 @@ class BuyTrendFollowingStrategy(Strategy):
 
         self.k_previous = None
         self.d_previous = None
+
+        self.trading_from = time(15, 0)
+        self.trading_to = time(20, 0)
     
     def should_long(self):
         return True

@@ -26,9 +26,16 @@ class Strategy(ABC):
 
         self._is_executing = False
 
-        self.candles = pd.DataFrame(columns=[
-            'Open', 'High', 'Low', 'Close', 'Volume'
-        ])
+        self.candles = {}
+        self.buffer = pd.DataFrame({
+            'date': pd.Series(dtype='str'),
+            'Open': pd.Series(dtype='float'),
+            'High': pd.Series(dtype='float'),
+            'Low': pd.Series(dtype='float'),
+            'Close': pd.Series(dtype='float'),
+            'Volume': pd.Series(dtype='float')
+        })
+        self.buffer_size = 200
 
     def _reset(self) -> None:
         """ Reset de la stratégie """
@@ -69,6 +76,21 @@ class Strategy(ABC):
     def filters(self) -> list:
         """ Liste des filtres à appliquer avant d'ouvrir une position. """
         return []
+    
+    def add_missing_indicators(self, candle: dict) -> dict:
+        """
+        Ajoute les indicateurs nécessaires à la bougie.
+        :param candle: Un dictionnaire représentant la bougie avec les clefs:
+                       'date', 'Open', 'High', 'Low', 'Close', 'Volume'
+        """
+        # Exemple d'ajout d'indicateurs
+        # candle['ema_50'] = 0
+        # candle['ema_200'] = 0
+        # candle['st_50_3'] = 0
+        # candle['stoch_k'] = 0
+        # candle['stoch_d'] = 0
+        # candle['atr'] = 0
+        return candle
     
     def _execute_long(self) -> None:
         self.go_long()
@@ -264,7 +286,14 @@ class Strategy(ABC):
         :param candle: Un dictionnaire représentant la bougie avec les clefs:
                        'date', 'Open', 'High', 'Low', 'Close', 'Volume'
         """
-        self.candles = candle.copy()
+    
+        # On ajoute la nouvelle bougie au buffer et on la garde à la taille max +- 100
+        self.buffer = pd.concat([self.buffer, pd.DataFrame([candle])], ignore_index=True)
+        if len(self.buffer) > self.buffer_size + 100:
+            self.buffer = self.buffer.iloc[-self.buffer_size:]
+
+        # On enrichit la bougie avec les indicateurs manquants
+        self.candles = self.add_missing_indicators(candle.copy())
 
         # Déclenche l'exécution de la stratégie avec la nouvelle donnée
         self._execute()

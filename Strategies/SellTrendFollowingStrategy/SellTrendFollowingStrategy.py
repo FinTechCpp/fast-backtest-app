@@ -2,17 +2,15 @@ try:
     from Strategies.Strategy import Strategy
 except ImportError:
     from Strategy import Strategy
-    
+from datetime import time
+
 
 class SellTrendFollowingStrategy(Strategy):
     """
     Stratégie de suivi de tendance à l'achat.
     """
-    def __init__(self):
+    def __init__(self, stop_loss_percent=1.01, take_profit_percent=0.99):
         super().__init__()
-        """
-        Initialise la stratégie.
-        """
 
         self.name = "SellTrendFollowingStrategy"
         self.symbol = None
@@ -21,6 +19,12 @@ class SellTrendFollowingStrategy(Strategy):
 
         self.k_previous = None
         self.d_previous = None
+
+        self.trading_from = time(15, 0)
+        self.trading_to = time(20, 0)
+
+        self.take_profit_persent = take_profit_percent
+        self.stop_loss_percent = stop_loss_percent
     
     def should_long(self):
         return False
@@ -33,8 +37,8 @@ class SellTrendFollowingStrategy(Strategy):
 
     def go_short(self):
         self.sell = 0.5, self.price
-        self.take_profit = 0.5, self.price * 0.99
-        self.stop_loss = 0.5, self.price * 1.01
+        self.take_profit = 0.5, self.price * self.take_profit_persent
+        self.stop_loss = 0.5, self.price * self.stop_loss_percent
     
     def ema_filter(self):
         return self.price < self.candles['ema_50'] and self.price < self.candles['ema_200']

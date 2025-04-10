@@ -9,11 +9,9 @@ class BuyTrendFollowingStrategy(Strategy):
     """
     Stratégie de suivi de tendance à l'achat.
     """
-    def __init__(self):
+    def __init__(self, stop_loss_percent=0.99, take_profit_percent=1.01):
         super().__init__()
-        """
-        Initialise la stratégie.
-        """
+
 
         self.name = "BuyTrendFollowingStrategy"
         self.symbol = None
@@ -25,6 +23,9 @@ class BuyTrendFollowingStrategy(Strategy):
 
         self.trading_from = time(15, 0)
         self.trading_to = time(20, 0)
+
+        self.take_profit_persent = take_profit_percent
+        self.stop_loss_percent = stop_loss_percent
     
     def should_long(self):
         return True
@@ -34,8 +35,8 @@ class BuyTrendFollowingStrategy(Strategy):
     
     def go_long(self):
         self.buy = 0.5, self.price
-        self.take_profit = 0.5, self.price * 1.01
-        self.stop_loss = 0.5, self.price * 0.99
+        self.take_profit = 0.5, self.price * self.take_profit_persent
+        self.stop_loss = 0.5, self.price * self.stop_loss_percent
     
     def go_short(self):
         raise NotImplementedError("La stratégie BuyTrendFollowingStrategy ne supporte pas la vente à découvert.")

@@ -1,4 +1,9 @@
-from Strategy import Strategy
+import os
+print(f"Current working directory (in BuySt): {os.getcwd()}")
+try:
+    from Strategies.Strategy import Strategy
+except ImportError:
+    from Strategy import Strategy
 
 
 class BuyTrendFollowingStrategy(Strategy):

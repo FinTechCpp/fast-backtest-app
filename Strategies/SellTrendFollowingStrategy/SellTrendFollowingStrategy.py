@@ -1,6 +1,8 @@
-from Strategy import Strategy
-
-
+try:
+    from Strategies.Strategy import Strategy
+except ImportError:
+    from Strategy import Strategy
+    
 
 class SellTrendFollowingStrategy(Strategy):
     """

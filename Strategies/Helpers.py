@@ -114,6 +114,19 @@ def load_data(symbol, interval='1min', period='1m'):
     chrono_load_data = time.time()
     print(f"Chargement des données pour {symbol}, intervalle {interval}, période {period}...")
     
+    # Vérifier si le dossier 'marketData' existe dans le répertoire actuel ou dans le parent
+    current_directory = os.getcwd()
+    market_data_path = os.path.join(current_directory, 'marketData')
+    
+    if not os.path.exists(market_data_path):
+        # Si 'marketData' n'existe pas dans le répertoire courant, vérifier dans le parent
+        parent_directory = os.path.dirname(current_directory)
+        market_data_path = os.path.join(parent_directory, 'marketData')
+        
+        if not os.path.exists(market_data_path):
+            raise ValueError(f"Le dossier 'marketData' n'existe pas dans le répertoire courant ni dans le parent.")
+    
+
     # Calculer la période de début et de fin
     end_date = pd.Timestamp.now(tz='US/Eastern')  # Ensure timezone matches the Parquet file
     if period.endswith('y'):  # Années
@@ -124,8 +137,9 @@ def load_data(symbol, interval='1min', period='1m'):
         start_date = end_date - pd.DateOffset(days=int(period[:-1]))
     else:
         raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
+    
     # Rechercher le fichier correspondant au symbole et à l'intervalle
-    pattern = f"./database/{symbol}_{interval.replace('_', '')}_*.parquet"
+    pattern = os.path.join(market_data_path, f"{symbol}_{interval.replace('_', '')}_*.parquet")
     matching_files = glob.glob(pattern)
     
     if not matching_files:

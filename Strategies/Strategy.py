@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
+from datetime import time
 
 class Strategy(ABC):
     """
@@ -12,6 +13,10 @@ class Strategy(ABC):
         self.symbol = None
         self.exchange = None
         self.timeframe = None
+
+        self.trading_from = time(14, 30) # 14:30 UTC
+        self.trading_to = time(21, 0) # 20:00 UTC
+        self.trading_days = [0, 1, 2, 3, 4] # Lundi à Vendredi
 
         self.buy = None
         self.sell = None
@@ -162,6 +167,13 @@ class Strategy(ABC):
     def _generate_sell_signal(self) -> dict:
         """
         Prépare et retourne le signal de vente.
+
+        Le signal est un dictionnaire contenant par exemple :
+        - action: 'SELL'
+        - quantity: la quantité
+        - price: le prix auquel l'ordre doit être passé
+        - take_profit: niveau du take profit (optionnel)
+        - stop_loss: niveau du stop loss (optionnel)
         """
         signal = {
             "action": "SELL",
@@ -169,6 +181,18 @@ class Strategy(ABC):
             "price": float(self.sell[1]),
             "take_profit": float(self.take_profit[1]) if self.take_profit is not None else None,
             "stop_loss": float(self.stop_loss[1]) if self.stop_loss is not None else None,
+        }
+        return signal
+    
+    def _generate_liquidation_signal(self) -> dict:
+        """
+        Prépare et retourne le signal de liquidation.
+
+        Le signal est un dictionnaire contenant par exemple :
+        - action: 'LIQUIDATE'
+        """
+        signal = {
+            "action": "LIQUIDATE"
         }
         return signal
     
@@ -180,8 +204,34 @@ class Strategy(ABC):
 
         return True
     
+    def _check_time(self) -> bool:
+        if self.candles is None or not isinstance(self.candles, dict) or 'date' not in self.candles:
+            return False
+
+        try:
+            last_candle_date = pd.to_datetime(self.candles['date'])
+        except Exception as e:
+            print("Erreur de conversion de la date :", e)
+            return False
+
+        # Vérifie si c'est un jour de trading
+        if last_candle_date.weekday() not in self.trading_days:
+            return False
+
+        # Vérifie si c'est dans l'intervalle de temps de trading
+        current_time = last_candle_date.time()
+        if not (self.trading_from <= current_time <= self.trading_to):
+            return False
+
+        return True
+    
     def _check(self) -> None:
         self._reset()
+
+        # Vérifie si la stratégie est dans la période de trading
+        if not self._check_time():
+            self.signal = self._generate_liquidation_signal()
+            return
         
         should_long = self.should_long()
         should_short = self.should_short()
@@ -212,7 +262,7 @@ class Strategy(ABC):
         Ajoute la nouvelle bougie au DataFrame et déclenche l'exécution de la stratégie.
         
         :param candle: Un dictionnaire représentant la bougie avec les clefs:
-                       'timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'
+                       'date', 'Open', 'High', 'Low', 'Close', 'Volume'
         """
         self.candles = candle.copy()
 

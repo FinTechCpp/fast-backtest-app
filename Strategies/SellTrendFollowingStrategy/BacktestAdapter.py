@@ -1,4 +1,4 @@
-from SellTrendFollowingStrategy import SellTrendFollowingStrategy
+from .SellTrendFollowingStrategy import SellTrendFollowingStrategy
 from backtesting import Strategy as BacktestingStrategy
 import numpy as np
 
@@ -36,7 +36,7 @@ class BacktestingAdapter(BacktestingStrategy):
         on passe l'ordre correspondant.
         """
         candle = {
-            'timestamp': self.data.index[-1],
+            'date': self.data.index[-1],
             'Open':  self.data.Open[-1],
             'High':  self.data.High[-1],
             'Low':   self.data.Low[-1],

@@ -1,7 +1,6 @@
 from Strategy import Strategy
 
 
-
 class BuyTrendFollowingStrategy(Strategy):
     """
     Stratégie de suivi de tendance à l'achat.

@@ -1,9 +1,10 @@
 from BuyTrendFollowingStrategy.BacktestAdapter import BacktestingAdapter as BuyTrendFollowingBTA
 from SellTrendFollowingStrategy.BacktestAdapter import BacktestingAdapter as SellTrendFollowingBTA
 from Helpers import load_data
-from backtesting import Backtest
-
-
+import sys 
+import os
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
+from backtestingpy.backtesting.backtesting import Backtest
 
 data = load_data(symbol='NDX', period='2m', interval='1min')
 

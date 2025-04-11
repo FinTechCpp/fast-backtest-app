@@ -1,6 +1,8 @@
+import datetime
 import time
 import sys
 import os
+import pandas as pd
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
@@ -9,50 +11,60 @@ from Strategies.BuyTrendFollowingStrategy.BuyTrendFollowingStrategy import BuyTr
 from WrapperIGAPI.Broker import Broker
 
 
+def is_candle_complete(candle, resolution_minutes=1):
+    """
+    Vérifie si une bougie est finalisée.
+    
+    :param candle: Dictionnaire contenant une clé 'date' (de type datetime ou Timestamp).
+    :param resolution_minutes: Durée de la bougie en minutes.
+    :return: True si la bougie est finalisée, False sinon.
+    """
+
+    # Cas 1 : dict avec clé 'date'
+    if isinstance(candle, dict):
+        date = candle['date']
+    # Cas 2 : Series avec la date comme index
+    elif isinstance(candle, pd.Series):
+        date = candle.name
+    else:
+        raise TypeError("Le format de candle n'est pas supporté.")
+    
+    candle_end = date + datetime.timedelta(minutes=resolution_minutes)
+    # Ici, on compare à l'heure actuelle. Selon votre utilisation, vous pourriez vouloir
+    # vous baser sur l'heure serveur retournée par l'API plutôt que sur datetime.now()
+    return datetime.datetime.now() >= candle_end
+
+
 def main():
     # Création des instances
     broker = Broker(epic="IX.D.NASDAQ.IFE.IP", working_resolution='1Min')
     strategy = BuyTrendFollowingStrategy()
 
-    # Initialisation avec les 200 dernières bougies historiques
-    # historical_candles = broker.fetch_historical_prices(numpoints=10)
+    historical_candles = broker.fetch_historical_prices(numpoints=10)
+    if not is_candle_complete(historical_candles.iloc[-1]):
+        historical_candles = historical_candles[:-1]
+    strategy.initialize(historical_candles)
 
-    # strategy.initialize(historical_candles)
-
-    candle = {
-        'date': '2025-04-11 12:15:00',
-        'Open': 100.0,
-        'High': 105.0,
-        'Low': 95.0,
-        'Close': 102.0,
-    }
-
-    signal = strategy.update_candle(candle)
-
-    signal = {
-        'action': 'BUY',
-        'quantity': 0.5,
-        'take_profit': 30,
-        'stop_loss': 40,
-    }
-
-    # Envoi de l'ordre au broker
-    print(broker.place_order(signal))
+    print(historical_candles)
 
 
-    # # Boucle pour récupérer les bougies en live toutes les 10 secondes
-    # while True:
-    #     live_candle = broker.get_live_candle()
-    #     signal = strategy.update_candle(live_candle)
-        
-    #     if signal is not None:
-    #         # Si un signal est généré (achat, vente ou liquidation), on le transmet au broker
-    #         broker.place_order(signal)
-    #     else:
-    #         print("Aucun signal pour cette bougie.")
+    while True:
+        now = datetime.datetime.now()
+        seconds_to_wait = 60 - now.second - now.microsecond / 1_000_000
+        time.sleep(seconds_to_wait)
 
-    #     # Attendre 10 secondes avant de récupérer la prochaine bougie
-    #     time.sleep(10)
+        candle_previous, candle_current = broker.fetch_previous_and_current_candles()
+        print(f"Previous candle: {candle_previous}, is finished: {is_candle_complete(candle_previous)}")
+        print(f"Current candle: {candle_current}, is finished: {is_candle_complete(candle_current)}")
+
+        if is_candle_complete(candle_current):
+            signal = strategy.update_candle(candle_current)
+        elif is_candle_complete(candle_previous):
+            signal = strategy.update_candle(candle_previous)
+
+        print(f"Signal: {signal}")
+        broker.execute_signal(signal)
+
 
 
 if __name__ == '__main__':

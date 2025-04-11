@@ -36,6 +36,7 @@ class Strategy(ABC):
             'Low': pd.Series(dtype='float'),
             'Close': pd.Series(dtype='float'),
         })
+        self.buffer.set_index('date', inplace=True)
         
         self.BUFFER_SIZE = 200
 
@@ -306,6 +307,7 @@ class Strategy(ABC):
         new_candle.set_index('date', inplace=True)
     
         # On ajoute la nouvelle bougie au buffer et on la garde à la taille max +- 100
+        new_candle = new_candle.dropna(axis=1, how='all')
         self.buffer = pd.concat([self.buffer, new_candle])
         if len(self.buffer) > self.BUFFER_SIZE + 100:
             self.buffer = self.buffer.iloc[-self.BUFFER_SIZE:]

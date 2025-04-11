@@ -3,6 +3,8 @@ import numpy as np
 import pandas as pd
 from datetime import time
 
+
+
 class Strategy(ABC):
     """
     Classe mère pour les stratégies de trading.
@@ -33,9 +35,9 @@ class Strategy(ABC):
             'High': pd.Series(dtype='float'),
             'Low': pd.Series(dtype='float'),
             'Close': pd.Series(dtype='float'),
-            'Volume': pd.Series(dtype='float')
         })
-        self.buffer_size = 200
+        
+        self.BUFFER_SIZE = 200
 
     def _reset(self) -> None:
         """ Reset de la stratégie """
@@ -81,15 +83,8 @@ class Strategy(ABC):
         """
         Ajoute les indicateurs nécessaires à la bougie.
         :param candle: Un dictionnaire représentant la bougie avec les clefs:
-                       'date', 'Open', 'High', 'Low', 'Close', 'Volume'
+                       'date', 'Open', 'High', 'Low', 'Close'
         """
-        # Exemple d'ajout d'indicateurs
-        # candle['ema_50'] = 0
-        # candle['ema_200'] = 0
-        # candle['st_50_3'] = 0
-        # candle['stoch_k'] = 0
-        # candle['stoch_d'] = 0
-        # candle['atr'] = 0
         return candle
     
     def _execute_long(self) -> None:
@@ -278,19 +273,42 @@ class Strategy(ABC):
         self.after()
         self._is_executing = False
 
+    def initialize(self, candles: pd.DataFrame) -> None:
+        """
+        Initialise la stratégie avec les bougies historiques.
+        
+        :param candles: Un DataFrame contenant les bougies historiques avec les colonnes:
+                        'Open', 'High', 'Low', 'Close'
+        et indexé par 'date'.
+        """
+        self.buffer = candles.copy()
+        if 'date' in self.buffer.columns:
+            # Si la date est en colonne, on la convertit en datetime et on la définit comme index
+            self.buffer['date'] = pd.to_datetime(self.buffer['date'])
+            self.buffer.set_index('date', inplace=True)
+        else:
+            # Sinon, on suppose que la date est dans l'index
+            # On convertit l'index en datetime si nécessaire puis on définit le nom 'date'
+            if not pd.api.types.is_datetime64_any_dtype(self.buffer.index):
+                self.buffer.index = pd.to_datetime(self.buffer.index)
+            self.buffer.index.name = 'date'
 
     def update_candle(self, candle: dict) -> dict:
         """
         Ajoute la nouvelle bougie au DataFrame et déclenche l'exécution de la stratégie.
         
         :param candle: Un dictionnaire représentant la bougie avec les clefs:
-                       'date', 'Open', 'High', 'Low', 'Close', 'Volume'
+                       'date', 'Open', 'High', 'Low', 'Close'
         """
+
+        new_candle = pd.DataFrame([candle])
+        new_candle['date'] = pd.to_datetime(new_candle['date'])
+        new_candle.set_index('date', inplace=True)
     
         # On ajoute la nouvelle bougie au buffer et on la garde à la taille max +- 100
-        self.buffer = pd.concat([self.buffer, pd.DataFrame([candle])], ignore_index=True)
-        if len(self.buffer) > self.buffer_size + 100:
-            self.buffer = self.buffer.iloc[-self.buffer_size:]
+        self.buffer = pd.concat([self.buffer, new_candle])
+        if len(self.buffer) > self.BUFFER_SIZE + 100:
+            self.buffer = self.buffer.iloc[-self.BUFFER_SIZE:]
 
         # On enrichit la bougie avec les indicateurs manquants
         self.candles = self.add_missing_indicators(candle.copy())

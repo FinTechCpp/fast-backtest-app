@@ -110,7 +110,7 @@ class BuyTrendFollowingStrategy(Strategy):
             return candle
 
         # Garder uniquement les colonnes nécessaires
-        df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+        df = df[['Open', 'High', 'Low', 'Close']]
 
         # Calculer EMA 200 si absent
         if "ema_200" not in candle:

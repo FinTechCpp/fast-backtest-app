@@ -1,5 +1,7 @@
 from .BuyTrendFollowingStrategy import BuyTrendFollowingStrategy
-from backtesting import Strategy as BacktestingStrategy
+import os, sys
+sys.path.append(os.path.abspath(os.path.join(os.getcwd(), '..')))
+from backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 import numpy as np
 
 

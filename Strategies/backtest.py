@@ -5,15 +5,15 @@ from backtesting import Backtest
 
 
 
-data = load_data(symbol='NDX', period='1m', interval='1min')
+data = load_data(symbol='NDX', period='2m', interval='1min')
 
 print(data.head())
 print(data.tail(100))
 
 
-strategy = BuyTrendFollowingBTA
+strategy = SellTrendFollowingBTA
 bt = Backtest(data, strategy, cash=100000, commission=.00, exclusive_orders=True)
 stats = bt.run()
 print(stats)
-bt.plot()
+bt.plot(plot_volume=False, resample=False)
 

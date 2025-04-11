@@ -6,7 +6,6 @@ except ImportError:
     from Helpers import calculate_supertrend
 from datetime import time
 import talib
-import pandas as pd
 
 
 
@@ -14,7 +13,7 @@ class BuyTrendFollowingStrategy(Strategy):
     """
     Stratégie de suivi de tendance à l'achat.
     """
-    def __init__(self, stop_loss_percent=0.99, take_profit_percent=1.01):
+    def __init__(self, stop_loss_distance=20, take_profit_distance=30):
         super().__init__()
 
 
@@ -29,8 +28,8 @@ class BuyTrendFollowingStrategy(Strategy):
         self.trading_from = time(15, 0)
         self.trading_to = time(20, 0)
 
-        self.take_profit_persent = take_profit_percent
-        self.stop_loss_percent = stop_loss_percent
+        self.tp_distance = take_profit_distance
+        self.sl_distance = stop_loss_distance
     
     def should_long(self):
         return True
@@ -40,8 +39,8 @@ class BuyTrendFollowingStrategy(Strategy):
     
     def go_long(self):
         self.buy = 0.5, self.price
-        self.take_profit = 0.5, self.price * self.take_profit_persent
-        self.stop_loss = 0.5, self.price * self.stop_loss_percent
+        self.take_profit = 0.5, self.tp_distance
+        self.stop_loss = 0.5, self.sl_distance
     
     def go_short(self):
         raise NotImplementedError("La stratégie BuyTrendFollowingStrategy ne supporte pas la vente à découvert.")
@@ -91,7 +90,7 @@ class BuyTrendFollowingStrategy(Strategy):
         Si un indicateur est présent dans 'candle', il n'est pas recalcule.
         Sinon, on le calcule à partir des données du buffer.
         On se base sur le buffer (self.buffer) qui contient uniquement les colonnes 
-        'Open', 'High', 'Low', 'Close', 'Volume' et 'date'.
+        'Open', 'High', 'Low', 'Close'.
         """
         # On travaille sur une copie du buffer pour être sûr que seules les colonnes nécessaires soient présentes.
         df = self.buffer.copy()

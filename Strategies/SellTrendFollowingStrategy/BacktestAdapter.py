@@ -61,7 +61,7 @@ class BacktestingAdapter(BacktestingStrategy):
             self.position.close()
         elif signal['action'] == 'BUY':
             self.position.close()  # Fermer la position existante si elle existe
-            self.buy(sl=signal['stop_loss'], tp=signal['take_profit'], size=signal['quantity'])
+            self.buy(sl=candle['Close'] - signal['stop_loss'], tp=candle['Close'] + signal['take_profit'], size=signal['quantity'])
         elif signal['action'] == 'SELL':
             self.position.close()
-            self.sell(sl=signal['stop_loss'], tp=signal['take_profit'], size=signal['quantity'])
+            self.sell(sl=candle['Close'] + signal['stop_loss'], tp=candle['Close'] - signal['take_profit'], size=signal['quantity'])

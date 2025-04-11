@@ -1,15 +1,18 @@
 try:
     from Strategies.Strategy import Strategy
+    from Strategies.Helpers import calculate_supertrend
 except ImportError:
     from Strategy import Strategy
+    from Helpers import calculate_supertrend
 from datetime import time
+import talib
 
 
 class SellTrendFollowingStrategy(Strategy):
     """
     Stratégie de suivi de tendance à l'achat.
     """
-    def __init__(self, stop_loss_percent=1.01, take_profit_percent=0.99):
+    def __init__(self, stop_loss_distance=20, take_profit_distance=30):
         super().__init__()
 
         self.name = "SellTrendFollowingStrategy"
@@ -23,8 +26,8 @@ class SellTrendFollowingStrategy(Strategy):
         self.trading_from = time(15, 0)
         self.trading_to = time(20, 0)
 
-        self.take_profit_persent = take_profit_percent
-        self.stop_loss_percent = stop_loss_percent
+        self.tp_distance = take_profit_distance
+        self.sl_distance = stop_loss_distance
     
     def should_long(self):
         return False
@@ -37,8 +40,8 @@ class SellTrendFollowingStrategy(Strategy):
 
     def go_short(self):
         self.sell = 0.5, self.price
-        self.take_profit = 0.5, self.price * self.take_profit_persent
-        self.stop_loss = 0.5, self.price * self.stop_loss_percent
+        self.take_profit = 0.5, self.tp_distance
+        self.stop_loss = 0.5, self.sl_distance
     
     def ema_filter(self):
         return self.price < self.candles['ema_50'] and self.price < self.candles['ema_200']
@@ -76,3 +79,72 @@ class SellTrendFollowingStrategy(Strategy):
         ]
 
 
+    def add_missing_indicators(self, candle: dict) -> dict:
+        """
+        Ajoute les indicateurs manquants à la bougie 'candle'.
+        Si un indicateur est présent dans 'candle', il n'est pas recalcule.
+        Sinon, on le calcule à partir des données du buffer.
+        On se base sur le buffer (self.buffer) qui contient uniquement les colonnes 
+        'Open', 'High', 'Low', 'Close'.
+        """
+        # On travaille sur une copie du buffer pour être sûr que seules les colonnes nécessaires soient présentes.
+        df = self.buffer.copy()
+        if df.empty:
+            # Pas suffisamment de données : on affecte par défaut la valeur du Close de la bougie actuelle.
+            if "ema_50" not in candle:
+                candle["ema_50"] = candle["Close"]
+            if "ema_200" not in candle:
+                candle["ema_200"] = candle["Close"]
+            if "stoch_k" not in candle:
+                candle["stoch_k"] = 0.0
+            if "stoch_d" not in candle:
+                candle["stoch_d"] = 0.0
+            if "st_50_3" not in candle:
+                candle["st_50_3"] = candle["Close"]
+            return candle
+
+        # Garder uniquement les colonnes nécessaires
+        df = df[['Open', 'High', 'Low', 'Close']]
+
+        # Calculer EMA 200 si absent
+        if "ema_200" not in candle:
+            if len(df) >= 200:
+                ema_200 = talib.EMA(df['Close'].values, timeperiod=200)
+                candle["ema_200"] = float(ema_200[-1])
+            else:
+                candle["ema_200"] = candle["Close"]
+        
+        # Calculer EMA 50 si absent
+        if "ema_50" not in candle:
+            if len(df) >= 50:
+                ema_50 = talib.EMA(df['Close'].values, timeperiod=50)
+                candle["ema_50"] = float(ema_50[-1])
+            else:
+                candle["ema_50"] = candle["Close"]
+
+        # Calculer les stochastiques si absents
+        if ("stoch_k" not in candle) or ("stoch_d" not in candle):
+            if len(df) >= 14:
+                # Calcul des stochastiques
+                stoch_k, stoch_d = talib.STOCH(
+                    df['High'].values, df['Low'].values, df['Close'].values,
+                    fastk_period=10, slowk_period=7, slowd_period=3)
+                candle["stoch_k"] = float(stoch_k[-1])
+                candle["stoch_d"] = float(stoch_d[-1])
+            else:
+                candle["stoch_k"] = 0.0
+                candle["stoch_d"] = 0.0
+
+        # Calculer le SuperTrend (st_50_3) si absent
+        if "st_50_3" not in candle:
+            # On vérifie que le buffer contient bien les colonnes nécessaires
+            if len(df) >= 1:
+                # Créer un DataFrame minimal pour le calcul : seules les colonnes High, Low et Close sont requises.
+                df_st = df[['High', 'Low', 'Close']].copy()
+                # Calcul du SuperTrend via votre fonction, avec une ATR calculée en interne (atr_period=14)
+                st_df = calculate_supertrend(df_st, atr_period=50, multiplier=3)
+                candle["st_50_3"] = float(st_df['SuperTrend'].iloc[-1])
+            else:
+                candle["st_50_3"] = candle["Close"]
+                
+        return candle

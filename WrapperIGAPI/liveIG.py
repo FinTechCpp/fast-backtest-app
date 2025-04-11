@@ -32,9 +32,8 @@ def main():
     signal = {
         'action': 'BUY',
         'quantity': 0.5,
-        # 'expiry': 'DFB',
-        'take_profit': 15,
-        'stop_loss': 20,
+        'take_profit': 30,
+        'stop_loss': 40,
     }
 
     # Envoi de l'ordre au broker

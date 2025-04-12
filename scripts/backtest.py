@@ -1,5 +1,5 @@
-from igtrader.Strategies.BuyTrendFollowingStrategy.BacktestAdapter import BacktestingAdapter as BuyTrendFollowingBTA
-from igtrader.Strategies.SellTrendFollowingStrategy.BacktestAdapter import BacktestingAdapter as SellTrendFollowingBTA
+from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA
+from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.Helpers import load_data
 
 from igtrader.backtestingpy.backtesting.backtesting import Backtest
@@ -11,7 +11,7 @@ print(data.head())
 print(data.tail(100))
 
 
-strategy = BuyTrendFollowingBTA
+strategy = BuyTrendFollowingBA
 bt = Backtest(data, strategy, cash=100000, commission=.00, exclusive_orders=True)
 stats = bt.run()
 print(stats)

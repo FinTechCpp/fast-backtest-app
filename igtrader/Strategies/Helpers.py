@@ -150,7 +150,7 @@ def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=
     
     # Charger tout le fichier Parquet
     try:
-        df = pd.read_parquet(save_path).
+        df = pd.read_parquet(save_path)
         print(f"Données chargées depuis {save_path}: {len(df)} barres de prix")
     except FileNotFoundError:
         raise ValueError(f"Le fichier {save_path} est introuvable.")

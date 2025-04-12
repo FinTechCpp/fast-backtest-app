@@ -2,7 +2,7 @@ import datetime
 import time
 import pandas as pd
 
-from igtrader.Strategies.BuyTrendFollowingStrategy import BuyTrendFollowingStrategy
+from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
 from igtrader.WrapperIGAPI.Broker import Broker
 
 
@@ -33,7 +33,7 @@ def is_candle_complete(candle, resolution_minutes=1):
 def main():
     # Création des instances
     broker = Broker(epic="IX.D.NASDAQ.IFE.IP", working_resolution='1Min')
-    strategy = BuyTrendFollowingStrategy()
+    strategy = BuyTrendFollowing()
 
     historical_candles = broker.fetch_historical_prices(numpoints=10)
     if not is_candle_complete(historical_candles.iloc[-1]):

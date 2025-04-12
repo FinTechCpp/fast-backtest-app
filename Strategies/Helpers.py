@@ -5,7 +5,6 @@ import time
 import os
 import glob
 
-
 def calculate_supertrend(data, atr_period=14, multiplier=3):
     """
     Calcule l'indicateur technique Supertrend.
@@ -105,8 +104,7 @@ def calculate_supertrend(data, atr_period=14, multiplier=3):
     return st
 
 
-
-def load_data(symbol, interval='1min', period='1m'):
+def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=None, timezone='EU/Paris'):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
     et filtre les données en fonction de la période spécifiée.
@@ -126,9 +124,8 @@ def load_data(symbol, interval='1min', period='1m'):
         if not os.path.exists(market_data_path):
             raise ValueError(f"Le dossier 'marketData' n'existe pas dans le répertoire courant ni dans le parent.")
     
-
+    end_date = pd.Timestamp.now(tz=timezone) if end_date is None else pd.to_datetime(end_date, utc=True).tz_convert(timezone)
     # Calculer la période de début et de fin
-    end_date = pd.Timestamp.now(tz='US/Eastern')  # Ensure timezone matches the Parquet file
     if period.endswith('y'):  # Années
         start_date = end_date - pd.DateOffset(years=int(period[:-1]))
     elif period.endswith('m'):  # Mois
@@ -138,8 +135,8 @@ def load_data(symbol, interval='1min', period='1m'):
     else:
         raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
     
-    # Rechercher le fichier correspondant au symbole et à l'intervalle
-    pattern = os.path.join(market_data_path, f"{symbol}_{interval.replace('_', '')}_*.parquet")
+    # Rechercher le fichier correspondant au symbole
+    pattern = os.path.join(market_data_path, f"{symbol}_10secs_*.parquet")
     matching_files = glob.glob(pattern)
     
     if not matching_files:
@@ -153,7 +150,7 @@ def load_data(symbol, interval='1min', period='1m'):
     
     # Charger tout le fichier Parquet
     try:
-        df = pd.read_parquet(save_path)
+        df = pd.read_parquet(save_path).
         print(f"Données chargées depuis {save_path}: {len(df)} barres de prix")
     except FileNotFoundError:
         raise ValueError(f"Le fichier {save_path} est introuvable.")
@@ -168,10 +165,6 @@ def load_data(symbol, interval='1min', period='1m'):
         except Exception as e:
             raise ValueError(f"Erreur lors de la conversion de l'index en DateTimeIndex : {e}")
     
-    # Ajouter un fuseau horaire explicite si nécessaire
-    if df.index.tz is None:
-        df.index = df.index.tz_localize('UTC')  # Remplacez 'UTC' par le fuseau horaire approprié si nécessaire
-    
     # S'assurer que les dates de filtrage sont dans le même fuseau horaire que l'index
     start_date = start_date.tz_convert(df.index.tz)
     end_date = end_date.tz_convert(df.index.tz)
@@ -179,9 +172,7 @@ def load_data(symbol, interval='1min', period='1m'):
     # Filtrer les données en fonction de la période
     df = df[(df.index >= start_date) & (df.index <= end_date)]
     print(f"Données filtrées pour la période {start_date.date()} à {end_date.date()}: {len(df)} barres de prix")
-    
-    df.index = df.index.tz_convert(None)  # Supprime le fuseau horaire explicite
-    
+        
     # Vérifier les colonnes nécessaires
     required_columns = {'open', 'high', 'low', 'close', 'barCount'}
     if not required_columns.issubset(df.columns):
@@ -199,7 +190,7 @@ def load_data(symbol, interval='1min', period='1m'):
     # Garder uniquement les colonnes nécessaires
     df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
     
-    # # Calcul des indicateurs techniques
+    # ----------Calcul des indicateurs techniques---------------------------
     df['ema_200'] = talib.EMA(df['Close'].values, timeperiod=200)
     df['ema_50'] = talib.EMA(df['Close'].values, timeperiod=50)
     df['atr'] = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=14)
@@ -208,7 +199,7 @@ def load_data(symbol, interval='1min', period='1m'):
         fastk_period=10, slowk_period=7, slowd_period=3)
     df['st_50_3'] = calculate_supertrend(df, atr_period=50, multiplier=3)['SuperTrend']
 
-
     chrono_load_data = time.time() - chrono_load_data
     print(f"Données chargées et prétraitées en {chrono_load_data:.2f} secondes")
+    
     return df

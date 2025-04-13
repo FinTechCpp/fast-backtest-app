@@ -104,10 +104,18 @@ def calculate_supertrend(data, atr_period=14, multiplier=3):
     return st
 
 
-def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=None, timezone='EU/Paris'):
+def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=None, timezone='Europe/Paris'):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
     et filtre les données en fonction de la période spécifiée.
+    
+    Args:
+        symbol (str): Symbole du marché à charger (ex: 'NDX')
+        interval (str): Intervalle des données (ex: '20secs')
+        period (str): Période de données à charger (ex: '1m', '6m', '1y')
+        start_date (str|datetime): Date de début au format 'DD/MM/YYYY' ou objet datetime
+        end_date (str|datetime): Date de fin au format 'DD/MM/YYYY' ou objet datetime
+        timezone (str): Fuseau horaire pour les données (ex: 'Europe/Paris')
     """
     chrono_load_data = time.time()
     print(f"Chargement des données pour {symbol}, intervalle {interval}, période {period}...")
@@ -124,17 +132,6 @@ def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=
         if not os.path.exists(market_data_path):
             raise ValueError(f"Le dossier 'marketData' n'existe pas dans le répertoire courant ni dans le parent.")
     
-    end_date = pd.Timestamp.now(tz=timezone) if end_date is None else pd.to_datetime(end_date, utc=True).tz_convert(timezone)
-    # Calculer la période de début et de fin
-    if period.endswith('y'):  # Années
-        start_date = end_date - pd.DateOffset(years=int(period[:-1]))
-    elif period.endswith('m'):  # Mois
-        start_date = end_date - pd.DateOffset(months=int(period[:-1]))
-    elif period.endswith('d'):  # Jours
-        start_date = end_date - pd.DateOffset(days=int(period[:-1]))
-    else:
-        raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
-    
     # Rechercher le fichier correspondant au symbole
     pattern = os.path.join(market_data_path, f"{symbol}_10secs_*.parquet")
     matching_files = glob.glob(pattern)
@@ -146,33 +143,92 @@ def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=
     save_path = max(matching_files, key=os.path.getctime)
     
     print(f"Fichier trouvé: {save_path}")
-    print(f"Filtrage des données pour la période {start_date.date()} à {end_date.date()}...")
     
-    # Charger tout le fichier Parquet
+    # Charger tout le fichier Parquet pour pouvoir identifier les limites de dates disponibles
     try:
-        df = pd.read_parquet(save_path)
-        print(f"Données chargées depuis {save_path}: {len(df)} barres de prix")
+        df = pd.read_parquet(save_path, engine='pyarrow')
+        df_original_len = len(df)
+        print(f"Données chargées depuis {save_path}: {df_original_len} barres de prix")
     except FileNotFoundError:
         raise ValueError(f"Le fichier {save_path} est introuvable.")
     except Exception as e:
         raise ValueError(f"Erreur lors du chargement des données : {e}")
     
-    # Vérifier que l'index est un DateTimeIndex
-    if not isinstance(df.index, pd.DatetimeIndex):
-        try:
-            df['date'] = pd.to_datetime(df['date'])  # Convertir la colonne 'date' en datetime
-            df = df.set_index('date')  # Définir 'date' comme index
-        except Exception as e:
-            raise ValueError(f"Erreur lors de la conversion de l'index en DateTimeIndex : {e}")
+    # Convertir la colonne 'date' en datetime avec timezone si elle existe
+    if 'date' in df.columns and not pd.api.types.is_datetime64_any_dtype(df['date']):
+        df['date'] = pd.to_datetime(df['date'])
     
-    # S'assurer que les dates de filtrage sont dans le même fuseau horaire que l'index
-    start_date = start_date.tz_convert(df.index.tz)
-    end_date = end_date.tz_convert(df.index.tz)
+    # S'assurer que la colonne 'date' a un fuseau horaire
+    if 'date' in df.columns and df['date'].dt.tz is None:
+        df['date'] = df['date'].dt.tz_localize('UTC').dt.tz_convert(timezone)
+    elif 'date' in df.columns:
+        df['date'] = df['date'].dt.tz_convert(timezone)
+    
+    # Si date est dans l'index, le convertir aussi
+    if pd.api.types.is_datetime64_any_dtype(df.index):
+        if df.index.tz is None:
+            df.index = df.index.tz_localize('UTC').tz_convert(timezone)
+        else:
+            df.index = df.index.tz_convert(timezone)
+    
+    # Définir la date de fin si elle n'est pas spécifiée
+    if end_date is None:
+        # Utiliser la dernière date disponible dans le dataframe
+        if 'date' in df.columns:
+            last_available_date = df['date'].max()
+        else:
+            last_available_date = df.index.max()
+        end_date = last_available_date
+        print(f"Date de fin automatique: {end_date}")
+    else:
+        # Convertir end_date si c'est une chaîne au format DD/MM/YYYY
+        if isinstance(end_date, str):
+            try:
+                # Essayer d'abord le format DD/MM/YYYY
+                end_date = pd.to_datetime(end_date, format="%d/%m/%Y")
+            except ValueError:
+                # Si ça échoue, laisser pandas détecter le format
+                end_date = pd.to_datetime(end_date)
+        
+        # Ajouter le fuseau horaire si nécessaire
+        if not hasattr(end_date, 'tzinfo') or end_date.tzinfo is None:
+            end_date = pd.Timestamp(end_date).tz_localize('UTC').tz_convert(timezone)
+    
+    # Calculer la date de début si elle n'est pas spécifiée
+    if start_date is None:
+        # Calculer la période de début à partir de end_date et period
+        if period.endswith('y'):  # Années
+            start_date = end_date - pd.DateOffset(years=int(period[:-1]))
+        elif period.endswith('m'):  # Mois
+            start_date = end_date - pd.DateOffset(months=int(period[:-1]))
+        elif period.endswith('d'):  # Jours
+            start_date = end_date - pd.DateOffset(days=int(period[:-1]))
+        else:
+            raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
+        print(f"Date de début calculée: {start_date}")
+    else:
+        # Convertir start_date si c'est une chaîne au format DD/MM/YYYY
+        if isinstance(start_date, str):
+            try:
+                # Essayer d'abord le format DD/MM/YYYY
+                start_date = pd.to_datetime(start_date, format="%d/%m/%Y")
+            except ValueError:
+                # Si ça échoue, laisser pandas détecter le format
+                start_date = pd.to_datetime(start_date)
+        
+        # Ajouter le fuseau horaire si nécessaire
+        if not hasattr(start_date, 'tzinfo') or start_date.tzinfo is None:
+            start_date = pd.Timestamp(start_date).tz_localize('UTC').tz_convert(timezone)
+    
+    print(f"Filtrage des données pour la période {start_date.strftime('%d/%m/%Y %H:%M')} à {end_date.strftime('%d/%m/%Y %H:%M')}...")
     
     # Filtrer les données en fonction de la période
+    if 'date' in df.columns:
+        df = df.set_index('date')
+    
     df = df[(df.index >= start_date) & (df.index <= end_date)]
-    print(f"Données filtrées pour la période {start_date.date()} à {end_date.date()}: {len(df)} barres de prix")
-        
+    print(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
+    
     # Vérifier les colonnes nécessaires
     required_columns = {'open', 'high', 'low', 'close', 'barCount'}
     if not required_columns.issubset(df.columns):

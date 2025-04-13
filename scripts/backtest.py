@@ -11,8 +11,8 @@ print(data.head())
 print(data.tail(100))
 
 
-strategy = BuyTrendFollowingBA
-bt = Backtest(data, strategy, cash=100000, commission=.00, exclusive_orders=True)
+strategy = SellTrendFollowingBA
+bt = Backtest(data, strategy, cash=100000, commission=.00, spread=0.0, exclusive_orders=True)
 stats = bt.run()
 print(stats)
 bt.plot(plot_volume=False, resample=False)

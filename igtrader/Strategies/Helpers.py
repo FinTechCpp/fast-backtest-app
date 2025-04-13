@@ -213,7 +213,6 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
     df = df[(df.index >= start_date) & (df.index <= end_date)]
     print(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
     
-    # Le reste de la fonction reste identique...
     # Vérifier les colonnes nécessaires
     required_columns = {'open', 'high', 'low', 'close', 'barCount'}
     if not required_columns.issubset(df.columns):
@@ -243,4 +242,6 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
     chrono_load_data = time.time() - chrono_load_data
     print(f"Données chargées et prétraitées en {chrono_load_data:.2f} secondes")
     
+    # Retire les lignes avec des valeurs NaN notamment pour les indicateurs techniques qui n'ont pas assez de périodes de temps antérieurs pour avoir une valeur
+    df = df.dropna(axis=0)
     return df

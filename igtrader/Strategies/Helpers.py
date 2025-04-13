@@ -104,7 +104,7 @@ def calculate_supertrend(data, atr_period=14, multiplier=3):
     return st
 
 
-def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=None, timezone='Europe/Paris'):
+def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='Europe/Paris'):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
     et filtre les données en fonction de la période spécifiée.
@@ -113,7 +113,6 @@ def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=
         symbol (str): Symbole du marché à charger (ex: 'NDX')
         interval (str): Intervalle des données (ex: '20secs')
         period (str): Période de données à charger (ex: '1m', '6m', '1y')
-        start_date (str|datetime): Date de début au format 'DD/MM/YYYY' ou objet datetime
         end_date (str|datetime): Date de fin au format 'DD/MM/YYYY' ou objet datetime
         timezone (str): Fuseau horaire pour les données (ex: 'Europe/Paris')
     """
@@ -194,31 +193,16 @@ def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=
         if not hasattr(end_date, 'tzinfo') or end_date.tzinfo is None:
             end_date = pd.Timestamp(end_date).tz_localize('UTC').tz_convert(timezone)
     
-    # Calculer la date de début si elle n'est pas spécifiée
-    if start_date is None:
-        # Calculer la période de début à partir de end_date et period
-        if period.endswith('y'):  # Années
-            start_date = end_date - pd.DateOffset(years=int(period[:-1]))
-        elif period.endswith('m'):  # Mois
-            start_date = end_date - pd.DateOffset(months=int(period[:-1]))
-        elif period.endswith('d'):  # Jours
-            start_date = end_date - pd.DateOffset(days=int(period[:-1]))
-        else:
-            raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
-        print(f"Date de début calculée: {start_date}")
+    # Calculer la date de début à partir de end_date et period
+    if period.endswith('y'):  # Années
+        start_date = end_date - pd.DateOffset(years=int(period[:-1]))
+    elif period.endswith('m'):  # Mois
+        start_date = end_date - pd.DateOffset(months=int(period[:-1]))
+    elif period.endswith('d'):  # Jours
+        start_date = end_date - pd.DateOffset(days=int(period[:-1]))
     else:
-        # Convertir start_date si c'est une chaîne au format DD/MM/YYYY
-        if isinstance(start_date, str):
-            try:
-                # Essayer d'abord le format DD/MM/YYYY
-                start_date = pd.to_datetime(start_date, format="%d/%m/%Y")
-            except ValueError:
-                # Si ça échoue, laisser pandas détecter le format
-                start_date = pd.to_datetime(start_date)
-        
-        # Ajouter le fuseau horaire si nécessaire
-        if not hasattr(start_date, 'tzinfo') or start_date.tzinfo is None:
-            start_date = pd.Timestamp(start_date).tz_localize('UTC').tz_convert(timezone)
+        raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
+    print(f"Date de début calculée: {start_date}")
     
     print(f"Filtrage des données pour la période {start_date.strftime('%d/%m/%Y %H:%M')} à {end_date.strftime('%d/%m/%Y %H:%M')}...")
     
@@ -229,6 +213,7 @@ def load_data(symbol, interval='20secs', period='1m', start_date=None, end_date=
     df = df[(df.index >= start_date) & (df.index <= end_date)]
     print(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
     
+    # Le reste de la fonction reste identique...
     # Vérifier les colonnes nécessaires
     required_columns = {'open', 'high', 'low', 'close', 'barCount'}
     if not required_columns.issubset(df.columns):

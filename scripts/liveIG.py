@@ -3,6 +3,7 @@ import time
 import pandas as pd
 
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
+from igtrader.Strategies.CrossEMA import CrossEMA
 from igtrader.WrapperIGAPI.Broker import Broker
 
 
@@ -33,9 +34,9 @@ def is_candle_complete(candle, resolution_minutes=1):
 def main():
     # Création des instances
     broker = Broker(epic="IX.D.NASDAQ.IFE.IP", working_resolution='1Min')
-    strategy = BuyTrendFollowing()
+    strategy = CrossEMA()
 
-    historical_candles = broker.fetch_historical_prices(numpoints=10)
+    historical_candles = broker.fetch_historical_prices(numpoints=50)
     if not is_candle_complete(historical_candles.iloc[-1]):
         historical_candles = historical_candles[:-1]
     strategy.initialize(historical_candles)
@@ -49,12 +50,12 @@ def main():
         time.sleep(seconds_to_wait)
 
         candle_previous, candle_current = broker.fetch_previous_and_current_candles()
-        print(f"Previous candle: {candle_previous}, is finished: {is_candle_complete(candle_previous)}")
-        print(f"Current candle: {candle_current}, is finished: {is_candle_complete(candle_current)}")
 
         if is_candle_complete(candle_current):
+            print(f"Last complete candle: {candle_current}")
             signal = strategy.update_candle(candle_current)
         elif is_candle_complete(candle_previous):
+            print(f"Last complete candle: {candle_previous}")
             signal = strategy.update_candle(candle_previous)
 
         print(f"Signal: {signal}")

@@ -231,6 +231,7 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
     df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
     
     # ----------Calcul des indicateurs techniques---------------------------
+    df['ema_20'] = talib.EMA(df['Close'].values, timeperiod=20)
     df['ema_200'] = talib.EMA(df['Close'].values, timeperiod=200)
     df['ema_50'] = talib.EMA(df['Close'].values, timeperiod=50)
     df['atr'] = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=14)

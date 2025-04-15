@@ -32,7 +32,20 @@ class BuyTrendFollowing(Strategy):
         self.sl_distance = stop_loss_distance
     
     def should_long(self):
-        return True
+        k_current, d_current = self.candles['stoch_k'], self.candles['stoch_d']
+
+        if self.k_previous is None or self.d_previous is None:
+            self.k_previous = k_current
+            self.d_previous = d_current
+            return False
+        
+        should_go_long = k_current > d_current and self.k_previous < self.d_previous
+
+        # Mettre à jour les valeurs précédentes
+        self.k_previous = k_current
+        self.d_previous = d_current
+
+        return should_go_long
 
     def should_short(self):
         return False
@@ -53,24 +66,6 @@ class BuyTrendFollowing(Strategy):
         # Vérifie si le prix est au-dessus du SuperTrend
         return self.price > self.candles['st_50_3']
     
-    def cross_stoch_filter(self):
-        # Vérifie si le Stochastic %K croise au-dessus de %D
-        k_current, d_current = self.candles['stoch_k'], self.candles['stoch_d']
-
-        if self.k_previous is None or self.d_previous is None:
-            self.k_previous = k_current
-            self.d_previous = d_current
-            return False
-        
-        filt = k_current > d_current and self.k_previous < self.d_previous
-
-        # Mettre à jour les valeurs précédentes
-        self.k_previous = k_current
-        self.d_previous = d_current
-
-
-        return filt
-    
     def stoch_sup_50_filter(self):
         # Vérifie si le Stochastic %D est supérieur à 50
         return self.candles['stoch_d'] > 50
@@ -79,7 +74,6 @@ class BuyTrendFollowing(Strategy):
         return [
             self.ema_filter,
             self.supertrend_filter,
-            self.cross_stoch_filter,
             self.stoch_sup_50_filter
         ]
     
@@ -211,8 +205,8 @@ class BuyTrendFollowingBA(BacktestingStrategy):
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
         elif signal['action'] == 'BUY':
-            self.position.close()  # Fermer la position existante si elle existe
+            # self.position.close()
             self.buy(sl=candle['Close'] - signal['stop_loss'], tp=candle['Close'] + signal['take_profit'], size=signal['quantity'])
         elif signal['action'] == 'SELL':
-            self.position.close()
+            # self.position.close()
             self.sell(sl=candle['Close'] + signal['stop_loss'], tp=candle['Close'] - signal['take_profit'], size=signal['quantity'])

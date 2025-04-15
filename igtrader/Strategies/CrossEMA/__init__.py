@@ -20,8 +20,11 @@ class CrossEMA(Strategy):
         self.trading_days = [0, 1, 2, 3, 4]  # Lundi à Vendredi
 
 
-        self.previous_ema_20 = None
-        self.previous_ema_50 = None
+        self.previous_ema_20_l = None
+        self.previous_ema_50_l = None
+
+        self.previous_ema_20_s = None
+        self.previous_ema_50_s = None
 
     def should_long(self):
         """
@@ -30,17 +33,17 @@ class CrossEMA(Strategy):
         current_ema_20 = self.candles['ema_20']
         current_ema_50 = self.candles['ema_50']
 
-        if self.previous_ema_20 is None or self.previous_ema_50 is None:
-            self.previous_ema_20 = current_ema_20
-            self.previous_ema_50 = current_ema_50
+        if self.previous_ema_20_l is None or self.previous_ema_50_l is None:
+            self.previous_ema_20_l = current_ema_20
+            self.previous_ema_50_l = current_ema_50
             return False
         
-        should_go_long = current_ema_20 > current_ema_50 and self.previous_ema_20 < self.previous_ema_50
-        self.previous_ema_20 = current_ema_20
-        self.previous_ema_50 = current_ema_50
+        should_go_long = current_ema_20 > current_ema_50 and self.previous_ema_20_l < self.previous_ema_50_l
+        self.previous_ema_20_l = current_ema_20
+        self.previous_ema_50_l = current_ema_50
 
 
-        print(f"current emas : {current_ema_20}, {current_ema_50}")
+        # print(f"current emas : {current_ema_20}, {current_ema_50}")
 
         return should_go_long
     
@@ -51,14 +54,14 @@ class CrossEMA(Strategy):
         current_ema_20 = self.candles['ema_20']
         current_ema_50 = self.candles['ema_50']
 
-        if self.previous_ema_20 is None or self.previous_ema_50 is None:
-            self.previous_ema_20 = current_ema_20
-            self.previous_ema_50 = current_ema_50
+        if self.previous_ema_20_s is None or self.previous_ema_50_s is None:
+            self.previous_ema_20_s = current_ema_20
+            self.previous_ema_50_s = current_ema_50
             return False
         
-        should_go_short = current_ema_20 < current_ema_50 and self.previous_ema_20 > self.previous_ema_50
-        self.previous_ema_20 = current_ema_20
-        self.previous_ema_50 = current_ema_50
+        should_go_short = current_ema_20 < current_ema_50 and self.previous_ema_20_s > self.previous_ema_50_s
+        self.previous_ema_20_s = current_ema_20
+        self.previous_ema_50_s = current_ema_50
 
         return should_go_short
     
@@ -163,8 +166,10 @@ class CrossEMABA(BacktestingStrategy):
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
         elif signal['action'] == 'BUY':
+            print("BUY")
             self.position.close()  # Fermer la position existante si elle existe
             self.buy(sl=candle['Close'] - signal['stop_loss'], tp=candle['Close'] + signal['take_profit'], size=signal['quantity'])
         elif signal['action'] == 'SELL':
+            print("SELL")
             self.position.close()
             self.sell(sl=candle['Close'] + signal['stop_loss'], tp=candle['Close'] - signal['take_profit'], size=signal['quantity'])

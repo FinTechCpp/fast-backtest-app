@@ -32,7 +32,20 @@ class SellTrendFollowing(Strategy):
         return False
 
     def should_short(self):
-        return True
+        k_current, d_current = self.candles['stoch_k'], self.candles['stoch_d']
+
+        if self.k_previous is None or self.d_previous is None:
+            self.k_previous = k_current
+            self.d_previous = d_current
+            return False
+        
+        should_go_long = k_current < d_current and self.k_previous > self.d_previous
+
+        # Mettre à jour les valeurs précédentes
+        self.k_previous = k_current
+        self.d_previous = d_current
+
+        return should_go_long
     
     def go_long(self):
         raise NotImplementedError("La stratégie SellTrendFollowingStrategy ne supporte pas l'achat.")
@@ -48,24 +61,6 @@ class SellTrendFollowing(Strategy):
     def supertrend_filter(self):
         return self.price < self.candles['st_50_3']
     
-    def cross_stoch_filter(self):
-        # Vérifie si le Stochastic %K croise au-dessus de %D
-        k_current, d_current = self.candles['stoch_k'], self.candles['stoch_d']
-
-        if self.k_previous is None or self.d_previous is None:
-            self.k_previous = k_current
-            self.d_previous = d_current
-            return False
-        
-        filt = k_current < d_current and self.k_previous > self.d_previous
-
-        # Mettre à jour les valeurs précédentes
-        self.k_previous = k_current
-        self.d_previous = d_current
-
-
-        return filt
-    
     def stoch_sup_50_filter(self):
         return self.candles['stoch_d'] < 50
     
@@ -73,7 +68,6 @@ class SellTrendFollowing(Strategy):
         return [
             self.ema_filter,
             self.supertrend_filter,
-            self.cross_stoch_filter,
             self.stoch_sup_50_filter
         ]
 
@@ -154,6 +148,18 @@ class SellTrendFollowingBA(BacktestingStrategy):
     """
     Adapter pour la stratégie de backtesting.
     """
+    # def __init__(self, broker, data,**kwargs):
+    #     super().__init__(broker, data, **kwargs)
+
+    #     print(**kwargs)
+
+    #     self.stop_loss_distance = kwargs.get('stop_loss_distance', 20)
+    #     self.take_profit_distance = kwargs.get('take_profit_distance', 30)
+
+    #     print(f"SellTrendFollowingBA : stop_loss_distance = {self.stop_loss_distance}, take_profit_distance = {self.take_profit_distance}")
+
+
+
     def init(self):
         self.my_strategy = SellTrendFollowing()
 
@@ -206,8 +212,8 @@ class SellTrendFollowingBA(BacktestingStrategy):
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
         elif signal['action'] == 'BUY':
-            self.position.close()  # Fermer la position existante si elle existe
+            # self.position.close()
             self.buy(sl=candle['Close'] - signal['stop_loss'], tp=candle['Close'] + signal['take_profit'], size=signal['quantity'])
         elif signal['action'] == 'SELL':
-            self.position.close()
+            # self.position.close()
             self.sell(sl=candle['Close'] + signal['stop_loss'], tp=candle['Close'] - signal['take_profit'], size=signal['quantity'])

@@ -179,7 +179,7 @@ class Strategy(metaclass=ABCMeta):
         return value
 
     @abstractmethod
-    def init(self):
+    def init(self, **kwargs):
         """
         Initialize the strategy.
         Override this method.
@@ -866,7 +866,7 @@ class _Broker:
         reprocess_orders = False
 
         # Process orders
-        for order in list(self.orders):  # type: Order
+        for order in list(self.orders):
 
             # Related SL/TP order was already removed
             if order not in self.orders:
@@ -1177,6 +1177,7 @@ class Backtest:
                  hedging=False,
                  exclusive_orders=False,
                  finalize_trades=False,
+                 strategy_kwargs: Optional[dict] = None
                  ):
         if not (isinstance(strategy, type) and issubclass(strategy, Strategy)):
             raise TypeError('`strategy` must be a Strategy sub-type')
@@ -1239,6 +1240,7 @@ class Backtest:
         self._strategy = strategy
         self._results: Optional[pd.Series] = None
         self._finalize_trades = bool(finalize_trades)
+        self._strategy_kwargs = strategy_kwargs or {}
 
     def run(self, **kwargs) -> pd.Series:
         """
@@ -1294,7 +1296,7 @@ class Backtest:
         broker: _Broker = self._broker(data=data)
         strategy: Strategy = self._strategy(broker, data, kwargs)
 
-        strategy.init()
+        strategy.init(**self._strategy_kwargs)
         data._update()  # Strategy.init might have changed/added to data.df
 
         # Indicators used in Strategy.next()

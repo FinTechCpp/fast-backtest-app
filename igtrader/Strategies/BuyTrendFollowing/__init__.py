@@ -154,8 +154,8 @@ class BuyTrendFollowingBA(BacktestingStrategy):
     """
     Adapter pour la stratégie de backtesting.
     """
-    def init(self):
-        self.my_strategy = BuyTrendFollowing()
+    def init(self, **kwargs):
+        self.my_strategy = BuyTrendFollowing(**kwargs)
 
         def stochastic():
             k = self.data.df['stoch_k']

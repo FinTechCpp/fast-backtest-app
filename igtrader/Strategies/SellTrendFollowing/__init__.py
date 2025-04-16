@@ -148,20 +148,8 @@ class SellTrendFollowingBA(BacktestingStrategy):
     """
     Adapter pour la stratégie de backtesting.
     """
-    # def __init__(self, broker, data,**kwargs):
-    #     super().__init__(broker, data, **kwargs)
-
-    #     print(**kwargs)
-
-    #     self.stop_loss_distance = kwargs.get('stop_loss_distance', 20)
-    #     self.take_profit_distance = kwargs.get('take_profit_distance', 30)
-
-    #     print(f"SellTrendFollowingBA : stop_loss_distance = {self.stop_loss_distance}, take_profit_distance = {self.take_profit_distance}")
-
-
-
-    def init(self):
-        self.my_strategy = SellTrendFollowing()
+    def init(self, **kwargs):
+        self.my_strategy = SellTrendFollowing(**kwargs)
 
         def stochastic():
             k = self.data.df['stoch_k']

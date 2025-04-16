@@ -130,8 +130,8 @@ class CrossEMABA(BacktestingStrategy):
     """
     Adapter pour la stratégie de backtesting.
     """
-    def init(self):
-        self.my_strategy = CrossEMA()
+    def init(self, **kwargs):
+        self.my_strategy = CrossEMA(**kwargs)
 
         self.ema_20 = self.I(lambda: self.data.df['ema_20'], name='EMA 20', overlay=True, color='blue')
         self.ema_50 = self.I(lambda: self.data.df['ema_50'], name='EMA 50', overlay=True, color='red')
@@ -160,16 +160,13 @@ class CrossEMABA(BacktestingStrategy):
 
         signal = self.my_strategy.update_candle(candle)
 
-        # Vérifier si un signal d'achat ou de vente est généré
         if signal is None:
             return
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
         elif signal['action'] == 'BUY':
-            print("BUY")
             self.position.close()  # Fermer la position existante si elle existe
             self.buy(sl=candle['Close'] - signal['stop_loss'], tp=candle['Close'] + signal['take_profit'], size=signal['quantity'])
         elif signal['action'] == 'SELL':
-            print("SELL")
             self.position.close()
             self.sell(sl=candle['Close'] + signal['stop_loss'], tp=candle['Close'] - signal['take_profit'], size=signal['quantity'])

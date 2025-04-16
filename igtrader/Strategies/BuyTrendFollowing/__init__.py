@@ -62,7 +62,7 @@ class BuyTrendFollowing(Strategy):
     
     def stoch_sup_50_filter(self):
         # Vérifie si le Stochastic %D est supérieur à 50
-        return self.candles['stoch_d'] > 50
+        return self.candles['stoch_k'] < 50
     
     def filters(self):
         return [

@@ -59,7 +59,7 @@ class SellTrendFollowing(Strategy):
         return self.price < self.candles['st_50_3']
     
     def stoch_sup_50_filter(self):
-        return self.candles['stoch_d'] < 50
+        return self.candles['stoch_k'] > 50
     
     def filters(self):
         return [

@@ -10,15 +10,15 @@ class Strategy(ABC):
     Classe mère pour les stratégies de trading.
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.name = None
         self.symbol = None
         self.exchange = None
         self.timeframe = None
 
-        self.trading_from = time(14, 30) # 14:30 UTC
-        self.trading_to = time(21, 0) # 20:00 UTC
-        self.trading_days = [0, 1, 2, 3, 4] # Lundi à Vendredi
+        self.trading_from = kwargs.get('trading_from', time(14, 30))
+        self.trading_to = kwargs.get('trading_to', time(21, 0))
+        self.trading_days = kwargs.get('trading_days', [0, 1, 2, 3, 4])  # Lundi à Vendredi
 
         self.buy = None
         self.sell = None

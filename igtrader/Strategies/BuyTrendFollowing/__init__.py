@@ -2,20 +2,17 @@ from ..Helpers import calculate_supertrend
 from ..Strategy import Strategy
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 
-
 import numpy as np
 from datetime import time
 import talib
-
 
 
 class BuyTrendFollowing(Strategy):
     """
     Stratégie de suivi de tendance à l'achat.
     """
-    def __init__(self, stop_loss_distance=20, take_profit_distance=30):
-        super().__init__()
-
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.name = "BuyTrendFollowingStrategy"
         self.symbol = None
@@ -25,11 +22,8 @@ class BuyTrendFollowing(Strategy):
         self.k_previous = None
         self.d_previous = None
 
-        self.trading_from = time(15, 0)
-        self.trading_to = time(20, 0)
-
-        self.tp_distance = take_profit_distance
-        self.sl_distance = stop_loss_distance
+        self.tp_distance = kwargs.get('take_profit_distance', 30)
+        self.sl_distance = kwargs.get('stop_loss_distance', 20)
     
     def should_long(self):
         k_current, d_current = self.candles['stoch_k'], self.candles['stoch_d']

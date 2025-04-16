@@ -11,8 +11,8 @@ class SellTrendFollowing(Strategy):
     """
     Stratégie de suivi de tendance à l'achat.
     """
-    def __init__(self, stop_loss_distance=20, take_profit_distance=30):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.name = "SellTrendFollowingStrategy"
         self.symbol = None
@@ -22,11 +22,8 @@ class SellTrendFollowing(Strategy):
         self.k_previous = None
         self.d_previous = None
 
-        self.trading_from = time(15, 0)
-        self.trading_to = time(20, 0)
-
-        self.tp_distance = take_profit_distance
-        self.sl_distance = stop_loss_distance
+        self.tp_distance = kwargs.get('take_profit_distance', 30)
+        self.sl_distance = kwargs.get('stop_loss_distance', 20)
     
     def should_long(self):
         return False

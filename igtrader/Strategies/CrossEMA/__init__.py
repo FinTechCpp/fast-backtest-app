@@ -8,16 +8,10 @@ from datetime import time
 
 
 class CrossEMA(Strategy):
-    def __init__(self):
-        super().__init__()
-
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.name = "TemplateStrategy"
-
-        self.trading_from = time(11, 0)
-        self.trading_to = time(20, 0)
-
-        self.trading_days = [0, 1, 2, 3, 4]  # Lundi à Vendredi
 
 
         self.previous_ema_20_l = None

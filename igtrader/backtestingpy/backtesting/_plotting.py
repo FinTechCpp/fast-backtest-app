@@ -694,7 +694,7 @@ return this.labels[index] || "";
 
         f.add_tools(linked_crosshair)
         wheelzoom_tool = next(wz for wz in f.tools if isinstance(wz, WheelZoomTool))
-        wheelzoom_tool.maintain_focus = False
+        wheelzoom_tool.maintain_focus = True
 
     kwargs = {}
     if plot_width is None:

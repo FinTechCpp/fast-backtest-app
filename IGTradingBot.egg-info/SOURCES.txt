@@ -9,6 +9,7 @@ igtrader/Strategies/Helpers.py
 igtrader/Strategies/Strategy.py
 igtrader/Strategies/__init__.py
 igtrader/Strategies/BuyTrendFollowing/__init__.py
+igtrader/Strategies/CrossEMA/__init__.py
 igtrader/Strategies/SellTrendFollowing/__init__.py
 igtrader/WrapperIGAPI/Broker.py
 igtrader/WrapperIGAPI/__init__.py

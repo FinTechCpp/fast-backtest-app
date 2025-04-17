@@ -1,6 +1,7 @@
 import pandas as pd
 from lightweight_charts import Chart
 import os
+
 os.environ["PYWEBVIEW_GUI"] = "qt"
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA
 from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
@@ -81,33 +82,36 @@ data['time'] = data['time'].dt.tz_convert(args.timezone)
 # Sort the datag
 data.sort_values('time', inplace=True)
 
-# ...existing code...
-
 # Create main chart with volume disabled
-chart = Chart(width=1900, height=800, title=f"Backtest Results - {args.strategy} on {args.symbol}", inner_height=0.7)  # Set inner_height to leave room for subcharts
+chart = Chart(width=1900, 
+              height=800, 
+              title=f"Backtest Results - {args.strategy} on {args.symbol} in {args.interval}",
+              inner_height=0.7,
+              toolbox=True)  # Set inner_height to leave room for subcharts
+#chart.layout(background_color='#ffffff')
 chart.set(data)
 
 # Add EMAs as line series
 if 'ema_20' in data.columns:
-    ema_20_line = chart.create_line(name='EMA 20', color='blue', width=1)
+    ema_20_line = chart.create_line(name='EMA 20', color='blue', width=1, price_line=False)
     ema_20_df = data[['time', 'ema_20']].copy()
     ema_20_df.rename(columns={'ema_20': 'EMA 20'}, inplace=True)
     ema_20_line.set(ema_20_df)
 
 if 'ema_50' in data.columns:
-    ema_50_line = chart.create_line(name='EMA 50', color='purple', width=1)
+    ema_50_line = chart.create_line(name='EMA 50', color='purple', width=1, price_line=False)
     ema_50_df = data[['time', 'ema_50']].copy()
     ema_50_df.rename(columns={'ema_50': 'EMA 50'}, inplace=True)
     ema_50_line.set(ema_50_df)
 
 if 'ema_200' in data.columns:
-    ema_200_line = chart.create_line(name='EMA 200', color='red', width=1.5)
+    ema_200_line = chart.create_line(name='EMA 200', color='red', width=1.5, price_line=False)
     ema_200_df = data[['time', 'ema_200']].copy()
     ema_200_df.rename(columns={'ema_200': 'EMA 200'}, inplace=True)
     ema_200_line.set(ema_200_df)
     
 if 'st_50_3' in data.columns:
-    st_line = chart.create_line(name='Supertrend', color='orange', width=1)
+    st_line = chart.create_line(name='Supertrend', color='orange', width=1, price_line=False)
     st_df = data[['time', 'st_50_3']].copy()
     st_df.rename(columns={'st_50_3': 'Supertrend'}, inplace=True)
     st_line.set(st_df)
@@ -116,29 +120,31 @@ if 'st_50_3' in data.columns:
 if 'stoch_k' in data.columns and 'stoch_d' in data.columns:
     # Create stochastic subchart
     stoch_chart = chart.create_subchart(height=0.15, width=1, position="bottom", sync=True)
-    
+    #stoch_chart.layout(background_color='#ffffff')
+    stoch_chart.time_scale(visible=False)  # Hide time scale for stochastic chart
     # Add stochastic lines
-    stoch_k_line = stoch_chart.create_line(name='Stoch K', color='blue', width=1)
+    stoch_k_line = stoch_chart.create_line(name='Stoch K', color='blue', width=1, price_line=False)
     stoch_k_df = data[['time', 'stoch_k']].copy()
     stoch_k_df.rename(columns={'stoch_k': 'Stoch K'}, inplace=True)
     stoch_k_line.set(stoch_k_df)
     
-    stoch_d_line = stoch_chart.create_line(name='Stoch D', color='red', width=1)
+    stoch_d_line = stoch_chart.create_line(name='Stoch D', color='red', width=1, price_line=False)
     stoch_d_df = data[['time', 'stoch_d']].copy()
     stoch_d_df.rename(columns={'stoch_d': 'Stoch D'}, inplace=True)
     stoch_d_line.set(stoch_d_df)
     
     # Add overbought/oversold levels
-    stoch_chart.horizontal_line(price=80, color='gray', width=1, style='dashed')
-    stoch_chart.horizontal_line(price=20, color='gray', width=1, style='dashed')
+    stoch_chart.horizontal_line(price=80, color='green', width=1, style='dashed', text='Overbought')
+    stoch_chart.horizontal_line(price=20, color='red', width=1, style='dashed', text='Oversold')
 
 # Add ATR indicator as a subchart
 if 'atr' in data.columns:
     # Create ATR subchart
     atr_chart = chart.create_subchart(height=0.15, width=1, position="bottom", sync=True)
-    
+    #atr_chart.layout(background_color='#f7f7f7')  # Slightly darker gray/white
+    atr_chart.time_scale(visible=False)  # Hide time scale for ATR chart
     # Add ATR line
-    atr_line = atr_chart.create_line(name='ATR', color='green', width=1)
+    atr_line = atr_chart.create_line(name='ATR', color='green', width=1, price_line=False)
     atr_df = data[['time', 'atr']].copy()
     atr_df.rename(columns={'atr': 'ATR'}, inplace=True)
     atr_line.set(atr_df)

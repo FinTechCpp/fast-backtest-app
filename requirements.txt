@@ -50,3 +50,4 @@ ib_async==1.0.3
 pyarrow==19.0.1
 fastparquet==2024.11.0
 bokeh==3.7.2
+QtPy==2.4.3

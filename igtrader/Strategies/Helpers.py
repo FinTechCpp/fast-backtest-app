@@ -214,7 +214,7 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
     print(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
     
     # Vérifier les colonnes nécessaires
-    required_columns = {'open', 'high', 'low', 'close', 'barCount'}
+    required_columns = {'open', 'high', 'low', 'close'}
     if not required_columns.issubset(df.columns):
         raise ValueError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(df.columns)}")
     
@@ -223,12 +223,11 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
         'open': 'Open',
         'high': 'High',
         'low': 'Low',
-        'close': 'Close',
-        'barCount': 'Volume'  # Utiliser 'barCount' comme substitut pour 'Volume'
+        'close': 'Close'
     })
     
     # Garder uniquement les colonnes nécessaires
-    df = df[['Open', 'High', 'Low', 'Close', 'Volume']]
+    df = df[['Open', 'High', 'Low', 'Close']]
     
     # ----------Calcul des indicateurs techniques---------------------------
     df['ema_20'] = talib.EMA(df['Close'].values, timeperiod=20)

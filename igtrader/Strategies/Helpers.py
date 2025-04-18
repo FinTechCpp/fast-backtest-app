@@ -4,6 +4,9 @@ import talib
 import time
 import os
 import glob
+import re 
+import logging
+
 
 def calculate_supertrend(data, atr_period=14, multiplier=3):
     """
@@ -104,7 +107,7 @@ def calculate_supertrend(data, atr_period=14, multiplier=3):
     return st
 
 
-def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='Europe/Paris'):
+def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timezone='Europe/Paris'):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
     et filtre les données en fonction de la période spécifiée.
@@ -117,22 +120,25 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
         timezone (str): Fuseau horaire pour les données (ex: 'Europe/Paris')
     """
     chrono_load_data = time.time()
-    print(f"Chargement des données pour {symbol}, intervalle {interval}, période {period}...")
+    logging.info(f"Chargement des données pour {symbol}, intervalle {interval}, période {period}...")
     
-    # Vérifier si le dossier 'marketData' existe dans le répertoire actuel ou dans le parent
+    # Recherche du dossier 'marketData' dans plusieurs emplacements
     current_directory = os.getcwd()
-    market_data_path = os.path.join(current_directory, 'marketData')
-    
-    if not os.path.exists(market_data_path):
-        # Si 'marketData' n'existe pas dans le répertoire courant, vérifier dans le parent
-        parent_directory = os.path.dirname(current_directory)
-        market_data_path = os.path.join(parent_directory, 'marketData')
-        
-        if not os.path.exists(market_data_path):
-            raise ValueError(f"Le dossier 'marketData' n'existe pas dans le répertoire courant ni dans le parent.")
+    possible_paths = [
+        os.path.join(current_directory, 'marketData'),
+        os.path.join(os.path.dirname(current_directory), 'marketData'),
+        os.path.join(os.getenv('BOT_REPO_PATH', ''), 'marketData'),
+    ]
+    market_data_path = None
+    for p in possible_paths:
+        if p and os.path.exists(p):
+            market_data_path = p
+            break
+    if market_data_path is None:
+        raise ValueError(f"Le dossier 'marketData' n'a pas été trouvé dans : {possible_paths}")
     
     # Rechercher le fichier correspondant au symbole
-    pattern = os.path.join(market_data_path, f"{symbol}_10secs_*.parquet")
+    pattern = os.path.join(market_data_path, f"{symbol}_{interval}_*.parquet")
     matching_files = glob.glob(pattern)
     
     if not matching_files:
@@ -141,13 +147,13 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
     # Utiliser le fichier le plus récent si plusieurs fichiers correspondent
     save_path = max(matching_files, key=os.path.getctime)
     
-    print(f"Fichier trouvé: {save_path}")
+    logging.debug(f"Fichier trouvé: {save_path}")
     
     # Charger tout le fichier Parquet pour pouvoir identifier les limites de dates disponibles
     try:
         df = pd.read_parquet(save_path, engine='pyarrow')
         df_original_len = len(df)
-        print(f"Données chargées depuis {save_path}: {df_original_len} barres de prix")
+        logging.debug(f"Données chargées depuis {save_path}: {df_original_len} barres de prix")
     except FileNotFoundError:
         raise ValueError(f"Le fichier {save_path} est introuvable.")
     except Exception as e:
@@ -178,7 +184,7 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
         else:
             last_available_date = df.index.max()
         end_date = last_available_date
-        print(f"Date de fin automatique: {end_date}")
+        logging.debug(f"Date de fin automatique: {end_date}")
     else:
         # Convertir end_date si c'est une chaîne au format DD/MM/YYYY
         if isinstance(end_date, str):
@@ -202,22 +208,22 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
         start_date = end_date - pd.DateOffset(days=int(period[:-1]))
     else:
         raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
-    print(f"Date de début calculée: {start_date}")
+    logging.debug(f"Date de début calculée: {start_date}")
     
-    print(f"Filtrage des données pour la période {start_date.strftime('%d/%m/%Y %H:%M')} à {end_date.strftime('%d/%m/%Y %H:%M')}...")
+    logging.debug(f"Filtrage des données pour la période {start_date.strftime('%d/%m/%Y %H:%M')} à {end_date.strftime('%d/%m/%Y %H:%M')}...")
     
     # Filtrer les données en fonction de la période
     if 'date' in df.columns:
         df = df.set_index('date')
     
     df = df[(df.index >= start_date) & (df.index <= end_date)]
-    print(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
+    logging.debug(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
     
     # Vérifier les colonnes nécessaires
     required_columns = {'open', 'high', 'low', 'close'}
     if not required_columns.issubset(df.columns):
         raise ValueError(f"Les colonnes requises sont manquantes dans les données : {required_columns - set(df.columns)}")
-    
+        
     # Renommer les colonnes pour correspondre au format attendu
     df = df.rename(columns={
         'open': 'Open',
@@ -240,8 +246,154 @@ def load_data(symbol, interval='20secs', period='1m', end_date=None, timezone='E
     df['st_50_3'] = calculate_supertrend(df, atr_period=50, multiplier=3)['SuperTrend']
 
     chrono_load_data = time.time() - chrono_load_data
-    print(f"Données chargées et prétraitées en {chrono_load_data:.2f} secondes")
+    logging.info(f"Données chargées et prétraitées en {chrono_load_data:.2f} secondes")
+        
+    return df.dropna()
+
+def resample_ohlc(data, timeframe):
+    """
+    Resample an OHLC DataFrame to a new timeframe, aligning to standard calendar intervals.
+    The function first trims the DataFrame to start at a timestamp that aligns with the requested interval.
     
-    # Retire les lignes avec des valeurs NaN notamment pour les indicateurs techniques qui n'ont pas assez de périodes de temps antérieurs pour avoir une valeur
-    df = df.dropna(axis=0)
-    return df
+    Args:
+        data (pd.DataFrame): Must have a DatetimeIndex (or a 'date' column) 
+                            and columns ['Open','High','Low','Close'] or ['open','high','low','close'].
+        timeframe (str|int): pandas offset alias (e.g. '20secs','1T') or integer seconds.
+    Returns:
+        pd.DataFrame: resampled OHLC DataFrame aligned to standard intervals.
+    """
+    df = data.copy()
+    
+    # Convert date column to index if it exists
+    if not isinstance(df.index, pd.DatetimeIndex):
+        if 'date' in df.columns:
+            df = df.set_index('date')
+        else:
+            df.index = pd.to_datetime(df.index)
+    
+    # Ensure DatetimeIndex has timezone if original data had it
+    if df.index.tz is None and hasattr(data.index, 'tz') and data.index.tz is not None:
+        df.index = df.index.tz_localize(data.index.tz)
+    
+    # Parse the timeframe into seconds for alignment calculation
+    if isinstance(timeframe, int):
+        seconds = timeframe
+        rule = f'{timeframe}s'
+    else:
+        rule = str(timeframe).strip()
+        # Extract the numeric value and unit
+        match = re.match(r'(\d+)([a-zA-Z]+)', rule)
+        if match:
+            value = int(match.group(1))
+            unit = match.group(2).lower()
+            
+            # Convert to seconds based on the unit
+            if re.match(r'secs?', unit):
+                seconds = value
+            elif re.match(r'mins?', unit):
+                seconds = value * 60
+            elif re.match(r'hrs?|hours?', unit):
+                seconds = value * 3600
+            else:
+                seconds = value  # Default if we can't determine
+        else:
+            seconds = 1  # Default if we can't parse
+        
+        # Map seconds, minutes and hours to pandas frequencies
+        rule = re.sub(r'secs?$', 's', rule, flags=re.IGNORECASE)
+        rule = re.sub(r'mins?$', 'T', rule, flags=re.IGNORECASE)
+        rule = re.sub(r'hrs?$|hours?$', 'H', rule, flags=re.IGNORECASE)
+    
+    # Find the first timestamp that aligns with the interval
+    first_ts = df.index[0]
+    epoch_seconds = int(first_ts.timestamp())
+    remainder = epoch_seconds % seconds
+    
+    if remainder != 0:
+        # Calculate the next aligned timestamp
+        aligned_epoch = epoch_seconds - remainder + seconds
+        aligned_ts = pd.Timestamp(aligned_epoch, unit='s', tz=first_ts.tz)
+        
+        # Trim the DataFrame to start from this aligned timestamp
+        df = df[df.index >= aligned_ts]
+    
+    # Detect column name format (uppercase or lowercase)
+    has_uppercase = all(col in df.columns for col in ['Open', 'High', 'Low', 'Close'])
+    has_lowercase = all(col in df.columns for col in ['open', 'high', 'low', 'close'])
+    
+    # Build aggregation dictionary for all columns
+    if has_uppercase:
+        ohlc_dict = {'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}
+        # Add other columns to the aggregation dictionary with 'last' as default
+        for col in df.columns:
+            if col not in ['Open', 'High', 'Low', 'Close']:
+                ohlc_dict[col] = 'last'
+    elif has_lowercase:
+        ohlc_dict = {'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last'}
+        # Add other columns to the aggregation dictionary with 'last' as default
+        for col in df.columns:
+            if col not in ['open', 'high', 'low', 'close']:
+                ohlc_dict[col] = 'last'
+    else:
+        raise ValueError("DataFrame must have OHLC columns (either uppercase or lowercase)")
+    
+    # Resample the aligned DataFrame
+    resampled = df.resample(rule).agg(ohlc_dict)
+    
+    # Drop any NaN rows
+    resampled = resampled.dropna()
+    
+    return resampled
+
+def to_heikin_ashi(df):
+    if df.empty:
+         logging.warning("Input DataFrame is empty. Returning an empty DataFrame.")
+         return pd.DataFrame(columns=['Open', 'High', 'Low', 'Close'], index=df.index)
+
+    # If caller passed in a 'time' (or 'Time') column, make it the DatetimeIndex
+    if 'time' in df.columns:
+        df['time'] = pd.to_datetime(df['time'])
+        df = df.set_index('time')
+    elif 'Time' in df.columns:
+        df['Time'] = pd.to_datetime(df['Time'])
+        df = df.set_index('Time')
+
+    # Normalize column names to uppercase for consistency
+    df.columns = [col.capitalize() for col in df.columns]
+    
+    # Drop rows with NaN values in OHLC columns
+    required_columns = {'Open', 'High', 'Low', 'Close'}
+    if not required_columns.issubset(df.columns):
+        raise ValueError(f"Input DataFrame must contain columns: {required_columns}")
+    
+    df = df.dropna(subset=required_columns)
+    if df.empty:
+        logging.warning("Input DataFrame has no valid OHLC data after dropping NaN values.")
+        return pd.DataFrame(columns=['Open', 'High', 'Low', 'Close'], index=df.index)
+    
+    data = df.copy()
+    # Detect case
+    o, h, l, c = (
+        ('Open', 'High', 'Low', 'Close')
+        if {'Open', 'High', 'Low', 'Close'}.issubset(data.columns)
+        else ('open', 'high', 'low', 'close')
+    )
+    # HA close
+    ha_close = (data[o] + data[h] + data[l] + data[c]) / 4.0
+    # HA open
+    ha_open = pd.Series(index=data.index, dtype=float)
+    ha_open.iloc[0] = (data[o].iloc[0] + data[c].iloc[0]) / 2.0
+    for i in range(1, len(data)):
+        ha_open.iloc[i] = (ha_open.iloc[i - 1] + ha_close.iloc[i - 1]) / 2.0
+    # HA high & low
+    ha_high = pd.concat([data[h], ha_open, ha_close], axis=1).max(axis=1)
+    ha_low = pd.concat([data[l], ha_open, ha_close], axis=1).min(axis=1)
+    # Assemble result
+    ha = pd.DataFrame({
+        'Open': ha_open,
+        'High': ha_high,
+        'Low': ha_low,
+        'Close': ha_close
+    }, index=data.index)
+    
+    return ha

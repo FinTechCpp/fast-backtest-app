@@ -162,13 +162,13 @@ for i, trade in trades.iterrows():
     # Debug the exact times to compare with chart data
     print(f"Trade {i}: Entry time: {entry_time}, Exit time: {exit_time}, Entry price: {entry_price}, Exit price: {exit_price}")
     
-    entry_color = "green" if trade['Size'] > 0 else "red"
+    entry_color = "yellow" if trade['Size'] > 0 else "red"
     exit_color = "green" if trade['PnL'] > 0 else "red"
     
     # Add markers to the main chart
     chart.marker(
         time=entry_time,
-        position="below",
+        position="above",
         color=entry_color,
         text=f"Entry: {entry_price:.2f}"
     )

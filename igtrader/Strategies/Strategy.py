@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from datetime import time
-
+import logging
 
 
 class Strategy(ABC):
@@ -229,7 +229,7 @@ class Strategy(ABC):
         try:
             last_candle_date = pd.to_datetime(self.candles['date'])
         except Exception as e:
-            print("Erreur de conversion de la date :", e)
+            logging.error("Erreur de conversion de la date :", e)
             return False
 
         # Vérifie si c'est un jour de trading
@@ -308,7 +308,10 @@ class Strategy(ABC):
     
         # On ajoute la nouvelle bougie au buffer et on la garde à la taille max +- 100
         new_candle = new_candle.dropna(axis=1, how='all')
-        self.buffer = pd.concat([self.buffer, new_candle])
+        if self.buffer.empty:
+            self.buffer = new_candle.copy()
+        elif not new_candle.empty:
+            self.buffer = pd.concat([self.buffer, new_candle])
         if len(self.buffer) > self.BUFFER_SIZE + 100:
             self.buffer = self.buffer.iloc[-self.BUFFER_SIZE:]
 

@@ -1,3 +1,4 @@
+import logging
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA
 from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.Helpers import load_data
@@ -28,7 +29,7 @@ strategy = args.strategy
 bt = Backtest(data, strategy, cash=args.cash, commission=.00, spread=args.spread, exclusive_orders=True)
 
 stats = bt.run()
-print(stats)
+logging.info(stats)
 if args.save:
     stats.to_frame().to_parquet(f"../backtest_results/{args.strategy}_{args.symbol}_{args.period}_{args.interval}_{args.end_date}.csv")
 

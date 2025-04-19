@@ -1,5 +1,6 @@
 import igtrader.WrapperIGAPI.cmd_app.utils as utils
 import sys
+import logging
 
 #MAIN FUNCTION
 def main():
@@ -32,13 +33,13 @@ def main():
             elif choice == "5":
                 utils.create_position(ig_service)
             elif choice == "0":
-                print("Au revoir!")
+                logging.info("Au revoir!")
                 sys.exit(0)
             else:
-                print("⚠️ Option invalide. Veuillez réessayer.")
+                logging.warning("⚠️ Option invalide. Veuillez réessayer.")
     
     except Exception as e:
-        print(f"⚠️ Erreur critique: {e}")
+        logging.error(f"⚠️ Erreur critique: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":

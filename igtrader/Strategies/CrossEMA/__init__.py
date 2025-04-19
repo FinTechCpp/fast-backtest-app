@@ -5,7 +5,7 @@ from igtrader.backtestingpy.backtesting.backtesting import Strategy as Backtesti
 import talib
 import numpy as np
 from datetime import time
-
+import logging
 
 class CrossEMA(Strategy):
     def __init__(self, **kwargs):
@@ -37,7 +37,7 @@ class CrossEMA(Strategy):
         self.previous_ema_50_l = current_ema_50
 
 
-        # print(f"current emas : {current_ema_20}, {current_ema_50}")
+        logging.debug(f"current emas : {current_ema_20}, {current_ema_50}")
 
         return should_go_long
     

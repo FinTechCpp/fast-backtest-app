@@ -1,3 +1,4 @@
+import logging
 import datetime
 import time
 import pandas as pd
@@ -5,7 +6,6 @@ import pandas as pd
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
 from igtrader.Strategies.CrossEMA import CrossEMA
 from igtrader.WrapperIGAPI.Broker import Broker
-
 
 def is_candle_complete(candle, resolution_minutes=1):
     """
@@ -41,7 +41,7 @@ def main():
         historical_candles = historical_candles[:-1]
     strategy.initialize(historical_candles)
 
-    print(historical_candles)
+    logging.debug(historical_candles)
 
 
     while True:
@@ -52,13 +52,13 @@ def main():
         candle_previous, candle_current = broker.fetch_previous_and_current_candles()
 
         if is_candle_complete(candle_current):
-            print(f"Last complete candle: {candle_current}")
+            logging.debug(f"Last complete candle: {candle_current}")
             signal = strategy.update_candle(candle_current)
         elif is_candle_complete(candle_previous):
-            print(f"Last complete candle: {candle_previous}")
+            logging.debug(f"Last complete candle: {candle_previous}")
             signal = strategy.update_candle(candle_previous)
 
-        print(f"Signal: {signal}")
+        logging.debug(f"Signal: {signal}")
         broker.execute_signal(signal)
 
 

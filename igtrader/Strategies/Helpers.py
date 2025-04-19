@@ -107,7 +107,7 @@ def calculate_supertrend(data, atr_period=14, multiplier=3):
     return st
 
 
-def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timezone='Europe/Paris'):
+def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timezone='Europe/Paris', indicators=None):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
     et filtre les données en fonction de la période spécifiée.
@@ -118,8 +118,17 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
         period (str): Période de données à charger (ex: '1m', '6m', '1y')
         end_date (str|datetime): Date de fin au format 'DD/MM/YYYY' ou objet datetime
         timezone (str): Fuseau horaire pour les données (ex: 'Europe/Paris')
+        indicators (dict): Configuration des indicateurs à calculer
     """
-    chrono_load_data = time.time()
+    # Définir les indicateurs par défaut si aucun n'est fourni
+    if indicators is None:
+        indicators = {
+            'EMA': [[20], [50], [200]],
+            'ATR': [[14]],
+            'STOCH': [[10, 7, 3]],
+            'SUPERTREND': [[50, 3]]
+        }
+    start_time = time.time()
     logging.info(f"Chargement des données pour {symbol}, intervalle {interval}, période {period}...")
     
     # Recherche du dossier 'marketData' dans plusieurs emplacements
@@ -236,17 +245,68 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
     df = df[['Open', 'High', 'Low', 'Close']]
     
     # ----------Calcul des indicateurs techniques---------------------------
-    df['ema_20'] = talib.EMA(df['Close'].values, timeperiod=20)
-    df['ema_200'] = talib.EMA(df['Close'].values, timeperiod=200)
-    df['ema_50'] = talib.EMA(df['Close'].values, timeperiod=50)
-    df['atr'] = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=14)
-    df['stoch_k'], df['stoch_d'] = talib.STOCH(
-        df['High'].values, df['Low'].values, df['Close'].values,
-        fastk_period=10, slowk_period=7, slowd_period=3)
-    df['st_50_3'] = calculate_supertrend(df, atr_period=50, multiplier=3)['SuperTrend']
-
-    chrono_load_data = time.time() - chrono_load_data
-    logging.info(f"Données chargées et prétraitées en {chrono_load_data:.2f} secondes")
+    # Calculer les indicateurs selon les paramètres fournis
+    # EMA - Exponential Moving Average
+    if 'EMA' in indicators:
+        for params in indicators['EMA']:
+            period = params[0]
+            col_name = f"EMA_{period}"
+            df[col_name] = talib.EMA(df['Close'].values, timeperiod=period)
+    
+    # ATR - Average True Range
+    if 'ATR' in indicators:
+        for params in indicators['ATR']:
+            period = params[0]
+            col_name = f"ATR_{period}"
+            df[col_name] = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=period)
+    
+    # STOCH - Stochastic
+    if 'STOCH' in indicators:
+        for params in indicators['STOCH']:
+            fastk_period, slowk_period, slowd_period = params
+            k_col_name = f"STOCH_K_{fastk_period}_{slowk_period}_{slowd_period}"
+            d_col_name = f"STOCH_D_{fastk_period}_{slowk_period}_{slowd_period}"
+            df[k_col_name], df[d_col_name] = talib.STOCH(
+                df['High'].values, df['Low'].values, df['Close'].values,
+                fastk_period=fastk_period, slowk_period=slowk_period, slowd_period=slowd_period)
+    
+    # SUPERTREND
+    if 'SUPERTREND' in indicators:
+        for params in indicators['SUPERTREND']:
+            atr_period, multiplier = params
+            col_name = f"SUPERTREND_{atr_period}_{multiplier}"
+            df[col_name] = calculate_supertrend(df, atr_period=atr_period, multiplier=multiplier)['SuperTrend']
+    
+    # Créer un dictionnaire pour stocker les noms de colonnes des indicateurs pour référence ultérieure
+    indicator_columns = {}
+    for indicator_type, params_list in indicators.items():
+        indicator_columns[indicator_type] = []
+        for params in params_list:
+            if indicator_type == 'EMA':
+                indicator_columns[indicator_type].append(f"EMA_{params[0]}")
+            elif indicator_type == 'ATR':
+                indicator_columns[indicator_type].append(f"ATR_{params[0]}")
+            elif indicator_type == 'STOCH':
+                fastk_period, slowk_period, slowd_period = params
+                indicator_columns[indicator_type].extend([
+                    f"STOCH_K_{fastk_period}_{slowk_period}_{slowd_period}", 
+                    f"STOCH_D_{fastk_period}_{slowk_period}_{slowd_period}"
+                ])
+            elif indicator_type == 'SUPERTREND':
+                atr_period, multiplier = params
+                indicator_columns[indicator_type].append(f"SUPERTREND_{atr_period}_{multiplier}")
+    
+    # Stocker les noms des colonnes comme attribut du DataFrame ET comme propriété séparée
+    # pour s'assurer qu'ils ne seront pas perdus lors des manipulations de DataFrame
+    df.attrs['indicator_columns'] = indicator_columns
+    
+    # Ajouter une colonne spéciale qui contient les noms des indicateurs en format JSON
+    # Cette approche est plus robuste car les colonnes sont préservées lors des manipulations
+    df['_indicator_columns'] = str(indicator_columns)
+    
+    # Afficher le temps total de chargement et prétraitement
+    end_time = time.time()
+    logging.info(f"Données chargées et prétraitées en {end_time - start_time:.2f} secondes")
         
     return df.dropna()
 

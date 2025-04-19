@@ -3,6 +3,7 @@ from igtrader.WrapperIGAPI.trading_ig.config import config
 
 import pandas as pd
 import datetime
+import logging
 
 EXPIRY = '-'
 CURRENCY = 'EUR'
@@ -18,7 +19,7 @@ class Broker:
         acc_number=config.acc_number)
 
         self.ig_service.create_session(version='3')
-        print("Connexion à l'API du broker établie.")
+        logging.info("Connexion à l'API du broker établie.")
 
         self.epic = epic
         self.working_resolution = working_resolution
@@ -128,10 +129,10 @@ class Broker:
                     # Optionnel : vous pouvez ajouter time_in_force si nécessaire,
                     # et éventuellement gérer le paramètre "session"
                 )
-                print(f"Position fermée (dealId: {deal_id}) :", result)
+                logging.info(f"Position fermée (dealId: {deal_id}) :", result)
                 results.append(result)
             except Exception as e:
-                print(f"Erreur lors de la fermeture de la position (dealId: {deal_id}) :", e)
+                logging.error(f"Erreur lors de la fermeture de la position (dealId: {deal_id}) :", e)
                 
         return results
 

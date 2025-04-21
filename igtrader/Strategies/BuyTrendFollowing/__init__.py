@@ -206,14 +206,6 @@ class BuyTrendFollowingBA(BacktestingStrategy):
             kwargs['stoch_d_name'] = self.stoch_d_name
             
             self.my_strategy = BuyTrendFollowing(**kwargs)
-
-            def stochastic():
-                k = self.data.df[self.stoch_k_name]
-                d = self.data.df[self.stoch_d_name]
-                level_80 = np.full(len(k), 80)
-                level_20 = np.full(len(k), 20)
-                return k, d, level_80, level_20
-
                                     
             # Ajouter des attributs pour accéder aux données
             setattr(self.data, 'ema_short', self.data.df[self.ema_short_name])

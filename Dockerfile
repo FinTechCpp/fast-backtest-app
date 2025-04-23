@@ -32,18 +32,19 @@ RUN conda create -n backtestenv python=3.12 -y && \
     /opt/conda/envs/backtestenv/bin/pip install --no-cache-dir -r requirements.txt && \
     conda clean -afy
 
+# Copy Streamlit config file - add these lines
+COPY backtest_interface/streamlit/.streamlit/config.toml /app/backtest_interface/streamlit/.streamlit/config.toml
+# Also copy it to the user's home directory as a fallback
+RUN mkdir -p ~/.streamlit
+COPY backtest_interface/streamlit/.streamlit/config.toml ~/.streamlit/config.toml
+
+# Now copy the rest of the application
 COPY . .
 RUN /opt/conda/envs/backtestenv/bin/pip install --no-cache-dir -e ./
-# COPY lightweight-charts-python ./lightweight-charts-python
 RUN /opt/conda/envs/backtestenv/bin/pip install --no-cache-dir -e ./lightweight-charts-python
 
 # Install the npm package
 RUN npm install pinets
-
-# Now copy the rest of the application code
-# This step happens AFTER dependencies are installed
-# COPY backtest_interface/streamlit/ ./backtest_interface/streamlit/
-# COPY backtest_interface/. .
 
 # Expose the Streamlit port
 EXPOSE 8501

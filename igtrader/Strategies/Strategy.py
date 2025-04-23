@@ -3,6 +3,17 @@ import numpy as np
 import pandas as pd
 from datetime import time
 import logging
+from dataclasses import dataclass
+from dataclasses import field
+from pandas import Timestamp
+
+@dataclass
+class StrategyBaseConfig:
+    trading_from: time = time(14, 30)
+    trading_to: time = time(21, 0)
+    trading_days: list = field(default_factory=lambda: [0, 1, 2, 3, 4])  # Monday to Friday
+    take_profit_distance: float = 30.0
+    stop_loss_distance: float = 20.0
 
 
 class Strategy(ABC):
@@ -10,15 +21,13 @@ class Strategy(ABC):
     Classe mère pour les stratégies de trading.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, base_config: StrategyBaseConfig):
         self.name = None
         self.symbol = None
         self.exchange = None
         self.timeframe = None
 
-        self.trading_from = kwargs.get('trading_from', time(14, 30))
-        self.trading_to = kwargs.get('trading_to', time(21, 0))
-        self.trading_days = kwargs.get('trading_days', [0, 1, 2, 3, 4])  # Lundi à Vendredi
+        self.base_config = base_config
 
         self.buy = None
         self.sell = None
@@ -227,18 +236,18 @@ class Strategy(ABC):
             return False
 
         try:
-            last_candle_date = pd.to_datetime(self.candles['date'])
+            last_candle_date = Timestamp(pd.to_datetime(self.candles['date']))
         except Exception as e:
             logging.error("Erreur de conversion de la date :", e)
             return False
 
         # Vérifie si c'est un jour de trading
-        if last_candle_date.weekday() not in self.trading_days:
+        if last_candle_date.weekday() not in self.base_config.trading_days:
             return False
 
         # Vérifie si c'est dans l'intervalle de temps de trading
         current_time = last_candle_date.time()
-        if not (self.trading_from <= current_time <= self.trading_to):
+        if not (self.base_config.trading_from <= current_time <= self.base_config.trading_to):
             return False
 
         return True

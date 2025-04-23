@@ -47,13 +47,8 @@ class BuyHeikinGreen(Strategy):
         return self.price > self.candles[self.ema_short_name] and self.price > self.candles[self.ema_long_name]
     
     def stoch_inf_50_filter(self):
-        # Vérifie si le Stochastic présent et previous %K/%D et est inférieur à 50
-        return (
-            self.candles[self.stoch_k_name] < 50 and 
-            self.candles[self.stoch_d_name] < 50 and 
-            (self.k_previous is not None and self.k_previous < 50) and 
-            (self.d_previous is not None and self.d_previous < 50)
-        )
+        # Vérifie si le Stochastic %K présent et previous est inférieur à 50
+        return self.candles[self.stoch_k_name] < 50 and (self.k_previous is not None and self.k_previous < 50)
     
     def filters(self):
         return [

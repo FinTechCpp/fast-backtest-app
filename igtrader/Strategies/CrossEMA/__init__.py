@@ -1,81 +1,83 @@
-# from ..Helpers import calculate_supertrend
-from ..Strategy import Strategy
+from ..Strategy import Strategy, StrategyBaseConfig
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
-
-import talib
+import logging
 import numpy as np
 from datetime import time
-import logging
+import talib
+from dataclasses import dataclass
+
+@dataclass
+class BuyTrendConfig:
+    ema_short_period: int = 50
+    ema_long_period: int = 200
+
 
 class CrossEMA(Strategy):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, base_config: StrategyBaseConfig, buy_trend_config: BuyTrendConfig):
+        super().__init__(base_config)
 
         self.name = "TemplateStrategy"
 
+        self.previous_ema_short_l = None
+        self.previous_ema_long_l = None
 
-        self.previous_ema_20_l = None
-        self.previous_ema_50_l = None
+        self.previous_ema_short_s = None
+        self.previous_ema_long_s = None
 
-        self.previous_ema_20_s = None
-        self.previous_ema_50_s = None
+        self.config = buy_trend_config
+        
+        # TODO : Arriver a rendre cela fixe, a ne pas redefinir a chaque fois
+        # Noms des indicateurs
+        self.ema_short_name = f'EMA_{self.config.ema_short_period}'
+        self.ema_long_name = f'EMA_{self.config.ema_long_period}'
 
+    
     def should_long(self):
         """
         Détermine si la stratégie doit entrer en position longue.
         """
-        current_ema_20 = self.candles['ema_20']
-        current_ema_50 = self.candles['ema_50']
+        current_ema_short = self.candles[self.ema_short_name]
+        current_ema_long = self.candles[self.ema_long_name]
 
-        if self.previous_ema_20_l is None or self.previous_ema_50_l is None:
-            self.previous_ema_20_l = current_ema_20
-            self.previous_ema_50_l = current_ema_50
+        if self.previous_ema_short_l is None or self.previous_ema_long_l is None:
+            self.previous_ema_short_l = current_ema_short
+            self.previous_ema_long_l = current_ema_long
             return False
         
-        should_go_long = current_ema_20 > current_ema_50 and self.previous_ema_20_l < self.previous_ema_50_l
-        self.previous_ema_20_l = current_ema_20
-        self.previous_ema_50_l = current_ema_50
-
-
-        logging.debug(f"current emas : {current_ema_20}, {current_ema_50}")
+        should_go_long = current_ema_short > current_ema_long and self.previous_ema_short_l < self.previous_ema_long_l
+        self.previous_ema_short_l = current_ema_short
+        self.previous_ema_long_l = current_ema_long
 
         return should_go_long
-    
+
     def should_short(self):
         """
         Détermine si la stratégie doit entrer en position courte.
         """
-        current_ema_20 = self.candles['ema_20']
-        current_ema_50 = self.candles['ema_50']
+        current_ema_short = self.candles[self.ema_short_name]
+        current_ema_long = self.candles[self.ema_long_name]
 
-        if self.previous_ema_20_s is None or self.previous_ema_50_s is None:
-            self.previous_ema_20_s = current_ema_20
-            self.previous_ema_50_s = current_ema_50
+        if self.previous_ema_short_s is None or self.previous_ema_long_s is None:
+            self.previous_ema_short_s = current_ema_short
+            self.previous_ema_long_s = current_ema_long
             return False
         
-        should_go_short = current_ema_20 < current_ema_50 and self.previous_ema_20_s > self.previous_ema_50_s
-        self.previous_ema_20_s = current_ema_20
-        self.previous_ema_50_s = current_ema_50
+        should_go_short = current_ema_short < current_ema_long and self.previous_ema_short_s > self.previous_ema_long_s
+        self.previous_ema_short_s = current_ema_short
+        self.previous_ema_long_s = current_ema_long
 
         return should_go_short
     
     def go_long(self):
-        """
-        Exécute une position longue.
-        """
         self.buy = 1, self.price
-        self.take_profit = 1, 30
-        self.stop_loss = 1, 20
-
+        self.take_profit = 1, self.base_config.take_profit_distance
+        self.stop_loss = 1, self.base_config.stop_loss_distance
+    
     def go_short(self):
-        """
-        Exécute une position courte.
-        """
         self.sell = 1, self.price
-        self.take_profit = 1, 30
-        self.stop_loss = 1, 20
-
-
+        self.take_profit = 1, self.base_config.take_profit_distance
+        self.stop_loss = 1, self.base_config.stop_loss_distance
+    
     def filters(self):
         return []
     
@@ -84,40 +86,31 @@ class CrossEMA(Strategy):
         Ajoute les indicateurs manquants à la bougie 'candle'.
         Si un indicateur est présent dans 'candle', il n'est pas recalcule.
         Sinon, on le calcule à partir des données du buffer.
-        On se base sur le buffer (self.buffer) qui contient uniquement les colonnes 
-        'Open', 'High', 'Low', 'Close'.
         """
         # On travaille sur une copie du buffer pour être sûr que seules les colonnes nécessaires soient présentes.
         df = self.buffer.copy()
         if df.empty:
-            # Pas suffisamment de données : on affecte par défaut la valeur du Close de la bougie actuelle.
-            if "ema_50" not in candle:
-                candle["ema_50"] = candle["Close"]
-            if "ema_20" not in candle:
-                candle["ema_20"] = candle["Close"]
+            # Pas suffisamment de données : on affecte np.nan
+            if self.ema_short_name not in candle:
+                candle[self.ema_short_name] = np.nan
+            if self.ema_long_name not in candle:
+                candle[self.ema_long_name] = np.nan
             return candle
 
         # Garder uniquement les colonnes nécessaires
         df = df[['Open', 'High', 'Low', 'Close']]
-
-        # Calculer EMA 20 si absent
-        if "ema_20" not in candle:
-            if len(df) >= 20:
-                ema_20 = talib.EMA(df['Close'].values, timeperiod=20)
-                candle["ema_20"] = float(ema_20[-1])
-            else:
-                candle["ema_20"] = candle["Close"]
         
-        # Calculer EMA 50 si absent
-        if "ema_50" not in candle:
-            if len(df) >= 50:
-                ema_50 = talib.EMA(df['Close'].values, timeperiod=50)
-                candle["ema_50"] = float(ema_50[-1])
-            else:
-                candle["ema_50"] = candle["Close"]
+        # EMA
+        if self.ema_long_name not in candle:
+            ema_val = talib.EMA(df['Close'].values, timeperiod=self.config.ema_long_period)
+            candle[self.ema_long_name] = float(ema_val[-1])
                 
+        if self.ema_short_name not in candle:
+            ema_val = talib.EMA(df['Close'].values, timeperiod=self.config.ema_short_period)
+            candle[self.ema_short_name] = float(ema_val[-1])
+                    
         return candle
-    
+
 
 
 class CrossEMABA(BacktestingStrategy):
@@ -125,42 +118,60 @@ class CrossEMABA(BacktestingStrategy):
     Adapter pour la stratégie de backtesting.
     """
     def init(self, **kwargs):
-        self.my_strategy = CrossEMA(**kwargs)
 
-        self.ema_20 = self.I(lambda: self.data.df['ema_20'], name='EMA 20', overlay=True, color='blue')
-        self.ema_50 = self.I(lambda: self.data.df['ema_50'], name='EMA 50', overlay=True, color='red')
+        # 1) extraire les clés génériques
+        base_config = StrategyBaseConfig(
+            trading_from    = kwargs.pop('trading_from'),
+            trading_to      = kwargs.pop('trading_to'),
+            trading_days    = kwargs.pop('trading_days'),
+            take_profit_distance = kwargs.pop('take_profit_distance'),
+            stop_loss_distance   = kwargs.pop('stop_loss_distance'),
+        )
+        # 2) extraire les clés spécifiques
+        buy_trend_config = BuyTrendConfig(
+            ema_short_period     = kwargs.pop('ema_short_period'),
+            ema_long_period      = kwargs.pop('ema_long_period'),
+        )
 
-    
+        # 3) stocker et instancier la stratégie “métier”
+        self.base_config = base_config
+        self.config      = buy_trend_config
+        self.my_strategy = CrossEMA(base_config, buy_trend_config)
+
+
     def next(self):
         """
         Méthode appelée à chaque bougie pendant le backtest.
-        On construit une nouvelle bougie sous forme de dictionnaire, on la transmet à 
-        la stratégie custom via update_candle(), et on récupère le signal généré.
-        
-        Si un signal d'achat ou de vente est généré (et aucune position n'est déjà ouverte),
-        on passe l'ordre correspondant.
         """
+        # Noms des indicateurs
+        self.ema_short_name = f'EMA_{self.config.ema_short_period}'
+        self.ema_long_name = f'EMA_{self.config.ema_long_period}'
+
         candle = {
             'date': self.data.index[-1],
-            'Open':  self.data.Open[-1],
-            'High':  self.data.High[-1],
-            'Low':   self.data.Low[-1],
+            'Open': self.data.Open[-1],
+            'High': self.data.High[-1],
+            'Low': self.data.Low[-1],
             'Close': self.data.Close[-1],
-            'Volume': self.data.Volume[-1],
 
-            'ema_20': self.data.ema_20[-1],
-            'ema_50': self.data.ema_50[-1],
+            self.ema_short_name: self.data.df[self.ema_short_name].iloc[-1],
+            self.ema_long_name: self.data.df[self.ema_long_name].iloc[-1],
         }
 
         signal = self.my_strategy.update_candle(candle)
 
+        # Vérifier si un signal d'achat ou de vente est généré
         if signal is None:
             return
+
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
-        elif signal['action'] == 'BUY':
-            self.position.close()  # Fermer la position existante si elle existe
-            self.buy(sl=candle['Close'] - signal['stop_loss'], tp=candle['Close'] + signal['take_profit'], size=signal['quantity'])
-        elif signal['action'] == 'SELL':
-            self.position.close()
-            self.sell(sl=candle['Close'] + signal['stop_loss'], tp=candle['Close'] - signal['take_profit'], size=signal['quantity'])
+        elif not self.position and signal['action'] == 'BUY':
+            self.buy(sl=candle['Close'] - signal['stop_loss'], 
+                    tp=candle['Close'] + signal['take_profit'], 
+                    size=signal['quantity'])
+        elif not self.position and signal['action'] == 'SELL':
+            self.sell(sl=candle['Close'] + signal['stop_loss'], 
+                    tp=candle['Close'] - signal['take_profit'], 
+                    size=signal['quantity'])
+            

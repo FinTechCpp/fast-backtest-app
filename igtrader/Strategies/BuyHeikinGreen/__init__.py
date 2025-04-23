@@ -64,6 +64,8 @@ class BuyHeikinGreen(Strategy):
         # Vérifie si le Stochastic %K présent et previous est inférieur à 50
         return self.candles[self.stoch_k_name] < 50 and (self.k_previous is not None and self.k_previous < 50)
     
+
+    
     def filters(self):
         return [
             self.ema_filter,

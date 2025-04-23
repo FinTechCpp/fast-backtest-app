@@ -3,7 +3,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 import os
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, time
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, 
                             QPushButton, QComboBox, QDoubleSpinBox, QDateEdit, QLineEdit, 
                             QCheckBox, QLabel, QTabWidget, QScrollArea, QSplitter, QTableWidget, 
@@ -288,7 +288,7 @@ class BacktestApp(QMainWindow):
         
         stoch_group.setLayout(stoch_layout)
         indicators_layout.addWidget(stoch_group)
-        
+             
         # SuperTrend
         st_group = QGroupBox("SuperTrend")
         st_layout = QGridLayout()
@@ -318,6 +318,54 @@ class BacktestApp(QMainWindow):
         scroll_area.setWidget(control_panel)
         scroll_area.setWidgetResizable(True)
         self.splitter.addWidget(scroll_area)
+        
+        # Trading hours
+        trading_hours_group = QGroupBox("Heures de trading")
+        trading_hours_layout = QGridLayout()
+        
+        # Trading start time
+        self.trading_from_hour = QSpinBox()
+        self.trading_from_hour.setRange(0, 23)
+        self.trading_from_hour.setValue(9)
+        self.trading_from_minute = QSpinBox()
+        self.trading_from_minute.setRange(0, 59)
+        self.trading_from_minute.setValue(30)
+        from_layout = QHBoxLayout()
+        from_layout.addWidget(self.trading_from_hour)
+        from_layout.addWidget(QLabel(":"))
+        from_layout.addWidget(self.trading_from_minute)
+        
+        # Trading end time
+        self.trading_to_hour = QSpinBox()
+        self.trading_to_hour.setRange(0, 23)
+        self.trading_to_hour.setValue(16)
+        self.trading_to_minute = QSpinBox()
+        self.trading_to_minute.setRange(0, 59)
+        self.trading_to_minute.setValue(0)
+        to_layout = QHBoxLayout()
+        to_layout.addWidget(self.trading_to_hour)
+        to_layout.addWidget(QLabel(":"))
+        to_layout.addWidget(self.trading_to_minute)
+        
+        # Trading days (checkboxes for each day)
+        days_layout = QHBoxLayout()
+        self.trading_days_check = []
+        days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+        for i, day in enumerate(days):
+            check = QCheckBox(day)
+            check.setChecked(i < 5)  # Check Mon-Fri by default
+            self.trading_days_check.append(check)
+            days_layout.addWidget(check)
+        
+        trading_hours_layout.addWidget(QLabel("De:"), 0, 0)
+        trading_hours_layout.addLayout(from_layout, 0, 1)
+        trading_hours_layout.addWidget(QLabel("À:"), 1, 0)
+        trading_hours_layout.addLayout(to_layout, 1, 1)
+        trading_hours_layout.addWidget(QLabel("Jours:"), 2, 0)
+        trading_hours_layout.addLayout(days_layout, 2, 1)
+        
+        trading_hours_group.setLayout(trading_hours_layout)
+        layout.addWidget(trading_hours_group)
     
     def create_results_area(self):
         """Crée la zone d'affichage des résultats"""
@@ -826,10 +874,32 @@ class BacktestApp(QMainWindow):
                 logging.error(f"Strategy {strategy_name} not found. Available strategies: {list(self.strategy_map.keys())}")
                 return
             
+            # Get trading hours from UI
+            trading_from = time(
+                self.trading_from_hour.value(),
+                self.trading_from_minute.value()
+            )
+            trading_to = time(
+                self.trading_to_hour.value(),
+                self.trading_to_minute.value()
+            )
+
+            # Get trading days from UI
+            trading_days = [i for i, check in enumerate(self.trading_days_check) if check.isChecked()]
+            
             # Préparer les arguments pour la stratégie
             strategy_kwargs = {
+                "trading_from": trading_from,
+                "trading_to": trading_to,
+                "trading_days": trading_days,
                 "take_profit_distance": take_profit,
-                "stop_loss_distance": stop_loss
+                "stop_loss_distance": stop_loss,
+                
+                "ema_short_period": self.ema_short_spin.value(),
+                "ema_long_period": self.ema_long_spin.value(),
+                "stoch_fastk": self.fastk_spin.value(),
+                "stoch_slowk": self.slowk_spin.value(),
+                "stoch_slowd": self.slowd_spin.value(),
             }
             logging.debug(f"Stop Loss: {stop_loss}, Take Profit: {take_profit}")
             

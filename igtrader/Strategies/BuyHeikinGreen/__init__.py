@@ -1,15 +1,28 @@
-from ..Strategy import Strategy
+from ..Strategy import Strategy, StrategyBaseConfig
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 import logging
 import talib
+import numpy as np
+from dataclasses import dataclass
+
+@dataclass
+class BuyHeikinGreenConfig:
+    """
+    Paramètres de la stratégie de trading basée sur les bougies Heikin Ashi.
+    """
+    ema_short_period: int = 50
+    ema_long_period: int = 200
+    stoch_fastk: int = 10
+    stoch_slowk: int = 7
+    stoch_slowd: int = 3
 
 
 class BuyHeikinGreen(Strategy):
     """
-    Stratégie de suivi de tendance à l'achat.
+    Stratégie de trading basée sur les bougies Heikin Ashi.
     """
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, base_config: StrategyBaseConfig, buy_heikin_green_config: BuyHeikinGreenConfig):
+        super().__init__(base_config)
 
         self.name = "BuyHeikinGreen"
         self.symbol = None
@@ -19,16 +32,17 @@ class BuyHeikinGreen(Strategy):
         self.k_previous = None
         self.d_previous = None
 
-        self.tp_distance = kwargs.get('take_profit_distance', 30)
-        self.sl_distance = kwargs.get('stop_loss_distance', 20)
+        self.config = buy_heikin_green_config
         
-        # Noms des indicateurs (dynamiques ou par défaut)
-        self.ema_short_name = kwargs.get('ema_short_name', 'EMA_50')
-        self.ema_long_name = kwargs.get('ema_long_name', 'EMA_200')
-        self.stoch_k_name = kwargs.get('stoch_k_name', 'STOCH_K_10_7_3')
-        self.stoch_d_name = kwargs.get('stoch_d_name', 'STOCH_D_10_7_3')
+        # TODO : Arriver a rendre cela fixe, a ne pas redefinir a chaque fois
+        # Noms des indicateurs
+        self.ema_short_name = f'EMA_{self.config.ema_short_period}'
+        self.ema_long_name = f'EMA_{self.config.ema_long_period}'
+        self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
+        self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
     
     def should_long(self):
+        # Vérifie si la bougie actuelle est verte (Close > Open)
         return self.candles["Close"] > self.candles["Open"]
 
     def should_short(self):
@@ -36,8 +50,8 @@ class BuyHeikinGreen(Strategy):
     
     def go_long(self):
         self.buy = 0.5, self.price
-        self.take_profit = 0.5, self.tp_distance
-        self.stop_loss = 0.5, self.sl_distance
+        self.take_profit = 0.5, self.base_config.take_profit_distance
+        self.stop_loss = 0.5, self.base_config.stop_loss_distance
     
     def go_short(self):
         raise NotImplementedError(f"La stratégie {self.name} ne supporte pas la vente à découvert.")
@@ -67,58 +81,33 @@ class BuyHeikinGreen(Strategy):
         if df.empty:
             # Pas suffisamment de données : on affecte par défaut la valeur du Close de la bougie actuelle.
             if self.ema_short_name not in candle:
-                candle[self.ema_short_name] = candle["Close"]
+                candle[self.ema_short_name] = np.nan
             if self.ema_long_name not in candle:
-                candle[self.ema_long_name] = candle["Close"]
+                candle[self.ema_long_name] = np.nan
             if self.stoch_k_name not in candle:
-                candle[self.stoch_k_name] = 0.0
+                candle[self.stoch_k_name] = np.nan
             if self.stoch_d_name not in candle:
-                candle[self.stoch_d_name] = 0.0
+                candle[self.stoch_d_name] = np.nan
             return candle
         
         # Garder uniquement les colonnes nécessaires
         df = df[['Open', 'High', 'Low', 'Close']]
         
-        # Extraire les paramètres des noms d'indicateurs
         # EMA
         if self.ema_long_name not in candle:
-            # Extraire la période de l'EMA du nom (ex: EMA_200 -> 200)
-            period = int(self.ema_long_name.split('_')[1])
-            if len(df) >= period:
-                ema_val = talib.EMA(df['Close'].values, timeperiod=period)
-                candle[self.ema_long_name] = float(ema_val[-1])
-            else:
-                candle[self.ema_long_name] = candle["Close"]
+            ema_val = talib.EMA(df['Close'].values, timeperiod=self.config.ema_long_period)
+            candle[self.ema_long_name] = float(ema_val[-1])
                 
         if self.ema_short_name not in candle:
-            period = int(self.ema_short_name.split('_')[1])
-            if len(df) >= period:
-                ema_val = talib.EMA(df['Close'].values, timeperiod=period)
-                candle[self.ema_short_name] = float(ema_val[-1])
-            else:
-                candle[self.ema_short_name] = candle["Close"]
+            ema_val = talib.EMA(df['Close'].values, timeperiod=self.config.ema_short_period)
+            candle[self.ema_short_name] = float(ema_val[-1])
 
-        # Stochastique
         if self.stoch_k_name not in candle or self.stoch_d_name not in candle:
-            # Extraire les paramètres du nom (ex: STOCH_K_10_7_3 -> 10,7,3)
-            parts = self.stoch_k_name.split('_')
-            if len(parts) >= 5:  # STOCH_K_10_7_3
-                fastk_period = int(parts[2])
-                slowk_period = int(parts[3])
-                slowd_period = int(parts[4])
-                
-                if len(df) >= fastk_period:
-                    k, d = talib.STOCH(
-                        df['High'].values, df['Low'].values, df['Close'].values,
-                        fastk_period=fastk_period, slowk_period=slowk_period, slowd_period=slowd_period)
-                    candle[self.stoch_k_name] = float(k[-1])
-                    candle[self.stoch_d_name] = float(d[-1])
-                else:
-                    candle[self.stoch_k_name] = 0.0
-                    candle[self.stoch_d_name] = 0.0
-            else:
-                candle[self.stoch_k_name] = 0.0
-                candle[self.stoch_d_name] = 0.0
+            k, d = talib.STOCH(
+                df['High'].values, df['Low'].values, df['Close'].values,
+                fastk_period=self.config.stoch_fastk, slowk_period=self.config.stoch_slowk, slowd_period=self.config.stoch_slowd)
+            candle[self.stoch_k_name] = float(k[-1])
+            candle[self.stoch_d_name] = float(d[-1])
                     
         return candle
 
@@ -129,58 +118,54 @@ class BuyHeikinGreenBA(BacktestingStrategy):
     Adapter pour la stratégie de backtesting.
     """
     def init(self, **kwargs):
+        # 1) extraire les clés génériques
+        base_config = StrategyBaseConfig(
+            trading_from    = kwargs.pop('trading_from'),
+            trading_to      = kwargs.pop('trading_to'),
+            trading_days    = kwargs.pop('trading_days'),
+            take_profit_distance = kwargs.pop('take_profit_distance'),
+            stop_loss_distance   = kwargs.pop('stop_loss_distance'),
+        )
+        # 2) extraire les clés spécifiques
+        buy_trend_config = BuyHeikinGreenConfig(
+            ema_short_period     = kwargs.pop('ema_short_period'),
+            ema_long_period      = kwargs.pop('ema_long_period'),
+            stoch_fastk          = kwargs.pop('stoch_fastk'),
+            stoch_slowk          = kwargs.pop('stoch_slowk'),
+            stoch_slowd          = kwargs.pop('stoch_slowd'),
+        )
 
-        # Obtenir ou définir les noms des indicateurs
-        self.ema_short_name = kwargs.get('ema_short_name', 'EMA_50')
-        self.ema_long_name = kwargs.get('ema_long_name', 'EMA_200')
-        self.stoch_k_name = kwargs.get('stoch_k_name', 'STOCH_K_10_7_3')
-        self.stoch_d_name = kwargs.get('stoch_d_name', 'STOCH_D_10_7_3')
-        
-        # Vérifier que les indicateurs requis sont présents dans les données
-        required_indicators = [
-            self.ema_short_name, 
-            self.ema_long_name, 
-            self.stoch_k_name, 
-            self.stoch_d_name
-        ]
-        
-        for indicator in required_indicators:
-            if indicator.lower() not in [col.lower() for col in self.data.df.columns]:
-                logging.warning(f"L'indicateur {indicator} n'est pas présent dans les données. "
-                            f"Colonnes disponibles: {list(self.data.df.columns)}")
-            
-            # Passer ces noms à la stratégie
-            kwargs['ema_short_name'] = self.ema_short_name
-            kwargs['ema_long_name'] = self.ema_long_name
-            kwargs['stoch_k_name'] = self.stoch_k_name
-            kwargs['stoch_d_name'] = self.stoch_d_name
-            
-            self.my_strategy = BuyHeikinGreen(**kwargs)
-                                    
-            # Ajouter des attributs pour accéder aux données
-            setattr(self.data, 'ema_short', self.data.df[self.ema_short_name])
-            setattr(self.data, 'ema_long', self.data.df[self.ema_long_name])
-            setattr(self.data, 'stoch_k', self.data.df[self.stoch_k_name])
-            setattr(self.data, 'stoch_d', self.data.df[self.stoch_d_name])
+        # 3) stocker et instancier la stratégie “métier”
+        self.base_config = base_config
+        self.config      = buy_trend_config
+        self.my_strategy = BuyHeikinGreen(base_config, buy_trend_config)
+
             
     
     def next(self):
         """
         Méthode appelée à chaque bougie pendant le backtest.
         """
+
+        # Noms des indicateurs
+        self.ema_short_name = f'EMA_{self.config.ema_short_period}'
+        self.ema_long_name = f'EMA_{self.config.ema_long_period}'
+        self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
+        self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
+
         candle = {
             'date': self.data.index[-1],
             'Open': self.data.Open[-1],
             'High': self.data.High[-1],
             'Low': self.data.Low[-1],
-            'Close': self.data.Close[-1]
+            'Close': self.data.Close[-1],
+
+            self.ema_short_name: self.data.df[self.ema_short_name].iloc[-1],
+            self.ema_long_name: self.data.df[self.ema_long_name].iloc[-1],
+            self.stoch_k_name: self.data.df[self.stoch_k_name].iloc[-1],
+            self.stoch_d_name: self.data.df[self.stoch_d_name].iloc[-1],
         }
         
-        # Corriger l'accès aux indicateurs - en utilisant self.data.df
-        candle[self.ema_short_name] = self.data.df[self.ema_short_name].iloc[-1]
-        candle[self.ema_long_name] = self.data.df[self.ema_long_name].iloc[-1] 
-        candle[self.stoch_k_name] = self.data.df[self.stoch_k_name].iloc[-1]
-        candle[self.stoch_d_name] = self.data.df[self.stoch_d_name].iloc[-1]
         
         # Mettre à jour les valeurs précédentes du Stochastique
         self.my_strategy.k_previous = candle[self.stoch_k_name]
@@ -215,7 +200,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             self.buy(sl=candle['Close'] - signal['stop_loss'], 
                     tp=candle['Close'] + signal['take_profit'], 
                     size=signal['quantity'])
-        elif signal['action'] == 'SELL':
+        elif not self.position and signal['action'] == 'SELL':
             self.sell(sl=candle['Close'] + signal['stop_loss'], 
                     tp=candle['Close'] - signal['take_profit'], 
                     size=signal['quantity'])

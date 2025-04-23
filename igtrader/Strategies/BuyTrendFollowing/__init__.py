@@ -1,4 +1,3 @@
-from ..Helpers import calculate_supertrend
 from ..Strategy import Strategy, StrategyBaseConfig
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 import logging

@@ -7,10 +7,10 @@ from igtrader.backtestingpy.backtesting.backtesting import Backtest
 from datetime import time
 
 
-data = load_data(symbol='NDX', period='7d', interval='1min')
+data = load_data(symbol='NDX', period='1d', interval='20secs')
 
-
-strategy = SellTrendFollowingBA
+print(data.head())
+strategy = BuyTrendFollowingBA
 strategy_params = {
     'stop_loss_distance': 20,
     'take_profit_distance': 30,
@@ -21,5 +21,5 @@ strategy_params = {
 bt = Backtest(data, strategy, cash=100000, commission=.00, exclusive_orders=True, strategy_kwargs=strategy_params)
 stats = bt.run()
 print(stats)
-bt.plot(plot_volume=False, resample=False, indicator_height=300)
+# bt.plot(plot_volume=False, resample=False, indicator_height=300)
 

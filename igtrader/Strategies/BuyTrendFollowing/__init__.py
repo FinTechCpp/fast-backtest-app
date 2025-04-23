@@ -11,6 +11,13 @@ class BuyTrendFollowing(Strategy):
     """
     Stratégie de suivi de tendance à l'achat.
     """
+
+    required_params = [
+        'ema_short_period', 'ema_long_period',
+        'supertrend_period', 'supertrend_multiplier',
+        'stoch_fastk', 'stoch_slowk', 'stoch_slowd'
+    ]
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -24,13 +31,22 @@ class BuyTrendFollowing(Strategy):
 
         self.tp_distance = kwargs.get('take_profit_distance', 30)
         self.sl_distance = kwargs.get('stop_loss_distance', 20)
-        
+
+        self.ema_short_period = kwargs.get('ema_short_period', 50)
+        self.ema_long_period = kwargs.get('ema_long_period', 200)
+        self.supertrend_period = kwargs.get('supertrend_period', 50)
+        self.supertrend_multiplier = kwargs.get('supertrend_multiplier', 3)
+        self.stoch_fastk = kwargs.get('stoch_fastk', 10)
+        self.stoch_slowk = kwargs.get('stoch_slowk', 7)
+        self.stoch_slowd = kwargs.get('stoch_slowd', 3)
+
         # Noms des indicateurs (dynamiques ou par défaut)
-        self.ema_short_name = kwargs.get('ema_short_name', 'EMA_50')
-        self.ema_long_name = kwargs.get('ema_long_name', 'EMA_200')
-        self.supertrend_name = kwargs.get('supertrend_name', 'SUPERTREND_50_3')
-        self.stoch_k_name = kwargs.get('stoch_k_name', 'STOCH_K_10_7_3')
-        self.stoch_d_name = kwargs.get('stoch_d_name', 'STOCH_D_10_7_3')
+        self.ema_short_name = f'EMA_{self.ema_short_period}'
+        self.ema_long_name = f'EMA_{self.ema_long_period}'
+        self.supertrend_name = f'SUPERTREND_{self.supertrend_period}_{self.supertrend_multiplier}'
+        self.stoch_k_name = f'STOCH_K_{self.stoch_fastk}_{self.stoch_slowk}_{self.stoch_slowd}'
+        self.stoch_d_name = f'STOCH_D_{self.stoch_fastk}_{self.stoch_slowk}_{self.stoch_slowd}'
+
     
     def should_long(self):
         k_current, d_current = self.candles[self.stoch_k_name], self.candles[self.stoch_d_name]
@@ -103,21 +119,17 @@ class BuyTrendFollowing(Strategy):
         # Garder uniquement les colonnes nécessaires
         df = df[['Open', 'High', 'Low', 'Close']]
         
-        # Extraire les paramètres des noms d'indicateurs
         # EMA
         if self.ema_long_name not in candle:
-            # Extraire la période de l'EMA du nom (ex: EMA_200 -> 200)
-            period = int(self.ema_long_name.split('_')[1])
-            if len(df) >= period:
-                ema_val = talib.EMA(df['Close'].values, timeperiod=period)
+            if len(df) >= self.ema_long_period:
+                ema_val = talib.EMA(df['Close'].values, timeperiod=self.ema_long_period)
                 candle[self.ema_long_name] = float(ema_val[-1])
             else:
                 candle[self.ema_long_name] = candle["Close"]
                 
         if self.ema_short_name not in candle:
-            period = int(self.ema_short_name.split('_')[1])
-            if len(df) >= period:
-                ema_val = talib.EMA(df['Close'].values, timeperiod=period)
+            if len(df) >= self.ema_short_period:
+                ema_val = talib.EMA(df['Close'].values, timeperiod=self.ema_short_period)
                 candle[self.ema_short_name] = float(ema_val[-1])
             else:
                 candle[self.ema_short_name] = candle["Close"]
@@ -125,21 +137,12 @@ class BuyTrendFollowing(Strategy):
         # Stochastique
         if self.stoch_k_name not in candle or self.stoch_d_name not in candle:
             # Extraire les paramètres du nom (ex: STOCH_K_10_7_3 -> 10,7,3)
-            parts = self.stoch_k_name.split('_')
-            if len(parts) >= 5:  # STOCH_K_10_7_3
-                fastk_period = int(parts[2])
-                slowk_period = int(parts[3])
-                slowd_period = int(parts[4])
-                
-                if len(df) >= fastk_period:
-                    k, d = talib.STOCH(
-                        df['High'].values, df['Low'].values, df['Close'].values,
-                        fastk_period=fastk_period, slowk_period=slowk_period, slowd_period=slowd_period)
-                    candle[self.stoch_k_name] = float(k[-1])
-                    candle[self.stoch_d_name] = float(d[-1])
-                else:
-                    candle[self.stoch_k_name] = 0.0
-                    candle[self.stoch_d_name] = 0.0
+            if len(df) >= self.stoch_fastk:
+                k, d = talib.STOCH(
+                    df['High'].values, df['Low'].values, df['Close'].values,
+                    fastk_period=self.stoch_fastk, slowk_period=self.stoch_slowk, slowd_period=self.stoch_slowd)
+                candle[self.stoch_k_name] = float(k[-1])
+                candle[self.stoch_d_name] = float(d[-1])
             else:
                 candle[self.stoch_k_name] = 0.0
                 candle[self.stoch_d_name] = 0.0
@@ -147,17 +150,13 @@ class BuyTrendFollowing(Strategy):
         # SuperTrend
         if self.supertrend_name not in candle:
             # Extraire les paramètres (ex: SUPERTREND_50_3 -> 50,3)
-            parts = self.supertrend_name.split('_')
-            if len(parts) >= 3:  # SUPERTREND_50_3
-                atr_period = int(parts[1])
-                multiplier = int(parts[2])
+                # atr_period = int(parts[1])
+                # multiplier = int(parts[2])
                 
-                if len(df) >= 1:
-                    df_st = df[['High', 'Low', 'Close']].copy()
-                    st_df = calculate_supertrend(df_st, atr_period=atr_period, multiplier=multiplier)
-                    candle[self.supertrend_name] = float(st_df['SuperTrend'].iloc[-1])
-                else:
-                    candle[self.supertrend_name] = candle["Close"]
+            if len(df) >= 1:
+                df_st = df[['High', 'Low', 'Close']].copy()
+                st_df = calculate_supertrend(df_st, atr_period=self.supertrend_period, multiplier=self.supertrend_multiplier)
+                candle[self.supertrend_name] = float(st_df['SuperTrend'].iloc[-1])
             else:
                 candle[self.supertrend_name] = candle["Close"]
                     

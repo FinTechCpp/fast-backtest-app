@@ -99,3 +99,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+# python ./scripts/backtest.py --symbol NDX --period 1d --interval 20secs --trading-from 19:00 --trading-to 21:00 --trading-days 0,1,2,3,4 --take-profit-distance 30 --stop-loss-distance 20 --ema-short-period 50 --ema-long-period 200 --stoch-fastk 10 --stoch-slowk 7 --stoch-slowd 3 --strategy BuyTrendFollowingBA --cash 100000 --spread 0.0

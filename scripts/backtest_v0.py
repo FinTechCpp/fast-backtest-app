@@ -10,7 +10,7 @@ from datetime import time
 data = load_data(symbol='NDX', period='1d', interval='20secs')
 
 print(data.head())
-strategy = BuyTrendFollowingBA
+strategy = SellTrendFollowingBA
 strategy_kwargs = {
   # base
   'trading_from': time(19, 0),

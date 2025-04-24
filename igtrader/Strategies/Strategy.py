@@ -55,7 +55,7 @@ class Strategy(ABC):
         self.RESIZE_THRESHOLD = int(self.BUFFER_SIZE * 1.2)
         
         # Configuration pour le benchmark
-        self.MAX_EXECUTION_TIMES = 1000
+        self.MAX_EXECUTION_TIMES = 100000
         self.execution_times = []
         self.last_execution_time = None
         self.benchmark_active = False
@@ -281,44 +281,32 @@ class Strategy(ABC):
         return True
     
     def _check_time(self) -> bool:
-        if self.candles is None or not isinstance(self.candles, dict) or 'date' not in self.candles:
+        """Version optimisée du check de temps."""
+        if not self.candles or 'date' not in self.candles:
             return False
 
         try:
-            last_candle_date = Timestamp(pd.to_datetime(self.candles['date']))
+            # Utiliser des variables de classe pour éviter les calculs répétés
+            if not hasattr(self, '_last_check_date') or self.candles['date'] != self._last_check_date:
+                self._last_check_date = self.candles['date']
+                last_candle_date = pd.to_datetime(self._last_check_date)
+                
+                # Calculer et mettre en cache les résultats
+                self._weekday_check = last_candle_date.weekday() in self.base_config.trading_days
+                if not self._weekday_check:
+                    return False
+                    
+                current_time = last_candle_date.time()
+                self._time_check = (self.base_config.trading_from <= current_time <= self.base_config.trading_to)
+                
+                return self._time_check
+            else:
+                # Utiliser les résultats en cache
+                return self._weekday_check and self._time_check
         except Exception as e:
-            logging.error("Erreur de conversion de la date :", e)
+            logging.error(f"Erreur dans _check_time: {e}")
             return False
-
-        # Vérifie si c'est un jour de trading
-        if last_candle_date.weekday() not in self.base_config.trading_days:
-            return False
-
-        # Vérifie si c'est dans l'intervalle de temps de trading
-        current_time = last_candle_date.time()
-        if not (self.base_config.trading_from <= current_time <= self.base_config.trading_to):
-            return False
-
-        return True
     
-    def _check(self) -> None:
-        self._reset()
-
-        # Vérifie si la stratégie est dans la période de trading
-        if not self._check_time():
-            self.signal = self._generate_liquidation_signal()
-            return
-        
-        should_long = self.should_long()
-        should_short = self.should_short()
-        if should_long and should_short:
-            raise ValueError("La stratégie ne peut pas être à la fois en position longue et courte.")
-    
-        if should_long:
-            self._execute_long()
-        elif should_short:
-            self._execute_short()
-
     def _execute(self) -> None:
         """ Exécute la stratégie. """
 
@@ -327,8 +315,25 @@ class Strategy(ABC):
             return
 
         self._is_executing = True
+
+        # Check rapide du temps avant d'exécuter quoi que ce soit d'autre
+        if not self._check_time():
+            self.signal = self._generate_liquidation_signal()
+            self._is_executing = False
+            return
+    
         self.before()
-        self._check()
+        
+        should_long = self.should_long()
+        should_short = should_short = False if should_long else self.should_short()
+
+        if not (should_long or should_short):
+            self._reset()
+        elif should_long:
+            self._execute_long()
+        else:
+            self._execute_short()
+        
         self.after()
         self._is_executing = False
 
@@ -386,16 +391,17 @@ class Strategy(ABC):
         # 6. Exécution de la stratégie
         self._execute()
         
-        end_time = dt.perf_counter()
-        duration_ms = (end_time - start_time) * 1000
-
+        duration_ms = (dt.perf_counter() - start_time) * 1000
         self.last_execution_time = duration_ms
 
         # Ajouter le temps d'exécution à la liste et limiter sa taille
         if self.benchmark_active:
             self.execution_times.append(duration_ms)
 
-        logging.debug(f"Strategy execution time: {duration_ms:.2f} ms")
+            if len(self.execution_times) > self.MAX_EXECUTION_TIMES:
+                self.execution_times.pop(0)
+
+        # logging.debug(f"Strategy execution time: {duration_ms:.2f} ms")
 
         return self.signal
 

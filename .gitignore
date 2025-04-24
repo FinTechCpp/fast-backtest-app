@@ -11,10 +11,7 @@ __pycache__/
 .ipynb_checkpoints/*
 .local*
 .ipython*
-.npm*
 .jupyter*
 *.egg-info/
-dist/*
-build/*
-backtest_interface/build/*
-backtest_interface/dist/*
+
+

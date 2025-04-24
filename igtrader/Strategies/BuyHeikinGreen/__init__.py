@@ -195,7 +195,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # Vérifier si un signal d'achat ou de vente est généré
         if signal is None:
             return
-
+        
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
         elif not self.position and signal['action'] == 'BUY':

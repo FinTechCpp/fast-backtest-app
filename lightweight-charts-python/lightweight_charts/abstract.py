@@ -1591,7 +1591,8 @@ class AbstractChart(Candlestick, Pane):
         
         # Ajouter les séries principales du graphique actuel
         for line in self.lines():
-            js_code = f'{tooltip_id}.addSeries({self.id}.chart, {line.id}.series, "{line.name.replace("\'", "\\\'")}")';
+            escaped_name = line.name.replace("'", "\\'")
+            js_code = f'{tooltip_id}.addSeries({self.id}.chart, {line.id}.series, "{escaped_name}")'
             self.run_script(js_code)
         
         # Ajouter la série de bougies principale
@@ -1607,7 +1608,8 @@ class AbstractChart(Candlestick, Pane):
                 
                 # Ajouter les lignes du sous-graphique
                 for line in chart.lines():
-                    js_code = f'{tooltip_id}.addSeries({chart.id}.chart, {line.id}.series, "{line.name.replace("\'", "\\\'")}")';
+                    escaped_name = line.name.replace("'", "\\'")
+                    js_code = f'{tooltip_id}.addSeries({chart.id}.chart, {line.id}.series, "{escaped_name}")'
                     self.run_script(js_code)
         
         # Configuration de l'activation par touche du clavier

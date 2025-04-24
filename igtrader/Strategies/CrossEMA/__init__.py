@@ -7,13 +7,13 @@ import talib
 from dataclasses import dataclass
 
 @dataclass
-class BuyTrendConfig:
+class CrossEMAConfig:
     ema_short_period: int = 50
     ema_long_period: int = 200
 
 
 class CrossEMA(Strategy):
-    def __init__(self, base_config: StrategyBaseConfig, buy_trend_config: BuyTrendConfig):
+    def __init__(self, base_config: StrategyBaseConfig, buy_trend_config: CrossEMAConfig):
         super().__init__(base_config)
 
         self.name = "TemplateStrategy"
@@ -128,7 +128,7 @@ class CrossEMABA(BacktestingStrategy):
             stop_loss_distance   = kwargs.pop('stop_loss_distance'),
         )
         # 2) extraire les clés spécifiques
-        buy_trend_config = BuyTrendConfig(
+        buy_trend_config = CrossEMAConfig(
             ema_short_period     = kwargs.pop('ema_short_period'),
             ema_long_period      = kwargs.pop('ema_long_period'),
         )

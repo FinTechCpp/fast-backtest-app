@@ -2,10 +2,12 @@ import logging
 import datetime
 import time
 import pandas as pd
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
-from igtrader.Strategies.CrossEMA import CrossEMA
+from igtrader.Strategies.CrossEMA import CrossEMA, CrossEMAConfig
 from igtrader.WrapperIGAPI.Broker import Broker
+from igtrader.Strategies.Strategy import StrategyBaseConfig
 
 def is_candle_complete(candle, resolution_minutes=1):
     """
@@ -34,7 +36,20 @@ def is_candle_complete(candle, resolution_minutes=1):
 def main():
     # Création des instances
     broker = Broker(epic="IX.D.NASDAQ.IFE.IP", working_resolution='1Min')
-    strategy = CrossEMA()
+
+    base_config = StrategyBaseConfig(
+        trading_from=datetime.time(19, 0),
+        trading_to=datetime.time(21, 0),
+        trading_days=[0, 1, 2, 3, 4],
+        take_profit_distance=30,
+        stop_loss_distance=20,
+    )
+    crossEMA_config = CrossEMAConfig(
+        ema_short_period=50,
+        ema_long_period=200,
+    )
+
+    strategy = CrossEMA(base_config, crossEMA_config)
 
     historical_candles = broker.fetch_historical_prices(numpoints=50)
     if not is_candle_complete(historical_candles.iloc[-1]):

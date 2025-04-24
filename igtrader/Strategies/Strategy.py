@@ -6,6 +6,8 @@ import logging
 from dataclasses import dataclass
 from dataclasses import field
 from pandas import Timestamp
+import time as dt
+import statistics
 
 @dataclass
 class StrategyBaseConfig:
@@ -47,7 +49,54 @@ class Strategy(ABC):
         })
         self.buffer.set_index('date', inplace=True)
         
+        # Permettre de configurer la taille du buffer
         self.BUFFER_SIZE = 200
+        # Définir un seuil pour le redimensionnement (par exemple 20% de plus que BUFFER_SIZE)
+        self.RESIZE_THRESHOLD = int(self.BUFFER_SIZE * 1.2)
+        
+        # Configuration pour le benchmark
+        self.MAX_EXECUTION_TIMES = 1000
+        self.execution_times = []
+        self.last_execution_time = None
+        self.benchmark_active = False
+
+    def start_benchmark(self):
+        """Active la collecte des métriques de benchmark."""
+        self.benchmark_active = True
+        self.execution_times = []
+        
+    def stop_benchmark(self):
+        """Désactive la collecte des métriques de benchmark."""
+        self.benchmark_active = False
+        
+    def get_benchmark_stats(self):
+        """Retourne les statistiques de performance."""
+        if not self.execution_times:
+            return {
+                "count": 0,
+                "min": 0,
+                "max": 0, 
+                "mean": 0,
+                "median": 0,
+                "p95": 0,
+                "p99": 0,
+                "total": 0
+            }
+            
+        sorted_times = sorted(self.execution_times)
+        p95_index = int(len(sorted_times) * 0.95)
+        p99_index = int(len(sorted_times) * 0.99)
+        
+        return {
+            "count": len(self.execution_times),
+            "min": min(self.execution_times),
+            "max": max(self.execution_times),
+            "mean": statistics.mean(self.execution_times),
+            "median": statistics.median(self.execution_times),
+            "p95": sorted_times[p95_index] if p95_index < len(sorted_times) else sorted_times[-1],
+            "p99": sorted_times[p99_index] if p99_index < len(sorted_times) else sorted_times[-1],
+            "total": sum(self.execution_times)
+        }
 
     def _reset(self) -> None:
         """ Reset de la stratégie """
@@ -310,28 +359,45 @@ class Strategy(ABC):
         :param candle: Un dictionnaire représentant la bougie avec les clefs:
                        'date', 'Open', 'High', 'Low', 'Close'
         """
+        start_time = dt.perf_counter()
 
-        new_candle = pd.DataFrame([candle])
-        new_candle['date'] = pd.to_datetime(new_candle['date'])
-        new_candle.set_index('date', inplace=True)
-    
-        # On ajoute la nouvelle bougie au buffer et on la garde à la taille max +- 100
-        new_candle = new_candle.dropna(axis=1, how='all')
+        # 1. Conversion optimisée de la date
+        date_value = pd.to_datetime(candle['date'])
+        
+        # 2. Filtrer les données pertinentes sans créer de DataFrame intermédiaire
+        candle_data = {k: v for k, v in candle.items() if k != 'date' and not pd.isna(v)}
+        
+        # 3. Mise à jour efficace du buffer
         if self.buffer.empty:
-            self.buffer = new_candle.copy()
-        elif not new_candle.empty:
-            self.buffer = pd.concat([self.buffer, new_candle])
-        if len(self.buffer) > self.BUFFER_SIZE + 100:
-            self.buffer = self.buffer.iloc[-self.BUFFER_SIZE:]
-
-        # On enrichit la bougie avec les indicateurs manquants
-        self.candles = self.add_missing_indicators(candle.copy())
-
-        # Déclenche l'exécution de la stratégie avec la nouvelle donnée
+            # Créer un nouveau DataFrame directement si le buffer est vide
+            self.buffer = pd.DataFrame([candle_data], index=[date_value])
+        else:
+            # Ajouter directement la ligne sans utiliser concat (qui est coûteux)
+            self.buffer.loc[date_value] = pd.Series(candle_data)
+            
+            # 4. Redimensionnement du buffer dès qu'il dépasse le seuil
+            if len(self.buffer) > self.RESIZE_THRESHOLD:
+                # Ne garder que les BUFFER_SIZE dernières entrées
+                self.buffer = self.buffer.iloc[-self.BUFFER_SIZE:]
+        
+        # 5. Éviter la copie inutile du dictionnaire candle
+        self.candles = self.add_missing_indicators(candle)
+        
+        # 6. Exécution de la stratégie
         self._execute()
+        
+        end_time = dt.perf_counter()
+        duration_ms = (end_time - start_time) * 1000
+
+        self.last_execution_time = duration_ms
+
+        # Ajouter le temps d'exécution à la liste et limiter sa taille
+        if self.benchmark_active:
+            self.execution_times.append(duration_ms)
+
+        logging.debug(f"Strategy execution time: {duration_ms:.2f} ms")
 
         return self.signal
-
 
     @property
     def price(self) -> float:

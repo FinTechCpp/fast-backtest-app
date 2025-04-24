@@ -1556,3 +1556,106 @@ class AbstractChart(Candlestick, Pane):
         args = locals()
         del args['self']
         return self.win.create_subchart(*args.values())
+
+    def create_synchronized_tooltip(self, charts=None, options=None, trigger_key=None, trigger_click=False, toggle_mode=False):
+        """
+        Crée un tooltip synchronisé qui affiche les valeurs de chaque série à la position du crosshair
+        pour le graphique principal et les sous-graphiques spécifiés.
+        
+        :param charts: Liste des sous-graphiques à synchroniser avec le tooltip.
+                   Si None, seul le graphique principal sera utilisé.
+        :param options: Options de style du tooltip (optionnel)
+            - backgroundColor: Couleur de fond de l'infobulle
+            - textColor: Couleur du texte
+            - padding: Marge intérieure
+            - showOHLC: Afficher les valeurs OHLC pour les bougies (par défaut: True)
+        :param trigger_key: Touche du clavier pour activer le tooltip (ex: 't')
+        :param trigger_click: Si True, le tooltip s'affiche après un clic sur le graphique
+        :param toggle_mode: Si True, la touche ou le clic basculera l'état du tooltip (on/off).
+                            Si False, le tooltip ne s'affichera que pendant que la touche est maintenue
+                            ou pour quelques secondes après un clic
+        :return: L'ID du tooltip créé
+        """
+        if options is None:
+            options = {}
+        
+        # Définir l'option showOHLC=True par défaut
+        if 'showOHLC' not in options:
+            options['showOHLC'] = True
+        
+        tooltip_id = self.win._id_gen.generate()
+        
+        # Créer le tooltip synchronisé (désactivé par défaut)
+        js_code = f"{tooltip_id} = new Lib.SynchronizedTooltip({self.id}.chart, {js_json(options)});"
+        self.run_script(js_code)
+        
+        # Ajouter les séries principales du graphique actuel
+        for line in self.lines():
+            js_code = f'{tooltip_id}.addSeries({self.id}.chart, {line.id}.series, "{line.name.replace("\'", "\\\'")}")';
+            self.run_script(js_code)
+        
+        # Ajouter la série de bougies principale
+        js_code = f'{tooltip_id}.addSeries({self.id}.chart, {self.id}.series, "Prix")';
+        self.run_script(js_code)
+        
+        # Ajouter les séries des sous-graphiques si spécifiés
+        if charts:
+            for chart in charts:
+                # Ajouter la série principale du sous-graphique 
+                js_code = f'{tooltip_id}.addSeries({chart.id}.chart, {chart.id}.series, "Principal")';
+                self.run_script(js_code)
+                
+                # Ajouter les lignes du sous-graphique
+                for line in chart.lines():
+                    js_code = f'{tooltip_id}.addSeries({chart.id}.chart, {line.id}.series, "{line.name.replace("\'", "\\\'")}")';
+                    self.run_script(js_code)
+        
+        # Configuration de l'activation par touche du clavier
+        if trigger_key:
+            if toggle_mode:
+                # Mode bascule: une pression active/désactive le tooltip
+                js_code = f"""
+                document.addEventListener('keydown', function(e) {{
+                    if (e.key === '{trigger_key}') {{
+                        {tooltip_id}.toggleVisibility();
+                    }}
+                }});
+                """
+            else:
+                # Mode maintenu: le tooltip est visible uniquement pendant la pression
+                js_code = f"""
+                document.addEventListener('keydown', function(e) {{
+                    if (e.key === '{trigger_key}') {{
+                        {tooltip_id}.setEnabled(true);
+                    }}
+                }});
+                document.addEventListener('keyup', function(e) {{
+                    if (e.key === '{trigger_key}') {{
+                        {tooltip_id}.setEnabled(false);
+                    }}
+                }});
+                """
+            self.run_script(js_code)
+        
+        # Configuration de l'activation par clic
+        if trigger_click:
+            if toggle_mode:
+                # Mode bascule: un clic active/désactive le tooltip
+                js_code = f"""
+                {self.id}.chart.subscribeClick(function(param) {{
+                    {tooltip_id}.toggleVisibility();
+                }});
+                """
+            else:
+                # Mode temporaire: le tooltip s'affiche pendant 3 secondes après un clic
+                js_code = f"""
+                {self.id}.chart.subscribeClick(function(param) {{
+                    {tooltip_id}.setEnabled(true);
+                    setTimeout(function() {{ 
+                        {tooltip_id}.setEnabled(false); 
+                    }}, 3000);
+                }});
+                """
+            self.run_script(js_code)
+        
+        return tooltip_id

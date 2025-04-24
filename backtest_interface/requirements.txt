@@ -1,7 +1,6 @@
 streamlit
 setuptools
 pandas
-plotly
 numpy==2.1.3
 pycryptodome
 munch

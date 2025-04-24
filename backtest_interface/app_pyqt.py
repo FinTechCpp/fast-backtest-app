@@ -79,7 +79,7 @@ class BacktestApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Backtest Dashboard")
-        self.resize(1600, 900)
+        self.resize(1900, 1200)
         
         # Initialisation des variables
         self.strategy_map = {
@@ -478,8 +478,9 @@ class BacktestApp(QMainWindow):
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
-            else:
+            elif item.layout() is not None:  # Check if item.layout() is not None
                 self.clear_layout(item.layout())
+            # If neither widget nor layout, just continue
     
     def create_stats_widgets(self, stats):
         """Crée les widgets pour afficher les statistiques du backtest"""
@@ -833,6 +834,13 @@ class BacktestApp(QMainWindow):
             
             # Fit the chart to show all data
             chart.fit()
+            
+            chart.create_synchronized_tooltip(charts=[equity_chart, atr_chart, stoch_chart], options={
+                "backgroundColor": "rgba(255, 255, 255, 0.9)",
+                "textColor": "#333",
+                "padding": "8px"}, 
+                trigger_key="Shift",
+                toggle_mode=False)
         
         # Ajouter le conteneur du graphique au layout
         self.charts_layout.addWidget(chart_container)

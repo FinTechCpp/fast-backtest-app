@@ -14,3 +14,5 @@ __pycache__/
 .npm*
 .jupyter*
 *.egg-info/
+dist/app_pyqt*
+build/app_pyqt*

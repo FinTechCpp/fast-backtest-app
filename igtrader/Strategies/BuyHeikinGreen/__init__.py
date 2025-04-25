@@ -1,6 +1,7 @@
 from ..Strategy import Strategy, StrategyBaseConfig
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 import talib
 import numpy as np
 from dataclasses import dataclass
@@ -23,7 +24,7 @@ class BuyHeikinGreen(Strategy):
     """
     def __init__(self, base_config: StrategyBaseConfig, buy_heikin_green_config: BuyHeikinGreenConfig):
         super().__init__(base_config)
-        
+
         self.name = "BuyHeikinGreen"
         self.symbol = None
         self.exchange = None
@@ -41,9 +42,27 @@ class BuyHeikinGreen(Strategy):
         self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
     
-    def should_long(self):
-        # Vérifie si la bougie actuelle est verte (Close > Open) et la précedente rouge (Close < Open)
-        return self.candles["Close"] > self.candles["Open"] and self.buffer["Close"].iloc[-2] < self.buffer["Open"].iloc[-2] 
+    def should_long(self):   
+        if len(self.buffer) < 3:
+            # Pas assez de bougies pour retourner un signal
+            return False
+                
+        # Get current and previous candles
+        current, prev = self.candles, self.buffer.iloc[-2]
+        
+        # TODO : créer une méthode dans la classe Strategy mère pour calculer 
+        # les valeurs Heikin-Ashi dans les classes filles de manière optimale, 
+        # c'est à dire en calculant uniquement Open / High / Low / Close selon nécessaire dans should_long()
+    
+        # Calculate Heikin-Ashi values
+        ha_close_current = (current["Open"] + current["High"] + current["Low"] + current["Close"]) / 4
+        ha_open_current = (prev["Open"] + prev["Close"]) / 2
+        
+        ha_close_prev = (prev["Open"] + prev["High"] + prev["Low"] + prev["Close"]) / 4
+        ha_open_prev = (self.buffer.iloc[-3]["Open"] + self.buffer.iloc[-3]["Close"]) / 2
+        
+        # Check if current HA candle is green and previous HA candle is red
+        return ha_close_current > ha_open_current and ha_close_prev < ha_open_prev
 
     def should_short(self):
         return False

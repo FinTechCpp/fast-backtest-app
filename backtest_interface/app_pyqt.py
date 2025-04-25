@@ -1,6 +1,6 @@
 import sys
 import logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 import os
 import pandas as pd
 from datetime import datetime, time
@@ -176,9 +176,9 @@ class BacktestApp(QMainWindow):
         # Spread
         self.spread = QDoubleSpinBox()
         self.spread.setDecimals(4)
-        self.spread.setRange(0, 1)
+        self.spread.setRange(0, 0.001)
         self.spread.setSingleStep(0.0001)
-        self.spread.setValue(0.0002)
+        self.spread.setValue(0.0001)
         params_layout.addRow(QLabel("Spread:"), self.spread)
         
         # Cash initial
@@ -667,7 +667,7 @@ class BacktestApp(QMainWindow):
         chart_layout.setContentsMargins(0, 0, 0, 0)
         
         # Créer le graphique principal
-        chart = QtChart(chart_container, toolbox=True, inner_height=0.6)
+        chart = QtChart(chart_container, toolbox=True, inner_height=0.7)
 
         # Configurer l'apparence du graphique
         chart.layout(background_color='#f0f8ff', text_color='black')
@@ -677,9 +677,10 @@ class BacktestApp(QMainWindow):
         chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
         chart.legend(visible=True, color_based_on_candle=False, color='rgba(1,1,1,1)', font_size=12, font_family='Arial')
         
-        # Définir les données sur le graphique
+        if self.candle_type_combo.currentText() == "Heikin Ashi":
+            data = to_heikin_ashi(data)
         chart.set(data)
-        
+            
         # Ajouter le graphique au layout
         chart_layout.addWidget(chart.get_webview())
         
@@ -770,7 +771,7 @@ class BacktestApp(QMainWindow):
             
             # STOCHASTIC SUBCHART
             if 'STOCH' in indicator_columns:
-                stoch_chart = chart.create_subchart(height=0.15, width=1, position="bottom", sync=True)
+                stoch_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
                 stoch_chart.layout(background_color='#f0f8ff')
                 stoch_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
                 stoch_chart.time_scale(visible=False, min_bar_spacing=0.0)
@@ -795,7 +796,7 @@ class BacktestApp(QMainWindow):
             
             # ATR SUBCHART
             if 'ATR' in indicator_columns:
-                atr_chart = chart.create_subchart(height=0.15, width=1, position="bottom", sync=True)
+                atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
                 atr_chart.layout(background_color='#f0f8ff')
                 atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
                 atr_chart.time_scale(visible=False, min_bar_spacing=0.0)
@@ -891,9 +892,7 @@ class BacktestApp(QMainWindow):
                 interval=interval,
                 end_date=end_date,
                 timezone=timezone,
-                indicators=indicators,
-                candle_type=candle_type
-            )
+                indicators=indicators)
             
             # Vérifier la stratégie
             if strategy_name not in self.strategy_map:

@@ -228,11 +228,6 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
     df = df[(df.index >= start_date) & (df.index <= end_date)]
     logging.debug(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
     
-    # #Conversion en heikin ashi si candle_type est 'heikin ashi'
-    # if candle_type.lower() == 'heikin ashi' or candle_type.lower() == 'heikinashi':
-    #     logging.info("Conversion des données en Heikin-Ashi...")
-    #     df = to_heikin_ashi(df)
-    
     # Vérifier les colonnes nécessaires
     required_columns = {'open', 'high', 'low', 'close'}
     if not required_columns.issubset(df.columns):
@@ -411,31 +406,6 @@ def resample_ohlc(data, timeframe):
     return resampled
 
 def to_heikin_ashi(df):
-    if df.empty:
-         logging.warning("Input DataFrame is empty. Returning an empty DataFrame.")
-         return pd.DataFrame(columns=['Open', 'High', 'Low', 'Close'], index=df.index)
-
-    # If caller passed in a 'time' (or 'Time') column, make it the DatetimeIndex
-    if 'time' in df.columns:
-        df['time'] = pd.to_datetime(df['time'])
-        df = df.set_index('time')
-    elif 'Time' in df.columns:
-        df['Time'] = pd.to_datetime(df['Time'])
-        df = df.set_index('Time')
-
-    # Normalize column names to uppercase for consistency
-    df.columns = [col.capitalize() for col in df.columns]
-    
-    # Drop rows with NaN values in OHLC columns
-    required_columns = {'Open', 'High', 'Low', 'Close'}
-    if not required_columns.issubset(df.columns):
-        raise ValueError(f"Input DataFrame must contain columns: {required_columns}")
-    
-    df = df.dropna(subset=required_columns)
-    if df.empty:
-        logging.warning("Input DataFrame has no valid OHLC data after dropping NaN values.")
-        return pd.DataFrame(columns=['Open', 'High', 'Low', 'Close'], index=df.index)
-    
     data = df.copy()
     # Detect case
     o, h, l, c = (
@@ -460,5 +430,12 @@ def to_heikin_ashi(df):
         'low': ha_low,
         'close': ha_close
     }, index=data.index)
+    
+    # Préserver les colonnes d'indicateurs et autres métadonnées du DataFrame original
+    if hasattr(data, 'attrs'):
+        ha.attrs = data.attrs.copy()
+    for col in data.columns:
+        if col not in [o, h, l, c] and col not in ha.columns:
+            ha[col] = data[col]
     
     return ha

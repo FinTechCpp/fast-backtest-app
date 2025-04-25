@@ -3,7 +3,6 @@ venv
 __pycache__/
 *.pyc
 *.csv
-*.html
 .bash_history
 .cache/conda/notices/notices.cache
 .cache/pip/*
@@ -13,5 +12,6 @@ __pycache__/
 .ipython*
 .jupyter*
 *.egg-info/
+docs/build/** 
 
 

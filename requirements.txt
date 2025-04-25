@@ -53,3 +53,5 @@ pyarrow==19.0.1
 fastparquet==2024.11.0
 QtPy==2.4.3
 PyQt5==5.15.11
+tqdm==4.67.1
+pywebview==5.4

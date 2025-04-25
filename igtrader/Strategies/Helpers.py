@@ -107,7 +107,7 @@ def calculate_supertrend(data, atr_period=14, multiplier=3):
     return st
 
 
-def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timezone='Europe/Paris', indicators=None, candle_type='Standard'):
+def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timezone='Europe/Paris', indicators=None):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
     et filtre les données en fonction de la période spécifiée.
@@ -119,7 +119,6 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
         end_date (str|datetime): Date de fin au format 'DD/MM/YYYY' ou objet datetime
         timezone (str): Fuseau horaire pour les données (ex: 'Europe/Paris')
         indicators (dict): Configuration des indicateurs à calculer
-        candle_type (str): Type de bougie ('Standard' ou 'Heikin Ashi')
     """
     # Définir les indicateurs par défaut si aucun n'est fourni
     if indicators is None:
@@ -229,10 +228,10 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
     df = df[(df.index >= start_date) & (df.index <= end_date)]
     logging.debug(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
     
-    #Conversion en heikin ashi si candle_type est 'heikin ashi'
-    if candle_type.lower() == 'heikin ashi' or candle_type.lower() == 'heikinashi':
-        logging.info("Conversion des données en Heikin-Ashi...")
-        df = to_heikin_ashi(df)
+    # #Conversion en heikin ashi si candle_type est 'heikin ashi'
+    # if candle_type.lower() == 'heikin ashi' or candle_type.lower() == 'heikinashi':
+    #     logging.info("Conversion des données en Heikin-Ashi...")
+    #     df = to_heikin_ashi(df)
     
     # Vérifier les colonnes nécessaires
     required_columns = {'open', 'high', 'low', 'close'}

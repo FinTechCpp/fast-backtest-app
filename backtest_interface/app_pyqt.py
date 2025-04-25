@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout
                             QPushButton, QComboBox, QDoubleSpinBox, QDateEdit, QLineEdit, 
                             QCheckBox, QLabel, QTabWidget, QScrollArea, QSplitter, QTableWidget, 
                             QTableWidgetItem, QGroupBox, QGridLayout, QFormLayout, QSpinBox,
-                            QFrame, QSizePolicy)
+                            QFrame, QSizePolicy, QProgressBar)
 from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QFont, QColor
 from dotenv import load_dotenv
@@ -123,10 +123,24 @@ class BacktestApp(QMainWindow):
         title_label.setFont(title_font)
         layout.addWidget(title_label)
         
-        # Bouton de lancement du backtest
+        # Remplacer les lignes 126-129 par ceci:
+        # Bouton de lancement du backtest avec indicateur de chargement
+        button_layout = QHBoxLayout()
+        
         self.run_button = QPushButton("Lancer le backtest")
         self.run_button.setMinimumHeight(40)
-        layout.addWidget(self.run_button)
+        self.run_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
+        
+        self.loading_indicator = QProgressBar()
+        self.loading_indicator.setMaximum(0)  # Mode indéterminé
+        self.loading_indicator.setMinimum(0)
+        self.loading_indicator.setTextVisible(False)  # Pas de texte de pourcentage
+        self.loading_indicator.setMaximumHeight(10)
+        self.loading_indicator.setVisible(False)  # Caché par défaut
+        
+        button_layout.addWidget(self.run_button)
+        button_layout.addWidget(self.loading_indicator)
+        layout.addLayout(button_layout)
         
         # Paramètres généraux
         params_group = QGroupBox("Paramètres généraux")
@@ -326,7 +340,7 @@ class BacktestApp(QMainWindow):
         # Trading start time
         self.trading_from_hour = QSpinBox()
         self.trading_from_hour.setRange(0, 23)
-        self.trading_from_hour.setValue(9)
+        self.trading_from_hour.setValue(15)
         self.trading_from_minute = QSpinBox()
         self.trading_from_minute.setRange(0, 59)
         self.trading_from_minute.setValue(30)
@@ -338,7 +352,7 @@ class BacktestApp(QMainWindow):
         # Trading end time
         self.trading_to_hour = QSpinBox()
         self.trading_to_hour.setRange(0, 23)
-        self.trading_to_hour.setValue(16)
+        self.trading_to_hour.setValue(22)
         self.trading_to_minute = QSpinBox()
         self.trading_to_minute.setRange(0, 59)
         self.trading_to_minute.setValue(0)
@@ -654,7 +668,7 @@ class BacktestApp(QMainWindow):
         
         # Créer le graphique principal
         chart = QtChart(chart_container, toolbox=True, inner_height=0.6)
-        
+
         # Configurer l'apparence du graphique
         chart.layout(background_color='#f0f8ff', text_color='black')
         chart.grid(color='rgba(1,1,1,0.1)', vert_enabled=False, horz_enabled=False, style='solid')
@@ -848,6 +862,10 @@ class BacktestApp(QMainWindow):
     def run_backtest(self):
         """Exécute le backtest avec les paramètres sélectionnés et met à jour l'interface"""
         try:
+            self.loading_indicator.setVisible(True)
+            self.run_button.setEnabled(False)
+            self.run_button.setText("Exécution du backtest en cours...")
+            QApplication.processEvents()
             # Récupérer les paramètres du backtest
             symbol = self.symbol_combo.currentText()
             period = self.period_combo.currentText()
@@ -976,13 +994,19 @@ class BacktestApp(QMainWindow):
             self.setup_chart(chart_data, stats)
             self.create_stats_widgets(stats)
             
-            # Basculer vers l'onglet des graphiques
-            self.tab_widget.setCurrentIndex(0)
+            # Défini l'onglet à afficher en premier après l'exécution du backtest
+            # 0 = chart ; 1 = stats
+            self.tab_widget.setCurrentIndex(1)
             
             logging.info("Backtest exécuté avec succès")
             
         except Exception as e:
             logging.exception(f"Erreur lors de l'exécution du backtest: {str(e)}")
+        
+        finally:
+            self.loading_indicator.setVisible(False)
+            self.run_button.setEnabled(True)
+            self.run_button.setText("Lancer le backtest")
 
 
 if __name__ == "__main__":

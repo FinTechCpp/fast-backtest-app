@@ -17,3 +17,6 @@ pip install -e .
 npm install
 python build.py
 cd ..
+
+
+cd %USERPROFILE%\ig-trading-bot && git fetch && git pull && conda activate trading && python %USERPROFILE%\ig-trading-bot\backtest_interface\app_pyqt.py

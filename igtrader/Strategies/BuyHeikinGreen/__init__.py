@@ -41,28 +41,71 @@ class BuyHeikinGreen(Strategy):
         self.ema_long_name = f'EMA_{self.config.ema_long_period}'
         self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-    
-    def should_long(self):   
-        if len(self.buffer) < 3:
-            # Pas assez de bougies pour retourner un signal
-            return False
-                
-        # Get current and previous candles
+
+        self.ha_cache = {
+            'current': {'open': None, 'close': None, 'is_green': None},
+            'previous': {'open': None, 'close': None, 'is_green': None},
+        }
+
+    def before(self):
+        """
+        Calcule les valeurs Heikin Ashi de façon incrémentale.
+        À chaque appel, déplace les valeurs actuelles vers précédentes et calcule uniquement la nouvelle bougie.
+        """
+        # On a besoin d'au moins 2 bougies pour calculer les valeurs HA
+        if len(self.buffer) < 2:
+            return
+            
+        # Récupérer la bougie actuelle et la précédente
         current, prev = self.candles, self.buffer.iloc[-2]
         
-        # TODO : créer une méthode dans la classe Strategy mère pour calculer 
-        # les valeurs Heikin-Ashi dans les classes filles de manière optimale, 
-        # c'est à dire en calculant uniquement Open / High / Low / Close selon nécessaire dans should_long()
-    
-        # Calculate Heikin-Ashi values
+        # Si c'est la première fois qu'on calcule ou après une réinitialisation
+        if self.ha_cache['current']['close'] is None:
+            # On doit initialiser les deux bougies
+            if len(self.buffer) >= 3:
+                prev2 = self.buffer.iloc[-3]
+                
+                # Calculer HA pour la bougie précédente
+                ha_close_prev = (prev["Open"] + prev["High"] + prev["Low"] + prev["Close"]) / 4
+                ha_open_prev = (prev2["Open"] + prev2["Close"]) / 2
+                
+                self.ha_cache['previous'] = {
+                    'open': ha_open_prev,
+                    'close': ha_close_prev,
+                    'is_green': ha_close_prev > ha_open_prev
+                }
+            else:
+                # Si pas assez d'historique, initialiser avec des valeurs de base
+                self.ha_cache['previous'] = {
+                    'open': prev["Open"],
+                    'close': prev["Close"],
+                    'is_green': prev["Close"] > prev["Open"]
+                }
+        else:
+            # Déplacer les valeurs actuelles vers précédentes (réutilisation des calculs)
+            self.ha_cache['previous'] = self.ha_cache['current'].copy()
+        
+        # Calculer HA uniquement pour la bougie actuelle
         ha_close_current = (current["Open"] + current["High"] + current["Low"] + current["Close"]) / 4
-        ha_open_current = (prev["Open"] + prev["Close"]) / 2
+        ha_open_current = (self.ha_cache['previous']['open'] + self.ha_cache['previous']['close']) / 2
         
-        ha_close_prev = (prev["Open"] + prev["High"] + prev["Low"] + prev["Close"]) / 4
-        ha_open_prev = (self.buffer.iloc[-3]["Open"] + self.buffer.iloc[-3]["Close"]) / 2
+        # Mettre à jour le cache pour la bougie actuelle
+        self.ha_cache['current'] = {
+            'open': ha_open_current,
+            'close': ha_close_current,
+            'is_green': ha_close_current > ha_open_current
+        }
+    
+    def should_long(self):
+        """
+        Vérifie si la condition d'entrée en position longue est remplie:
+        - La bougie Heikin Ashi actuelle est verte
+        """
+        if len(self.buffer) < 3:
+            return False
         
-        # Check if current HA candle is green and previous HA candle is red
-        return ha_close_current > ha_open_current and ha_close_prev < ha_open_prev
+        # Vérifier seulement si la bougie actuelle est verte
+        return self.ha_cache['current']['is_green']
 
     def should_short(self):
         return False
@@ -79,6 +122,16 @@ class BuyHeikinGreen(Strategy):
         # Vérifie si le prix est au-dessus des EMA
         return self.price > self.candles[self.ema_short_name] and self.price > self.candles[self.ema_long_name]
     
+    def previous_ha_candle_red_filter(self):
+        """
+        Filtre vérifiant si la bougie Heikin Ashi précédente est rouge.
+        """
+        if len(self.buffer) < 3:
+            return False
+        
+        # Vérifier si la bougie précédente est rouge
+        return not self.ha_cache['previous']['is_green']
+    
     def stoch_inf_50_filter(self):
         # Vérifie si le Stochastic %K présent est inférieur à 50 ou qu'il est ete en dessous de 50 sur la bougie précédente
         return self.candles[self.stoch_k_name] < 50 and (self.k_previous is not None and self.k_previous < 50)
@@ -86,6 +139,7 @@ class BuyHeikinGreen(Strategy):
     # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
         return [
+            self.previous_ha_candle_red_filter,
             self.ema_filter,
             self.stoch_inf_50_filter,
         ]
@@ -122,6 +176,7 @@ class BuyHeikinGreen(Strategy):
             ema_val = talib.EMA(df['Close'].values, timeperiod=self.config.ema_short_period)
             candle[self.ema_short_name] = float(ema_val[-1])
 
+        # Stochastique
         if self.stoch_k_name not in candle or self.stoch_d_name not in candle:
             k, d = talib.STOCH(
                 df['High'].values, df['Low'].values, df['Close'].values,

@@ -3,7 +3,6 @@ venv
 __pycache__/
 *.pyc
 *.csv
-*.html
 .bash_history
 .cache/conda/notices/notices.cache
 .cache/pip/*
@@ -11,10 +10,8 @@ __pycache__/
 .ipynb_checkpoints/*
 .local*
 .ipython*
-.npm*
 .jupyter*
 *.egg-info/
-dist/*
-build/*
-backtest_interface/build/*
-backtest_interface/dist/*
+docs/build/** 
+
+

@@ -23,7 +23,7 @@ class BuyHeikinGreen(Strategy):
     """
     def __init__(self, base_config: StrategyBaseConfig, buy_heikin_green_config: BuyHeikinGreenConfig):
         super().__init__(base_config)
-
+        
         self.name = "BuyHeikinGreen"
         self.symbol = None
         self.exchange = None
@@ -42,8 +42,8 @@ class BuyHeikinGreen(Strategy):
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
     
     def should_long(self):
-        # Vérifie si la bougie actuelle est verte (Close > Open)
-        return self.candles["Close"] > self.candles["Open"]
+        # Vérifie si la bougie actuelle est verte (Close > Open) et la précedente rouge (Close < Open)
+        return self.candles["Close"] > self.candles["Open"] and self.buffer["Close"].iloc[-2] < self.buffer["Open"].iloc[-2] 
 
     def should_short(self):
         return False

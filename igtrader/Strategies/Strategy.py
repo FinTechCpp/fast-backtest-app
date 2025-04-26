@@ -178,6 +178,8 @@ class Strategy(ABC):
 
         # Filters
         if not self._execute_filters():
+            # CORRECTION: Réinitialiser le signal en cas d'échec des filtres
+            self._reset()  # Appel à _reset() qui réinitialise self.signal
             return
         
         # Submit the buy order
@@ -215,6 +217,8 @@ class Strategy(ABC):
 
         # Filters
         if not self._execute_filters():
+            # CORRECTION: Réinitialiser le signal en cas d'échec des filtres
+            self._reset()  # Appel à _reset() qui réinitialise self.signal
             return
         
         # Submit the sell order

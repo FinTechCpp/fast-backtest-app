@@ -23,7 +23,7 @@ from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreenBA
 from igtrader.Strategies.Helpers import load_data
 from igtrader.backtestingpy.backtesting.backtesting import Backtest
-from util import to_heikin_ashi
+from ui_util import to_heikin_ashi
 
 # Configure logging
 load_dotenv()

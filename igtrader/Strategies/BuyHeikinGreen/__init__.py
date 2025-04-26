@@ -35,7 +35,7 @@ class BuyHeikinGreen(Strategy):
 
         self.config = buy_heikin_green_config
         
-        # TODO : Arriver a rendre cela fixe, a ne pas redefinir a chaque fois
+        # TODO : Arriver a rendre cela fixe, à ne pas redéfinir à chaque fois
         # Noms des indicateurs
         self.ema_short_name = f'EMA_{self.config.ema_short_period}'
         self.ema_long_name = f'EMA_{self.config.ema_long_period}'
@@ -55,7 +55,7 @@ class BuyHeikinGreen(Strategy):
         # On a besoin d'au moins 2 bougies pour calculer les valeurs HA
         if len(self.buffer) < 2:
             return
-            
+        
         # Récupérer la bougie actuelle et la précédente
         current, prev = self.candles, self.buffer.iloc[-2]
         
@@ -250,32 +250,41 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # car cela initialise self.candles dans la stratégie
         signal = self.my_strategy.update_candle(candle)
         
+        
         # Vérifier les filtres
         ema_filter = self.my_strategy.ema_filter()
         stoch_filter = self.my_strategy.stoch_inf_50_filter()
         should_long = self.my_strategy.should_long()
-        
-        # Maintenant que self.candles a été mis à jour, on peut déboguer
-        if self.data.index[-1].day % 2 == 0 and self.data.index[-1].hour == 10:  # Limiter la quantité de logs
-            logging.debug(f"Candle: {candle['date']}")
-            logging.debug(f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}")
-            logging.debug(f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}")
-            logging.debug(f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}")
-            logging.debug(f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}")
-            logging.debug(f"Filtres - EMA: {ema_filter}, Stoch<50: {stoch_filter}")
-            logging.debug(f"Should Long: {should_long}")
     
         # Vérifier si un signal d'achat ou de vente est généré
-        if signal is None:
+        if signal is None or ema_filter is False or stoch_filter is False or should_long is False:
             return
         
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
-        elif not self.position and signal['action'] == 'BUY':
+        elif not self.position and signal['action'] == 'BUY' and ema_filter and stoch_filter and should_long:
             self.buy(sl=candle['Close'] - signal['stop_loss'], 
                     tp=candle['Close'] + signal['take_profit'], 
                     size=signal['quantity'])
+            logging.debug(
+                f"\n\nCandle: {candle['date']}\n"
+                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
+                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
+                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
+                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
+                f"Filtres - EMA: {ema_filter}, Stoch<50: {stoch_filter}\n "
+                f"Should Long: {should_long}\n\n"
+            )
         elif not self.position and signal['action'] == 'SELL':
             self.sell(sl=candle['Close'] + signal['stop_loss'], 
                     tp=candle['Close'] - signal['take_profit'], 
                     size=signal['quantity'])
+            logging.debug(
+                f"\n\nCandle: {candle['date']}\n"
+                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
+                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
+                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
+                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
+                f"Filtres - EMA: {ema_filter}, Stoch<50: {stoch_filter}\n "
+                f"Should Long: {should_long}\n\n"
+            )

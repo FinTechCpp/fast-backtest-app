@@ -169,7 +169,7 @@ class BacktestApp(QMainWindow):
         
         # Période
         self.period_combo = QComboBox()
-        self.period_combo.addItems(["5d", "10d", "30d", "1m", "3m", "6m", "1y", "2y"])
+        self.period_combo.addItems(["5d", "10d", "30d", "1m", "2m","3m", "6m", "1y", "2y"])
         self.period_combo.setCurrentIndex(1)
         params_layout.addRow(QLabel("Période de données:"), self.period_combo)
         

@@ -9,3 +9,5 @@ pip install -r requirements.txt
 cd lightweight-charts-python && npm install && python build.py && cd ..
 
 python %USERPROFILE%\ig-trading-bot\backtest_interface\PyQt\app.py
+
+cd %USERPROFILE%\ig-trading-bot && git fetch && git pull && pip install -r requirements.txt && cd lightweight-charts-python && npm install && python build.py && cd .. && python %USERPROFILE%\ig-trading-bot\backtest_interface\PyQt\app.py

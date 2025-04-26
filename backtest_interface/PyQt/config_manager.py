@@ -2,7 +2,7 @@ import os
 import configparser
 import logging
 from datetime import datetime
-from PyQt5.QtWidgets import QInputDialog, QMessageBox, QLineEdit, QComboBox
+from PyQt5.QtWidgets import QInputDialog, QMessageBox, QLineEdit
 
 class ConfigManager:
     """Gestionnaire de profils de configuration pour l'application de backtesting.

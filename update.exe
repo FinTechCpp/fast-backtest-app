@@ -1,0 +1,11 @@
+cd %USERPROFILE%\ig-trading-bot
+
+conda activate trading && conda update -n base -c defaults conda && conda install -c conda-forge nodejs --update-deps
+
+git status && git fetch && git pull
+
+pip install -r requirements.txt 
+
+cd lightweight-charts-python && npm install && python build.py && cd ..
+
+python %USERPROFILE%\ig-trading-bot\backtest_interface\PyQt\app.py

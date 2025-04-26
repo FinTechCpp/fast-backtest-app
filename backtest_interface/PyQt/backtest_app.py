@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout
                             QPushButton, QComboBox, QDoubleSpinBox, QDateEdit, QLineEdit, 
                             QCheckBox, QLabel, QTabWidget, QScrollArea, QSplitter, QTableWidget, 
                             QTableWidgetItem, QGroupBox, QGridLayout, QFormLayout, QSpinBox, QProgressBar)
-from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor
 
 # Lightweight Charts imports
@@ -19,21 +19,19 @@ from lightweight_charts.widgets import QtChart
 # Local imports
 from config_manager import ConfigManager
 from metric_widget import MetricWidget
+from ui_util import to_heikin_ashi, BacktestWorker
 
 # backtest_backend imports
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA  
 from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreenBA
 from igtrader.Strategies.Helpers import load_data
-from igtrader.backtestingpy.backtesting.backtesting import Backtest
-from ui_util import to_heikin_ashi
-
 
 class BacktestApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Backtest Dashboard")
-        self.resize(1600, 1080)
+        self.resize(2100, 800)
         
         # Initialisation des variables
         self.strategy_map = {
@@ -183,7 +181,7 @@ class BacktestApp(QMainWindow):
         
         # Date de fin
         self.end_date = QDateEdit()
-        self.end_date.setDate(QDate(2025, 2, 10))
+        self.end_date.setDate(QDate(2025, 4, 10))
         self.end_date.setCalendarPopup(True)
         params_layout.addRow(QLabel("Date de fin:"), self.end_date)
         
@@ -675,168 +673,321 @@ class BacktestApp(QMainWindow):
         self.stats_content_layout.addStretch()
     
     def setup_chart(self, data, stats=None):
-        """Configure et affiche le graphique principal et les sous-graphiques"""
-        # Supprimer l'ancien graphique s'il existe
-        self.clear_layout(self.charts_layout)
-        
-        # Création du conteneur pour le graphique
-        chart_container = QWidget()
-        chart_layout = QVBoxLayout(chart_container)
-        chart_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Créer le graphique principal
-        chart = QtChart(chart_container, toolbox=True, inner_height=0.7)
-
-        # Configurer l'apparence du graphique
-        chart.layout(background_color='#f0f8ff', text_color='black')
-        chart.grid(color='rgba(1,1,1,0.1)', vert_enabled=False, horz_enabled=False, style='solid')
-        chart.price_scale(minimum_width=120, auto_scale=True, mode='normal', scale_margin_bottom=0.1, scale_margin_top=0.1)
-        chart.time_scale(visible=True, seconds_visible=True, border_color='black', min_bar_spacing=0.0)
-        chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
-        chart.legend(visible=True, color_based_on_candle=False, color='rgba(1,1,1,1)', font_size=12, font_family='Arial')
-        
-        if self.candle_type_combo.currentText() == "Heikin Ashi":
-            data = to_heikin_ashi(data)
-        chart.set(data)
+        """Configure et affiche le graphique principal et les sous-graphiques en utilisant les données brutes"""
+        try:
+            # Supprimer l'ancien graphique s'il existe
+            self.clear_layout(self.charts_layout)
             
-        # Ajouter le graphique au layout
-        chart_layout.addWidget(chart.get_webview())
-        
-        # Stocker la référence au graphique
-        self.current_chart = chart
-        
-        # Si des statistiques sont fournies, ajouter les indicateurs et les trades
-        if stats is not None:
-            # EQUITY SUBCHART
-            equity_chart = chart.create_subchart(height=0.1, width=1, position="top", sync=True)
-            equity_chart.layout(background_color='#f0f8ff')
-            equity_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
-            equity_chart.time_scale(visible=False, min_bar_spacing=0.0)  # Hide time scale for equity curve
-            equity_chart.price_scale(minimum_width=120)
-            equity_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+            # Afficher un message de chargement
+            loading_label = QLabel("Chargement du graphique en cours...")
+            loading_label.setAlignment(Qt.AlignCenter)
+            font = QFont()
+            font.setPointSize(12)
+            loading_label.setFont(font)
+            self.charts_layout.addWidget(loading_label)
+            QApplication.processEvents()
             
-            # Prepare equity data
-            equity_df = stats['_equity_curve'].copy()
-            equity_df.reset_index(inplace=True)
+            # Informer l'utilisateur du nombre de points de données à afficher
+            loading_label.setText(f"Préparation de l'affichage des {len(data)} points de données brutes...")
+            QApplication.processEvents()
             
-            # Handle possible column names - check what's actually there
-            if 'index' in equity_df.columns:
-                equity_df.rename(columns={'index': 'time'}, inplace=True)
-            elif 'date' in equity_df.columns:
-                equity_df.rename(columns={'date': 'time'}, inplace=True)
-            elif equity_df.index.name is None:
-                equity_df.rename(columns={equity_df.columns[0]: 'time'}, inplace=True)
+            # Création du conteneur pour le graphique 
+            chart_container = QWidget()
+            chart_layout = QVBoxLayout(chart_container)
+            chart_layout.setContentsMargins(0, 0, 0, 0)
             
-            # Add the main equity line
-            equity_line = equity_chart.create_line(name='Equity', color='rgba(20,20,180,1)', width=1, price_line=False)
-            equity_line.horizontal_line(price=100, color='black', width=1, style='dashed', text='Initial Equity')
+            # Créer le graphique principal avec des options de performance
+            chart = QtChart(chart_container, toolbox=True, inner_height=0.7)
+            QApplication.processEvents()
+    
+            # Ajouter d'abord le webview au layout pour qu'il soit initialisé correctement
+            chart_layout.addWidget(chart.get_webview())
+            QApplication.processEvents()
             
-            # Convert time to string and handle Timedelta objects
-            equity_df['time'] = equity_df['time'].astype(str)
-            for column in equity_df.columns:
-                if pd.api.types.is_timedelta64_dtype(equity_df[column]):
-                    equity_df[column] = equity_df[column].dt.total_seconds()
-                elif isinstance(equity_df[column].iloc[0], pd.Timedelta):
-                    equity_df[column] = equity_df[column].apply(lambda x: x.total_seconds() if isinstance(x, pd.Timedelta) else x)
+            # Configurer l'apparence du graphique
+            chart.layout(background_color='#f0f8ff', text_color='black')
+            chart.grid(color='rgba(1,1,1,0.1)', vert_enabled=False, horz_enabled=False, style='solid')
+            chart.price_scale(minimum_width=120, auto_scale=True, mode='normal', scale_margin_bottom=0.1, scale_margin_top=0.1)
+            chart.time_scale(visible=True, seconds_visible=True, border_color='black', min_bar_spacing=0.0)
+            chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+            chart.legend(visible=True, color_based_on_candle=False, color='rgba(1,1,1,1)', font_size=12, font_family='Arial')
+            QApplication.processEvents()
             
-            # Set the data for the equity line
-            equity_line.set(equity_df)
+            # Traitement des données en Heikin Ashi si nécessaire
+            if self.candle_type_combo.currentText() == "Heikin Ashi":
+                data = to_heikin_ashi(data)
+                QApplication.processEvents()
             
-            # Define indicator colors
-            indicator_colors = {
-                'EMA': ['blue', 'purple', 'red', 'green', 'cyan', 'magenta'],
-                'SUPERTREND': ['orange', 'brown', 'gold'],
-                'STOCH_K': ['blue'],
-                'STOCH_D': ['red'],
-                'ATR': ['green', 'teal']
-            }
+            # Ajouter le conteneur au layout principal avant de définir les données
+            self.charts_layout.removeWidget(loading_label)
+            loading_label.deleteLater()
+            self.charts_layout.addWidget(chart_container)
+            QApplication.processEvents()
             
-            # Get indicator columns from data attributes
-            indicator_columns = data.attrs.get('indicator_columns', {})
+            # Stocker la référence au graphique
+            self.current_chart = chart
             
-            logging.debug(f"data.attrs: {data.attrs}")
-            logging.debug(f"Indicator columns: {indicator_columns}")
+            # Nouveau label de chargement avec progression
+            loading_overlay = QWidget(chart_container)
+            loading_overlay_layout = QVBoxLayout(loading_overlay)
+            loading_label = QLabel("Chargement des données brutes dans le graphique...")
+            loading_label.setAlignment(Qt.AlignCenter)
+            loading_label.setStyleSheet("background-color: rgba(255,255,255,0.85); padding: 10px; border-radius: 5px; color: #333; font-weight: bold;")
             
-            # Add EMAs to main chart
-            if 'EMA' in indicator_columns:
-                for i, ema_col in enumerate(indicator_columns['EMA']):
-                    if ema_col in data.columns:
-                        color_idx = i % len(indicator_colors['EMA'])
-                        ema_line = chart.create_line(
-                            name=ema_col, 
-                            color=indicator_colors['EMA'][color_idx], 
-                            width=1, 
-                            price_line=False
-                        )
-                        ema_df = data[['time', ema_col]].copy()
-                        ema_line.set(ema_df)
-                        logging.debug(f"Added EMA indicator: {ema_col}")
+            loading_progress = QProgressBar()
+            loading_progress.setRange(0, 100)
+            loading_progress.setValue(0)
+            loading_progress.setStyleSheet("QProgressBar {border: 1px solid #ccc; border-radius: 5px; text-align: center;} QProgressBar::chunk {background-color: #4CAF50; width: 10px;}")
             
-            # Add SuperTrend to main chart
-            if 'SUPERTREND' in indicator_columns:
-                for i, st_col in enumerate(indicator_columns['SUPERTREND']):
-                    if st_col in data.columns:
-                        color_idx = i % len(indicator_colors['SUPERTREND'])
-                        st_line = chart.create_line(
-                            name=st_col, 
-                            color=indicator_colors['SUPERTREND'][color_idx], 
-                            width=1, 
-                            price_line=False
-                        )
-                        st_df = data[['time', st_col]].copy()
-                        st_line.set(st_df)
-                        logging.debug(f"Added SuperTrend indicator: {st_col}")
+            loading_overlay_layout.addWidget(loading_label)
+            loading_overlay_layout.addWidget(loading_progress)
             
-            # STOCHASTIC SUBCHART
-            if 'STOCH' in indicator_columns:
-                stoch_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
-                stoch_chart.layout(background_color='#f0f8ff')
-                stoch_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
-                stoch_chart.time_scale(visible=False, min_bar_spacing=0.0)
-                stoch_chart.price_scale(minimum_width=120)
-                stoch_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+            loading_overlay.setGeometry(chart_container.rect())
+            loading_overlay.raise_()
+            loading_overlay.show()
+            QApplication.processEvents()
+            
+            # Définir les données brutes complètes - mais éviter le blocage de l'interface
+            try:
+                # Utiliser set directement avec les données complètes
+                loading_label.setText(f"Chargement de {len(data)} points de données brutes...")
+                QApplication.processEvents()
                 
-                stoch_lines = []
-                for i, stoch_col in enumerate(indicator_columns['STOCH']):
-                    if stoch_col in data.columns:
-                        color = indicator_colors['STOCH_K'][0] if 'K' in stoch_col else indicator_colors['STOCH_D'][0]
-                        stoch_line = stoch_chart.create_line(name=stoch_col, color=color, width=1, price_line=False)
-                        stoch_df = data[['time', stoch_col]].copy()
-                        stoch_line.set(stoch_df)
-                        stoch_lines.append(stoch_line)
-                        logging.debug(f"Added Stochastic indicator: {stoch_col}")
+                chart.set(data)
+                QApplication.processEvents()
+                loading_progress.setValue(100)
                 
-                # Add reference lines if we created any stochastic lines
-                if stoch_lines:
-                    stoch_lines[0].horizontal_line(price=80, color='green', width=1, style='dashed', text='Overbought(80)')
-                    stoch_lines[0].horizontal_line(price=20, color='red', width=1, style='dashed', text='Oversold(20)')
-                    stoch_lines[0].horizontal_line(price=50, color='blue', width=1, style='dashed', text='Neutral(50)')
+            except Exception as e:
+                logging.error(f"Erreur lors du chargement des données: {str(e)}")
+                loading_label.setText(f"Erreur: {str(e)}")
+                loading_label.setStyleSheet("background-color: rgba(255,0,0,0.7); color: white; padding: 10px; border-radius: 5px;")
+                QApplication.processEvents()
+                return
+                    
+            # Supprimer le widget de chargement
+            loading_overlay.deleteLater()
+            QApplication.processEvents()
             
-            # ATR SUBCHART
-            if 'ATR' in indicator_columns:
-                atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
-                atr_chart.layout(background_color='#f0f8ff')
-                atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
-                atr_chart.time_scale(visible=False, min_bar_spacing=0.0)
-                atr_chart.price_scale(minimum_width=120)
-                atr_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+            # Si des statistiques sont fournies, ajouter les indicateurs et les trades
+            # mais avec un délai pour permettre au graphique de se stabiliser
+            if stats is not None:
+                # Utiliser un QTimer pour différer l'ajout des composants
+                QTimer.singleShot(500, lambda: self.process_chart_components(chart, data, stats))
+            
+        except Exception as e:
+            logging.exception(f"Erreur lors de la création du graphique: {str(e)}")
+            # Afficher un message d'erreur à l'utilisateur
+            error_widget = QWidget()
+            error_layout = QVBoxLayout(error_widget)
+            
+            error_label = QLabel(f"Erreur lors de la création du graphique:")
+            error_label.setStyleSheet("color: red; font-weight: bold;")
+            
+            error_detail = QLabel(str(e))
+            error_detail.setWordWrap(True)
+            
+            error_layout.addWidget(error_label)
+            error_layout.addWidget(error_detail)
+            
+            self.clear_layout(self.charts_layout)
+            self.charts_layout.addWidget(error_widget)
+    
+    def process_chart_components(self, chart, data, stats):
+        """Traite les composants du graphique séparément pour éviter de bloquer l'interface"""
+        # Utiliser un QTimer pour permettre à l'interface de rester responsive
+        indicator_columns = data.attrs.get('indicator_columns', {})
+        
+        # Variables pour le suivi des sous-graphiques
+        self.equity_chart = None
+        self.stoch_chart = None 
+        self.atr_chart = None
+        
+        # Définir les couleurs des indicateurs
+        indicator_colors = {
+            'EMA': ['blue', 'purple', 'red', 'green', 'cyan', 'magenta'],
+            'SUPERTREND': ['orange', 'brown', 'gold'],
+            'STOCH_K': ['blue'],
+            'STOCH_D': ['red'],
+            'ATR': ['green', 'teal']
+        }
+        
+        # Créer un timer pour traiter séquentiellement les étapes
+        self.chart_timer = QTimer(self)
+        self.chart_steps = [
+            lambda: self.process_equity_chart(chart, stats),
+            lambda: self.process_ema_indicators(chart, data, indicator_columns, indicator_colors),
+            lambda: self.process_supertrend_indicators(chart, data, indicator_columns, indicator_colors),
+            lambda: self.process_stoch_indicators(chart, data, indicator_columns, indicator_colors),
+            lambda: self.process_atr_indicators(chart, data, indicator_columns, indicator_colors),
+            lambda: self.process_trade_markers(chart, stats),
+            lambda: self.finalize_chart(chart)
+        ]
+        
+        # Démarrer le traitement séquentiel
+        self.chart_step_index = 0
+        self.chart_timer.timeout.connect(self.execute_next_chart_step)
+        self.chart_timer.start(50)  # Intervalle de 50 ms entre les étapes
+    
+    def execute_next_chart_step(self):
+        """Exécute la prochaine étape du traitement du graphique"""
+        if self.chart_step_index < len(self.chart_steps):
+            try:
+                # Exécuter l'étape actuelle
+                self.chart_steps[self.chart_step_index]()
+                self.chart_step_index += 1
+            except Exception as e:
+                logging.exception(f"Erreur lors de l'étape {self.chart_step_index}: {str(e)}")
+                self.chart_timer.stop()
+        else:
+            # Toutes les étapes terminées
+            self.chart_timer.stop()
+    
+    def process_equity_chart(self, chart, stats):
+        """Traitement du graphique d'équité"""
+        self.equity_chart = chart.create_subchart(height=0.1, width=1, position="top", sync=True)
+        self.equity_chart.layout(background_color='#f0f8ff')
+        self.equity_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
+        self.equity_chart.time_scale(visible=False, min_bar_spacing=0.0)
+        self.equity_chart.price_scale(minimum_width=120)
+        self.equity_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+        QApplication.processEvents()
+        
+        # Prepare equity data
+        equity_df = stats['_equity_curve'].copy()
+        equity_df.reset_index(inplace=True)
+        
+        # Handle possible column names
+        if 'index' in equity_df.columns:
+            equity_df.rename(columns={'index': 'time'}, inplace=True)
+        elif 'date' in equity_df.columns:
+            equity_df.rename(columns={'date': 'time'}, inplace=True)
+        elif equity_df.index.name is None and len(equity_df.columns) > 0:
+            equity_df.rename(columns={equity_df.columns[0]: 'time'}, inplace=True)
+        QApplication.processEvents()
+        
+        # Add the main equity line
+        equity_line = self.equity_chart.create_line(name='Equity', color='rgba(20,20,180,1)', width=1, price_line=False)
+        equity_line.horizontal_line(price=100, color='black', width=1, style='dashed', text='Initial Equity')
+        QApplication.processEvents()
+        
+        # Convert time to string and handle Timedelta objects
+        equity_df['time'] = equity_df['time'].astype(str)
+        for column in equity_df.columns:
+            if pd.api.types.is_timedelta64_dtype(equity_df[column]):
+                equity_df[column] = equity_df[column].dt.total_seconds()
+            elif len(equity_df) > 0 and isinstance(equity_df[column].iloc[0], pd.Timedelta):
+                equity_df[column] = equity_df[column].apply(lambda x: x.total_seconds() if isinstance(x, pd.Timedelta) else x)
+        QApplication.processEvents()
+        
+        # Set the data for the equity line
+        equity_line.set(equity_df)
+        QApplication.processEvents()
+    
+    def process_ema_indicators(self, chart, data, indicator_columns, indicator_colors):
+        """Traitement des indicateurs EMA"""
+        if 'EMA' in indicator_columns:
+            for i, ema_col in enumerate(indicator_columns['EMA']):
+                if ema_col in data.columns:
+                    color_idx = i % len(indicator_colors['EMA'])
+                    ema_line = chart.create_line(
+                        name=ema_col, 
+                        color=indicator_colors['EMA'][color_idx], 
+                        width=1, 
+                        price_line=False
+                    )
+                    ema_df = data[['time', ema_col]].copy()
+                    ema_line.set(ema_df)
+                    logging.debug(f"Added EMA indicator: {ema_col}")
                 
-                for i, atr_col in enumerate(indicator_columns['ATR']):
-                    if atr_col in data.columns:
-                        color_idx = i % len(indicator_colors['ATR'])
-                        atr_line = atr_chart.create_line(
-                            name=atr_col, 
-                            color=indicator_colors['ATR'][color_idx], 
-                            width=1, 
-                            price_line=False
-                        )
-                        atr_df = data[['time', atr_col]].copy()
-                        atr_line.set(atr_df)
-                        logging.debug(f"Added ATR indicator: {atr_col}")
+                # Répondre à l'interface toutes les 2 EMAs ou à la dernière
+                if i % 2 == 1 or i == len(indicator_columns['EMA'])-1:
+                    QApplication.processEvents()
+    
+    def process_supertrend_indicators(self, chart, data, indicator_columns, indicator_colors):
+        """Traitement des indicateurs SuperTrend"""
+        if 'SUPERTREND' in indicator_columns:
+            for i, st_col in enumerate(indicator_columns['SUPERTREND']):
+                if st_col in data.columns:
+                    color_idx = i % len(indicator_colors['SUPERTREND'])
+                    st_line = chart.create_line(
+                        name=st_col, 
+                        color=indicator_colors['SUPERTREND'][color_idx], 
+                        width=1, 
+                        price_line=False
+                    )
+                    st_df = data[['time', st_col]].copy()
+                    st_line.set(st_df)
+                    logging.debug(f"Added SuperTrend indicator: {st_col}")
+                    QApplication.processEvents()
+    
+    def process_stoch_indicators(self, chart, data, indicator_columns, indicator_colors):
+        """Traitement des indicateurs stochastiques"""
+        if 'STOCH' in indicator_columns:
+            self.stoch_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
+            self.stoch_chart.layout(background_color='#f0f8ff')
+            self.stoch_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
+            self.stoch_chart.time_scale(visible=False, min_bar_spacing=0.0)
+            self.stoch_chart.price_scale(minimum_width=120)
+            self.stoch_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+            QApplication.processEvents()
             
-            # Add trade markers
-            trades = stats['_trades']
-            for i, trade in trades.iterrows():
+            stoch_lines = []
+            for i, stoch_col in enumerate(indicator_columns['STOCH']):
+                if stoch_col in data.columns:
+                    color = indicator_colors['STOCH_K'][0] if 'K' in stoch_col else indicator_colors['STOCH_D'][0]
+                    stoch_line = self.stoch_chart.create_line(name=stoch_col, color=color, width=1, price_line=False)
+                    stoch_df = data[['time', stoch_col]].copy()
+                    stoch_line.set(stoch_df)
+                    stoch_lines.append(stoch_line)
+                    logging.debug(f"Added Stochastic indicator: {stoch_col}")
+                QApplication.processEvents()
+            
+            # Add reference lines if we created any stochastic lines
+            if stoch_lines:
+                stoch_lines[0].horizontal_line(price=80, color='green', width=1, style='dashed', text='Overbought(80)')
+                stoch_lines[0].horizontal_line(price=20, color='red', width=1, style='dashed', text='Oversold(20)')
+                stoch_lines[0].horizontal_line(price=50, color='blue', width=1, style='dashed', text='Neutral(50)')
+            QApplication.processEvents()
+    
+    def process_atr_indicators(self, chart, data, indicator_columns, indicator_colors):
+        """Traitement des indicateurs ATR"""
+        if 'ATR' in indicator_columns:
+            self.atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
+            self.atr_chart.layout(background_color='#f0f8ff')
+            self.atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
+            self.atr_chart.time_scale(visible=False, min_bar_spacing=0.0)
+            self.atr_chart.price_scale(minimum_width=120)
+            self.atr_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+            QApplication.processEvents()
+            
+            for i, atr_col in enumerate(indicator_columns['ATR']):
+                if atr_col in data.columns:
+                    color_idx = i % len(indicator_colors['ATR'])
+                    atr_line = self.atr_chart.create_line(
+                        name=atr_col, 
+                        color=indicator_colors['ATR'][color_idx], 
+                        width=1, 
+                        price_line=False
+                    )
+                    atr_df = data[['time', atr_col]].copy()
+                    atr_line.set(atr_df)
+                    logging.debug(f"Added ATR indicator: {atr_col}")
+                QApplication.processEvents()
+    
+    def process_trade_markers(self, chart, stats):
+        """Traitement des marqueurs de trades par lots"""
+        trades = stats['_trades']
+        if len(trades) == 0:
+            return
+            
+        # Traiter les marqueurs par lots pour éviter de bloquer l'interface
+        batch_size = 20  # Plus petit batch pour Windows
+        
+        for batch_start in range(0, len(trades), batch_size):
+            batch_end = min(batch_start + batch_size, len(trades))
+            
+            for i in range(batch_start, batch_end):
+                trade = trades.iloc[i]
                 entry_time = pd.to_datetime(trade['EntryTime'])
                 exit_time = pd.to_datetime(trade['ExitTime'])
                 entry_price = trade['EntryPrice']
@@ -851,7 +1002,8 @@ class BacktestApp(QMainWindow):
                     position="above",
                     color=entry_color,
                     text=f"Entry: {entry_price:.2f}",
-                    shape="arrow_down")                
+                    shape="arrow_down")
+                
                 # Exit marker
                 chart.marker(
                     time=exit_time,
@@ -860,18 +1012,28 @@ class BacktestApp(QMainWindow):
                     text=f"Exit: {exit_price:.2f} (P/L: {trade['PnL']:.2f})",
                     shape="arrow_up")
             
-            # Fit the chart to show all data
-            chart.fit()
-            
-            chart.create_synchronized_tooltip(charts=[equity_chart, atr_chart, stoch_chart], options={
-                "backgroundColor": "rgba(255, 255, 255, 0.9)",
-                "textColor": "#333",
-                "padding": "8px"}, 
-                trigger_key="Shift",
-                toggle_mode=False)
+            QApplication.processEvents()
+    
+    def finalize_chart(self, chart):
+        """Finalisation du graphique avec ajustement et configuration des tooltips"""
+        # Fit the chart to show all data
+        chart.fit()
+        QApplication.processEvents()
         
-        # Ajouter le conteneur du graphique au layout
-        self.charts_layout.addWidget(chart_container)
+        # Créer les tooltips synchronisés seulement si les sous-graphiques existent
+        charts_for_tooltip = [c for c in [self.equity_chart, self.stoch_chart, self.atr_chart] if c is not None]
+        if charts_for_tooltip:
+            chart.create_synchronized_tooltip(
+                charts=charts_for_tooltip,
+                options={
+                    "backgroundColor": "rgba(255, 255, 255, 0.9)",
+                    "textColor": "#333",
+                    "padding": "8px"
+                },
+                trigger_key="Shift",
+                toggle_mode=False
+            )
+        QApplication.processEvents()
         
     def run_backtest(self):
         """Exécute le backtest avec les paramètres sélectionnés et met à jour l'interface"""
@@ -880,6 +1042,7 @@ class BacktestApp(QMainWindow):
             self.run_button.setEnabled(False)
             self.run_button.setText("Exécution du backtest en cours...")
             QApplication.processEvents()
+            
             # Récupérer les paramètres du backtest
             symbol = self.symbol_combo.currentText()
             period = self.period_combo.currentText()
@@ -897,7 +1060,7 @@ class BacktestApp(QMainWindow):
             indicators = self.get_indicator_config()
             logging.debug(f"Using indicators: {indicators}")
             
-            # Charger les données
+            # Charger les données (potentiellement long aussi, mais gérable)
             logging.debug("Chargement des données...")
             data = load_data(
                 symbol=symbol,
@@ -939,38 +1102,54 @@ class BacktestApp(QMainWindow):
                 "stoch_slowk": self.slowk_spin.value(),
                 "stoch_slowd": self.slowd_spin.value(),
             }
-            logging.debug(f"Stop Loss: {stop_loss}, Take Profit: {take_profit}")
             
             # Configurer les indicateurs attendus par la stratégie
             if "EMA" in indicators:
-                # Trouver l'EMA court, moyen et long
                 ema_periods = sorted([params[0] for params in indicators["EMA"]])
                 if len(ema_periods) >= 2:
-                    strategy_kwargs["ema_short_name"] = f"EMA_{ema_periods[-2]}"  # Avant-dernier (moyen)
-                    strategy_kwargs["ema_long_name"] = f"EMA_{ema_periods[-1]}"   # Dernier (long)
+                    strategy_kwargs["ema_short_name"] = f"EMA_{ema_periods[-2]}"
+                    strategy_kwargs["ema_long_name"] = f"EMA_{ema_periods[-1]}"
             
             if "SUPERTREND" in indicators:
-                # Utiliser le premier SuperTrend de la configuration
                 atr_period, multiplier = indicators["SUPERTREND"][0]
                 strategy_kwargs["supertrend_name"] = f"SUPERTREND_{atr_period}_{multiplier}"
             
             if "STOCH" in indicators:
-                # Utiliser le premier Stochastic de la configuration
                 fastk, slowk, slowd = indicators["STOCH"][0]
                 strategy_kwargs["stoch_k_name"] = f"STOCH_K_{fastk}_{slowk}_{slowd}"
                 strategy_kwargs["stoch_d_name"] = f"STOCH_D_{fastk}_{slowk}_{slowd}"
             
-            logging.info(f"Utilisant les indicateurs pour la stratégie: {strategy_kwargs}")
             strategy = self.strategy_map[strategy_name]
             
-            # Défini l'onglet à afficher en premier après l'exécution du backtest
-            # 0 = chart ; 1 = stats
-            self.tab_widget.setCurrentIndex(1)
+            # Définir le comportement après le backtest
+            self.tab_widget.setCurrentIndex(0)
             
-            # Exécuter le backtest
-            bt = Backtest(data, strategy, cash=cash, commission=.00, spread=spread, 
-                        exclusive_orders=False, strategy_kwargs=strategy_kwargs)
-            stats = bt.run()
+            # Créer et exécuter le thread de backtest
+            self.backtest_thread = BacktestWorker(
+                data=data,
+                strategy=strategy,
+                cash=cash,
+                spread=spread,
+                strategy_kwargs=strategy_kwargs
+            )
+            
+            # Connecter les signaux
+            self.backtest_thread.finished.connect(self.on_backtest_finished)
+            self.backtest_thread.error.connect(self.on_backtest_error)
+            
+            # Démarrer le thread
+            self.backtest_thread.start()
+            
+        except Exception as e:
+            logging.exception(f"Erreur lors de l'exécution du backtest: {str(e)}")
+            self.loading_indicator.setVisible(False)
+            self.run_button.setEnabled(True)
+            self.run_button.setText("Lancer le backtest")
+            
+    def on_backtest_finished(self, data, stats):
+        """Fonction appelée lorsque le backtest est terminé avec succès"""
+        try:
+            timezone = self.timezone.text()
             
             # Traiter les résultats
             stats['_trades']['EntryTime'] = stats['_trades']['EntryTime'].dt.tz_convert(timezone).dt.tz_localize(None)
@@ -978,6 +1157,7 @@ class BacktestApp(QMainWindow):
             stats['_equity_curve'].index = stats['_equity_curve'].index.tz_convert(timezone).tz_localize(None)
             stats['_equity_curve']['Equity'] = stats['_equity_curve']['Equity'] / 1000
             
+            # Afficher les statistiques (généralement plus léger)
             self.create_stats_widgets(stats)
             
             # Préparer les données pour le graphique
@@ -1007,17 +1187,19 @@ class BacktestApp(QMainWindow):
             
             # Trier les données
             chart_data.sort_values('time', inplace=True)
-            
-            
-            # Afficher le graphique et les statistiques
-            self.setup_chart(chart_data, stats)
+
+            self.setup_chart(chart_data, stats=stats)    
             
             logging.info("Backtest exécuté avec succès")
-            
-        except Exception as e:
-            logging.exception(f"Erreur lors de l'exécution du backtest: {str(e)}")
         
         finally:
             self.loading_indicator.setVisible(False)
             self.run_button.setEnabled(True)
             self.run_button.setText("Lancer le backtest")
+
+    def on_backtest_error(self, error_msg):
+        """Fonction appelée en cas d'erreur pendant le backtest"""
+        logging.error(f"Erreur pendant le backtest: {error_msg}")
+        self.loading_indicator.setVisible(False)
+        self.run_button.setEnabled(True)
+        self.run_button.setText("Lancer le backtest")

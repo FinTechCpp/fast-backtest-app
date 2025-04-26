@@ -13,6 +13,4 @@ __pycache__/
 .jupyter*
 *.egg-info/
 docs/build/** 
-
-
-backtest_interface/backtest_config.ini
+*backtest_config.ini

@@ -1,23 +1,26 @@
-import sys
+# Python utils imports
 import logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-import os
 import pandas as pd
 from datetime import datetime, time
+from dotenv import load_dotenv
+load_dotenv()
+
+#Qt imports
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, 
                             QPushButton, QComboBox, QDoubleSpinBox, QDateEdit, QLineEdit, 
                             QCheckBox, QLabel, QTabWidget, QScrollArea, QSplitter, QTableWidget, 
-                            QTableWidgetItem, QGroupBox, QGridLayout, QFormLayout, QSpinBox,
-                            QFrame, QSizePolicy, QProgressBar, QInputDialog, QMessageBox,
-                            QDialogButtonBox, QDialog, QListWidget)
+                            QTableWidgetItem, QGroupBox, QGridLayout, QFormLayout, QSpinBox, QProgressBar)
 from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QFont, QColor
-from dotenv import load_dotenv
 
+# Lightweight Charts imports
 from lightweight_charts.widgets import QtChart
 
+# Local imports
+from config_manager import ConfigManager
+from metric_widget import MetricWidget
 
-# Import your strategy classes and helpers
+# backtest_backend imports
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA  
 from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreenBA
@@ -25,64 +28,12 @@ from igtrader.Strategies.Helpers import load_data
 from igtrader.backtestingpy.backtesting.backtesting import Backtest
 from ui_util import to_heikin_ashi
 
-# Configure logging
-load_dotenv()
-
-class MetricWidget(QFrame):
-    """Widget pour afficher une métrique avec un titre, une valeur et une variation optionnelle"""
-    def __init__(self, title, value="", delta="", delta_color="normal", parent=None):
-        super().__init__(parent)
-        self.setFrameShape(QFrame.StyledPanel)
-        self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
-        
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 10, 10, 10)
-        
-        # Titre
-        self.title_label = QLabel(title)
-        title_font = QFont()
-        title_font.setPointSize(10)
-        self.title_label.setFont(title_font)
-        
-        # Valeur
-        self.value_label = QLabel(value)
-        value_font = QFont()
-        value_font.setPointSize(12)
-        value_font.setBold(True)
-        self.value_label.setFont(value_font)
-        
-        # Delta
-        self.delta_label = QLabel(delta)
-        delta_font = QFont()
-        delta_font.setPointSize(10)
-        self.delta_label.setFont(delta_font)
-        if delta_color == "normal":
-            self.delta_label.setStyleSheet("color: green")
-        elif delta_color == "inverse":
-            self.delta_label.setStyleSheet("color: red")
-        
-        layout.addWidget(self.title_label)
-        layout.addWidget(self.value_label)
-        if delta:
-            layout.addWidget(self.delta_label)
-        
-        self.setLayout(layout)
-    
-    def update_values(self, value, delta="", delta_color="normal"):
-        self.value_label.setText(value)
-        if delta:
-            self.delta_label.setText(delta)
-            if delta_color == "normal":
-                self.delta_label.setStyleSheet("color: green")
-            elif delta_color == "inverse":
-                self.delta_label.setStyleSheet("color: red")
-
 
 class BacktestApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Backtest Dashboard")
-        self.resize(1900, 1200)
+        self.resize(1600, 1080)
         
         # Initialisation des variables
         self.strategy_map = {
@@ -92,6 +43,9 @@ class BacktestApp(QMainWindow):
         }
         self.default_indicators = {}
         self.current_chart = None
+        
+        # Initialiser le gestionnaire de configuration
+        self.config_manager = ConfigManager()
         
         # Créer le layout principal
         self.central_widget = QWidget()
@@ -110,7 +64,21 @@ class BacktestApp(QMainWindow):
         
         # Connecter les signaux
         self.connect_signals()
+        
+        # Charger le profil DEFAULT
+        self.config_manager.apply_profile_to_ui("DEFAULT", self)
     
+    def load_selected_profile(self, profile_name):
+        """Charge le profil sélectionné dans le menu déroulant."""
+        if profile_name != self.config_manager.current_profile:
+            success = self.config_manager.apply_profile_to_ui(profile_name, self)
+            if not success:
+                # En cas d'échec, rétablir le profil précédent dans le combobox
+                index = self.profile_combo.findText(self.config_manager.current_profile)
+                if index >= 0:
+                    self.profile_combo.setCurrentIndex(index)
+    
+    # Modifier la méthode create_control_panel pour ajouter la section des profils
     def create_control_panel(self):
         """Crée le panneau de contrôle (équivalent de la sidebar Streamlit)"""
         control_panel = QWidget()
@@ -126,7 +94,54 @@ class BacktestApp(QMainWindow):
         title_label.setFont(title_font)
         layout.addWidget(title_label)
         
-        # Remplacer les lignes 126-129 par ceci:
+        # Gestion des profils
+        profile_group = QGroupBox("Profils de configuration")
+        profile_layout = QVBoxLayout()  # Changement: utiliser un QVBoxLayout pour plus de clarté
+        
+        # Affichage du profil actif
+        self.current_profile_label = QLabel(f"Profil actif: {self.config_manager.current_profile}")
+        self.current_profile_label.setStyleSheet("font-weight: bold;")
+        profile_layout.addWidget(self.current_profile_label)
+        
+        # Actions de profil
+        profile_buttons_layout = QHBoxLayout()
+        
+        # Bouton pour sauvegarder le profil actuel
+        save_profile_btn = QPushButton("💾 Sauvegarder")
+        save_profile_btn.setToolTip("Sauvegarder les paramètres actuels dans le profil courant")
+        save_profile_btn.clicked.connect(lambda: self.config_manager.save_current_profile(self, self))
+        profile_buttons_layout.addWidget(save_profile_btn)
+        
+        # Bouton pour créer un nouveau profil
+        new_profile_btn = QPushButton("➕ Nouveau")
+        new_profile_btn.setToolTip("Créer un nouveau profil avec les paramètres actuels")
+        new_profile_btn.clicked.connect(lambda: self.config_manager.prompt_create_new_profile(self, self))
+        profile_buttons_layout.addWidget(new_profile_btn)
+        
+        # Bouton pour supprimer un profil
+        delete_profile_btn = QPushButton("🗑️ Supprimer")
+        delete_profile_btn.setToolTip("Supprimer le profil actuel")
+        delete_profile_btn.clicked.connect(lambda: self.config_manager.delete_current_profile(self, self))
+        profile_buttons_layout.addWidget(delete_profile_btn)
+        
+        profile_layout.addLayout(profile_buttons_layout)
+        
+        # Menu déroulant pour sélectionner un profil
+        profile_selector_layout = QHBoxLayout()
+        profile_selector_layout.addWidget(QLabel("Charger un profil:"))
+        
+        self.profile_combo = QComboBox()
+        self.profile_combo.addItems(self.config_manager.list_profiles())
+        self.profile_combo.setCurrentText(self.config_manager.current_profile)
+        self.profile_combo.currentTextChanged.connect(self.load_selected_profile)
+        profile_selector_layout.addWidget(self.profile_combo)
+        
+        profile_layout.addLayout(profile_selector_layout)
+        
+        # Finaliser le groupe de profils
+        profile_group.setLayout(profile_layout)
+        layout.addWidget(profile_group)
+        
         # Bouton de lancement du backtest avec indicateur de chargement
         button_layout = QHBoxLayout()
         
@@ -948,6 +963,10 @@ class BacktestApp(QMainWindow):
             logging.info(f"Utilisant les indicateurs pour la stratégie: {strategy_kwargs}")
             strategy = self.strategy_map[strategy_name]
             
+            # Défini l'onglet à afficher en premier après l'exécution du backtest
+            # 0 = chart ; 1 = stats
+            self.tab_widget.setCurrentIndex(1)
+            
             # Exécuter le backtest
             bt = Backtest(data, strategy, cash=cash, commission=.00, spread=spread, 
                         exclusive_orders=False, strategy_kwargs=strategy_kwargs)
@@ -958,6 +977,8 @@ class BacktestApp(QMainWindow):
             stats['_trades']['ExitTime'] = stats['_trades']['ExitTime'].dt.tz_convert(timezone).dt.tz_localize(None)
             stats['_equity_curve'].index = stats['_equity_curve'].index.tz_convert(timezone).tz_localize(None)
             stats['_equity_curve']['Equity'] = stats['_equity_curve']['Equity'] / 1000
+            
+            self.create_stats_widgets(stats)
             
             # Préparer les données pour le graphique
             chart_data = data.reset_index()
@@ -987,13 +1008,9 @@ class BacktestApp(QMainWindow):
             # Trier les données
             chart_data.sort_values('time', inplace=True)
             
+            
             # Afficher le graphique et les statistiques
             self.setup_chart(chart_data, stats)
-            self.create_stats_widgets(stats)
-            
-            # Défini l'onglet à afficher en premier après l'exécution du backtest
-            # 0 = chart ; 1 = stats
-            self.tab_widget.setCurrentIndex(1)
             
             logging.info("Backtest exécuté avec succès")
             
@@ -1004,10 +1021,3 @@ class BacktestApp(QMainWindow):
             self.loading_indicator.setVisible(False)
             self.run_button.setEnabled(True)
             self.run_button.setText("Lancer le backtest")
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = BacktestApp()
-    window.show()
-    sys.exit(app.exec_())

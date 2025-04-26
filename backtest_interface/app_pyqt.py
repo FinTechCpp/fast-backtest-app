@@ -8,19 +8,22 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout
                             QPushButton, QComboBox, QDoubleSpinBox, QDateEdit, QLineEdit, 
                             QCheckBox, QLabel, QTabWidget, QScrollArea, QSplitter, QTableWidget, 
                             QTableWidgetItem, QGroupBox, QGridLayout, QFormLayout, QSpinBox,
-                            QFrame, QSizePolicy, QProgressBar)
+                            QFrame, QSizePolicy, QProgressBar, QInputDialog, QMessageBox,
+                            QDialogButtonBox, QDialog, QListWidget)
 from PyQt5.QtCore import Qt, QDate
 from PyQt5.QtGui import QFont, QColor
 from dotenv import load_dotenv
 
 from lightweight_charts.widgets import QtChart
 
+
 # Import your strategy classes and helpers
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA  
 from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreenBA
-from igtrader.Strategies.Helpers import load_data, to_heikin_ashi
+from igtrader.Strategies.Helpers import load_data
 from igtrader.backtestingpy.backtesting.backtesting import Backtest
+from util import to_heikin_ashi
 
 # Configure logging
 load_dotenv()
@@ -833,19 +836,14 @@ class BacktestApp(QMainWindow):
                     position="above",
                     color=entry_color,
                     text=f"Entry: {entry_price:.2f}",
-                    shape="arrow_down",
-                    price=entry_price
-                )
-                
+                    shape="arrow_down")                
                 # Exit marker
                 chart.marker(
                     time=exit_time,
                     position="below",
                     color=exit_color,
                     text=f"Exit: {exit_price:.2f} (P/L: {trade['PnL']:.2f})",
-                    shape="arrow_up",
-                    price=exit_price
-                )
+                    shape="arrow_up")
             
             # Fit the chart to show all data
             chart.fit()

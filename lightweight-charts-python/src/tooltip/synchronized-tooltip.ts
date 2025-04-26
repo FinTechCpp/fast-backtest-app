@@ -144,7 +144,7 @@ export class SynchronizedTooltip {
         };
 
         Object.entries(styles).forEach(([key, value]) => {
-            this._tooltipElement.style[key as any] = value;
+            this._tooltipElement.style[key as any] = value || '';
         });
     }
 

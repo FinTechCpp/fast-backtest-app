@@ -295,7 +295,7 @@ class SeriesCommon(Pane):
 
     def marker(self, time: Optional[datetime] = None, position: MARKER_POSITION = 'below',
                shape: MARKER_SHAPE = 'arrow_up', color: str = '#2196F3', text: str | None = None,
-               size: NUM | None = None, price: Optional[float] = None) -> str:
+               size: NUM | None = None):
         """
         Creates a new marker.\n
         :param time: Time location of the marker. If no time is given, it will be placed at the last bar.
@@ -318,8 +318,7 @@ class SeriesCommon(Pane):
             'color': color,
             'shape': marker_shape(shape),
         }
-        if price is not None:
-            m['price'] = price
+
         if text is not None:
             m['text'] = text
         if size is not None:

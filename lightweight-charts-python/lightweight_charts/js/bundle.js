@@ -2147,7 +2147,7 @@ var Lib = (function (exports, lightweightCharts) {
             return this._y ?? 0;
         }
         text() {
-            return this._source._options.text || this._price || '';
+            return this._source._options?.text || this._price || '';
         }
         textColor() {
             return 'white';
@@ -2252,13 +2252,23 @@ var Lib = (function (exports, lightweightCharts) {
                 ctx.lineWidth = this._options.width;
                 ctx.strokeStyle = this._options.lineColor;
                 setLineStyle(ctx, this._options.lineStyle);
+                // Declare variables at this scope level
+                let mainX = 0, mainY = 0, width = 0, height = 0;
+                let hasValidCoordinates = false;
                 // Only proceed if both points have valid data
                 if (this._p1 && this._p2) {
-                    if (this._p1.y !== undefined && this._p2.y !== undefined && this._p1.x !== undefined && this._p2.x !== undefined) {
+                    if (this._p1.y !== undefined && this._p1.y !== null &&
+                        this._p2.y !== undefined && this._p2.y !== null &&
+                        this._p1.x !== undefined && this._p1.x !== null &&
+                        this._p2.x !== undefined && this._p2.x !== null) {
                         const price1 = this.series.coordinateToPrice(this._p1.y);
                         const price2 = this.series.coordinateToPrice(this._p2.y);
                         const time1 = this.chart.timeScale().coordinateToTime(this._p1.x);
                         const time2 = this.chart.timeScale().coordinateToTime(this._p2.x);
+                        // Ensure prices and times are not null
+                        if (price1 === null || price2 === null || time1 === null || time2 === null) {
+                            return;
+                        }
                         // Calculate Price Percentage Difference
                         const priceDiff_abs = price2 - price1;
                         const priceDiff_pct = (priceDiff_abs / price1) * 100;
@@ -2268,10 +2278,11 @@ var Lib = (function (exports, lightweightCharts) {
                         else {
                             ctx.fillStyle = 'rgba(255,5,5,0.1)'; // You can customize the color
                         }
-                        const mainX = Math.min(scaled.x1, scaled.x2);
-                        const mainY = Math.min(scaled.y1, scaled.y2);
-                        const width = Math.abs(scaled.x1 - scaled.x2);
-                        const height = Math.abs(scaled.y1 - scaled.y2);
+                        mainX = Math.min(scaled.x1, scaled.x2);
+                        mainY = Math.min(scaled.y1, scaled.y2);
+                        width = Math.abs(scaled.x1 - scaled.x2);
+                        height = Math.abs(scaled.y1 - scaled.y2);
+                        hasValidCoordinates = true;
                         // Draw the rectangle
                         ctx.strokeRect(mainX, mainY, width, height);
                         ctx.fillRect(mainX, mainY, width, height);
@@ -2280,7 +2291,7 @@ var Lib = (function (exports, lightweightCharts) {
                         const priceDiffText = `${priceDiff_pct.toFixed(2)}%`;
                         const priceDiffText_abs = `${priceDiff_abs.toFixed(2)}`;
                         // Calculate Time Difference
-                        const timeDiffMs = Math.abs(time2 - time1);
+                        const timeDiffMs = Math.abs((typeof time2 === 'number' ? time2 : 0) - (typeof time1 === 'number' ? time1 : 0));
                         const timeDiffText = `Time: ${this._formatTimeDifference(timeDiffMs)}`;
                         // Set text styles
                         ctx.font = "14px Arial";
@@ -2299,12 +2310,13 @@ var Lib = (function (exports, lightweightCharts) {
                         ctx.fillText(timeDiffText, centerX, bottomY);
                     }
                 }
-                if (!this._hovered)
-                    return;
-                this._drawEndCircle(scope, mainX, mainY);
-                this._drawEndCircle(scope, mainX + width, mainY);
-                this._drawEndCircle(scope, mainX + width, mainY + height);
-                this._drawEndCircle(scope, mainX, mainY + height);
+                // Only draw circles if we have valid coordinates and we're being hovered
+                if (this._hovered && hasValidCoordinates) {
+                    this._drawEndCircle(scope, mainX, mainY);
+                    this._drawEndCircle(scope, mainX + width, mainY);
+                    this._drawEndCircle(scope, mainX + width, mainY + height);
+                    this._drawEndCircle(scope, mainX, mainY + height);
+                }
             });
         }
         /**
@@ -2333,8 +2345,8 @@ var Lib = (function (exports, lightweightCharts) {
             super(source);
         }
         renderer() {
-            return new MeasurePaneRenderer(this._source._series, // to help convert price coordinates
-            this._source.chart, // to help convert time coordinates
+            return new MeasurePaneRenderer(this._source.series, // Use public accessor method
+            this._source.chart, // Use public accessor method
             this._p1, this._p2, this._source._options, this._source.hovered);
         }
     }
@@ -7553,7 +7565,7 @@ var Lib = (function (exports, lightweightCharts) {
                 boxSizing: 'border-box'
             };
             Object.entries(styles).forEach(([key, value]) => {
-                this._tooltipElement.style[key] = value;
+                this._tooltipElement.style[key] = value || '';
             });
         }
         _handleCrosshairMove = (param) => {

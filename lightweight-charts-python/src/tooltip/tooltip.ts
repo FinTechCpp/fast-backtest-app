@@ -18,6 +18,7 @@ import { positionsLine } from '../helpers/dimensions/positions';
 import { convertTime, formattedDateAndTime } from '../helpers/time';
 import { ISeriesApiExtended } from '../helpers/general';
 import { hasColorOption } from '../helpers/typeguards';
+
 class TooltipCrosshairLinePaneRenderer implements ISeriesPrimitivePaneRenderer {
 	_data: TooltipCrosshairLineData;
 

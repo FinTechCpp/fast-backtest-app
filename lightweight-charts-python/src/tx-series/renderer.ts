@@ -568,7 +568,7 @@ private _findEndIndexByCross(
   // Step 2: loop from baseIndex forward
   for (let i = baseIndex; i < baseBars.length; i++) {
     const bar = baseBars[i];
-    let barPrice = 'close' in bar ? bar.close : bar.value;
+    let barPrice = 'close' in bar ? bar.close : ('value' in bar ? bar.value : undefined);
     if (barPrice == null) continue;
 
     // target hit

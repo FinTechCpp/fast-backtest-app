@@ -7,10 +7,7 @@ To get started with the backtest interface, follow the instructions below:
 ![Interface View](./images/interface_view.png)
 
 ``` 
-mkdir -p ~/finance_repos && cd finance_repos
-mv ~/ig-trading-bot/ ~/finance_repos
-git clone http://10.8.0.1:9000/Maxxime/backtest_interface.git
-cd backtest_interface && sudo docker compose up -d --build
+cd ~/ig-trading-bot && sudo docker compose up -d --build
 ```
 
 Then you can view the backtest interface at this URL: 
@@ -30,14 +27,3 @@ git remote add origin http://10.8.0.1:9000/Maxxime/backtest_interface.git
 git branch -M main
 git push -uf origin main
 ```
-
-### Authors 
-
-This project was developed and maintained by Maxxime. 
-
-## License
-Private license
-
-## Project status
-I am currently hard working on this project.
-I push updates almost every day to fit Alexandre's requirements

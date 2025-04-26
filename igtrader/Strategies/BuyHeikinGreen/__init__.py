@@ -254,7 +254,15 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # Vérifier les filtres
         ema_filter = self.my_strategy.ema_filter()
         stoch_filter = self.my_strategy.stoch_inf_50_filter()
+        previous_ha_candle_red_filter = self.my_strategy.previous_ha_candle_red_filter()
         should_long = self.my_strategy.should_long()
+
+        # affiche un warning sur un signal d'achat avec des filtre a false
+        if signal is not None and signal['action'] == 'BUY' and (not ema_filter or not stoch_filter or not previous_ha_candle_red_filter or not should_long):
+            logging.warning(
+                f"Signal d'achat généré avec des filtres non respectés : "
+                f"EMA: {ema_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
+            )
     
         # Vérifier si un signal d'achat ou de vente est généré
         if signal is None or ema_filter is False or stoch_filter is False or should_long is False:

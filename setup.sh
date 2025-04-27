@@ -1,6 +1,6 @@
 
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xkb1 libxkbcommon-x11-0
+sudo apt install -y libxcb-xinerama0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-xkb1 libxkbcommon-x11-0 libxcb-shape0
 if ! command -v conda &> /dev/null; then
     echo "Conda not found. Installing Miniconda..."
     mkdir -p ~/miniconda3
@@ -21,9 +21,16 @@ else
     echo "Conda environment 'trading' already exists."
 fi
 conda activate trading
+if ! grep -q "conda activate trading" ~/.bashrc; then
+    echo "conda activate trading" >> ~/.bashrc
+    echo "Added 'conda activate trading' to ~/.bashrc"
+else
+    echo "'conda activate trading' is already in ~/.bashrc"
+fi
 cd ~/ig-trading-bot
 git checkout develop
 pip install -r requirements.txt
+sudo apt-get install libqt5webengine5 libqt5webenginewidgets5
 pip install -e .
 if ! python -c "import talib" &> /dev/null; then
     echo "ta-lib not found. Installing ta-lib..."
@@ -39,7 +46,7 @@ else
     echo "nvm is already installed."
 fi
 
-source ~/.bashrc && conda activate trading
+source ~/.bashrc 
 if ! command -v nvm &> /dev/null; then
     echo "nvm not found. Installing nvm..."
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
@@ -48,7 +55,7 @@ if ! command -v nvm &> /dev/null; then
 else
     echo "nvm is already installed. Version: $(nvm --version)"
 fi
-source ~/.bashrc && conda activate trading
+source ~/.bashrc
 node -v
 npm -v
 cd ~/ig-trading-bot/lightweight-charts-python

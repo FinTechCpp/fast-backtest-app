@@ -29,7 +29,7 @@ else
 fi
 cd ~/ig-trading-bot
 git checkout develop
-pip install -r requirements.txt
+pip install -r requirements.txt 
 sudo apt-get install libqt5webengine5 libqt5webenginewidgets5
 pip install -e .
 if ! python -c "import talib" &> /dev/null; then

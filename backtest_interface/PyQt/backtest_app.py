@@ -231,6 +231,54 @@ class BacktestApp(QMainWindow):
         self.take_profit.setValue(30)
         params_layout.addRow(QLabel("Take Profit [pts]:"), self.take_profit)
         
+        # Nouvelle section pour l'ATR
+        atr_group = QGroupBox("ATR pour SL/TP")
+        atr_layout = QFormLayout()
+        
+        # Checkbox pour activer l'ATR pour SL/TP
+        self.use_atr_check = QCheckBox("Utiliser l'ATR pour SL/TP")
+        atr_layout.addRow("", self.use_atr_check)
+        
+        # Multiplicateurs ATR
+        self.sl_atr_multiplier = QDoubleSpinBox()
+        self.sl_atr_multiplier.setDecimals(1)
+        self.sl_atr_multiplier.setRange(0.1, 10.0)
+        self.sl_atr_multiplier.setSingleStep(0.1)
+        self.sl_atr_multiplier.setValue(2.0)
+        self.sl_atr_multiplier.setEnabled(False)
+        atr_layout.addRow("Multiplicateur ATR pour SL:", self.sl_atr_multiplier)
+        
+        self.tp_atr_multiplier = QDoubleSpinBox()
+        self.tp_atr_multiplier.setDecimals(1)
+        self.tp_atr_multiplier.setRange(0.1, 10.0)
+        self.tp_atr_multiplier.setSingleStep(0.1)
+        self.tp_atr_multiplier.setValue(3.0)
+        self.tp_atr_multiplier.setEnabled(False)
+        atr_layout.addRow("Multiplicateur ATR pour TP:", self.tp_atr_multiplier)
+        
+        # Valeurs minimales
+        self.min_sl = QDoubleSpinBox()
+        self.min_sl.setDecimals(1)
+        self.min_sl.setRange(1.0, 100.0)
+        self.min_sl.setSingleStep(1.0)
+        self.min_sl.setValue(5.0)
+        self.min_sl.setEnabled(False)
+        atr_layout.addRow("SL minimal [pts]:", self.min_sl)
+        
+        self.min_tp = QDoubleSpinBox()
+        self.min_tp.setDecimals(1)
+        self.min_tp.setRange(1.0, 100.0)
+        self.min_tp.setSingleStep(1.0)
+        self.min_tp.setValue(5.0)
+        self.min_tp.setEnabled(False)
+        atr_layout.addRow("TP minimal [pts]:", self.min_tp)
+        
+        atr_group.setLayout(atr_layout)
+        layout.addWidget(atr_group)
+        
+        # Connect signals
+        self.use_atr_check.toggled.connect(self.toggle_atr_controls)
+        
         # Sauvegarder les résultats
         self.save_results = QCheckBox("Sauvegarder les résultats")
         params_layout.addRow("", self.save_results)
@@ -452,6 +500,17 @@ class BacktestApp(QMainWindow):
         self.atr_check.toggled.connect(lambda checked: self.atr_period_spin.setEnabled(checked))
         self.stoch_check.toggled.connect(self.toggle_stoch_widgets)
         self.supertrend_check.toggled.connect(self.toggle_supertrend_widgets)
+        self.use_atr_check.toggled.connect(self.toggle_atr_controls)
+        
+    def toggle_atr_controls(self, checked):
+        """Active ou désactive les contrôles pour les paramètres ATR"""
+        self.sl_atr_multiplier.setEnabled(checked)
+        self.tp_atr_multiplier.setEnabled(checked)
+        self.min_sl.setEnabled(checked)
+        self.min_tp.setEnabled(checked)
+        # Désactiver les contrôles classiques de SL/TP quand ATR est activé
+        self.stop_loss.setEnabled(not checked)
+        self.take_profit.setEnabled(not checked)
     
     def toggle_stoch_widgets(self, checked):
         """Active/désactive les widgets Stochastic en fonction de la checkbox"""
@@ -888,7 +947,6 @@ class BacktestApp(QMainWindow):
             spread = self.spread.value()
             cash = self.cash.value()
             strategy_name = self.strategy_combo.currentText()
-            candle_type = self.candle_type_combo.currentText()
             stop_loss = self.stop_loss.value()
             take_profit = self.take_profit.value()
             
@@ -932,12 +990,23 @@ class BacktestApp(QMainWindow):
                 "take_profit_distance": take_profit,
                 "stop_loss_distance": stop_loss,
                 
+                # ATR parameters
+                "use_atr_for_sl_tp": self.use_atr_check.isChecked(),
+                "atr_period": self.atr_period_spin.value(),
+                "stop_loss_atr_multiplier": self.sl_atr_multiplier.value(),
+                "take_profit_atr_multiplier": self.tp_atr_multiplier.value(),
+                "min_stop_loss_distance": self.min_sl.value(),
+                "min_take_profit_distance": self.min_tp.value(),
+                
                 "ema_short_period": self.ema_short_spin.value(),
                 "ema_long_period": self.ema_long_spin.value(),
                 "stoch_fastk": self.fastk_spin.value(),
                 "stoch_slowk": self.slowk_spin.value(),
                 "stoch_slowd": self.slowd_spin.value(),
             }
+            
+            if self.use_atr_check.isChecked() and 'ATR' not in indicators:
+                indicators['ATR'] = [[self.atr_period_spin.value()]]
             
             # Configurer les indicateurs attendus par la stratégie
             if "EMA" in indicators:
@@ -957,8 +1026,9 @@ class BacktestApp(QMainWindow):
             
             strategy = self.strategy_map[strategy_name]
             
-            # Définir le comportement après le backtest
-            self.tab_widget.setCurrentIndex(0)
+            # Définir l'onglet à afficher à la fin de l'exécution du backtest
+            # 0 = Graphiques, 1 = Statistiques
+            self.tab_widget.setCurrentIndex(1)
             
             # Créer et exécuter le thread de backtest
             self.backtest_thread = BacktestWorker(

@@ -41,7 +41,7 @@ class BuyHeikinGreen(Strategy):
         self.ema_long_name = f'EMA_{self.config.ema_long_period}'
         self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-
+        self.atr_name = f'ATR_{self.base_config.atr_period}'
         self.ha_cache = {
             'current': {'open': None, 'close': None, 'is_green': None},
             'previous': {'open': None, 'close': None, 'is_green': None},
@@ -111,9 +111,29 @@ class BuyHeikinGreen(Strategy):
         return False
     
     def go_long(self):
+        # Si nous utilisons l'ATR pour les SL/TP
+        if self.base_config.use_atr_for_sl_tp and self.atr_name in self.candles:
+            current_atr = self.candles[self.atr_name]
+            
+            # Calculer le stop loss basé sur l'ATR avec un minimum
+            stop_loss_distance = max(
+                current_atr * self.base_config.stop_loss_atr_multiplier,
+                self.base_config.min_stop_loss_distance
+            )
+            
+            # Calculer le take profit basé sur l'ATR avec un minimum
+            take_profit_distance = max(
+                current_atr * self.base_config.take_profit_atr_multiplier,
+                self.base_config.min_take_profit_distance
+            )
+        else:
+            # Utiliser les valeurs fixes de fallback
+            stop_loss_distance = self.base_config.stop_loss_distance
+            take_profit_distance = self.base_config.take_profit_distance
+        
         self.buy = 0.5, self.price
-        self.take_profit = 0.5, self.base_config.take_profit_distance
-        self.stop_loss = 0.5, self.base_config.stop_loss_distance
+        self.take_profit = 0.5, take_profit_distance
+        self.stop_loss = 0.5, stop_loss_distance
     
     def go_short(self):
         raise NotImplementedError(f"La stratégie {self.name} ne supporte pas la vente à découvert.")
@@ -162,6 +182,8 @@ class BuyHeikinGreen(Strategy):
                 candle[self.stoch_k_name] = np.nan
             if self.stoch_d_name not in candle:
                 candle[self.stoch_d_name] = np.nan
+            if self.atr_name not in candle:
+                candle[self.atr_name] = np.nan
             return candle
         
         # Garder uniquement les colonnes nécessaires
@@ -183,7 +205,11 @@ class BuyHeikinGreen(Strategy):
                 fastk_period=self.config.stoch_fastk, slowk_period=self.config.stoch_slowk, slowd_period=self.config.stoch_slowd)
             candle[self.stoch_k_name] = float(k[-1])
             candle[self.stoch_d_name] = float(d[-1])
-                    
+        
+        if self.atr_name not in candle and self.base_config.use_atr_for_sl_tp:
+            atr_val = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=self.base_config.atr_period)
+            candle[self.atr_name] = float(atr_val[-1]) if not np.isnan(atr_val[-1]) else 0.0
+                
         return candle
 
 
@@ -193,6 +219,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
     Adapter pour la stratégie de backtesting.
     """
     def init(self, **kwargs):
+        
         # 1) extraire les clés génériques
         base_config = StrategyBaseConfig(
             trading_from    = kwargs.pop('trading_from'),
@@ -200,7 +227,15 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             trading_days    = kwargs.pop('trading_days'),
             take_profit_distance = kwargs.pop('take_profit_distance'),
             stop_loss_distance   = kwargs.pop('stop_loss_distance'),
+            # Nouveaux paramètres ATR
+            use_atr_for_sl_tp = kwargs.pop('use_atr_for_sl_tp', False),
+            atr_period = kwargs.pop('atr_period', 14),
+            stop_loss_atr_multiplier = kwargs.pop('stop_loss_atr_multiplier', 2.0),
+            take_profit_atr_multiplier = kwargs.pop('take_profit_atr_multiplier', 3.0),
+            min_stop_loss_distance = kwargs.pop('min_stop_loss_distance', 5.0),
+            min_take_profit_distance = kwargs.pop('min_take_profit_distance', 5.0),
         )
+        
         # 2) extraire les clés spécifiques
         buy_trend_config = BuyHeikinGreenConfig(
             ema_short_period     = kwargs.pop('ema_short_period'),
@@ -221,27 +256,29 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         """
         Méthode appelée à chaque bougie pendant le backtest.
         """
-
         # Noms des indicateurs
         self.ema_short_name = f'EMA_{self.config.ema_short_period}'
         self.ema_long_name = f'EMA_{self.config.ema_long_period}'
         self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-
+        self.atr_name = f'ATR_{self.base_config.atr_period}'
+    
         candle = {
             'date': self.data.index[-1],
             'Open': self.data.Open[-1],
             'High': self.data.High[-1],
             'Low': self.data.Low[-1],
             'Close': self.data.Close[-1],
-
             self.ema_short_name: self.data.df[self.ema_short_name].iloc[-1],
             self.ema_long_name: self.data.df[self.ema_long_name].iloc[-1],
             self.stoch_k_name: self.data.df[self.stoch_k_name].iloc[-1],
             self.stoch_d_name: self.data.df[self.stoch_d_name].iloc[-1],
         }
         
-        
+        # Ajouter l'ATR s'il est disponible
+        if self.atr_name in self.data.df.columns:
+            candle[self.atr_name] = self.data.df[self.atr_name].iloc[-1]
+                
         # Mettre à jour les valeurs précédentes du Stochastique
         self.my_strategy.k_previous = candle[self.stoch_k_name]
         self.my_strategy.d_previous = candle[self.stoch_d_name]

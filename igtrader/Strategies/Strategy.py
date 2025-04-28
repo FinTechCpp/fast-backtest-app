@@ -176,12 +176,6 @@ class Strategy(ABC):
             # Formatage du stop loss
             self.stop_loss = np.array(self.stop_loss, dtype=float)
 
-        # Filters
-        if not self._execute_filters():
-            # CORRECTION: Réinitialiser le signal en cas d'échec des filtres
-            self._reset()  # Appel à _reset() qui réinitialise self.signal
-            return
-        
         # Submit the buy order
         self.signal = self._generate_buy_signal()
 
@@ -214,12 +208,6 @@ class Strategy(ABC):
             
             # Formatage du stop loss
             self.stop_loss = np.array(self.stop_loss, dtype=float)
-
-        # Filters
-        if not self._execute_filters():
-            # CORRECTION: Réinitialiser le signal en cas d'échec des filtres
-            self._reset()  # Appel à _reset() qui réinitialise self.signal
-            return
         
         # Submit the sell order
         self.signal = self._generate_sell_signal()
@@ -331,9 +319,19 @@ class Strategy(ABC):
         should_long = self.should_long()
         should_short = should_short = False if should_long else self.should_short()
 
+
         if not (should_long or should_short):
             self._reset()
-        elif should_long:
+            self._is_executing = False
+            return
+        
+        if not self._execute_filters():
+            # Si les filtres échouent, on ne fait rien
+            self._reset()
+            self._is_executing = False
+            return
+
+        if should_long:
             self._execute_long()
         else:
             self._execute_short()

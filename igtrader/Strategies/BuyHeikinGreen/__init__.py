@@ -187,7 +187,7 @@ class BuyHeikinGreen(Strategy):
     def stoch_inf_threshold_filter(self):
         # Vérifie si le Stochastic %K présent est inférieur à threshold ou qu'il est ete en dessous de threshold sur la bougie précédente
         threshold = self.config.stoch_threshold
-        return self.candles[self.stoch_k_name] < threshold and (self.k_previous is not None and self.k_previous < threshold)
+        return self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold)
     
     # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
@@ -358,9 +358,9 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
                 f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                f"Filtres - EMA: {ema_filter}, Stoch<50: {stoch_filter}\n "
+                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
                 f"Should Long: {should_long}\n "
-                f"Trade size: {signal["quantity"]}\n")
+                f"Trade size: {signal['quantity']}\n")
             
         elif not self.position and signal['action'] == 'SELL':
             self.sell(sl=candle['Close'] + signal['stop_loss'], 

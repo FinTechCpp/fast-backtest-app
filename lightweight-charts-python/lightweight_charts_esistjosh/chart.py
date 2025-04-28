@@ -5,7 +5,7 @@ import typing
 import webview
 from webview.errors import JavascriptException
 
-from lightweight_charts import abstract
+from lightweight_charts_esistjosh import abstract
 from .util import parse_event_message, FLOAT
 
 import os

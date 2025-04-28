@@ -9,12 +9,12 @@ load_dotenv()
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, 
                             QPushButton, QComboBox, QDoubleSpinBox, QDateEdit, QLineEdit, 
                             QCheckBox, QLabel, QTabWidget, QScrollArea, QSplitter, QTableWidget, 
-                            QTableWidgetItem, QGroupBox, QGridLayout, QFormLayout, QSpinBox, QProgressBar)
+                            QTableWidgetItem, QGroupBox, QGridLayout, QFormLayout, QSpinBox, QProgressBar, QToolBar)
 from PyQt5.QtCore import Qt, QDate, QTimer
 from PyQt5.QtGui import QFont, QColor
 
 # Lightweight Charts imports
-from lightweight_charts.widgets import QtChart
+from lightweight_charts_esistjosh.widgets import QtChart
 
 # Local imports
 from config_manager import ConfigManager
@@ -278,6 +278,29 @@ class BacktestApp(QMainWindow):
         
         # Connect signals
         self.use_atr_check.toggled.connect(self.toggle_atr_controls)
+                
+        # Risk-based sizing
+        risk_sizing_group = QGroupBox("Gestion du risque")
+        risk_layout = QFormLayout()
+        
+        # Checkbox pour activer le risk-based sizing
+        self.use_risk_based_sizing = QCheckBox("Utiliser Risk-Based Sizing")
+        risk_layout.addRow("", self.use_risk_based_sizing)
+        
+        # Spinner pour le pourcentage de risque
+        self.risk_percentage = QDoubleSpinBox()
+        self.risk_percentage.setDecimals(2)
+        self.risk_percentage.setRange(0.1, 50.0)
+        self.risk_percentage.setSingleStep(0.1)
+        self.risk_percentage.setValue(1.0)  # 1% par défaut
+        self.risk_percentage.setEnabled(False)
+        risk_layout.addRow("Risque par trade (%):", self.risk_percentage)
+        
+        risk_sizing_group.setLayout(risk_layout)
+        layout.addWidget(risk_sizing_group)
+        
+        # Connecter le signal
+        self.use_risk_based_sizing.toggled.connect(lambda checked: self.toggle_risk_controls(checked))
         
         # Sauvegarder les résultats
         self.save_results = QCheckBox("Sauvegarder les résultats")
@@ -511,6 +534,10 @@ class BacktestApp(QMainWindow):
         # Désactiver les contrôles classiques de SL/TP quand ATR est activé
         self.stop_loss.setEnabled(not checked)
         self.take_profit.setEnabled(not checked)
+        
+    def toggle_risk_controls(self, checked):
+        """Active ou désactive les contrôles pour le risk-based sizing"""
+        self.risk_percentage.setEnabled(checked)
     
     def toggle_stoch_widgets(self, checked):
         """Active/désactive les widgets Stochastic en fonction de la checkbox"""
@@ -1003,6 +1030,11 @@ class BacktestApp(QMainWindow):
                 "stoch_fastk": self.fastk_spin.value(),
                 "stoch_slowk": self.slowk_spin.value(),
                 "stoch_slowd": self.slowd_spin.value(),
+                
+                # Paramètres de gestion du risque
+                "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),
+                "risk_percentage": self.risk_percentage.value(),
+                "risk_capital": self.cash.value(),
             }
             
             if self.use_atr_check.isChecked() and 'ATR' not in indicators:

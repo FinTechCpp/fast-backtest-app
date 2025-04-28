@@ -28,6 +28,10 @@ class StrategyBaseConfig:
     # Valeurs minimales pour éviter des SL/TP trop serrés
     min_stop_loss_distance: float = 5.0
     min_take_profit_distance: float = 5.0
+    
+    use_risk_based_sizing: bool = False
+    risk_percentage: float = 1.0  # Pourcentage par défaut (1% du capital)
+    cash: float = 100000.0  # Capital pour calculer le risque
 
 
 class Strategy(ABC):

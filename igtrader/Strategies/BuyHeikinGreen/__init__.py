@@ -187,7 +187,7 @@ class BuyHeikinGreen(Strategy):
     def stoch_inf_threshold_filter(self):
         # Vérifie si le Stochastic %K présent est inférieur à threshold ou qu'il est ete en dessous de threshold sur la bougie précédente
         threshold = self.config.stoch_threshold
-        return self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold)
+        return self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold), self.candles[self.stoch_k_name], self.k_previous 
     
     # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
@@ -342,7 +342,31 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"Signal d'achat généré avec des filtres non respectés : "
                 f"EMA: {ema_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
             )
-    
+        display = False
+        if display:
+            logging.error(
+                f"\n\nCandle: {candle['date']}\n "
+                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
+                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
+                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
+                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
+                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
+                f"Should Long: {should_long}\n\n"
+            )
+            display = False
+            
+        if candle[self.stoch_k_name] < 20:
+            display = True
+            logging.error(
+                f"\n\nCandle: {candle['date']}\n "
+                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
+                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
+                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
+                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
+                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
+                f"Should Long: {should_long}\n\n"
+            )
+            
         # Vérifier si un signal d'achat ou de vente est généré
         if signal is None or ema_filter is False or stoch_filter is False or should_long is False:
             return

@@ -734,7 +734,7 @@ class BacktestApp(QMainWindow):
                 elif j == trades.columns.get_loc('PnL') and float(value) < 0:
                     item.setForeground(QColor('red'))
                 trades_table.setItem(i, j, item)
-        
+        trades_table.setMinimumHeight(500)
         trades_table.resizeColumnsToContents()
         self.stats_content_layout.addWidget(trades_table)
         
@@ -759,7 +759,7 @@ class BacktestApp(QMainWindow):
             for j, value in enumerate(row):
                 item = QTableWidgetItem(str(value))
                 equity_table.setItem(i, j + 1, item)  # +1 pour tenir compte de la colonne d'index
-        
+        equity_table.setMinimumHeight(500)
         equity_table.resizeColumnsToContents()
         self.stats_content_layout.addWidget(equity_table)
         

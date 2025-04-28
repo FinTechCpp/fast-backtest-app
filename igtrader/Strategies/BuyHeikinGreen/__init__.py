@@ -1,7 +1,6 @@
 from ..Strategy import Strategy, StrategyBaseConfig
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 import logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 import talib
 import numpy as np
 from dataclasses import dataclass
@@ -141,11 +140,8 @@ class BuyHeikinGreen(Strategy):
             # Utiliser l'equity actuelle si disponible, sinon utiliser la valeur de base
             capital = self.current_equity if self.current_equity is not None else self.base_config.cash
             
-            # Montant que l'utilisateur est prêt à risquer par trade
-            risk_amount = capital * (self.base_config.risk_percentage / 100)
-            
-            # Calculer la taille de position: montant risqué divisé par la distance du stop loss
-            raw_position_size = risk_amount / self.price
+            risk_amount = capital * self.base_config.risk_percentage / 100
+            raw_position_size = risk_amount / stop_loss_distance
             
             # Si la taille est >= 1, arrondir à l'entier supérieur
             # Si la taille est < 1, la laisser telle quelle (fraction d'equity)

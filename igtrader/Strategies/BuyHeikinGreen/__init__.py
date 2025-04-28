@@ -1,7 +1,6 @@
 from ..Strategy import Strategy, StrategyBaseConfig
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 import logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 import talib
 import numpy as np
 from dataclasses import dataclass
@@ -16,6 +15,7 @@ class BuyHeikinGreenConfig:
     stoch_fastk: int = 10
     stoch_slowk: int = 7
     stoch_slowd: int = 3
+    stoch_threshold: int = 50
 
 
 class BuyHeikinGreen(Strategy):
@@ -34,14 +34,14 @@ class BuyHeikinGreen(Strategy):
         self.d_previous = None
 
         self.config = buy_heikin_green_config
-        
+        self.current_equity = None
         # TODO : Arriver a rendre cela fixe, à ne pas redéfinir à chaque fois
         # Noms des indicateurs
         self.ema_short_name = f'EMA_{self.config.ema_short_period}'
         self.ema_long_name = f'EMA_{self.config.ema_long_period}'
         self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-
+        self.atr_name = f'ATR_{self.base_config.atr_period}'
         self.ha_cache = {
             'current': {'open': None, 'close': None, 'is_green': None},
             'previous': {'open': None, 'close': None, 'is_green': None},
@@ -111,9 +111,61 @@ class BuyHeikinGreen(Strategy):
         return False
     
     def go_long(self):
-        self.buy = 0.5, self.price
-        self.take_profit = 0.5, self.base_config.take_profit_distance
-        self.stop_loss = 0.5, self.base_config.stop_loss_distance
+        # Si nous utilisons l'ATR pour les SL/TP
+        if self.base_config.use_atr_for_sl_tp and self.atr_name in self.candles:
+            current_atr = self.candles[self.atr_name]
+            
+            # Vérifier que l'ATR n'est pas zéro ou négatif
+            if current_atr <= 0:
+                logging.warning(f"ATR invalide: {current_atr}, utilisation de la valeur minimale")
+                current_atr = self.base_config.min_stop_loss_distance / self.base_config.stop_loss_atr_multiplier
+            
+            # Calculer le stop loss basé sur l'ATR avec un minimum
+            stop_loss_distance = max(
+                current_atr * self.base_config.stop_loss_atr_multiplier,
+                self.base_config.min_stop_loss_distance
+            )
+            
+            # Calculer le take profit basé sur l'ATR avec un minimum
+            take_profit_distance = max(
+                current_atr * self.base_config.take_profit_atr_multiplier,
+                self.base_config.min_take_profit_distance
+            )
+        else:
+            # Utiliser les valeurs fixes de fallback
+            stop_loss_distance = self.base_config.stop_loss_distance
+            take_profit_distance = self.base_config.take_profit_distance
+        
+        # Calculer la taille du trade basée sur le risque si activé
+        if self.base_config.use_risk_based_sizing:
+            # Utiliser l'equity actuelle si disponible, sinon utiliser la valeur de base
+            capital = self.current_equity if self.current_equity is not None else self.base_config.cash
+            
+            risk_amount = capital * self.base_config.risk_percentage / 100
+            raw_position_size = risk_amount / stop_loss_distance
+            
+            # Si la taille est >= 1, arrondir à l'entier supérieur
+            # Si la taille est < 1, la laisser telle quelle (fraction d'equity)
+            if raw_position_size >= 1:
+                position_size = round(raw_position_size)  # Arrondir à l'entier le plus proche
+            else:
+                # Limiter à un minimum de 0.01 (1% d'equity)
+                position_size = max(0.5, min(raw_position_size, 0.99))
+            
+            logging.debug(
+                f"Risk-based sizing: Capital={capital}, "
+                f"Risque={self.base_config.risk_percentage}%, "
+                f"Montant risqué={risk_amount}, "
+                f"Taille calculée={position_size} (raw={raw_position_size})"
+                f"Prix actuel de l'actif={self.price}, "
+            )
+        else:
+            # Taille fixe par défaut (entier)
+            position_size = 1
+        
+        self.buy = position_size, self.price
+        self.take_profit = position_size, take_profit_distance
+        self.stop_loss = position_size, stop_loss_distance
     
     def go_short(self):
         raise NotImplementedError(f"La stratégie {self.name} ne supporte pas la vente à découvert.")
@@ -132,16 +184,17 @@ class BuyHeikinGreen(Strategy):
         # Vérifier si la bougie précédente est rouge
         return not self.ha_cache['previous']['is_green']
     
-    def stoch_inf_50_filter(self):
-        # Vérifie si le Stochastic %K présent est inférieur à 50 ou qu'il est ete en dessous de 50 sur la bougie précédente
-        return self.candles[self.stoch_k_name] < 50 and (self.k_previous is not None and self.k_previous < 50)
+    def stoch_inf_threshold_filter(self):
+        # Vérifie si le Stochastic %K présent est inférieur à threshold ou qu'il est ete en dessous de threshold sur la bougie précédente
+        threshold = self.config.stoch_threshold
+        return self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold), self.candles[self.stoch_k_name], self.k_previous 
     
     # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
         return [
             self.previous_ha_candle_red_filter,
             self.ema_filter,
-            self.stoch_inf_50_filter,
+            self.stoch_inf_threshold_filter,
         ]
     
     def add_missing_indicators(self, candle: dict) -> dict:
@@ -162,6 +215,8 @@ class BuyHeikinGreen(Strategy):
                 candle[self.stoch_k_name] = np.nan
             if self.stoch_d_name not in candle:
                 candle[self.stoch_d_name] = np.nan
+            if self.atr_name not in candle:
+                candle[self.atr_name] = np.nan
             return candle
         
         # Garder uniquement les colonnes nécessaires
@@ -183,9 +238,12 @@ class BuyHeikinGreen(Strategy):
                 fastk_period=self.config.stoch_fastk, slowk_period=self.config.stoch_slowk, slowd_period=self.config.stoch_slowd)
             candle[self.stoch_k_name] = float(k[-1])
             candle[self.stoch_d_name] = float(d[-1])
-                    
+        
+        if self.atr_name not in candle and self.base_config.use_atr_for_sl_tp:
+            atr_val = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=self.base_config.atr_period)
+            candle[self.atr_name] = float(atr_val[-1]) if not np.isnan(atr_val[-1]) else 0.0
+                
         return candle
-
 
 
 class BuyHeikinGreenBA(BacktestingStrategy):
@@ -193,6 +251,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
     Adapter pour la stratégie de backtesting.
     """
     def init(self, **kwargs):
+        
         # 1) extraire les clés génériques
         base_config = StrategyBaseConfig(
             trading_from    = kwargs.pop('trading_from'),
@@ -200,7 +259,19 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             trading_days    = kwargs.pop('trading_days'),
             take_profit_distance = kwargs.pop('take_profit_distance'),
             stop_loss_distance   = kwargs.pop('stop_loss_distance'),
+            # Nouveaux paramètres ATR
+            use_atr_for_sl_tp = kwargs.pop('use_atr_for_sl_tp', False),
+            atr_period = kwargs.pop('atr_period', 14),
+            stop_loss_atr_multiplier = kwargs.pop('stop_loss_atr_multiplier', 2.0),
+            take_profit_atr_multiplier = kwargs.pop('take_profit_atr_multiplier', 3.0),
+            min_stop_loss_distance = kwargs.pop('min_stop_loss_distance', 5.0),
+            min_take_profit_distance = kwargs.pop('min_take_profit_distance', 5.0),
+            # Paramètres de gestion du risque - AJOUT DES PARAMÈTRES MANQUANTS
+            use_risk_based_sizing = kwargs.pop('use_risk_based_sizing', False),
+            risk_percentage = kwargs.pop('risk_percentage', 1.0),
+            cash = kwargs.pop('cash', 100000.0),
         )
+        
         # 2) extraire les clés spécifiques
         buy_trend_config = BuyHeikinGreenConfig(
             ema_short_period     = kwargs.pop('ema_short_period'),
@@ -208,9 +279,10 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             stoch_fastk          = kwargs.pop('stoch_fastk'),
             stoch_slowk          = kwargs.pop('stoch_slowk'),
             stoch_slowd          = kwargs.pop('stoch_slowd'),
+            stoch_threshold      = kwargs.pop('stoch_threshold', 50),
         )
-
-        # 3) stocker et instancier la stratégie “métier”
+    
+        # 3) stocker et instancier la stratégie "métier"
         self.base_config = base_config
         self.config      = buy_trend_config
         self.my_strategy = BuyHeikinGreen(base_config, buy_trend_config)
@@ -221,39 +293,46 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         """
         Méthode appelée à chaque bougie pendant le backtest.
         """
-
         # Noms des indicateurs
         self.ema_short_name = f'EMA_{self.config.ema_short_period}'
         self.ema_long_name = f'EMA_{self.config.ema_long_period}'
         self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-
+        self.atr_name = f'ATR_{self.base_config.atr_period}'
+    
         candle = {
             'date': self.data.index[-1],
             'Open': self.data.Open[-1],
             'High': self.data.High[-1],
             'Low': self.data.Low[-1],
             'Close': self.data.Close[-1],
-
             self.ema_short_name: self.data.df[self.ema_short_name].iloc[-1],
             self.ema_long_name: self.data.df[self.ema_long_name].iloc[-1],
             self.stoch_k_name: self.data.df[self.stoch_k_name].iloc[-1],
             self.stoch_d_name: self.data.df[self.stoch_d_name].iloc[-1],
         }
         
-        
+        # Ajouter l'ATR s'il est disponible
+        if self.atr_name in self.data.df.columns:
+            candle[self.atr_name] = self.data.df[self.atr_name].iloc[-1]
+                
         # Mettre à jour les valeurs précédentes du Stochastique
         self.my_strategy.k_previous = candle[self.stoch_k_name]
         self.my_strategy.d_previous = candle[self.stoch_d_name]
+        
+        # Transmettre l'equity actuelle à la stratégie
+        self.my_strategy.current_equity = self.equity
         
         # TRÈS IMPORTANT: Mettre à jour la bougie AVANT d'appeler les filtres
         # car cela initialise self.candles dans la stratégie
         signal = self.my_strategy.update_candle(candle)
         
+        # Vérifier les filtres
         
+        cash = self.equity
         # Vérifier les filtres
         ema_filter = self.my_strategy.ema_filter()
-        stoch_filter = self.my_strategy.stoch_inf_50_filter()
+        stoch_filter = self.my_strategy.stoch_inf_threshold_filter()
         previous_ha_candle_red_filter = self.my_strategy.previous_ha_candle_red_filter()
         should_long = self.my_strategy.should_long()
 
@@ -263,32 +342,56 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"Signal d'achat généré avec des filtres non respectés : "
                 f"EMA: {ema_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
             )
-    
+        display = False
+        if display:
+            logging.error(
+                f"\n\nCandle: {candle['date']}\n "
+                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
+                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
+                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
+                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
+                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
+                f"Should Long: {should_long}\n\n"
+            )
+            display = False
+            
+        if candle[self.stoch_k_name] < 20:
+            display = True
+            logging.error(
+                f"\n\nCandle: {candle['date']}\n "
+                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
+                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
+                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
+                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
+                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
+                f"Should Long: {should_long}\n\n"
+            )
+            
         # Vérifier si un signal d'achat ou de vente est généré
         if signal is None or ema_filter is False or stoch_filter is False or should_long is False:
             return
-        
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
         elif not self.position and signal['action'] == 'BUY' and ema_filter and stoch_filter and should_long:
             self.buy(sl=candle['Close'] - signal['stop_loss'], 
                     tp=candle['Close'] + signal['take_profit'], 
                     size=signal['quantity'])
-            logging.debug(
-                f"\n\nCandle: {candle['date']}\n"
+            logging.info(
+                f"\n\nCandle: {candle['date']}\n "
                 f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
                 f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                f"Filtres - EMA: {ema_filter}, Stoch<50: {stoch_filter}\n "
-                f"Should Long: {should_long}\n\n"
-            )
+                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
+                f"Should Long: {should_long}\n "
+                f"Trade size: {signal['quantity']}\n")
+            
         elif not self.position and signal['action'] == 'SELL':
             self.sell(sl=candle['Close'] + signal['stop_loss'], 
                     tp=candle['Close'] - signal['take_profit'], 
                     size=signal['quantity'])
-            logging.debug(
-                f"\n\nCandle: {candle['date']}\n"
+            logging.info(
+                f"\n\nCandle: {candle['date']}\n "
                 f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "

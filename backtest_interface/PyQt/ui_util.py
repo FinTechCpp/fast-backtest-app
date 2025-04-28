@@ -20,7 +20,7 @@ class BacktestWorker(QThread):
             # Exécuter le backtest
             bt = Backtest(self.data, self.strategy, cash=self.cash, commission=.00, 
                           spread=self.spread, exclusive_orders=False, 
-                          strategy_kwargs=self.strategy_kwargs)
+                          strategy_kwargs=self.strategy_kwargs, margin=0.05)
             stats = bt.run()
             
             # Émettre le signal avec les résultats

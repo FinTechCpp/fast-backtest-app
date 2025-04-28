@@ -14,8 +14,24 @@ class StrategyBaseConfig:
     trading_from: time = time(14, 30)
     trading_to: time = time(21, 0)
     trading_days: list = field(default_factory=lambda: [0, 1, 2, 3, 4])  # Monday to Friday
+    
+    # Valeurs fixes comme fallback
     take_profit_distance: float = 30.0
     stop_loss_distance: float = 20.0
+    
+    # Nouveaux paramètres pour l'ATR
+    use_atr_for_sl_tp: bool = False
+    atr_period: int = 14
+    stop_loss_atr_multiplier: float = 2.0
+    take_profit_atr_multiplier: float = 3.0
+    
+    # Valeurs minimales pour éviter des SL/TP trop serrés
+    min_stop_loss_distance: float = 5.0
+    min_take_profit_distance: float = 5.0
+    
+    use_risk_based_sizing: bool = False
+    risk_percentage: float = 1.0  # Pourcentage par défaut (1% du capital)
+    cash: float = 100000.0  # Capital pour calculer le risque
 
 
 class Strategy(ABC):

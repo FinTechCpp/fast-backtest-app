@@ -348,6 +348,17 @@ class ConfigManager:
             'trading_from_minute': app.trading_from_minute,
             'trading_to_hour': app.trading_to_hour,
             'trading_to_minute': app.trading_to_minute,
+            
+            # AJOUT: ATR pour SL/TP
+            'use_atr_for_sl_tp': app.use_atr_check,
+            'sl_atr_multiplier': app.sl_atr_multiplier,
+            'tp_atr_multiplier': app.tp_atr_multiplier,
+            'min_stop_loss_distance': app.min_sl,
+            'min_take_profit_distance': app.min_tp,
+            
+            # AJOUT: Risk-Based Sizing
+            'use_risk_based_sizing': app.use_risk_based_sizing,
+            'risk_percentage': app.risk_percentage,
         }
         
         # Ajouter les jours de trading

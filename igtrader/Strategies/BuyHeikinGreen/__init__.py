@@ -15,6 +15,7 @@ class BuyHeikinGreenConfig:
     stoch_fastk: int = 10
     stoch_slowk: int = 7
     stoch_slowd: int = 3
+    stoch_threshold: int = 50
 
 
 class BuyHeikinGreen(Strategy):
@@ -183,16 +184,17 @@ class BuyHeikinGreen(Strategy):
         # Vérifier si la bougie précédente est rouge
         return not self.ha_cache['previous']['is_green']
     
-    def stoch_inf_50_filter(self):
-        # Vérifie si le Stochastic %K présent est inférieur à 50 ou qu'il est ete en dessous de 50 sur la bougie précédente
-        return self.candles[self.stoch_k_name] < 50 and (self.k_previous is not None and self.k_previous < 50)
+    def stoch_inf_threshold_filter(self):
+        # Vérifie si le Stochastic %K présent est inférieur à threshold ou qu'il est ete en dessous de threshold sur la bougie précédente
+        threshold = self.config.stoch_threshold
+        return self.candles[self.stoch_k_name] < threshold and (self.k_previous is not None and self.k_previous < threshold)
     
     # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
         return [
             self.previous_ha_candle_red_filter,
             self.ema_filter,
-            self.stoch_inf_50_filter,
+            self.stoch_inf_threshold_filter,
         ]
     
     def add_missing_indicators(self, candle: dict) -> dict:
@@ -277,6 +279,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             stoch_fastk          = kwargs.pop('stoch_fastk'),
             stoch_slowk          = kwargs.pop('stoch_slowk'),
             stoch_slowd          = kwargs.pop('stoch_slowd'),
+            stoch_threshold      = kwargs.pop('stoch_threshold', 50),
         )
     
         # 3) stocker et instancier la stratégie "métier"
@@ -329,7 +332,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         cash = self.equity
         # Vérifier les filtres
         ema_filter = self.my_strategy.ema_filter()
-        stoch_filter = self.my_strategy.stoch_inf_50_filter()
+        stoch_filter = self.my_strategy.stoch_inf_threshold_filter()
         previous_ha_candle_red_filter = self.my_strategy.previous_ha_candle_red_filter()
         should_long = self.my_strategy.should_long()
 

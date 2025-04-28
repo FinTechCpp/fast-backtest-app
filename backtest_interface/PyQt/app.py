@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QApplication
 import argparse
 
 parser = argparse.ArgumentParser(description="Set logging level for the application.")
-parser.add_argument("--log-level", type=str, default="INFO", 
+parser.add_argument("--log-level", type=str, default="WARNING", 
                     help="Set the logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL).")
 args = parser.parse_args()
 

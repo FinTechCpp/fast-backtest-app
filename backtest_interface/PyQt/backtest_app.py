@@ -387,9 +387,16 @@ class BacktestApp(QMainWindow):
         stoch_layout.addWidget(QLabel("Slow %D:"), 3, 0)
         stoch_layout.addWidget(self.slowd_spin, 3, 1)
         
+        self.stoch_threshold_spin = QSpinBox()
+        self.stoch_threshold_spin.setRange(1, 99)
+        self.stoch_threshold_spin.setValue(50)
+        self.stoch_threshold_spin.setEnabled(True)
+        stoch_layout.addWidget(QLabel("Seuil filtre %K:"), 4, 0)
+        stoch_layout.addWidget(self.stoch_threshold_spin, 4, 1)
+        
         stoch_group.setLayout(stoch_layout)
         indicators_layout.addWidget(stoch_group)
-             
+    
         # SuperTrend
         st_group = QGroupBox("SuperTrend")
         st_layout = QGridLayout()
@@ -544,6 +551,7 @@ class BacktestApp(QMainWindow):
         self.fastk_spin.setEnabled(checked)
         self.slowk_spin.setEnabled(checked)
         self.slowd_spin.setEnabled(checked)
+        self.stoch_threshold_spin.setEnabled(checked)  # Ajouter cette ligne
     
     def toggle_supertrend_widgets(self, checked):
         """Active/désactive les widgets SuperTrend en fonction de la checkbox"""
@@ -1030,6 +1038,7 @@ class BacktestApp(QMainWindow):
                 "stoch_fastk": self.fastk_spin.value(),
                 "stoch_slowk": self.slowk_spin.value(),
                 "stoch_slowd": self.slowd_spin.value(),
+                "stoch_threshold": self.stoch_threshold_spin.value(),
                 
                 # Paramètres de gestion du risque
                 "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),

@@ -308,6 +308,28 @@ class BacktestApp(QMainWindow):
         
         params_group.setLayout(params_layout)
         layout.addWidget(params_group)
+
+        # Configuration des filtres
+        filters_group = QGroupBox("Configuration des filtres")
+        filters_layout = QVBoxLayout()
+
+        # EMA Filter
+        self.ema_filter_check = QCheckBox("Activer EMA Filter")
+        self.ema_filter_check.setChecked(True)
+
+        # Stochastic Filter
+        self.stoch_filter_check = QCheckBox("Activer Stochastic Filter")
+        self.stoch_filter_check.setChecked(True)
+
+        # Previous HA Candle Red Filter
+        self.previous_ha_candle_red_check = QCheckBox("Activer Previous HA Candle Red Filter")
+        self.previous_ha_candle_red_check.setChecked(True)
+        filters_layout.addWidget(self.ema_filter_check)
+        filters_layout.addWidget(self.stoch_filter_check)
+        filters_layout.addWidget(self.previous_ha_candle_red_check)
+        filters_group.setLayout(filters_layout)
+        layout.addWidget(filters_group)
+
         
         # Configuration des indicateurs
         indicators_group = QGroupBox("Configuration des indicateurs")
@@ -1039,6 +1061,11 @@ class BacktestApp(QMainWindow):
                 "stoch_slowk": self.slowk_spin.value(),
                 "stoch_slowd": self.slowd_spin.value(),
                 "stoch_threshold": self.stoch_threshold_spin.value(),
+
+                # Activation des filtres
+                "use_ema_filter": self.ema_filter_check.isChecked(),
+                "use_stoch_filter": self.stoch_filter_check.isChecked(),
+                "use_previous_ha_candle_red_filter": self.previous_ha_candle_red_check.isChecked(),
                 
                 # Paramètres de gestion du risque
                 "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),

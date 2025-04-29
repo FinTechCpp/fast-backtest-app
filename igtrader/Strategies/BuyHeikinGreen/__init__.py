@@ -17,6 +17,11 @@ class BuyHeikinGreenConfig:
     stoch_slowd: int = 3
     stoch_threshold: int = 50
 
+    # Activation/désactivation des filtres
+    use_ema_filter: bool = True
+    use_stoch_filter: bool = True
+    use_previous_ha_candle_red_filter: bool = True
+
 
 class BuyHeikinGreen(Strategy):
     """
@@ -46,6 +51,14 @@ class BuyHeikinGreen(Strategy):
             'current': {'open': None, 'close': None, 'is_green': None},
             'previous': {'open': None, 'close': None, 'is_green': None},
         }
+
+        self.active_filters = []
+        if self.config.use_ema_filter:
+            self.active_filters.append(self.ema_filter)
+        if self.config.use_stoch_filter:
+            self.active_filters.append(self.stoch_inf_threshold_filter)
+        if self.config.use_previous_ha_candle_red_filter:
+            self.active_filters.append(self.previous_ha_candle_red_filter)
 
     def before(self):
         """
@@ -191,11 +204,7 @@ class BuyHeikinGreen(Strategy):
     
     # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
-        return [
-            self.previous_ha_candle_red_filter,
-            self.ema_filter,
-            self.stoch_inf_threshold_filter,
-        ]
+        return self.active_filters
     
     def add_missing_indicators(self, candle: dict) -> dict:
         """
@@ -280,6 +289,10 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             stoch_slowk          = kwargs.pop('stoch_slowk'),
             stoch_slowd          = kwargs.pop('stoch_slowd'),
             stoch_threshold      = kwargs.pop('stoch_threshold', 50),
+            # Activation/désactivation des filtres
+            use_ema_filter       = kwargs.pop('use_ema_filter', True),
+            use_stoch_filter     = kwargs.pop('use_stoch_filter', True),
+            use_previous_ha_candle_red_filter = kwargs.pop('use_previous_ha_candle_red_filter', True),
         )
     
         # 3) stocker et instancier la stratégie "métier"

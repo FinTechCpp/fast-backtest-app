@@ -295,6 +295,15 @@ class BacktestApp(QMainWindow):
         self.risk_percentage.setValue(1.0)  # 1% par défaut
         self.risk_percentage.setEnabled(False)
         risk_layout.addRow("Risque par trade (%):", self.risk_percentage)
+                
+        # Break-Even Threshold
+        self.break_even_threshold = QDoubleSpinBox()
+        self.break_even_threshold.setDecimals(2)
+        self.break_even_threshold.setRange(0.1, 1.0)
+        self.break_even_threshold.setSingleStep(0.05)
+        self.break_even_threshold.setValue(0.7)  # Default: 70% of take profit
+        self.break_even_threshold.setToolTip("Sets stop loss to break-even when profit reaches this % of take profit")
+        risk_layout.addRow("Break-Even Threshold (%):", self.break_even_threshold)
         
         risk_sizing_group.setLayout(risk_layout)
         layout.addWidget(risk_sizing_group)
@@ -673,9 +682,9 @@ class BacktestApp(QMainWindow):
         perf_layout.addWidget(MetricWidget("CAGR [%]", f"{stats['CAGR [%]']:.2f}%"), 3, 0)
         
         # Capital final, max et Buy & Hold
-        perf_layout.addWidget(MetricWidget("Capital final [$]", f"${stats['Equity Final [$]']:,.2f}"), 0, 1)
-        perf_layout.addWidget(MetricWidget("Capital max [$]", f"${stats['Equity Peak [$]']:,.2f}"), 1, 1)
-        perf_layout.addWidget(MetricWidget("Buy & Hold [%]", f"{stats['Buy & Hold Return [%]']:.2f}%"), 2, 1)
+        perf_layout.addWidget(MetricWidget("Capital final [$]", f"${stats['Equity Final [$]']:,.3f}"), 0, 1)
+        perf_layout.addWidget(MetricWidget("Capital max [$]", f"${stats['Equity Peak [$]']:,.3f}"), 1, 1)
+        perf_layout.addWidget(MetricWidget("Buy & Hold [%]", f"{stats['Buy & Hold Return [%]']:.3f}%"), 2, 1)
         perf_layout.addWidget(MetricWidget("Alpha [%]", f"{stats['Alpha [%]']:.4f}%"), 3, 1)
         
         perf_group.setLayout(perf_layout)
@@ -1071,6 +1080,7 @@ class BacktestApp(QMainWindow):
                 "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),
                 "risk_percentage": self.risk_percentage.value(),
                 "risk_capital": self.cash.value(),
+                "break_even_threshold": self.break_even_threshold.value(),
             }
             
             if self.use_atr_check.isChecked() and 'ATR' not in indicators:
@@ -1129,7 +1139,6 @@ class BacktestApp(QMainWindow):
             stats['_trades']['EntryTime'] = stats['_trades']['EntryTime'].dt.tz_convert(timezone).dt.tz_localize(None)
             stats['_trades']['ExitTime'] = stats['_trades']['ExitTime'].dt.tz_convert(timezone).dt.tz_localize(None)
             stats['_equity_curve'].index = stats['_equity_curve'].index.tz_convert(timezone).tz_localize(None)
-            stats['_equity_curve']['Equity'] = stats['_equity_curve']['Equity'] / 1000
             
             # Afficher les statistiques (généralement plus léger)
             self.create_stats_widgets(stats)

@@ -14,3 +14,6 @@ __pycache__/
 *.egg-info/
 docs/build/** 
 *backtest_config.ini
+backtest_interface/PyQt/build/*
+backtest_interface/PyQt/dist/*
+backtest_interface/PyQt/*.spec

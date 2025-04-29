@@ -338,6 +338,7 @@ class ConfigManager:
             'stoch_fastk': app.fastk_spin,
             'stoch_slowk': app.slowk_spin,
             'stoch_slowd': app.slowd_spin,
+            'stoch_threshold': app.stoch_threshold_spin,
             
             'supertrend_enabled': app.supertrend_check,
             'supertrend_atr_period': app.st_atr_period_spin,
@@ -359,6 +360,7 @@ class ConfigManager:
             # AJOUT: Risk-Based Sizing
             'use_risk_based_sizing': app.use_risk_based_sizing,
             'risk_percentage': app.risk_percentage,
+            'break_even_threshold': app.break_even_threshold,
         }
         
         # Ajouter les jours de trading

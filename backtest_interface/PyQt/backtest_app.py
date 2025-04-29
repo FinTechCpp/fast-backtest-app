@@ -295,6 +295,15 @@ class BacktestApp(QMainWindow):
         self.risk_percentage.setValue(1.0)  # 1% par défaut
         self.risk_percentage.setEnabled(False)
         risk_layout.addRow("Risque par trade (%):", self.risk_percentage)
+                
+        # Break-Even Threshold
+        self.break_even_threshold = QDoubleSpinBox()
+        self.break_even_threshold.setDecimals(2)
+        self.break_even_threshold.setRange(0.1, 1.0)
+        self.break_even_threshold.setSingleStep(0.05)
+        self.break_even_threshold.setValue(0.7)  # Default: 70% of take profit
+        self.break_even_threshold.setToolTip("Sets stop loss to break-even when profit reaches this % of take profit")
+        risk_layout.addRow("Break-Even Threshold (%):", self.break_even_threshold)
         
         risk_sizing_group.setLayout(risk_layout)
         layout.addWidget(risk_sizing_group)
@@ -1044,6 +1053,7 @@ class BacktestApp(QMainWindow):
                 "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),
                 "risk_percentage": self.risk_percentage.value(),
                 "risk_capital": self.cash.value(),
+                "break_even_threshold": self.break_even_threshold.value(),
             }
             
             if self.use_atr_check.isChecked() and 'ATR' not in indicators:

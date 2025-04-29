@@ -259,6 +259,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             trading_days    = kwargs.pop('trading_days'),
             take_profit_distance = kwargs.pop('take_profit_distance'),
             stop_loss_distance   = kwargs.pop('stop_loss_distance'),
+            
             # Nouveaux paramètres ATR
             use_atr_for_sl_tp = kwargs.pop('use_atr_for_sl_tp', False),
             atr_period = kwargs.pop('atr_period', 14),
@@ -266,6 +267,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             take_profit_atr_multiplier = kwargs.pop('take_profit_atr_multiplier', 3.0),
             min_stop_loss_distance = kwargs.pop('min_stop_loss_distance', 5.0),
             min_take_profit_distance = kwargs.pop('min_take_profit_distance', 5.0),
+            
             # Paramètres de gestion du risque - AJOUT DES PARAMÈTRES MANQUANTS
             use_risk_based_sizing = kwargs.pop('use_risk_based_sizing', False),
             risk_percentage = kwargs.pop('risk_percentage', 1.0),
@@ -281,6 +283,9 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             stoch_slowd          = kwargs.pop('stoch_slowd'),
             stoch_threshold      = kwargs.pop('stoch_threshold', 50),
         )
+    
+        # Extract break-even threshold parameter
+        self.break_even_threshold = kwargs.pop('break_even_threshold', 0.7)  # Default to 70% if not provided
     
         # 3) stocker et instancier la stratégie "métier"
         self.base_config = base_config
@@ -325,6 +330,14 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # Transmettre l'equity actuelle à la stratégie
         self.my_strategy.current_equity = self.equity
         
+        
+        #Break-even stop loss quand PL > % du TP
+        if self.position:
+            for trade in self.trades:
+                if self.position.pl_pct > self.break_even_threshold * (self.base_config.take_profit_distance / trade.entry_price * 100):
+                    trade.sl = trade.entry_price  # Set stop loss at break-even
+                    logging.info(f"Moving stop loss to break-even at {trade.entry_price}")
+        
         # TRÈS IMPORTANT: Mettre à jour la bougie AVANT d'appeler les filtres
         # car cela initialise self.candles dans la stratégie
         signal = self.my_strategy.update_candle(candle)
@@ -348,13 +361,12 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA: {ema_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
             )
             
-            
 #----------------DEBUGGING----------------------------------------------------------------
         if candle[self.stoch_k_name] < 20:
             # This is the trigger candle (n)
             self.track_candles_counter = 2  # Track 2 more candles after this one
             self.trigger_candle_date = candle['date']
-            logging.error(
+            logging.debug(
                 f"\n\n===== TRIGGER Candle (n): {candle['date']} =====\n"
                 f"Open: {self.my_strategy.ha_cache['current']['open']}, Close: {self.my_strategy.ha_cache['current']['close']} \n"
                 f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n"
@@ -367,7 +379,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         elif self.track_candles_counter > 0:
             # This is a follow-up candle (n+1 or n+2)
             position = 3 - self.track_candles_counter  # 1 for first follow-up, 2 for second
-            logging.error(
+            logging.debug(
                 f"\n\n===== FOLLOW-UP Candle n+{position} (after {self.trigger_candle_date}): {candle['date']} =====\n"
                 f"Open: {self.my_strategy.ha_cache['current']['open']}, Close: {self.my_strategy.ha_cache['current']['close']} \n"
                 f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n"

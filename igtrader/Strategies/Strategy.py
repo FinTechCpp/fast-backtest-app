@@ -335,7 +335,6 @@ class Strategy(ABC):
         should_long = self.should_long()
         should_short = should_short = False if should_long else self.should_short()
 
-
         if not (should_long or should_short):
             self._reset()
             self._is_executing = False

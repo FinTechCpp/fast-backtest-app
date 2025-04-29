@@ -322,6 +322,12 @@ class ConfigManager:
             'stop_loss': app.stop_loss,
             'take_profit': app.take_profit,
             'save_results': app.save_results,
+
+            # configuration des filtres
+            'ema_short_filter': app.ema_short_filter_check,
+            'ema_long_filter': app.ema_long_filter_check,
+            'stoch_filter': app.stoch_filter_check,
+            'previous_ha_candle_red_filter': app.previous_ha_candle_red_check,
             
             # Configuration des indicateurs
             'ema_short_enabled': app.ema_short_check,

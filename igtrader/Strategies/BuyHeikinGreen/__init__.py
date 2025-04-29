@@ -405,11 +405,11 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             self.track_candles_counter -= 1  # Decrement counter
             
         # Vérifier si un signal d'achat ou de vente est généré
-        if signal is None or ema_filter is False or stoch_filter is False or should_long is False:
+        if signal is None:
             return
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
-        elif not self.position and signal['action'] == 'BUY' and ema_filter and stoch_filter and should_long:
+        elif not self.position and signal['action'] == 'BUY':
             self.buy(sl=candle['Close'] - signal['stop_loss'], 
                     tp=candle['Close'] + signal['take_profit'], 
                     size=signal['quantity'])

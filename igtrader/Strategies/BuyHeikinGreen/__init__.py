@@ -286,9 +286,11 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         self.base_config = base_config
         self.config      = buy_trend_config
         self.my_strategy = BuyHeikinGreen(base_config, buy_trend_config)
+        
+        
+        #Only for debugging(can be removed)
         self.track_candles_counter = 0
         self.trigger_candle_date = None
-            
     
     def next(self):
         """
@@ -345,7 +347,9 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"Signal d'achat généré avec des filtres non respectés : "
                 f"EMA: {ema_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
             )
-        # Replace the current stoch_k < 20 condition block with this:
+            
+            
+#----------------DEBUGGING----------------------------------------------------------------
         if candle[self.stoch_k_name] < 20:
             # This is the trigger candle (n)
             self.track_candles_counter = 2  # Track 2 more candles after this one

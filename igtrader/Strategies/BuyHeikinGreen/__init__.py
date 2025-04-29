@@ -187,7 +187,7 @@ class BuyHeikinGreen(Strategy):
     def stoch_inf_threshold_filter(self):
         # Vérifie si le Stochastic %K présent est inférieur à threshold ou qu'il est ete en dessous de threshold sur la bougie précédente
         threshold = self.config.stoch_threshold
-        return self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold), self.candles[self.stoch_k_name], self.k_previous 
+        return self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold) 
     
     # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
@@ -286,7 +286,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         self.base_config = base_config
         self.config      = buy_trend_config
         self.my_strategy = BuyHeikinGreen(base_config, buy_trend_config)
-
+        self.track_candles_counter = 0
+        self.trigger_candle_date = None
             
     
     def next(self):
@@ -299,7 +300,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.atr_name = f'ATR_{self.base_config.atr_period}'
-    
         candle = {
             'date': self.data.index[-1],
             'Open': self.data.Open[-1],
@@ -316,9 +316,9 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         if self.atr_name in self.data.df.columns:
             candle[self.atr_name] = self.data.df[self.atr_name].iloc[-1]
                 
-        # Mettre à jour les valeurs précédentes du Stochastique
-        self.my_strategy.k_previous = candle[self.stoch_k_name]
-        self.my_strategy.d_previous = candle[self.stoch_d_name]
+        # Sauvegarder temporairement les valeurs actuelles pour les mettre à jour plus tard
+        current_k = candle[self.stoch_k_name]
+        current_d = candle[self.stoch_d_name]
         
         # Transmettre l'equity actuelle à la stratégie
         self.my_strategy.current_equity = self.equity
@@ -326,15 +326,18 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # TRÈS IMPORTANT: Mettre à jour la bougie AVANT d'appeler les filtres
         # car cela initialise self.candles dans la stratégie
         signal = self.my_strategy.update_candle(candle)
-        
-        # Vérifier les filtres
-        
+                
         cash = self.equity
         # Vérifier les filtres
         ema_filter = self.my_strategy.ema_filter()
         stoch_filter = self.my_strategy.stoch_inf_threshold_filter()
         previous_ha_candle_red_filter = self.my_strategy.previous_ha_candle_red_filter()
         should_long = self.my_strategy.should_long()
+        
+        # Maintenant que les filtres ont été évalués, mettre à jour k_previous et d_previous 
+        # pour la prochaine bougie
+        self.my_strategy.k_previous = current_k
+        self.my_strategy.d_previous = current_d
 
         # affiche un warning sur un signal d'achat avec des filtre a false
         if signal is not None and signal['action'] == 'BUY' and (not ema_filter or not stoch_filter or not previous_ha_candle_red_filter or not should_long):
@@ -342,30 +345,35 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"Signal d'achat généré avec des filtres non respectés : "
                 f"EMA: {ema_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
             )
-        display = False
-        if display:
-            logging.error(
-                f"\n\nCandle: {candle['date']}\n "
-                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
-                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
-                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
-                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
-                f"Should Long: {should_long}\n\n"
-            )
-            display = False
-            
+        # Replace the current stoch_k < 20 condition block with this:
         if candle[self.stoch_k_name] < 20:
-            display = True
+            # This is the trigger candle (n)
+            self.track_candles_counter = 2  # Track 2 more candles after this one
+            self.trigger_candle_date = candle['date']
             logging.error(
-                f"\n\nCandle: {candle['date']}\n "
-                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
-                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
-                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
-                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
+                f"\n\n===== TRIGGER Candle (n): {candle['date']} =====\n"
+                f"Open: {self.my_strategy.ha_cache['current']['open']}, Close: {self.my_strategy.ha_cache['current']['close']} \n"
+                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n"
+                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n"
+                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n"
+                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n"
+                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n"
                 f"Should Long: {should_long}\n\n"
             )
+        elif self.track_candles_counter > 0:
+            # This is a follow-up candle (n+1 or n+2)
+            position = 3 - self.track_candles_counter  # 1 for first follow-up, 2 for second
+            logging.error(
+                f"\n\n===== FOLLOW-UP Candle n+{position} (after {self.trigger_candle_date}): {candle['date']} =====\n"
+                f"Open: {self.my_strategy.ha_cache['current']['open']}, Close: {self.my_strategy.ha_cache['current']['close']} \n"
+                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n"
+                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n"
+                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n"
+                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n"
+                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n"
+                f"Should Long: {should_long}\n\n"
+            )
+            self.track_candles_counter -= 1  # Decrement counter
             
         # Vérifier si un signal d'achat ou de vente est généré
         if signal is None or ema_filter is False or stoch_filter is False or should_long is False:
@@ -378,6 +386,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                     size=signal['quantity'])
             logging.info(
                 f"\n\nCandle: {candle['date']}\n "
+                f"Open ({candle['Open']}), Close ({candle['Close']})\n "
                 f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "

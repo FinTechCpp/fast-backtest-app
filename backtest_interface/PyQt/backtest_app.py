@@ -660,9 +660,9 @@ class BacktestApp(QMainWindow):
         perf_layout.addWidget(MetricWidget("CAGR [%]", f"{stats['CAGR [%]']:.2f}%"), 3, 0)
         
         # Capital final, max et Buy & Hold
-        perf_layout.addWidget(MetricWidget("Capital final [$]", f"${stats['Equity Final [$]']:,.2f}"), 0, 1)
-        perf_layout.addWidget(MetricWidget("Capital max [$]", f"${stats['Equity Peak [$]']:,.2f}"), 1, 1)
-        perf_layout.addWidget(MetricWidget("Buy & Hold [%]", f"{stats['Buy & Hold Return [%]']:.2f}%"), 2, 1)
+        perf_layout.addWidget(MetricWidget("Capital final [$]", f"${stats['Equity Final [$]']:,.3f}"), 0, 1)
+        perf_layout.addWidget(MetricWidget("Capital max [$]", f"${stats['Equity Peak [$]']:,.3f}"), 1, 1)
+        perf_layout.addWidget(MetricWidget("Buy & Hold [%]", f"{stats['Buy & Hold Return [%]']:.3f}%"), 2, 1)
         perf_layout.addWidget(MetricWidget("Alpha [%]", f"{stats['Alpha [%]']:.4f}%"), 3, 1)
         
         perf_group.setLayout(perf_layout)
@@ -1112,7 +1112,6 @@ class BacktestApp(QMainWindow):
             stats['_trades']['EntryTime'] = stats['_trades']['EntryTime'].dt.tz_convert(timezone).dt.tz_localize(None)
             stats['_trades']['ExitTime'] = stats['_trades']['ExitTime'].dt.tz_convert(timezone).dt.tz_localize(None)
             stats['_equity_curve'].index = stats['_equity_curve'].index.tz_convert(timezone).tz_localize(None)
-            stats['_equity_curve']['Equity'] = stats['_equity_curve']['Equity'] / 1000
             
             # Afficher les statistiques (généralement plus léger)
             self.create_stats_widgets(stats)

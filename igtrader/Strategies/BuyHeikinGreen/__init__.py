@@ -18,7 +18,8 @@ class BuyHeikinGreenConfig:
     stoch_threshold: int = 50
 
     # Activation/désactivation des filtres
-    use_ema_filter: bool = True
+    use_ema_short_filter: bool = True
+    use_ema_long_filter: bool = True
     use_stoch_filter: bool = True
     use_previous_ha_candle_red_filter: bool = True
 
@@ -53,8 +54,10 @@ class BuyHeikinGreen(Strategy):
         }
 
         self.active_filters = []
-        if self.config.use_ema_filter:
-            self.active_filters.append(self.ema_filter)
+        if self.config.use_ema_short_filter:
+            self.active_filters.append(self.ema_short_filter)
+        if self.config.use_ema_long_filter:
+            self.active_filters.append(self.ema_long_filter)
         if self.config.use_stoch_filter:
             self.active_filters.append(self.stoch_inf_threshold_filter)
         if self.config.use_previous_ha_candle_red_filter:
@@ -183,9 +186,13 @@ class BuyHeikinGreen(Strategy):
     def go_short(self):
         raise NotImplementedError(f"La stratégie {self.name} ne supporte pas la vente à découvert.")
 
-    def ema_filter(self):
+    def ema_short_filter(self):
         # Vérifie si le prix est au-dessus des EMA
-        return self.price > self.candles[self.ema_short_name] and self.price > self.candles[self.ema_long_name]
+        return self.price > self.candles[self.ema_short_name]
+    
+    def ema_long_filter(self):
+        # Vérifie si le prix est au-dessus des EMA
+        return self.price > self.candles[self.ema_long_name]
     
     def previous_ha_candle_red_filter(self):
         """
@@ -292,7 +299,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             stoch_slowd          = kwargs.pop('stoch_slowd'),
             stoch_threshold      = kwargs.pop('stoch_threshold', 50),
             # Activation/désactivation des filtres
-            use_ema_filter       = kwargs.pop('use_ema_filter', True),
+            use_ema_short_filter       = kwargs.pop('use_ema_short_filter', True),
+            use_ema_long_filter  = kwargs.pop('use_ema_long_filter', True),
             use_stoch_filter     = kwargs.pop('use_stoch_filter', True),
             use_previous_ha_candle_red_filter = kwargs.pop('use_previous_ha_candle_red_filter', True),
         )
@@ -357,7 +365,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 
         cash = self.equity
         # Vérifier les filtres
-        ema_filter = self.my_strategy.ema_filter()
+        ema_short_filter = self.my_strategy.ema_short_filter()
+        ema_long_filter = self.my_strategy.ema_long_filter()
         stoch_filter = self.my_strategy.stoch_inf_threshold_filter()
         previous_ha_candle_red_filter = self.my_strategy.previous_ha_candle_red_filter()
         should_long = self.my_strategy.should_long()
@@ -368,10 +377,10 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         self.my_strategy.d_previous = current_d
 
         # affiche un warning sur un signal d'achat avec des filtre a false
-        if signal is not None and signal['action'] == 'BUY' and (not ema_filter or not stoch_filter or not previous_ha_candle_red_filter or not should_long):
+        if signal is not None and signal['action'] == 'BUY' and (not ema_short_filter or not ema_long_filter or not stoch_filter or not previous_ha_candle_red_filter or not should_long):
             logging.warning(
                 f"Signal d'achat généré avec des filtres non respectés : "
-                f"EMA: {ema_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
+                f"EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
             )
             
 #----------------DEBUGGING----------------------------------------------------------------
@@ -386,7 +395,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n"
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n"
                 f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n"
-                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n"
+                f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n"
                 f"Should Long: {should_long}\n\n"
             )
         elif self.track_candles_counter > 0:
@@ -399,7 +408,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n"
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n"
                 f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n"
-                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n"
+                f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n"
                 f"Should Long: {should_long}\n\n"
             )
             self.track_candles_counter -= 1  # Decrement counter
@@ -420,7 +429,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
                 f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                f"Filtres - EMA: {ema_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
+                f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
                 f"Should Long: {should_long}\n "
                 f"Trade size: {signal['quantity']}\n")
             
@@ -434,6 +443,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
                 f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                f"Filtres - EMA: {ema_filter}, Stoch<50: {stoch_filter}\n "
+                f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<50: {stoch_filter}\n "
                 f"Should Long: {should_long}\n\n"
             )

@@ -323,8 +323,10 @@ class BacktestApp(QMainWindow):
         filters_layout = QVBoxLayout()
 
         # EMA Filter
-        self.ema_filter_check = QCheckBox("Activer EMA Filter")
-        self.ema_filter_check.setChecked(True)
+        self.ema_short_filter_check = QCheckBox("Activer EMA court Filter")
+        self.ema_short_filter_check.setChecked(True)
+        self.ema_long_filter_check = QCheckBox("Activer EMA long Filter")
+        self.ema_long_filter_check.setChecked(True)
 
         # Stochastic Filter
         self.stoch_filter_check = QCheckBox("Activer Stochastic Filter")
@@ -333,7 +335,8 @@ class BacktestApp(QMainWindow):
         # Previous HA Candle Red Filter
         self.previous_ha_candle_red_check = QCheckBox("Activer Previous HA Candle Red Filter")
         self.previous_ha_candle_red_check.setChecked(True)
-        filters_layout.addWidget(self.ema_filter_check)
+        filters_layout.addWidget(self.ema_short_filter_check)
+        filters_layout.addWidget(self.ema_long_filter_check)
         filters_layout.addWidget(self.stoch_filter_check)
         filters_layout.addWidget(self.previous_ha_candle_red_check)
         filters_group.setLayout(filters_layout)
@@ -1072,7 +1075,8 @@ class BacktestApp(QMainWindow):
                 "stoch_threshold": self.stoch_threshold_spin.value(),
 
                 # Activation des filtres
-                "use_ema_filter": self.ema_filter_check.isChecked(),
+                "use_ema_short_filter": self.ema_short_filter_check.isChecked(),
+                "use_ema_long_filter": self.ema_long_filter_check.isChecked(),
                 "use_stoch_filter": self.stoch_filter_check.isChecked(),
                 "use_previous_ha_candle_red_filter": self.previous_ha_candle_red_check.isChecked(),
                 

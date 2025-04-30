@@ -39,8 +39,10 @@ class BuyHeikinGreen(Strategy):
         self.k_previous = None
         self.d_previous = None
 
+        # Initialize cash from base_config
+        self.cash = base_config.cash
+
         self.config = buy_heikin_green_config
-        self.current_equity = None
         # TODO : Arriver a rendre cela fixe, à ne pas redéfinir à chaque fois
         # Noms des indicateurs
         self.ema_short_name = f'EMA_{self.config.ema_short_period}'
@@ -154,17 +156,17 @@ class BuyHeikinGreen(Strategy):
         
         # Calculer la taille du trade basée sur le risque si activé
         if self.base_config.use_risk_based_sizing:
+            
             # Utiliser l'equity actuelle si disponible, sinon utiliser la valeur de base
-            capital = 100000
-            self.current_equity
+            initial_capital = self.cash
             # Calculer le montant risqué en dollars
-            risk_amount = capital * self.base_config.risk_percentage / 100
+            risk_amount = initial_capital * self.base_config.risk_percentage / 100
             
             # Calculer la taille de position pour que le SL représente exactement risk_amount
             risk_based_position_size = risk_amount / stop_loss_distance
             
             # Utiliser le capital total disponible avec effet de levier
-            leveraged_capital = capital * self.base_config.leverage_limit
+            leveraged_capital = initial_capital * self.base_config.leverage_limit
             
             # Limiter la taille maximale de position à un pourcentage du capital avec effet de levier
             max_position_value = leveraged_capital * self.base_config.max_position_percentage / 100
@@ -182,10 +184,10 @@ class BuyHeikinGreen(Strategy):
             
             # Calculer le risque réel après arrondis pour vérification
             real_risk_amount = position_size * stop_loss_distance
-            real_risk_percentage = (real_risk_amount / capital) * 100
+            real_risk_percentage = (real_risk_amount / initial_capital) * 100
             
             logging.warning(
-                f"Position size calculation: Capital={capital}\n "
+                f"Position size calculation: Capital={initial_capital}\n "
                 f"Capital avec levier={leveraged_capital}\n "
                 f"Risque={self.base_config.risk_percentage}%\n "
                 f"Effet de levier={self.base_config.leverage_limit}\n "
@@ -375,9 +377,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # Sauvegarder temporairement les valeurs actuelles pour les mettre à jour plus tard
         current_k = candle[self.stoch_k_name]
         current_d = candle[self.stoch_d_name]
-        
-        # Transmettre l'equity actuelle à la stratégie
-        self.my_strategy.current_equity = self.equity
 
         #Break-even stop loss quand PL > % du TP
         if self.position and self.use_break_even:

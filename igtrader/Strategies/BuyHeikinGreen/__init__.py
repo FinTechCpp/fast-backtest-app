@@ -327,6 +327,11 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             use_stoch_filter     = kwargs.pop('use_stoch_filter', True),
             use_previous_ha_candle_red_filter = kwargs.pop('use_previous_ha_candle_red_filter', True),
         )
+        
+        # Récupérer les paramètres de break-even
+        self.use_break_even = kwargs.pop('use_break_even', True)  # Par défaut activé
+        self.break_even_threshold = kwargs.pop('break_even_threshold', 0.7)  # Default to 70% if not provided
+
     
         # Extract break-even threshold parameter
         self.break_even_threshold = kwargs.pop('break_even_threshold', 0.7)  # Default to 70% if not provided
@@ -376,7 +381,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         
         
         #Break-even stop loss quand PL > % du TP
-        if self.position:
+        if self.position and self.use_break_even:
             for trade in self.trades:
                 if self.position.pl_pct > self.break_even_threshold * (self.base_config.take_profit_distance / trade.entry_price * 100):
                     trade.sl = trade.entry_price  # Set stop loss at break-even

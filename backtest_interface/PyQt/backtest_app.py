@@ -295,6 +295,11 @@ class BacktestApp(QMainWindow):
         self.risk_percentage.setValue(1.0)  # 1% par défaut
         self.risk_percentage.setEnabled(False)
         risk_layout.addRow("Risque par trade (%):", self.risk_percentage)
+        
+        # Checkbox pour activer/désactiver le break-even
+        self.use_break_even = QCheckBox("Activer break-even")
+        self.use_break_even.setChecked(True)  # Activé par défaut
+        risk_layout.addRow("", self.use_break_even)
                 
         # Break-Even Threshold
         self.break_even_threshold = QDoubleSpinBox()
@@ -574,6 +579,11 @@ class BacktestApp(QMainWindow):
         self.stoch_check.toggled.connect(self.toggle_stoch_widgets)
         self.supertrend_check.toggled.connect(self.toggle_supertrend_widgets)
         self.use_atr_check.toggled.connect(self.toggle_atr_controls)
+        self.use_break_even.toggled.connect(self.toggle_break_even_controls)
+        
+    def toggle_break_even_controls(self, checked):
+        """Active ou désactive les contrôles pour le break-even"""
+        self.break_even_threshold.setEnabled(checked)
         
     def toggle_atr_controls(self, checked):
         """Active ou désactive les contrôles pour les paramètres ATR"""
@@ -1097,6 +1107,7 @@ class BacktestApp(QMainWindow):
                 "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),
                 "risk_percentage": self.risk_percentage.value(),
                 "risk_capital": self.cash.value(),
+                "use_break_even": self.use_break_even.isChecked(),
                 "break_even_threshold": self.break_even_threshold.value(),
                 "maximal_leverage": self.maximal_leverage.value(),
             }

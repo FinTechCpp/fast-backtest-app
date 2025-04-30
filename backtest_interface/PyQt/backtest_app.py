@@ -305,6 +305,15 @@ class BacktestApp(QMainWindow):
         self.break_even_threshold.setToolTip("Sets stop loss to break-even when profit reaches this % of take profit")
         risk_layout.addRow("Break-Even Threshold (%):", self.break_even_threshold)
         
+        # Maximum leverage
+        self.maximal_leverage = QDoubleSpinBox()
+        self.maximal_leverage.setDecimals(2)
+        self.maximal_leverage.setRange(1.0, 100.0)
+        self.maximal_leverage.setSingleStep(0.1)
+        self.maximal_leverage.setValue(20.0)  # Default: 20x leverage
+        self.maximal_leverage.setToolTip("Effet de levier maximum autorisé")
+        risk_layout.addRow("Levier maximal autorisé:", self.maximal_leverage)
+        
         risk_sizing_group.setLayout(risk_layout)
         layout.addWidget(risk_sizing_group)
         
@@ -855,7 +864,7 @@ class BacktestApp(QMainWindow):
             
             # Add the main equity line
             equity_line = equity_chart.create_line(name='Equity', color='rgba(20,20,180,1)', width=1, price_line=False)
-            equity_line.horizontal_line(price=100, color='black', width=1, style='dashed', text='Initial Equity')
+            equity_line.horizontal_line(price=self.cash.value(), color='black', width=1, style='dashed', text='Initial Equity')
             
             # Convert time to string and handle Timedelta objects
             equity_df['time'] = equity_df['time'].astype(str)
@@ -977,14 +986,18 @@ class BacktestApp(QMainWindow):
                     position="above",
                     color=entry_color,
                     text=f"Entry: {entry_price:.2f}",
-                    shape="arrow_down")                
+                    shape="arrow_down",
+                    size=1)
+                                
                 # Exit marker
                 chart.marker(
                     time=exit_time,
                     position="below",
                     color=exit_color,
-                    text=f"Exit: {exit_price:.2f} (P/L: {trade['PnL']:.2f})",
-                    shape="arrow_up")
+                    text=f"Exit: {exit_price:.2f}\n"
+                         f"(P/L: {trade['PnL']:.2f} $ / {round(trade['ReturnPct'], 5)}%)\n",
+                    shape="arrow_up",
+                    size=1)
             
             # Fit the chart to show all data
             chart.fit()
@@ -1085,6 +1098,7 @@ class BacktestApp(QMainWindow):
                 "risk_percentage": self.risk_percentage.value(),
                 "risk_capital": self.cash.value(),
                 "break_even_threshold": self.break_even_threshold.value(),
+                "maximal_leverage": self.maximal_leverage.value(),
             }
             
             if self.use_atr_check.isChecked() and 'ATR' not in indicators:
@@ -1118,7 +1132,7 @@ class BacktestApp(QMainWindow):
                 strategy=strategy,
                 cash=cash,
                 spread=spread,
-                strategy_kwargs=strategy_kwargs
+                strategy_kwargs=strategy_kwargs,
             )
             
             # Connecter les signaux

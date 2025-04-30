@@ -1139,7 +1139,7 @@ class Backtest:
 
     `margin` is the required margin (ratio) of a leveraged account.
     No difference is made between initial and maintenance margins.
-    To run the backtest using e.g. 50:1 leverge that your broker allows,
+    To run the backtest using e.g. 50:1 leverage that your broker allows,
     set margin to `0.02` (1 / leverage).
 
     If `trade_on_close` is `True`, market orders will be filled

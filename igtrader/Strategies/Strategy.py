@@ -32,6 +32,8 @@ class StrategyBaseConfig:
     use_risk_based_sizing: bool = False
     risk_percentage: float = 1.0  # Pourcentage par défaut (1% du capital)
     cash: float = 100000.0  # Capital pour calculer le risque
+    max_position_percentage: float = 100.0  # Pourcentage du capital à investir par trade
+    leverage_limit: float = 20.0  # Limite de levier pour le calcul du risque
 
 
 class Strategy(ABC):

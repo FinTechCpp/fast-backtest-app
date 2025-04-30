@@ -8,7 +8,7 @@ from igtrader.backtestingpy.backtesting.backtesting import Backtest
 from datetime import time
 
 
-data = load_data(symbol='NDX', period='1d', interval='20secs')
+data = load_data(symbol='NDX', period='3d', interval='20secs')
 
 print(data.head())
 strategy = BuyHeikinGreenBA
@@ -28,6 +28,7 @@ strategy_kwargs = {
 }
 bt = Backtest(data, strategy, cash=100000, commission=.00, exclusive_orders=True, strategy_kwargs=strategy_kwargs)
 stats = bt.run()
-print(stats)
+print([stats])
+print(stats['_trades'])
 # bt.plot(plot_volume=False, resample=False, indicator_height=300)
 

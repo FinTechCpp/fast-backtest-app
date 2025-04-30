@@ -17,10 +17,14 @@ class BacktestWorker(QThread):
     
     def run(self):
         try:
+            maximum_leverage = self.strategy_kwargs.get('maximal_leverage', 20.0)
+            margin = 1 / maximum_leverage
+            
             # Exécuter le backtest
+            # margin = 1 / leverage donc pour IG avec un levier max de 20 : levier = 20 = 1/0.05
             bt = Backtest(self.data, self.strategy, cash=self.cash, commission=.00, 
                           spread=self.spread, exclusive_orders=False, 
-                          strategy_kwargs=self.strategy_kwargs, margin=0.05)
+                          strategy_kwargs=self.strategy_kwargs, margin=margin)
             stats = bt.run()
             
             # Émettre le signal avec les résultats

@@ -157,23 +157,45 @@ class BuyHeikinGreen(Strategy):
             # Utiliser l'equity actuelle si disponible, sinon utiliser la valeur de base
             capital = self.current_equity if self.current_equity is not None else self.base_config.cash
             
+            # Calculer le montant risqué en dollars
             risk_amount = capital * self.base_config.risk_percentage / 100
-            raw_position_size = risk_amount / stop_loss_distance
             
-            # Si la taille est >= 1, arrondir à l'entier supérieur
-            # Si la taille est < 1, la laisser telle quelle (fraction d'equity)
+            # Calculer la taille de position pour que le SL représente exactement risk_amount
+            risk_based_position_size = risk_amount / stop_loss_distance
+            
+            # Utiliser le capital total disponible avec effet de levier
+            leveraged_capital = capital * self.base_config.leverage_limit
+            
+            # Limiter la taille maximale de position à un pourcentage du capital avec effet de levier
+            max_position_value = leveraged_capital * self.base_config.max_position_percentage / 100
+            max_position_size = max_position_value / self.price
+            
+            # Prendre le MINIMUM entre la taille basée sur le risque et la limite imposée par "leveraged capital
+            raw_position_size = min(risk_based_position_size, max_position_size)
+            
+            # Si la taille est >= 1, arrondir à l'entier le plus proche
             if raw_position_size >= 1:
-                position_size = round(raw_position_size)  # Arrondir à l'entier le plus proche
+                position_size = int(raw_position_size)
             else:
-                # Limiter à un minimum de 0.01 (1% d'equity)
+                # Limiter à un minimum de 0.5
                 position_size = max(0.5, min(raw_position_size, 0.99))
             
-            logging.debug(
-                f"Risk-based sizing: Capital={capital}, "
-                f"Risque={self.base_config.risk_percentage}%, "
-                f"Montant risqué={risk_amount}, "
-                f"Taille calculée={position_size} (raw={raw_position_size})"
-                f"Prix actuel de l'actif={self.price}, "
+            # Calculer le risque réel après arrondis pour vérification
+            real_risk_amount = position_size * stop_loss_distance
+            real_risk_percentage = (real_risk_amount / capital) * 100
+            
+            logging.warning(
+                f"Position size calculation: Capital={capital}\n "
+                f"Capital avec levier={leveraged_capital}\n "
+                f"Risque={self.base_config.risk_percentage}%\n "
+                f"Effet de levier={self.base_config.leverage_limit}\n "
+                f"Montant risqué={risk_amount}\n "
+                f"Prix actuel={self.price}\n "
+                f"Distance SL={stop_loss_distance}\n "
+                f"Taille basée sur le risque={risk_based_position_size}\n "
+                f"Taille maximale par position={max_position_size}\n "
+                f"Taille après limites={position_size} ({self.price*position_size}$)\n "
+                f"Risque réel={real_risk_percentage:.2f}% ({real_risk_amount:.2f}$)\n "
             )
         else:
             # Taille fixe par défaut (entier)
@@ -288,6 +310,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             use_risk_based_sizing = kwargs.pop('use_risk_based_sizing', False),
             risk_percentage = kwargs.pop('risk_percentage', 1.0),
             cash = kwargs.pop('cash', 100000.0),
+            leverage_limit= kwargs.pop('leverage_limit', 20.0),  
         )
         
         # 2) extraire les clés spécifiques
@@ -383,7 +406,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
             )
             
-#----------------DEBUGGING----------------------------------------------------------------
+            
+#-----------------------------------------DEBUGGING (CAN BE REMOVED IN THE FUTURE)----------------------------------------------------------------
         if candle[self.stoch_k_name] < 20:
             # This is the trigger candle (n)
             self.track_candles_counter = 2  # Track 2 more candles after this one
@@ -412,6 +436,9 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"Should Long: {should_long}\n\n"
             )
             self.track_candles_counter -= 1  # Decrement counter
+#-------------------------------------------DEBUGGING----------------------------------------------------------------
+
+            
             
         # Vérifier si un signal d'achat ou de vente est généré
         if signal is None:
@@ -439,6 +466,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                     size=signal['quantity'])
             logging.info(
                 f"\n\nCandle: {candle['date']}\n "
+                f"Open ({candle['Open']}), Close ({candle['Close']})\n "
                 f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "

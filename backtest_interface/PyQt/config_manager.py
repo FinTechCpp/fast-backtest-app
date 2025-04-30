@@ -367,6 +367,7 @@ class ConfigManager:
             'use_risk_based_sizing': app.use_risk_based_sizing,
             'risk_percentage': app.risk_percentage,
             'break_even_threshold': app.break_even_threshold,
+            'maximal_leverage': app.maximal_leverage,
         }
         
         # Ajouter les jours de trading

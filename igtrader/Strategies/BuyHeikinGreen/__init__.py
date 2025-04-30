@@ -155,8 +155,8 @@ class BuyHeikinGreen(Strategy):
         # Calculer la taille du trade basée sur le risque si activé
         if self.base_config.use_risk_based_sizing:
             # Utiliser l'equity actuelle si disponible, sinon utiliser la valeur de base
-            capital = self.current_equity if self.current_equity is not None else self.base_config.cash
-            
+            capital = 100000
+            self.current_equity
             # Calculer le montant risqué en dollars
             risk_amount = capital * self.base_config.risk_percentage / 100
             
@@ -306,7 +306,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             min_stop_loss_distance = kwargs.pop('min_stop_loss_distance', 5.0),
             min_take_profit_distance = kwargs.pop('min_take_profit_distance', 5.0),
             
-            # Paramètres de gestion du risque - AJOUT DES PARAMÈTRES MANQUANTS
+            # Paramètres de gestion du risque 
             use_risk_based_sizing = kwargs.pop('use_risk_based_sizing', False),
             risk_percentage = kwargs.pop('risk_percentage', 1.0),
             cash = kwargs.pop('cash', 100000.0),
@@ -378,8 +378,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         
         # Transmettre l'equity actuelle à la stratégie
         self.my_strategy.current_equity = self.equity
-        
-        
+
         #Break-even stop loss quand PL > % du TP
         if self.position and self.use_break_even:
             for trade in self.trades:
@@ -391,7 +390,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # car cela initialise self.candles dans la stratégie
         signal = self.my_strategy.update_candle(candle)
                 
-        cash = self.equity
         # Vérifier les filtres
         ema_short_filter = self.my_strategy.ema_short_filter()
         ema_long_filter = self.my_strategy.ema_long_filter()
@@ -451,8 +449,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
         elif not self.position and signal['action'] == 'BUY':
-            self.buy(sl=candle['Close'] - signal['stop_loss'], 
-                    tp=candle['Close'] + signal['take_profit'], 
+            self.buy(sl_points=signal['stop_loss'], 
+                    tp_points=signal['take_profit'], 
                     size=signal['quantity'])
             logging.info(
                 f"\n\nCandle: {candle['date']}\n "
@@ -466,8 +464,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"Trade size: {signal['quantity']}\n")
             
         elif not self.position and signal['action'] == 'SELL':
-            self.sell(sl=candle['Close'] + signal['stop_loss'], 
-                    tp=candle['Close'] - signal['take_profit'], 
+            self.sell(sl_points=signal['stop_loss'], 
+                    tp_points=signal['take_profit'], 
                     size=signal['quantity'])
             logging.info(
                 f"\n\nCandle: {candle['date']}\n "

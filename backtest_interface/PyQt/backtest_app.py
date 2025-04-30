@@ -494,10 +494,10 @@ class BacktestApp(QMainWindow):
         # Trading end time
         self.trading_to_hour = QSpinBox()
         self.trading_to_hour.setRange(0, 23)
-        self.trading_to_hour.setValue(22)
+        self.trading_to_hour.setValue(21)
         self.trading_to_minute = QSpinBox()
         self.trading_to_minute.setRange(0, 59)
-        self.trading_to_minute.setValue(0)
+        self.trading_to_minute.setValue(59)
         to_layout = QHBoxLayout()
         to_layout.addWidget(self.trading_to_hour)
         to_layout.addWidget(QLabel(":"))

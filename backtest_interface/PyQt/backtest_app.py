@@ -136,6 +136,24 @@ class BacktestApp(QMainWindow):
         
         profile_layout.addLayout(profile_selector_layout)
         
+        # Ajout des boutons d'import/export de configuration
+        import_export_layout = QHBoxLayout()
+        
+        # Bouton d'importation
+        import_btn = QPushButton("📥 Importer")
+        import_btn.setToolTip("Importer une configuration depuis un fichier")
+        import_btn.clicked.connect(lambda: self.config_manager.import_config_from_file(self, self))
+        import_export_layout.addWidget(import_btn)
+        
+        # Bouton d'exportation
+        export_btn = QPushButton("📤 Exporter")
+        export_btn.setToolTip("Exporter la configuration vers un fichier")
+        export_btn.clicked.connect(lambda: self.config_manager.export_config_to_file(self))
+        import_export_layout.addWidget(export_btn)
+        
+        # Ajouter ce layout au layout des profils
+        profile_layout.addLayout(import_export_layout)
+        
         # Finaliser le groupe de profils
         profile_group.setLayout(profile_layout)
         layout.addWidget(profile_group)
@@ -494,10 +512,10 @@ class BacktestApp(QMainWindow):
         # Trading end time
         self.trading_to_hour = QSpinBox()
         self.trading_to_hour.setRange(0, 23)
-        self.trading_to_hour.setValue(22)
+        self.trading_to_hour.setValue(21)
         self.trading_to_minute = QSpinBox()
-        self.trading_to_minute.setRange(0, 59)
-        self.trading_to_minute.setValue(0)
+        self.trading_to_minute.setRange(0, 58)
+        self.trading_to_minute.setValue(58)
         to_layout = QHBoxLayout()
         to_layout.addWidget(self.trading_to_hour)
         to_layout.addWidget(QLabel(":"))
@@ -742,13 +760,19 @@ class BacktestApp(QMainWindow):
         
         trade_layout.addWidget(MetricWidget("Nombre de trades", f"{stats['# Trades']}"), 0, 0)
         trade_layout.addWidget(MetricWidget("Taux de réussite [%]", f"{stats['Win Rate [%]']:.2f}%"), 1, 0)
-        trade_layout.addWidget(MetricWidget("Meilleur trade [%]", f"{stats['Best Trade [%]']:.2f}%"), 2, 0)
-        trade_layout.addWidget(MetricWidget("Pire trade [%]", f"{stats['Worst Trade [%]']:.2f}%"), 3, 0)
         
-        trade_layout.addWidget(MetricWidget("Trade moyen [%]", f"{stats['Avg. Trade [%]']:.4f}%"), 0, 1)
-        trade_layout.addWidget(MetricWidget("Durée max trade", str(stats["Max. Trade Duration"])), 1, 1)
-        trade_layout.addWidget(MetricWidget("Durée moyenne trade", str(stats["Avg. Trade Duration"])), 2, 1)
-        trade_layout.addWidget(MetricWidget("Profit Factor", f"{stats['Profit Factor']:.2f}"), 3, 1)
+        # Nouvelles statistiques sur les types de trades
+        trade_layout.addWidget(MetricWidget("Trades gagnants", f"{stats['# Winning Trades']}"), 0, 1)
+        trade_layout.addWidget(MetricWidget("Trades perdants", f"{stats['# Losing Trades']}"), 1, 1)
+        trade_layout.addWidget(MetricWidget("Trades neutres", f"{stats['# Neutral Trades']}"), 2, 1)
+        
+        trade_layout.addWidget(MetricWidget("Meilleur trade [%]", f"{stats['Best Trade [%]']:.2f}%"), 4, 0)
+        trade_layout.addWidget(MetricWidget("Pire trade [%]", f"{stats['Worst Trade [%]']:.2f}%"), 5, 0)
+        
+        trade_layout.addWidget(MetricWidget("Trade moyen [%]", f"{stats['Avg. Trade [%]']:.4f}%"), 4, 1)
+        trade_layout.addWidget(MetricWidget("Durée max trade", str(stats["Max. Trade Duration"])), 5, 1)
+        trade_layout.addWidget(MetricWidget("Durée moyenne trade", str(stats["Avg. Trade Duration"])), 6, 0)
+        trade_layout.addWidget(MetricWidget("Profit Factor", f"{stats['Profit Factor']:.2f}"), 6, 1)
         
         trade_group.setLayout(trade_layout)
         col2_layout.addWidget(trade_group)
@@ -1109,7 +1133,7 @@ class BacktestApp(QMainWindow):
                 "risk_capital": self.cash.value(),
                 "use_break_even": self.use_break_even.isChecked(),
                 "break_even_threshold": self.break_even_threshold.value(),
-                "maximal_leverage": self.maximal_leverage.value(),
+                "leverage_limit": self.maximal_leverage.value(),
             }
             
             if self.use_atr_check.isChecked() and 'ATR' not in indicators:

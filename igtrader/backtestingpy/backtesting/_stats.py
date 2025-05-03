@@ -169,13 +169,16 @@ def compute_stats(
     s.loc['# Trades'] = n_trades = len(trades_df)
     win_rate = np.nan if not n_trades else (pl > 0).mean()
     s.loc['Win Rate [%]'] = win_rate * 100
+    s.loc['# Winning Trades'] = np.sum(pl > 0) if n_trades else 0
+    s.loc['# Losing Trades'] = np.sum(pl < 0) if n_trades else 0
+    s.loc['# Neutral Trades'] = np.sum(pl == 0) if n_trades else 0
     s.loc['Best Trade [%]'] = returns.max() * 100
     s.loc['Worst Trade [%]'] = returns.min() * 100
     mean_return = geometric_mean(returns)
     s.loc['Avg. Trade [%]'] = mean_return * 100
     s.loc['Max. Trade Duration'] = _round_timedelta(durations.max())
     s.loc['Avg. Trade Duration'] = _round_timedelta(durations.mean())
-    s.loc['Profit Factor'] = returns[returns > 0].sum() / (abs(returns[returns < 0].sum()) or np.nan)  # noqa: E501
+    s.loc['Profit Factor'] = pl[pl > 0].sum() / (abs(pl[pl < 0].sum()) or np.nan)
     s.loc['Expectancy [%]'] = returns.mean() * 100
     s.loc['SQN'] = np.sqrt(n_trades) * pl.mean() / (pl.std() or np.nan)
     s.loc['Kelly Criterion'] = win_rate - (1 - win_rate) / (pl[pl > 0].mean() / -pl[pl < 0].mean())

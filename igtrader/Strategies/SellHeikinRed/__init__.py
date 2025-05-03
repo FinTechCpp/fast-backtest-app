@@ -6,7 +6,7 @@ import numpy as np
 from dataclasses import dataclass
 
 @dataclass
-class BuyHeikinGreenConfig:
+class SellHeikinRedConfig:
     """
     Paramètres de la stratégie de trading basée sur les bougies Heikin Ashi.
     """
@@ -24,14 +24,14 @@ class BuyHeikinGreenConfig:
     use_previous_ha_candle_red_filter: bool = True
 
 
-class BuyHeikinGreen(Strategy):
+class SellHeikinRed(Strategy):
     """
     Stratégie de trading basée sur les bougies Heikin Ashi.
     """
-    def __init__(self, base_config: StrategyBaseConfig, buy_heikin_green_config: BuyHeikinGreenConfig):
+    def __init__(self, base_config: StrategyBaseConfig, sell_heikin_red_config: SellHeikinRedConfig):
         super().__init__(base_config)
 
-        self.name = "BuyHeikinGreen"
+        self.name = "SellHeikinRed"
         self.symbol = None
         self.exchange = None
         self.timeframe = None
@@ -42,7 +42,7 @@ class BuyHeikinGreen(Strategy):
         # Initialize cash from base_config
         self.cash = base_config.cash
 
-        self.config = buy_heikin_green_config
+        self.config = sell_heikin_red_config
         # TODO : Arriver a rendre cela fixe, à ne pas redéfinir à chaque fois
         # Noms des indicateurs
         self.ema_short_name = f'EMA_{self.config.ema_short_period}'
@@ -288,7 +288,7 @@ class BuyHeikinGreen(Strategy):
         return candle
 
 
-class BuyHeikinGreenBA(BacktestingStrategy):
+class SellHeikinRedBA(BacktestingStrategy):
     """
     Adapter pour la stratégie de backtesting.
     """
@@ -318,7 +318,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         )
         
         # 2) extraire les clés spécifiques
-        buy_trend_config = BuyHeikinGreenConfig(
+        buy_trend_config = SellHeikinRedConfig(
             ema_short_period     = kwargs.pop('ema_short_period'),
             ema_long_period      = kwargs.pop('ema_long_period'),
             stoch_fastk          = kwargs.pop('stoch_fastk'),
@@ -343,7 +343,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # 3) stocker et instancier la stratégie "métier"
         self.base_config = base_config
         self.config      = buy_trend_config
-        self.my_strategy = BuyHeikinGreen(base_config, buy_trend_config)
+        self.my_strategy = SellHeikinRed(base_config, buy_trend_config)
         
         
         #Only for debugging(can be removed)

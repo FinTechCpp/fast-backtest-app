@@ -219,6 +219,8 @@ class Strategy(metaclass=ABCMeta):
             stop: Optional[float] = None,
             sl: Optional[float] = None,
             tp: Optional[float] = None,
+            sl_points: Optional[float] = None,
+            tp_points: Optional[float] = None,
             tag: object = None) -> 'Order':
         """
         Place a new long order and return it. For explanation of parameters, see `Order`
@@ -227,14 +229,23 @@ class Strategy(metaclass=ABCMeta):
         market orders are filled on next bar's open,
         whereas other order types (limit, stop-limit, stop-market) are filled when
         the respective conditions are met.
-
+    
         See `Position.close()` and `Trade.close()` for closing existing positions.
-
+    
         See also `Strategy.sell()`.
+        
+        Parameters:
+            sl_points: Optional[float]
+                Stop loss distance in points from entry price (alternative to sl)
+            tp_points: Optional[float]
+                Take profit distance in points from entry price (alternative to tp)
         """
         assert 0 < size < 1 or round(size) == size >= 1, \
             "size must be a positive fraction of equity, or a positive whole number of units"
-        return self._broker.new_order(size, limit, stop, sl, tp, tag)
+        assert sl is None or sl_points is None, "Cannot specify both sl and sl_points"
+        assert tp is None or tp_points is None, "Cannot specify both tp and tp_points"
+        
+        return self._broker.new_order(size, limit, stop, sl, tp, tag, sl_points=sl_points, tp_points=tp_points)
 
     def sell(self, *,
              size: float = _FULL_EQUITY,
@@ -242,30 +253,41 @@ class Strategy(metaclass=ABCMeta):
              stop: Optional[float] = None,
              sl: Optional[float] = None,
              tp: Optional[float] = None,
+             sl_points: Optional[float] = None,
+             tp_points: Optional[float] = None,
              tag: object = None) -> 'Order':
         """
         Place a new short order and return it. For explanation of parameters, see `Order`
         and its properties.
-
+    
         .. caution::
             Keep in mind that `self.sell(size=.1)` doesn't close existing `self.buy(size=.1)`
             trade unless:
-
+    
             * the backtest was run with `exclusive_orders=True`,
             * the underlying asset price is equal in both cases and
               the backtest was run with `spread = commission = 0`.
-
+    
             Use `Trade.close()` or `Position.close()` to explicitly exit trades.
-
+    
         See also `Strategy.buy()`.
-
+    
         .. note::
             If you merely want to close an existing long position,
             use `Position.close()` or `Trade.close()`.
+            
+        Parameters:
+            sl_points: Optional[float]
+                Stop loss distance in points from entry price (alternative to sl)
+            tp_points: Optional[float]
+                Take profit distance in points from entry price (alternative to tp)
         """
         assert 0 < size < 1 or round(size) == size >= 1, \
             "size must be a positive fraction of equity, or a positive whole number of units"
-        return self._broker.new_order(-size, limit, stop, sl, tp, tag)
+        assert sl is None or sl_points is None, "Cannot specify both sl and sl_points"
+        assert tp is None or tp_points is None, "Cannot specify both tp and tp_points"
+        
+        return self._broker.new_order(-size, limit, stop, sl, tp, tag, sl_points=sl_points, tp_points=tp_points)
 
     @property
     def equity(self) -> float:
@@ -422,7 +444,9 @@ class Order:
                  sl_price: Optional[float] = None,
                  tp_price: Optional[float] = None,
                  parent_trade: Optional['Trade'] = None,
-                 tag: object = None):
+                 tag: object = None,
+                 sl_points: Optional[float] = None,
+                 tp_points: Optional[float] = None):
         self.__broker = broker
         assert size != 0
         self.__size = size
@@ -432,6 +456,8 @@ class Order:
         self.__tp_price = tp_price
         self.__parent_trade = parent_trade
         self.__tag = tag
+        self.__sl_points = sl_points
+        self.__tp_points = tp_points
 
     def _replace(self, **kwargs):
         for k, v in kwargs.items():
@@ -464,6 +490,17 @@ class Order:
 
     # Fields getters
 
+    # Add properties for sl_points and tp_points
+    @property
+    def sl_points(self) -> Optional[float]:
+        """Stop loss distance in points from entry price."""
+        return self.__sl_points
+    
+    @property
+    def tp_points(self) -> Optional[float]:
+        """Take profit distance in points from entry price."""
+        return self.__tp_points
+    
     @property
     def size(self) -> float:
         """
@@ -779,6 +816,8 @@ class _Broker:
                   tp: Optional[float] = None,
                   tag: object = None,
                   *,
+                  sl_points: Optional[float] = None,
+                  tp_points: Optional[float] = None,
                   trade: Optional[Trade] = None) -> Order:
         """
         Argument size indicates whether the order is long or short
@@ -788,24 +827,28 @@ class _Broker:
         limit = limit and float(limit)
         sl = sl and float(sl)
         tp = tp and float(tp)
-
+        sl_points = sl_points and float(sl_points)
+        tp_points = tp_points and float(tp_points)
+    
         is_long = size > 0
         assert size != 0, size
         adjusted_price = self._adjusted_price(size)
-
-        if is_long:
-            if not (sl or -np.inf) < (limit or stop or adjusted_price) < (tp or np.inf):
-                raise ValueError(
-                    "Long orders require: "
-                    f"SL ({sl}) < LIMIT ({limit or stop or adjusted_price}) < TP ({tp})")
-        else:
-            if not (tp or -np.inf) < (limit or stop or adjusted_price) < (sl or np.inf):
-                raise ValueError(
-                    "Short orders require: "
-                    f"TP ({tp}) < LIMIT ({limit or stop or adjusted_price}) < SL ({sl})")
-
-        order = Order(self, size, limit, stop, sl, tp, trade, tag)
-
+    
+        # Only validate absolute price levels if they're provided
+        if sl is not None or tp is not None:
+            if is_long:
+                if not (sl or -np.inf) < (limit or stop or adjusted_price) < (tp or np.inf):
+                    raise ValueError(
+                        "Long orders require: "
+                        f"SL ({sl}) < LIMIT ({limit or stop or adjusted_price}) < TP ({tp})")
+            else:
+                if not (tp or -np.inf) < (limit or stop or adjusted_price) < (sl or np.inf):
+                    raise ValueError(
+                        "Short orders require: "
+                        f"TP ({tp}) < LIMIT ({limit or stop or adjusted_price}) < SL ({sl})")
+    
+        order = Order(self, size, limit, stop, sl, tp, trade, tag, sl_points, tp_points)
+    
         if not trade:
             # If exclusive orders (each new order auto-closes previous orders/position),
             # cancel all non-contingent orders and close all open trades beforehand
@@ -815,10 +858,10 @@ class _Broker:
                         o.cancel()
                 for t in self.trades:
                     t.close()
-
+    
         # Put the new order in the order queue, Ensure SL orders are processed first
         self.orders.insert(0 if trade and stop else len(self.orders), order)
-
+    
         return order
 
     @property
@@ -991,12 +1034,8 @@ class _Broker:
 
             # Open a new trade
             if need_size:
-                self._open_trade(adjusted_price,
-                                 need_size,
-                                 order.sl,
-                                 order.tp,
-                                 time_index,
-                                 order.tag)
+                self._open_trade(price, int(size), order.sl, order.tp, time_index, order.tag, order=order)
+
 
                 # We need to reprocess the SL/TP orders newly added to the queue.
                 # This allows e.g. SL hitting in the same bar the order was open.
@@ -1069,16 +1108,30 @@ class _Broker:
         closed_trade._commissions = commission + trade_open_commission
 
     def _open_trade(self, price: float, size: int,
-                    sl: Optional[float], tp: Optional[float], time_index: int, tag):
+                    sl: Optional[float], tp: Optional[float], time_index: int, tag, order=None):
         trade = Trade(self, size, price, time_index, tag)
         self.trades.append(trade)
         # Apply broker commission at trade open
         self._cash -= self._commission(size, price)
-        # Create SL/TP (bracket) orders.
+        
+        # Use points-based SL/TP if available from the order
+        if order:
+            if order.sl_points is not None:
+                # For long positions, SL is entry - points; for short positions, SL is entry + points
+                sl = price - order.sl_points if size > 0 else price + order.sl_points
+            
+            if order.tp_points is not None:
+                # For long positions, TP is entry + points; for short positions, TP is entry - points
+                tp = price + order.tp_points if size > 0 else price - order.tp_points
+        
+        # Create SL/TP (bracket) orders
         if tp:
-            trade.tp = tp
+            tp_order = self.new_order(-size, limit=tp, trade=trade, tag=tag)
+            trade._replace(tp_order=tp_order)
+        
         if sl:
-            trade.sl = sl
+            sl_order = self.new_order(-size, stop=sl, trade=trade, tag=tag)
+            trade._replace(sl_order=sl_order)
 
 
 class Backtest:

@@ -68,22 +68,6 @@ class GeneralParamsPanel(BasePanel):
         self.widgets['candle_type_combo'].addItems(["Heikin Ashi", "Standard"])
         params_layout.addRow(QLabel("Type de bougie:"), self.widgets['candle_type_combo'])
         
-        # Stop Loss
-        self.widgets['stop_loss'] = QDoubleSpinBox()
-        self.widgets['stop_loss'].setDecimals(2)
-        self.widgets['stop_loss'].setRange(0, 1000)
-        self.widgets['stop_loss'].setSingleStep(1)
-        self.widgets['stop_loss'].setValue(20)
-        params_layout.addRow(QLabel("Stop Loss [pts]:"), self.widgets['stop_loss'])
-        
-        # Take Profit
-        self.widgets['take_profit'] = QDoubleSpinBox()
-        self.widgets['take_profit'].setDecimals(2)
-        self.widgets['take_profit'].setRange(0, 1000)
-        self.widgets['take_profit'].setSingleStep(1)
-        self.widgets['take_profit'].setValue(30)
-        params_layout.addRow(QLabel("Take Profit [pts]:"), self.widgets['take_profit'])
-        
         # Sauvegarder les résultats
         self.widgets['save_results'] = QCheckBox("Sauvegarder les résultats")
         params_layout.addRow("", self.widgets['save_results'])
@@ -103,8 +87,6 @@ class GeneralParamsPanel(BasePanel):
             'cash': self.widgets['cash'].value(),
             'strategy': self.widgets['strategy_combo'].currentText(),
             'candle_type': self.widgets['candle_type_combo'].currentText(),
-            'stop_loss': self.widgets['stop_loss'].value(),
-            'take_profit': self.widgets['take_profit'].value(),
             'save_results': self.widgets['save_results'].isChecked()
         }
     
@@ -146,12 +128,6 @@ class GeneralParamsPanel(BasePanel):
             index = self.widgets['candle_type_combo'].findText(values['candle_type'])
             if index >= 0:
                 self.widgets['candle_type_combo'].setCurrentIndex(index)
-        
-        if 'stop_loss' in values:
-            self.widgets['stop_loss'].setValue(values['stop_loss'])
-        
-        if 'take_profit' in values:
-            self.widgets['take_profit'].setValue(values['take_profit'])
         
         if 'save_results' in values:
             self.widgets['save_results'].setChecked(values['save_results'])

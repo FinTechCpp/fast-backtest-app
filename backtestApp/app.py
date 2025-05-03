@@ -78,7 +78,7 @@ class BacktestApp(QMainWindow):
     
     # Modifier la méthode create_control_panel pour ajouter la section des profils
     def create_control_panel(self):
-        """Crée le panneau de contrôle (équivalent de la sidebar Streamlit)"""
+        """Crée le panneau de contrôle avec des panels modulaires"""
         control_panel = QWidget()
         control_panel.setMaximumWidth(400)
         layout = QVBoxLayout(control_panel)
@@ -120,286 +120,107 @@ class BacktestApp(QMainWindow):
         from panels import GeneralParamsPanel
         self.general_params_panel = GeneralParamsPanel(self)
         layout.addWidget(self.general_params_panel.create())
-        
-        # Nouvelle section pour l'ATR
-        atr_group = QGroupBox("ATR pour SL/TP")
-        atr_layout = QFormLayout()
-        
-        # Checkbox pour activer l'ATR pour SL/TP
-        self.use_atr_check = QCheckBox("Utiliser l'ATR pour SL/TP")
-        atr_layout.addRow("", self.use_atr_check)
-        
-        # Multiplicateurs ATR
-        self.sl_atr_multiplier = QDoubleSpinBox()
-        self.sl_atr_multiplier.setDecimals(1)
-        self.sl_atr_multiplier.setRange(0.1, 10.0)
-        self.sl_atr_multiplier.setSingleStep(0.1)
-        self.sl_atr_multiplier.setValue(2.0)
-        self.sl_atr_multiplier.setEnabled(False)
-        atr_layout.addRow("Multiplicateur ATR pour SL:", self.sl_atr_multiplier)
-        
-        self.tp_atr_multiplier = QDoubleSpinBox()
-        self.tp_atr_multiplier.setDecimals(1)
-        self.tp_atr_multiplier.setRange(0.1, 10.0)
-        self.tp_atr_multiplier.setSingleStep(0.1)
-        self.tp_atr_multiplier.setValue(3.0)
-        self.tp_atr_multiplier.setEnabled(False)
-        atr_layout.addRow("Multiplicateur ATR pour TP:", self.tp_atr_multiplier)
-        
-        # Valeurs minimales
-        self.min_sl = QDoubleSpinBox()
-        self.min_sl.setDecimals(1)
-        self.min_sl.setRange(1.0, 100.0)
-        self.min_sl.setSingleStep(1.0)
-        self.min_sl.setValue(5.0)
-        self.min_sl.setEnabled(False)
-        atr_layout.addRow("SL minimal [pts]:", self.min_sl)
-        
-        self.min_tp = QDoubleSpinBox()
-        self.min_tp.setDecimals(1)
-        self.min_tp.setRange(1.0, 100.0)
-        self.min_tp.setSingleStep(1.0)
-        self.min_tp.setValue(5.0)
-        self.min_tp.setEnabled(False)
-        atr_layout.addRow("TP minimal [pts]:", self.min_tp)
-        
-        atr_group.setLayout(atr_layout)
-        layout.addWidget(atr_group)
-        
-        # Connect signals
-        self.use_atr_check.toggled.connect(self.toggle_atr_controls)
-                
-        # Risk-based sizing
-        risk_sizing_group = QGroupBox("Gestion du risque")
-        risk_layout = QFormLayout()
-        
-        # Checkbox pour activer le risk-based sizing
-        self.use_risk_based_sizing = QCheckBox("Utiliser Risk-Based Sizing")
-        risk_layout.addRow("", self.use_risk_based_sizing)
-        
-        # Spinner pour le pourcentage de risque
-        self.risk_percentage = QDoubleSpinBox()
-        self.risk_percentage.setDecimals(2)
-        self.risk_percentage.setRange(0.1, 50.0)
-        self.risk_percentage.setSingleStep(0.1)
-        self.risk_percentage.setValue(1.0)  # 1% par défaut
-        self.risk_percentage.setEnabled(False)
-        risk_layout.addRow("Risque par trade (%):", self.risk_percentage)
-                
-        # Break-Even Threshold
-        self.break_even_threshold = QDoubleSpinBox()
-        self.break_even_threshold.setDecimals(2)
-        self.break_even_threshold.setRange(0.1, 1.0)
-        self.break_even_threshold.setSingleStep(0.05)
-        self.break_even_threshold.setValue(0.7)  # Default: 70% of take profit
-        self.break_even_threshold.setToolTip("Sets stop loss to break-even when profit reaches this % of take profit")
-        risk_layout.addRow("Break-Even Threshold (%):", self.break_even_threshold)
-        
-        # Maximum leverage
-        self.maximal_leverage = QDoubleSpinBox()
-        self.maximal_leverage.setDecimals(2)
-        self.maximal_leverage.setRange(1.0, 100.0)
-        self.maximal_leverage.setSingleStep(0.1)
-        self.maximal_leverage.setValue(20.0)  # Default: 20x leverage
-        self.maximal_leverage.setToolTip("Effet de levier maximum autorisé")
-        risk_layout.addRow("Levier maximal autorisé:", self.maximal_leverage)
-        
-        risk_sizing_group.setLayout(risk_layout)
-        layout.addWidget(risk_sizing_group)
-        
-        # Connecter le signal
-        self.use_risk_based_sizing.toggled.connect(lambda checked: self.toggle_risk_controls(checked))
 
-        # Configuration des filtres
-        filters_group = QGroupBox("Configuration des filtres")
-        filters_layout = QVBoxLayout()
 
-        # EMA Filter
-        self.ema_short_filter_check = QCheckBox("Activer EMA court Filter")
-        self.ema_short_filter_check.setChecked(True)
-        self.ema_long_filter_check = QCheckBox("Activer EMA long Filter")
-        self.ema_long_filter_check.setChecked(True)
+        # Panel de base de la stratégie (commun à toutes les stratégies)
+        from panels import StrategyBasePanel
+        self.strategy_base_panel = StrategyBasePanel(self)
+        layout.addWidget(self.strategy_base_panel.create())
 
-        # Stochastic Filter
-        self.stoch_filter_check = QCheckBox("Activer Stochastic Filter")
-        self.stoch_filter_check.setChecked(True)
-
-        # Previous HA Candle Red Filter
-        self.previous_ha_candle_red_check = QCheckBox("Activer Previous HA Candle Red Filter")
-        self.previous_ha_candle_red_check.setChecked(True)
-        filters_layout.addWidget(self.ema_short_filter_check)
-        filters_layout.addWidget(self.ema_long_filter_check)
-        filters_layout.addWidget(self.stoch_filter_check)
-        filters_layout.addWidget(self.previous_ha_candle_red_check)
-        filters_group.setLayout(filters_layout)
-        layout.addWidget(filters_group)
-
-        
-        # Configuration des indicateurs
-        indicators_group = QGroupBox("Configuration des indicateurs")
-        indicators_layout = QVBoxLayout()
-        
-        # EMA
-        self.ema_short_check = QCheckBox("Activer EMA court")
-        self.ema_short_check.setChecked(True)
-        self.ema_short_spin = QSpinBox()
-        self.ema_short_spin.setRange(1, 500)
-        self.ema_short_spin.setValue(20)
-        
-        self.ema_medium_check = QCheckBox("Activer EMA moyen")
-        self.ema_medium_check.setChecked(True)
-        self.ema_medium_spin = QSpinBox()
-        self.ema_medium_spin.setRange(1, 500)
-        self.ema_medium_spin.setValue(50)
-        
-        self.ema_long_check = QCheckBox("Activer EMA long")
-        self.ema_long_check.setChecked(True)
-        self.ema_long_spin = QSpinBox()
-        self.ema_long_spin.setRange(1, 500)
-        self.ema_long_spin.setValue(200)
-        
-        ema_layout = QGridLayout()
-        ema_layout.addWidget(self.ema_short_check, 0, 0)
-        ema_layout.addWidget(QLabel("Période:"), 0, 1)
-        ema_layout.addWidget(self.ema_short_spin, 0, 2)
-        ema_layout.addWidget(self.ema_medium_check, 1, 0)
-        ema_layout.addWidget(QLabel("Période:"), 1, 1)
-        ema_layout.addWidget(self.ema_medium_spin, 1, 2)
-        ema_layout.addWidget(self.ema_long_check, 2, 0)
-        ema_layout.addWidget(QLabel("Période:"), 2, 1)
-        ema_layout.addWidget(self.ema_long_spin, 2, 2)
-        
-        indicators_layout.addLayout(ema_layout)
-        
-        # ATR
-        atr_widget = QWidget()
-        atr_layout = QHBoxLayout(atr_widget)
-        atr_layout.setContentsMargins(0, 0, 0, 0)
-        
-        self.atr_check = QCheckBox("Activer ATR")
-        self.atr_check.setChecked(True)
-        self.atr_period_spin = QSpinBox()
-        self.atr_period_spin.setRange(1, 100)
-        self.atr_period_spin.setValue(14)
-        
-        atr_layout.addWidget(self.atr_check)
-        atr_layout.addWidget(QLabel("Période:"))
-        atr_layout.addWidget(self.atr_period_spin)
-        atr_layout.addStretch()
-        
-        indicators_layout.addWidget(atr_widget)
-        
-        # Stochastic
-        stoch_group = QGroupBox("Stochastic")
-        stoch_layout = QGridLayout()
-        
-        self.stoch_check = QCheckBox("Activer Stochastic")
-        self.stoch_check.setChecked(True)
-        self.fastk_spin = QSpinBox()
-        self.fastk_spin.setRange(1, 100)
-        self.fastk_spin.setValue(10)
-        self.slowk_spin = QSpinBox()
-        self.slowk_spin.setRange(1, 100)
-        self.slowk_spin.setValue(10)
-        self.slowd_spin = QSpinBox()
-        self.slowd_spin.setRange(1, 100)
-        self.slowd_spin.setValue(3)
-        
-        stoch_layout.addWidget(self.stoch_check, 0, 0, 1, 3)
-        stoch_layout.addWidget(QLabel("Fast %K:"), 1, 0)
-        stoch_layout.addWidget(self.fastk_spin, 1, 1)
-        stoch_layout.addWidget(QLabel("Slow %K:"), 2, 0)
-        stoch_layout.addWidget(self.slowk_spin, 2, 1)
-        stoch_layout.addWidget(QLabel("Slow %D:"), 3, 0)
-        stoch_layout.addWidget(self.slowd_spin, 3, 1)
-        
-        self.stoch_threshold_spin = QSpinBox()
-        self.stoch_threshold_spin.setRange(1, 99)
-        self.stoch_threshold_spin.setValue(50)
-        self.stoch_threshold_spin.setEnabled(True)
-        stoch_layout.addWidget(QLabel("Seuil filtre %K:"), 4, 0)
-        stoch_layout.addWidget(self.stoch_threshold_spin, 4, 1)
-        
-        stoch_group.setLayout(stoch_layout)
-        indicators_layout.addWidget(stoch_group)
-    
-        # SuperTrend
-        st_group = QGroupBox("SuperTrend")
-        st_layout = QGridLayout()
-        
-        self.supertrend_check = QCheckBox("Activer SuperTrend")
-        self.st_atr_period_spin = QSpinBox()
-        self.st_atr_period_spin.setRange(1, 500)
-        self.st_atr_period_spin.setValue(100)
-        self.st_multiplier_spin = QSpinBox()
-        self.st_multiplier_spin.setRange(1, 200)
-        self.st_multiplier_spin.setValue(50)
-        
-        st_layout.addWidget(self.supertrend_check, 0, 0, 1, 3)
-        st_layout.addWidget(QLabel("Période ATR:"), 1, 0)
-        st_layout.addWidget(self.st_atr_period_spin, 1, 1)
-        st_layout.addWidget(QLabel("Multiplicateur:"), 2, 0)
-        st_layout.addWidget(self.st_multiplier_spin, 2, 1)
-        
-        st_group.setLayout(st_layout)
-        indicators_layout.addWidget(st_group)
-        
-        indicators_group.setLayout(indicators_layout)
-        layout.addWidget(indicators_group)
-        
         # Ajouter le scroll area pour le panneau de contrôle
         scroll_area = QScrollArea()
         scroll_area.setWidget(control_panel)
         scroll_area.setWidgetResizable(True)
         self.splitter.addWidget(scroll_area)
+
+        # Stocker une référence au layout du control panel
+        self.control_panel_layout = layout
+
+        # Panel spécifique à la stratégie (dynamique)
+        self.strategy_specific_panel = None
+        self.update_strategy_specific_panel()
         
-        # Trading hours
-        trading_hours_group = QGroupBox("Heures de trading")
-        trading_hours_layout = QGridLayout()
+        # Connecter le changement de stratégie pour mettre à jour le panel spécifique
+        self.general_params_panel.widgets['strategy_combo'].currentTextChanged.connect(
+            self.update_strategy_specific_panel
+        )
+
+
         
-        # Trading start time
-        self.trading_from_hour = QSpinBox()
-        self.trading_from_hour.setRange(0, 23)
-        self.trading_from_hour.setValue(15)
-        self.trading_from_minute = QSpinBox()
-        self.trading_from_minute.setRange(0, 59)
-        self.trading_from_minute.setValue(30)
-        from_layout = QHBoxLayout()
-        from_layout.addWidget(self.trading_from_hour)
-        from_layout.addWidget(QLabel(":"))
-        from_layout.addWidget(self.trading_from_minute)
+        # # ATR
+        # atr_widget = QWidget()
+        # atr_layout = QHBoxLayout(atr_widget)
+        # atr_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Trading end time
-        self.trading_to_hour = QSpinBox()
-        self.trading_to_hour.setRange(0, 23)
-        self.trading_to_hour.setValue(22)
-        self.trading_to_minute = QSpinBox()
-        self.trading_to_minute.setRange(0, 59)
-        self.trading_to_minute.setValue(0)
-        to_layout = QHBoxLayout()
-        to_layout.addWidget(self.trading_to_hour)
-        to_layout.addWidget(QLabel(":"))
-        to_layout.addWidget(self.trading_to_minute)
+        # self.atr_check = QCheckBox("Activer ATR")
+        # self.atr_check.setChecked(True)
+        # self.atr_period_spin = QSpinBox()
+        # self.atr_period_spin.setRange(1, 100)
+        # self.atr_period_spin.setValue(14)
         
-        # Trading days (checkboxes for each day)
-        days_layout = QHBoxLayout()
-        self.trading_days_check = []
-        days = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
-        for i, day in enumerate(days):
-            check = QCheckBox(day)
-            check.setChecked(i < 5)  # Check Mon-Fri by default
-            self.trading_days_check.append(check)
-            days_layout.addWidget(check)
+        # atr_layout.addWidget(self.atr_check)
+        # atr_layout.addWidget(QLabel("Période:"))
+        # atr_layout.addWidget(self.atr_period_spin)
+        # atr_layout.addStretch()
         
-        trading_hours_layout.addWidget(QLabel("De:"), 0, 0)
-        trading_hours_layout.addLayout(from_layout, 0, 1)
-        trading_hours_layout.addWidget(QLabel("À:"), 1, 0)
-        trading_hours_layout.addLayout(to_layout, 1, 1)
-        trading_hours_layout.addWidget(QLabel("Jours:"), 2, 0)
-        trading_hours_layout.addLayout(days_layout, 2, 1)
+        # indicators_layout.addWidget(atr_widget)
         
-        trading_hours_group.setLayout(trading_hours_layout)
-        layout.addWidget(trading_hours_group)
+    
+
+        
+    
+
+    def update_strategy_specific_panel(self):
+        """Met à jour le panel spécifique en fonction de la stratégie sélectionnée."""
+        # Obtenir la stratégie sélectionnée
+        selected_strategy = self.general_params_panel.widgets['strategy_combo'].currentText()
+        
+        # Supprimer l'ancien panel spécifique s'il existe
+        if self.strategy_specific_panel:
+            old_panel_widget = self.strategy_specific_panel.create().parent()
+            if old_panel_widget:
+                old_panel_widget.setParent(None)
+                old_panel_widget.deleteLater()
+        
+        # Créer le nouveau panel spécifique
+        from panels import STRATEGY_PANELS
+        if selected_strategy in STRATEGY_PANELS:
+            panel_class = STRATEGY_PANELS[selected_strategy]
+            self.strategy_specific_panel = panel_class(self)
+            
+            # Utiliser directement la référence au layout stockée
+            if hasattr(self, 'control_panel_layout'):
+                self.control_panel_layout.addWidget(self.strategy_specific_panel.create())
+            else:
+                # Fallback à l'ancienne méthode (ne devrait plus être nécessaire)
+                try:
+                    control_panel = self.splitter.widget(0).findChild(QScrollArea).widget()
+                    if control_panel:
+                        layout = control_panel.layout()
+                        if layout:
+                            layout.addWidget(self.strategy_specific_panel.create())
+                        else:
+                            logging.error("Le layout du panneau de contrôle est None")
+                    else:
+                        logging.error("Le widget du panneau de contrôle est None")
+                except Exception as e:
+                    logging.error(f"Erreur lors de la mise à jour du panel spécifique: {str(e)}")
+
+    def get_strategy_config(self):
+        """Récupère la configuration complète de la stratégie."""
+        config = {}
+        
+        # Paramètres généraux
+        config.update(self.general_params_panel.get_values())
+        
+        # Paramètres de base de la stratégie
+        config.update(self.strategy_base_panel.get_values())
+        
+        # Paramètres spécifiques à la stratégie
+        if self.strategy_specific_panel:
+            config.update(self.strategy_specific_panel.get_values())
+        
+        return config
     
     def create_results_area(self):
         """Crée la zone d'affichage des résultats"""
@@ -449,14 +270,14 @@ class BacktestApp(QMainWindow):
         """Connecter les signaux des widgets aux fonctions correspondantes"""
         self.run_button.clicked.connect(self.run_backtest)
         
-        # État des widgets en fonction des checkboxes
-        self.ema_short_check.toggled.connect(lambda checked: self.ema_short_spin.setEnabled(checked))
-        self.ema_medium_check.toggled.connect(lambda checked: self.ema_medium_spin.setEnabled(checked))
-        self.ema_long_check.toggled.connect(lambda checked: self.ema_long_spin.setEnabled(checked))
-        self.atr_check.toggled.connect(lambda checked: self.atr_period_spin.setEnabled(checked))
-        self.stoch_check.toggled.connect(self.toggle_stoch_widgets)
-        self.supertrend_check.toggled.connect(self.toggle_supertrend_widgets)
-        self.use_atr_check.toggled.connect(self.toggle_atr_controls)
+        # # État des widgets en fonction des checkboxes
+        # self.ema_short_check.toggled.connect(lambda checked: self.ema_short_spin.setEnabled(checked))
+        # self.ema_medium_check.toggled.connect(lambda checked: self.ema_medium_spin.setEnabled(checked))
+        # self.ema_long_check.toggled.connect(lambda checked: self.ema_long_spin.setEnabled(checked))
+        # self.atr_check.toggled.connect(lambda checked: self.atr_period_spin.setEnabled(checked))
+        # self.stoch_check.toggled.connect(self.toggle_stoch_widgets)
+        # self.supertrend_check.toggled.connect(self.toggle_supertrend_widgets)
+        # self.use_atr_check.toggled.connect(self.toggle_atr_controls)
         
     def toggle_atr_controls(self, checked):
         """Active ou désactive les contrôles pour les paramètres ATR"""
@@ -485,39 +306,50 @@ class BacktestApp(QMainWindow):
         self.st_multiplier_spin.setEnabled(checked)
     
     def get_indicator_config(self):
-        """Récupère la configuration des indicateurs à partir des widgets"""
+        """Récupère la configuration des indicateurs à partir des panels"""
         indicators = {}
+        
+        # Vérifier si nous avons un panel spécifique actif
+        if not hasattr(self, 'strategy_specific_panel') or self.strategy_specific_panel is None:
+            return indicators
+        
+        # Récupérer les valeurs du panel spécifique
+        values = self.strategy_specific_panel.get_values()
+        widgets = self.strategy_specific_panel.widgets
         
         # EMA
         ema_periods = []
-        if self.ema_short_check.isChecked():
-            ema_periods.append([self.ema_short_spin.value()])
-        if self.ema_medium_check.isChecked():
-            ema_periods.append([self.ema_medium_spin.value()])
-        if self.ema_long_check.isChecked():
-            ema_periods.append([self.ema_long_spin.value()])
+        if 'ema_short_check' in widgets and widgets['ema_short_check'].isChecked():
+            ema_periods.append([values.get('ema_short_period', 20)])
+        if 'ema_medium_check' in widgets and widgets['ema_medium_check'].isChecked():
+            ema_periods.append([values.get('ema_medium_period', 50)])
+        if 'ema_long_check' in widgets and widgets['ema_long_check'].isChecked():
+            ema_periods.append([values.get('ema_long_period', 200)])
         
         if ema_periods:
             indicators['EMA'] = ema_periods
         
         # ATR
-        if self.atr_check.isChecked():
-            indicators['ATR'] = [[self.atr_period_spin.value()]]
+        if 'atr_check' in widgets and widgets['atr_check'].isChecked():
+            indicators['ATR'] = [[values.get('atr_period', 14)]]
         
         # Stochastic
-        if self.stoch_check.isChecked():
+        if 'stoch_check' in widgets and widgets['stoch_check'].isChecked():
             indicators['STOCH'] = [[
-                self.fastk_spin.value(),
-                self.slowk_spin.value(),
-                self.slowd_spin.value()
+                values.get('stoch_fastk', 10),
+                values.get('stoch_slowk', 7),
+                values.get('stoch_slowd', 3)
             ]]
         
         # SuperTrend
-        if self.supertrend_check.isChecked():
+        if 'supertrend_check' in widgets and widgets['supertrend_check'].isChecked():
             indicators['SUPERTREND'] = [[
-                self.st_atr_period_spin.value(),
-                self.st_multiplier_spin.value()
+                values.get('st_atr_period', 14),
+                values.get('st_multiplier', 3.0)
             ]]
+        
+        # Ajouter des logs pour le débogage
+        logging.debug(f"Indicateurs configurés: {indicators}")
         
         return indicators
     
@@ -907,110 +739,92 @@ class BacktestApp(QMainWindow):
             self.run_button.setText("Exécution du backtest en cours...")
             QApplication.processEvents()
             
-            # Récupérer les paramètres des différents panels
-            general_params = self.general_params_panel.get_values()
+            # Récupérer tous les paramètres de configuration
+            config = self.get_strategy_config()
 
-            # Récupérer les paramètres du backtest
-            symbol = general_params['symbol']
-            period = general_params['period']
-            interval = general_params['interval']
-            end_date = general_params['end_date']
-            timezone = general_params['timezone']
-            spread = general_params['spread']
-            cash = general_params['cash']
-            strategy_name = general_params['strategy']
-            stop_loss = general_params['stop_loss']
-            take_profit = general_params['take_profit']
+            print(config)
+
+            # # Récupérer les paramètres du backtest
+            # symbol = general_params['symbol']
+            # period = general_params['period']
+            # interval = general_params['interval']
+            # end_date = general_params['end_date']
+            # timezone = general_params['timezone']
+            # spread = general_params['spread']
+            # cash = general_params['cash']
+            # strategy_name = general_params['strategy']
+            # stop_loss = general_params['stop_loss']
+            # take_profit = general_params['take_profit']
             
-            # Récupérer la configuration des indicateurs
-            indicators = self.get_indicator_config()
-            logging.debug(f"Using indicators: {indicators}")
             
             # Charger les données (potentiellement long aussi, mais gérable)
             logging.debug("Chargement des données...")
             data = load_data(
-                symbol=symbol,
-                period=period,
-                interval=interval,
-                end_date=end_date,
-                timezone=timezone,
-                indicators=indicators)
+                symbol=config['symbol'],
+                period=config['period'],
+                interval=config['interval'],
+                end_date=config['end_date'],
+                timezone=config['timezone'],
+                indicators=self.get_indicator_config())
             
             # Vérifier la stratégie
+            strategy_name = config['strategy']
             if strategy_name not in self.strategy_map:
                 logging.error(f"Strategy {strategy_name} not found. Available strategies: {list(self.strategy_map.keys())}")
                 return
             
-            # Get trading hours from UI
-            trading_from = time(
-                self.trading_from_hour.value(),
-                self.trading_from_minute.value()
-            )
-            trading_to = time(
-                self.trading_to_hour.value(),
-                self.trading_to_minute.value()
-            )
+            # # Get trading hours from UI
+            # trading_from = time(
+            #     self.trading_from_hour.value(),
+            #     self.trading_from_minute.value()
+            # )
+            # trading_to = time(
+            #     self.trading_to_hour.value(),
+            #     self.trading_to_minute.value()
+            # )
 
             # Get trading days from UI
-            trading_days = [i for i, check in enumerate(self.trading_days_check) if check.isChecked()]
+            # trading_days = [i for i, check in enumerate(self.trading_days_check) if check.isChecked()]
             
-            # Préparer les arguments pour la stratégie
-            strategy_kwargs = {
-                "trading_from": trading_from,
-                "trading_to": trading_to,
-                "trading_days": trading_days,
-                "take_profit_distance": take_profit,
-                "stop_loss_distance": stop_loss,
+            # # Préparer les arguments pour la stratégie
+            # strategy_kwargs = {
+            #     "trading_from": trading_from,
+            #     "trading_to": trading_to,
+            #     "trading_days": trading_days,
+            #     "take_profit_distance": take_profit,
+            #     "stop_loss_distance": stop_loss,
                 
-                # ATR parameters
-                "use_atr_for_sl_tp": self.use_atr_check.isChecked(),
-                "atr_period": self.atr_period_spin.value(),
-                "stop_loss_atr_multiplier": self.sl_atr_multiplier.value(),
-                "take_profit_atr_multiplier": self.tp_atr_multiplier.value(),
-                "min_stop_loss_distance": self.min_sl.value(),
-                "min_take_profit_distance": self.min_tp.value(),
+            #     # ATR parameters
+            #     "use_atr_for_sl_tp": self.use_atr_check.isChecked(),
+            #     "atr_period": self.atr_period_spin.value(),
+            #     "stop_loss_atr_multiplier": self.sl_atr_multiplier.value(),
+            #     "take_profit_atr_multiplier": self.tp_atr_multiplier.value(),
+            #     "min_stop_loss_distance": self.min_sl.value(),
+            #     "min_take_profit_distance": self.min_tp.value(),
                 
-                "ema_short_period": self.ema_short_spin.value(),
-                "ema_long_period": self.ema_long_spin.value(),
-                "stoch_fastk": self.fastk_spin.value(),
-                "stoch_slowk": self.slowk_spin.value(),
-                "stoch_slowd": self.slowd_spin.value(),
-                "stoch_threshold": self.stoch_threshold_spin.value(),
+            #     "ema_short_period": self.ema_short_spin.value(),
+            #     "ema_long_period": self.ema_long_spin.value(),
+            #     "stoch_fastk": self.fastk_spin.value(),
+            #     "stoch_slowk": self.slowk_spin.value(),
+            #     "stoch_slowd": self.slowd_spin.value(),
+            #     "stoch_threshold": self.stoch_threshold_spin.value(),
 
-                # Activation des filtres
-                "use_ema_short_filter": self.ema_short_filter_check.isChecked(),
-                "use_ema_long_filter": self.ema_long_filter_check.isChecked(),
-                "use_stoch_filter": self.stoch_filter_check.isChecked(),
-                "use_previous_ha_candle_red_filter": self.previous_ha_candle_red_check.isChecked(),
+            #     # Activation des filtres
+            #     "use_ema_short_filter": self.ema_short_filter_check.isChecked(),
+            #     "use_ema_long_filter": self.ema_long_filter_check.isChecked(),
+            #     "use_stoch_filter": self.stoch_filter_check.isChecked(),
+            #     "use_previous_ha_candle_red_filter": self.previous_ha_candle_red_check.isChecked(),
                 
-                # Paramètres de gestion du risque
-                "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),
-                "risk_percentage": self.risk_percentage.value(),
-                "risk_capital": cash,
-                "break_even_threshold": self.break_even_threshold.value(),
-                "maximal_leverage": self.maximal_leverage.value(),
-            }
+            #     # Paramètres de gestion du risque
+            #     "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),
+            #     "risk_percentage": self.risk_percentage.value(),
+            #     "risk_capital": cash,
+            #     "break_even_threshold": self.break_even_threshold.value(),
+            #     "maximal_leverage": self.maximal_leverage.value(),
+            # }
+                       
+
             
-            if self.use_atr_check.isChecked() and 'ATR' not in indicators:
-                indicators['ATR'] = [[self.atr_period_spin.value()]]
-            
-            # Configurer les indicateurs attendus par la stratégie
-            if "EMA" in indicators:
-                ema_periods = sorted([params[0] for params in indicators["EMA"]])
-                if len(ema_periods) >= 2:
-                    strategy_kwargs["ema_short_name"] = f"EMA_{ema_periods[-2]}"
-                    strategy_kwargs["ema_long_name"] = f"EMA_{ema_periods[-1]}"
-            
-            if "SUPERTREND" in indicators:
-                atr_period, multiplier = indicators["SUPERTREND"][0]
-                strategy_kwargs["supertrend_name"] = f"SUPERTREND_{atr_period}_{multiplier}"
-            
-            if "STOCH" in indicators:
-                fastk, slowk, slowd = indicators["STOCH"][0]
-                strategy_kwargs["stoch_k_name"] = f"STOCH_K_{fastk}_{slowk}_{slowd}"
-                strategy_kwargs["stoch_d_name"] = f"STOCH_D_{fastk}_{slowk}_{slowd}"
-            
-            strategy = self.strategy_map[strategy_name]
             
             # Définir l'onglet à afficher à la fin de l'exécution du backtest
             # 0 = Graphiques, 1 = Statistiques
@@ -1019,10 +833,10 @@ class BacktestApp(QMainWindow):
             # Créer et exécuter le thread de backtest
             self.backtest_thread = BacktestWorker(
                 data=data,
-                strategy=strategy,
-                cash=cash,
-                spread=spread,
-                strategy_kwargs=strategy_kwargs,
+                strategy=self.strategy_map[strategy_name],
+                cash=config['cash'],
+                spread=config['spread'],
+                strategy_kwargs=config,
             )
             
             # Connecter les signaux

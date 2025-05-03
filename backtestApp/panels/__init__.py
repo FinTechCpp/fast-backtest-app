@@ -1,4 +1,27 @@
 from .profile_panel import ProfilePanel
 from .general_params_panel import GeneralParamsPanel
+from .strategy_base_panel import StrategyBasePanel
 
-__all__ = ['ProfilePanel', 'GeneralParamsPanel']
+# Import des panels spécifiques aux stratégies
+from .strategy_specific_panels import (
+    BuyHeikinGreenPanel,
+    # BuyTrendFollowingPanel,
+    # SellTrendFollowingPanel
+)
+
+
+# Dictionnaire pour associer chaque stratégie à son panel correspondant
+STRATEGY_PANELS = {
+    'BuyHeikinGreenBA': BuyHeikinGreenPanel,
+    # 'BuyTrendFollowingBA': BuyTrendFollowingPanel,
+    # 'SellTrendFollowingBA': SellTrendFollowingPanel,
+}
+
+__all__ = [
+    'BasePanel',
+    'ProfilePanel', 
+    'GeneralParamsPanel'
+    'StrategyBasePanel',
+    'BuyHeikinGreenPanel',
+    'STRATEGY_PANELS',
+    ]

@@ -186,18 +186,20 @@ class BuyHeikinGreen(Strategy):
             real_risk_amount = position_size * stop_loss_distance
             real_risk_percentage = (real_risk_amount / initial_capital) * 100
             
-            logging.warning(
-                f"Position size calculation: Capital={initial_capital}\n "
-                f"Capital avec levier={leveraged_capital}\n "
-                f"Risque={self.base_config.risk_percentage}%\n "
-                f"Effet de levier={self.base_config.leverage_limit}\n "
-                f"Montant risqué={risk_amount}\n "
-                f"Prix actuel={self.price}\n "
-                f"Distance SL={stop_loss_distance}\n "
-                f"Taille basée sur le risque={risk_based_position_size}\n "
-                f"Taille maximale par position={max_position_size}\n "
-                f"Taille après limites={position_size} ({self.price*position_size}$)\n "
+            logging.debug(
+                f"Position size calculation: Capital={initial_capital:.2f}\n "
+                f"Capital avec levier={leveraged_capital:.2f}\n "
+                f"Risque={self.base_config.risk_percentage:.2f}%\n "
+                f"Effet de levier={self.base_config.leverage_limit:.2f}\n "
+                f"Montant risqué={risk_amount:.2f}\n "
+                f"Prix actuel={self.price:.2f}\n "
+                f"Distance SL={stop_loss_distance:.2f}\n "
+                f"Distance TP={take_profit_distance:.2f}\n "
+                f"Taille basée sur le risque={risk_based_position_size:.2f}\n "
+                f"Taille maximale par position={max_position_size:.2f}\n "
+                f"Taille après limites={position_size} ({self.price * position_size:.2f}$)\n "
                 f"Risque réel={real_risk_percentage:.2f}% ({real_risk_amount:.2f}$)\n "
+                f"Profit potentiel={take_profit_distance * position_size:.2f} $\n "
             )
         else:
             # Taille fixe par défaut (entier)
@@ -312,7 +314,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             use_risk_based_sizing = kwargs.pop('use_risk_based_sizing', False),
             risk_percentage = kwargs.pop('risk_percentage', 1.0),
             cash = kwargs.pop('cash', 100000.0),
-            leverage_limit= kwargs.pop('leverage_limit', 20.0),  
+            leverage_limit= kwargs.pop('leverage_limit', 20.0) 
         )
         
         # 2) extraire les clés spécifiques
@@ -407,39 +409,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"Signal d'achat généré avec des filtres non respectés : "
                 f"EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
             )
-            
-            
-#-----------------------------------------DEBUGGING (CAN BE REMOVED IN THE FUTURE)----------------------------------------------------------------
-        if candle[self.stoch_k_name] < 20:
-            # This is the trigger candle (n)
-            self.track_candles_counter = 2  # Track 2 more candles after this one
-            self.trigger_candle_date = candle['date']
-            logging.debug(
-                f"\n\n===== TRIGGER Candle (n): {candle['date']} =====\n"
-                f"Open: {self.my_strategy.ha_cache['current']['open']}, Close: {self.my_strategy.ha_cache['current']['close']} \n"
-                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n"
-                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n"
-                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n"
-                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n"
-                f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n"
-                f"Should Long: {should_long}\n\n"
-            )
-        elif self.track_candles_counter > 0:
-            # This is a follow-up candle (n+1 or n+2)
-            position = 3 - self.track_candles_counter  # 1 for first follow-up, 2 for second
-            logging.debug(
-                f"\n\n===== FOLLOW-UP Candle n+{position} (after {self.trigger_candle_date}): {candle['date']} =====\n"
-                f"Open: {self.my_strategy.ha_cache['current']['open']}, Close: {self.my_strategy.ha_cache['current']['close']} \n"
-                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n"
-                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n"
-                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n"
-                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n"
-                f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n"
-                f"Should Long: {should_long}\n\n"
-            )
-            self.track_candles_counter -= 1  # Decrement counter
-#-------------------------------------------DEBUGGING----------------------------------------------------------------
-
             
             
         # Vérifier si un signal d'achat ou de vente est généré

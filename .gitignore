@@ -18,3 +18,4 @@ backtest_interface/PyQt/build/*
 backtest_interface/PyQt/dist/*
 backtest_interface/PyQt/*.spec
 *.log
+*.DS_Store

@@ -1109,7 +1109,7 @@ class BacktestApp(QMainWindow):
                 "risk_capital": self.cash.value(),
                 "use_break_even": self.use_break_even.isChecked(),
                 "break_even_threshold": self.break_even_threshold.value(),
-                "maximal_leverage": self.maximal_leverage.value(),
+                "leverage_limit": self.maximal_leverage.value(),
             }
             
             if self.use_atr_check.isChecked() and 'ATR' not in indicators:

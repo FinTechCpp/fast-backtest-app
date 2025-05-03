@@ -367,6 +367,7 @@ class ConfigManager:
             'use_risk_based_sizing': app.use_risk_based_sizing,
             'risk_percentage': app.risk_percentage,
             'break_even_threshold': app.break_even_threshold,
+            'use_break_even': app.use_break_even,
             'maximal_leverage': app.maximal_leverage,
         }
         

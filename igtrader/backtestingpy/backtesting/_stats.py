@@ -169,6 +169,9 @@ def compute_stats(
     s.loc['# Trades'] = n_trades = len(trades_df)
     win_rate = np.nan if not n_trades else (pl > 0).mean()
     s.loc['Win Rate [%]'] = win_rate * 100
+    s.loc['# Winning Trades'] = np.sum(pl > 0) if n_trades else 0
+    s.loc['# Losing Trades'] = np.sum(pl < 0) if n_trades else 0
+    s.loc['# Neutral Trades'] = np.sum(pl == 0) if n_trades else 0
     s.loc['Best Trade [%]'] = returns.max() * 100
     s.loc['Worst Trade [%]'] = returns.min() * 100
     mean_return = geometric_mean(returns)

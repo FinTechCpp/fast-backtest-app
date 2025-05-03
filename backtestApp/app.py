@@ -25,6 +25,7 @@ from ui_util import to_heikin_ashi, BacktestWorker
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA  
 from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreenBA
+from igtrader.Strategies.CrossEMA import CrossEMABA
 from igtrader.Strategies.Helpers import load_data
 
 class BacktestApp(QMainWindow):
@@ -38,9 +39,11 @@ class BacktestApp(QMainWindow):
             'BuyHeikinGreenBA': BuyHeikinGreenBA,
             'BuyTrendFollowingBA': BuyTrendFollowingBA,
             'SellTrendFollowingBA': SellTrendFollowingBA,
+            'CrossEMABA': CrossEMABA
         }
         self.default_indicators = {}
         self.current_chart = None
+        self.current_strategy_widget = None
         
         # Initialiser le gestionnaire de configuration
         self.config_manager = ConfigManager()
@@ -59,9 +62,6 @@ class BacktestApp(QMainWindow):
         
         # Créer et configurer la zone de résultats
         self.create_results_area()
-        
-        # Connecter les signaux
-        self.connect_signals()
         
         # Charger le profil DEFAULT
         self.config_manager.apply_profile_to_ui("DEFAULT", self)
@@ -103,6 +103,7 @@ class BacktestApp(QMainWindow):
         self.run_button = QPushButton("Lancer le backtest")
         self.run_button.setMinimumHeight(40)
         self.run_button.setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;")
+        self.run_button.clicked.connect(self.run_backtest)
         
         self.loading_indicator = QProgressBar()
         self.loading_indicator.setMaximum(0)  # Mode indéterminé
@@ -145,66 +146,39 @@ class BacktestApp(QMainWindow):
             self.update_strategy_specific_panel
         )
 
-
-        
-        # # ATR
-        # atr_widget = QWidget()
-        # atr_layout = QHBoxLayout(atr_widget)
-        # atr_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # self.atr_check = QCheckBox("Activer ATR")
-        # self.atr_check.setChecked(True)
-        # self.atr_period_spin = QSpinBox()
-        # self.atr_period_spin.setRange(1, 100)
-        # self.atr_period_spin.setValue(14)
-        
-        # atr_layout.addWidget(self.atr_check)
-        # atr_layout.addWidget(QLabel("Période:"))
-        # atr_layout.addWidget(self.atr_period_spin)
-        # atr_layout.addStretch()
-        
-        # indicators_layout.addWidget(atr_widget)
-        
-    
-
-        
-    
-
     def update_strategy_specific_panel(self):
         """Met à jour le panel spécifique en fonction de la stratégie sélectionnée."""
         # Obtenir la stratégie sélectionnée
         selected_strategy = self.general_params_panel.widgets['strategy_combo'].currentText()
         
         # Supprimer l'ancien panel spécifique s'il existe
-        if self.strategy_specific_panel:
-            old_panel_widget = self.strategy_specific_panel.create().parent()
-            if old_panel_widget:
-                old_panel_widget.setParent(None)
-                old_panel_widget.deleteLater()
+        if hasattr(self, 'current_strategy_widget') and self.current_strategy_widget:
+            # Supprimer le widget courant du layout
+            self.control_panel_layout.removeWidget(self.current_strategy_widget)
+            # Détruire proprement le widget
+            self.current_strategy_widget.setParent(None)
+            self.current_strategy_widget.deleteLater()
+            self.current_strategy_widget = None
         
         # Créer le nouveau panel spécifique
         from panels import STRATEGY_PANELS
         if selected_strategy in STRATEGY_PANELS:
-            panel_class = STRATEGY_PANELS[selected_strategy]
-            self.strategy_specific_panel = panel_class(self)
-            
-            # Utiliser directement la référence au layout stockée
-            if hasattr(self, 'control_panel_layout'):
-                self.control_panel_layout.addWidget(self.strategy_specific_panel.create())
-            else:
-                # Fallback à l'ancienne méthode (ne devrait plus être nécessaire)
-                try:
-                    control_panel = self.splitter.widget(0).findChild(QScrollArea).widget()
-                    if control_panel:
-                        layout = control_panel.layout()
-                        if layout:
-                            layout.addWidget(self.strategy_specific_panel.create())
-                        else:
-                            logging.error("Le layout du panneau de contrôle est None")
-                    else:
-                        logging.error("Le widget du panneau de contrôle est None")
-                except Exception as e:
-                    logging.error(f"Erreur lors de la mise à jour du panel spécifique: {str(e)}")
+            try:
+                # Créer une nouvelle instance du panel
+                panel_class = STRATEGY_PANELS[selected_strategy]
+                self.strategy_specific_panel = panel_class(self)
+                
+                # Créer le widget et le conserver dans un attribut
+                new_widget = self.strategy_specific_panel.create()
+                self.current_strategy_widget = new_widget
+                
+                # Ajouter le widget au layout
+                if hasattr(self, 'control_panel_layout'):
+                    self.control_panel_layout.addWidget(new_widget)
+                else:
+                    logging.error("control_panel_layout n'est pas défini")
+            except Exception as e:
+                logging.error(f"Erreur lors de la création du panel spécifique: {str(e)}")
 
     def get_strategy_config(self):
         """Récupère la configuration complète de la stratégie."""
@@ -265,45 +239,6 @@ class BacktestApp(QMainWindow):
         
         # Définir les tailles initiales du splitter
         self.splitter.setSizes([400, 1200])  # 400px pour le panneau de contrôle, le reste pour les résultats
-    
-    def connect_signals(self):
-        """Connecter les signaux des widgets aux fonctions correspondantes"""
-        self.run_button.clicked.connect(self.run_backtest)
-        
-        # # État des widgets en fonction des checkboxes
-        # self.ema_short_check.toggled.connect(lambda checked: self.ema_short_spin.setEnabled(checked))
-        # self.ema_medium_check.toggled.connect(lambda checked: self.ema_medium_spin.setEnabled(checked))
-        # self.ema_long_check.toggled.connect(lambda checked: self.ema_long_spin.setEnabled(checked))
-        # self.atr_check.toggled.connect(lambda checked: self.atr_period_spin.setEnabled(checked))
-        # self.stoch_check.toggled.connect(self.toggle_stoch_widgets)
-        # self.supertrend_check.toggled.connect(self.toggle_supertrend_widgets)
-        # self.use_atr_check.toggled.connect(self.toggle_atr_controls)
-        
-    def toggle_atr_controls(self, checked):
-        """Active ou désactive les contrôles pour les paramètres ATR"""
-        self.sl_atr_multiplier.setEnabled(checked)
-        self.tp_atr_multiplier.setEnabled(checked)
-        self.min_sl.setEnabled(checked)
-        self.min_tp.setEnabled(checked)
-        # Désactiver les contrôles classiques de SL/TP quand ATR est activé
-        self.stop_loss.setEnabled(not checked)
-        self.take_profit.setEnabled(not checked)
-        
-    def toggle_risk_controls(self, checked):
-        """Active ou désactive les contrôles pour le risk-based sizing"""
-        self.risk_percentage.setEnabled(checked)
-    
-    def toggle_stoch_widgets(self, checked):
-        """Active/désactive les widgets Stochastic en fonction de la checkbox"""
-        self.fastk_spin.setEnabled(checked)
-        self.slowk_spin.setEnabled(checked)
-        self.slowd_spin.setEnabled(checked)
-        self.stoch_threshold_spin.setEnabled(checked)  # Ajouter cette ligne
-    
-    def toggle_supertrend_widgets(self, checked):
-        """Active/désactive les widgets SuperTrend en fonction de la checkbox"""
-        self.st_atr_period_spin.setEnabled(checked)
-        self.st_multiplier_spin.setEnabled(checked)
     
     def get_indicator_config(self):
         """Récupère la configuration des indicateurs à partir des panels"""
@@ -741,21 +676,6 @@ class BacktestApp(QMainWindow):
             
             # Récupérer tous les paramètres de configuration
             config = self.get_strategy_config()
-
-            print(config)
-
-            # # Récupérer les paramètres du backtest
-            # symbol = general_params['symbol']
-            # period = general_params['period']
-            # interval = general_params['interval']
-            # end_date = general_params['end_date']
-            # timezone = general_params['timezone']
-            # spread = general_params['spread']
-            # cash = general_params['cash']
-            # strategy_name = general_params['strategy']
-            # stop_loss = general_params['stop_loss']
-            # take_profit = general_params['take_profit']
-            
             
             # Charger les données (potentiellement long aussi, mais gérable)
             logging.debug("Chargement des données...")
@@ -772,58 +692,6 @@ class BacktestApp(QMainWindow):
             if strategy_name not in self.strategy_map:
                 logging.error(f"Strategy {strategy_name} not found. Available strategies: {list(self.strategy_map.keys())}")
                 return
-            
-            # # Get trading hours from UI
-            # trading_from = time(
-            #     self.trading_from_hour.value(),
-            #     self.trading_from_minute.value()
-            # )
-            # trading_to = time(
-            #     self.trading_to_hour.value(),
-            #     self.trading_to_minute.value()
-            # )
-
-            # Get trading days from UI
-            # trading_days = [i for i, check in enumerate(self.trading_days_check) if check.isChecked()]
-            
-            # # Préparer les arguments pour la stratégie
-            # strategy_kwargs = {
-            #     "trading_from": trading_from,
-            #     "trading_to": trading_to,
-            #     "trading_days": trading_days,
-            #     "take_profit_distance": take_profit,
-            #     "stop_loss_distance": stop_loss,
-                
-            #     # ATR parameters
-            #     "use_atr_for_sl_tp": self.use_atr_check.isChecked(),
-            #     "atr_period": self.atr_period_spin.value(),
-            #     "stop_loss_atr_multiplier": self.sl_atr_multiplier.value(),
-            #     "take_profit_atr_multiplier": self.tp_atr_multiplier.value(),
-            #     "min_stop_loss_distance": self.min_sl.value(),
-            #     "min_take_profit_distance": self.min_tp.value(),
-                
-            #     "ema_short_period": self.ema_short_spin.value(),
-            #     "ema_long_period": self.ema_long_spin.value(),
-            #     "stoch_fastk": self.fastk_spin.value(),
-            #     "stoch_slowk": self.slowk_spin.value(),
-            #     "stoch_slowd": self.slowd_spin.value(),
-            #     "stoch_threshold": self.stoch_threshold_spin.value(),
-
-            #     # Activation des filtres
-            #     "use_ema_short_filter": self.ema_short_filter_check.isChecked(),
-            #     "use_ema_long_filter": self.ema_long_filter_check.isChecked(),
-            #     "use_stoch_filter": self.stoch_filter_check.isChecked(),
-            #     "use_previous_ha_candle_red_filter": self.previous_ha_candle_red_check.isChecked(),
-                
-            #     # Paramètres de gestion du risque
-            #     "use_risk_based_sizing": self.use_risk_based_sizing.isChecked(),
-            #     "risk_percentage": self.risk_percentage.value(),
-            #     "risk_capital": cash,
-            #     "break_even_threshold": self.break_even_threshold.value(),
-            #     "maximal_leverage": self.maximal_leverage.value(),
-            # }
-                       
-
             
             
             # Définir l'onglet à afficher à la fin de l'exécution du backtest

@@ -2,7 +2,7 @@ import os
 import configparser
 import logging
 from datetime import datetime
-from PyQt5.QtWidgets import QInputDialog, QMessageBox, QLineEdit
+from PyQt5.QtWidgets import QInputDialog, QMessageBox, QLineEdit, QTimeEdit
 # from app import BacktestApp
 
 class ConfigManager:
@@ -212,6 +212,8 @@ class ConfigManager:
             return widget.value()
         elif widget_type == "QDateEdit":
             return widget.date().toString("dd/MM/yyyy")
+        elif widget_type == "QTimeEdit":
+            return widget.time().toString("HH:mm:ss")
         else:
             logging.warning(f"Type de widget non géré: {widget_type}")
             return None
@@ -253,6 +255,20 @@ class ConfigManager:
                 except:
                     if default:
                         widget.setDate(QDate.currentDate())
+            elif widget_type == "QTimeEdit":
+                from PyQt5.QtCore import QTime
+                try:
+                    parts = str(value).split(':')
+                    if len(parts) >= 2:
+                        hour = int(parts[0])
+                        minute = int(parts[1])
+                        second = int(parts[2]) if len(parts) > 2 else 0
+                        time = QTime(hour, minute, second)
+                        widget.setTime(time)
+                except Exception as e:
+                    logging.warning(f"Erreur lors de l'application de la valeur de temps: {e}")
+                    if default:
+                        widget.setTime(QTime.currentTime())
             else:
                 logging.warning(f"Type de widget non géré pour la définition: {widget_type}")
         except Exception as e:
@@ -310,73 +326,46 @@ class ConfigManager:
         """
         # Mapping des attributs de l'application vers les noms de paramètres dans la configuration
 
-        general_params = app.general_params_panel.get_values()
+        general_params = app.get_strategy_config()
 
-        mapping = {
-            # Paramètres généraux
-            'symbol': general_params['symbol'],
-            'period': general_params['period'],
-            'interval': general_params['interval'],
-            'end_date': general_params['end_date'],
-            'timezone': general_params['timezone'],
-            'spread': general_params['spread'],
-            'cash': general_params['cash'],
-            'strategy': general_params['strategy'],
-            'candle_type': general_params['candle_type'],
-            'stop_loss': general_params['stop_loss'],
-            'take_profit': general_params['take_profit'],
-            'save_results': general_params['save_results'],
-
-            # configuration des filtres
-            'ema_short_filter': app.ema_short_filter_check,
-            'ema_long_filter': app.ema_long_filter_check,
-            'stoch_filter': app.stoch_filter_check,
-            'previous_ha_candle_red_filter': app.previous_ha_candle_red_check,
-            
-            # Configuration des indicateurs
-            'ema_short_enabled': app.ema_short_check,
-            'ema_short_period': app.ema_short_spin,
-            'ema_medium_enabled': app.ema_medium_check,
-            'ema_medium_period': app.ema_medium_spin,
-            'ema_long_enabled': app.ema_long_check,
-            'ema_long_period': app.ema_long_spin,
-            
-            'atr_enabled': app.atr_check,
-            'atr_period': app.atr_period_spin,
-            
-            'stoch_enabled': app.stoch_check,
-            'stoch_fastk': app.fastk_spin,
-            'stoch_slowk': app.slowk_spin,
-            'stoch_slowd': app.slowd_spin,
-            'stoch_threshold': app.stoch_threshold_spin,
-            
-            'supertrend_enabled': app.supertrend_check,
-            'supertrend_atr_period': app.st_atr_period_spin,
-            'supertrend_multiplier': app.st_multiplier_spin,
-            
-            # Heures de trading
-            'trading_from_hour': app.trading_from_hour,
-            'trading_from_minute': app.trading_from_minute,
-            'trading_to_hour': app.trading_to_hour,
-            'trading_to_minute': app.trading_to_minute,
-            
-            # AJOUT: ATR pour SL/TP
-            'use_atr_for_sl_tp': app.use_atr_check,
-            'sl_atr_multiplier': app.sl_atr_multiplier,
-            'tp_atr_multiplier': app.tp_atr_multiplier,
-            'min_stop_loss_distance': app.min_sl,
-            'min_take_profit_distance': app.min_tp,
-            
-            # AJOUT: Risk-Based Sizing
-            'use_risk_based_sizing': app.use_risk_based_sizing,
-            'risk_percentage': app.risk_percentage,
-            'break_even_threshold': app.break_even_threshold,
-            'maximal_leverage': app.maximal_leverage,
-        }
+        # Initialiser le dictionnaire de mapping
+        mapping = {}
         
-        # Ajouter les jours de trading
-        for i, day_check in enumerate(app.trading_days_check):
-            mapping[f'trading_day_{i}'] = day_check
+        # Ajouter les widgets du panel de paramètres généraux
+        if hasattr(app, 'general_params_panel') and app.general_params_panel:
+            for key, widget in app.general_params_panel.widgets.items():
+                # Convertir les noms de widgets en noms de paramètres
+                param_name = key
+                if key == 'symbol_combo':
+                    param_name = 'symbol'
+                elif key == 'period_combo':
+                    param_name = 'period'
+                elif key == 'interval_combo':
+                    param_name = 'interval'
+                elif key == 'end_date':
+                    param_name = 'end_date'
+                elif key == 'strategy_combo':
+                    param_name = 'strategy'
+                elif key == 'candle_type_combo':
+                    param_name = 'candle_type'
+
+                mapping[param_name] = widget
+
+        # Ajouter les widgets du panel de base de la stratégie
+        if hasattr(app, 'strategy_base_panel') and app.strategy_base_panel:
+            for key, widget in app.strategy_base_panel.widgets.items():
+                # Gestion particulière pour les jours de trading qui sont dans une liste
+                if key == 'trading_days_check':
+                    for i, day_check in enumerate(widget):
+                        mapping[f'trading_day_{i}'] = day_check
+                else:
+                    # Conserver le mapping direct pour les autres widgets
+                    mapping[key] = widget
+        
+        # Ajouter les widgets du panel spécifique à la stratégie
+        if hasattr(app, 'strategy_specific_panel') and app.strategy_specific_panel:
+            for key, widget in app.strategy_specific_panel.widgets.items():
+                mapping[key] = widget
         
         return mapping
     

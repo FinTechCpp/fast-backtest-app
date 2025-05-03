@@ -126,7 +126,22 @@ class CrossEMABA(BacktestingStrategy):
             trading_days    = kwargs.pop('trading_days'),
             take_profit_distance = kwargs.pop('take_profit_distance'),
             stop_loss_distance   = kwargs.pop('stop_loss_distance'),
+            
+            # Nouveaux paramètres ATR
+            use_atr_for_sl_tp = kwargs.pop('use_atr_for_sl_tp', False),
+            atr_period = kwargs.pop('atr_period', 14),
+            stop_loss_atr_multiplier = kwargs.pop('stop_loss_atr_multiplier', 2.0),
+            take_profit_atr_multiplier = kwargs.pop('take_profit_atr_multiplier', 3.0),
+            min_stop_loss_distance = kwargs.pop('min_stop_loss_distance', 5.0),
+            min_take_profit_distance = kwargs.pop('min_take_profit_distance', 5.0),
+            
+            # Paramètres de gestion du risque 
+            use_risk_based_sizing = kwargs.pop('use_risk_based_sizing', False),
+            risk_percentage = kwargs.pop('risk_percentage', 1.0),
+            cash = kwargs.pop('cash', 100000.0),
+            leverage_limit= kwargs.pop('leverage_limit', 20.0) 
         )
+        
         # 2) extraire les clés spécifiques
         buy_trend_config = CrossEMAConfig(
             ema_short_period     = kwargs.pop('ema_short_period'),

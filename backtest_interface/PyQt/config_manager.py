@@ -2,7 +2,8 @@ import os
 import configparser
 import logging
 from datetime import datetime
-from PyQt5.QtWidgets import QInputDialog, QMessageBox, QLineEdit
+from PyQt5.QtWidgets import QInputDialog, QMessageBox, QLineEdit, QFileDialog
+import shutil
 
 class ConfigManager:
     """Gestionnaire de profils de configuration pour l'application de backtesting.
@@ -578,3 +579,122 @@ class ConfigManager:
             
             return success
         return False
+    
+    def import_config_from_file(self, app, window):
+        """Importe et fusionne une configuration depuis un fichier externe.
+        
+        Args:
+            app: Instance de l'application BacktestApp
+            window: Fenêtre parente pour les dialogues
+            
+        Returns:
+            bool: True si l'importation a réussi, False sinon
+        """
+        # Ouvrir une boîte de dialogue pour sélectionner le fichier à importer
+        file_path, _ = QFileDialog.getOpenFileName(
+            window,
+            "Importer une configuration",
+            "",
+            "Fichiers INI (*.ini);;Tous les fichiers (*)"
+        )
+        
+        if not file_path:
+            return False  # L'utilisateur a annulé
+        
+        try:
+            # Sauvegarde du fichier actuel avant modification
+            backup_path = self.config_file + ".bak"
+            shutil.copy2(self.config_file, backup_path)
+            
+            # Charger la configuration externe
+            imported_config = configparser.ConfigParser()
+            imported_config.read(file_path)
+            
+            # Vérifier si le fichier contient des sections
+            if len(imported_config.sections()) == 0 and not imported_config['DEFAULT']:
+                QMessageBox.warning(window, "Erreur", "Le fichier sélectionné ne contient aucune configuration valide.")
+                return False
+            
+            # Fusionner les sections importées
+            for section in imported_config.sections():
+                if section not in self.config:
+                    self.config.add_section(section)
+                    
+                for key, value in imported_config[section].items():
+                    self.config[section][key] = value
+                    
+            # Fusionner les valeurs DEFAULT si présentes
+            if imported_config['DEFAULT']:
+                for key, value in imported_config['DEFAULT'].items():
+                    if key not in self.config['DEFAULT']:  # Ne pas écraser les valeurs par défaut existantes
+                        self.config['DEFAULT'][key] = value
+            
+            # Enregistrer la nouvelle configuration
+            success = self.save_config()
+            
+            if success:
+                # Mettre à jour la liste des profils
+                if hasattr(app, 'profile_combo'):
+                    app.profile_combo.clear()
+                    app.profile_combo.addItems(self.list_profiles())
+                    
+                QMessageBox.information(
+                    window, 
+                    "Succès", 
+                    f"Configuration importée et fusionnée avec succès depuis {file_path}"
+                )
+            else:
+                QMessageBox.warning(window, "Erreur", "Échec de l'enregistrement de la configuration.")
+                
+            return success
+        
+        except Exception as e:
+            QMessageBox.critical(
+                window,
+                "Erreur",
+                f"Une erreur est survenue lors de l'importation de la configuration:\n{str(e)}"
+            )
+            logging.error(f"Erreur lors de l'importation de la configuration: {str(e)}")
+            return False
+    
+    def export_config_to_file(self, window, profile_name=None):
+        """Exporte la configuration vers le dossier de téléchargements.
+        
+        Args:
+            window: Fenêtre parente pour les dialogues
+            profile_name: Paramètre ignoré (conservé pour compatibilité)
+            
+        Returns:
+            bool: True si l'exportation a réussi, False sinon
+        """
+        try:
+            # Obtenir le chemin du dossier de téléchargements
+            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+            if not os.path.exists(downloads_path):  # Sur système en français
+                downloads_path = os.path.join(os.path.expanduser("~"), "Téléchargements")
+                if not os.path.exists(downloads_path):  # Fallback au dossier home
+                    downloads_path = os.path.expanduser("~")
+            
+            # Générer un nom de fichier avec horodatage
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_path = os.path.join(downloads_path, f"backtest_config_{timestamp}.ini")
+            
+            # Enregistrer la configuration dans le fichier
+            with open(file_path, 'w') as configfile:
+                self.config.write(configfile)
+            
+            QMessageBox.information(
+                window,
+                "Succès",
+                f"Configuration exportée avec succès vers:\n{file_path}"
+            )
+            
+            return True
+        except Exception as e:
+            QMessageBox.critical(
+                window,
+                "Erreur",
+                f"Une erreur est survenue lors de l'exportation de la configuration:\n{str(e)}"
+            )
+            logging.error(f"Erreur lors de l'exportation de la configuration: {str(e)}")
+            return False

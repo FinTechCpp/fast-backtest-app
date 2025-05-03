@@ -136,6 +136,24 @@ class BacktestApp(QMainWindow):
         
         profile_layout.addLayout(profile_selector_layout)
         
+        # Ajout des boutons d'import/export de configuration
+        import_export_layout = QHBoxLayout()
+        
+        # Bouton d'importation
+        import_btn = QPushButton("📥 Importer")
+        import_btn.setToolTip("Importer une configuration depuis un fichier")
+        import_btn.clicked.connect(lambda: self.config_manager.import_config_from_file(self, self))
+        import_export_layout.addWidget(import_btn)
+        
+        # Bouton d'exportation
+        export_btn = QPushButton("📤 Exporter")
+        export_btn.setToolTip("Exporter la configuration vers un fichier")
+        export_btn.clicked.connect(lambda: self.config_manager.export_config_to_file(self))
+        import_export_layout.addWidget(export_btn)
+        
+        # Ajouter ce layout au layout des profils
+        profile_layout.addLayout(import_export_layout)
+        
         # Finaliser le groupe de profils
         profile_group.setLayout(profile_layout)
         layout.addWidget(profile_group)

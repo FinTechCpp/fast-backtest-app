@@ -233,7 +233,15 @@ class BuyHeikinGreen(Strategy):
     def stoch_inf_threshold_filter(self):
         # Vérifie si le Stochastic %K présent est inférieur à threshold ou qu'il est ete en dessous de threshold sur la bougie précédente
         threshold = self.config.stoch_threshold
-        return self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold) 
+        
+        # Récupérer le résultat du filtre avant de mettre à jour les valeurs précédentes
+        result = self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold)
+        
+        # Mettre à jour les valeurs précédentes avec les valeurs actuelles pour la prochaine bougie
+        self.k_previous = self.candles[self.stoch_k_name]
+        self.d_previous = self.candles[self.stoch_d_name]
+        
+        return result
     
     # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
@@ -380,9 +388,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         if self.atr_name in self.data.df.columns:
             candle[self.atr_name] = self.data.df[self.atr_name].iloc[-1]
                 
-        # Sauvegarder temporairement les valeurs actuelles pour les mettre à jour plus tard
-        current_k = candle[self.stoch_k_name]
-        current_d = candle[self.stoch_d_name]
 
         #Break-even stop loss quand PL > % du TP
         if self.position and self.use_break_even:
@@ -402,12 +407,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         previous_ha_candle_red_filter = self.my_strategy.previous_ha_candle_red_filter()
         should_long = self.my_strategy.should_long()
         
-        # Maintenant que les filtres ont été évalués, mettre à jour k_previous et d_previous 
-        # pour la prochaine bougie
-        self.my_strategy.k_previous = current_k
-        self.my_strategy.d_previous = current_d
-
-
             
         # Vérifier si un signal d'achat ou de vente est généré
         if signal is None:

@@ -11,12 +11,17 @@ cd ig-trading-bot
 
 ### 2. Configurer l'environnement virtuel
 
-Nous vous conseillons d’utiliser un environnement virtuel :
+Le projet nécessite un environnement virtuel conda:
 
+**Installation conda**
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # Sous Linux/MacOS
-venv\Scripts\activate     # Sous Windows
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash ~/Miniconda3-latest-Linux-x86_64.sh
+```
+**Création environnement**
+```bash
+conda create -n trading python=3.12 -y
+conda activate trading
 ```
 
 ### 3. Installer les dépendances
@@ -24,7 +29,22 @@ venv\Scripts\activate     # Sous Windows
 Installez les dépendances nécessaires à partir du fichier `requirements.txt` :
 
 ```bash
+conda install -c conda-forge ta-lib -y
 pip install -r requirements.txt
+```
+
+Installer nvm 
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+nvm install --lts
+```
+
+Installer lightweight-charts-python
+```bash
+cd ~/ig-trading-bot/lightweight-charts-python
+pip install -e .
+npm install 
+./build.sh
 ```
 
 ### 4. Installer le package en mode développement
@@ -114,7 +134,8 @@ python scripts/liveIG.py
 Pour exécuter le backtest :
 
 ```bash
-python scripts/backtest_runner.py
+cd ~/ig-trading-bot
+python backtest_interface/PyQt/app.py 
 ```
 
 ---

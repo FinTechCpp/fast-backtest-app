@@ -256,8 +256,6 @@ class BacktestApp(QMainWindow):
         ema_periods = []
         if 'ema_short_check' in widgets and widgets['ema_short_check'].isChecked():
             ema_periods.append([values.get('ema_short_period', 20)])
-        if 'ema_medium_check' in widgets and widgets['ema_medium_check'].isChecked():
-            ema_periods.append([values.get('ema_medium_period', 50)])
         if 'ema_long_check' in widgets and widgets['ema_long_check'].isChecked():
             ema_periods.append([values.get('ema_long_period', 200)])
         
@@ -274,13 +272,6 @@ class BacktestApp(QMainWindow):
                 values.get('stoch_fastk', 10),
                 values.get('stoch_slowk', 7),
                 values.get('stoch_slowd', 3)
-            ]]
-        
-        # SuperTrend
-        if 'supertrend_check' in widgets and widgets['supertrend_check'].isChecked():
-            indicators['SUPERTREND'] = [[
-                values.get('st_atr_period', 14),
-                values.get('st_multiplier', 3.0)
             ]]
         
         # Ajouter des logs pour le débogage
@@ -676,6 +667,23 @@ class BacktestApp(QMainWindow):
             
             # Récupérer tous les paramètres de configuration
             config = self.get_strategy_config()
+
+            # Obtenir les indicateurs requis directement depuis le panel spécifique
+            indicators = {}
+            if hasattr(self, 'strategy_specific_panel') and self.strategy_specific_panel:
+                if hasattr(self.strategy_specific_panel, 'get_required_indicators'):
+                    indicators = self.strategy_specific_panel.get_required_indicators()
+
+            indicators_strategy_base = self.strategy_base_panel.get_required_indicators()
+
+            if indicators_strategy_base:
+                for key, value in indicators_strategy_base.items():
+                    if key in indicators:
+                        indicators[key].extend(value)
+                    else:
+                        indicators[key] = value
+
+            print(indicators)
             
             # Charger les données (potentiellement long aussi, mais gérable)
             logging.debug("Chargement des données...")
@@ -685,7 +693,7 @@ class BacktestApp(QMainWindow):
                 interval=config['interval'],
                 end_date=config['end_date'],
                 timezone=config['timezone'],
-                indicators=self.get_indicator_config())
+                indicators=indicators)
             
             # Vérifier la stratégie
             strategy_name = config['strategy']

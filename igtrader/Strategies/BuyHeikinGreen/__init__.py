@@ -337,9 +337,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         self.break_even_threshold = kwargs.pop('break_even_threshold', 0.7)  # Default to 70% if not provided
 
     
-        # Extract break-even threshold parameter
-        self.break_even_threshold = kwargs.pop('break_even_threshold', 0.7)  # Default to 70% if not provided
-    
         # 3) stocker et instancier la stratégie "métier"
         self.base_config = base_config
         self.config      = buy_trend_config
@@ -403,13 +400,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         self.my_strategy.k_previous = current_k
         self.my_strategy.d_previous = current_d
 
-        # affiche un warning sur un signal d'achat avec des filtre a false
-        if signal is not None and signal['action'] == 'BUY' and (not ema_short_filter or not ema_long_filter or not stoch_filter or not previous_ha_candle_red_filter or not should_long):
-            logging.warning(
-                f"Signal d'achat généré avec des filtres non respectés : "
-                f"EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<50: {stoch_filter}, Should Long: {should_long}, Previous HA Candle Red: {previous_ha_candle_red_filter}"
-            )
-            
+
             
         # Vérifier si un signal d'achat ou de vente est généré
         if signal is None:

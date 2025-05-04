@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QGroupBox, QVBoxLayout, QGridLayout, QCheckBox, 
-                           QSpinBox, QLabel)
+                           QSpinBox, QLabel, QFrame, QHBoxLayout)
 from ..base_panel import BasePanel
 
 class BuyHeikinGreenPanel(BasePanel):
@@ -13,189 +13,189 @@ class BuyHeikinGreenPanel(BasePanel):
         strategy_group = QGroupBox("Paramètres BuyHeikinGreen")
         strategy_layout = QVBoxLayout()
         
-        # Configuration des filtres
-        filters_group = QGroupBox("Configuration des filtres")
-        filters_layout = QVBoxLayout()
-
-        # EMA Filter
-        self.widgets['ema_short_filter_check'] = QCheckBox("Activer EMA court Filter")
+        # Section EMA Court
+        ema_short_group = QGroupBox("EMA Court")
+        ema_short_layout = QVBoxLayout()
+        
+        # Checkbox pour activer/désactiver le filtre EMA court
+        self.widgets['ema_short_filter_check'] = QCheckBox("Activer le filtre EMA court")
         self.widgets['ema_short_filter_check'].setChecked(True)
-        self.widgets['ema_long_filter_check'] = QCheckBox("Activer EMA long Filter")
-        self.widgets['ema_long_filter_check'].setChecked(True)
-
-        # Stochastic Filter
-        self.widgets['stoch_filter_check'] = QCheckBox("Activer Stochastic Filter")
-        self.widgets['stoch_filter_check'].setChecked(True)
-
-        # Previous HA Candle Red Filter
-        self.widgets['previous_ha_candle_red_check'] = QCheckBox("Activer Previous HA Candle Red Filter")
-        self.widgets['previous_ha_candle_red_check'].setChecked(True)
+        ema_short_layout.addWidget(self.widgets['ema_short_filter_check'])
         
-        filters_layout.addWidget(self.widgets['ema_short_filter_check'])
-        filters_layout.addWidget(self.widgets['ema_long_filter_check'])
-        filters_layout.addWidget(self.widgets['stoch_filter_check'])
-        filters_layout.addWidget(self.widgets['previous_ha_candle_red_check'])
-        filters_group.setLayout(filters_layout)
-        strategy_layout.addWidget(filters_group)
-
-        # Configuration des indicateurs
-        indicators_group = QGroupBox("Configuration des indicateurs")
-        indicators_layout = QVBoxLayout()
-        
-        # EMA
-        ema_layout = QGridLayout()
-        
-        self.widgets['ema_short_check'] = QCheckBox("Activer EMA court")
-        self.widgets['ema_short_check'].setChecked(True)
+        # Frame pour les paramètres de l'EMA court
+        ema_short_params = QFrame()
+        ema_short_params_layout = QHBoxLayout()
+        ema_short_params_layout.addWidget(QLabel("Période:"))
         self.widgets['ema_short_spin'] = QSpinBox()
         self.widgets['ema_short_spin'].setRange(1, 500)
         self.widgets['ema_short_spin'].setValue(20)
+        ema_short_params_layout.addWidget(self.widgets['ema_short_spin'])
+        ema_short_params_layout.addStretch()
+        ema_short_params.setLayout(ema_short_params_layout)
+        ema_short_layout.addWidget(ema_short_params)
         
-        self.widgets['ema_medium_check'] = QCheckBox("Activer EMA moyen")
-        self.widgets['ema_medium_check'].setChecked(True)
-        self.widgets['ema_medium_spin'] = QSpinBox()
-        self.widgets['ema_medium_spin'].setRange(1, 500)
-        self.widgets['ema_medium_spin'].setValue(50)
+        ema_short_group.setLayout(ema_short_layout)
+        strategy_layout.addWidget(ema_short_group)
         
-        self.widgets['ema_long_check'] = QCheckBox("Activer EMA long")
-        self.widgets['ema_long_check'].setChecked(True)
+        # Section EMA Long
+        ema_long_group = QGroupBox("EMA Long")
+        ema_long_layout = QVBoxLayout()
+        
+        # Checkbox pour activer/désactiver le filtre EMA long
+        self.widgets['ema_long_filter_check'] = QCheckBox("Activer le filtre EMA long")
+        self.widgets['ema_long_filter_check'].setChecked(True)
+        ema_long_layout.addWidget(self.widgets['ema_long_filter_check'])
+        
+        # Frame pour les paramètres de l'EMA long
+        ema_long_params = QFrame()
+        ema_long_params_layout = QHBoxLayout()
+        ema_long_params_layout.addWidget(QLabel("Période:"))
         self.widgets['ema_long_spin'] = QSpinBox()
         self.widgets['ema_long_spin'].setRange(1, 500)
         self.widgets['ema_long_spin'].setValue(200)
+        ema_long_params_layout.addWidget(self.widgets['ema_long_spin'])
+        ema_long_params_layout.addStretch()
+        ema_long_params.setLayout(ema_long_params_layout)
+        ema_long_layout.addWidget(ema_long_params)
         
-        ema_layout.addWidget(self.widgets['ema_short_check'], 0, 0)
-        ema_layout.addWidget(QLabel("Période:"), 0, 1)
-        ema_layout.addWidget(self.widgets['ema_short_spin'], 0, 2)
-        ema_layout.addWidget(self.widgets['ema_medium_check'], 1, 0)
-        ema_layout.addWidget(QLabel("Période:"), 1, 1)
-        ema_layout.addWidget(self.widgets['ema_medium_spin'], 1, 2)
-        ema_layout.addWidget(self.widgets['ema_long_check'], 2, 0)
-        ema_layout.addWidget(QLabel("Période:"), 2, 1)
-        ema_layout.addWidget(self.widgets['ema_long_spin'], 2, 2)
+        ema_long_group.setLayout(ema_long_layout)
+        strategy_layout.addWidget(ema_long_group)
         
-        indicators_layout.addLayout(ema_layout)
+        # Section Stochastique
+        stoch_group = QGroupBox("Stochastique")
+        stoch_layout = QVBoxLayout()
         
-        # Stochastic
-        stoch_group = QGroupBox("Stochastic")
-        stoch_layout = QGridLayout()
+        # Checkbox pour activer/désactiver le filtre Stochastique
+        self.widgets['stoch_filter_check'] = QCheckBox("Activer le filtre Stochastique")
+        self.widgets['stoch_filter_check'].setChecked(True)
+        stoch_layout.addWidget(self.widgets['stoch_filter_check'])
         
-        self.widgets['stoch_check'] = QCheckBox("Activer Stochastic")
-        self.widgets['stoch_check'].setChecked(True)
+        # Frame pour les paramètres du Stochastique
+        stoch_params = QFrame()
+        stoch_params_layout = QGridLayout()
+        
+        stoch_params_layout.addWidget(QLabel("Fast %K:"), 0, 0)
         self.widgets['fastk_spin'] = QSpinBox()
         self.widgets['fastk_spin'].setRange(1, 100)
         self.widgets['fastk_spin'].setValue(10)
+        stoch_params_layout.addWidget(self.widgets['fastk_spin'], 0, 1)
+        
+        stoch_params_layout.addWidget(QLabel("Slow %K:"), 1, 0)
         self.widgets['slowk_spin'] = QSpinBox()
         self.widgets['slowk_spin'].setRange(1, 100)
         self.widgets['slowk_spin'].setValue(10)
+        stoch_params_layout.addWidget(self.widgets['slowk_spin'], 1, 1)
+        
+        stoch_params_layout.addWidget(QLabel("Slow %D:"), 2, 0)
         self.widgets['slowd_spin'] = QSpinBox()
         self.widgets['slowd_spin'].setRange(1, 100)
         self.widgets['slowd_spin'].setValue(3)
+        stoch_params_layout.addWidget(self.widgets['slowd_spin'], 2, 1)
         
-        stoch_layout.addWidget(self.widgets['stoch_check'], 0, 0, 1, 3)
-        stoch_layout.addWidget(QLabel("Fast %K:"), 1, 0)
-        stoch_layout.addWidget(self.widgets['fastk_spin'], 1, 1)
-        stoch_layout.addWidget(QLabel("Slow %K:"), 2, 0)
-        stoch_layout.addWidget(self.widgets['slowk_spin'], 2, 1)
-        stoch_layout.addWidget(QLabel("Slow %D:"), 3, 0)
-        stoch_layout.addWidget(self.widgets['slowd_spin'], 3, 1)
-        
+        stoch_params_layout.addWidget(QLabel("Seuil filtre %K:"), 3, 0)
         self.widgets['stoch_threshold_spin'] = QSpinBox()
         self.widgets['stoch_threshold_spin'].setRange(1, 99)
         self.widgets['stoch_threshold_spin'].setValue(50)
-        stoch_layout.addWidget(QLabel("Seuil filtre %K:"), 4, 0)
-        stoch_layout.addWidget(self.widgets['stoch_threshold_spin'], 4, 1)
+        stoch_params_layout.addWidget(self.widgets['stoch_threshold_spin'], 3, 1)
+        
+        stoch_params.setLayout(stoch_params_layout)
+        stoch_layout.addWidget(stoch_params)
         
         stoch_group.setLayout(stoch_layout)
-        indicators_layout.addWidget(stoch_group)
+        strategy_layout.addWidget(stoch_group)
         
-        # ATR
-        self.widgets['atr_check'] = QCheckBox("Activer ATR")
-        self.widgets['atr_check'].setChecked(True)
-        self.widgets['atr_period_spin'] = QSpinBox()
-        self.widgets['atr_period_spin'].setRange(1, 100)
-        self.widgets['atr_period_spin'].setValue(14)
+        # Section pour le filtre de bougie Heikin Ashi précédente rouge
+        ha_group = QGroupBox("Condition bougie Heikin Ashi")
+        ha_layout = QVBoxLayout()
         
-        atr_layout = QGridLayout()
-        atr_layout.addWidget(self.widgets['atr_check'], 0, 0)
-        atr_layout.addWidget(QLabel("Période:"), 0, 1)
-        atr_layout.addWidget(self.widgets['atr_period_spin'], 0, 2)
-        indicators_layout.addLayout(atr_layout)
+        self.widgets['previous_ha_candle_red_check'] = QCheckBox("Activer le filtre bougie précédente rouge")
+        self.widgets['previous_ha_candle_red_check'].setChecked(True)
+        ha_layout.addWidget(self.widgets['previous_ha_candle_red_check'])
         
-        indicators_group.setLayout(indicators_layout)
-        strategy_layout.addWidget(indicators_group)
-
-        # Connections des signaux
-        self.widgets['ema_short_check'].toggled.connect(
-            lambda checked: self.widgets['ema_short_spin'].setEnabled(checked))
-        self.widgets['ema_medium_check'].toggled.connect(
-            lambda checked: self.widgets['ema_medium_spin'].setEnabled(checked))
-        self.widgets['ema_long_check'].toggled.connect(
-            lambda checked: self.widgets['ema_long_spin'].setEnabled(checked))
-        self.widgets['atr_check'].toggled.connect(
-            lambda checked: self.widgets['atr_period_spin'].setEnabled(checked))
-        self.widgets['stoch_check'].toggled.connect(self._toggle_stoch_widgets)
+        ha_group.setLayout(ha_layout)
+        strategy_layout.addWidget(ha_group)
+        
+        # Connexion des signaux pour activer/désactiver les widgets en fonction des checkboxes
+        self.widgets['ema_short_filter_check'].toggled.connect(
+            lambda checked: self._toggle_widget_group([self.widgets['ema_short_spin']], checked))
+        
+        self.widgets['ema_long_filter_check'].toggled.connect(
+            lambda checked: self._toggle_widget_group([self.widgets['ema_long_spin']], checked))
+        
+        self.widgets['stoch_filter_check'].toggled.connect(
+            lambda checked: self._toggle_widget_group([
+                self.widgets['fastk_spin'], 
+                self.widgets['slowk_spin'], 
+                self.widgets['slowd_spin'], 
+                self.widgets['stoch_threshold_spin']
+            ], checked))
         
         strategy_group.setLayout(strategy_layout)
         return strategy_group
     
-    def _toggle_stoch_widgets(self, checked):
-        """Active/désactive les widgets Stochastic en fonction de la checkbox"""
-        self.widgets['fastk_spin'].setEnabled(checked)
-        self.widgets['slowk_spin'].setEnabled(checked)
-        self.widgets['slowd_spin'].setEnabled(checked)
-        self.widgets['stoch_threshold_spin'].setEnabled(checked)
+    def _toggle_widget_group(self, widgets, enabled):
+        """Active/désactive un groupe de widgets."""
+        for widget in widgets:
+            widget.setEnabled(enabled)
     
     def get_values(self):
         """Récupère les valeurs des widgets du panel."""
+        #TODO : Il serait bien ici de return directement l'objet de la stratégie : le dataclass : BuyHeikinGreenConfig
         return {
+            # Périodes des EMA
             'ema_short_period': self.widgets['ema_short_spin'].value(),
             'ema_long_period': self.widgets['ema_long_spin'].value(),
+            
+            # Paramètres Stochastique
             'stoch_fastk': self.widgets['fastk_spin'].value(),
             'stoch_slowk': self.widgets['slowk_spin'].value(),
             'stoch_slowd': self.widgets['slowd_spin'].value(),
             'stoch_threshold': self.widgets['stoch_threshold_spin'].value(),
+            
+            # Activation des filtres
             'use_ema_short_filter': self.widgets['ema_short_filter_check'].isChecked(),
             'use_ema_long_filter': self.widgets['ema_long_filter_check'].isChecked(),
             'use_stoch_filter': self.widgets['stoch_filter_check'].isChecked(),
             'use_previous_ha_candle_red_filter': self.widgets['previous_ha_candle_red_check'].isChecked(),
-            'atr_period': self.widgets['atr_period_spin'].value(),
-            'atr_enabled': self.widgets['atr_check'].isChecked()
         }
     
-    def set_values(self, values):
-        """Définit les valeurs des widgets du panel."""
-        if 'ema_short_period' in values:
-            self.widgets['ema_short_spin'].setValue(values['ema_short_period'])
+    def get_required_indicators(self):
+        """
+        Retourne les indicateurs nécessaires pour la stratégie BuyHeikinGreen.
+        Cette méthode est utilisée par l'application de backtest pour précalculer les indicateurs.
         
-        if 'ema_long_period' in values:
-            self.widgets['ema_long_spin'].setValue(values['ema_long_period'])
+        Returns:
+            dict: Un dictionnaire des indicateurs à précalculer au format:
+                {'NOM_INDICATEUR': [[param1, param2, ...], [autre_config], ...]}
+        """
+        indicators = {}
         
-        if 'stoch_fastk' in values:
-            self.widgets['fastk_spin'].setValue(values['stoch_fastk'])
+        # EMA
+        ema_periods = []
+        if self.widgets['ema_short_filter_check'].isChecked():
+            ema_periods.append([self.widgets['ema_short_spin'].value()])
         
-        if 'stoch_slowk' in values:
-            self.widgets['slowk_spin'].setValue(values['stoch_slowk'])
+        if self.widgets['ema_long_filter_check'].isChecked():
+            ema_periods.append([self.widgets['ema_long_spin'].value()])
         
-        if 'stoch_slowd' in values:
-            self.widgets['slowd_spin'].setValue(values['stoch_slowd'])
+        # Ajouter une EMA moyenne pour l'affichage si elle existe
+        if hasattr(self.widgets, 'ema_medium_check') and self.widgets.get('ema_medium_check') and self.widgets['ema_medium_check'].isChecked():
+            ema_periods.append([self.widgets['ema_medium_spin'].value()])
         
-        if 'stoch_threshold' in values:
-            self.widgets['stoch_threshold_spin'].setValue(values['stoch_threshold'])
+        if ema_periods:
+            indicators['EMA'] = ema_periods
         
-        if 'use_ema_short_filter' in values:
-            self.widgets['ema_short_filter_check'].setChecked(values['use_ema_short_filter'])
+        # Stochastique
+        if self.widgets['stoch_filter_check'].isChecked():
+            indicators['STOCH'] = [[
+                self.widgets['fastk_spin'].value(),
+                self.widgets['slowk_spin'].value(),
+                self.widgets['slowd_spin'].value()
+            ]]
         
-        if 'use_ema_long_filter' in values:
-            self.widgets['ema_long_filter_check'].setChecked(values['use_ema_long_filter'])
+        # ATR (pour le calcul des stops si nécessaire)
+        if hasattr(self.widgets, 'atr_check') and self.widgets.get('atr_check') and self.widgets['atr_check'].isChecked():
+            indicators['ATR'] = [[self.widgets['atr_period_spin'].value()]]
         
-        if 'use_stoch_filter' in values:
-            self.widgets['stoch_filter_check'].setChecked(values['use_stoch_filter'])
-        
-        if 'use_previous_ha_candle_red_filter' in values:
-            self.widgets['previous_ha_candle_red_check'].setChecked(values['use_previous_ha_candle_red_filter'])
-        
-        if 'atr_period' in values:
-            self.widgets['atr_period_spin'].setValue(values['atr_period'])
-        
-        if 'atr_enabled' in values:
-            self.widgets['atr_check'].setChecked(values['atr_enabled'])
+        return indicators
+    

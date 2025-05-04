@@ -46,6 +46,15 @@ class StrategyBasePanel(BasePanel):
         
         # Paramètres ATR
         atr_layout = QFormLayout()
+
+        # Période ATR
+        self.widgets['atr_period'] = QDoubleSpinBox()
+        self.widgets['atr_period'].setDecimals(0)
+        self.widgets['atr_period'].setRange(1, 100)
+        self.widgets['atr_period'].setSingleStep(1)
+        self.widgets['atr_period'].setValue(14)
+        self.widgets['atr_period'].setEnabled(False)
+        atr_layout.addRow("Période ATR:", self.widgets['atr_period'])
         
         # Multiplicateurs ATR
         self.widgets['sl_atr_multiplier'] = QDoubleSpinBox()
@@ -170,6 +179,7 @@ class StrategyBasePanel(BasePanel):
         self.widgets['tp_atr_multiplier'].setEnabled(checked)
         self.widgets['min_sl'].setEnabled(checked)
         self.widgets['min_tp'].setEnabled(checked)
+        self.widgets['atr_period'].setEnabled(checked)
         
         self.widgets['stop_loss_distance'].setEnabled(not checked)
         self.widgets['take_profit_distance'].setEnabled(not checked)
@@ -192,6 +202,7 @@ class StrategyBasePanel(BasePanel):
             'stop_loss_distance': self.widgets['stop_loss_distance'].value(),
             'take_profit_distance': self.widgets['take_profit_distance'].value(),
             'use_atr_for_sl_tp': self.widgets['use_atr_check'].isChecked(),
+            'atr_period': self.widgets['atr_period'].value(),
             'stop_loss_atr_multiplier': self.widgets['sl_atr_multiplier'].value(),
             'take_profit_atr_multiplier': self.widgets['tp_atr_multiplier'].value(),
             'min_stop_loss_distance': self.widgets['min_sl'].value(),
@@ -204,42 +215,9 @@ class StrategyBasePanel(BasePanel):
             'trading_to': trading_to,
             'trading_days': days
         }
-    
-    def set_values(self, values):
-        """Définit les valeurs des widgets du panel."""
-        if 'stop_loss_distance' in values:
-            self.widgets['stop_loss_distance'].setValue(values['stop_loss_distance'])
 
-        if 'take_profit_distance' in values:
-            self.widgets['take_profit_distance'].setValue(values['take_profit_distance'])
-            
-        if 'use_atr_for_sl_tp' in values:
-            self.widgets['use_atr_check'].setChecked(values['use_atr_for_sl_tp'])
-        
-        if 'stop_loss_atr_multiplier' in values:
-            self.widgets['sl_atr_multiplier'].setValue(values['stop_loss_atr_multiplier'])
-        
-        if 'take_profit_atr_multiplier' in values:
-            self.widgets['tp_atr_multiplier'].setValue(values['take_profit_atr_multiplier'])
-        
-        if 'min_stop_loss_distance' in values:
-            self.widgets['min_sl'].setValue(values['min_stop_loss_distance'])
-        
-        if 'min_take_profit_distance' in values:
-            self.widgets['min_tp'].setValue(values['min_take_profit_distance'])
-        
-        if 'use_risk_based_sizing' in values:
-            self.widgets['use_risk_based_sizing'].setChecked(values['use_risk_based_sizing'])
-        
-        if 'risk_percentage' in values:
-            self.widgets['risk_percentage'].setValue(values['risk_percentage'])
-        
-        if 'break_even_threshold' in values:
-            self.widgets['break_even_threshold'].setValue(values['break_even_threshold'])
-        
-        if 'maximal_leverage' in values:
-            self.widgets['maximal_leverage'].setValue(values['maximal_leverage'])
-        
-        if 'trading_days' in values and isinstance(values['trading_days'], list):
-            for i, check in enumerate(self.widgets['trading_days_check']):
-                check.setChecked(i in values['trading_days'])
+    def get_required_indicators(self):
+        """Récupère les indicateurs requis pour la stratégie."""
+        return {
+            'ATR': [[self.widgets['atr_period'].value()]],
+        } 

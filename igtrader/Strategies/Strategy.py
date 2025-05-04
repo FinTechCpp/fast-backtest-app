@@ -391,17 +391,12 @@ class Strategy(ABC):
         # 2. Filtrer les données pertinentes sans créer de DataFrame intermédiaire
         candle_data = {k: v for k, v in candle.items() if k != 'date' and not pd.isna(v)}
         
-        # 3. Mise à jour efficace du buffer
         if self.buffer.empty:
-            # Créer un nouveau DataFrame directement si le buffer est vide
             self.buffer = pd.DataFrame([candle_data], index=[date_value])
         else:
-            # Ajouter directement la ligne sans utiliser concat (qui est coûteux)
             self.buffer.loc[date_value] = pd.Series(candle_data)
             
-            # 4. Redimensionnement du buffer dès qu'il dépasse le seuil
             if len(self.buffer) > self.RESIZE_THRESHOLD:
-                # Ne garder que les BUFFER_SIZE dernières entrées
                 self.buffer = self.buffer.iloc[-self.BUFFER_SIZE:]
         
         # 5. Éviter la copie inutile du dictionnaire candle

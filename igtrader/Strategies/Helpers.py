@@ -121,13 +121,8 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
         indicators (dict): Configuration des indicateurs à calculer
     """
     # Définir les indicateurs par défaut si aucun n'est fourni
-    if indicators is None:
-        indicators = {
-            'EMA': [[20], [50], [200]],
-            'ATR': [[14]],
-            'STOCH': [[10, 7, 3]],
-            'SUPERTREND': [[50, 3]]
-        }
+    if indicators is None or not isinstance(indicators, dict):
+        indicators = {}
     start_time = time.time()
     logging.info(f"Chargement des données pour {symbol}, intervalle {interval}, période {period}...")
     

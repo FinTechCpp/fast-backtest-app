@@ -396,16 +396,9 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                     trade.sl = trade.entry_price  # Set stop loss at break-even
                     logging.info(f"Moving stop loss to break-even at {trade.entry_price}")
         
-        # TRÈS IMPORTANT: Mettre à jour la bougie AVANT d'appeler les filtres
-        # car cela initialise self.candles dans la stratégie
+
         signal = self.my_strategy.update_candle(candle)
                 
-        # Vérifier les filtres
-        ema_short_filter = self.my_strategy.ema_short_filter()
-        ema_long_filter = self.my_strategy.ema_long_filter()
-        stoch_filter = self.my_strategy.stoch_inf_threshold_filter()
-        previous_ha_candle_red_filter = self.my_strategy.previous_ha_candle_red_filter()
-        should_long = self.my_strategy.should_long()
         
             
         # Vérifier si un signal d'achat ou de vente est généré
@@ -424,21 +417,9 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
                 f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
-                f"Should Long: {should_long}\n "
+                # f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
+                # f"Should Long: {should_long}\n "
                 f"Trade size: {signal['quantity']}\n")
             
         elif not self.position and signal['action'] == 'SELL':
-            self.sell(sl_points=signal['stop_loss'], 
-                    tp_points=signal['take_profit'], 
-                    size=signal['quantity'])
-            logging.info(
-                f"\n\nCandle: {candle['date']}\n "
-                f"Open ({candle['Open']}), Close ({candle['Close']})\n "
-                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
-                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
-                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
-                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<50: {stoch_filter}\n "
-                f"Should Long: {should_long}\n\n"
-            )
+            pass

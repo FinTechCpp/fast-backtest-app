@@ -288,6 +288,13 @@ class BuyHeikinGreen(Strategy):
         return candle
 
 
+# TODO : pas mal de travail à faire pour enlever la logique de cette class.
+# Il faut la mettre directement dans la class de stratégie
+# - enlever les break even => il faut que la strategy sache gérer les break even
+# Pour cela on ajoute un signal => "Moving SL to break even"
+# Ensuite on traite le signal dans le BA
+# - enlever les filtres => On les utilise pour les log mais pas jolie je trouve 
+# Plus de robustesse sur les indicateurs => si on les a pas et he pg il faudra que la strategie les calcule
 class BuyHeikinGreenBA(BacktestingStrategy):
     """
     Adapter pour la stratégie de backtesting.

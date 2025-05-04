@@ -9,6 +9,12 @@ from pandas import Timestamp
 import time as dt
 import statistics
 
+# TODO : Beaucoup de chose qui je pense n'on rien a faire là
+# - Est ce que toute les strategies doivent avoir un stop loss et un take profit ?
+# - Est ce que toute les strategies doivent avoir un sl et tp basé sur l'ATR ?
+# - Est ce que toute les strategies doivent avoir un sl et tp basé sur le risque ?
+# Si les réponses sont non, alors il faut bouger cela dans les strategies qui en ont besoin
+# Si c'est oui alors my bad et on peut laisser comme ça mais j'en doute
 @dataclass
 class StrategyBaseConfig:
     trading_from: time = time(14, 30)

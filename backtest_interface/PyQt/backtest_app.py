@@ -883,38 +883,58 @@ class BacktestApp(QMainWindow):
         
         # Si des statistiques sont fournies, ajouter les indicateurs et les trades
         if stats is not None:
-            # EQUITY SUBCHART
             equity_chart = chart.create_subchart(height=0.1, width=1, position="top", sync=True)
             equity_chart.layout(background_color='#f0f8ff')
             equity_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
             equity_chart.time_scale(visible=False, min_bar_spacing=0.0)  # Hide time scale for equity curve
             equity_chart.price_scale(minimum_width=120)
             equity_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+                        
+            # Create a realized PnL equity curve that only changes on trade exits
+            # First, get all timestamps from the main chart data
+            all_timestamps = data['time'].copy()
             
-            # Prepare equity data
-            equity_df = stats['_equity_curve'].copy()
-            equity_df.reset_index(inplace=True)
+            # Create a new dataframe with these timestamps
+            equity_df = pd.DataFrame({'time': all_timestamps})
             
-            # Handle possible column names - check what's actually there
-            if 'index' in equity_df.columns:
-                equity_df.rename(columns={'index': 'time'}, inplace=True)
-            elif 'date' in equity_df.columns:
-                equity_df.rename(columns={'date': 'time'}, inplace=True)
-            elif equity_df.index.name is None:
-                equity_df.rename(columns={equity_df.columns[0]: 'time'}, inplace=True)
+            # Initial equity value (cash)
+            initial_equity = self.cash.value()
+            
+            # Get trade data sorted by exit time
+            trades_df = stats['_trades'].sort_values('ExitTime')
+                        
+            # Create a series mapping exit times to cumulative PnL
+            current_equity = initial_equity
+            equity_at_exit = {}
+            for _, trade in trades_df.iterrows():
+                current_equity += trade['PnL']
+                equity_at_exit[trade['ExitTime']] = current_equity
+            
+            # Create a new column for equity value
+            equity_df['Equity'] = initial_equity
+            
+            # Update equity values at trade exit times
+            for i, row in equity_df.iterrows():
+                # Convert row time to datetime for comparison
+                row_time = pd.to_datetime(row['time'])
+                
+                # Find the most recent trade exit time that's not after current row time
+                latest_equity = initial_equity
+                for exit_time, equity_value in equity_at_exit.items():
+                    if exit_time <= row_time:
+                        latest_equity = equity_value
+                
+                # Set the equity value for this timestamp
+                equity_df.at[i, 'Equity'] = latest_equity
             
             # Add the main equity line
+            # Add the main equity line
             equity_line = equity_chart.create_line(name='Equity', color='rgba(20,20,180,1)', width=1, price_line=False)
-            equity_line.horizontal_line(price=self.cash.value(), color='black', width=1, style='dashed', text='Initial Equity')
-            
+            equity_line.horizontal_line(price=initial_equity, color='black', width=1, style='dashed', text='Initial Equity')
+                        
             # Convert time to string and handle Timedelta objects
             equity_df['time'] = equity_df['time'].astype(str)
-            for column in equity_df.columns:
-                if pd.api.types.is_timedelta64_dtype(equity_df[column]):
-                    equity_df[column] = equity_df[column].dt.total_seconds()
-                elif isinstance(equity_df[column].iloc[0], pd.Timedelta):
-                    equity_df[column] = equity_df[column].apply(lambda x: x.total_seconds() if isinstance(x, pd.Timedelta) else x)
-            
+                        
             # Set the data for the equity line
             equity_line.set(equity_df)
             
@@ -1033,8 +1053,8 @@ class BacktestApp(QMainWindow):
                                 price=entry_price,
                                 fill_color='black',
                                 line_color='black',
-                                width=1,
-                                radius=3)
+                                width=3,
+                                radius=5)
                                 
                 # Exit marker
                 chart.marker(
@@ -1048,9 +1068,9 @@ class BacktestApp(QMainWindow):
                 chart.point_marker(time=exit_time,
                                 price=exit_price,
                                 fill_color='black',
-                                line_color='black',
-                                width=1,
-                                radius=3)
+                                line_color='back',
+                                width=3,
+                                radius=5)
                 
             
             # Fit the chart to show all data
@@ -1062,7 +1082,6 @@ class BacktestApp(QMainWindow):
                 "padding": "8px"}, 
                 trigger_key="Shift",
                 toggle_mode=False)
-        
         # Ajouter le conteneur du graphique au layout
         self.charts_layout.addWidget(chart_container)
         

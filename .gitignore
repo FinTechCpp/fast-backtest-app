@@ -19,3 +19,6 @@ backtest_interface/PyQt/dist/*
 backtest_interface/PyQt/*.spec
 *.log
 *.DS_Store
+*.bak
+backtest_interface/PyQt/backtest_config.ini.bak
+*.ini.bak

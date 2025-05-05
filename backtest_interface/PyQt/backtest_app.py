@@ -928,7 +928,6 @@ class BacktestApp(QMainWindow):
                 equity_df.at[i, 'Equity'] = latest_equity
             
             # Add the main equity line
-            # Add the main equity line
             equity_line = equity_chart.create_line(name='Equity', color='rgba(20,20,180,1)', width=1, price_line=False)
             equity_line.horizontal_line(price=initial_equity, color='black', width=1, style='dashed', text='Initial Equity')
                         
@@ -1053,8 +1052,8 @@ class BacktestApp(QMainWindow):
                                 price=entry_price,
                                 fill_color='black',
                                 line_color='black',
-                                width=3,
-                                radius=5)
+                                width=2,
+                                radius=4)
                                 
                 # Exit marker
                 chart.marker(
@@ -1069,8 +1068,8 @@ class BacktestApp(QMainWindow):
                                 price=exit_price,
                                 fill_color='black',
                                 line_color='back',
-                                width=3,
-                                radius=5)
+                                width=2,
+                                radius=4)
                 
             
             # Fit the chart to show all data

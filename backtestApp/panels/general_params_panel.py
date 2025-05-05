@@ -39,7 +39,7 @@ class GeneralParamsPanel(BasePanel):
         params_layout.addRow(QLabel("Date de fin:"), self.widgets['end_date'])
         
         # Fuseau horaire
-        self.widgets['timezone'] = QLineEdit("Europe/Paris")
+        self.widgets['timezone'] = QLineEdit("America/New_York")
         params_layout.addRow(QLabel("Fuseau horaire:"), self.widgets['timezone'])
         
         # Spread

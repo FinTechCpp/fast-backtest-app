@@ -155,7 +155,7 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
     
     # Charger tout le fichier Parquet pour pouvoir identifier les limites de dates disponibles
     try:
-        df = pd.read_parquet(save_path, engine='pyarrow')
+        df = pd.read_parquet(save_path)
         df_original_len = len(df)
         logging.debug(f"Données chargées depuis {save_path}: {df_original_len} barres de prix")
     except FileNotFoundError:

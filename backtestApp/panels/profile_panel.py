@@ -3,12 +3,15 @@ from PyQt5.QtWidgets import (QGroupBox, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtGui import QFont
 from .base_panel import BasePanel
 
+# import ConfigManager
+from backtestApp.config_manager import ConfigManager
+
 class ProfilePanel(BasePanel):
     """Panel de gestion des profils de configuration."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.config_manager = parent.config_manager if parent else None
+        self.config_manager = parent.config_manager if parent else ConfigManager()
     
     def create(self):
         """Crée le panel de gestion des profils."""
@@ -71,6 +74,30 @@ class ProfilePanel(BasePanel):
         profile_selector_layout.addWidget(self.widgets['profile_combo'])
         
         profile_layout.addLayout(profile_selector_layout)
+        
+        # Ajout des boutons d'import/export de configuration
+        import_export_layout = QHBoxLayout()
+        
+        # Bouton d'importation
+        import_btn = QPushButton("📥 Importer")
+        import_btn.setToolTip("Importer une configuration depuis un fichier")
+        if self.parent and self.config_manager:
+            import_btn.clicked.connect(
+                lambda: self.config_manager.import_config_from_file(self.parent, self.parent)
+            )
+        import_export_layout.addWidget(import_btn)
+        
+        # Bouton d'exportation
+        export_btn = QPushButton("📤 Exporter")
+        export_btn.setToolTip("Exporter la configuration vers un fichier")
+        if self.parent and self.config_manager:
+            export_btn.clicked.connect(
+                lambda: self.config_manager.export_config_to_file(self.parent)
+            )
+        import_export_layout.addWidget(export_btn)
+        
+        # Ajouter ce layout au layout des profils
+        profile_layout.addLayout(import_export_layout)
         
         # Finaliser le groupe de profils
         profile_group.setLayout(profile_layout)

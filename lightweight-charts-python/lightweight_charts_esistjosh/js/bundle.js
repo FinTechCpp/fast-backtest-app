@@ -7662,11 +7662,157 @@ var Lib = (function (exports, lightweightCharts) {
         }
     }
 
+    class PointMarkerPaneRenderer extends DrawingPaneRenderer {
+        _point;
+        _hovered;
+        constructor(point, options, hovered) {
+            super(options);
+            this._point = point;
+            this._hovered = hovered;
+        }
+        draw(target) {
+            if (this._point.x === null || this._point.y === null)
+                return;
+            const options = this._options;
+            target.useBitmapCoordinateSpace(scope => {
+                const ctx = scope.context;
+                const x = Math.round((this._point.x ?? 0) * scope.horizontalPixelRatio);
+                const y = Math.round((this._point.y ?? 0) * scope.verticalPixelRatio);
+                // Draw the marker
+                ctx.beginPath();
+                const radius = options.radius * scope.horizontalPixelRatio;
+                ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                // Fill
+                ctx.fillStyle = options.fillColor;
+                ctx.fill();
+                // Border
+                ctx.lineWidth = 1 * scope.horizontalPixelRatio;
+                ctx.strokeStyle = options.lineColor;
+                ctx.stroke();
+                // If hovered, draw a highlight
+                if (this._hovered) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius + 2 * scope.horizontalPixelRatio, 0, 2 * Math.PI);
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.lineWidth = 1 * scope.horizontalPixelRatio;
+                    ctx.stroke();
+                }
+            });
+        }
+    }
+
+    class PointMarkerPaneView extends DrawingPaneView {
+        _point = { x: null, y: null };
+        _source;
+        constructor(source) {
+            super(source);
+            this._source = source;
+        }
+        update() {
+            if (!this._source.point)
+                return;
+            const series = this._source.series;
+            const point = this._source.point;
+            const y = series.priceToCoordinate(point.price);
+            let x;
+            if (point.time) {
+                x = this._source.chart.timeScale().timeToCoordinate(point.time);
+            }
+            else {
+                x = this._source.chart.timeScale().logicalToCoordinate(point.logical);
+            }
+            this._point = { x, y };
+        }
+        renderer() {
+            return new PointMarkerPaneRenderer(this._point, this._source._options, this._source.isHovered() // Use the public method instead
+            );
+        }
+    }
+
+    const defaultPointMarkerOptions = {
+        ...defaultOptions$2,
+        radius: 5,
+        fillColor: '#000000',
+    };
+    class PointMarker extends Drawing {
+        _type = 'PointMarker';
+        constructor(point, options) {
+            super({
+                ...defaultPointMarkerOptions,
+                ...options,
+            });
+            this._points.push(point);
+            // We'll set the pane view after constructor to avoid circular dependency
+            // this._paneViews = [new PointMarkerPaneView(this)]; 
+        }
+        // Add this method to be called after construction
+        initializeViews() {
+            this._paneViews = [new PointMarkerPaneView(this)];
+        }
+        get point() { return this.points[0]; }
+        _onMouseDown() {
+            this._moveToState(InteractionState.DRAGGING);
+        }
+        _onDrag(diff) {
+            this._addDiffToPoint(this.points[0], diff.logical, diff.price);
+            this.requestUpdate();
+        }
+        _moveToState(state) {
+            switch (state) {
+                case InteractionState.NONE:
+                    document.body.style.cursor = "default";
+                    this._unsubscribe("mousedown", this._handleMouseDownInteraction);
+                    break;
+                case InteractionState.HOVERING:
+                    document.body.style.cursor = "pointer";
+                    this._subscribe("mousedown", this._handleMouseDownInteraction);
+                    this.chart.applyOptions({ handleScroll: true });
+                    break;
+                case InteractionState.DRAGGING:
+                    document.body.style.cursor = "grabbing";
+                    this._subscribe("mouseup", this._handleMouseUpInteraction);
+                    this.chart.applyOptions({ handleScroll: false });
+                    break;
+            }
+            this._state = state;
+        }
+        _mouseIsOverDrawing(param) {
+            if (!param.point || !this.points[0])
+                return false;
+            const point = this.points[0];
+            const y = this.series.priceToCoordinate(point.price);
+            if (!y)
+                return false;
+            // Get x-coordinate from time or logical index
+            let x;
+            if (point.time) {
+                x = this.chart.timeScale().timeToCoordinate(point.time);
+            }
+            else {
+                x = this.chart.timeScale().logicalToCoordinate(point.logical);
+            }
+            if (!x)
+                return false;
+            // Check if mouse is over the marker (circular area)
+            const options = this._options;
+            const radius = options.radius;
+            const tolerance = 4; // Extra pixels for easier interaction
+            const dx = param.point.x - x;
+            const dy = param.point.y - y;
+            return (dx * dx + dy * dy) <= ((radius + tolerance) * (radius + tolerance));
+        }
+        // Add this method to the PointMarker class
+        isHovered() {
+            return this._state !== InteractionState.NONE;
+        }
+    }
+
     exports.Box = Box;
     exports.FillArea = FillArea;
     exports.Handler = Handler;
     exports.HorizontalLine = HorizontalLine;
     exports.Legend = Legend;
+    exports.PointMarker = PointMarker;
     exports.RayLine = RayLine;
     exports.SynchronizedTooltip = SynchronizedTooltip;
     exports.Table = Table;
@@ -7677,6 +7823,7 @@ var Lib = (function (exports, lightweightCharts) {
     exports.VerticalLine = VerticalLine;
     exports.closedEye = closedEye;
     exports.defaultFillAreaOptions = defaultFillAreaOptions;
+    exports.defaultPointMarkerOptions = defaultPointMarkerOptions;
     exports.globalParamInit = globalParamInit;
     exports.ohlcSeries = ohlcSeries;
     exports.ohlcdefaultOptions = ohlcdefaultOptions;

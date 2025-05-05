@@ -9,7 +9,7 @@ from webview.errors import JavascriptException
 
 from .table import Table
 from .toolbox import ToolBox
-from .drawings import Box, HorizontalLine, RayLine, TrendLine, TwoPointDrawing, VerticalLine, VerticalSpan
+from .drawings import Box, HorizontalLine, RayLine, TrendLine, TwoPointDrawing, VerticalLine, VerticalSpan, PointMarker
 from .topbar import TopBar
 from .util import (
     BulkRunScript, Pane, Events, IDGen, as_enum, jbool, js_json, TIME, NUM, FLOAT,
@@ -449,6 +449,31 @@ class SeriesCommon(Pane):
             start_time = self._single_datetime_format(start_time)
             end_time = self._single_datetime_format(end_time) if end_time else None
         return VerticalSpan(self, start_time, end_time, color)
+    
+    def point_marker(
+        self,
+        time: TIME,
+        price: NUM,
+        radius: int = 5,
+        fill_color: str = '#000000',
+        line_color: str = '#1E80F0',
+        width: int = 1,
+        func: Optional[Callable] = None
+    ) -> 'PointMarker':
+        """
+        Creates a point marker at specified time and price coordinates.
+        
+        :param time: Datetime or timestamp for the marker
+        :param price: Price level for the marker
+        :param radius: Radius of the marker in pixels
+        :param fill_color: Fill color of the marker
+        :param line_color: Border color of the marker
+        :param width: Border width in pixels
+        :param func: Optional callback function when the marker is moved
+        
+        :return: PointMarker object
+        """
+        return PointMarker(self._chart, time, price, radius, fill_color, line_color, width, func)
 
 
 class Line(SeriesCommon):

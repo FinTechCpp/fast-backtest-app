@@ -1029,6 +1029,12 @@ class BacktestApp(QMainWindow):
                     text=f"Entry: {entry_price:.2f}",
                     shape="arrow_down",
                     size=1)
+                chart.point_marker(time=entry_time,
+                                price=entry_price,
+                                fill_color='black',
+                                line_color='black',
+                                width=1,
+                                radius=3)
                                 
                 # Exit marker
                 chart.marker(
@@ -1039,6 +1045,13 @@ class BacktestApp(QMainWindow):
                          f"(P/L: {trade['PnL']:.2f} $ / {round(trade['ReturnPct'], 5)}%)\n",
                     shape="arrow_up",
                     size=1)
+                chart.point_marker(time=exit_time,
+                                price=exit_price,
+                                fill_color='black',
+                                line_color='black',
+                                width=1,
+                                radius=3)
+                
             
             # Fit the chart to show all data
             chart.fit()

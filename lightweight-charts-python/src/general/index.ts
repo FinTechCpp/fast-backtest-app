@@ -8,3 +8,4 @@ export * from './toolbox';
 export * from './topbar';
 export * from '../horizontal-line/ray-line';
 export * from  '../tooltip/synchronized-tooltip'
+export * from '../point-marker/point-marker';

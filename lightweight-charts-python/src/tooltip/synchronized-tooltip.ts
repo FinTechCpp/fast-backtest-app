@@ -18,6 +18,7 @@ export interface SynchronizedTooltipOptions {
     borderColor?: string;
     borderRadius?: string;
     showOHLC?: boolean;
+    showDateTime?: boolean; // Nouvelle option pour contrôler l'affichage de la date/heure
 }
 
 export class SynchronizedTooltip {
@@ -161,12 +162,15 @@ export class SynchronizedTooltip {
         // Calculate common time for all series
         const time = param.time as Time;
         const timestamp = time ? convertTime(time) : undefined;
-        const [dateStr, timeStr] = formattedDateAndTime(timestamp);
-    
+        
         // Gather all series values at this time point
-        const tooltipContent: string[] = [
-            `<div style="font-weight: bold; margin-bottom: 5px; text-align: center;">${dateStr} ${timeStr}</div>`
-        ];
+        const tooltipContent: string[] = [];
+        
+        // Ajouter la date/heure seulement si showDateTime est true ou non défini
+        if (this._options.showDateTime !== false) {
+            const [dateStr, timeStr] = formattedDateAndTime(timestamp);
+            tooltipContent.push(`<div style="font-weight: bold; margin-bottom: 5px; text-align: center;">${dateStr} ${timeStr}</div>`);
+        }
     
         let hasData = false;
         

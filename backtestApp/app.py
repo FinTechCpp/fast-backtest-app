@@ -381,13 +381,19 @@ class BacktestApp(QMainWindow):
         
         trade_layout.addWidget(MetricWidget("Nombre de trades", f"{stats['# Trades']}"), 0, 0)
         trade_layout.addWidget(MetricWidget("Taux de réussite [%]", f"{stats['Win Rate [%]']:.2f}%"), 1, 0)
-        trade_layout.addWidget(MetricWidget("Meilleur trade [%]", f"{stats['Best Trade [%]']:.2f}%"), 2, 0)
-        trade_layout.addWidget(MetricWidget("Pire trade [%]", f"{stats['Worst Trade [%]']:.2f}%"), 3, 0)
         
-        trade_layout.addWidget(MetricWidget("Trade moyen [%]", f"{stats['Avg. Trade [%]']:.4f}%"), 0, 1)
-        trade_layout.addWidget(MetricWidget("Durée max trade", str(stats["Max. Trade Duration"])), 1, 1)
-        trade_layout.addWidget(MetricWidget("Durée moyenne trade", str(stats["Avg. Trade Duration"])), 2, 1)
-        trade_layout.addWidget(MetricWidget("Profit Factor", f"{stats['Profit Factor']:.2f}"), 3, 1)
+        # Nouvelles statistiques sur les types de trades
+        trade_layout.addWidget(MetricWidget("Trades gagnants", f"{stats['# Winning Trades']}"), 0, 1)
+        trade_layout.addWidget(MetricWidget("Trades perdants", f"{stats['# Losing Trades']}"), 1, 1)
+        trade_layout.addWidget(MetricWidget("Trades neutres", f"{stats['# Neutral Trades']}"), 2, 1)
+        
+        trade_layout.addWidget(MetricWidget("Meilleur trade [%]", f"{stats['Best Trade [%]']:.2f}%"), 4, 0)
+        trade_layout.addWidget(MetricWidget("Pire trade [%]", f"{stats['Worst Trade [%]']:.2f}%"), 5, 0)
+        
+        trade_layout.addWidget(MetricWidget("Trade moyen [%]", f"{stats['Avg. Trade [%]']:.4f}%"), 4, 1)
+        trade_layout.addWidget(MetricWidget("Durée max trade", str(stats["Max. Trade Duration"])), 5, 1)
+        trade_layout.addWidget(MetricWidget("Durée moyenne trade", str(stats["Avg. Trade Duration"])), 6, 0)
+        trade_layout.addWidget(MetricWidget("Profit Factor", f"{stats['Profit Factor']:.2f}"), 6, 1)
         
         trade_group.setLayout(trade_layout)
         col2_layout.addWidget(trade_group)
@@ -692,7 +698,9 @@ class BacktestApp(QMainWindow):
             chart.create_synchronized_tooltip(charts=[equity_chart, atr_chart, stoch_chart], options={
                 "backgroundColor": "rgba(255, 255, 255, 0.9)",
                 "textColor": "#333",
-                "padding": "8px"}, 
+                "padding": "8px",
+                "showOHLC": True,
+                "showDateTime": False}, 
                 trigger_key="Shift",
                 toggle_mode=False)
         

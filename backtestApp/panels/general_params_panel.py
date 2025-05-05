@@ -34,7 +34,7 @@ class GeneralParamsPanel(BasePanel):
         
         # Date de fin
         self.widgets['end_date'] = QDateEdit()
-        self.widgets['end_date'].setDate(QDate(2025, 4, 10))
+        self.widgets['end_date'].setDate(QDate(2025, 4, 30))
         self.widgets['end_date'].setCalendarPopup(True)
         params_layout.addRow(QLabel("Date de fin:"), self.widgets['end_date'])
         

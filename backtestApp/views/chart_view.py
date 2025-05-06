@@ -252,7 +252,9 @@ class ChartView(ResultView):
             chart.create_synchronized_tooltip(charts=sync_charts, options={
                 "backgroundColor": "rgba(255, 255, 255, 0.9)",
                 "textColor": "#333",
-                "padding": "8px"}, 
+                "padding": "8px",
+                "showOHLC": True,
+                "showDateTime": False}, 
                 trigger_key="Shift",
                 toggle_mode=False)
                 

@@ -7579,11 +7579,13 @@ var Lib = (function (exports, lightweightCharts) {
             // Calculate common time for all series
             const time = param.time;
             const timestamp = time ? convertTime(time) : undefined;
-            const [dateStr, timeStr] = formattedDateAndTime(timestamp);
             // Gather all series values at this time point
-            const tooltipContent = [
-                `<div style="font-weight: bold; margin-bottom: 5px; text-align: center;">${dateStr} ${timeStr}</div>`
-            ];
+            const tooltipContent = [];
+            // Ajouter la date/heure seulement si showDateTime est true ou non défini
+            if (this._options.showDateTime !== false) {
+                const [dateStr, timeStr] = formattedDateAndTime(timestamp);
+                tooltipContent.push(`<div style="font-weight: bold; margin-bottom: 5px; text-align: center;">${dateStr} ${timeStr}</div>`);
+            }
             let hasData = false;
             // Pour chaque série enregistrée
             this._seriesInfos.forEach(info => {

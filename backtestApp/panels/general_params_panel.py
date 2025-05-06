@@ -34,12 +34,12 @@ class GeneralParamsPanel(BasePanel):
         
         # Date de fin
         self.widgets['end_date'] = QDateEdit()
-        self.widgets['end_date'].setDate(QDate(2025, 4, 10))
+        self.widgets['end_date'].setDate(QDate(2025, 4, 30))
         self.widgets['end_date'].setCalendarPopup(True)
         params_layout.addRow(QLabel("Date de fin:"), self.widgets['end_date'])
         
         # Fuseau horaire
-        self.widgets['timezone'] = QLineEdit("Europe/Paris")
+        self.widgets['timezone'] = QLineEdit("America/New_York")
         params_layout.addRow(QLabel("Fuseau horaire:"), self.widgets['timezone'])
         
         # Spread

@@ -11,7 +11,7 @@ class ProfilePanel(BasePanel):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.config_manager = parent.config_manager if parent else ConfigManager()
+        self.config_manager = parent.config_manager if parent else None
     
     def create(self):
         """Crée le panel de gestion des profils."""
@@ -70,7 +70,7 @@ class ProfilePanel(BasePanel):
             self.widgets['profile_combo'].addItems(self.config_manager.list_profiles())
             self.widgets['profile_combo'].setCurrentText(self.config_manager.current_profile)
             if self.parent:
-                self.widgets['profile_combo'].currentTextChanged.connect(self.parent.load_selected_profile)
+                self.widgets['profile_combo'].currentTextChanged.connect(self.load_selected_profile)
         profile_selector_layout.addWidget(self.widgets['profile_combo'])
         
         profile_layout.addLayout(profile_selector_layout)
@@ -102,7 +102,21 @@ class ProfilePanel(BasePanel):
         # Finaliser le groupe de profils
         profile_group.setLayout(profile_layout)
         return profile_group
-        
+    
+    def load_selected_profile(self, profile_name):
+        """Charge le profil sélectionné dans le menu déroulant."""
+        if profile_name != self.config_manager.current_profile:
+            # Appliquer le profil à l'interface utilisateur du parent
+            success = self.config_manager.apply_profile_to_ui(profile_name, self.parent)
+            if not success:
+                # En cas d'échec, rétablir le profil précédent dans le combobox
+                index = self.widgets['profile_combo'].findText(self.config_manager.current_profile)
+                if index >= 0:
+                    self.widgets['profile_combo'].setCurrentIndex(index)
+            else:
+                # Mettre à jour le libellé du profil actif
+                self.widgets['current_profile_label'].setText(f"Profil actif: {profile_name}")
+
     def get_values(self):
         """Récupère les valeurs des widgets du panel."""
         return {

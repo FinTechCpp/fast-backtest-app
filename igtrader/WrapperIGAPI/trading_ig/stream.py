@@ -8,12 +8,13 @@ import traceback
 import logging
 
 from lightstreamer.client import LightstreamerClient, Subscription
+from igtrader.WrapperIGAPI.trading_ig.rest import IGService # Belek circular import
 
 logger = logging.getLogger(__name__)
 
 
 class IGStreamService(object):
-    def __init__(self, ig_service):
+    def __init__(self, ig_service : IGService):
         self.ig_service = ig_service
         self.lightstreamerEndpoint = None
         self.acc_number = None

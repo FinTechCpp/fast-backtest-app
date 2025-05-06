@@ -8,6 +8,7 @@ from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
 from igtrader.Strategies.CrossEMA import CrossEMA, CrossEMAConfig
 from igtrader.WrapperIGAPI.Broker import Broker
 from igtrader.Strategies.Strategy import StrategyBaseConfig
+from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreen, BuyHeikinGreenConfig
 
 def is_candle_complete(candle, resolution_minutes=1):
     """
@@ -35,7 +36,7 @@ def is_candle_complete(candle, resolution_minutes=1):
 
 def main():
     # Création des instances
-    broker = Broker(epic="IX.D.NASDAQ.IFE.IP", working_resolution='1Min')
+    broker = Broker(epic="IX.D.NASDAQ.IFE.IP", working_resolution='1s')
 
     base_config = StrategyBaseConfig(
         trading_from=datetime.time(19, 0),
@@ -44,12 +45,20 @@ def main():
         take_profit_distance=30,
         stop_loss_distance=20,
     )
-    crossEMA_config = CrossEMAConfig(
-        ema_short_period=50,
-        ema_long_period=200,
+    buy_heikin_green_config = BuyHeikinGreenConfig(
+        ema_short_period = 50,
+        ema_long_period = 200,
+        stoch_fastk = 10,
+        stoch_slowk = 7,
+        stoch_slowd = 3,
+        stoch_threshold = 50,
+        use_ema_short_filter = True,
+        use_ema_long_filter = True,
+        use_stoch_filter = True,
+        use_previous_ha_candle_red_filter = True
     )
 
-    strategy = CrossEMA(base_config, crossEMA_config)
+    strategy = BuyHeikinGreen(base_config, buy_heikin_green_config)
 
     historical_candles = broker.fetch_historical_prices(numpoints=50)
     if not is_candle_complete(historical_candles.iloc[-1]):
@@ -58,14 +67,16 @@ def main():
 
     logging.debug(historical_candles)
 
-
     while True:
         now = datetime.datetime.now()
         seconds_to_wait = 60 - now.second - now.microsecond / 1_000_000
-        time.sleep(seconds_to_wait)
+        time.sleep(20)
 
         candle_previous, candle_current = broker.fetch_previous_and_current_candles()
-
+        
+        # Initialize signal with default value
+        signal = None
+        
         if is_candle_complete(candle_current):
             logging.debug(f"Last complete candle: {candle_current}")
             signal = strategy.update_candle(candle_current)

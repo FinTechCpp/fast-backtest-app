@@ -398,7 +398,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         
 
         signal = self.my_strategy.update_candle(candle)
-                
         
             
         # Vérifier si un signal d'achat ou de vente est généré
@@ -417,8 +416,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
                 f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
                 f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
                 f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                # f"Filtres - EMA Short: {ema_short_filter}, EMA Long: {ema_long_filter}, Stoch<{self.config.stoch_threshold}: {stoch_filter}\n "
-                # f"Should Long: {should_long}\n "
+                f"Filtres - EMA Short: {self.ema_short_filter}, EMA Long: {self.ema_long_filter}, Stoch<{self.config.stoch_threshold}: {self.stoch_filter}\n "
+                f"Should Long: {self.should_long}\n "
                 f"Trade size: {signal['quantity']}\n")
             
         elif not self.position and signal['action'] == 'SELL':

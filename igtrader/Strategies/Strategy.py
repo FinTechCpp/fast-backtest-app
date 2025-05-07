@@ -339,7 +339,7 @@ class Strategy(ABC):
             return
     
         self.before()
-        
+    
         should_long = self.should_long()
         should_short = should_short = False if should_long else self.should_short()
 
@@ -353,7 +353,6 @@ class Strategy(ABC):
             self._reset()
             self._is_executing = False
             return
-
         if should_long:
             self._execute_long()
         else:
@@ -390,7 +389,6 @@ class Strategy(ABC):
                        'date', 'Open', 'High', 'Low', 'Close'
         """
         start_time = dt.perf_counter()
-
         # 1. Conversion optimisée de la date
         date_value = pd.to_datetime(candle['date'])
         
@@ -407,7 +405,7 @@ class Strategy(ABC):
         
         # 5. Éviter la copie inutile du dictionnaire candle
         self.candles = self.add_missing_indicators(candle)
-        
+        logging.info(f"Updated candles: {self.candles}")
         # 6. Exécution de la stratégie
         self._execute()
         
@@ -421,8 +419,7 @@ class Strategy(ABC):
             if len(self.execution_times) > self.MAX_EXECUTION_TIMES:
                 self.execution_times.pop(0)
 
-        # logging.debug(f"Strategy execution time: {duration_ms:.2f} ms")
-
+        #logging.debug(f"Strategy execution time: {duration_ms:.2f} ms")
         return self.signal
 
     @property

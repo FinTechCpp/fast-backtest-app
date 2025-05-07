@@ -295,7 +295,7 @@ class BuyHeikinGreen(Strategy):
         if self.atr_name not in candle and self.base_config.use_atr_for_sl_tp:
             atr_val = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=self.base_config.atr_period)
             candle[self.atr_name] = float(atr_val[-1]) if not np.isnan(atr_val[-1]) else 0.0
-                
+            
         return candle
 
 

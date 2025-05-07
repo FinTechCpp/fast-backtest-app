@@ -110,7 +110,11 @@ class StrategyBasePanel(BasePanel):
         self.widgets['risk_percentage'].setValue(1.0)  # 1% par défaut
         self.widgets['risk_percentage'].setEnabled(False)
         risk_layout.addRow("Risque par trade (%):", self.widgets['risk_percentage'])
-                
+        
+        # Checkbox pour activer le Break-Even
+        self.widgets['use_break_even'] = QCheckBox("Utiliser Break-Even")
+        risk_layout.addRow("", self.widgets['use_break_even'])
+            
         # Break-Even Threshold
         self.widgets['break_even_threshold'] = QDoubleSpinBox()
         self.widgets['break_even_threshold'].setDecimals(2)
@@ -118,6 +122,7 @@ class StrategyBasePanel(BasePanel):
         self.widgets['break_even_threshold'].setSingleStep(0.05)
         self.widgets['break_even_threshold'].setValue(0.7)  # Default: 70% of take profit
         self.widgets['break_even_threshold'].setToolTip("Ajuste le stop loss au point d'équilibre quand le profit atteint ce % du take profit")
+        self.widgets['break_even_threshold'].setEnabled(False)
         risk_layout.addRow("Break-Even Threshold (%):", self.widgets['break_even_threshold'])
         
         # Maximum leverage
@@ -128,6 +133,9 @@ class StrategyBasePanel(BasePanel):
         self.widgets['maximal_leverage'].setValue(20.0)  # Default: 20x leverage
         self.widgets['maximal_leverage'].setToolTip("Effet de levier maximum autorisé")
         risk_layout.addRow("Levier maximal autorisé:", self.widgets['maximal_leverage'])
+        
+        # Connect break-even checkbox signal
+        self.widgets['use_break_even'].toggled.connect(self._toggle_break_even_controls)
         
         risk_sizing_group.setLayout(risk_layout)
         base_layout.addWidget(risk_sizing_group)
@@ -187,6 +195,10 @@ class StrategyBasePanel(BasePanel):
     def _toggle_risk_controls(self, checked):
         """Active ou désactive les contrôles pour le risk-based sizing"""
         self.widgets['risk_percentage'].setEnabled(checked)
+
+    def _toggle_break_even_controls(self, checked):
+        """Active ou désactive les contrôles pour le Break-Even"""
+        self.widgets['break_even_threshold'].setEnabled(checked)
     
     def get_values(self):
         """Récupère les valeurs des widgets du panel."""
@@ -209,6 +221,7 @@ class StrategyBasePanel(BasePanel):
             'min_take_profit_distance': self.widgets['min_tp'].value(),
             'use_risk_based_sizing': self.widgets['use_risk_based_sizing'].isChecked(),
             'risk_percentage': self.widgets['risk_percentage'].value(),
+            'use_break_even': self.widgets['use_break_even'].isChecked(),
             'break_even_threshold': self.widgets['break_even_threshold'].value(),
             'maximal_leverage': self.widgets['maximal_leverage'].value(),
             'trading_from': trading_from,

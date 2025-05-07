@@ -5,6 +5,9 @@ import talib
 import numpy as np
 from dataclasses import dataclass
 
+# from cpp_strategies import StrategyBaseConfig, BuyHeikinGreenConfig, BuyHeikinGreen, Candle
+
+
 @dataclass
 class BuyHeikinGreenConfig:
     """

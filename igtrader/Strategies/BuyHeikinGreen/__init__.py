@@ -1,9 +1,11 @@
-from ..Strategy import Strategy, StrategyBaseConfig
+from ..Strategy import Strategy, StrategyBaseConfig, BaseCandle
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 import logging
 import talib
 import numpy as np
 from dataclasses import dataclass
+from typing import Optional, Dict, Any, List
+
 
 # from cpp_strategies import StrategyBaseConfig, BuyHeikinGreenConfig, BuyHeikinGreen, Candle
 
@@ -26,6 +28,39 @@ class BuyHeikinGreenConfig:
     use_stoch_filter: bool = True
     use_previous_ha_candle_red_filter: bool = True
 
+@dataclass
+class BuyHeikinGreenCandle(BaseCandle):
+    """Dataclass spécifique pour la stratégie BuyHeikinGreen avec les indicateurs nécessaires"""
+    # EMA
+    ema_short: Optional[float] = None
+    ema_long: Optional[float] = None
+    
+    # Stochastique
+    stoch_k: Optional[float] = None
+    stoch_d: Optional[float] = None
+    
+    # ATR
+    atr: Optional[float] = None
+    
+    def get_indicator(self, name: str) -> Optional[float]:
+        """
+        Méthode d'accès unifiée aux indicateurs par nom pour compatibilité
+        """
+        # Mapping des noms d'indicateurs aux attributs
+        indicator_mapping = {
+            # Les clés sont les noms variables des indicateurs
+            # Les valeurs sont les attributs de cette classe
+            "ema_short": self.ema_short,
+            "ema_long": self.ema_long,
+            "stoch_k": self.stoch_k,
+            "stoch_d": self.stoch_d,
+            "atr": self.atr
+        }
+        
+        # Retourner la valeur si trouvée, sinon None
+        return indicator_mapping.get(name)
+
+
 
 class BuyHeikinGreen(Strategy):
     """
@@ -33,11 +68,6 @@ class BuyHeikinGreen(Strategy):
     """
     def __init__(self, base_config: StrategyBaseConfig, buy_heikin_green_config: BuyHeikinGreenConfig):
         super().__init__(base_config)
-
-        self.name = "BuyHeikinGreen"
-        self.symbol = None
-        self.exchange = None
-        self.timeframe = None
 
         self.k_previous = None
         self.d_previous = None
@@ -77,8 +107,17 @@ class BuyHeikinGreen(Strategy):
         if len(self.buffer) < 2:
             return
         
-        # Récupérer la bougie actuelle et la précédente
-        current, prev = self.candles, self.buffer.iloc[-2]
+        # Récupérer la bougie actuelle (dataclass) et la précédente (du buffer)
+        current_candle = self.current_candle
+        prev = self.buffer.iloc[-2]
+        
+        # Créer un dictionnaire avec les données de la bougie actuelle pour compatibilité
+        current = {
+            "Open": current_candle.Open,
+            "High": current_candle.High,
+            "Low": current_candle.Low,
+            "Close": current_candle.Close
+    }
         
         # Si c'est la première fois qu'on calcule ou après une réinitialisation
         if self.ha_cache['current']['close'] is None:
@@ -133,8 +172,8 @@ class BuyHeikinGreen(Strategy):
     
     def go_long(self):
         # Si nous utilisons l'ATR pour les SL/TP
-        if self.base_config.use_atr_for_sl_tp and self.atr_name in self.candles:
-            current_atr = self.candles[self.atr_name]
+        if self.base_config.use_atr_for_sl_tp and hasattr(self.current_candle, 'atr') and self.current_candle.atr is not None:
+            current_atr = self.current_candle.atr
             
             # Vérifier que l'ATR n'est pas zéro ou négatif
             if current_atr <= 0:
@@ -217,11 +256,17 @@ class BuyHeikinGreen(Strategy):
 
     def ema_short_filter(self):
         # Vérifie si le prix est au-dessus des EMA
-        return self.price > self.candles[self.ema_short_name]
+        ema_short_value = getattr(self.current_candle, 'ema_short', None)
+        if ema_short_value is None:
+            ema_short_value = self.get_indicator_value(self.ema_short_name)
+        return self.price > ema_short_value
     
     def ema_long_filter(self):
         # Vérifie si le prix est au-dessus des EMA
-        return self.price > self.candles[self.ema_long_name]
+        ema_long_value = getattr(self.current_candle, 'ema_long', None)
+        if ema_long_value is None:
+            ema_long_value = self.get_indicator_value(self.ema_long_name)
+        return self.price > ema_long_value
     
     def previous_ha_candle_red_filter(self):
         """
@@ -232,17 +277,22 @@ class BuyHeikinGreen(Strategy):
         
         # Vérifier si la bougie précédente est rouge
         return not self.ha_cache['previous']['is_green']
-    
+
     def stoch_inf_threshold_filter(self):
-        # Vérifie si le Stochastic %K présent est inférieur à threshold ou qu'il est ete en dessous de threshold sur la bougie précédente
+        # Vérifie si le Stochastic %K présent est inférieur à threshold
         threshold = self.config.stoch_threshold
         
-        # Récupérer le résultat du filtre avant de mettre à jour les valeurs précédentes
-        result = self.candles[self.stoch_k_name] < threshold or (self.k_previous is not None and self.k_previous < threshold)
+        stoch_k_value = getattr(self.current_candle, 'stoch_k', None)
+        if stoch_k_value is None:
+            stoch_k_value = self.get_indicator_value(self.stoch_k_name)
         
-        # Mettre à jour les valeurs précédentes avec les valeurs actuelles pour la prochaine bougie
-        self.k_previous = self.candles[self.stoch_k_name]
-        self.d_previous = self.candles[self.stoch_d_name]
+        # Récupérer le résultat du filtre avant de mettre à jour les valeurs précédentes
+        result = stoch_k_value < threshold or (self.k_previous is not None and self.k_previous < threshold)
+        
+        # Mettre à jour les valeurs précédentes
+        self.k_previous = stoch_k_value
+        self.d_previous = getattr(self.current_candle, 'stoch_d', 
+                                 self.get_indicator_value(self.stoch_d_name))
         
         return result
     
@@ -300,11 +350,6 @@ class BuyHeikinGreen(Strategy):
 
 
 # TODO : pas mal de travail à faire pour enlever la logique de cette class.
-# Il faut la mettre directement dans la class de stratégie
-# - enlever les break even => il faut que la strategy sache gérer les break even
-# Pour cela on ajoute un signal => "Moving SL to break even"
-# Ensuite on traite le signal dans le BA
-# - enlever les filtres => On les utilise pour les log mais pas jolie je trouve 
 # Plus de robustesse sur les indicateurs => si on les a pas et he pg il faudra que la strategie les calcule
 class BuyHeikinGreenBA(BacktestingStrategy):
     """
@@ -332,7 +377,11 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             use_risk_based_sizing = kwargs.pop('use_risk_based_sizing', False),
             risk_percentage = kwargs.pop('risk_percentage', 1.0),
             cash = kwargs.pop('cash', 100000.0),
-            leverage_limit= kwargs.pop('leverage_limit', 20.0) 
+            leverage_limit = kwargs.pop('leverage_limit', 20.0),
+
+            # Paramètres de gestion de la position
+            use_break_even = kwargs.pop('use_break_even', True),
+            break_even_threshold = kwargs.pop('break_even_threshold', 0.7)
         )
         
         # 2) extraire les clés spécifiques
@@ -349,10 +398,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             use_stoch_filter     = kwargs.pop('use_stoch_filter', True),
             use_previous_ha_candle_red_filter = kwargs.pop('use_previous_ha_candle_red_filter', True),
         )
-        
-        # Récupérer les paramètres de break-even
-        self.use_break_even = kwargs.pop('use_break_even', True)  # Par défaut activé
-        self.break_even_threshold = kwargs.pop('break_even_threshold', 0.7)  # Default to 70% if not provided
 
     
         # 3) stocker et instancier la stratégie "métier"
@@ -361,44 +406,40 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         self.my_strategy = BuyHeikinGreen(base_config, buy_trend_config)
         
         
-        #Only for debugging(can be removed)
-        self.track_candles_counter = 0
-        self.trigger_candle_date = None
     
     def next(self):
         """
         Méthode appelée à chaque bougie pendant le backtest.
         """
         # Noms des indicateurs
-        self.ema_short_name = f'EMA_{self.config.ema_short_period}'
-        self.ema_long_name = f'EMA_{self.config.ema_long_period}'
-        self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-        self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-        self.atr_name = f'ATR_{self.base_config.atr_period}'
-        candle = {
-            'date': self.data.index[-1],
-            'Open': self.data.Open[-1],
-            'High': self.data.High[-1],
-            'Low': self.data.Low[-1],
-            'Close': self.data.Close[-1],
-            self.ema_short_name: self.data.df[self.ema_short_name].iloc[-1],
-            self.ema_long_name: self.data.df[self.ema_long_name].iloc[-1],
-            self.stoch_k_name: self.data.df[self.stoch_k_name].iloc[-1],
-            self.stoch_d_name: self.data.df[self.stoch_d_name].iloc[-1],
-        }
-        
-        # Ajouter l'ATR s'il est disponible
-        if self.atr_name in self.data.df.columns:
-            candle[self.atr_name] = self.data.df[self.atr_name].iloc[-1]
-                
+        ema_short_name = f'EMA_{self.config.ema_short_period}'
+        ema_long_name = f'EMA_{self.config.ema_long_period}'
+        stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
+        stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
+        atr_name = f'ATR_{self.base_config.atr_period}'
 
-        #Break-even stop loss quand PL > % du TP
-        if self.position and self.use_break_even:
-            for trade in self.trades:
-                if self.position.pl_pct > self.break_even_threshold * (self.base_config.take_profit_distance / trade.entry_price * 100):
-                    trade.sl = trade.entry_price  # Set stop loss at break-even
-                    logging.info(f"Moving stop loss to break-even at {trade.entry_price}")
-        
+
+        # Créer une instance de la dataclass spécifique
+        candle = BuyHeikinGreenCandle(
+            date=self.data.index[-1],
+            Open=self.data.Open[-1],
+            High=self.data.High[-1],
+            Low=self.data.Low[-1],
+            Close=self.data.Close[-1],
+            # Informations de position
+            in_position=bool(self.position),
+            position_pl_pct=self.position.pl_pct if self.position else None,
+            entry_price=self.trades[-1].entry_price if self.position and self.trades else None,
+            position_size=self.position.size if self.position else None,
+            
+            # Indicateurs spécifiques
+            ema_short=self.data.df[ema_short_name].iloc[-1],
+            ema_long=self.data.df[ema_long_name].iloc[-1],
+            stoch_k=self.data.df[stoch_k_name].iloc[-1],
+            stoch_d=self.data.df[stoch_d_name].iloc[-1],
+            # ATR (si disponible)
+            atr=self.data.df[atr_name].iloc[-1] if atr_name in self.data.df.columns else None
+        )        
 
         signal = self.my_strategy.update_candle(candle)
         
@@ -408,19 +449,22 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             return
         if signal['action'] == 'LIQUIDATE':
             self.position.close()
+        elif signal['action'] == 'MOVE_SL':
+            # Traiter le signal de break-even
+            for trade in self.trades:
+                trade.sl = signal['new_sl']
+                logging.info(f"Moving stop loss to break-even at {signal['new_sl']}")
         elif not self.position and signal['action'] == 'BUY':
             self.buy(sl_points=signal['stop_loss'], 
                     tp_points=signal['take_profit'], 
                     size=signal['quantity'])
             logging.info(
-                f"\n\nCandle: {candle['date']}\n "
-                f"Open ({candle['Open']}), Close ({candle['Close']})\n "
-                f"EMA Short ({self.ema_short_name}): {candle[self.ema_short_name]}\n "
-                f"EMA Long ({self.ema_long_name}): {candle[self.ema_long_name]}\n "
-                f"Stoch K ({self.stoch_k_name}): {candle[self.stoch_k_name]}\n "
-                f"Stoch D ({self.stoch_d_name}): {candle[self.stoch_d_name]}\n "
-                # f"Filtres - EMA Short: {self.ema_short_filter}, EMA Long: {self.ema_long_filter}, Stoch<{self.config.stoch_threshold}: {self.stoch_filter}\n "
-                # f"Should Long: {self.should_long}\n "
+                f"\n\nCandle: {candle.date}\n "
+                f"Open ({candle.Open}), Close ({candle.Close})\n "
+                f"EMA Short: {candle.ema_short}\n "
+                f"EMA Long: {candle.ema_long}\n "
+                f"Stoch K: {candle.stoch_k}\n "
+                f"Stoch D: {candle.stoch_d}\n "
                 f"Trade size: {signal['quantity']}\n")
             
         elif not self.position and signal['action'] == 'SELL':

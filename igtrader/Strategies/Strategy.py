@@ -3,18 +3,14 @@ import numpy as np
 import pandas as pd
 from datetime import time
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field, asdict
+from typing import Optional, Dict, Any, List
 from dataclasses import field
 from pandas import Timestamp
 import time as dt
 import statistics
 
-# TODO : Beaucoup de chose qui je pense n'on rien a faire là
-# - Est ce que toute les strategies doivent avoir un stop loss et un take profit ?
-# - Est ce que toute les strategies doivent avoir un sl et tp basé sur l'ATR ?
-# - Est ce que toute les strategies doivent avoir un sl et tp basé sur le risque ?
-# Si les réponses sont non, alors il faut bouger cela dans les strategies qui en ont besoin
-# Si c'est oui alors my bad et on peut laisser comme ça mais j'en doute
+
 @dataclass
 class StrategyBaseConfig:
     trading_from: time = time(14, 30)
@@ -41,6 +37,25 @@ class StrategyBaseConfig:
     max_position_percentage: float = 100.0  # Pourcentage du capital à investir par trade
     leverage_limit: float = 20.0  # Limite de levier pour le calcul du risque
 
+    # Paramètres de break-even
+    use_break_even: bool = False
+    break_even_threshold: float = 0.7  # 70% du take profit par défaut
+
+@dataclass
+class BaseCandle:
+    """Classe de base pour les données de bougie communes à toutes les stratégies"""
+    date: Timestamp
+    Open: float
+    High: float
+    Low: float
+    Close: float
+
+    # Informations supplémentaires
+    in_position: bool = False
+    entry_price: Optional[float] = None
+    position_size: Optional[float] = None
+    position_pl_pct: Optional[float] = None
+
 
 class Strategy(ABC):
     """
@@ -48,12 +63,13 @@ class Strategy(ABC):
     """
 
     def __init__(self, base_config: StrategyBaseConfig):
-        self.name = None
-        self.symbol = None
-        self.exchange = None
-        self.timeframe = None
-
         self.base_config = base_config
+
+        # Ajout des informations de position
+        self.in_position = False
+        self.entry_price = None
+        self.position_size = None
+        self.position_pl_pct = None
 
         self.buy = None
         self.sell = None
@@ -63,7 +79,8 @@ class Strategy(ABC):
 
         self._is_executing = False
 
-        self.candles = {}
+        self.current_candle = None
+
         self.buffer = pd.DataFrame({
             'date': pd.Series(dtype='str'),
             'Open': pd.Series(dtype='float'),
@@ -83,6 +100,14 @@ class Strategy(ABC):
         self.execution_times = []
         self.last_execution_time = None
         self.benchmark_active = False
+
+    # Propriété price modifiée pour utiliser current_candle
+    @property
+    def price(self) -> float:
+        """ Retourne le prix actuel de l'actif. """
+        if self.current_candle:
+            return self.current_candle.Close
+        return None
 
     def start_benchmark(self):
         """Active la collecte des métriques de benchmark."""
@@ -121,7 +146,22 @@ class Strategy(ABC):
             "p99": sorted_times[p99_index] if p99_index < len(sorted_times) else sorted_times[-1],
             "total": sum(self.execution_times)
         }
-
+    
+    # Méthode d'accès aux indicateurs
+    def get_indicator_value(self, indicator_name: str) -> Optional[float]:
+        """
+        Récupère la valeur d'un indicateur à partir de la bougie actuelle
+        """
+        # Vérifier si l'indicateur est accessible via un attribut
+        if hasattr(self.current_candle, indicator_name):
+            return getattr(self.current_candle, indicator_name)
+        
+        # Pour la compatibilité avec les classes dérivées qui implémentent get_indicator
+        if hasattr(self.current_candle, "get_indicator"):
+            return self.current_candle.get_indicator(indicator_name)
+        
+        return None
+    
     def _reset(self) -> None:
         """ Reset de la stratégie """
         self.buy = None
@@ -169,6 +209,30 @@ class Strategy(ABC):
                        'date', 'Open', 'High', 'Low', 'Close'
         """
         return candle
+    
+    def _check_break_even(self) -> Optional[dict]:
+        """
+        Vérifie si le stop loss doit être déplacé au point d'entrée (break-even).
+        Retourne un signal si les conditions sont remplies, sinon None.
+        """
+        if not (self.in_position and self.base_config.use_break_even):
+            return None
+            
+        if self.entry_price is None or self.position_pl_pct is None:
+            return None
+            
+        # Calcul du seuil basé sur la distance du take profit
+        threshold_pct = (self.base_config.take_profit_distance / self.entry_price * 100)
+        
+        # Vérifier si on a atteint le seuil pour activer le break-even
+        if self.position_pl_pct > (self.base_config.break_even_threshold * threshold_pct):
+            # Générer un signal de break-even
+            return {
+                "action": "MOVE_SL",
+                "new_sl": self.entry_price
+            }
+        
+        return None
     
     def _execute_long(self) -> None:
         self.go_long()
@@ -297,22 +361,22 @@ class Strategy(ABC):
         return True
     
     def _check_time(self) -> bool:
-        """Version optimisée du check de temps."""
-        if not self.candles or 'date' not in self.candles:
+        """Version optimisée du check de temps avec dataclass."""
+        if not self.current_candle:
             return False
 
         try:
             # Utiliser des variables de classe pour éviter les calculs répétés
-            if not hasattr(self, '_last_check_date') or self.candles['date'] != self._last_check_date:
-                self._last_check_date = self.candles['date']
-                last_candle_date = pd.to_datetime(self._last_check_date)
+            current_date = self.current_candle.date
+            if not hasattr(self, '_last_check_date') or current_date != self._last_check_date:
+                self._last_check_date = current_date
                 
                 # Calculer et mettre en cache les résultats
-                self._weekday_check = last_candle_date.weekday() in self.base_config.trading_days
+                self._weekday_check = current_date.weekday() in self.base_config.trading_days
                 if not self._weekday_check:
                     return False
                     
-                current_time = last_candle_date.time()
+                current_time = current_date.time()
                 self._time_check = (self.base_config.trading_from <= current_time <= self.base_config.trading_to)
                 
                 return self._time_check
@@ -381,7 +445,7 @@ class Strategy(ABC):
                 self.buffer.index = pd.to_datetime(self.buffer.index)
             self.buffer.index.name = 'date'
 
-    def update_candle(self, candle: dict) -> dict:
+    def update_candle(self, candle: BaseCandle) -> dict:
         """
         Ajoute la nouvelle bougie au DataFrame et déclenche l'exécution de la stratégie.
         
@@ -389,40 +453,59 @@ class Strategy(ABC):
                        'date', 'Open', 'High', 'Low', 'Close'
         """
         start_time = dt.perf_counter()
-        # 1. Conversion optimisée de la date
-        date_value = pd.to_datetime(candle['date'])
+
+        # Stocker la référence directe à la bougie
+        self.current_candle = candle
+
+        # Mettre à jour les informations de position
+        self.in_position = candle.in_position
+        self.entry_price = candle.entry_price
+        self.position_size = candle.position_size
+        self.position_pl_pct = candle.position_pl_pct
+
+        # Ajouter les données au buffer (utile pour les calculs qui nécessitent un historique)
+        date_value = candle.date
         
-        # 2. Filtrer les données pertinentes sans créer de DataFrame intermédiaire
-        candle_data = {k: v for k, v in candle.items() if k != 'date' and not pd.isna(v)}
+        # Créer un dictionnaire avec les données OHLC
+        ohlc_data = {
+            'Open': candle.Open,
+            'High': candle.High,
+            'Low': candle.Low,
+            'Close': candle.Close
+        }
+
+        # Ajouter les attributs supplémentaires de la classe dérivée
+        for attr_name, attr_value in vars(candle).items():
+            if attr_name not in ['date', 'Open', 'High', 'Low', 'Close', 
+                                'in_position', 'entry_price', 'position_size', 'position_pl_pct']:
+                if not attr_name.startswith('_'):  # Ignorer les attributs privés
+                    ohlc_data[attr_name] = attr_value
         
+        # Mettre à jour le buffer
         if self.buffer.empty:
-            self.buffer = pd.DataFrame([candle_data], index=[date_value])
+            self.buffer = pd.DataFrame([ohlc_data], index=[date_value])
         else:
-            self.buffer.loc[date_value] = pd.Series(candle_data)
+            self.buffer.loc[date_value] = pd.Series(ohlc_data)
             
             if len(self.buffer) > self.RESIZE_THRESHOLD:
                 self.buffer = self.buffer.iloc[-self.BUFFER_SIZE:]
-        
-        # 5. Éviter la copie inutile du dictionnaire candle
-        self.candles = self.add_missing_indicators(candle)
-        logging.info(f"Updated candles: {self.candles}")
-        # 6. Exécution de la stratégie
+
+        # Vérifier si on doit déclencher un break-even avant d'exécuter la stratégie
+        break_even_signal = self._check_break_even()
+        if break_even_signal:
+            return break_even_signal
+
+        # Exécution de la stratégie
         self._execute()
         
+        # Benchmark
         duration_ms = (dt.perf_counter() - start_time) * 1000
         self.last_execution_time = duration_ms
 
-        # Ajouter le temps d'exécution à la liste et limiter sa taille
         if self.benchmark_active:
             self.execution_times.append(duration_ms)
-
             if len(self.execution_times) > self.MAX_EXECUTION_TIMES:
                 self.execution_times.pop(0)
 
-        #logging.debug(f"Strategy execution time: {duration_ms:.2f} ms")
         return self.signal
 
-    @property
-    def price(self) -> float:
-        """ Retourne le prix actuel de l'actif. """
-        return self.candles['Close'] if self.candles is not None else None

@@ -15,6 +15,7 @@ Modules requis:
 - sys
 - time
 """
+import logging 
 import sys
 sys.path.insert(0, '..')
 from igtrader.WrapperIGAPI.trading_ig import IGService
@@ -33,6 +34,11 @@ from curses import wrapper
 import plotext as plt
 import numpy as np
 import talib 
+from igtrader.WrapperIGAPI.trading_ig.stream import IGStreamService
+from igtrader.WrapperIGAPI.trading_ig.streamer.manager import StreamingManager
+import os
+os.environ['PYWEBVIEW_GUI'] = 'qt'
+from lightweight_charts_esistjosh import Chart
 
 # Liste des options de direction pour les positions
 direction_options = ["BUY", "SELL"]
@@ -109,7 +115,7 @@ def initialize_service():
     Returns:
         IGService: Une instance du service IG connectée.
     """
-    print("Connexion au service IG...")
+    logging.info("Connexion au service IG...")
     ig_service = IGService(
         config.username, 
         config.password, 
@@ -117,7 +123,7 @@ def initialize_service():
         config.acc_type,
         acc_number=config.acc_number)
     ig_service.create_session(version='3')
-    print(f"✅ Connexion réussie avec le compte de {config.username}")
+    logging.info(f"✅ Connexion réussie avec le compte de {config.username}")
     return ig_service
 
 def select_from_dict(data_dict):
@@ -145,8 +151,8 @@ def select_from_dict(data_dict):
         selected_option, index = pick(options, title)
         return keys[index], data_dict[keys[index]]
     except ImportError:
-        print("📦 Le module 'pick' n'est pas installé. Utilisation du mode de sélection basique.")
-        print("Pour une meilleure expérience, installez-le avec: pip install pick")
+        logging.warning("📦 Le module 'pick' n'est pas installé. Utilisation du mode de sélection basique.")
+        logging.warning("Pour une meilleure expérience, installez-le avec: pip install pick")
         print("\nOptions disponibles:")
         for i, (key, value) in enumerate(data_dict.items(), 1):
             if isinstance(value, dict):
@@ -160,7 +166,7 @@ def select_from_dict(data_dict):
                     selected_key = keys[choice - 1]
                     return selected_key, data_dict[selected_key]
                 else:
-                    print("⚠️ Numéro invalide. Veuillez réessayer.")
+                    ("⚠️ Numéro invalide. Veuillez réessayer.")
             except ValueError:
                 print("⚠️ Veuillez entrer un numéro valide.")
 
@@ -230,7 +236,7 @@ def get_market_info(ig_service):
             if 'maxDealSize' in market['dealingRules']:
                 print(f"Taille maximale: {market['dealingRules']['maxDealSize']['value']}")
     except Exception as e:
-        print(f"⚠️ Erreur: {e}")
+        logging.error(f"⚠️ Erreur: {e}")
         traceback.print_exc()
     input("\nAppuyez sur Entrée pour continuer...")
     
@@ -337,41 +343,155 @@ def get_historical_prices(ig_service):
 
 def track_realtime_prices(ig_service):
     """
-    Suit les prix d'un marché en temps réel.
+    Suit les prix d'un marché en temps réel via le streaming Lightstreamer et les affiche sur un graphique.
 
     Args:
         ig_service (IGService): Le service IG initialisé.
     """
+
+    
+    # Sélectionner l'epic et les paramètres
     selected_epic, selected_data = select_from_dict(epics_dict)
     iterations = int(prefill_input("Nombre d'itérations (1-100): ", "10"))
-    delay = int(prefill_input("Délai entre les itérations (en secondes): ", "5"))
-    print(f"🔄 Récupération des prix de {selected_epic} en temps réel...")
-    for i in range(min(iterations, 100)):
-        try:
-            result = ig_service.fetch_market_by_epic(selected_epic)
-            if "snapshot" in result:
-                bid = result["snapshot"]["bid"]
-                ask = result["snapshot"]["offer"]
-                print(f"⏱️ {i+1}/{iterations} - Bid: {bid}, Ask: {ask}")
-            else:
-                print("⚠️ Impossible de récupérer les données.")
-        except Exception as e:
-            print(f"⚠️ Erreur: {e}")
-        time.sleep(delay)
-    print("✅ Fin de la récupération des prix.")
-    input("\nAppuyez sur Entrée pour continuer...")
+    resolution = prefill_input("Résolution pour données historiques (1Min, 5Min, 1H, D, etc.): ", "1Min")
+    history_points = int(prefill_input("Nombre de points historiques (10-100): ", "30"))
     
-def position_output(result):                              
-    if(result['status'] == 'OPEN'):
-        print("\n✅ Position créée avec succès!")
-        print(f"Deal reference: {result['dealReference']}")
-        print(f"Deal ID: {result.get('dealId', 'N/A')}")
-        print(f"Status: {result.get('status', 'N/A')}")
-    else:
-        print("\n⚠️ Erreur lors de la création de la position:")
-        print(f"Raison: {result['reason']}")
-        print(f"Status: {result['status']}")
-        print("Détails : ", result)
+    logging.info(f"🔄 Initialisation du streaming pour {selected_data.get('name', selected_epic)}...")
+    
+    # Récupérer des données historiques pour initialiser le graphique
+    logging.info(f"📊 Récupération des données historiques pour {selected_epic}...")
+    try:
+        historical_data = ig_service.fetch_historical_prices_by_epic(
+            epic=selected_epic,
+            resolution=resolution,
+            numpoints=history_points
+        )
+        
+        # Convertir les données historiques en DataFrame
+        if 'prices' in historical_data:
+            df_hist = pd.DataFrame(historical_data['prices'])
+            
+            # Préparer les données OHLC pour le chart
+            df_ohlc = pd.DataFrame()
+            df_ohlc['time'] = df_hist.index.astype(str)
+            df_ohlc['open'] = df_hist[('bid', 'Open')].values
+            df_ohlc['high'] = df_hist[('bid', 'High')].values
+            df_ohlc['low'] = df_hist[('bid', 'Low')].values
+            df_ohlc['close'] = df_hist[('bid', 'Close')].values
+            
+            # Tentative d'initialisation du graphique avec gestion d'erreur
+            chart = None
+            use_chart = True
+            try:
+                chart = Chart()
+                chart.set(df_ohlc)
+                chart.show(block=False)  # Afficher sans bloquer
+            except Exception as e:
+                logging.error(f"⚠️ Impossible d'initialiser le graphique: {e}")
+                logging.info("Poursuite en mode console uniquement (sans graphique)")
+                use_chart = False
+            
+            # Créer un DataFrame pour stocker les ticks
+            ticks_data = pd.DataFrame(columns=['time', 'price'])
+            
+            # Initialiser le streaming
+            stream_service = IGStreamService(ig_service)
+            stream_service.acc_number = config.acc_number
+            stream_service.create_session(version="3")
+            
+            # Créer le gestionnaire de streaming
+            streaming_manager = StreamingManager(stream_service)
+            
+            # Démarrer une souscription pour l'epic sélectionné
+            logging.info(f"🔄 Connexion au flux en direct pour {selected_epic}...")
+            streaming_manager.start_tick_subscription(selected_epic)
+            
+            logging.info(f"🔄 Récupération des prix de {selected_epic} en temps réel...")
+            logging.info("⏳ Attente de la première mise à jour...")
+            
+            # Préparer l'affichage du tableau des dernières données
+            last_prices = []
+            
+            for i in range(min(iterations, 100)):
+                try:
+                    # Récupérer le ticker avec les données en temps réel
+                    ticker = streaming_manager.ticker(selected_epic)
+                    
+                    # Récupérer l'heure actuelle et le prix
+                    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    current_price = ticker.bid  # Utiliser le prix bid
+                    
+                    # Stocker les dernières données
+                    last_prices.append({
+                        'time': current_time,
+                        'bid': ticker.bid,
+                        'ask': ticker.offer,
+                        'last': ticker.last_traded_price,
+                        'vol': ticker.last_traded_volume
+                    })
+                    
+                    # Limiter à 5 entrées pour l'affichage
+                    if len(last_prices) > 5:
+                        last_prices.pop(0)
+                    
+                    # Créer un tick à partir des données
+                    tick = pd.Series({'time': current_time, 'price': current_price})
+                    
+                    # Mettre à jour le graphique avec le nouveau tick si disponible
+                    if use_chart and chart:
+                        try:
+                            chart.update_from_tick(tick)
+                        except Exception as e:
+                            logging.error(f"⚠️ Erreur lors de la mise à jour du graphique: {e}")
+                            use_chart = False
+                    
+                    # Afficher les informations dans les logs
+                    logging.info(f"Heure actuelle: {current_time} (heure locale)")
+                    logging.info(f"⏱️ {i+1}/{iterations} - Timestamp: {ticker.timestamp}")
+                    logging.info(f"   Bid: {ticker.bid}, Ask: {ticker.offer}")
+                    logging.info(f"   Last: {ticker.last_traded_price}, Vol: {ticker.last_traded_volume}")
+                    
+                    # Afficher le tableau des dernières données
+                    if not use_chart:
+                        print("\n" + "="*70)
+                        print(f"Dernières données pour {selected_data.get('name', selected_epic)}")
+                        print("="*70)
+                        print(f"{'Heure':^20}|{'Bid':^12}|{'Ask':^12}|{'Last':^12}|{'Volume':^8}")
+                        print("-"*70)
+                        for data in last_prices:
+                            print(f"{data['time']:^20}|{data['bid']:<12.5f}|{data['ask']:<12.5f}|{data['last']:<12.5f}|{data['vol']:^8}")
+                        print("="*70)
+                    
+                    time.sleep(1)  # Pause entre les mises à jour
+                    
+                except Exception as e:
+                    logging.error(f"⚠️ Erreur: {e}")
+                    traceback.print_exc()
+        
+        else:
+            logging.error("❌ Impossible de récupérer les données historiques")
+    
+    except Exception as e:
+        logging.error(f"⚠️ Erreur lors de l'initialisation du streaming ou du graphique: {e}")
+        traceback.print_exc()
+        
+    finally:
+        # Nettoyer les ressources de streaming
+        try:
+            if 'streaming_manager' in locals():
+                logging.info("⏹️ Arrêt du streaming...")
+                streaming_manager.stop_subscriptions()
+        except Exception as e:
+            logging.error(f"⚠️ Erreur lors de la fermeture du streaming: {e}")
+        
+        # Attendre que l'utilisateur ferme le graphique
+        if 'chart' in locals() and chart:
+            try:
+                logging.info("📊 Graphique affiché. Fermez la fenêtre du graphique pour continuer.")
+            except:
+                pass
+    
+    logging.info("✅ Fin de la récupération des prix.")
 
 def create_position(ig_service):
     """

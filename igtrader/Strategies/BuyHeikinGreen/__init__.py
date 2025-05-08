@@ -77,10 +77,11 @@ class BuyHeikinGreen(Strategy):
         if len(self.buffer) < 2:
             return
         
-        # Récupérer la bougie actuelle et la précédente
-        current, prev = self.candles, self.buffer.iloc[-2]
+        # Récupérer la bougie actuelle et la précédente depuis le buffer pour assurer la cohérence
+        current = self.buffer.iloc[-1]
+        prev = self.buffer.iloc[-2]
         
-        # Si c'est la première fois qu'on calcule ou après une réinitialisation
+        # Le reste de votre code reste identique
         if self.ha_cache['current']['close'] is None:
             # On doit initialiser les deux bougies
             if len(self.buffer) >= 3:

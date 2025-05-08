@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QGroupBox, QFormLayout, QLabel, QComboBox, 
-                            QDateEdit, QLineEdit, QDoubleSpinBox, QCheckBox)
+                            QDateEdit, QDoubleSpinBox, QCheckBox)
 from PyQt5.QtCore import QDate
 from .base_panel import BasePanel
 

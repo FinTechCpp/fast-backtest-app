@@ -15,7 +15,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler(log_file),
-        logging.StreamHandler()  # Optional: also log to console
+        #logging.StreamHandler()  # Optional: also log to console
     ]
 )
 
@@ -25,7 +25,9 @@ from igtrader.WrapperIGAPI.TickBroker import TickBroker
 from igtrader.Strategies.Strategy import StrategyBaseConfig
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreen, BuyHeikinGreenConfig
 
-def is_candle_complete(candle, resolution_seconds=10):
+candle_interval = 20  # n-second time unit candles to trade with
+
+def is_candle_complete(candle, resolution_seconds=candle_interval):
     """
     Vérifie si une bougie est finalisée.
     
@@ -46,10 +48,7 @@ def is_candle_complete(candle, resolution_seconds=10):
     return datetime.datetime.now() >= candle_end
 
 
-def main():
-    # Définir l'intervalle de temps pour les bougies en secondes
-    candle_interval = 10  # n-second candles
-    
+def main():   
     # Création des instances avec le nouveau TickBroker
     broker = TickBroker(
         epic="IX.D.NASDAQ.IFE.IP", 
@@ -61,7 +60,7 @@ def main():
     
     base_config = StrategyBaseConfig(
         trading_from=datetime.time(7, 0),
-        trading_to=datetime.time(22, 0),
+        trading_to=datetime.time(23, 0),
         trading_days=[0, 1, 2, 3, 4],
         take_profit_distance=30,
         stop_loss_distance=20,
@@ -95,7 +94,7 @@ def main():
             next_candle_time = now + datetime.timedelta(seconds=(candle_interval - seconds_in_interval))
             
             # Log timing information
-            logging.info(f"Current time: {now}, next candle at: {next_candle_time}")
+            logging.debug(f"Current time: {now}, next candle at: {next_candle_time}")
             
             # Get candles from streaming data (construites à partir des ticks)
             candle_previous, candle_current = broker.fetch_previous_and_current_candles()
@@ -108,7 +107,6 @@ def main():
                 logging.info(f"Processing complete current candle: {candle_current}")
                 signal = strategy.update_candle(candle_current)
             elif candle_previous and is_candle_complete(candle_previous, candle_interval):
-                logging.info(f"Processing complete previous candle: {candle_previous}")
                 signal = strategy.update_candle(candle_previous)
             else:
                 logging.info("Waiting for complete candles...")

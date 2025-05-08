@@ -100,7 +100,10 @@ class BacktestRunner(QObject):
                 interval=config['interval'],
                 end_date=config['end_date'],
                 timezone=config['timezone'],
-                indicators=indicators)
+                indicators=indicators,
+                trading_from=config.get('trading_from'),
+                trading_to=config.get('trading_to'),
+                trading_days=config.get('trading_days'))
             
             # Vérifier la stratégie
             strategy_name = config['strategy']

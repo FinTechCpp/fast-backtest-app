@@ -170,18 +170,23 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
     if 'date' in df.columns and not pd.api.types.is_datetime64_any_dtype(df['date']):
         df['date'] = pd.to_datetime(df['date'])
     
-    # S'assurer que la colonne 'date' a un fuseau horaire
-    if 'date' in df.columns and df['date'].dt.tz is None:
-        df['date'] = df['date'].dt.tz_localize('UTC').dt.tz_convert(timezone)
-    elif 'date' in df.columns:
-        df['date'] = df['date'].dt.tz_convert(timezone)
-    
-    # Si date est dans l'index, le convertir aussi
-    if pd.api.types.is_datetime64_any_dtype(df.index):
-        if df.index.tz is None:
-            df.index = df.index.tz_localize('UTC').tz_convert(timezone)
+    # S'assurer que la colonne 'date' a le fuseau horaire New York + 6h
+    if 'date' in df.columns:
+        if df['date'].dt.tz is None:
+            df['date'] = df['date'].dt.tz_localize('UTC').dt.tz_convert('America/New_York')
         else:
-            df.index = df.index.tz_convert(timezone)
+            df['date'] = df['date'].dt.tz_convert('America/New_York')
+        # Ajouter 6 heures pour avoir des horaires fixes entre 15h30 et 22h
+        df['date'] = df['date'] + pd.Timedelta(hours=6)
+    
+    # # Si date est dans l'index, appliquer le même traitement
+    # if pd.api.types.is_datetime64_any_dtype(df.index):
+    #     if df.index.tz is None:
+    #         df.index = df.index.tz_localize('UTC').tz_convert('America/New_York')
+    #     else:
+    #         df.index = df.index.tz_convert('America/New_York')
+    #     # Ajouter 6 heures
+    #     df.index = df.index + pd.Timedelta(hours=6)
     
     # Définir la date de fin si elle n'est pas spécifiée
     if end_date is None:

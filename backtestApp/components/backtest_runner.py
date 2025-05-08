@@ -120,13 +120,13 @@ class BacktestRunner(QObject):
         """Fonction appelée lorsque le backtest est terminé avec succès"""
         try:
             # Obtenir le fuseau horaire depuis les paramètres généraux
-            general_params = self.parent.general_params_panel.get_values()
-            timezone = general_params['timezone']
+            # general_params = self.parent.general_params_panel.get_values()
+            # timezone = general_params['timezone']
             
             # Traiter les résultats
-            stats['_trades']['EntryTime'] = stats['_trades']['EntryTime'].dt.tz_convert(timezone).dt.tz_localize(None)
-            stats['_trades']['ExitTime'] = stats['_trades']['ExitTime'].dt.tz_convert(timezone).dt.tz_localize(None)
-            stats['_equity_curve'].index = stats['_equity_curve'].index.tz_convert(timezone).tz_localize(None)
+            stats['_trades']['EntryTime'] = stats['_trades']['EntryTime'].dt.tz_localize(None)
+            stats['_trades']['ExitTime'] = stats['_trades']['ExitTime'].dt.tz_localize(None)
+            stats['_equity_curve'].index = stats['_equity_curve'].tz_localize(None)
             
             # Stocker les statistiques dans l'application parent
             self.parent.stats = stats
@@ -153,8 +153,8 @@ class BacktestRunner(QObject):
             # Traiter la colonne de temps
             chart_data['time'] = pd.to_datetime(chart_data['time'])
             if chart_data['time'].dt.tz is None:
-                chart_data['time'] = chart_data['time'].dt.tz_localize(timezone)
-            chart_data['time'] = chart_data['time'].dt.tz_convert(timezone).dt.tz_localize(None)
+                chart_data['time'] = chart_data['time']
+            chart_data['time'] = chart_data['time'].dt.tz_localize(None)
             
             # Trier les données
             chart_data.sort_values('time', inplace=True)

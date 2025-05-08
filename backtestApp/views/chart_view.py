@@ -75,7 +75,7 @@ class ChartView(ResultView):
         # Si des statistiques sont fournies, ajouter les indicateurs et les trades
         if stats is not None:
             self._add_equity_subchart(chart, data, stats)
-            # self._add_indicators(chart, data)
+            self._add_indicators(chart, data)
             self._add_trade_markers(chart, stats)
             
             # Fit the chart to show all data
@@ -86,7 +86,7 @@ class ChartView(ResultView):
     
     def _add_equity_subchart(self, chart, data, stats):
         """Ajoute le sous-graphique de l'équité."""
-        equity_chart = chart.create_subchart(height=0.1, width=1, position="top", sync=True)
+        equity_chart = chart.create_subchart(height=0.1, width=1, sync=True)
         equity_chart.layout(background_color='#f0f8ff')
         equity_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
         equity_chart.time_scale(visible=False, min_bar_spacing=0.0)
@@ -141,7 +141,13 @@ class ChartView(ResultView):
         return equity_chart
     
     def _add_indicators(self, chart, data):
-        """Ajoute les indicateurs au graphique."""
+        """Ajoute les indicateurs au graphique en les calculant directement avec talib."""
+        try:
+            import talib
+        except ImportError:
+            logging.error("talib n'est pas installé. Les indicateurs ne seront pas affichés.")
+            return {}
+
         # Define indicator colors
         indicator_colors = {
             'EMA': ['blue', 'purple', 'red', 'green', 'cyan', 'magenta'],
@@ -151,47 +157,94 @@ class ChartView(ResultView):
             'ATR': ['green', 'teal']
         }
         
-        # Get indicator columns from data attributes
-        indicator_columns = data.attrs.get('indicator_columns', {})
-        
-        logging.debug(f"data.attrs: {data.attrs}")
-        logging.debug(f"Indicator columns: {indicator_columns}")
-        
         # Dictionnaire pour stocker les sous-graphiques créés
         subcharts = {}
         
-        # Add EMAs to main chart
-        if 'EMA' in indicator_columns:
-            for i, ema_col in enumerate(indicator_columns['EMA']):
-                if ema_col in data.columns:
-                    color_idx = i % len(indicator_colors['EMA'])
-                    ema_line = chart.create_line(
-                        name=ema_col, 
-                        color=indicator_colors['EMA'][color_idx], 
-                        width=1, 
-                        price_line=False
-                    )
-                    ema_df = data[['time', ema_col]].copy()
-                    ema_line.set(ema_df)
-                    logging.debug(f"Added EMA indicator: {ema_col}")
+        # Déterminer les noms corrects des colonnes (majuscules ou minuscules)
+        if 'close' in data.columns:
+            close_col = 'close'
+            high_col = 'high' 
+            low_col = 'low'
+        elif 'Close' in data.columns:
+            close_col = 'Close'
+            high_col = 'High'
+            low_col = 'Low'
+        else:
+            logging.error("Colonnes OHLC introuvables dans les données")
+            return {}
         
-        # Add SuperTrend to main chart
-        if 'SUPERTREND' in indicator_columns:
-            for i, st_col in enumerate(indicator_columns['SUPERTREND']):
-                if st_col in data.columns:
-                    color_idx = i % len(indicator_colors['SUPERTREND'])
-                    st_line = chart.create_line(
-                        name=st_col, 
-                        color=indicator_colors['SUPERTREND'][color_idx], 
-                        width=1, 
-                        price_line=False
-                    )
-                    st_df = data[['time', st_col]].copy()
-                    st_line.set(st_df)
-                    logging.debug(f"Added SuperTrend indicator: {st_col}")
+        # Récupérer les paramètres de la stratégie
+        strategy_config = self.parent.get_strategy_config()
+        strategy_name = strategy_config.get('strategy', '')
         
-        # STOCHASTIC SUBCHART
-        if 'STOCH' in indicator_columns:
+        # --------------------------------
+        # EMAs
+        # --------------------------------
+        ema_periods = []
+        
+        # Si stratégie BuyHeikinGreen, utiliser ses paramètres spécifiques
+        if 'BuyHeikinGreen' in strategy_name:
+            ema_short_period = int(strategy_config.get('ema_short_period', 9))
+            ema_long_period = int(strategy_config.get('ema_long_period', 21))
+            if strategy_config.get('use_ema_short_filter', True):
+                ema_periods.append(ema_short_period)
+            if strategy_config.get('use_ema_long_filter', True):
+                ema_periods.append(ema_long_period)
+        else:
+            # Pour les autres stratégies, vérifier les paramètres génériques
+            if strategy_config.get('use_ema', False):
+                ema_periods = [9, 21, 50, 200]  # Valeurs par défaut
+        
+        for i, period in enumerate(ema_periods):
+            # Calculer l'EMA avec talib
+            ema_col = f'EMA_{period}'
+            ema_values = talib.EMA(data[close_col].values, timeperiod=period)
+            
+            # Créer un DataFrame pour la ligne
+            ema_df = pd.DataFrame({
+                'time': data['time'],
+                ema_col: ema_values
+            })
+            
+            # Ajouter la ligne au graphique
+            color_idx = i % len(indicator_colors['EMA'])
+            ema_line = chart.create_line(
+                name=ema_col, 
+                color=indicator_colors['EMA'][color_idx], 
+                width=1.5, 
+                price_line=False
+            )
+            ema_line.set(ema_df.dropna())
+            logging.debug(f"Added EMA indicator: {ema_col}")
+        
+        # --------------------------------
+        # Stochastique
+        # --------------------------------
+        show_stoch = False
+        stoch_k_period = 14  # valeur par défaut
+        stoch_d_period = 3  # valeur par défaut
+        stoch_slowing = 3  # valeur par défaut
+        
+        if 'BuyHeikinGreen' in strategy_name:
+            show_stoch = strategy_config.get('use_stoch_filter', False)
+            stoch_k_period = int(strategy_config.get('stoch_fastk', 14))
+            stoch_slowing = int(strategy_config.get('stoch_slowk', 3))
+            stoch_d_period = int(strategy_config.get('stoch_slowd', 3))
+        
+        if show_stoch:
+            # Calculer Stochastique avec talib
+            stoch_k, stoch_d = talib.STOCH(
+                data[high_col].values,
+                data[low_col].values,
+                data[close_col].values,
+                fastk_period=stoch_k_period,
+                slowk_period=stoch_slowing,
+                slowk_matype=0,
+                slowd_period=stoch_d_period,
+                slowd_matype=0
+            )
+            
+            # Créer le sous-graphique pour le stochastique
             stoch_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
             stoch_chart.layout(background_color='#f0f8ff')
             stoch_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
@@ -200,24 +253,61 @@ class ChartView(ResultView):
             stoch_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
             subcharts['stoch_chart'] = stoch_chart
             
+            # Ajouter les lignes K et D
             stoch_lines = []
-            for i, stoch_col in enumerate(indicator_columns['STOCH']):
-                if stoch_col in data.columns:
-                    color = indicator_colors['STOCH_K'][0] if 'K' in stoch_col else indicator_colors['STOCH_D'][0]
-                    stoch_line = stoch_chart.create_line(name=stoch_col, color=color, width=1, price_line=False)
-                    stoch_df = data[['time', stoch_col]].copy()
-                    stoch_line.set(stoch_df)
-                    stoch_lines.append(stoch_line)
-                    logging.debug(f"Added Stochastic indicator: {stoch_col}")
             
-            # Add reference lines if we created any stochastic lines
+            # Ligne K
+            k_df = pd.DataFrame({
+                'time': data['time'],
+                'STOCH_K': stoch_k
+            })
+            k_line = stoch_chart.create_line(
+                name='STOCH_K', 
+                color=indicator_colors['STOCH_K'][0], 
+                width=1, 
+                price_line=False
+            )
+            k_line.set(k_df.dropna())
+            stoch_lines.append(k_line)
+            logging.debug("Added Stochastic K indicator")
+            
+            # Ligne D
+            d_df = pd.DataFrame({
+                'time': data['time'],
+                'STOCH_D': stoch_d
+            })
+            d_line = stoch_chart.create_line(
+                name='STOCH_D', 
+                color=indicator_colors['STOCH_D'][0], 
+                width=1, 
+                price_line=False
+            )
+            d_line.set(d_df.dropna())
+            stoch_lines.append(d_line)
+            logging.debug("Added Stochastic D indicator")
+            
+            # Ajouter les lignes de référence
             if stoch_lines:
                 stoch_lines[0].horizontal_line(price=80, color='green', width=1, style='dashed', text='Overbought(80)')
                 stoch_lines[0].horizontal_line(price=20, color='red', width=1, style='dashed', text='Oversold(20)')
                 stoch_lines[0].horizontal_line(price=50, color='blue', width=1, style='dashed', text='Neutral(50)')
         
-        # ATR SUBCHART
-        if 'ATR' in indicator_columns:
+        # --------------------------------
+        # ATR
+        # --------------------------------
+        show_atr = strategy_config.get('use_atr_for_sl_tp', False)
+        atr_period = int(strategy_config.get('atr_period', 14))
+        
+        if show_atr:
+            # Calculer ATR avec talib
+            atr_values = talib.ATR(
+                data[high_col].values,
+                data[low_col].values,
+                data[close_col].values,
+                timeperiod=atr_period
+            )
+            
+            # Créer le sous-graphique pour l'ATR
             atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
             atr_chart.layout(background_color='#f0f8ff')
             atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
@@ -226,28 +316,25 @@ class ChartView(ResultView):
             atr_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
             subcharts['atr_chart'] = atr_chart
             
-            for i, atr_col in enumerate(indicator_columns['ATR']):
-                if atr_col in data.columns:
-                    color_idx = i % len(indicator_colors['ATR'])
-                    atr_line = atr_chart.create_line(
-                        name=atr_col, 
-                        color=indicator_colors['ATR'][color_idx], 
-                        width=1, 
-                        price_line=False
-                    )
-                    atr_df = data[['time', atr_col]].copy()
-                    atr_line.set(atr_df)
-                    logging.debug(f"Added ATR indicator: {atr_col}")
+            # Ajouter la ligne ATR
+            atr_df = pd.DataFrame({
+                'time': data['time'],
+                f'ATR_{atr_period}': atr_values
+            })
+            atr_line = atr_chart.create_line(
+                name=f'ATR_{atr_period}', 
+                color=indicator_colors['ATR'][0], 
+                width=1, 
+                price_line=False
+            )
+            atr_line.set(atr_df.dropna())
+            logging.debug(f"Added ATR indicator: ATR_{atr_period}")
         
-        # Synchronize tooltips between charts if we have subcharts
+        # Synchroniser les tooltips entre les graphiques si nous avons des sous-graphiques
         if subcharts:
             sync_charts = [chart]
-            if 'equity_chart' in subcharts:
-                sync_charts.append(subcharts['equity_chart'])
-            if 'atr_chart' in subcharts:
-                sync_charts.append(subcharts['atr_chart'])
-            if 'stoch_chart' in subcharts:
-                sync_charts.append(subcharts['stoch_chart'])
+            for subchart_name, subchart in subcharts.items():
+                sync_charts.append(subchart)
             
             chart.create_synchronized_tooltip(charts=sync_charts, options={
                 "backgroundColor": "rgba(255, 255, 255, 0.9)",
@@ -257,7 +344,7 @@ class ChartView(ResultView):
                 "showDateTime": False}, 
                 trigger_key="Shift",
                 toggle_mode=False)
-                
+        
         return subcharts
     
     def _add_trade_markers(self, chart, stats):

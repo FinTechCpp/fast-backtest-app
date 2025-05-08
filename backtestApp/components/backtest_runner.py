@@ -71,25 +71,6 @@ class BacktestRunner(QObject):
             
             # Récupérer tous les paramètres de configuration
             config = self.parent.get_strategy_config()
-
-            # Obtenir les indicateurs requis directement depuis le panel spécifique
-            indicators = {}
-            if hasattr(self.parent, 'strategy_specific_panel') and self.parent.strategy_specific_panel:
-                if hasattr(self.parent.strategy_specific_panel, 'get_required_indicators'):
-                    indicators = self.parent.strategy_specific_panel.get_required_indicators()
-
-            # Obtenir les indicateurs du panel de base
-            indicators_strategy_base = self.parent.strategy_base_panel.get_required_indicators()
-
-            # Fusionner les indicateurs
-            if indicators_strategy_base:
-                for key, value in indicators_strategy_base.items():
-                    if key in indicators:
-                        indicators[key].extend(value)
-                    else:
-                        indicators[key] = value
-
-            print(f"Indicateurs à précalculer: {indicators}")
             
             # Charger les données
             logging.debug("Chargement des données...")
@@ -99,8 +80,8 @@ class BacktestRunner(QObject):
                 period=config['period'],
                 interval=config['interval'],
                 end_date=config['end_date'],
-                timezone=config['timezone'],
-                indicators=indicators)
+                timezone=config['timezone']
+            )
             
             # Vérifier la stratégie
             strategy_name = config['strategy']
@@ -110,7 +91,6 @@ class BacktestRunner(QObject):
                 return
             
             # Définir l'onglet à afficher à la fin de l'exécution du backtest (1 = Statistiques)
-            # Utiliser la méthode appropriée dans ResultManager au lieu d'accéder directement au tab_widget
             if hasattr(self.parent, 'result_manager'):
                 self.parent.result_manager.set_current_tab(1)
             

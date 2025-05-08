@@ -75,7 +75,7 @@ class ChartView(ResultView):
         # Si des statistiques sont fournies, ajouter les indicateurs et les trades
         if stats is not None:
             self._add_equity_subchart(chart, data, stats)
-            self._add_indicators(chart, data)
+            # self._add_indicators(chart, data)
             self._add_trade_markers(chart, stats)
             
             # Fit the chart to show all data

@@ -107,10 +107,11 @@ def calculate_supertrend(data, atr_period=14, multiplier=3):
     return st
 
 
-def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timezone='Europe/Paris'):
+def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timezone='Europe/Paris',
+              trading_from=None, trading_to=None, trading_days=None):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
-    et filtre les données en fonction de la période spécifiée.
+    et filtre les données en fonction de la période spécifiée et des horaires de trading.
     
     Args:
         symbol (str): Symbole du marché à charger (ex: 'NDX')
@@ -118,6 +119,9 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
         period (str): Période de données à charger (ex: '1m', '6m', '1y')
         end_date (str|datetime): Date de fin au format 'DD/MM/YYYY' ou objet datetime
         timezone (str): Fuseau horaire pour les données (ex: 'Europe/Paris')
+        trading_from (QTime|str): Heure de début du trading
+        trading_to (QTime|str): Heure de fin du trading
+        trading_days (list): Liste des jours de trading (0=Lundi, 6=Dimanche)
 
     Returns:
         pd.DataFrame: DataFrame contenant les données OHLC filtrées
@@ -242,6 +246,58 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
     end_time = time.time()
     logging.info(f"Données chargées et prétraitées en {end_time - start_time:.2f} secondes")
         
+    # Filtrage par jours et heures de trading
+    if trading_days is not None and len(trading_days) > 0:
+        logging.debug(f"Filtrage par jours de trading: {trading_days}")
+        # Extraire le jour de la semaine (0=lundi, 6=dimanche)
+        df['day_of_week'] = df.index.dayofweek
+        # Ne garder que les jours de trading spécifiés
+        df = df[df['day_of_week'].isin(trading_days)]
+        # Supprimer la colonne temporaire
+        df = df.drop('day_of_week', axis=1)
+        logging.debug(f"Après filtrage par jours: {len(df)} barres de prix")
+
+    if trading_from is not None and trading_to is not None:
+        # Convertir QTime en heures et minutes si nécessaire
+        if hasattr(trading_from, 'hour') and hasattr(trading_from, 'minute'):
+            from_hour, from_minute = trading_from.hour(), trading_from.minute()
+        else:
+            # Si c'est une chaîne au format "HH:MM"
+            from_hour, from_minute = map(int, str(trading_from).split(':'))
+        
+        if hasattr(trading_to, 'hour') and hasattr(trading_to, 'minute'):
+            to_hour, to_minute = trading_to.hour(), trading_to.minute()
+        else:
+            # Si c'est une chaîne au format "HH:MM"
+            to_hour, to_minute = map(int, str(trading_to).split(':'))
+        
+        logging.debug(f"Filtrage par heures de trading: {from_hour}:{from_minute} à {to_hour}:{to_minute}")
+        
+        # Extraire l'heure et la minute
+        df['hour'] = df.index.hour
+        df['minute'] = df.index.minute
+        
+        # Création d'un masque pour filtrer par heure
+        if to_hour > from_hour or (to_hour == from_hour and to_minute >= from_minute):
+            # Cas standard: période dans la même journée
+            mask = ((df['hour'] > from_hour) | 
+                  ((df['hour'] == from_hour) & (df['minute'] >= from_minute)))
+            mask &= ((df['hour'] < to_hour) | 
+                    ((df['hour'] == to_hour) & (df['minute'] <= to_minute)))
+        else:
+            # Cas où la période traverse minuit
+            mask = ((df['hour'] > from_hour) | 
+                  ((df['hour'] == from_hour) & (df['minute'] >= from_minute)) |
+                  (df['hour'] < to_hour) | 
+                  ((df['hour'] == to_hour) & (df['minute'] <= to_minute)))
+        
+        # Application du filtre
+        df = df[mask]
+        
+        # Suppression des colonnes temporaires
+        df = df.drop(['hour', 'minute'], axis=1)
+        logging.debug(f"Après filtrage par heures: {len(df)} barres de prix")
+    
     return df.dropna()
 
 def resample_ohlc(data, timeframe):

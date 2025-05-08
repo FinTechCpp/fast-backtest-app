@@ -159,7 +159,6 @@ class Broker:
                     if candle_data:
                         if hasattr(candle_data, 'timestamp') and candle_data.timestamp:
                             # Stocker ou mettre à jour la bougie dans le buffer en utilisant la date de la bougie comme clé
-                            # (et non le timestamp de réception)
                             candle_datetime = candle_data.timestamp
                             with self.stream_lock:
                                 second_candles_buffer[candle_datetime] = candle_data
@@ -168,8 +167,14 @@ class Broker:
                 
                 # Check if it's time to create a new candle
                 if aligned_time > last_candle_time:
-                    # Process SECOND candles that belong to the previous interval
+                    # Vérifier si nous avons suffisamment de données pour l'intervalle
+                    expected_timestamps = []
+                    for i in range(self.candle_interval):
+                        expected_ts = last_candle_time + datetime.timedelta(seconds=i)
+                        expected_timestamps.append(expected_ts)
+                    
                     candles_in_interval = []
+                    missing_timestamps = []
                     
                     # Debug - log all candles in buffer
                     logging.debug(f"Buffer contains {len(second_candles_buffer)} candles")
@@ -177,16 +182,22 @@ class Broker:
                         logging.debug(f"Buffer candle: {ts} - {cd}")
                     
                     with self.stream_lock:
-                        # Get all second candles from buffer that fall within the interval
-                        for timestamp, candle_data in sorted(second_candles_buffer.items()):
-                            if last_candle_time <= timestamp < aligned_time:
-                                candles_in_interval.append(candle_data)
-                                logging.debug(f"Added candle to interval: {timestamp}")
+                        # Vérifier les bougies manquantes
+                        for expected_ts in expected_timestamps:
+                            if expected_ts in second_candles_buffer:
+                                candles_in_interval.append(second_candles_buffer[expected_ts])
+                                logging.debug(f"Added candle to interval: {expected_ts}")
+                            else:
+                                missing_timestamps.append(expected_ts)
+                    
+                    # Log les bougies manquantes
+                    if missing_timestamps:
+                        logging.warning(f"Missing {len(missing_timestamps)} candles for interval {last_candle_time} to {aligned_time}: {missing_timestamps}")
                     
                     # Log the number of candles found for this interval
                     logging.info(f"Found {len(candles_in_interval)} SECOND candles for interval {last_candle_time} to {aligned_time}")
                     
-                    # Build a new candle if we have second candles
+                    # Build a new candle if we have at least one candle
                     if candles_in_interval:
                         # Sorting to ensure correct order
                         candles_in_interval.sort(key=lambda x: x.timestamp)
@@ -214,12 +225,15 @@ class Broker:
                         last_candle = candles_in_interval[-1]
                         close_price = getattr(last_candle, f"{price_source_prefix}close")
                         
+                        completeness_ratio = len(candles_in_interval) / self.candle_interval
+                        
                         new_candle = {
                             'date': last_candle_time,
                             'Open': open_price,
                             'High': high_price,
                             'Low': low_price,
-                            'Close': close_price
+                            'Close': close_price,
+                            'completeness': completeness_ratio  # Optionnel: indicateur de complétude
                         }
                         
                         # Update candles
@@ -229,7 +243,8 @@ class Broker:
                             self.current_candle = new_candle
                             
                         logging.info(f"Built new {self.price_source} candle for {last_candle_time}: "
-                                    f"O={open_price:.5f}, H={high_price:.5f}, L={low_price:.5f}, C={close_price:.5f}")
+                                    f"O={open_price:.5f}, H={high_price:.5f}, L={low_price:.5f}, C={close_price:.5f} "
+                                    f"(completeness: {completeness_ratio*100:.1f}%)")
                     else:
                         logging.warning(f"No valid {self.price_source} candles in interval {last_candle_time} to {aligned_time}")
                     
@@ -247,7 +262,6 @@ class Broker:
                 
             except Exception as e:
                 logging.error(f"Error in candle building thread: {e}")
-                import traceback
                 logging.error(traceback.format_exc())
                 time.sleep(1)  # Sleep on error to avoid rapid looping
 

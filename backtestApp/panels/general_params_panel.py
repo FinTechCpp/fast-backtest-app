@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QGroupBox, QFormLayout, QLabel, QComboBox, 
-                            QDateEdit, QLineEdit, QDoubleSpinBox, QCheckBox)
+                            QDateEdit, QDoubleSpinBox, QCheckBox)
 from PyQt5.QtCore import QDate
 from .base_panel import BasePanel
 
@@ -17,7 +17,7 @@ class GeneralParamsPanel(BasePanel):
         
         # Symbole
         self.widgets['symbol_combo'] = QComboBox()
-        self.widgets['symbol_combo'].addItems(["NDX", "SPX", "EURUSD"])
+        self.widgets['symbol_combo'].addItems(["NDX", "IBUST100", "EURUSD"])
         params_layout.addRow(QLabel("Symbole:"), self.widgets['symbol_combo'])
         
         # Période
@@ -39,7 +39,8 @@ class GeneralParamsPanel(BasePanel):
         params_layout.addRow(QLabel("Date de fin:"), self.widgets['end_date'])
         
         # Fuseau horaire
-        self.widgets['timezone'] = QLineEdit("America/New_York")
+        self.widgets['timezone'] = QComboBox()
+        self.widgets['timezone'].addItems(["America/New_York", "Europe/Paris"])
         params_layout.addRow(QLabel("Fuseau horaire:"), self.widgets['timezone'])
         
         # Spread
@@ -82,7 +83,7 @@ class GeneralParamsPanel(BasePanel):
             'period': self.widgets['period_combo'].currentText(),
             'interval': self.widgets['interval_combo'].currentText(),
             'end_date': self.widgets['end_date'].date().toString("dd/MM/yyyy"),
-            'timezone': self.widgets['timezone'].text(),
+            'timezone': self.widgets['timezone'].currentText(),
             'spread': self.widgets['spread'].value(),
             'cash': self.widgets['cash'].value(),
             'strategy': self.widgets['strategy_combo'].currentText(),
@@ -111,7 +112,9 @@ class GeneralParamsPanel(BasePanel):
             self.widgets['end_date'].setDate(QDate.fromString(values['end_date'], "dd/MM/yyyy"))
         
         if 'timezone' in values:
-            self.widgets['timezone'].setText(values['timezone'])
+            self.widgets['timezone'].findText(values['timezone'])
+            if index >= 0:
+                self.widgets['timezone'].setCurrentIndex(index)
         
         if 'spread' in values:
             self.widgets['spread'].setValue(values['spread'])

@@ -210,7 +210,7 @@ class BuyHeikinGreen(Strategy):
             "Close": current_candle.Close
         }
         
-        # Si c'est la première fois qu'on calcule ou après une réinitialisation
+        # Le reste de votre code reste identique
         if self.ha_cache['current']['close'] is None:
             # On doit initialiser les deux bougies
             if len(self.buffer) >= 3:

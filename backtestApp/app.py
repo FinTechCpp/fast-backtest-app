@@ -1,36 +1,22 @@
 # Python utils imports
 import logging
-import pandas as pd
-from datetime import datetime, time
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-import matplotlib.pyplot as plt
-import numpy as np
 from dotenv import load_dotenv
 load_dotenv()
 
 #Qt imports
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget, 
-                            QPushButton, QComboBox, QDoubleSpinBox, QDateEdit, QLineEdit, 
-                            QCheckBox, QLabel, QTabWidget, QScrollArea, QSplitter, QTableWidget, 
-                            QTableWidgetItem, QGroupBox, QGridLayout, QFormLayout, QSpinBox, QProgressBar, QToolBar)
-from PyQt5.QtCore import Qt, QDate, QTimer
-from PyQt5.QtGui import QFont, QColor
-
-# Lightweight Charts imports
-from lightweight_charts_esistjosh.widgets import QtChart
+from PyQt5.QtWidgets import (QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
+                            QLabel, QScrollArea, QSplitter)
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont
 
 # Local imports
 from config_manager import ConfigManager
-from metric_widget import MetricWidget
-from ui_util import to_heikin_ashi, BacktestWorker
 
 # backtest_backend imports
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA  
 from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreenBA
 from igtrader.Strategies.CrossEMA import CrossEMABA
-from igtrader.Strategies.Helpers import load_data
 
 from views.result_manager import ResultManager
 

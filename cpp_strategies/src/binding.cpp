@@ -1,14 +1,38 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 #include "strategy.hpp"
 #include "buy_heikin_green.hpp"
+#include "indicators.hpp"
 
 namespace py = pybind11;
 
 PYBIND11_MODULE(cpp_strategies, m) {
-    m.doc() = "Stratégies de trading C++";
+    m.doc() = "C++ Trading Strategies";
 
-    // Exposer la classe Candle
+    // Expose indicators
+    py::class_<EMA>(m, "CppEMA")
+        .def(py::init<int>())
+        .def("initialize_with_history", &EMA::initialize_with_history)
+        .def("update", &EMA::update)
+        .def("get_value", &EMA::get_value)
+        .def_property_readonly("is_initialized", &EMA::initialized);
+        
+    py::class_<STOCH>(m, "CppSTOCH")
+        .def(py::init<int, int, int>())
+        .def("initialize_with_history", &STOCH::initialize_with_history)
+        .def("update", &STOCH::update)
+        .def("get_values", &STOCH::get_values)
+        .def_property_readonly("is_initialized", &STOCH::initialized);
+        
+    py::class_<ATR>(m, "CppATR")
+        .def(py::init<int>())
+        .def("initialize_with_history", &ATR::initialize_with_history)
+        .def("update", &ATR::update)
+        .def("get_value", &ATR::get_value)
+        .def_property_readonly("is_initialized", &ATR::initialized);
+
+    // Expose the Candle structure
     py::class_<Candle>(m, "CppCandle")
         .def(py::init<>())
         .def_readwrite("date", &Candle::date)
@@ -16,19 +40,28 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def_readwrite("high", &Candle::high)
         .def_readwrite("low", &Candle::low)
         .def_readwrite("close", &Candle::close)
-        .def_readwrite("indicators", &Candle::indicators);
+        .def_readwrite("indicators", &Candle::indicators)
+        .def_readwrite("in_position", &Candle::in_position)
+        .def_readwrite("entry_price", &Candle::entry_price)
+        .def_readwrite("position_size", &Candle::position_size)
+        .def_readwrite("position_pl_pct", &Candle::position_pl_pct);
 
-    // Exposer la classe Signal
+    // Expose the Signal structure
     py::class_<Signal>(m, "CppSignal")
         .def_readonly("action", &Signal::action)
         .def_readonly("quantity", &Signal::quantity)
         .def_readonly("price", &Signal::price)
         .def_readonly("take_profit", &Signal::take_profit)
-        .def_readonly("stop_loss", &Signal::stop_loss);
+        .def_readonly("stop_loss", &Signal::stop_loss)
+        .def_readonly("new_sl", &Signal::new_sl);
 
-    // Exposer StrategyBaseConfig
+    // Expose StrategyBaseConfig
     py::class_<StrategyBaseConfig>(m, "CppStrategyBaseConfig")
         .def(py::init<>())
+        .def_readwrite("trading_from_hour", &StrategyBaseConfig::trading_from_hour)
+        .def_readwrite("trading_from_minute", &StrategyBaseConfig::trading_from_minute)
+        .def_readwrite("trading_to_hour", &StrategyBaseConfig::trading_to_hour)
+        .def_readwrite("trading_to_minute", &StrategyBaseConfig::trading_to_minute)
         .def_readwrite("trading_days", &StrategyBaseConfig::trading_days)
         .def_readwrite("take_profit_distance", &StrategyBaseConfig::take_profit_distance)
         .def_readwrite("stop_loss_distance", &StrategyBaseConfig::stop_loss_distance)
@@ -41,9 +74,12 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def_readwrite("use_risk_based_sizing", &StrategyBaseConfig::use_risk_based_sizing)
         .def_readwrite("risk_percentage", &StrategyBaseConfig::risk_percentage)
         .def_readwrite("cash", &StrategyBaseConfig::cash)
-        .def_readwrite("leverage_limit", &StrategyBaseConfig::leverage_limit);
+        .def_readwrite("max_position_percentage", &StrategyBaseConfig::max_position_percentage)
+        .def_readwrite("leverage_limit", &StrategyBaseConfig::leverage_limit)
+        .def_readwrite("use_break_even", &StrategyBaseConfig::use_break_even)
+        .def_readwrite("break_even_threshold", &StrategyBaseConfig::break_even_threshold);
 
-    // Exposer BuyHeikinGreenConfig
+    // Expose BuyHeikinGreenConfig
     py::class_<BuyHeikinGreenConfig>(m, "CppBuyHeikinGreenConfig")
         .def(py::init<>())
         .def_readwrite("ema_short_period", &BuyHeikinGreenConfig::ema_short_period)
@@ -57,8 +93,11 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def_readwrite("use_stoch_filter", &BuyHeikinGreenConfig::use_stoch_filter)
         .def_readwrite("use_previous_ha_candle_red_filter", &BuyHeikinGreenConfig::use_previous_ha_candle_red_filter);
 
-    // Exposer BuyHeikinGreen
-    py::class_<BuyHeikinGreen>(m, "CppBuyHeikinGreen")
-        .def(py::init<const StrategyBaseConfig&, const BuyHeikinGreenConfig&>())
-        .def("update_candle", &BuyHeikinGreen::update_candle, py::return_value_policy::reference);
+    // Expose base Strategy class as abstract
+    py::class_<Strategy, std::unique_ptr<Strategy>>(m, "CppStrategy")
+        .def("update_candle", &Strategy::update_candle, py::return_value_policy::reference);
+
+    // Expose BuyHeikinGreen strategy
+    py::class_<BuyHeikinGreen, Strategy>(m, "CppBuyHeikinGreen")
+        .def(py::init<const StrategyBaseConfig&, const BuyHeikinGreenConfig&>());
 }

@@ -94,12 +94,6 @@ class Strategy(ABC):
         self.BUFFER_SIZE = 200
         # Définir un seuil pour le redimensionnement (par exemple 20% de plus que BUFFER_SIZE)
         self.RESIZE_THRESHOLD = int(self.BUFFER_SIZE * 1.2)
-        
-        # Configuration pour le benchmark
-        self.MAX_EXECUTION_TIMES = 100000
-        self.execution_times = []
-        self.last_execution_time = None
-        self.benchmark_active = False
 
     # Propriété price modifiée pour utiliser current_candle
     @property
@@ -109,44 +103,6 @@ class Strategy(ABC):
             return self.current_candle.Close
         return None
 
-    def start_benchmark(self):
-        """Active la collecte des métriques de benchmark."""
-        self.benchmark_active = True
-        self.execution_times = []
-        
-    def stop_benchmark(self):
-        """Désactive la collecte des métriques de benchmark."""
-        self.benchmark_active = False
-        
-    def get_benchmark_stats(self):
-        """Retourne les statistiques de performance."""
-        if not self.execution_times:
-            return {
-                "count": 0,
-                "min": 0,
-                "max": 0, 
-                "mean": 0,
-                "median": 0,
-                "p95": 0,
-                "p99": 0,
-                "total": 0
-            }
-            
-        sorted_times = sorted(self.execution_times)
-        p95_index = int(len(sorted_times) * 0.95)
-        p99_index = int(len(sorted_times) * 0.99)
-        
-        return {
-            "count": len(self.execution_times),
-            "min": min(self.execution_times),
-            "max": max(self.execution_times),
-            "mean": statistics.mean(self.execution_times),
-            "median": statistics.median(self.execution_times),
-            "p95": sorted_times[p95_index] if p95_index < len(sorted_times) else sorted_times[-1],
-            "p99": sorted_times[p99_index] if p99_index < len(sorted_times) else sorted_times[-1],
-            "total": sum(self.execution_times)
-        }
-    
     # Méthode d'accès aux indicateurs
     def get_indicator_value(self, indicator_name: str) -> Optional[float]:
         """
@@ -452,8 +408,6 @@ class Strategy(ABC):
         :param candle: Un dictionnaire représentant la bougie avec les clefs:
                        'date', 'Open', 'High', 'Low', 'Close'
         """
-        start_time = dt.perf_counter()
-
         # Stocker la référence directe à la bougie
         self.current_candle = candle
 
@@ -497,15 +451,6 @@ class Strategy(ABC):
 
         # Exécution de la stratégie
         self._execute()
-        
-        # Benchmark
-        duration_ms = (dt.perf_counter() - start_time) * 1000
-        self.last_execution_time = duration_ms
-
-        if self.benchmark_active:
-            self.execution_times.append(duration_ms)
-            if len(self.execution_times) > self.MAX_EXECUTION_TIMES:
-                self.execution_times.pop(0)
 
         return self.signal
 

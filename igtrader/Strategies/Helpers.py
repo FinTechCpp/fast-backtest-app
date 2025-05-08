@@ -399,3 +399,250 @@ def resample_ohlc(data, timeframe):
     resampled = resampled.dropna()
     
     return resampled
+
+
+class IncrementalIndicator:
+    """Classe de base pour tous les indicateurs calculés de manière incrémentale"""
+    def __init__(self):
+        self.is_initialized = False
+        
+    def requires_initialization(self):
+        """Vérifie si l'indicateur a besoin d'être initialisé avec un historique"""
+        return not self.is_initialized
+    
+
+class EMA(IncrementalIndicator):
+    """
+    Calcule l'Exponential Moving Average (EMA) de manière incrémentale.
+    """
+    def __init__(self, period):
+        super().__init__()
+        self.period = int(period)
+        self.multiplier = 2.0 / (self.period + 1)
+        self.current_ema = None
+        self.price_history = []
+    
+    def initialize_with_history(self, price_history):
+        if len(price_history) >= self.period:
+            # Calculer la moyenne simple comme valeur initiale
+            sma = sum(price_history[-self.period:]) / self.period
+            self.current_ema = sma
+            
+            # Calculer l'EMA directement sans appeler update()
+            if len(price_history) > self.period:
+                for price in price_history[-self.period:]:
+                    self.current_ema = (price - self.current_ema) * self.multiplier + self.current_ema
+            
+            self.is_initialized = True
+            return self.current_ema
+        return None
+    
+    def update(self, price):
+        """Met à jour l'EMA avec le nouveau prix"""
+        if not self.is_initialized:
+            self.price_history.append(price)
+            if len(self.price_history) >= self.period:
+                return self.initialize_with_history(self.price_history)
+            return None
+        
+        # Calculer la nouvelle valeur EMA
+        self.current_ema = (price - self.current_ema) * self.multiplier + self.current_ema
+        return self.current_ema
+    
+    def get_value(self):
+        """Retourne la valeur actuelle de l'EMA"""
+        return self.current_ema
+    
+
+class STOCH(IncrementalIndicator):
+    """
+    Calcule l'oscillateur Stochastique de manière incrémentale.
+    """
+    def __init__(self, fastk_period, slowk_period, slowd_period):
+        super().__init__()
+        self.fastk_period = int(fastk_period)
+        self.slowk_period = int(slowk_period)
+        self.slowd_period = int(slowd_period)
+        
+        self.high_buffer = []
+        self.low_buffer = []
+        self.close_buffer = []
+        
+        self.raw_k_values = []  # Pour stocker les valeurs K brutes avant lissage
+        self.k_values = []      # Pour stocker les valeurs K lissées
+        self.d_values = []      # Pour stocker les valeurs D
+        
+        self.current_k = None
+        self.current_d = None
+    
+    def initialize_with_history(self, high_history, low_history, close_history):
+        """Initialise le stochastique avec un historique de prix"""
+        if len(high_history) < self.fastk_period:
+            return None, None
+            
+        self.high_buffer = list(high_history[-self.fastk_period:])
+        self.low_buffer = list(low_history[-self.fastk_period:])
+        self.close_buffer = list(close_history[-self.fastk_period:])
+        
+        # Calculer les valeurs K brutes initiales
+        for i in range(len(close_history) - self.fastk_period + 1):
+            period_high = max(high_history[i:i+self.fastk_period])
+            period_low = min(low_history[i:i+self.fastk_period])
+            close = close_history[i+self.fastk_period-1]
+            
+            raw_k = 100.0 * ((close - period_low) / (period_high - period_low) if period_high > period_low else 0)
+            self.raw_k_values.append(raw_k)
+        
+        # Appliquer le lissage K
+        if len(self.raw_k_values) >= self.slowk_period:
+            for i in range(len(self.raw_k_values) - self.slowk_period + 1):
+                smooth_k = sum(self.raw_k_values[i:i+self.slowk_period]) / self.slowk_period
+                self.k_values.append(smooth_k)
+        
+        # Calculer les valeurs D (moyenne mobile des valeurs K)
+        if len(self.k_values) >= self.slowd_period:
+            for i in range(len(self.k_values) - self.slowd_period + 1):
+                smooth_d = sum(self.k_values[i:i+self.slowd_period]) / self.slowd_period
+                self.d_values.append(smooth_d)
+        
+        if self.k_values and self.d_values:
+            self.current_k = self.k_values[-1]
+            self.current_d = self.d_values[-1]
+            self.is_initialized = True
+            
+        return self.current_k, self.current_d
+    
+    def update(self, high, low, close):
+        """Met à jour le stochastique avec les nouveaux prix"""
+        # Ajouter le nouveau prix et supprimer l'ancien si nécessaire
+        self.high_buffer.append(high)
+        self.low_buffer.append(low)
+        self.close_buffer.append(close)
+        
+        if len(self.high_buffer) > self.fastk_period:
+            self.high_buffer.pop(0)
+            self.low_buffer.pop(0)
+            self.close_buffer.pop(0)
+        
+        if not self.is_initialized:
+            if len(self.high_buffer) == self.fastk_period:
+                return self.initialize_with_history(self.high_buffer, self.low_buffer, self.close_buffer)
+            return None, None
+        
+        # Calculer la nouvelle valeur K brute
+        period_high = max(self.high_buffer)
+        period_low = min(self.low_buffer)
+        
+        if period_high > period_low:
+            raw_k = 100.0 * ((close - period_low) / (period_high - period_low))
+        else:
+            raw_k = 0.0
+            
+        self.raw_k_values.append(raw_k)
+        if len(self.raw_k_values) > self.fastk_period + self.slowk_period:
+            self.raw_k_values.pop(0)
+        
+        # Calculer la nouvelle valeur K lissée
+        if len(self.raw_k_values) >= self.slowk_period:
+            smooth_k = sum(self.raw_k_values[-self.slowk_period:]) / self.slowk_period
+            self.k_values.append(smooth_k)
+            
+            if len(self.k_values) > self.fastk_period + self.slowk_period:
+                self.k_values.pop(0)
+        
+        # Calculer la nouvelle valeur D
+        if len(self.k_values) >= self.slowd_period:
+            smooth_d = sum(self.k_values[-self.slowd_period:]) / self.slowd_period
+            self.d_values.append(smooth_d)
+            
+            if len(self.d_values) > self.fastk_period + self.slowk_period:
+                self.d_values.pop(0)
+        
+        # Mettre à jour les valeurs actuelles
+        if self.k_values and self.d_values:
+            self.current_k = self.k_values[-1]
+            self.current_d = self.d_values[-1]
+        
+        return self.current_k, self.current_d
+    
+    def get_values(self):
+        """Retourne les valeurs actuelles K et D"""
+        return self.current_k, self.current_d
+
+
+class ATR(IncrementalIndicator):
+    """
+    Calcule l'Average True Range (ATR) de manière incrémentale.
+    """
+    def __init__(self, period):
+        super().__init__()
+        self.period = int(period)
+        self.current_atr = None
+        self.previous_close = None
+        self.true_range_history = []
+    
+    def initialize_with_history(self, high_history, low_history, close_history):
+        """Initialise l'ATR avec un historique de prix"""
+        if len(high_history) < self.period + 1:
+            return None
+            
+        # Calculer les True Ranges sur toute la période
+        true_ranges = []
+        for i in range(1, len(high_history)):
+            high = high_history[i]
+            low = low_history[i]
+            prev_close = close_history[i-1]
+            
+            tr = max(
+                high - low,
+                abs(high - prev_close),
+                abs(low - prev_close)
+            )
+            true_ranges.append(tr)
+        
+        # Calculer l'ATR initial en tant que moyenne simple des TR
+        if len(true_ranges) >= self.period:
+            self.current_atr = sum(true_ranges[-self.period:]) / self.period
+            self.previous_close = close_history[-1]
+            self.is_initialized = True
+            
+        return self.current_atr
+    
+    def update(self, high, low, close):
+        """Met à jour l'ATR avec les nouveaux prix"""
+        if not self.is_initialized:
+            if self.previous_close is None:
+                self.previous_close = close
+                return None
+                
+            self.true_range_history.append(max(
+                high - low,
+                abs(high - self.previous_close),
+                abs(low - self.previous_close)
+            ))
+            
+            self.previous_close = close
+            
+            if len(self.true_range_history) >= self.period:
+                self.current_atr = sum(self.true_range_history) / self.period
+                self.is_initialized = True
+                return self.current_atr
+            
+            return None
+        
+        # Calculer le nouveau True Range
+        tr = max(
+            high - low,
+            abs(high - self.previous_close),
+            abs(low - self.previous_close)
+        )
+        
+        # Mettre à jour l'ATR en utilisant la méthode de Wilder (lissage exponentiel)
+        self.current_atr = ((self.current_atr * (self.period - 1)) + tr) / self.period
+        self.previous_close = close
+        
+        return self.current_atr
+    
+    def get_value(self):
+        """Retourne la valeur actuelle de l'ATR"""
+        return self.current_atr

@@ -1,5 +1,6 @@
 from ..Strategy import Strategy, StrategyBaseConfig, BaseCandle
 from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
+from ..Helpers import EMA, STOCH, ATR
 import logging
 import talib
 import numpy as np
@@ -83,6 +84,25 @@ class BuyHeikinGreen(Strategy):
         self.stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
         self.atr_name = f'ATR_{self.base_config.atr_period}'
+
+        # Initialiser les calculateurs d'indicateurs
+        self.ema_short_calculator = EMA(self.config.ema_short_period)
+        self.ema_long_calculator = EMA(self.config.ema_long_period)
+        self.stochastic_calculator = STOCH(
+            self.config.stoch_fastk,
+            self.config.stoch_slowk,
+            self.config.stoch_slowd
+        )
+        self.atr_calculator = ATR(self.base_config.atr_period)
+        
+        # Variables pour stocker les valeurs calculées
+        self.current_ema_short = None
+        self.current_ema_long = None
+        self.current_stoch_k = None
+        self.current_stoch_d = None
+        self.current_atr = None
+
+        # Cache pour les bougies Heikin Ashi
         self.ha_cache = {
             'current': {'open': None, 'close': None, 'is_green': None},
             'previous': {'open': None, 'close': None, 'is_green': None},
@@ -98,11 +118,82 @@ class BuyHeikinGreen(Strategy):
         if self.config.use_previous_ha_candle_red_filter:
             self.active_filters.append(self.previous_ha_candle_red_filter)
 
+
+    def initialize_indicators(self):
+        """
+        Initialise les indicateurs avec l'historique des prix si disponible
+        """
+        if len(self.buffer) < max(self.config.ema_long_period, self.config.stoch_fastk + self.config.stoch_slowk):
+            return False
+            
+        # Extraire les données pour l'initialisation
+        close_history = self.buffer['Close'].values
+        high_history = self.buffer['High'].values
+        low_history = self.buffer['Low'].values
+        
+        # Initialiser les EMA
+        self.current_ema_short = self.ema_short_calculator.initialize_with_history(close_history)
+        self.current_ema_long = self.ema_long_calculator.initialize_with_history(close_history)
+        
+        # Initialiser le stochastique
+        self.current_stoch_k, self.current_stoch_d = self.stochastic_calculator.initialize_with_history(
+            high_history, low_history, close_history
+        )
+        
+        # Initialiser l'ATR
+        self.current_atr = self.atr_calculator.initialize_with_history(
+            high_history, low_history, close_history
+        )
+        
+        return (self.current_ema_short is not None and
+                self.current_ema_long is not None and
+                self.current_stoch_k is not None and
+                self.current_stoch_d is not None)
+    
+    def update_indicators(self):
+        """
+        Met à jour tous les indicateurs avec les prix actuels
+        """
+        if not self.current_candle:
+            return False
+            
+        if (not self.ema_short_calculator.is_initialized or
+            not self.ema_long_calculator.is_initialized or
+            not self.stochastic_calculator.is_initialized or
+            (self.base_config.use_atr_for_sl_tp and not self.atr_calculator.is_initialized)):
+            
+            # Si les indicateurs ne sont pas initialisés, essayer de les initialiser
+            if not self.initialize_indicators():
+                return False
+        
+        # Mettre à jour les EMA
+        self.current_ema_short = self.ema_short_calculator.update(self.current_candle.Close)
+        self.current_ema_long = self.ema_long_calculator.update(self.current_candle.Close)
+        
+        # Mettre à jour le stochastique
+        self.current_stoch_k, self.current_stoch_d = self.stochastic_calculator.update(
+            self.current_candle.High,
+            self.current_candle.Low,
+            self.current_candle.Close
+        )
+        
+        # Mettre à jour l'ATR
+        self.current_atr = self.atr_calculator.update(
+            self.current_candle.High,
+            self.current_candle.Low,
+            self.current_candle.Close
+        )
+        
+        return True
+
     def before(self):
         """
         Calcule les valeurs Heikin Ashi de façon incrémentale.
         À chaque appel, déplace les valeurs actuelles vers précédentes et calcule uniquement la nouvelle bougie.
         """
+        # Mettre à jour tous les indicateurs techniques
+        self.update_indicators()
+
         # On a besoin d'au moins 2 bougies pour calculer les valeurs HA
         if len(self.buffer) < 2:
             return
@@ -117,7 +208,7 @@ class BuyHeikinGreen(Strategy):
             "High": current_candle.High,
             "Low": current_candle.Low,
             "Close": current_candle.Close
-    }
+        }
         
         # Si c'est la première fois qu'on calcule ou après une réinitialisation
         if self.ha_cache['current']['close'] is None:
@@ -172,8 +263,8 @@ class BuyHeikinGreen(Strategy):
     
     def go_long(self):
         # Si nous utilisons l'ATR pour les SL/TP
-        if self.base_config.use_atr_for_sl_tp and hasattr(self.current_candle, 'atr') and self.current_candle.atr is not None:
-            current_atr = self.current_candle.atr
+        if self.base_config.use_atr_for_sl_tp and self.current_atr is not None:
+            current_atr = self.current_atr
             
             # Vérifier que l'ATR n'est pas zéro ou négatif
             if current_atr <= 0:
@@ -255,18 +346,30 @@ class BuyHeikinGreen(Strategy):
         raise NotImplementedError(f"La stratégie {self.name} ne supporte pas la vente à découvert.")
 
     def ema_short_filter(self):
-        # Vérifie si le prix est au-dessus des EMA
-        ema_short_value = getattr(self.current_candle, 'ema_short', None)
-        if ema_short_value is None:
-            ema_short_value = self.get_indicator_value(self.ema_short_name)
-        return self.price > ema_short_value
+        """Vérifie si le prix est au-dessus de l'EMA courte"""
+        if self.current_ema_short is None:
+            return False
+        return self.price > self.current_ema_short
     
     def ema_long_filter(self):
-        # Vérifie si le prix est au-dessus des EMA
-        ema_long_value = getattr(self.current_candle, 'ema_long', None)
-        if ema_long_value is None:
-            ema_long_value = self.get_indicator_value(self.ema_long_name)
-        return self.price > ema_long_value
+        """Vérifie si le prix est au-dessus de l'EMA longue"""
+        if self.current_ema_long is None:
+            return False
+        return self.price > self.current_ema_long
+    
+    def stoch_inf_threshold_filter(self):
+        """Vérifie si le Stochastic %K est inférieur au seuil"""
+        if self.current_stoch_k is None:
+            return False
+            
+        threshold = self.config.stoch_threshold
+        result = self.current_stoch_k < threshold or (self.k_previous is not None and self.k_previous < threshold)
+        
+        # Mettre à jour les valeurs précédentes
+        self.k_previous = self.current_stoch_k
+        self.d_previous = self.current_stoch_d
+        
+        return result
     
     def previous_ha_candle_red_filter(self):
         """
@@ -277,76 +380,11 @@ class BuyHeikinGreen(Strategy):
         
         # Vérifier si la bougie précédente est rouge
         return not self.ha_cache['previous']['is_green']
-
-    def stoch_inf_threshold_filter(self):
-        # Vérifie si le Stochastic %K présent est inférieur à threshold
-        threshold = self.config.stoch_threshold
-        
-        stoch_k_value = getattr(self.current_candle, 'stoch_k', None)
-        if stoch_k_value is None:
-            stoch_k_value = self.get_indicator_value(self.stoch_k_name)
-        
-        # Récupérer le résultat du filtre avant de mettre à jour les valeurs précédentes
-        result = stoch_k_value < threshold or (self.k_previous is not None and self.k_previous < threshold)
-        
-        # Mettre à jour les valeurs précédentes
-        self.k_previous = stoch_k_value
-        self.d_previous = getattr(self.current_candle, 'stoch_d', 
-                                 self.get_indicator_value(self.stoch_d_name))
-        
-        return result
     
-    # TODO : calculer les indicateur seulement si on en a besoin, donc au debut de chaque filtre on calcule les indicateurs
     def filters(self):
         return self.active_filters
     
-    def add_missing_indicators(self, candle: dict) -> dict:
-        """
-        Ajoute les indicateurs manquants à la bougie 'candle'.
-        Si un indicateur est présent dans 'candle', il n'est pas recalcule.
-        Sinon, on le calcule à partir des données du buffer.
-        """
-        # On travaille sur une copie du buffer pour être sûr que seules les colonnes nécessaires soient présentes.
-        df = self.buffer.copy()
-        if df.empty:
-            # Pas suffisamment de données : on affecte par défaut la valeur du Close de la bougie actuelle.
-            if self.ema_short_name not in candle:
-                candle[self.ema_short_name] = np.nan
-            if self.ema_long_name not in candle:
-                candle[self.ema_long_name] = np.nan
-            if self.stoch_k_name not in candle:
-                candle[self.stoch_k_name] = np.nan
-            if self.stoch_d_name not in candle:
-                candle[self.stoch_d_name] = np.nan
-            if self.atr_name not in candle:
-                candle[self.atr_name] = np.nan
-            return candle
-        
-        # Garder uniquement les colonnes nécessaires
-        df = df[['Open', 'High', 'Low', 'Close']]
-        
-        # EMA
-        if self.ema_long_name not in candle:
-            ema_val = talib.EMA(df['Close'].values, timeperiod=self.config.ema_long_period)
-            candle[self.ema_long_name] = float(ema_val[-1])
-                
-        if self.ema_short_name not in candle:
-            ema_val = talib.EMA(df['Close'].values, timeperiod=self.config.ema_short_period)
-            candle[self.ema_short_name] = float(ema_val[-1])
 
-        # Stochastique
-        if self.stoch_k_name not in candle or self.stoch_d_name not in candle:
-            k, d = talib.STOCH(
-                df['High'].values, df['Low'].values, df['Close'].values,
-                fastk_period=self.config.stoch_fastk, slowk_period=self.config.stoch_slowk, slowd_period=self.config.stoch_slowd)
-            candle[self.stoch_k_name] = float(k[-1])
-            candle[self.stoch_d_name] = float(d[-1])
-        
-        if self.atr_name not in candle and self.base_config.use_atr_for_sl_tp:
-            atr_val = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=self.base_config.atr_period)
-            candle[self.atr_name] = float(atr_val[-1]) if not np.isnan(atr_val[-1]) else 0.0
-                
-        return candle
 
 
 # TODO : pas mal de travail à faire pour enlever la logique de cette class.
@@ -396,7 +434,7 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             use_ema_short_filter       = kwargs.pop('use_ema_short_filter', True),
             use_ema_long_filter  = kwargs.pop('use_ema_long_filter', True),
             use_stoch_filter     = kwargs.pop('use_stoch_filter', True),
-            use_previous_ha_candle_red_filter = kwargs.pop('use_previous_ha_candle_red_filter', True),
+            use_previous_ha_candle_red_filter = kwargs.pop('use_previous_ha_candle_red_filter', True)
         )
 
     
@@ -411,16 +449,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         """
         Méthode appelée à chaque bougie pendant le backtest.
         """
-        # Noms des indicateurs
-        ema_short_name = f'EMA_{self.config.ema_short_period}'
-        ema_long_name = f'EMA_{self.config.ema_long_period}'
-        stoch_k_name = f'STOCH_K_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-        stoch_d_name = f'STOCH_D_{self.config.stoch_fastk}_{self.config.stoch_slowk}_{self.config.stoch_slowd}'
-        atr_name = f'ATR_{self.base_config.atr_period}'
-
-
         # Créer une instance de la dataclass spécifique
-        candle = BuyHeikinGreenCandle(
+        candle = BaseCandle(
             date=self.data.index[-1],
             Open=self.data.Open[-1],
             High=self.data.High[-1],
@@ -431,14 +461,6 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             position_pl_pct=self.position.pl_pct if self.position else None,
             entry_price=self.trades[-1].entry_price if self.position and self.trades else None,
             position_size=self.position.size if self.position else None,
-            
-            # Indicateurs spécifiques
-            ema_short=self.data.df[ema_short_name].iloc[-1],
-            ema_long=self.data.df[ema_long_name].iloc[-1],
-            stoch_k=self.data.df[stoch_k_name].iloc[-1],
-            stoch_d=self.data.df[stoch_d_name].iloc[-1],
-            # ATR (si disponible)
-            atr=self.data.df[atr_name].iloc[-1] if atr_name in self.data.df.columns else None
         )        
 
         signal = self.my_strategy.update_candle(candle)
@@ -461,11 +483,10 @@ class BuyHeikinGreenBA(BacktestingStrategy):
             logging.info(
                 f"\n\nCandle: {candle.date}\n "
                 f"Open ({candle.Open}), Close ({candle.Close})\n "
-                f"EMA Short: {candle.ema_short}\n "
-                f"EMA Long: {candle.ema_long}\n "
-                f"Stoch K: {candle.stoch_k}\n "
-                f"Stoch D: {candle.stoch_d}\n "
+                f"EMA Short: {self.my_strategy.current_ema_short}\n "
+                f"EMA Long: {self.my_strategy.current_ema_long}\n "
+                f"Stoch K: {self.my_strategy.current_stoch_k}\n "
+                f"Stoch D: {self.my_strategy.current_stoch_d}\n "
                 f"Trade size: {signal['quantity']}\n")
-            
         elif not self.position and signal['action'] == 'SELL':
             pass

@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 from PyQt5.QtWidgets import QPushButton, QProgressBar, QHBoxLayout, QApplication
 from PyQt5.QtCore import QObject, pyqtSignal
-
+import traceback
 from ui_util import BacktestWorker
 
 
@@ -194,6 +194,11 @@ class BacktestRunner(QObject):
     def on_backtest_error(self, error_msg):
         """Fonction appelée en cas d'erreur pendant le backtest"""
         logging.error(f"Erreur pendant le backtest: {error_msg}")
+        
+        # Log the full traceback if available
+        current_tb = traceback.format_exc()
+        if current_tb and 'NoneType' not in current_tb:
+            logging.error(f"Traceback complet:\n{current_tb}")
         
         # Réinitialiser l'interface
         self.loading_indicator.setVisible(False)

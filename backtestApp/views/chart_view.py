@@ -214,7 +214,7 @@ class ChartView(ResultView):
                 width=1.5, 
                 price_line=False
             )
-            ema_line.set(ema_df.dropna())
+            ema_line.set(ema_df)
             logging.debug(f"Added EMA indicator: {ema_col}")
         
         # --------------------------------
@@ -267,7 +267,7 @@ class ChartView(ResultView):
                 width=1, 
                 price_line=False
             )
-            k_line.set(k_df.dropna())
+            k_line.set(k_df)
             stoch_lines.append(k_line)
             logging.debug("Added Stochastic K indicator")
             
@@ -327,7 +327,7 @@ class ChartView(ResultView):
                 width=1, 
                 price_line=False
             )
-            atr_line.set(atr_df.dropna())
+            atr_line.set(atr_df)
             logging.debug(f"Added ATR indicator: ATR_{atr_period}")
         
         # Synchroniser les tooltips entre les graphiques si nous avons des sous-graphiques

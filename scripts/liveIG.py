@@ -4,6 +4,9 @@ import time
 import pandas as pd
 import os
 import traceback
+import signal
+import sys
+
 # Create logs directory if it doesn't exist
 log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logs')
 os.makedirs(log_dir, exist_ok=True)
@@ -21,42 +24,50 @@ logging.basicConfig(
 
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
 from igtrader.Strategies.CrossEMA import CrossEMA, CrossEMAConfig
-from igtrader.WrapperIGAPI.TickBroker import TickBroker
-from igtrader.Strategies.Strategy import StrategyBaseConfig
+from igtrader.WrapperIGAPI.TickBroker import TickBroker, PriceSource
+from igtrader.Strategies.Strategy import Strategy, StrategyBaseConfig, BaseCandle
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreen, BuyHeikinGreenConfig
 
-candle_interval = 20  # n-second time unit candles to trade with
+CANDLE_TIME_UNIT = 20  # n-second time unit candles to trade with
 
-def is_candle_complete(candle, resolution_seconds=candle_interval):
+# Variable globale pour arrêter proprement le programme
+running = True
+
+def signal_handler(sig, frame):
+    """Gestionnaire de signal pour arrêter proprement le programme"""
+    global running
+    logging.info("Signal d'arrêt reçu, arrêt en cours...")
+    running = False
+
+def process_candle(candle: BaseCandle, broker: TickBroker, strategy: Strategy):
     """
-    Vérifie si une bougie est finalisée.
+    Fonction de callback appelée lorsqu'une nouvelle bougie est prête.
+    Traite la bougie et exécute la stratégie.
     
-    :param candle: Dictionnaire contenant une clé 'date' (de type datetime ou Timestamp).
-    :param resolution_seconds: Durée de la bougie en secondes.
-    :return: True si la bougie est finalisée, False sinon.
+    Args:
+        candle (BaseCandle): La bougie complète
+        broker (TickBroker): Instance du broker pour exécuter les signaux
+        strategy (Strategy): Stratégie de trading à utiliser
     """
-    # Cas 1 : dict avec clé 'date'
-    if isinstance(candle, dict):
-        date = candle['date']
-    # Cas 2 : Series avec la date comme index
-    elif isinstance(candle, pd.Series):
-        date = candle.name
-    else:
-        raise TypeError("Le format de candle n'est pas supporté.")
-    
-    candle_end = date + datetime.timedelta(seconds=resolution_seconds)
-    return datetime.datetime.now() >= candle_end
+    try:
+        logging.info(f"Processing complete candle: {candle.date} - O:{candle.Open} H:{candle.High} L:{candle.Low} C:{candle.Close}")
+        
+        # Cette fonction contient désormais toute la logique qui était dans la boucle principale
+        signal = strategy.update_candle(candle)
+        
+        # Execute signal if we have one
+        if signal:
+            logging.info(f"Signal generated: {signal}")
+            broker.execute_signal(signal)
+    except Exception as e:
+        logging.error(f"Error processing candle: {e}")
+        logging.error(traceback.format_exc())
 
 
-def main():   
-    # Création des instances avec le nouveau TickBroker
-    broker = TickBroker(
-        epic="IX.D.NASDAQ.IFE.IP", 
-        working_resolution='SECOND', 
-        candle_interval=candle_interval, 
-        price_source='ask'
-    )
-    time.sleep(1)
+def main():
+    # Configurer le gestionnaire de signal pour Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
     
     base_config = StrategyBaseConfig(
         trading_from=datetime.time(7, 0),
@@ -86,47 +97,29 @@ def main():
 
     strategy = BuyHeikinGreen(base_config, buy_heikin_green_config)
 
-    while True:
+    # Création des instances avec le nouveau TickBroker
+    broker = TickBroker(
+        epic="IX.D.NASDAQ.IFE.IP", 
+        candle_interval=CANDLE_TIME_UNIT, 
+        price_source=PriceSource.ASK
+    )
+
+    # Configurer le callback pour traiter les bougies
+    broker.set_candle_callback(lambda candle: process_candle(candle, broker, strategy))
+
+    logging.info("Bot de trading démarré. En attente de bougies...")
+
+    # Boucle principale simple pour maintenir le programme en vie
+    # Plus besoin de polling, le callback sera appelé automatiquement
+    while running:
         try:
-            # Calculate aligned execution time
-            now = datetime.datetime.now()
-            seconds_in_interval = now.second % candle_interval
-            next_candle_time = now + datetime.timedelta(seconds=(candle_interval - seconds_in_interval))
-            
-            # Log timing information
-            logging.debug(f"Current time: {now}, next candle at: {next_candle_time}")
-            
-            # Get candles from streaming data (construites à partir des ticks)
-            candle_previous, candle_current = broker.fetch_previous_and_current_candles()
-            
-            # Initialize signal with default value
-            signal = None
-            
-            # Process candles
-            if candle_current and is_candle_complete(candle_current, candle_interval):
-                logging.info(f"Processing complete current candle: {candle_current}")
-                signal = strategy.update_candle(candle_current)
-            elif candle_previous and is_candle_complete(candle_previous, candle_interval):
-                signal = strategy.update_candle(candle_previous)
-            else:
-                logging.info("Waiting for complete candles...")
-            
-            # Execute signal if we have one
-            if signal:
-                logging.info(f"Signal generated: {signal}")
-                broker.execute_signal(signal)
-            
-            # Calculate sleep time until the next candle
-            sleep_time = (candle_interval - seconds_in_interval) - 1  # Wake up 1 second before next candle
-            if sleep_time < 1:
-                sleep_time = candle_interval - 1
-            
-            time.sleep(sleep_time)
-            
+            time.sleep(1)
         except Exception as e:
             logging.error(f"Error in main loop: {e}")
             logging.error(traceback.format_exc())
-            time.sleep(5)  # Sleep on error to avoid rapid error loops
+            time.sleep(5)
+    
+    logging.info("Bot de trading arrêté proprement.")
 
 if __name__ == '__main__':
     main()

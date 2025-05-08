@@ -12,13 +12,25 @@ import time
 import math
 from collections import deque
 import traceback
+from enum import Enum
 
 EXPIRY = '-'
 CURRENCY = 'EUR'
 ORDER_TYPE = 'MARKET'
 
+
+class PriceSource(Enum):
+    BID = 'bid'
+    ASK = 'ask'
+    LAST = 'last'
+
+    @classmethod
+    def get_default(cls):
+        return cls.BID
+
+
 class TickBroker:
-    def __init__(self, epic=None, working_resolution=None, candle_interval=None, price_source=None):
+    def __init__(self, epic=None, candle_interval=None, price_source: PriceSource = PriceSource.get_default(), candle_callback=None):
         """
         Initialise un broker qui construit des bougies à partir de ticks.
         
@@ -42,25 +54,19 @@ class TickBroker:
         logging.info("Connexion à l'API du broker établie.")
     
         self.epic = epic
-        self.working_resolution = working_resolution
         self.candle_interval = candle_interval  # in seconds
+        self.price_source: PriceSource = price_source
+        self.candle_callback = candle_callback
         
-        # Validate and set price source
-        if price_source not in ['bid', 'ask', 'last']:
-            logging.warning(f"Source de prix '{price_source}' invalide. Utilisation de 'bid' par défaut.")
-            self.price_source = 'bid'
-        else:
-            self.price_source = price_source
-        
-        logging.info(f"Utilisation des prix '{self.price_source}' pour la construction des bougies")
+        logging.info(f"Utilisation des prix '{self.price_source.value}' pour la construction des bougies")
         
         # Streaming data structures
         self.stream_lock = threading.Lock()
         self.current_candle = None
-        self.previous_candle = None
         self.ticks_buffer = deque(maxlen=10000)  # Un buffer plus grand pour les ticks
         self.candles_by_interval = {}  # Pour stocker les bougies construites par intervalle
         self.last_tick_time = None
+        self.last_candle_time = None
         
         # Initialize streaming connection
         self._setup_streaming()
@@ -136,7 +142,7 @@ class TickBroker:
     def _build_candles_from_ticks_loop(self):
         """Background thread that continuously builds candles from tick data."""
         logging.info("Starting candle building from ticks thread")
-        last_candle_time = None
+        self.last_candle_time = None
         ticks_by_interval = {}  # Buffer pour stocker les ticks par intervalle
         
         while self.should_continue:
@@ -144,8 +150,8 @@ class TickBroker:
                 now = datetime.datetime.now()
                 aligned_time = self._align_time_to_interval(now)
                 
-                if last_candle_time is None:
-                    last_candle_time = aligned_time - datetime.timedelta(seconds=self.candle_interval)
+                if self.last_candle_time is None:
+                    self.last_candle_time = aligned_time - datetime.timedelta(seconds=self.candle_interval)
                 
                 # Process ticks if available
                 if hasattr(self, 'stream_manager') and hasattr(self.stream_manager, 'tickers'):
@@ -174,17 +180,17 @@ class TickBroker:
                                 self.last_tick_time = tick_time
                 
                 # Check if it's time to create a new candle
-                if aligned_time > last_candle_time:
+                if aligned_time > self.last_candle_time:
                     # Construire une bougie à partir des ticks dans l'intervalle précédent
                     with self.stream_lock:
-                        if last_candle_time in ticks_by_interval and ticks_by_interval[last_candle_time]:
+                        if self.last_candle_time in ticks_by_interval and ticks_by_interval[self.last_candle_time]:
                             # Trier les ticks par timestamp pour s'assurer qu'ils sont dans l'ordre
-                            ticks_for_candle = sorted(ticks_by_interval[last_candle_time], key=lambda x: x['timestamp'])
+                            ticks_for_candle = sorted(ticks_by_interval[self.last_candle_time], key=lambda x: x['timestamp'])
                             
                             # Dans la section qui détermine les prix à utiliser:
-                            if self.price_source == 'bid':
+                            if self.price_source == PriceSource.BID:
                                 prices = [t['bid'] for t in ticks_for_candle if t['bid'] is not None]
-                            elif self.price_source == 'ask':
+                            elif self.price_source == PriceSource.ASK:
                                 prices = [t['offer'] for t in ticks_for_candle if t['offer'] is not None]
                             else:  # 'last' ou autre
                                 prices = [t['last'] for t in ticks_for_candle if t['last'] is not None]
@@ -196,7 +202,7 @@ class TickBroker:
                                 close_price = prices[-1]
                                 
                                 new_candle = {
-                                    'date': last_candle_time,
+                                    'date': self.last_candle_time,
                                     'Open': open_price,
                                     'High': high_price,
                                     'Low': low_price,
@@ -204,23 +210,38 @@ class TickBroker:
                                     'ticks_count': len(prices)  # Nombre de ticks utilisés
                                 }
                                 
-                                # Mettre à jour les bougies
-                                if self.current_candle:
-                                    self.previous_candle = self.current_candle.copy()
+                                # Mettre à jour la bougie courante
                                 self.current_candle = new_candle
                                 
                                 # Stocker la bougie dans le dictionnaire par intervalle
-                                self.candles_by_interval[last_candle_time] = new_candle
+                                self.candles_by_interval[self.last_candle_time] = new_candle
                                 
-                                logging.info(f"Built new {self.price_source} candle from {len(prices)} ticks for {last_candle_time}: "
+                                logging.info(f"Built new {self.price_source.value} candle from {len(prices)} ticks for {self.last_candle_time}: "
                                             f"O={open_price:.5f}, H={high_price:.5f}, L={low_price:.5f}, C={close_price:.5f}")
+                                
+                                # Appeler le callback avec la nouvelle bougie si défini
+                                if self.candle_callback is not None:
+                                    # Créer un BaseCandle à partir du dict
+                                    from igtrader.Strategies.Strategy import BaseCandle
+                                    base_candle = BaseCandle(
+                                        date=self.last_candle_time,
+                                        Open=open_price,
+                                        High=high_price,
+                                        Low=low_price,
+                                        Close=close_price,
+                                        in_position=self.has_open_position(),
+                                        entry_price=None,  # À remplir si nécessaire
+                                        position_size=None,  # À remplir si nécessaire
+                                        position_pl_pct=None  # À remplir si nécessaire
+                                    )
+                                    self.candle_callback(base_candle)
                             else:
-                                logging.warning(f"No valid {self.price_source} prices for interval {last_candle_time}")
+                                logging.warning(f"No valid {self.price_source.value} prices for interval {self.last_candle_time}")
                         else:
-                            logging.warning(f"No ticks available for interval {last_candle_time}")
+                            logging.warning(f"No ticks available for interval {self.last_candle_time}")
                     
                     # Update last candle time
-                    last_candle_time = aligned_time
+                    self.last_candle_time = aligned_time
                     
                     # Clean up old data pour éviter les fuites de mémoire
                     with self.stream_lock:
@@ -241,25 +262,15 @@ class TickBroker:
                 logging.error(traceback.format_exc())
                 time.sleep(1)  # Sleep on error to avoid rapid looping
 
-    def fetch_previous_and_current_candles(self):
+    def set_candle_callback(self, callback):
         """
-        Récupère les deux dernières bougies construites à partir des ticks.
-        Retourne un tuple (bougie_precedente, bougie_actuelle).
+        Définit une fonction de rappel pour traiter les bougies construites.
+        
+        Args:
+            callback (function): Fonction à appeler avec la bougie construite.
         """
-        with self.stream_lock:
-            if self.current_candle is None:
-                logging.warning("No streaming candles available yet, waiting for streaming data...")
-                return None, None
-                    
-            current = self.current_candle.copy() if self.current_candle else None
-            previous = self.previous_candle.copy() if self.previous_candle else None
-            
-        # Check if we have valid data
-        if not current or not previous:
-            logging.warning("Incomplete streaming candle data, waiting for more data...")
-            return None, None
-                
-        return previous, current
+        self.candle_callback = callback
+
 
     def fetch_recent_ticks(self, count=100):
         """

@@ -29,39 +29,6 @@ class BuyHeikinGreenConfig:
     use_stoch_filter: bool = True
     use_previous_ha_candle_red_filter: bool = True
 
-@dataclass
-class BuyHeikinGreenCandle(BaseCandle):
-    """Dataclass spécifique pour la stratégie BuyHeikinGreen avec les indicateurs nécessaires"""
-    # EMA
-    ema_short: Optional[float] = None
-    ema_long: Optional[float] = None
-    
-    # Stochastique
-    stoch_k: Optional[float] = None
-    stoch_d: Optional[float] = None
-    
-    # ATR
-    atr: Optional[float] = None
-    
-    def get_indicator(self, name: str) -> Optional[float]:
-        """
-        Méthode d'accès unifiée aux indicateurs par nom pour compatibilité
-        """
-        # Mapping des noms d'indicateurs aux attributs
-        indicator_mapping = {
-            # Les clés sont les noms variables des indicateurs
-            # Les valeurs sont les attributs de cette classe
-            "ema_short": self.ema_short,
-            "ema_long": self.ema_long,
-            "stoch_k": self.stoch_k,
-            "stoch_d": self.stoch_d,
-            "atr": self.atr
-        }
-        
-        # Retourner la valeur si trouvée, sinon None
-        return indicator_mapping.get(name)
-
-
 
 class BuyHeikinGreen(Strategy):
     """

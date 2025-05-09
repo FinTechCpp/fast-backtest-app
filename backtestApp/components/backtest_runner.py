@@ -80,7 +80,7 @@ class BacktestRunner(QObject):
                 period=config['period'],
                 interval=config['interval'],
                 end_date=config['end_date'],
-                timezone=config['timezone'],
+                # timezone=config['timezone'],
                 trading_from=config.get('trading_from'),
                 trading_to=config.get('trading_to'),
                 trading_days=config.get('trading_days'))
@@ -119,15 +119,28 @@ class BacktestRunner(QObject):
     def on_backtest_finished(self, data, stats):
         """Fonction appelée lorsque le backtest est terminé avec succès"""
         try:
-            # Obtenir le fuseau horaire depuis les paramètres généraux
-            general_params = self.parent.general_params_panel.get_values()
-            timezone = general_params['timezone']
+            # Traiter les résultats en vérifiant d'abord le type des données
+            if '_trades' in stats and isinstance(stats['_trades'], pd.DataFrame):
+                # Vérifier EntryTime
+                if 'EntryTime' in stats['_trades'].columns:
+                    if pd.api.types.is_datetime64_dtype(stats['_trades']['EntryTime']):
+                        # Seulement si c'est un datetime et qu'il a une timezone
+                        if hasattr(stats['_trades']['EntryTime'].dt, 'tz') and stats['_trades']['EntryTime'].dt.tz is not None:
+                            stats['_trades']['EntryTime'] = stats['_trades']['EntryTime'].dt.tz_localize(None)
+                
+                # Vérifier ExitTime
+                if 'ExitTime' in stats['_trades'].columns:
+                    if pd.api.types.is_datetime64_dtype(stats['_trades']['ExitTime']):
+                        # Seulement si c'est un datetime et qu'il a une timezone
+                        if hasattr(stats['_trades']['ExitTime'].dt, 'tz') and stats['_trades']['ExitTime'].dt.tz is not None:
+                            stats['_trades']['ExitTime'] = stats['_trades']['ExitTime'].dt.tz_localize(None)
             
-            # Traiter les résultats
-            stats['_trades']['EntryTime'] = stats['_trades']['EntryTime'].dt.tz_convert(timezone).dt.tz_localize(None)
-            stats['_trades']['ExitTime'] = stats['_trades']['ExitTime'].dt.tz_convert(timezone).dt.tz_localize(None)
-            stats['_equity_curve'].index = stats['_equity_curve'].index.tz_convert(timezone).tz_localize(None)
-            
+            # Vérifier equity_curve
+            if '_equity_curve' in stats and hasattr(stats['_equity_curve'], 'index'):
+                if pd.api.types.is_datetime64_dtype(stats['_equity_curve'].index):
+                    if hasattr(stats['_equity_curve'].index, 'tz') and stats['_equity_curve'].index.tz is not None:
+                        stats['_equity_curve'].index = stats['_equity_curve'].index.tz_localize(None)
+        
             # Stocker les statistiques dans l'application parent
             self.parent.stats = stats
             
@@ -153,8 +166,8 @@ class BacktestRunner(QObject):
             # Traiter la colonne de temps
             chart_data['time'] = pd.to_datetime(chart_data['time'])
             if chart_data['time'].dt.tz is None:
-                chart_data['time'] = chart_data['time'].dt.tz_localize(timezone)
-            chart_data['time'] = chart_data['time'].dt.tz_convert(timezone).dt.tz_localize(None)
+                chart_data['time'] = chart_data['time']
+            chart_data['time'] = chart_data['time'].dt.tz_localize(None)
             
             # Trier les données
             chart_data.sort_values('time', inplace=True)

@@ -38,10 +38,10 @@ class GeneralParamsPanel(BasePanel):
         self.widgets['end_date'].setCalendarPopup(True)
         params_layout.addRow(QLabel("Date de fin:"), self.widgets['end_date'])
         
-        # Fuseau horaire
-        self.widgets['timezone'] = QComboBox()
-        self.widgets['timezone'].addItems(["America/New_York", "Europe/Paris"])
-        params_layout.addRow(QLabel("Fuseau horaire:"), self.widgets['timezone'])
+        # Fuseau horaire => Plus necessaire car on convertit les dates par default entre 15:30h et 22h
+        # self.widgets['timezone'] = QComboBox()
+        # self.widgets['timezone'].addItems(["America/New_York", "Europe/Paris"])
+        # params_layout.addRow(QLabel("Fuseau horaire:"), self.widgets['timezone'])
         
         # Spread
         self.widgets['spread'] = QDoubleSpinBox()
@@ -83,7 +83,7 @@ class GeneralParamsPanel(BasePanel):
             'period': self.widgets['period_combo'].currentText(),
             'interval': self.widgets['interval_combo'].currentText(),
             'end_date': self.widgets['end_date'].date().toString("dd/MM/yyyy"),
-            'timezone': self.widgets['timezone'].currentText(),
+            # 'timezone': self.widgets['timezone'].currentText(),
             'spread': self.widgets['spread'].value(),
             'cash': self.widgets['cash'].value(),
             'strategy': self.widgets['strategy_combo'].currentText(),
@@ -111,10 +111,10 @@ class GeneralParamsPanel(BasePanel):
         if 'end_date' in values:
             self.widgets['end_date'].setDate(QDate.fromString(values['end_date'], "dd/MM/yyyy"))
         
-        if 'timezone' in values:
-            self.widgets['timezone'].findText(values['timezone'])
-            if index >= 0:
-                self.widgets['timezone'].setCurrentIndex(index)
+        # if 'timezone' in values:
+        #     self.widgets['timezone'].findText(values['timezone'])
+        #     if index >= 0:
+        #         self.widgets['timezone'].setCurrentIndex(index)
         
         if 'spread' in values:
             self.widgets['spread'].setValue(values['spread'])

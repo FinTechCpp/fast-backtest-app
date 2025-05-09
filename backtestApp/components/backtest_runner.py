@@ -173,7 +173,7 @@ class BacktestRunner(QObject):
             chart_data.sort_values('time', inplace=True)
 
             # Mettre à jour toutes les vues
-            self.parent.result_manager.update_all(chart_data, stats)
+            self.parent.result_manager.update_all(chart_data, stats)            
             
             # Afficher l'onglet des statistiques
             self.parent.result_manager.set_current_tab(1)  # Index 1 = Statistics tab

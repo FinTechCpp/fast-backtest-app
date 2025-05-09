@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
 from abc import ABC, abstractmethod
 
 class ResultView(ABC):
@@ -22,3 +22,13 @@ class ResultView(ABC):
     def clear(self):
         """Réinitialise la vue à son état initial."""
         pass
+
+    def clear_layout(self, layout: QVBoxLayout):
+        """Supprime tous les widgets d'un layout."""
+        while layout.count():
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            elif item.layout() is not None:
+                self.clear_layout(item.layout())

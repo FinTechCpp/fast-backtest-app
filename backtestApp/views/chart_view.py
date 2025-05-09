@@ -26,16 +26,6 @@ class ChartView(ResultView):
         
         return self.chart_container
     
-    def clear_layout(self, layout):
-        """Supprime tous les widgets d'un layout."""
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
-            elif item.layout() is not None:
-                self.clear_layout(item.layout())
-    
     def update(self, data=None, stats=None):
         """Met à jour le graphique avec les nouvelles données."""
         if data is None:
@@ -345,7 +335,7 @@ class ChartView(ResultView):
         
         return subcharts
     
-    def _add_trade_markers(self, chart, stats):
+    def _add_trade_markers(self, chart: QtChart, stats):
         """Ajoute les marqueurs de trades au graphique."""
         trades = stats['_trades']
         for i, trade in trades.iterrows():
@@ -354,8 +344,8 @@ class ChartView(ResultView):
             entry_price = trade['EntryPrice']
             exit_price = trade['ExitPrice']
             
-            entry_color = "blue" if trade['Size'] > 0 else "red"
-            exit_color = "green" if trade['PnL'] > 0 else "red"
+            entry_color = "blue" if trade['Size'] > 0 else "red" if trade['Size'] < 0 else "black"
+            exit_color = "green" if trade['PnL'] > 0 else "red" if trade['PnL'] < 0 else "black"
             
             # Entry marker
             chart.marker(

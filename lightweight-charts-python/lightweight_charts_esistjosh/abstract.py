@@ -851,6 +851,55 @@ class Candlestick(SeriesCommon):
         else:
             self.run_script(f"{self._chart.id}.toolBox?.clearDrawings()")
 
+    # TODO: ctte methode ne marche pas du tout, comprend pas comment le js fonctionne 
+    def auto_aggregate_candles(self, min_space_per_candle=5):
+        """
+        Configure l'agrégation automatique des bougies en fonction du niveau de zoom.
+        
+        :param min_space_per_candle: Espace minimum en pixels entre chaque bougie
+        """
+        self.run_script(f"""
+        // Fonction qui sera appelée à chaque changement de timeScale
+        function updateCandleAggregation() {{
+            // Obtenir les propriétés de l'échelle de temps
+            const visibleLogicalRange = {self.id}.chart.timeScale().getVisibleLogicalRange();
+            if (!visibleLogicalRange) return;
+            
+            // Calculer le nombre de barres visibles
+            const barCount = visibleLogicalRange.to - visibleLogicalRange.from;
+            
+            // Obtenir la largeur disponible pour les barres
+            const timeScaleWidth = {self.id}.chart.timeScale().width();
+            
+            // Calculer la largeur disponible par barre
+            const pixelsPerBar = timeScaleWidth / barCount;
+            
+            // Si l'espace est trop petit, calculer un facteur d'agrégation
+            let aggregationFactor = 1;
+            if (pixelsPerBar < {min_space_per_candle}) {{
+                // Calculer le facteur d'agrégation pour atteindre l'espace minimum souhaité
+                aggregationFactor = Math.ceil({min_space_per_candle} / pixelsPerBar);
+                
+                // Appliquer les nouvelles options à la série
+                {self.id}.series.applyOptions({{
+                    chandelierSize: aggregationFactor
+                }});
+                
+            }} else {{
+                // Revenir à l'affichage normal
+                {self.id}.series.applyOptions({{
+                    chandelierSize: 1
+                }});
+            }}
+        }}
+        
+        // Observer les changements de timeScale
+        {self.id}.chart.timeScale().subscribeVisibleLogicalRangeChange(updateCandleAggregation);
+        
+        // Exécuter une fois immédiatement
+        updateCandleAggregation();
+        """)
+
     def update(self, series: pd.Series, _from_tick=False):
         """
         Updates the data from a bar;

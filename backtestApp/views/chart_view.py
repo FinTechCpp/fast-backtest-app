@@ -295,40 +295,38 @@ class ChartView(ResultView):
         # --------------------------------
         # ATR
         # --------------------------------
-        show_atr = strategy_config.get('use_atr_for_sl_tp', False)
         atr_period = int(strategy_config.get('atr_period', 14))
         
-        if show_atr:
-            # Calculer ATR avec talib
-            atr_values = talib.ATR(
-                data[high_col].values,
-                data[low_col].values,
-                data[close_col].values,
-                timeperiod=atr_period
-            )
-            
-            # Créer le sous-graphique pour l'ATR
-            atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
-            atr_chart.layout(background_color='#f0f8ff')
-            atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
-            atr_chart.time_scale(visible=False, min_bar_spacing=0.0)
-            atr_chart.price_scale(minimum_width=120)
-            atr_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
-            subcharts['atr_chart'] = atr_chart
-            
-            # Ajouter la ligne ATR
-            atr_df = pd.DataFrame({
-                'time': data['time'],
-                f'ATR_{atr_period}': atr_values
-            })
-            atr_line = atr_chart.create_line(
-                name=f'ATR_{atr_period}', 
-                color=indicator_colors['ATR'][0], 
-                width=1, 
-                price_line=False
-            )
-            atr_line.set(atr_df)
-            logging.debug(f"Added ATR indicator: ATR_{atr_period}")
+        # Calculer ATR avec talib
+        atr_values = talib.ATR(
+            data[high_col].values,
+            data[low_col].values,
+            data[close_col].values,
+            timeperiod=atr_period
+        )
+        
+        # Créer le sous-graphique pour l'ATR
+        atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
+        atr_chart.layout(background_color='#f0f8ff')
+        atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
+        atr_chart.time_scale(visible=False, min_bar_spacing=0.0)
+        atr_chart.price_scale(minimum_width=120)
+        atr_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+        subcharts['atr_chart'] = atr_chart
+        
+        # Ajouter la ligne ATR
+        atr_df = pd.DataFrame({
+            'time': data['time'],
+            f'ATR_{atr_period}': atr_values
+        })
+        atr_line = atr_chart.create_line(
+            name=f'ATR_{atr_period}', 
+            color=indicator_colors['ATR'][0], 
+            width=1, 
+            price_line=False
+        )
+        atr_line.set(atr_df)
+        logging.debug(f"Added ATR indicator: ATR_{atr_period}")
         
         # Synchroniser les tooltips entre les graphiques si nous avons des sous-graphiques
         if subcharts:

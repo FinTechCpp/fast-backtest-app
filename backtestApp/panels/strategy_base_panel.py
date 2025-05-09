@@ -147,7 +147,7 @@ class StrategyBasePanel(BasePanel):
         # Trading start time
         start_time_layout = QHBoxLayout()
         self.widgets['trading_from_hour'] = QTimeEdit()
-        self.widgets['trading_from_hour'].setTime(QTime(9, 30))
+        self.widgets['trading_from_hour'].setTime(QTime(15, 30))
         self.widgets['trading_from_hour'].setDisplayFormat("HH:mm")
         start_time_layout.addWidget(self.widgets['trading_from_hour'])
         trading_hours_layout.addRow("Heure de début:", start_time_layout)
@@ -155,7 +155,7 @@ class StrategyBasePanel(BasePanel):
         # Trading end time
         end_time_layout = QHBoxLayout()
         self.widgets['trading_to_hour'] = QTimeEdit()
-        self.widgets['trading_to_hour'].setTime(QTime(15, 59))
+        self.widgets['trading_to_hour'].setTime(QTime(21, 59))
         self.widgets['trading_to_hour'].setDisplayFormat("HH:mm")
         end_time_layout.addWidget(self.widgets['trading_to_hour'])
         trading_hours_layout.addRow("Heure de fin:", end_time_layout)

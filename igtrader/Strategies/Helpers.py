@@ -107,7 +107,7 @@ def calculate_supertrend(data, atr_period=14, multiplier=3):
     return st
 
 
-def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timezone='Europe/Paris',
+def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None,
               trading_from=None, trading_to=None, trading_days=None):
     """
     Charge les données historiques pour le backtesting à partir d'un fichier Parquet
@@ -118,13 +118,12 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
         interval (str): Intervalle des données (ex: '20secs')
         period (str): Période de données à charger (ex: '1m', '6m', '1y')
         end_date (str|datetime): Date de fin au format 'DD/MM/YYYY' ou objet datetime
-        timezone (str): Fuseau horaire pour les données (ex: 'Europe/Paris')
         trading_from (QTime|str): Heure de début du trading
         trading_to (QTime|str): Heure de fin du trading
         trading_days (list): Liste des jours de trading (0=Lundi, 6=Dimanche)
 
     Returns:
-        pd.DataFrame: DataFrame contenant les données OHLC filtrées
+        pd.DataFrame: DataFrame contenant les données OHLC filtrées indexées par date toujours entre 15h30 et 22h (bourse ouverte)
     """
     start_time = time.time()
     logging.info(f"Chargement des données pour {symbol}, intervalle {interval}, période {period}...")
@@ -166,39 +165,36 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
     except Exception as e:
         raise ValueError(f"Erreur lors du chargement des données : {e}")
     
-    # Convertir la colonne 'date' en datetime avec timezone si elle existe
-    if 'date' in df.columns and not pd.api.types.is_datetime64_any_dtype(df['date']):
-        df['date'] = pd.to_datetime(df['date'])
-    
-    # S'assurer que la colonne 'date' a le fuseau horaire New York + 6h
+    # Convertir la colonne 'date' en datetime et la définir comme index
     if 'date' in df.columns:
-        if df['date'].dt.tz is None:
-            df['date'] = df['date'].dt.tz_localize('UTC').dt.tz_convert('America/New_York')
+        # Convertir en datetime si nécessaire
+        if not pd.api.types.is_datetime64_any_dtype(df['date']):
+            df['date'] = pd.to_datetime(df['date'])
+        # Définir comme index
+        df = df.set_index('date')
+    
+    # Standardiser l'index en heure française (NY + 6h)
+    if pd.api.types.is_datetime64_any_dtype(df.index):
+        # Convertir vers le fuseau horaire New York si nécessaire
+        if df.index.tz is None:
+            df.index = df.index.tz_localize('UTC').tz_convert('America/New_York')
         else:
-            df['date'] = df['date'].dt.tz_convert('America/New_York')
-        # Ajouter 6 heures pour avoir des horaires fixes entre 15h30 et 22h
-        df['date'] = df['date'] + pd.Timedelta(hours=6)
-    
-    # # Si date est dans l'index, appliquer le même traitement
-    # if pd.api.types.is_datetime64_any_dtype(df.index):
-    #     if df.index.tz is None:
-    #         df.index = df.index.tz_localize('UTC').tz_convert('America/New_York')
-    #     else:
-    #         df.index = df.index.tz_convert('America/New_York')
-    #     # Ajouter 6 heures
-    #     df.index = df.index + pd.Timedelta(hours=6)
-    
+            df.index = df.index.tz_convert('America/New_York')
+        
+        # Ajouter 6 heures pour transformer les heures de marché US (9h30-16h) 
+        # en heures françaises standardisées (15h30-22h)
+        df.index = df.index + pd.Timedelta(hours=6)
+        
+        # Supprimer l'information de fuseau horaire
+        df.index = df.index.tz_localize(None)
+
     # Définir la date de fin si elle n'est pas spécifiée
     if end_date is None:
         # Utiliser la dernière date disponible dans le dataframe
-        if 'date' in df.columns:
-            last_available_date = df['date'].max()
-        else:
-            last_available_date = df.index.max()
-        end_date = last_available_date
+        end_date = df.index.max()
         logging.debug(f"Date de fin automatique: {end_date}")
     else:
-        # Convertir end_date si c'est une chaîne au format DD/MM/YYYY
+        # Convertir end_date si c'est une chaîne
         if isinstance(end_date, str):
             try:
                 # Essayer d'abord le format DD/MM/YYYY
@@ -207,9 +203,11 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
                 # Si ça échoue, laisser pandas détecter le format
                 end_date = pd.to_datetime(end_date)
         
-        # Ajouter le fuseau horaire si nécessaire
-        if not hasattr(end_date, 'tzinfo') or end_date.tzinfo is None:
-            end_date = pd.Timestamp(end_date).tz_localize('UTC').tz_convert(timezone)
+        # Standardiser end_date dans le même format que l'index (sans timezone)
+        if hasattr(end_date, 'tzinfo') and end_date.tzinfo is not None:
+            # Si end_date a une timezone, on la convertit en NY+6h puis on supprime la timezone
+            end_date = pd.Timestamp(end_date).tz_convert('America/New_York') + pd.Timedelta(hours=6)
+            end_date = end_date.tz_localize(None)
     
     # Calculer la date de début à partir de end_date et period
     if period.endswith('y'):  # Années
@@ -220,14 +218,10 @@ def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None, timez
         start_date = end_date - pd.DateOffset(days=int(period[:-1]))
     else:
         raise ValueError(f"Période non reconnue : {period}. Utilisez '1y', '6m', '30d', etc.")
-    logging.debug(f"Date de début calculée: {start_date}")
     
     logging.debug(f"Filtrage des données pour la période {start_date.strftime('%d/%m/%Y %H:%M')} à {end_date.strftime('%d/%m/%Y %H:%M')}...")
     
     # Filtrer les données en fonction de la période
-    if 'date' in df.columns:
-        df = df.set_index('date')
-    
     df = df[(df.index >= start_date) & (df.index <= end_date)]
     logging.debug(f"Données filtrées: {len(df)} barres de prix sur {df_original_len} disponibles")
     

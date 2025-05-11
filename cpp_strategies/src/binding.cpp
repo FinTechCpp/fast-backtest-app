@@ -3,6 +3,7 @@
 #include <pybind11/functional.h>
 #include "strategy.hpp"
 #include "buy_heikin_green.hpp"
+#include "sell_heikin_red.hpp"
 #include "indicators.hpp"
 
 namespace py = pybind11;
@@ -93,6 +94,20 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def_readwrite("use_stoch_filter", &BuyHeikinGreenConfig::use_stoch_filter)
         .def_readwrite("use_previous_ha_candle_red_filter", &BuyHeikinGreenConfig::use_previous_ha_candle_red_filter);
 
+    // Expose SellHeikinRedConfig
+    py::class_<SellHeikinRedConfig>(m, "CppSellHeikinRedConfig")
+        .def(py::init<>())
+        .def_readwrite("ema_short_period", &SellHeikinRedConfig::ema_short_period)
+        .def_readwrite("ema_long_period", &SellHeikinRedConfig::ema_long_period)
+        .def_readwrite("stoch_fastk", &SellHeikinRedConfig::stoch_fastk)
+        .def_readwrite("stoch_slowk", &SellHeikinRedConfig::stoch_slowk)
+        .def_readwrite("stoch_slowd", &SellHeikinRedConfig::stoch_slowd)
+        .def_readwrite("stoch_threshold", &SellHeikinRedConfig::stoch_threshold)
+        .def_readwrite("use_ema_short_filter", &SellHeikinRedConfig::use_ema_short_filter)
+        .def_readwrite("use_ema_long_filter", &SellHeikinRedConfig::use_ema_long_filter)
+        .def_readwrite("use_stoch_filter", &SellHeikinRedConfig::use_stoch_filter)
+        .def_readwrite("use_previous_ha_candle_green_filter", &SellHeikinRedConfig::use_previous_ha_candle_green_filter);
+
     // Expose base Strategy class as abstract
     py::class_<Strategy, std::unique_ptr<Strategy>>(m, "CppStrategy")
         .def("update_candle", &Strategy::update_candle, py::return_value_policy::reference);
@@ -100,4 +115,8 @@ PYBIND11_MODULE(cpp_strategies, m) {
     // Expose BuyHeikinGreen strategy
     py::class_<BuyHeikinGreen, Strategy>(m, "CppBuyHeikinGreen")
         .def(py::init<const StrategyBaseConfig&, const BuyHeikinGreenConfig&>());
+
+    // Expose SellHeikinRed strategy
+    py::class_<SellHeikinRed, Strategy>(m, "CppSellHeikinRed")
+        .def(py::init<const StrategyBaseConfig&, const SellHeikinRedConfig&>());
 }

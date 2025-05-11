@@ -173,7 +173,7 @@ class ChartView(ResultView):
         ema_periods = []
         
         # Si stratégie BuyHeikinGreen, utiliser ses paramètres spécifiques
-        if 'BuyHeikinGreen' in strategy_name:
+        if 'BuyHeikinGreen' in strategy_name or 'SellHeikinRed' in strategy_name:
             ema_short_period = int(strategy_config.get('ema_short_period', 9))
             ema_long_period = int(strategy_config.get('ema_long_period', 21))
             if strategy_config.get('use_ema_short_filter', True):
@@ -210,12 +210,12 @@ class ChartView(ResultView):
         # --------------------------------
         # Stochastique
         # --------------------------------
-        show_stoch = False
+        show_stoch = True
         stoch_k_period = 14  # valeur par défaut
         stoch_d_period = 3  # valeur par défaut
         stoch_slowing = 3  # valeur par défaut
         
-        if 'BuyHeikinGreen' in strategy_name:
+        if 'BuyHeikinGreen' in strategy_name or 'SellHeikinRed' in strategy_name:
             show_stoch = strategy_config.get('use_stoch_filter', False)
             stoch_k_period = int(strategy_config.get('stoch_fastk', 14))
             stoch_slowing = int(strategy_config.get('stoch_slowk', 3))

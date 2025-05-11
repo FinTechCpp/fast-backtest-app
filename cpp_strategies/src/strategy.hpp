@@ -117,6 +117,7 @@ struct Candle {
     double entry_price = 0.0;
     double position_size = 0.0;
     double position_pl_pct = 0.0;
+    double closed_trade_pnl = 0.0; // P&L of the last closed trade
 };
 
 struct Signal {
@@ -158,6 +159,11 @@ struct StrategyBaseConfig {
     // Break-even parameters
     bool use_break_even = false;
     double break_even_threshold = 0.7;
+
+    // Perte maximale journalière
+    bool use_daily_max_loss = false;
+    double daily_max_loss_percentage = 2.0;
+    double daily_max_loss_amount = 0.0; // Calculé à partir de cash et daily_max_loss_percentage
 };
 
 class Strategy {
@@ -186,7 +192,73 @@ protected:
     DateTime last_check_date;
     bool weekday_check = false;
     bool time_check = false;
+
+    // Suivi des pertes journalières
+    DateTime current_trading_day;
+    double daily_pnl = 0.0;
+    bool trading_suspended_for_day = false;
     
+    // Cache pour le dernier trade
+    double last_trade_pnl = 0.0;
+
+    // Vérifie si c'est un nouveau jour de trading
+    bool is_new_trading_day() {
+        if (!current_candle.date.is_valid() || !current_trading_day.is_valid()) {
+            return true;
+        }
+        
+        return (current_candle.date.year != current_trading_day.year ||
+                current_candle.date.month != current_trading_day.month ||
+                current_candle.date.day != current_trading_day.day);
+    }
+    
+    // Met à jour le suivi des pertes journalières
+    void update_daily_pnl_tracking() {
+        // Si la fonctionnalité n'est pas activée, on ne fait rien
+        if (!base_config.use_daily_max_loss) {
+            return;
+        }
+        
+        // Si c'est un nouveau jour, on réinitialise le compteur et on réactive le trading
+        if (is_new_trading_day()) {
+            current_trading_day = current_candle.date;
+            daily_pnl = 0.0;
+            trading_suspended_for_day = false;
+            
+            // Calculer le montant maximum de perte autorisé pour cette journée
+            double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
+            
+            // std::cout << "Nouveau jour de trading: " << current_trading_day.to_string() 
+            //           << " - Perte max autorisée: " << max_loss_amount 
+            //           << " (" << base_config.daily_max_loss_percentage << "%)" << std::endl;
+        }
+        
+        // Si on a un P&L du dernier trade, on l'ajoute au compteur journalier
+        if (last_trade_pnl != 0.0) {
+            daily_pnl += last_trade_pnl;
+            // std::cout << "P&L du trade: " << last_trade_pnl 
+            //           << " - P&L journalier cumulé: " << daily_pnl << std::endl;
+            
+            // Réinitialiser le P&L du dernier trade
+            last_trade_pnl = 0.0;
+            
+            // Calculer dynamiquement le montant de perte maximale
+            double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
+            
+            // Vérifier si on dépasse le seuil de perte
+            if (daily_pnl < -max_loss_amount) {
+                trading_suspended_for_day = true;
+                // std::cout << "ALERTE: Perte journalière maximum dépassée. "
+                //           << "Trading suspendu pour aujourd'hui." << std::endl;
+            }
+        }
+    }
+    
+    // Vérifie si le trading est autorisé en fonction des pertes journalières
+    bool is_trading_allowed() {
+        return !trading_suspended_for_day;
+    }
+
     // Méthode pour vérifier si on est dans les horaires de trading
     bool check_time() {
         if (!current_candle.date.is_valid()) {
@@ -320,10 +392,27 @@ protected:
         }
         
         is_executing = true;
-        
+
+        // Mise à jour du suivi des pertes journalières
+        update_daily_pnl_tracking();
+
         // Quick time check before executing anything else
         if (!check_time()) {
             signal = generate_liquidation_signal();
+            is_executing = false;
+            return;
+        }
+
+        // Si le trading est suspendu pour aujourd'hui à cause des pertes
+        if (base_config.use_daily_max_loss && !is_trading_allowed()) {
+            // Si on est en position, on liquide
+            if (in_position) {
+                signal = generate_liquidation_signal();
+            } else {
+                // Sinon on ne fait rien, mais on informe
+                // std::cout << "Trading suspendu pour aujourd'hui (perte max atteinte)." << std::endl;
+                reset();
+            }
             is_executing = false;
             return;
         }
@@ -381,6 +470,11 @@ public:
     Signal* update_candle(const Candle& candle) {
         // Store the current candle
         current_candle = candle;
+
+        // Store the last trade P&L si fourni dans candle
+        if (candle.closed_trade_pnl != 0.0) {
+            last_trade_pnl = candle.closed_trade_pnl;
+        }
         
         // Update position information
         in_position = candle.in_position;

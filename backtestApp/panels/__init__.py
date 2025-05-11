@@ -5,6 +5,7 @@ from .strategy_base_panel import StrategyBasePanel
 # Import des panels spécifiques aux stratégies
 from .strategy_specific_panels import (
     BuyHeikinGreenPanel,
+    SellHeikinRedPanel,
     CrossEMAPanel,
     # SellTrendFollowingPanel
 )
@@ -13,6 +14,7 @@ from .strategy_specific_panels import (
 # Dictionnaire pour associer chaque stratégie à son panel correspondant
 STRATEGY_PANELS = {
     'BuyHeikinGreenBA': BuyHeikinGreenPanel,
+    'SellHeikinRedBA': SellHeikinRedPanel,
     'CrossEMABA': CrossEMAPanel,
 }
 
@@ -22,6 +24,7 @@ __all__ = [
     'GeneralParamsPanel'
     'StrategyBasePanel',
     'BuyHeikinGreenPanel',
+    'SellHeikinRedPanel',
     'CrossEMAPanel',
     'STRATEGY_PANELS',
     ]

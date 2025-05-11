@@ -113,6 +113,7 @@ class StrategyBasePanel(BasePanel):
         
         # Checkbox pour activer le Break-Even
         self.widgets['use_break_even'] = QCheckBox("Utiliser Break-Even")
+        self.widgets['use_break_even'].toggled.connect(self._toggle_break_even_controls)
         risk_layout.addRow("", self.widgets['use_break_even'])
             
         # Break-Even Threshold
@@ -124,6 +125,21 @@ class StrategyBasePanel(BasePanel):
         self.widgets['break_even_threshold'].setToolTip("Ajuste le stop loss au point d'équilibre quand le profit atteint ce % du take profit")
         self.widgets['break_even_threshold'].setEnabled(False)
         risk_layout.addRow("Break-Even Threshold (%):", self.widgets['break_even_threshold'])
+
+        # Perte maximale par jour
+        self.widgets['use_daily_max_loss'] = QCheckBox("Utiliser la perte maximale quotidienne")
+        self.widgets['use_daily_max_loss'].toggled.connect(self._toggle_daily_max_loss_controls)
+        risk_layout.addRow("", self.widgets['use_daily_max_loss'])
+
+        # Pourcentage de perte maximale
+        self.widgets['daily_max_loss_percentage'] = QDoubleSpinBox()
+        self.widgets['daily_max_loss_percentage'].setDecimals(2)
+        self.widgets['daily_max_loss_percentage'].setRange(0.1, 100.0)
+        self.widgets['daily_max_loss_percentage'].setSingleStep(0.1)
+        self.widgets['daily_max_loss_percentage'].setValue(2.0)  # 2% par défaut
+        self.widgets['daily_max_loss_percentage'].setToolTip("Pourcentage de perte maximale autorisée par jour")
+        self.widgets['daily_max_loss_percentage'].setEnabled(False)
+        risk_layout.addRow("Perte maximale quotidienne (%):", self.widgets['daily_max_loss_percentage'])
         
         # Maximum leverage
         self.widgets['maximal_leverage'] = QDoubleSpinBox()
@@ -133,10 +149,7 @@ class StrategyBasePanel(BasePanel):
         self.widgets['maximal_leverage'].setValue(20.0)  # Default: 20x leverage
         self.widgets['maximal_leverage'].setToolTip("Effet de levier maximum autorisé")
         risk_layout.addRow("Levier maximal autorisé:", self.widgets['maximal_leverage'])
-        
-        # Connect break-even checkbox signal
-        self.widgets['use_break_even'].toggled.connect(self._toggle_break_even_controls)
-        
+                
         risk_sizing_group.setLayout(risk_layout)
         base_layout.addWidget(risk_sizing_group)
         
@@ -199,6 +212,10 @@ class StrategyBasePanel(BasePanel):
     def _toggle_break_even_controls(self, checked):
         """Active ou désactive les contrôles pour le Break-Even"""
         self.widgets['break_even_threshold'].setEnabled(checked)
+
+    def _toggle_daily_max_loss_controls(self, checked):
+        """Active ou désactive les contrôles pour la perte maximale quotidienne"""
+        self.widgets['daily_max_loss_percentage'].setEnabled(checked)
     
     def get_values(self):
         """Récupère les valeurs des widgets du panel."""
@@ -223,6 +240,8 @@ class StrategyBasePanel(BasePanel):
             'risk_percentage': self.widgets['risk_percentage'].value(),
             'use_break_even': self.widgets['use_break_even'].isChecked(),
             'break_even_threshold': self.widgets['break_even_threshold'].value(),
+            'use_daily_max_loss': self.widgets['use_daily_max_loss'].isChecked(),
+            'daily_max_loss_percentage': self.widgets['daily_max_loss_percentage'].value(),
             'maximal_leverage': self.widgets['maximal_leverage'].value(),
             'trading_from': trading_from,
             'trading_to': trading_to,

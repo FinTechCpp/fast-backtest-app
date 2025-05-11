@@ -17,6 +17,7 @@ from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA
 from igtrader.Strategies.SellTrendFollowing import SellTrendFollowingBA
 from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreenBA
 from igtrader.Strategies.CrossEMA import CrossEMABA
+from igtrader.Strategies.SellHeikinRed import SellHeikinRedBA
 
 from views.result_manager import ResultManager
 
@@ -29,6 +30,7 @@ class BacktestApp(QMainWindow):
         # Initialisation des variables
         self.strategy_map = {
             'BuyHeikinGreenBA': BuyHeikinGreenBA,
+            'SellHeikinRedBA': SellHeikinRedBA,
             'BuyTrendFollowingBA': BuyTrendFollowingBA,
             'SellTrendFollowingBA': SellTrendFollowingBA,
             'CrossEMABA': CrossEMABA

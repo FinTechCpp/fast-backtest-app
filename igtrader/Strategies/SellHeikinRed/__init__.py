@@ -20,29 +20,42 @@ class SellHeikinRedBA(BacktestingStrategy):
     def init(self, **kwargs):
         # 1) Create and configure the C++ base config object
         cpp_base_config = CppStrategyBaseConfig()
-        
+
+        # Initialisation des attributs pour suivre les trades fermés
+        self._last_closed_trade_count = 0
+        self._last_trade_closed = False
+        self._last_trade_pnl = 0.0   
+
         # Convert datetime.time objects to hour/minute values
         trading_from = kwargs.pop('trading_from')
         trading_to = kwargs.pop('trading_to')
 
+        # Créer des objets CppTime
+        from_time = CppTime()
+        to_time = CppTime()
+        
         if hasattr(trading_from, 'hour') and callable(trading_from.hour):
             # QTime objects
-            cpp_base_config.trading_from.hour = trading_from.hour()
-            cpp_base_config.trading_from.minute = trading_from.minute()
-            cpp_base_config.trading_from.second = 0
+            from_time.hour = trading_from.hour()
+            from_time.minute = trading_from.minute()
+            from_time.second = 0
             
-            cpp_base_config.trading_to.hour = trading_to.hour()
-            cpp_base_config.trading_to.minute = trading_to.minute()
-            cpp_base_config.trading_to.second = 0
+            to_time.hour = trading_to.hour()
+            to_time.minute = trading_to.minute()
+            to_time.second = 0
         else:
             # datetime.time objects
-            cpp_base_config.trading_from.hour = trading_from.hour
-            cpp_base_config.trading_from.minute = trading_from.minute
-            cpp_base_config.trading_from.second = 0
+            from_time.hour = trading_from.hour
+            from_time.minute = trading_from.minute
+            from_time.second = 0
             
-            cpp_base_config.trading_to.hour = trading_to.hour
-            cpp_base_config.trading_to.minute = trading_to.minute
-            cpp_base_config.trading_to.second = 0
+            to_time.hour = trading_to.hour
+            to_time.minute = trading_to.minute
+            to_time.second = 0
+        
+        # Affecter directement les objets CppTime
+        cpp_base_config.trading_from = from_time
+        cpp_base_config.trading_to = to_time
         
         # Set trading days
         cpp_base_config.trading_days = kwargs.pop('trading_days')
@@ -69,6 +82,10 @@ class SellHeikinRedBA(BacktestingStrategy):
         # Break-even parameters
         cpp_base_config.use_break_even = bool(kwargs.pop('use_break_even', True))
         cpp_base_config.break_even_threshold = float(kwargs.pop('break_even_threshold', 0.7))
+
+        # Daily max loss parameters
+        cpp_base_config.use_daily_max_loss = bool(kwargs.pop('use_daily_max_loss', False))
+        cpp_base_config.daily_max_loss_percentage = float(kwargs.pop('daily_max_loss_percentage', 2.0))
         
         # 2) Create and configure the C++ strategy config
         cpp_strategy_config = CppSellHeikinRedConfig()
@@ -100,6 +117,20 @@ class SellHeikinRedBA(BacktestingStrategy):
         """
         Method called for each candle during backtest.
         """
+        # Vérifier d'abord si une position a été fermée lors de la dernière bougie
+
+        if self.closed_trades and len(self.closed_trades) > self._last_closed_trade_count:
+            last_trade = self.closed_trades[-1]
+            
+            # Vérifier si le trade a été fermé à la dernière bougie
+            if last_trade.exit_bar == len(self.data)-1:
+                self._last_trade_closed = True
+                self._last_trade_pnl = last_trade.pl  # Profit/Loss en valeur absolue
+                # print(f"Trade fermé: PnL = {self._last_trade_pnl}")
+                
+            # Mettre à jour le compteur pour ne pas retraiter ce trade
+            self._last_closed_trade_count = len(self.closed_trades)
+
         # Create a C++ candle object with current data
         cpp_candle = CppCandle()
         
@@ -113,8 +144,18 @@ class SellHeikinRedBA(BacktestingStrategy):
             cpp_candle.date.time.minute = dt.minute
             cpp_candle.date.time.second = dt.second
         else:
-            # Si ce n'est pas un timestamp, essayer de parser la chaîne
-            date_str = str(self.data.index[-1])
+            # Si ce n'est pas un timestamp, parser la chaîne
+            try:
+                date_str = str(self.data.index[-1])
+                dt = datetime.datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
+                cpp_candle.date.year = dt.year
+                cpp_candle.date.month = dt.month
+                cpp_candle.date.day = dt.day
+                cpp_candle.date.time.hour = dt.hour
+                cpp_candle.date.time.minute = dt.minute
+                cpp_candle.date.time.second = dt.second
+            except ValueError:
+                logging.warning(f"Impossible de parser la date: {date_str}")
         
         # Set OHLC values
         cpp_candle.open = float(self.data.Open[-1])
@@ -127,6 +168,13 @@ class SellHeikinRedBA(BacktestingStrategy):
         cpp_candle.position_pl_pct = float(self.position.pl_pct) if self.position else 0.0
         cpp_candle.entry_price = float(self.trades[-1].entry_price) if self.position and self.trades else 0.0
         cpp_candle.position_size = float(self.position.size) if self.position else 0.0
+
+        # Calculer le P&L du dernier trade fermé si applicable
+        cpp_candle.closed_trade_pnl = 0.0
+        if self._last_trade_closed:
+            cpp_candle.closed_trade_pnl = self._last_trade_pnl
+            self._last_trade_closed = False
+            self._last_trade_pnl = 0.0
         
         # Update strategy with new candle and get signal
         cpp_signal = self.cpp_strategy.update_candle(cpp_candle)

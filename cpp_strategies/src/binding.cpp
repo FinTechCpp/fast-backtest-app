@@ -72,7 +72,8 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def_readwrite("in_position", &Candle::in_position)
         .def_readwrite("entry_price", &Candle::entry_price)
         .def_readwrite("position_size", &Candle::position_size)
-        .def_readwrite("position_pl_pct", &Candle::position_pl_pct);
+        .def_readwrite("position_pl_pct", &Candle::position_pl_pct)
+        .def_readwrite("closed_trade_pnl", &Candle::closed_trade_pnl);
 
     // Expose the Signal structure
     py::class_<Signal>(m, "CppSignal")
@@ -103,7 +104,10 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def_readwrite("max_position_percentage", &StrategyBaseConfig::max_position_percentage)
         .def_readwrite("leverage_limit", &StrategyBaseConfig::leverage_limit)
         .def_readwrite("use_break_even", &StrategyBaseConfig::use_break_even)
-        .def_readwrite("break_even_threshold", &StrategyBaseConfig::break_even_threshold);
+        .def_readwrite("break_even_threshold", &StrategyBaseConfig::break_even_threshold)
+        .def_readwrite("use_daily_max_loss", &StrategyBaseConfig::use_daily_max_loss)
+        .def_readwrite("daily_max_loss_percentage", &StrategyBaseConfig::daily_max_loss_percentage)
+        .def_readwrite("daily_max_loss_amount", &StrategyBaseConfig::daily_max_loss_amount);
 
     // Expose BuyHeikinGreenConfig
     py::class_<BuyHeikinGreenConfig>(m, "CppBuyHeikinGreenConfig")

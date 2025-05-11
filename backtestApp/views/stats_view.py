@@ -32,16 +32,6 @@ class StatsView(ResultView):
         
         return self.stats_tab
     
-    def clear_layout(self, layout):
-        """Supprime tous les widgets d'un layout."""
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
-            elif item.layout() is not None:
-                self.clear_layout(item.layout())
-    
     def update(self, data=None, stats=None):
         """Met à jour les statistiques avec les nouvelles données."""
         if stats is None:

@@ -32,6 +32,33 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def("update", &ATR::update)
         .def("get_value", &ATR::get_value)
         .def_property_readonly("is_initialized", &ATR::initialized);
+        
+    // Expose Time structure
+    py::class_<Time>(m, "CppTime")
+        .def(py::init<>())
+        .def_readwrite("hour", &Time::hour)
+        .def_readwrite("minute", &Time::minute)
+        .def_readwrite("second", &Time::second)
+        .def("__lt__", [](const Time &self, const Time &other) { return self < other; })
+        .def("__le__", [](const Time &self, const Time &other) { return self <= other; })
+        .def("__eq__", [](const Time &self, const Time &other) { return self == other; })
+        .def("__ne__", [](const Time &self, const Time &other) { return self != other; });
+
+    // Expose DateTime structure
+    py::class_<DateTime>(m, "CppDateTime")
+        .def(py::init<>())
+        .def_readwrite("year", &DateTime::year)
+        .def_readwrite("month", &DateTime::month)
+        .def_readwrite("day", &DateTime::day)
+        .def_readwrite("time", &DateTime::time)
+        .def("is_valid", &DateTime::is_valid)
+        .def("to_string", &DateTime::to_string)
+        .def("__eq__", [](const DateTime &self, const DateTime &other) { return self == other; })
+        .def("__ne__", [](const DateTime &self, const DateTime &other) { return self != other; });
+
+    // Add utility function
+    m.def("parse_iso_datetime", &parse_iso_datetime);
+    m.def("get_day_of_week", &get_day_of_week);
 
     // Expose the Candle structure
     py::class_<Candle>(m, "CppCandle")
@@ -59,10 +86,8 @@ PYBIND11_MODULE(cpp_strategies, m) {
     // Expose StrategyBaseConfig
     py::class_<StrategyBaseConfig>(m, "CppStrategyBaseConfig")
         .def(py::init<>())
-        .def_readwrite("trading_from_hour", &StrategyBaseConfig::trading_from_hour)
-        .def_readwrite("trading_from_minute", &StrategyBaseConfig::trading_from_minute)
-        .def_readwrite("trading_to_hour", &StrategyBaseConfig::trading_to_hour)
-        .def_readwrite("trading_to_minute", &StrategyBaseConfig::trading_to_minute)
+        .def_readwrite("trading_from", &StrategyBaseConfig::trading_from)
+        .def_readwrite("trading_to", &StrategyBaseConfig::trading_to)
         .def_readwrite("trading_days", &StrategyBaseConfig::trading_days)
         .def_readwrite("take_profit_distance", &StrategyBaseConfig::take_profit_distance)
         .def_readwrite("stop_loss_distance", &StrategyBaseConfig::stop_loss_distance)

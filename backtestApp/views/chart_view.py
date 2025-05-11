@@ -26,16 +26,6 @@ class ChartView(ResultView):
         
         return self.chart_container
     
-    def clear_layout(self, layout):
-        """Supprime tous les widgets d'un layout."""
-        while layout.count():
-            item = layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
-            elif item.layout() is not None:
-                self.clear_layout(item.layout())
-    
     def update(self, data=None, stats=None):
         """Met à jour le graphique avec les nouvelles données."""
         if data is None:
@@ -214,7 +204,7 @@ class ChartView(ResultView):
                 width=1.5, 
                 price_line=False
             )
-            ema_line.set(ema_df.dropna())
+            ema_line.set(ema_df)
             logging.debug(f"Added EMA indicator: {ema_col}")
         
         # --------------------------------
@@ -267,7 +257,7 @@ class ChartView(ResultView):
                 width=1, 
                 price_line=False
             )
-            k_line.set(k_df.dropna())
+            k_line.set(k_df)
             stoch_lines.append(k_line)
             logging.debug("Added Stochastic K indicator")
             
@@ -295,40 +285,38 @@ class ChartView(ResultView):
         # --------------------------------
         # ATR
         # --------------------------------
-        show_atr = strategy_config.get('use_atr_for_sl_tp', False)
         atr_period = int(strategy_config.get('atr_period', 14))
         
-        if show_atr:
-            # Calculer ATR avec talib
-            atr_values = talib.ATR(
-                data[high_col].values,
-                data[low_col].values,
-                data[close_col].values,
-                timeperiod=atr_period
-            )
-            
-            # Créer le sous-graphique pour l'ATR
-            atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
-            atr_chart.layout(background_color='#f0f8ff')
-            atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
-            atr_chart.time_scale(visible=False, min_bar_spacing=0.0)
-            atr_chart.price_scale(minimum_width=120)
-            atr_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
-            subcharts['atr_chart'] = atr_chart
-            
-            # Ajouter la ligne ATR
-            atr_df = pd.DataFrame({
-                'time': data['time'],
-                f'ATR_{atr_period}': atr_values
-            })
-            atr_line = atr_chart.create_line(
-                name=f'ATR_{atr_period}', 
-                color=indicator_colors['ATR'][0], 
-                width=1, 
-                price_line=False
-            )
-            atr_line.set(atr_df.dropna())
-            logging.debug(f"Added ATR indicator: ATR_{atr_period}")
+        # Calculer ATR avec talib
+        atr_values = talib.ATR(
+            data[high_col].values,
+            data[low_col].values,
+            data[close_col].values,
+            timeperiod=atr_period
+        )
+        
+        # Créer le sous-graphique pour l'ATR
+        atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
+        atr_chart.layout(background_color='#f0f8ff')
+        atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
+        atr_chart.time_scale(visible=False, min_bar_spacing=0.0)
+        atr_chart.price_scale(minimum_width=120)
+        atr_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+        subcharts['atr_chart'] = atr_chart
+        
+        # Ajouter la ligne ATR
+        atr_df = pd.DataFrame({
+            'time': data['time'],
+            f'ATR_{atr_period}': atr_values
+        })
+        atr_line = atr_chart.create_line(
+            name=f'ATR_{atr_period}', 
+            color=indicator_colors['ATR'][0], 
+            width=1, 
+            price_line=False
+        )
+        atr_line.set(atr_df)
+        logging.debug(f"Added ATR indicator: ATR_{atr_period}")
         
         # Synchroniser les tooltips entre les graphiques si nous avons des sous-graphiques
         if subcharts:
@@ -347,7 +335,7 @@ class ChartView(ResultView):
         
         return subcharts
     
-    def _add_trade_markers(self, chart, stats):
+    def _add_trade_markers(self, chart: QtChart, stats):
         """Ajoute les marqueurs de trades au graphique."""
         trades = stats['_trades']
         for i, trade in trades.iterrows():
@@ -356,8 +344,8 @@ class ChartView(ResultView):
             entry_price = trade['EntryPrice']
             exit_price = trade['ExitPrice']
             
-            entry_color = "blue" if trade['Size'] > 0 else "red"
-            exit_color = "green" if trade['PnL'] > 0 else "red"
+            entry_color = "blue" if trade['Size'] > 0 else "red" if trade['Size'] < 0 else "black"
+            exit_color = "green" if trade['PnL'] > 0 else "red" if trade['PnL'] < 0 else "black"
             
             # Entry marker
             chart.marker(

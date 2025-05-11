@@ -466,6 +466,8 @@ from cpp_strategies import (
     CppBuyHeikinGreenConfig, 
     CppBuyHeikinGreen, 
     CppCandle,
+    CppDateTime,
+    CppTime,
     CppSignal
 )
 import logging
@@ -483,19 +485,26 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # Convert datetime.time objects to hour/minute values
         trading_from = kwargs.pop('trading_from')
         trading_to = kwargs.pop('trading_to')
+
         if hasattr(trading_from, 'hour') and callable(trading_from.hour):
             # QTime objects
-            cpp_base_config.trading_from_hour = trading_from.hour()
-            cpp_base_config.trading_from_minute = trading_from.minute()
-            cpp_base_config.trading_to_hour = trading_to.hour()
-            cpp_base_config.trading_to_minute = trading_to.minute()
+            cpp_base_config.trading_from.hour = trading_from.hour()
+            cpp_base_config.trading_from.minute = trading_from.minute()
+            cpp_base_config.trading_from.second = 0
+            
+            cpp_base_config.trading_to.hour = trading_to.hour()
+            cpp_base_config.trading_to.minute = trading_to.minute()
+            cpp_base_config.trading_to.second = 0
         else:
             # datetime.time objects
-            cpp_base_config.trading_from_hour = trading_from.hour
-            cpp_base_config.trading_from_minute = trading_from.minute
-            cpp_base_config.trading_to_hour = trading_to.hour
-            cpp_base_config.trading_to_minute = trading_to.minute
-        
+            cpp_base_config.trading_from.hour = trading_from.hour
+            cpp_base_config.trading_from.minute = trading_from.minute
+            cpp_base_config.trading_from.second = 0
+            
+            cpp_base_config.trading_to.hour = trading_to.hour
+            cpp_base_config.trading_to.minute = trading_to.minute
+            cpp_base_config.trading_to.second = 0
+            
         # Set trading days
         cpp_base_config.trading_days = kwargs.pop('trading_days')
         
@@ -555,11 +564,18 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         # Create a C++ candle object with current data
         cpp_candle = CppCandle()
         
-        # Format date as ISO string
+        # Remplir la structure DateTime directement depuis le timestamp
         if isinstance(self.data.index[-1], pd.Timestamp):
-            cpp_candle.date = self.data.index[-1].strftime('%Y-%m-%dT%H:%M:%S')
+            dt = self.data.index[-1]
+            cpp_candle.date.year = dt.year
+            cpp_candle.date.month = dt.month
+            cpp_candle.date.day = dt.day
+            cpp_candle.date.time.hour = dt.hour
+            cpp_candle.date.time.minute = dt.minute
+            cpp_candle.date.time.second = dt.second
         else:
-            cpp_candle.date = str(self.data.index[-1])
+            # Si ce n'est pas un timestamp, essayer de parser la chaîne
+            date_str = str(self.data.index[-1])
         
         # Set OHLC values
         cpp_candle.open = float(self.data.Open[-1])

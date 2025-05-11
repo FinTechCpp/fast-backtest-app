@@ -11,8 +11,101 @@
 #include <sstream>
 #include "indicators.hpp"
 
+
+struct Time {
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+
+    bool operator<(const Time& other) const {
+        return std::tie(hour, minute, second) < std::tie(other.hour, other.minute, other.second);
+    }
+
+    bool operator<=(const Time& other) const {
+        return std::tie(hour, minute, second) <= std::tie(other.hour, other.minute, other.second);
+    }
+
+    bool operator==(const Time& other) const {
+        return hour == other.hour && minute == other.minute && second == other.second;
+    }
+
+    bool operator!=(const Time& other) const {
+        return !(*this == other);
+    }
+};
+
+struct DateTime {
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    Time time;
+
+    bool is_valid() const {
+        return year > 0 && month > 0 && month <= 12 && day > 0 && day <= 31;
+    }
+
+    bool operator==(const DateTime& other) const {
+        return year == other.year && month == other.month && day == other.day && time == other.time;
+    }
+
+    bool operator!=(const DateTime& other) const {
+        return !(*this == other);
+    }
+
+    // Méthode pour convertir en string (utile pour le débogage)
+    std::string to_string() const {
+        char buffer[20];
+        snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d", 
+                year, month, day, time.hour, time.minute, time.second);
+        return std::string(buffer);
+    }
+};
+
+// Fonction utilitaire pour parser une chaîne de date ISO
+DateTime parse_iso_datetime(const std::string& iso_date) {
+    DateTime result;
+    
+    // Vérification de la longueur minimale
+    if (iso_date.size() < 19) {
+        return result;  // Return invalid date
+    }
+    
+    std::tm tm = {};
+    std::istringstream ss(iso_date.substr(0, 19));
+    ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+    
+    if (ss.fail()) {
+        return result;  // Return invalid date
+    }
+    
+    result.year = tm.tm_year + 1900;  // tm_year est années depuis 1900
+    result.month = tm.tm_mon + 1;     // tm_mon est 0-11
+    result.day = tm.tm_mday;
+    result.time.hour = tm.tm_hour;
+    result.time.minute = tm.tm_min;
+    result.time.second = tm.tm_sec;
+    
+    return result;
+}
+
+// Fonction pour obtenir le jour de la semaine (0=lundi, 6=dimanche)
+int get_day_of_week(const DateTime& date) {
+    // Formule pour calculer le jour de la semaine
+    std::tm timeinfo = {};
+    timeinfo.tm_year = date.year - 1900;
+    timeinfo.tm_mon = date.month - 1;
+    timeinfo.tm_mday = date.day;
+    
+    std::time_t time = std::mktime(&timeinfo);
+    std::tm* local_tm = std::localtime(&time);
+    int weekday = local_tm->tm_wday;
+    
+    // Convertir de Sunday=0 à Sunday=6
+    return (weekday == 0) ? 6 : weekday - 1;
+}
+
 struct Candle {
-    std::string date;
+    DateTime date;
     double open;
     double high;
     double low;
@@ -37,10 +130,8 @@ struct Signal {
 
 struct StrategyBaseConfig {
     // Time settings
-    int trading_from_hour = 7;
-    int trading_from_minute = 0;
-    int trading_to_hour = 23;
-    int trading_to_minute = 0;
+    Time trading_from = {7, 0, 0};   // 7:00 AM
+    Time trading_to = {23, 0, 0};    // 11:00 PM
     std::vector<int> trading_days = {0, 1, 2, 3, 4};  // 0=Monday, 6=Sunday
     
     // Fixed SL/TP values as fallback
@@ -92,58 +183,46 @@ protected:
     std::unique_ptr<Signal> signal;
     
     // Cache for time checking
-    std::string last_check_date;
+    DateTime last_check_date;
     bool weekday_check = false;
     bool time_check = false;
     
-    // Utility methods
+    // Méthode pour vérifier si on est dans les horaires de trading
     bool check_time() {
-        if (current_candle.date.empty()) return false;
+        if (!current_candle.date.is_valid()) {
+            return false;
+        }
         
-        // Parse date string to time components - assuming ISO format
+        // Vérifier si la date a changé depuis la dernière vérification
         if (current_candle.date != last_check_date) {
             last_check_date = current_candle.date;
             
-            // Parse date to get day of week (0=Monday, 6=Sunday)
-            std::tm tm = {};
-            std::istringstream ss(current_candle.date.substr(0, 19));
-            ss >> std::get_time(&tm, "%Y-%m-%dT%H:%M:%S");
+            // Calculer le jour de la semaine (0=lundi, 6=dimanche)
+            int weekday = get_day_of_week(current_candle.date);
             
-            if (ss.fail()) {
-                return false;
-            }
-            
-            std::time_t time = std::mktime(&tm);
-            std::tm* local_tm = std::localtime(&time);
-            int weekday = local_tm->tm_wday;
-            // Convert Sunday=0 to Sunday=6
-            weekday = (weekday == 0) ? 6 : weekday - 1;
-            
-            // Check if current day is a trading day
+            // Vérifier si c'est un jour de trading
             weekday_check = std::find(base_config.trading_days.begin(), 
                                      base_config.trading_days.end(), 
                                      weekday) != base_config.trading_days.end();
+            
             if (!weekday_check) {
                 return false;
             }
             
-            // Check trading hours
-            int hour = local_tm->tm_hour;
-            int minute = local_tm->tm_min;
+            // Vérifier les heures de trading
+            const Time& current_time = current_candle.date.time;
             
-            bool after_start = (hour > base_config.trading_from_hour || 
-                               (hour == base_config.trading_from_hour && 
-                                minute >= base_config.trading_from_minute));
-            
-            bool before_end = (hour < base_config.trading_to_hour || 
-                              (hour == base_config.trading_to_hour && 
-                               minute <= base_config.trading_to_minute));
+            bool after_start = (base_config.trading_from < current_time || 
+                               base_config.trading_from == current_time);
+                               
+            bool before_end = (current_time < base_config.trading_to || 
+                              current_time == base_config.trading_to);
                                
             time_check = after_start && before_end;
             return time_check;
         }
         
-        // Use cached result
+        // Utiliser le résultat mis en cache
         return weekday_check && time_check;
     }
     

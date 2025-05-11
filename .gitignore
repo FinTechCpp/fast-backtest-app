@@ -22,3 +22,7 @@ backtest_interface/PyQt/*.spec
 *.bak
 backtest_interface/PyQt/backtest_config.ini.bak
 *.ini.bakbot_v3/docker/postgres-data/
+cpp_strategies/cpp_strategies.cpython-312-x86_64-linux-gnu.so
+cpp_strategies/build/lib.linux-x86_64-cpython-312/cpp_strategies.cpython-312-x86_64-linux-gnu.so
+.gitignore
+cpp_strategies/build/temp.linux-x86_64-cpython-312/src/binding.o

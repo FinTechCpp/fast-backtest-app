@@ -177,12 +177,8 @@ class ConfigManager:
             if success:
                 # Revenir au profil DEFAULT après la suppression
                 self.apply_profile_to_ui("DEFAULT", app)
-                
-                # Mettre à jour le combobox s'il existe
-                if hasattr(app, 'profile_combo'):
-                    app.profile_combo.clear()
-                    app.profile_combo.addItems(self.list_profiles())
-                    app.profile_combo.setCurrentText("DEFAULT")
+                # Mettre à jour l'interface utilisateur
+                self.update_profile_ui(app, "DEFAULT")
                 
                 logging.info(f"Profil '{profile_name}' supprimé.")
             else:
@@ -505,15 +501,7 @@ class ConfigManager:
         return False
     
     def save_current_profile(self, app, window):
-        """Sauvegarde les paramètres actuels dans le profil courant.
-        
-        Args:
-            app: Instance de l'application BacktestApp
-            window: Fenêtre parente pour les dialogues
-            
-        Returns:
-            bool: True si la sauvegarde a réussi, False sinon
-        """
+        """Sauvegarde les paramètres actuels dans le profil courant."""
         if self.current_profile == "DEFAULT":
             # On ne peut pas modifier le profil DEFAULT, demander un nouveau nom
             QMessageBox.information(window, "Information", 
@@ -526,21 +514,15 @@ class ConfigManager:
             
             if success:
                 QMessageBox.information(window, "Succès", f"Profil '{self.current_profile}' mis à jour.")
+                # Mettre à jour l'interface utilisateur
+                self.update_profile_ui(app, self.current_profile)
             else:
                 QMessageBox.warning(window, "Erreur", f"Échec de la mise à jour du profil '{self.current_profile}'.")
             
             return success
     
     def prompt_create_new_profile(self, app, window):
-        """Affiche une boîte de dialogue pour créer un nouveau profil.
-        
-        Args:
-            app: Instance de l'application BacktestApp
-            window: Fenêtre parente pour le dialogue
-            
-        Returns:
-            bool: True si le profil a été créé, False sinon
-        """
+        """Affiche une boîte de dialogue pour créer un nouveau profil."""
         profile_name, ok = QInputDialog.getText(
             window, 
             "Créer un nouveau profil", 
@@ -555,18 +537,9 @@ class ConfigManager:
             
             if success:
                 QMessageBox.information(window, "Succès", f"Profil '{profile_name}' créé.")
-                # Définir ce profil comme profil courant
+                # Définir ce profil comme profil courant et mettre à jour l'interface
                 self.current_profile = profile_name
-                # Mettre à jour l'affichage
-                if hasattr(app, 'current_profile_label'):
-                    app.current_profile_label.setText(f"Profil actif: {profile_name}")
-                # Mettre à jour le combobox s'il existe
-                if hasattr(app, 'profile_combo'):
-                    app.profile_combo.clear()
-                    app.profile_combo.addItems(self.list_profiles())
-                    index = app.profile_combo.findText(profile_name)
-                    if index >= 0:
-                        app.profile_combo.setCurrentIndex(index)
+                self.update_profile_ui(app, profile_name)
             else:
                 QMessageBox.warning(window, "Erreur", f"Échec de la création du profil '{profile_name}'.")
             
@@ -632,6 +605,9 @@ class ConfigManager:
                     app.profile_combo.clear()
                     app.profile_combo.addItems(self.list_profiles())
                     
+                # Mettre à jour l'interface utilisateur
+                self.update_profile_ui(app)
+                
                 QMessageBox.information(
                     window, 
                     "Succès", 
@@ -692,3 +668,49 @@ class ConfigManager:
             )
             logging.error(f"Erreur lors de l'exportation de la configuration: {str(e)}")
             return False
+
+    def update_profile_ui(self, app, selected_profile=None):
+        """Met à jour l'interface utilisateur après modification des profils.
+        
+        Args:
+            app: Instance de l'application BacktestApp
+            selected_profile: Nom du profil à sélectionner après mise à jour (optionnel)
+        """
+        if selected_profile == None:
+            selected_profile = self.current_profile
+            
+        # Mettre à jour les éléments du ProfilePanel si disponible
+        if hasattr(app, 'profile_panel'):
+            # Mettre à jour l'étiquette du profil actif
+            if 'current_profile_label' in app.profile_panel.widgets:
+                app.profile_panel.widgets['current_profile_label'].setText(f"Profil actif: {selected_profile}")
+            
+            # Mettre à jour la liste déroulante des profils
+            if 'profile_combo' in app.profile_panel.widgets:
+                # Bloquer les signaux pour éviter les déclenchements en cascade
+                combo = app.profile_panel.widgets['profile_combo']
+                combo.blockSignals(True)
+                
+                # Sauvegarder l'index actuel
+                current_text = combo.currentText()
+                
+                # Mettre à jour la liste
+                combo.clear()
+                profiles = self.list_profiles()
+                combo.addItems(profiles)
+                
+                # Sélectionner le profil approprié
+                if selected_profile in profiles:
+                    combo.setCurrentText(selected_profile)
+                else:
+                    # Si le profil sélectionné n'est pas disponible, réutiliser l'ancien si possible
+                    if current_text in profiles:
+                        combo.setCurrentText(current_text)
+                    else:
+                        # Sinon, sélectionner DEFAULT
+                        combo.setCurrentText("DEFAULT")
+                
+                combo.blockSignals(False)
+        
+        # Mettre à jour l'affichage du profil actuel dans l'application
+        self.current_profile = selected_profile

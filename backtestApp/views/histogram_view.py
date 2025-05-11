@@ -1,66 +1,69 @@
-import pandas as pd
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QApplication
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox
 from PyQt5.QtCore import Qt
-from lightweight_charts_esistjosh.widgets import QtChart
+
 from views.base_view import ResultView
-from enum import Enum
-
-
-class DataGranularity(Enum):
-    D = "D"  # Jour
-    W = "W"  # Semaine
-    M = "ME"  # Mois
-    Q = "QE"  # Trimestre
-    Y = "YE"  # Année
-
 
 class HistogramView(ResultView):
-    """Vue pour afficher l'évolution de l'équité en chandeliers."""
+    """Vue pour afficher l'histogramme des gains et pertes."""
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self.stats = None
-        self.data = None
-        self.current_chart = None
-        self.equity_df = None  # Pour stocker les données d'équité brutes
-        self.time_unit = DataGranularity.D  # Période par défaut (jour)
-        self.candle_series = None  # Pour stocker la référence à la série de chandeliers
     
     def create(self):
-        """Crée le widget principal pour le graphique en chandeliers."""
-        self.main_tab = QWidget()
-        main_layout = QVBoxLayout(self.main_tab)
+        """Crée le widget principal pour l'histogramme."""
+        self.histogram_tab = QWidget()
+        histogram_layout = QVBoxLayout(self.histogram_tab)
         
-        # Créer le conteneur pour le graphique
-        self.chart_container = QWidget()
-        self.chart_layout = QVBoxLayout(self.chart_container)
-        self.chart_layout.setContentsMargins(0, 0, 0, 0)
+        # Créer les contrôles pour sélectionner l'unité de temps
+        controls_widget = QWidget()
+        controls_layout = QHBoxLayout(controls_widget)
+        controls_layout.setContentsMargins(0, 0, 0, 10)
         
-        # Placeholder pour le graphique (sera remplacé lors de l'exécution)
-        self.chart_placeholder = QLabel("Exécutez le backtest pour afficher le graphique d'équité")
-        self.chart_placeholder.setAlignment(Qt.AlignCenter)
-        self.chart_layout.addWidget(self.chart_placeholder)
+        # Label pour l'unité de temps
+        controls_layout.addWidget(QLabel("Unité de temps:"))
         
-        main_layout.addWidget(self.chart_container)
+        # Combobox pour sélectionner l'unité de temps
+        self.time_unit_combo = QComboBox()
+        self.time_unit_combo.addItems(["Jour", "Semaine", "Mois", "Trimestre", "Année"])
+        self.time_unit_combo.setCurrentIndex(0)  # Jour par défaut
+        self.time_unit_combo.currentIndexChanged.connect(self.update_histogram)
+        controls_layout.addWidget(self.time_unit_combo)
         
-        return self.main_tab
-
+        controls_layout.addStretch()
+        
+        # Ajouter les contrôles au layout principal
+        histogram_layout.addWidget(controls_widget)
+        
+        # Créer le widget pour le graphique matplotlib
+        self.histogram_figure = Figure(figsize=(8, 6), dpi=100)
+        self.histogram_canvas = FigureCanvas(self.histogram_figure)
+        histogram_layout.addWidget(self.histogram_canvas)
+        
+        # Message placeholder initial
+        self.histogram_figure.clear()
+        ax = self.histogram_figure.add_subplot(111)
+        ax.text(0.5, 0.5, "Exécutez le backtest pour afficher l'histogramme des gains/pertes", 
+                horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
+        ax.axis('off')
+        self.histogram_canvas.draw()
+        
+        return self.histogram_tab
+    
     def update(self, data=None, stats=None):
-        """Met à jour le graphique avec les nouvelles données."""
+        """Met à jour l'histogramme avec les nouvelles données."""
         if stats is None:
             return
             
         self.stats = stats
-        self.data = data
-        
-        # Préparer les données d'équité brutes
-        self.prepare_equity_data()
-        
-        # Créer ou mettre à jour le graphique
-        self.update_chart()
+        self.update_histogram()
     
-    def prepare_equity_data(self):
-        """Prépare les données d'équité brutes à partir des trades."""
+    def update_histogram(self):
+        """Met à jour l'histogramme en fonction de l'unité de temps sélectionnée."""
         # Vérifier si on a des données de trades
         if self.stats is None or '_trades' not in self.stats:
             return
@@ -70,274 +73,81 @@ class HistogramView(ResultView):
         
         # Vérifier si les trades sont vides
         if trades.empty:
-            self.equity_df = None
+            self.histogram_figure.clear()
+            ax = self.histogram_figure.add_subplot(111)
+            ax.text(0.5, 0.5, "Aucun trade pour générer un histogramme", 
+                    horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
+            ax.axis('off')
+            self.histogram_canvas.draw()
             return
         
-        # Récupérer les paramètres généraux pour obtenir le capital initial
-        general_params = self.parent.general_params_panel.get_values()
-        initial_equity = general_params['cash']
+        # Définir le regroupement en fonction de l'unité de temps sélectionnée
+        unit = self.time_unit_combo.currentText()
+        if unit == "Jour":
+            # Regrouper par jour
+            trades['TimeGroup'] = trades['ExitTime'].dt.date
+            title = "Gains et pertes quotidiens"
+        elif unit == "Semaine":
+            # Regrouper par semaine (année-numéro de semaine)
+            trades['TimeGroup'] = trades['ExitTime'].dt.to_period('W').apply(lambda x: x.start_time.date())
+            title = "Gains et pertes hebdomadaires"
+        elif unit == "Mois":
+            # Regrouper par mois (année-mois)
+            trades['TimeGroup'] = trades['ExitTime'].dt.to_period('M').apply(lambda x: x.start_time.date())
+            title = "Gains et pertes mensuels"
+        elif unit == "Trimestre":
+            # Regrouper par trimestre (année-trimestre)
+            trades['TimeGroup'] = trades['ExitTime'].dt.to_period('Q').apply(lambda x: x.start_time.date())
+            title = "Gains et pertes trimestriels"
+        else:  # Année
+            # Regrouper par année
+            trades['TimeGroup'] = trades['ExitTime'].dt.year
+            title = "Gains et pertes annuels"
         
-        # Créer une série temporelle complète pour l'équité
-        if self.data is not None:
-            # Utiliser toutes les dates des données de prix
-            all_dates = pd.DataFrame({'time': self.data['time']})
-        else:
-            # Si pas de données de prix, utiliser seulement les dates des trades
-            min_date = trades['EntryTime'].min()
-            max_date = trades['ExitTime'].max()
-            all_dates = pd.DataFrame({'time': pd.date_range(min_date, max_date, freq='D')})
+        # Regrouper les PnL par la période définie
+        grouped = trades.groupby('TimeGroup')['PnL'].sum().reset_index()
+        grouped = grouped.sort_values('TimeGroup')
         
-        # Créer une liste pour stocker les transactions cumulatives
-        equity_transactions = []
+        # Créer l'histogramme
+        self.histogram_figure.clear()
+        ax = self.histogram_figure.add_subplot(111)
         
-        # Ajouter le cash initial
-        equity_transactions.append({
-            'time': trades['EntryTime'].min() - pd.Timedelta(days=1),  # Jour avant le premier trade
-            'amount': initial_equity
-        })
+        # Définir les couleurs pour les barres positives et négatives
+        colors = ['green' if pnl >= 0 else 'red' for pnl in grouped['PnL']]
         
-        # Ajouter toutes les transactions
-        for _, trade in trades.iterrows():
-            equity_transactions.append({
-                'time': trade['ExitTime'],
-                'amount': trade['PnL']  # on ajoute le P&L à chaque sortie de trade
-            })
+        # Créer l'histogramme avec les barres colorées
+        bars = ax.bar(grouped['TimeGroup'].astype(str), grouped['PnL'], color=colors)
         
-        # Convertir en DataFrame
-        equity_trans_df = pd.DataFrame(equity_transactions)
-        equity_trans_df = equity_trans_df.sort_values('time')
+        # Ajouter des annotations pour les valeurs sur chaque barre
+        for bar in bars:
+            height = bar.get_height()
+            value = height if height > 0 else bar.get_y() + height  # position y différente si négatif
+            sign = '+' if height > 0 else ''
+            ax.annotate(f'{sign}{height:.2f}',
+                        xy=(bar.get_x() + bar.get_width() / 2, value),
+                        xytext=(0, 3 if height > 0 else -12),  # 3 points au-dessus ou 12 points en-dessous
+                        textcoords="offset points",
+                        ha='center', va='bottom' if height > 0 else 'top',
+                        fontsize=8)
         
-        # Calculer l'équité cumulative
-        equity_trans_df['cumulative'] = equity_trans_df['amount'].cumsum()
+        # Configurer les axes et les titres
+        ax.set_title(title)
+        ax.set_xlabel('Période')
+        ax.set_ylabel('Profit/Perte ($)')
         
-        # Fusionner avec toutes les dates
-        equity_df = pd.merge_asof(
-            all_dates.sort_values('time'), 
-            equity_trans_df.sort_values('time'), 
-            on='time', 
-            direction='backward'
-        )
+        # Ajuster l'axe y pour avoir le zéro au milieu si nécessaire
+        max_abs_y = max(abs(grouped['PnL'].max()) if not grouped['PnL'].empty and not np.isnan(grouped['PnL'].max()) else 1, 
+                        abs(grouped['PnL'].min()) if not grouped['PnL'].empty and not np.isnan(grouped['PnL'].min()) else 1)
+        ax.set_ylim(-max_abs_y * 1.1, max_abs_y * 1.1)  # 10% de marge
         
-        equity_df['cumulative'] = equity_df['cumulative'].ffill()
+        # Ajouter une ligne horizontale à zéro
+        ax.axhline(y=0, color='black', linestyle='-', alpha=0.3)
         
-        # Stocker les données d'équité brutes
-        self.equity_df = equity_df
-    
-    def resample_equity_data(self, granularity: DataGranularity):
-        """Resampler les données d'équité brutes selon la fréquence demandée."""
-        if self.equity_df is None:
-            return None
+        # Rotation des étiquettes de l'axe x pour une meilleure lisibilité
+        plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
         
-        # Utiliser la valeur de l'énumération pour le resampling
-        freq = granularity.value
+        # Ajuster la mise en page
+        self.histogram_figure.tight_layout()
         
-        # Copier les données d'équité
-        df = self.equity_df.copy()
-        
-        # S'assurer que la colonne time est au format datetime
-        df['time'] = pd.to_datetime(df['time'])
-
-        # Identifier les jours où il y a des données réelles (pas des valeurs remplies)
-        # On sauvegarde les dates avant le resampling
-        original_dates = set(df['time'].dt.strftime('%Y-%m-%d'))
-        
-        # Définir la colonne time comme index pour faciliter le resampling
-        df.set_index('time', inplace=True)
-        
-        # Resampler les données selon la fréquence demandée
-        resampled = df['cumulative'].resample(freq).ohlc()
-        
-        # Réinitialiser l'index pour avoir time comme colonne
-        resampled.reset_index(inplace=True)
-        
-        # Remplir les valeurs manquantes (NaN) si nécessaire
-        resampled = resampled.ffill()
-        
-        # Préparer le format pour lightweight-charts et filtrer les week-ends sans données
-        ohlc_data = []
-        for _, row in resampled.iterrows():
-            # Vérifier que la ligne contient des données valides
-            if pd.notna(row['time']) and pd.notna(row['open']) and pd.notna(row['high']) and pd.notna(row['low']) and pd.notna(row['close']):
-                # Pour le niveau jour, vérifier si c'est une date avec des données réelles
-                date_str = row['time'].strftime('%Y-%m-%d')
-                
-                # Si c'est une période journalière, on filtre les dates sans données
-                if granularity == DataGranularity.D:
-                    # Vérifier si cette date existe dans les données originales
-                    if date_str in original_dates:
-                        ohlc_data.append({
-                            'time': date_str,
-                            'open': float(row['open']),
-                            'high': float(row['high']),
-                            'low': float(row['low']),
-                            'close': float(row['close'])
-                        })
-                else:
-                    # Pour les autres périodes, on garde toutes les données
-                    ohlc_data.append({
-                        'time': date_str,
-                        'open': float(row['open']),
-                        'high': float(row['high']),
-                        'low': float(row['low']),
-                        'close': float(row['close'])
-                    })
-        
-        # Si aucune donnée valide, retourner un DataFrame vide avec les colonnes appropriées
-        if not ohlc_data:
-            return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close'])
-        
-        return pd.DataFrame(ohlc_data)
-    
-    def on_timeframe_change(self, chart: QtChart):
-        """Callback pour le changement d'unité de temps dans la topbar."""
-        period_str = chart.topbar['period'].value
-        
-        # Convertir la période sélectionnée en valeur d'énumération
-        period_mapping = {
-            "Jour": DataGranularity.D,
-            "Semaine": DataGranularity.W,
-            "Mois": DataGranularity.M,
-            "Trimestre": DataGranularity.Q,
-            "Année": DataGranularity.Y
-        }
-        
-        self.time_unit = period_mapping.get(period_str, DataGranularity.D)
-        
-        # Mettre à jour le graphique sans recréer tout
-        if self.equity_df is not None and self.candle_series is not None:
-            # Resampler les données
-            ohlc_df = self.resample_equity_data(self.time_unit)
-            
-            # Mettre à jour les données
-            self.candle_series.set(ohlc_df)
-            
-            # Ajuster l'affichage
-            chart.fit()
-    
-    def update_chart(self):
-        """Crée ou met à jour le graphique."""
-        # Vérifier si on a des données d'équité
-        if self.equity_df is None:
-            self.clear_layout(self.chart_layout)
-            self.chart_placeholder = QLabel("Aucun trade pour générer un graphique d'équité")
-            self.chart_placeholder.setAlignment(Qt.AlignCenter)
-            self.chart_layout.addWidget(self.chart_placeholder)
-            return
-        
-        # Récupérer les paramètres généraux pour obtenir le capital initial
-        general_params = self.parent.general_params_panel.get_values()
-        initial_equity = general_params['cash']
-        
-        # Supprimer l'ancien graphique s'il existe
-        self.clear_layout(self.chart_layout)
-        
-        # Création du conteneur pour le graphique
-        chart_container = QWidget()
-        chart_container.setMinimumHeight(300)  # Forcer une hauteur minimale
-        chart_layout = QVBoxLayout(chart_container)
-        chart_layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Ajouter d'abord le conteneur au layout
-        self.chart_layout.addWidget(chart_container)
-        
-        # Forcer le traitement des événements pour que le widget soit correctement dimensionné
-        QApplication.processEvents()
-
-        # Créer le graphique principal
-        chart = QtChart(chart_container, toolbox=True)
-        
-        # Configurer l'apparence du graphique
-        chart.layout(background_color='#f0f8ff', text_color='black')
-        chart.grid(color='rgba(1,1,1,0.1)', vert_enabled=False, horz_enabled=False, style='solid')
-        chart.price_scale(minimum_width=120, auto_scale=True, mode='normal', scale_margin_bottom=0.1, scale_margin_top=0.1)
-        chart.time_scale(visible=True, seconds_visible=True, border_color='black', min_bar_spacing=0.0)
-        chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
-        chart.legend(visible=True, color_based_on_candle=False, color='rgba(1,1,1,1)', font_size=12, font_family='Arial')
-        
-        # Définir les noms d'affichage correspondant à chaque granularité
-        period_display_names = {
-            DataGranularity.D: "Jour",
-            DataGranularity.W: "Semaine",
-            DataGranularity.M: "Mois", 
-            DataGranularity.Q: "Trimestre",
-            DataGranularity.Y: "Année"
-        }
-        
-        # Récupérer le nom d'affichage pour la période actuelle
-        current_period_display = period_display_names.get(self.time_unit, "Jour")
-        
-        # Ajouter le sélecteur de période dans la topbar
-        chart.topbar.switcher('period', 
-                              tuple(period_display_names.values()), 
-                              default=current_period_display, 
-                              func=self.on_timeframe_change)
-        
-        # Obtenir les données OHLC resamplées pour la période actuelle
-        ohlc_df = self.resample_equity_data(self.time_unit)
-        
-        # Titre fixe pour le graphique d'équité
-        chart_title = "Évolution de l'Équité"
-        
-        # Créer le candlestick chart
-        self.candle_series = chart.create_custom_candle(
-            name=chart_title,
-            up_color='rgba(0, 150, 0, 0.8)',
-            down_color='rgba(220, 0, 0, 0.8)',
-            border_up_color='rgba(0, 150, 0, 1.0)',
-            border_down_color='rgba(220, 0, 0, 1.0)',
-            wick_up_color='rgba(0, 150, 0, 1.0)',
-            wick_down_color='rgba(220, 0, 0, 1.0)'
-        )
-
-        self.candle_series.precision(2)
-        
-        # Ajouter l'equity initiale comme ligne horizontale
-        self.candle_series.horizontal_line(
-            price=initial_equity,
-            color='rgba(0, 0, 0, 0.5)',
-            width=1,
-            style='dashed',
-            text='Capital initial'
-        )
-        
-        # Définir les données pour les chandeliers
-        self.candle_series.set(ohlc_df)
-        
-        # Ajouter des marqueurs pour les trades
-        trades = self.stats['_trades'].copy()
-        for i, trade in trades.iterrows():
-            entry_time = pd.to_datetime(trade['EntryTime'])
-            exit_time = pd.to_datetime(trade['ExitTime'])
-            
-            entry_color = "blue" if trade['Size'] > 0 else "red"
-            exit_color = "green" if trade['PnL'] > 0 else "red"
-            
-            # Entry marker
-            chart.marker(
-                time=entry_time,
-                position="below",
-                color=entry_color,
-                text=f"Trade #{i+1}",
-                shape="arrow_up",
-                size=1)
-                
-            # Exit marker
-            chart.marker(
-                time=exit_time,
-                position="above",
-                color=exit_color,
-                text=f"P/L: {trade['PnL']:.2f}$",
-                shape="arrow_down",
-                size=1)
-        
-        # Fit the chart to show all data
-        chart.fit()
-        
-        # Ajouter le graphique au layout
-        chart_layout.addWidget(chart.get_webview())
-        
-        # Stocker la référence au graphique
-        self.current_chart = chart
-        
-        # Ajouter le conteneur du graphique au layout
-        self.chart_layout.addWidget(chart_container)
+        # Rafraîchir le canvas
+        self.histogram_canvas.draw()

@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTabWidget
 
 from views.chart_view import ChartView
 from views.stats_view import StatsView
+from views.histogram_view_candle import HistogramViewCandle
 from views.histogram_view import HistogramView
 
 class ResultManager:
@@ -21,14 +22,16 @@ class ResultManager:
         self.tab_widget = QTabWidget()
         
         # Initialiser les vues
-        # self.views['chart'] = ChartView(self.parent)
+        self.views['chart'] = ChartView(self.parent)
         self.views['stats'] = StatsView(self.parent)
         self.views['histogram'] = HistogramView(self.parent)
+        # self.views['histogram_candle'] = HistogramViewCandle(self.parent)
         
         # Ajouter les vues aux onglets
-        # self.tab_widget.addTab(self.views['chart'].create(), "📈 Graphiques")
+        self.tab_widget.addTab(self.views['chart'].create(), "📈 Graphiques")
         self.tab_widget.addTab(self.views['stats'].create(), "📊 Statistiques")
         self.tab_widget.addTab(self.views['histogram'].create(), "📊 Histogramme PnL")
+        # self.tab_widget.addTab(self.parent.histogram_view_candle.create(), "📊 Histogramme Bougies")
         
         # Ajouter le widget d'onglets au layout principal
         self.results_layout.addWidget(self.tab_widget)

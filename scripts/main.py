@@ -1,8 +1,12 @@
 import sys
+import os
 import logging
+
+# Add the parent directory to Python's path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# from app import BacktestApp
 from backtestApp.app import BacktestApp
 from PyQt5.QtWidgets import QApplication
 import argparse

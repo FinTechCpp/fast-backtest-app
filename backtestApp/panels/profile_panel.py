@@ -4,7 +4,7 @@ from PyQt5.QtGui import QFont
 from .base_panel import BasePanel
 
 # import ConfigManager
-from config_manager import ConfigManager
+from backtestApp.config_manager import ConfigManager
 
 class ProfilePanel(BasePanel):
     """Panel de gestion des profils de configuration."""

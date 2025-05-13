@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
 # Local imports
-from config_manager import ConfigManager
+from backtestApp.config_manager import ConfigManager
 
 # backtest_backend imports
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowingBA  
@@ -19,7 +19,7 @@ from igtrader.Strategies.BuyHeikinGreen import BuyHeikinGreenBA
 from igtrader.Strategies.CrossEMA import CrossEMABA
 from igtrader.Strategies.SellHeikinRed import SellHeikinRedBA
 
-from views.result_manager import ResultManager
+from backtestApp.views.result_manager import ResultManager
 
 class BacktestApp(QMainWindow):
     def __init__(self):
@@ -78,22 +78,22 @@ class BacktestApp(QMainWindow):
         layout.addWidget(title_label)
         
         # Integration du panel de profils
-        from panels import ProfilePanel
+        from backtestApp.panels import ProfilePanel
         self.profile_panel = ProfilePanel(self)
         layout.addWidget(self.profile_panel.create())
         
         # Utiliser la classe BacktestRunner pour gérer l'exécution du backtest
-        from components.backtest_runner import BacktestRunner
+        from backtestApp.components.backtest_runner import BacktestRunner
         self.backtest_runner = BacktestRunner(self)
         layout.addLayout(self.backtest_runner.get_layout())
         
         # Integration du panel de paramètres généraux
-        from panels import GeneralParamsPanel
+        from backtestApp.panels import GeneralParamsPanel
         self.general_params_panel = GeneralParamsPanel(self)
         layout.addWidget(self.general_params_panel.create())
 
         # Panel de base de la stratégie (commun à toutes les stratégies)
-        from panels import StrategyBasePanel
+        from backtestApp.panels import StrategyBasePanel
         self.strategy_base_panel = StrategyBasePanel(self)
         layout.addWidget(self.strategy_base_panel.create())
 
@@ -130,7 +130,7 @@ class BacktestApp(QMainWindow):
             self.current_strategy_widget = None
         
         # Créer le nouveau panel spécifique
-        from panels import STRATEGY_PANELS
+        from backtestApp.panels import STRATEGY_PANELS
         if selected_strategy in STRATEGY_PANELS:
             try:
                 # Créer une nouvelle instance du panel

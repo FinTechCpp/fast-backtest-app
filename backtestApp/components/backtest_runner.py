@@ -3,7 +3,7 @@ import pandas as pd
 from PyQt5.QtWidgets import QPushButton, QProgressBar, QHBoxLayout, QApplication
 from PyQt5.QtCore import QObject, pyqtSignal
 import traceback
-from ui_util import BacktestWorker
+from backtestApp.ui_util import BacktestWorker
 
 
 class BacktestRunner(QObject):

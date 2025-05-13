@@ -2,7 +2,8 @@ import sys
 import logging
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
-from app import BacktestApp
+# from app import BacktestApp
+from backtestApp.app import BacktestApp
 from PyQt5.QtWidgets import QApplication
 import argparse
 

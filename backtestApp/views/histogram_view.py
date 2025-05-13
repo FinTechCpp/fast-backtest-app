@@ -5,7 +5,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox
 from PyQt5.QtCore import Qt
 
-from views.base_view import ResultView
+from backtestApp.views.base_view import ResultView
 
 class HistogramView(ResultView):
     """Vue pour afficher l'histogramme des gains et pertes."""

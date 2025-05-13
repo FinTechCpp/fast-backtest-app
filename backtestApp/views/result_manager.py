@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTabWidget
 
-from views.chart_view import ChartView
-from views.stats_view import StatsView
-from views.histogram_view_candle import HistogramViewCandle
-from views.histogram_view import HistogramView
+from backtestApp.views.chart_view import ChartView
+from backtestApp.views.stats_view import StatsView
+from backtestApp.views.histogram_view_candle import HistogramViewCandle
+from backtestApp.views.histogram_view import HistogramView
 
 class ResultManager:
     """Gestionnaire des vues de résultats du backtest."""

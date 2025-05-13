@@ -3,9 +3,9 @@ import pandas as pd
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import Qt
 from lightweight_charts_esistjosh.widgets import QtChart
-from ui_util import to_heikin_ashi
+from backtestApp.ui_util import to_heikin_ashi
 
-from views.base_view import ResultView
+from backtestApp.views.base_view import ResultView
 
 class ChartView(ResultView):
     """Vue pour afficher les graphiques de prix et d'indicateurs."""

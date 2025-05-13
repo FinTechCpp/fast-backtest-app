@@ -2,7 +2,7 @@ import pandas as pd
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QApplication
 from PyQt5.QtCore import Qt
 from lightweight_charts_esistjosh.widgets import QtChart
-from views.base_view import ResultView
+from backtestApp.views.base_view import ResultView
 from enum import Enum
 
 

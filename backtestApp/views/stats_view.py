@@ -3,8 +3,8 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QScrollArea, QGroupBo
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt
 
-from views.base_view import ResultView
-from metric_widget import MetricWidget
+from backtestApp.views.base_view import ResultView
+from backtestApp.metric_widget import MetricWidget
 
 class StatsView(ResultView):
     """Vue pour afficher les statistiques du backtest."""

@@ -1,7 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
-#include "strategy.hpp"
+#include "strategy.h"
 #include "buy_heikin_green.hpp"
 #include "sell_heikin_red.hpp"
 #include "indicators.hpp"

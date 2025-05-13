@@ -1,5 +1,5 @@
 #pragma once
-#include "strategy.hpp"
+#include "strategy.h"
 #include <algorithm>
 #include <cmath>
 #include <memory>

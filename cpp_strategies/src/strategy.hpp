@@ -227,17 +227,11 @@ protected:
             
             // Calculer le montant maximum de perte autorisé pour cette journée
             double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
-            
-            // std::cout << "Nouveau jour de trading: " << current_trading_day.to_string() 
-            //           << " - Perte max autorisée: " << max_loss_amount 
-            //           << " (" << base_config.daily_max_loss_percentage << "%)" << std::endl;
         }
         
         // Si on a un P&L du dernier trade, on l'ajoute au compteur journalier
         if (last_trade_pnl != 0.0) {
             daily_pnl += last_trade_pnl;
-            // std::cout << "P&L du trade: " << last_trade_pnl 
-            //           << " - P&L journalier cumulé: " << daily_pnl << std::endl;
             
             // Réinitialiser le P&L du dernier trade
             last_trade_pnl = 0.0;

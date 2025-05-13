@@ -85,10 +85,46 @@ int get_day_of_week(const DateTime& date) {
     return (weekday == 0) ? 6 : weekday - 1;
 }
 
+std::function<void(const std::string&, int)> g_py_log_callback;
 
+void cpp_log(const std::string& message, int level) {
+    if (g_py_log_callback) {
+        g_py_log_callback(message, level);
+    }
+}
     
 
 // Implementation of Strategy class methods
+// Calcule le risque potentiel d'un trade en valeur monétaire
+double Strategy::calculate_trade_risk(bool is_long) {
+    double position_value;
+    double risk_value;
+    
+    if (is_long) {
+        position_value = buy_quantity * buy_price;
+        risk_value = position_value * (stop_loss_distance / buy_price);
+    } else {
+        position_value = sell_quantity * sell_price;
+        risk_value = position_value * (stop_loss_distance / sell_price);
+    }
+    
+    return risk_value;
+}
+
+// Vérifie si un trade est acceptable en termes de risque quotidien
+bool Strategy::is_trade_risk_acceptable(double risk) {
+    if (!base_config.use_daily_max_loss) {
+        return true;  // Si la limite n'est pas activée, tous les trades sont acceptables
+    }
+    
+    // Calculer la limite de perte quotidienne
+    double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
+    
+    // Vérifier si le trade nous ferait dépasser la limite
+    // daily_pnl est le PnL cumulé jusqu'à présent, risk est le montant maximum que nous pourrions perdre
+    return (daily_pnl - risk) >= -max_loss_amount;
+}
+
 bool Strategy::is_new_trading_day() {
     if (!current_candle.date.is_valid() || !current_trading_day.is_valid()) {
         return true;
@@ -109,34 +145,13 @@ void Strategy::update_daily_pnl_tracking() {
     if (is_new_trading_day()) {
         current_trading_day = current_candle.date;
         daily_pnl = 0.0;
-        trading_suspended_for_day = false;
-        
-        // Calculer le montant maximum de perte autorisé pour cette journée
-        double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
     }
     
     // Si on a un P&L du dernier trade, on l'ajoute au compteur journalier
     if (last_trade_pnl != 0.0) {
         daily_pnl += last_trade_pnl;
-        
-        // Réinitialiser le P&L du dernier trade
         last_trade_pnl = 0.0;
-        
-        // Calculer dynamiquement le montant de perte maximale
-        double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
-        
-        // Vérifier si on dépasse le seuil de perte
-        if (daily_pnl < -max_loss_amount) {
-            trading_suspended_for_day = true;
-            // std::cout << "ALERTE: Perte journalière maximum dépassée. "
-            //           << "Trading suspendu pour aujourd'hui." << std::endl;
-        }
     }
-}
-    
-// Vérifie si le trading est autorisé en fonction des pertes journalières
-bool Strategy::is_trading_allowed() {
-    return !trading_suspended_for_day;
 }
 
 // Méthode pour vérifier si on est dans les horaires de trading
@@ -244,6 +259,15 @@ void Strategy::execute_long() {
         throw std::runtime_error("Buy parameters not properly set");
     }
     
+    // Calculer le risque et vérifier s'il est acceptable
+    double risk = calculate_trade_risk(true);
+    if (base_config.use_daily_max_loss && !is_trade_risk_acceptable(risk)) {
+        // Le trade est trop risqué par rapport à notre limite quotidienne, on ne le prend pas
+        cpp_log("Trade rejeté: risque trop élevé", LogLevel::WARNING);
+        reset();
+        return;
+    }
+    
     signal = generate_buy_signal();
 }
 
@@ -252,6 +276,15 @@ void Strategy::execute_short() {
     
     if (sell_quantity <= 0.0 || sell_price <= 0.0) {
         throw std::runtime_error("Sell parameters not properly set");
+    }
+    
+    // Calculer le risque et vérifier s'il est acceptable
+    double risk = calculate_trade_risk(false);
+    if (base_config.use_daily_max_loss && !is_trade_risk_acceptable(risk)) {
+        // Le trade est trop risqué par rapport à notre limite quotidienne, on ne le prend pas
+        cpp_log("Trade rejeté: risque trop élevé", LogLevel::WARNING);
+        reset();
+        return;
     }
     
     signal = generate_sell_signal();
@@ -279,20 +312,6 @@ void Strategy::execute() {
     // Quick time check before executing anything else
     if (!check_time()) {
         signal = generate_liquidation_signal();
-        is_executing = false;
-        return;
-    }
-
-    // Si le trading est suspendu pour aujourd'hui à cause des pertes
-    if (base_config.use_daily_max_loss && !is_trading_allowed()) {
-        // Si on est en position, on liquide
-        if (in_position) {
-            signal = generate_liquidation_signal();
-        } else {
-            // Sinon on ne fait rien, mais on informe
-            // std::cout << "Trading suspendu pour aujourd'hui (perte max atteinte)." << std::endl;
-            reset();
-        }
         is_executing = false;
         return;
     }
@@ -334,6 +353,8 @@ Strategy::Strategy(const StrategyBaseConfig& config)
 Signal* Strategy::update_candle(const Candle& candle) {
     // Store the current candle
     current_candle = candle;
+
+    cpp_log("Candle updated: " + candle.date.to_string(), LogLevel::DEBUG);
 
     // Store the last trade P&L si fourni dans candle
     if (candle.closed_trade_pnl != 0.0) {

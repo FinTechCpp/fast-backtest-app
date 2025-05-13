@@ -11,6 +11,21 @@ namespace py = pybind11;
 PYBIND11_MODULE(cpp_strategies, m) {
     m.doc() = "C++ Trading Strategies";
 
+    // Exposer l'enum LogLevel
+    py::enum_<LogLevel>(m, "LogLevel")
+        .value("DEBUG", LogLevel::DEBUG)
+        .value("INFO", LogLevel::INFO)
+        .value("WARNING", LogLevel::WARNING)
+        .value("ERROR", LogLevel::ERROR)
+        .export_values();
+    
+    // Exposer la fonction pour définir le callback
+    m.def("set_log_callback", [](py::function callback) {
+        g_py_log_callback = [callback](const std::string& msg, int level) {
+            callback(msg, level);
+        };
+    });
+
     // Expose indicators
     py::class_<EMA>(m, "CppEMA")
         .def(py::init<int>())

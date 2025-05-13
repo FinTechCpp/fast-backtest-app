@@ -1,7 +1,8 @@
+from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
+from ..Helpers import create_base_config
 import pandas as pd
 import logging
 import datetime
-from igtrader.backtestingpy.backtesting.backtesting import Strategy as BacktestingStrategy
 from cpp_strategies import (
     CppStrategyBaseConfig, 
     CppSellHeikinRedConfig, 
@@ -9,7 +10,9 @@ from cpp_strategies import (
     CppCandle,
     CppDateTime,
     CppTime,
-    CppSignal
+    CppSignal,
+    set_log_callback,
+    LogLevel
 )
 
 class SellHeikinRedBA(BacktestingStrategy):
@@ -18,75 +21,14 @@ class SellHeikinRedBA(BacktestingStrategy):
     This is a mirror (sell) version of the BuyHeikinGreen strategy.
     """
     def init(self, **kwargs):
-        # 1) Create and configure the C++ base config object
-        cpp_base_config = CppStrategyBaseConfig()
-
         # Initialisation des attributs pour suivre les trades fermés
         self._last_closed_trade_count = 0
         self._last_trade_closed = False
-        self._last_trade_pnl = 0.0   
+        self._last_trade_pnl = 0.0  
 
-        # Convert datetime.time objects to hour/minute values
-        trading_from = kwargs.pop('trading_from')
-        trading_to = kwargs.pop('trading_to')
+        # 1) Create and configure the C++ base config object
+        cpp_base_config = create_base_config(kwargs=kwargs)
 
-        # Créer des objets CppTime
-        from_time = CppTime()
-        to_time = CppTime()
-        
-        if hasattr(trading_from, 'hour') and callable(trading_from.hour):
-            # QTime objects
-            from_time.hour = trading_from.hour()
-            from_time.minute = trading_from.minute()
-            from_time.second = 0
-            
-            to_time.hour = trading_to.hour()
-            to_time.minute = trading_to.minute()
-            to_time.second = 0
-        else:
-            # datetime.time objects
-            from_time.hour = trading_from.hour
-            from_time.minute = trading_from.minute
-            from_time.second = 0
-            
-            to_time.hour = trading_to.hour
-            to_time.minute = trading_to.minute
-            to_time.second = 0
-        
-        # Affecter directement les objets CppTime
-        cpp_base_config.trading_from = from_time
-        cpp_base_config.trading_to = to_time
-        
-        # Set trading days
-        cpp_base_config.trading_days = kwargs.pop('trading_days')
-        
-        # Set distance parameters
-        cpp_base_config.take_profit_distance = float(kwargs.pop('take_profit_distance'))
-        cpp_base_config.stop_loss_distance = float(kwargs.pop('stop_loss_distance'))
-        
-        # ATR parameters - ensure integers for period values
-        cpp_base_config.use_atr_for_sl_tp = bool(kwargs.pop('use_atr_for_sl_tp', False))
-        cpp_base_config.atr_period = int(kwargs.pop('atr_period', 14))
-        cpp_base_config.stop_loss_atr_multiplier = float(kwargs.pop('stop_loss_atr_multiplier', 2.0))
-        cpp_base_config.take_profit_atr_multiplier = float(kwargs.pop('take_profit_atr_multiplier', 3.0))
-        cpp_base_config.min_stop_loss_distance = float(kwargs.pop('min_stop_loss_distance', 5.0))
-        cpp_base_config.min_take_profit_distance = float(kwargs.pop('min_take_profit_distance', 5.0))
-        
-        # Risk management parameters
-        cpp_base_config.use_risk_based_sizing = bool(kwargs.pop('use_risk_based_sizing', False))
-        cpp_base_config.risk_percentage = float(kwargs.pop('risk_percentage', 1.0))
-        cpp_base_config.cash = float(kwargs.pop('cash', 100000.0))
-        cpp_base_config.max_position_percentage = float(kwargs.pop('max_position_percentage', 100.0))
-        cpp_base_config.leverage_limit = float(kwargs.pop('leverage_limit', 20.0))
-        
-        # Break-even parameters
-        cpp_base_config.use_break_even = bool(kwargs.pop('use_break_even', True))
-        cpp_base_config.break_even_threshold = float(kwargs.pop('break_even_threshold', 0.7))
-
-        # Daily max loss parameters
-        cpp_base_config.use_daily_max_loss = bool(kwargs.pop('use_daily_max_loss', False))
-        cpp_base_config.daily_max_loss_percentage = float(kwargs.pop('daily_max_loss_percentage', 2.0))
-        
         # 2) Create and configure the C++ strategy config
         cpp_strategy_config = CppSellHeikinRedConfig()
         
@@ -118,7 +60,6 @@ class SellHeikinRedBA(BacktestingStrategy):
         Method called for each candle during backtest.
         """
         # Vérifier d'abord si une position a été fermée lors de la dernière bougie
-
         if self.closed_trades and len(self.closed_trades) > self._last_closed_trade_count:
             last_trade = self.closed_trades[-1]
             

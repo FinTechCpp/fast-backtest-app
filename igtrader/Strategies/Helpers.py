@@ -6,105 +6,8 @@ import os
 import glob
 import re 
 import logging
+from cpp_strategies import CppStrategyBaseConfig, CppTime, CppDateTime
 
-
-def calculate_supertrend(data, atr_period=14, multiplier=3):
-    """
-    Calcule l'indicateur technique Supertrend.
-    
-    Args:
-        data (pd.DataFrame): DataFrame contenant les données OHLC
-        atr_period (int): Période pour le calcul de l'ATR. Par défaut 14.
-        multiplier (float): Multiplicateur pour les bandes. Par défaut 3.
-    
-    Returns:
-        pd.DataFrame: DataFrame contenant les valeurs du Supertrend
-    """
-    # Extraire les colonnes high, low, close selon la structure du DataFrame
-    high, low, close = None, None, None
-    
-    # Vérifier différentes structures possibles de DataFrame
-    if {'High', 'Low', 'Close'}.issubset(data.columns):
-        high = data['High']
-        low = data['Low']
-        close = data['Close']
-    elif {('bid', 'High'), ('bid', 'Low'), ('bid', 'Close')}.issubset(data.columns):
-        high = data[('bid', 'High')]
-        low = data[('bid', 'Low')]
-        close = data[('bid', 'Close')]
-    else:
-        # Si on a uniquement le prix de clôture, on l'utilise comme approximation
-        if 'close' in data.columns:
-            close = data['close']
-            high = close
-            low = close
-        elif ('close', '') in data.columns:
-            close = data[('close', '')]
-            high = close
-            low = close
-        else:
-            raise KeyError("Les colonnes High, Low, Close ou une colonne close sont requises.")
-    
-    # Calcul de l'ATR
-    atr = talib.ATR(high, low, close, timeperiod=atr_period)
-    
-    # Calcul des bandes
-    hl2 = (high + low) / 2
-    upper_band = hl2 + (multiplier * atr)
-    lower_band = hl2 - (multiplier * atr)
-    
-    # Initialisation du DataFrame résultat
-    st = pd.DataFrame(index=data.index)
-    st['UpperBand'] = upper_band
-    st['LowerBand'] = lower_band
-    st['SuperTrend'] = np.nan
-    st['Direction'] = np.nan
-    
-    # Trouver l'index de départ (premier point non-NaN)
-    start_idx = 0
-    for i in range(len(data)):
-        if not np.isnan(atr.iloc[i]):
-            start_idx = i
-            break
-    
-    if np.isnan(atr).all():
-        return pd.DataFrame(index=data.index, columns=['UpperBand','LowerBand','SuperTrend', 'Direction'], data=np.nan)
-    
-    # Premier calcul
-    st.iloc[start_idx, 2] = lower_band.iloc[start_idx]  # Supertrend initial
-    st.iloc[start_idx, 3] = 1  # Direction initiale haussière
-    
-    # Calcul du Supertrend pour chaque point suivant
-    for i in range(start_idx + 1, len(data)):
-        prev_supertrend = st.iloc[i-1, 2]
-        prev_direction = st.iloc[i-1, 3]
-        
-        # Si la tendance précédente était haussière
-        if prev_direction == 1:
-            curr_lower_band = max(lower_band.iloc[i], prev_supertrend)
-            
-            if close.iloc[i] < curr_lower_band:
-                # Changement vers tendance baissière
-                st.iloc[i, 2] = upper_band.iloc[i]
-                st.iloc[i, 3] = -1
-            else:
-                # Maintien tendance haussière
-                st.iloc[i, 2] = curr_lower_band
-                st.iloc[i, 3] = 1
-        
-        # Si la tendance précédente était baissière
-        else:
-            curr_upper_band = min(upper_band.iloc[i], prev_supertrend)
-            
-            if close.iloc[i] > curr_upper_band:
-                # Changement vers tendance haussière
-                st.iloc[i, 2] = lower_band.iloc[i]
-                st.iloc[i, 3] = 1
-            else:
-                # Maintien tendance baissière
-                st.iloc[i, 2] = curr_upper_band
-                st.iloc[i, 3] = -1 
-    return st
 
 
 def load_data(symbol='NDX', interval='10secs', period='1m', end_date=None,
@@ -394,6 +297,85 @@ def resample_ohlc(data, timeframe):
     
     return resampled
 
+def create_base_config(kwargs) -> CppStrategyBaseConfig:
+    """
+    Crée et configure un objet CppStrategyBaseConfig à partir des kwargs.
+    Extrait également les paramètres utilisés du dictionnaire kwargs.
+    
+    Args:
+        kwargs (dict): Dictionnaire de paramètres
+        
+    Returns:
+        CppStrategyBaseConfig: Objet de configuration de base configuré
+    """
+    # Créer l'objet de configuration
+    config = CppStrategyBaseConfig()
+    
+    # Convertir les objets datetime.time en objets CppTime
+    trading_from = kwargs.pop('trading_from')
+    trading_to = kwargs.pop('trading_to')
+    
+    # Créer des objets CppTime
+    from_time = CppTime()
+    to_time = CppTime()
+    
+    if hasattr(trading_from, 'hour') and callable(trading_from.hour):
+        # QTime objects
+        from_time.hour = trading_from.hour()
+        from_time.minute = trading_from.minute()
+        from_time.second = 0
+        
+        to_time.hour = trading_to.hour()
+        to_time.minute = trading_to.minute()
+        to_time.second = 0
+    else:
+        # datetime.time objects
+        from_time.hour = trading_from.hour
+        from_time.minute = trading_from.minute
+        from_time.second = 0
+        
+        to_time.hour = trading_to.hour
+        to_time.minute = trading_to.minute
+        to_time.second = 0
+    
+    # Affecter les objets CppTime
+    config.trading_from = from_time
+    config.trading_to = to_time
+    
+    # Configurer les jours de trading
+    config.trading_days = kwargs.pop('trading_days')
+    
+    # Configurer les paramètres de distance
+    config.take_profit_distance = float(kwargs.pop('take_profit_distance'))
+    config.stop_loss_distance = float(kwargs.pop('stop_loss_distance'))
+    
+    # Paramètres ATR
+    config.use_atr_for_sl_tp = bool(kwargs.pop('use_atr_for_sl_tp', False))
+    config.atr_period = int(kwargs.pop('atr_period', 14))
+    config.stop_loss_atr_multiplier = float(kwargs.pop('stop_loss_atr_multiplier', 2.0))
+    config.take_profit_atr_multiplier = float(kwargs.pop('take_profit_atr_multiplier', 3.0))
+    config.min_stop_loss_distance = float(kwargs.pop('min_stop_loss_distance', 5.0))
+    config.min_take_profit_distance = float(kwargs.pop('min_take_profit_distance', 5.0))
+    
+    # Paramètres de gestion du risque
+    config.use_risk_based_sizing = bool(kwargs.pop('use_risk_based_sizing', False))
+    config.risk_percentage = float(kwargs.pop('risk_percentage', 1.0))
+    config.cash = float(kwargs.pop('cash', 100000.0))
+    config.max_position_percentage = float(kwargs.pop('max_position_percentage', 100.0))
+    config.leverage_limit = float(kwargs.pop('leverage_limit', 20.0))
+    
+    # Paramètres break-even
+    config.use_break_even = bool(kwargs.pop('use_break_even', True))
+    config.break_even_threshold = float(kwargs.pop('break_even_threshold', 0.7))
+    
+    # Paramètres de perte maximale journalière
+    config.use_daily_max_loss = bool(kwargs.pop('use_daily_max_loss', False))
+    config.daily_max_loss_percentage = float(kwargs.pop('daily_max_loss_percentage', 2.0))
+    
+    logging.debug("Configuration de base créée")
+    return config
+
+
 
 class IncrementalIndicator:
     """Classe de base pour tous les indicateurs calculés de manière incrémentale"""
@@ -404,7 +386,6 @@ class IncrementalIndicator:
         """Vérifie si l'indicateur a besoin d'être initialisé avec un historique"""
         return not self.is_initialized
     
-
 class EMA(IncrementalIndicator):
     """
     Calcule l'Exponential Moving Average (EMA) de manière incrémentale.
@@ -446,7 +427,6 @@ class EMA(IncrementalIndicator):
     def get_value(self):
         """Retourne la valeur actuelle de l'EMA"""
         return self.current_ema
-    
 
 class STOCH(IncrementalIndicator):
     """
@@ -563,7 +543,6 @@ class STOCH(IncrementalIndicator):
         """Retourne les valeurs actuelles K et D"""
         return self.current_k, self.current_d
 
-
 class ATR(IncrementalIndicator):
     """
     Calcule l'Average True Range (ATR) de manière incrémentale.
@@ -640,3 +619,102 @@ class ATR(IncrementalIndicator):
     def get_value(self):
         """Retourne la valeur actuelle de l'ATR"""
         return self.current_atr
+
+
+def calculate_supertrend(data, atr_period=14, multiplier=3):
+    """
+    Calcule l'indicateur technique Supertrend.
+    
+    Args:
+        data (pd.DataFrame): DataFrame contenant les données OHLC
+        atr_period (int): Période pour le calcul de l'ATR. Par défaut 14.
+        multiplier (float): Multiplicateur pour les bandes. Par défaut 3.
+    
+    Returns:
+        pd.DataFrame: DataFrame contenant les valeurs du Supertrend
+    """
+    # Extraire les colonnes high, low, close selon la structure du DataFrame
+    high, low, close = None, None, None
+    
+    # Vérifier différentes structures possibles de DataFrame
+    if {'High', 'Low', 'Close'}.issubset(data.columns):
+        high = data['High']
+        low = data['Low']
+        close = data['Close']
+    elif {('bid', 'High'), ('bid', 'Low'), ('bid', 'Close')}.issubset(data.columns):
+        high = data[('bid', 'High')]
+        low = data[('bid', 'Low')]
+        close = data[('bid', 'Close')]
+    else:
+        # Si on a uniquement le prix de clôture, on l'utilise comme approximation
+        if 'close' in data.columns:
+            close = data['close']
+            high = close
+            low = close
+        elif ('close', '') in data.columns:
+            close = data[('close', '')]
+            high = close
+            low = close
+        else:
+            raise KeyError("Les colonnes High, Low, Close ou une colonne close sont requises.")
+    
+    # Calcul de l'ATR
+    atr = talib.ATR(high, low, close, timeperiod=atr_period)
+    
+    # Calcul des bandes
+    hl2 = (high + low) / 2
+    upper_band = hl2 + (multiplier * atr)
+    lower_band = hl2 - (multiplier * atr)
+    
+    # Initialisation du DataFrame résultat
+    st = pd.DataFrame(index=data.index)
+    st['UpperBand'] = upper_band
+    st['LowerBand'] = lower_band
+    st['SuperTrend'] = np.nan
+    st['Direction'] = np.nan
+    
+    # Trouver l'index de départ (premier point non-NaN)
+    start_idx = 0
+    for i in range(len(data)):
+        if not np.isnan(atr.iloc[i]):
+            start_idx = i
+            break
+    
+    if np.isnan(atr).all():
+        return pd.DataFrame(index=data.index, columns=['UpperBand','LowerBand','SuperTrend', 'Direction'], data=np.nan)
+    
+    # Premier calcul
+    st.iloc[start_idx, 2] = lower_band.iloc[start_idx]  # Supertrend initial
+    st.iloc[start_idx, 3] = 1  # Direction initiale haussière
+    
+    # Calcul du Supertrend pour chaque point suivant
+    for i in range(start_idx + 1, len(data)):
+        prev_supertrend = st.iloc[i-1, 2]
+        prev_direction = st.iloc[i-1, 3]
+        
+        # Si la tendance précédente était haussière
+        if prev_direction == 1:
+            curr_lower_band = max(lower_band.iloc[i], prev_supertrend)
+            
+            if close.iloc[i] < curr_lower_band:
+                # Changement vers tendance baissière
+                st.iloc[i, 2] = upper_band.iloc[i]
+                st.iloc[i, 3] = -1
+            else:
+                # Maintien tendance haussière
+                st.iloc[i, 2] = curr_lower_band
+                st.iloc[i, 3] = 1
+        
+        # Si la tendance précédente était baissière
+        else:
+            curr_upper_band = min(upper_band.iloc[i], prev_supertrend)
+            
+            if close.iloc[i] > curr_upper_band:
+                # Changement vers tendance haussière
+                st.iloc[i, 2] = lower_band.iloc[i]
+                st.iloc[i, 3] = 1
+            else:
+                # Maintien tendance baissière
+                st.iloc[i, 2] = curr_upper_band
+                st.iloc[i, 3] = -1 
+    return st

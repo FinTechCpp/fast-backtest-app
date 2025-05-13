@@ -41,6 +41,18 @@ DateTime parse_iso_datetime(const std::string& iso_date);
 // Fonction pour obtenir le jour de la semaine (0=lundi, 6=dimanche)
 int get_day_of_week(const DateTime& date);
 
+extern std::function<void(const std::string&, int)> g_py_log_callback;
+
+enum LogLevel {
+    DEBUG = 0,
+    INFO = 1,
+    WARNING = 2,
+    ERROR = 3
+};
+
+// Fonction de log C++ qui appelle le callback Python
+void cpp_log(const std::string& message, int level = LogLevel::INFO);
+
 struct Candle {
     DateTime date;
     double open;
@@ -166,14 +178,10 @@ protected:
     // Cache pour le dernier trade
     double last_trade_pnl = 0.0;
 
-    // Vérifie si c'est un nouveau jour de trading
+    double calculate_trade_risk(bool is_long);
+    bool is_trade_risk_acceptable(double risk);
     bool is_new_trading_day();
-    
-    // Met à jour le suivi des pertes journalières
     void update_daily_pnl_tracking();
-    
-    // Vérifie si le trading est autorisé en fonction des pertes journalières
-    bool is_trading_allowed();
 
     // Méthode pour vérifier si on est dans les horaires de trading
     bool check_time();

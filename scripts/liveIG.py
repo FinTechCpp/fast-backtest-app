@@ -22,6 +22,21 @@ logging.basicConfig(
     ]
 )
 
+# Ajouter après la configuration de logging
+
+def cpp_log_callback(message, level):
+    """Fonction de callback pour les logs provenant du code C++"""
+    if level == 0:  # DEBUG
+        logging.debug(f"C++: {message}")
+    elif level == 1:  # INFO
+        logging.info(f"C++: {message}")
+    elif level == 2:  # WARNING
+        logging.warning(f"C++: {message}")
+    elif level == 3:  # ERROR
+        logging.error(f"C++: {message}")
+    else:
+        logging.info(f"C++: {message}")  # Fallback pour les autres niveaux
+
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
 from igtrader.Strategies.CrossEMA import CrossEMA, CrossEMAConfig
 from igtrader.WrapperIGAPI.TickBroker import TickBroker, PriceSource
@@ -61,17 +76,6 @@ def process_candle(candle: BaseCandle, broker: TickBroker, strategy):
     try:
         logging.info(f"Processing complete candle: {candle.date} - O:{candle.Open} H:{candle.High} L:{candle.Low} C:{candle.Close}")
         
-        # Rediriger stdout vers une chaîne pour capturer les logs C++
-        import sys
-        from io import StringIO
-        
-        # Sauvegarde de stdout
-        old_stdout = sys.stdout
-        
-        # Création d'un buffer temporaire pour capturer stdout
-        mystdout = StringIO()
-        sys.stdout = mystdout
-        
         # Convertir la bougie Python en bougie C++
         cpp_candle = CppCandle()
         
@@ -107,15 +111,6 @@ def process_candle(candle: BaseCandle, broker: TickBroker, strategy):
         
         # Mettre à jour la stratégie avec la nouvelle bougie et récupérer le signal
         cpp_signal = strategy.update_candle(cpp_candle)
-        
-        # Récupérer les logs C++ et les envoyer au logger
-        cpp_logs = mystdout.getvalue()
-        sys.stdout = old_stdout  # Restaurer stdout
-        
-        # Envoyer les logs C++ au logger
-        for line in cpp_logs.splitlines():
-            if line.strip():
-                logging.info(f"C++: {line}")
         
         # Exécuter le signal s'il y en a un
         if cpp_signal is not None:
@@ -210,6 +205,8 @@ def main():
 
     # Instancier la stratégie C++
     strategy = CppBuyHeikinGreen(cpp_base_config, cpp_strategy_config)
+    from cpp_strategies import set_log_callback
+    set_log_callback(cpp_log_callback)  # Configurer le callback de log C++
 
     # Création des instances avec le nouveau TickBroker
     broker = TickBroker(

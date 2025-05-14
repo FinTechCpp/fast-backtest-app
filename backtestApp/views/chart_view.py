@@ -4,6 +4,13 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt5.QtCore import Qt
 from lightweight_charts_esistjosh.widgets import QtChart
 from backtestApp.ui_util import to_heikin_ashi
+import time
+import numpy as np
+from cpp_strategies import (
+    CppEMA, 
+    CppSTOCH, 
+    CppATR
+)
 
 from backtestApp.views.base_view import ResultView
 
@@ -54,7 +61,10 @@ class ChartView(ResultView):
         general_params = self.parent.general_params_panel.get_values()
         if general_params['candle_type'] == "Heikin Ashi":
             data = to_heikin_ashi(data)
+        import time
+        start_time = time.time()
         chart.set(data)
+        print(f"Chart set time: {(time.time() - start_time) * 1000:.2f} ms")            
             
         # Ajouter le graphique au layout
         chart_layout.addWidget(chart.get_webview())
@@ -64,9 +74,16 @@ class ChartView(ResultView):
         
         # Si des statistiques sont fournies, ajouter les indicateurs et les trades
         if stats is not None:
+            start_time2 = time.time()
             self._add_equity_subchart(chart, data, stats)
+            end_time2 = time.time()
+            print(f"_add_equity_subchart time: {(end_time2- start_time2) * 1000:.2f} ms")
             self._add_indicators(chart, data)
+            end_time3 = time.time()
+            print(f"_add_indicators time: {(end_time3 - end_time2) * 1000:.2f} ms")
             self._add_trade_markers(chart, stats)
+            end_time4 = time.time()
+            print(f"_add_trade_markers time: {(end_time4 - end_time3) * 1000:.2f} ms")
             
             # Fit the chart to show all data
             chart.fit()
@@ -75,7 +92,10 @@ class ChartView(ResultView):
         self.chart_layout.addWidget(chart_container)
     
     def _add_equity_subchart(self, chart, data, stats):
-        """Ajoute le sous-graphique de l'équité."""
+        """Ajoute le sous-graphique de l'équité - version hautement optimisée."""
+        import numpy as np
+        
+        # Créer le sous-graphique
         equity_chart = chart.create_subchart(height=0.1, width=1, sync=True)
         equity_chart.layout(background_color='#f0f8ff')
         equity_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
@@ -83,65 +103,79 @@ class ChartView(ResultView):
         equity_chart.price_scale(minimum_width=120)
         equity_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
         
-        # Create a realized PnL equity curve that only changes on trade exits
-        all_timestamps = data['time'].copy()
-        equity_df = pd.DataFrame({'time': all_timestamps})
-        
-        # Initial equity value (cash)
+        # Récupérer les paramètres généraux
         general_params = self.parent.general_params_panel.get_values()
         initial_equity = general_params['cash']
-
-        # Get trade data sorted by exit time
-        trades_df = stats['_trades'].sort_values('ExitTime')
-                    
-        # Create a series mapping exit times to cumulative PnL
-        current_equity = initial_equity
-        equity_at_exit = {}
-        for _, trade in trades_df.iterrows():
-            current_equity += trade['PnL']
-            equity_at_exit[trade['ExitTime']] = current_equity
         
-        # Create a new column for equity value
-        equity_df['Equity'] = initial_equity
-        
-        # Update equity values at trade exit times
-        for i, row in equity_df.iterrows():
-            # Convert row time to datetime for comparison
-            row_time = pd.to_datetime(row['time'])
+        # Obtenir les trades triés par date de sortie
+        if '_trades' not in stats or len(stats['_trades']) == 0:
+            # Cas simple: pas de trades, ligne plate
+            equity_df = pd.DataFrame({
+                'time': data['time'],
+                'Equity': initial_equity
+            })
+        else:
+            # Obtenir et préparer les timestamps de toutes les bougies
+            all_timestamps = pd.to_datetime(data['time'])
             
-            # Find the most recent trade exit time that's not after current row time
-            latest_equity = initial_equity
-            for exit_time, equity_value in equity_at_exit.items():
-                if exit_time <= row_time:
-                    latest_equity = equity_value
+            # Préparer les données de trades - conversion efficace
+            trades_df = stats['_trades'].copy()
+            exit_times = pd.to_datetime(trades_df['ExitTime']).values
+            pnl_values = trades_df['PnL'].values
             
-            # Set the equity value for this timestamp
-            equity_df.at[i, 'Equity'] = latest_equity
-
-        # Add the main equity line
-        equity_line = equity_chart.create_line(name='Equity', color='rgba(20,20,180,1)', width=1, price_line=False)
-        equity_line.horizontal_line(price=initial_equity, color='black', width=1, style='dashed', text='Initial Equity')
+            # Création optimisée du DataFrame des changements d'équité en un seul appel
+            equity_changes = pd.DataFrame({
+                'time': exit_times,
+                'Equity': initial_equity + np.cumsum(pnl_values)
+            })
+            
+            # Créer le DataFrame final avec merge_asof (opération vectorisée efficace)
+            equity_df = pd.DataFrame({'time': all_timestamps})
+            
+            # Effectuer le merge_asof sans tri préalable qui crée des copies (plus efficace)
+            # On trie directement dans le merge_asof
+            equity_df = pd.merge_asof(
+                equity_df.sort_values('time'),
+                equity_changes.sort_values('time'),
+                on='time',
+                direction='backward'
+            )
+            
+            # Remplacer les NaN sans utiliser inplace=True (correction du warning)
+            equity_df = equity_df.assign(Equity=lambda x: x['Equity'].fillna(initial_equity))
         
-        # Convert time to string and handle Timedelta objects
-        equity_df['time'] = equity_df['time'].astype(str)
+        # Convertir efficacement les timestamps en strings
+        equity_df['time'] = equity_df['time'].dt.strftime('%Y-%m-%d %H:%M:%S')
         
-        # Set the data for the equity line
+        # Ajouter la ligne d'équité
+        equity_line = equity_chart.create_line(
+            name='Equity', 
+            color='rgba(20,20,180,1)', 
+            width=1, 
+            price_line=False
+        )
+        
+        # Ajouter la ligne horizontale de l'équité initiale
+        equity_line.horizontal_line(
+            price=initial_equity, 
+            color='black', 
+            width=1, 
+            style='dashed', 
+            text='Initial Equity'
+        )
+        
+        # Définir les données
         equity_line.set(equity_df)
         
         return equity_chart
     
     def _add_indicators(self, chart, data):
-        """Ajoute les indicateurs au graphique en les calculant directement avec talib."""
-        try:
-            import talib
-        except ImportError:
-            logging.error("talib n'est pas installé. Les indicateurs ne seront pas affichés.")
-            return {}
-
+        """Ajoute les indicateurs au graphique en les calculant avec les implémentations C++."""        
+        start_time = time.time()
+        
         # Define indicator colors
         indicator_colors = {
             'EMA': ['blue', 'purple', 'red', 'green', 'cyan', 'magenta'],
-            'SUPERTREND': ['orange', 'brown', 'gold'],
             'STOCH_K': ['blue'],
             'STOCH_D': ['red'],
             'ATR': ['green', 'teal']
@@ -163,13 +197,18 @@ class ChartView(ResultView):
             logging.error("Colonnes OHLC introuvables dans les données")
             return {}
         
+        # Convertir les colonnes en tableaux NumPy pour des performances optimales
+        close_values = data[close_col].values
+        high_values = data[high_col].values
+        low_values = data[low_col].values
+        
         # Récupérer les paramètres de la stratégie
         strategy_config = self.parent.get_strategy_config()
         strategy_name = strategy_config.get('strategy', '')
         
-        # --------------------------------
+        # --------------------------
         # EMAs
-        # --------------------------------
+        # --------------------------
         ema_periods = []
         
         # Si stratégie BuyHeikinGreen, utiliser ses paramètres spécifiques
@@ -185,10 +224,21 @@ class ChartView(ResultView):
             if strategy_config.get('use_ema', False):
                 ema_periods = [9, 21, 50, 200]  # Valeurs par défaut
         
+        # Calculer les EMAs avec les implémentations C++
         for i, period in enumerate(ema_periods):
-            # Calculer l'EMA avec talib
             ema_col = f'EMA_{period}'
-            ema_values = talib.EMA(data[close_col].values, timeperiod=period)
+            
+            # Créer et initialiser l'indicateur EMA C++
+            ema = CppEMA(period)
+            ema.initialize_with_history(close_values[:period*2].tolist())  # 2x la période pour une bonne initialisation
+            
+            # Calculer les valeurs EMA pour toutes les bougies
+            ema_values = np.zeros(len(close_values))
+            for j in range(period*2, len(close_values)):
+                ema_values[j] = ema.update(close_values[j])
+            
+            # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
+            ema_values[:period*2] = np.nan
             
             # Créer un DataFrame pour la ligne
             ema_df = pd.DataFrame({
@@ -207,9 +257,9 @@ class ChartView(ResultView):
             ema_line.set(ema_df)
             logging.debug(f"Added EMA indicator: {ema_col}")
         
-        # --------------------------------
+        # --------------------------
         # Stochastique
-        # --------------------------------
+        # --------------------------
         show_stoch = True
         stoch_k_period = 14  # valeur par défaut
         stoch_d_period = 3  # valeur par défaut
@@ -222,17 +272,30 @@ class ChartView(ResultView):
             stoch_d_period = int(strategy_config.get('stoch_slowd', 3))
         
         if show_stoch:
-            # Calculer Stochastique avec talib
-            stoch_k, stoch_d = talib.STOCH(
-                data[high_col].values,
-                data[low_col].values,
-                data[close_col].values,
-                fastk_period=stoch_k_period,
-                slowk_period=stoch_slowing,
-                slowk_matype=0,
-                slowd_period=stoch_d_period,
-                slowd_matype=0
-            )
+            # Créer et initialiser l'indicateur STOCH C++
+            stoch = CppSTOCH(stoch_k_period, stoch_slowing, stoch_d_period)
+            
+            # Calcul du nombre de bougies nécessaires pour l'initialisation
+            hist_size = stoch_k_period + max(stoch_slowing, stoch_d_period)
+            if len(high_values) > hist_size:
+                stoch.initialize_with_history(
+                    high_values[:hist_size].tolist(),
+                    low_values[:hist_size].tolist(),
+                    close_values[:hist_size].tolist()
+                )
+            
+            # Calculer les valeurs stochastiques pour toutes les bougies
+            stoch_k_values = np.zeros(len(close_values))
+            stoch_d_values = np.zeros(len(close_values))
+            
+            for j in range(hist_size, len(close_values)):
+                k, d = stoch.update(high_values[j], low_values[j], close_values[j])
+                stoch_k_values[j] = k
+                stoch_d_values[j] = d
+            
+            # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
+            stoch_k_values[:hist_size] = np.nan
+            stoch_d_values[:hist_size] = np.nan
             
             # Créer le sous-graphique pour le stochastique
             stoch_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
@@ -249,7 +312,7 @@ class ChartView(ResultView):
             # Ligne K
             k_df = pd.DataFrame({
                 'time': data['time'],
-                'STOCH_K': stoch_k
+                'STOCH_K': stoch_k_values
             })
             k_line = stoch_chart.create_line(
                 name='STOCH_K', 
@@ -264,7 +327,7 @@ class ChartView(ResultView):
             # Ligne D
             d_df = pd.DataFrame({
                 'time': data['time'],
-                'STOCH_D': stoch_d
+                'STOCH_D': stoch_d_values
             })
             d_line = stoch_chart.create_line(
                 name='STOCH_D', 
@@ -282,18 +345,29 @@ class ChartView(ResultView):
                 stoch_lines[0].horizontal_line(price=20, color='red', width=1, style='dashed', text='Oversold(20)')
                 stoch_lines[0].horizontal_line(price=50, color='blue', width=1, style='dashed', text='Neutral(50)')
         
-        # --------------------------------
+        # --------------------------
         # ATR
-        # --------------------------------
+        # --------------------------
         atr_period = int(strategy_config.get('atr_period', 14))
         
-        # Calculer ATR avec talib
-        atr_values = talib.ATR(
-            data[high_col].values,
-            data[low_col].values,
-            data[close_col].values,
-            timeperiod=atr_period
-        )
+        # Créer et initialiser l'indicateur ATR C++
+        atr = CppATR(atr_period)
+        
+        # Initialiser avec un historique suffisant
+        if len(high_values) > atr_period*2:
+            atr.initialize_with_history(
+                high_values[:atr_period*2].tolist(),
+                low_values[:atr_period*2].tolist(),
+                close_values[:atr_period*2].tolist()
+            )
+        
+        # Calculer les valeurs ATR pour toutes les bougies
+        atr_values = np.zeros(len(close_values))
+        for j in range(atr_period*2, len(close_values)):
+            atr_values[j] = atr.update(high_values[j], low_values[j], close_values[j])
+        
+        # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
+        atr_values[:atr_period*2] = np.nan
         
         # Créer le sous-graphique pour l'ATR
         atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
@@ -333,6 +407,7 @@ class ChartView(ResultView):
                 trigger_key="Shift",
                 toggle_mode=False)
         
+        print(f"C++ indicators calculation time: {(time.time() - start_time) * 1000:.2f} ms")
         return subcharts
     
     def _add_trade_markers(self, chart: QtChart, stats):

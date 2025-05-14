@@ -4,6 +4,7 @@ from backtestApp.views.chart_view import ChartView
 from backtestApp.views.stats_view import StatsView
 from backtestApp.views.histogram_view_candle import HistogramViewCandle
 from backtestApp.views.histogram_view import HistogramView
+import time
 
 class ResultManager:
     """Gestionnaire des vues de résultats du backtest."""
@@ -40,8 +41,15 @@ class ResultManager:
     
     def update_all(self, data=None, stats=None):
         """Met à jour toutes les vues avec les nouvelles données."""
-        for view in self.views.values():
+        start = time.time()
+        for name, view in self.views.items():
+            start_time = time.time()
             view.update(data, stats)
+            end_time = time.time()
+            print(f"Mise à jour de {name}: {(end_time - start_time) * 1000:.2f} ms")
+
+        end = time.time()
+        print(f"Mise à jour de toutes les vues: {(end - start) * 1000:.2f} ms")
     
     def set_current_tab(self, index):
         """Définit l'onglet actif."""

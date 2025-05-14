@@ -16,25 +16,40 @@ class TradesTableModel(QAbstractTableModel):
         super().__init__()
         self.dataframe = data if data is not None else pd.DataFrame()
         self.columns = list(self.dataframe.columns)
+        # Ajouter une colonne pour l'index numéroté
+        self.show_index = True
         
     def rowCount(self, parent=QModelIndex()):
         return len(self.dataframe)
     
     def columnCount(self, parent=QModelIndex()):
-        return len(self.columns)
+        return len(self.columns) + (1 if self.show_index else 0)
     
     def data(self, index, role=Qt.DisplayRole):
         if not index.isValid():
             return QVariant()
         
+        # Gestion de la colonne d'index numéroté
+        if self.show_index and index.column() == 0:
+            if role == Qt.DisplayRole:
+                # Numéro de trade (base 1)
+                return str(index.row() + 1)
+            elif role == Qt.TextAlignmentRole:
+                return Qt.AlignCenter
+            return QVariant()
+        
+        # Décalage des colonnes pour tenir compte de l'index
+        actual_column = index.column() - (1 if self.show_index else 0)
+        
         if role == Qt.DisplayRole:
-            value = self.dataframe.iloc[index.row(), index.column()]
+            value = self.dataframe.iloc[index.row(), actual_column]
             return str(value)
         
         if role == Qt.TextColorRole:
             # Colorer les profits et pertes
-            if self.columns[index.column()] == 'PnL':
-                value = float(self.dataframe.iloc[index.row(), index.column()])
+            col_name = self.columns[actual_column]
+            if col_name == 'PnL':
+                value = float(self.dataframe.iloc[index.row(), actual_column])
                 if value > 0:
                     return QColor('green')
                 elif value < 0:
@@ -44,7 +59,13 @@ class TradesTableModel(QAbstractTableModel):
     
     def headerData(self, section, orientation, role=Qt.DisplayRole):
         if role == Qt.DisplayRole and orientation == Qt.Horizontal:
-            return self.columns[section]
+            # Pour la colonne d'index
+            if self.show_index and section == 0:
+                return "N°"
+            # Pour les autres colonnes
+            actual_section = section - (1 if self.show_index else 0)
+            if actual_section < len(self.columns):
+                return self.columns[actual_section]
         return QVariant()
     
     def update_data(self, data):
@@ -358,7 +379,7 @@ class StatsView(ResultView):
         self.metric_widgets["End"].update_values(stats["End"].strftime("%Y-%m-%d %H:%M"))
         self.metric_widgets["Exposure"].update_values(f"{stats['Exposure Time [%]']:.2f}%")
 
-        # Performance
+        # Performance - Ajout du delta par rapport au B&H dans la case rendement
         delta = f"{stats['Return [%]'] - stats['Buy & Hold Return [%]']:.2f}% vs B&H"
         self.metric_widgets["Return"].update_values(f"{stats['Return [%]']:.2f}%", delta)
         self.metric_widgets["ReturnAnn"].update_values(f"{stats['Return (Ann.) [%]']:.2f}%")

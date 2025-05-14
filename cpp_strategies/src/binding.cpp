@@ -47,6 +47,13 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def("update", &ATR::update)
         .def("get_value", &ATR::get_value)
         .def_property_readonly("is_initialized", &ATR::initialized);
+
+    py::class_<RSI>(m, "CppRSI")
+        .def(py::init<int>())
+        .def("initialize_with_history", &RSI::initialize_with_history)
+        .def("update", &RSI::update)
+        .def("get_value", &RSI::get_value)
+        .def_property_readonly("is_initialized", &RSI::initialized);
         
     // Expose Time structure
     py::class_<Time>(m, "CppTime")

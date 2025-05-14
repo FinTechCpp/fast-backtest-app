@@ -1,6 +1,6 @@
 import logging
 import pandas as pd
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QCheckBox
 from PyQt5.QtCore import Qt
 from lightweight_charts_esistjosh.widgets import QtChart
 from backtestApp.ui_util import to_heikin_ashi
@@ -9,7 +9,8 @@ import numpy as np
 from cpp_strategies import (
     CppEMA, 
     CppSTOCH, 
-    CppATR
+    CppATR,
+    CppRSI
 )
 
 from backtestApp.views.base_view import ResultView
@@ -20,6 +21,11 @@ class ChartView(ResultView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_chart = None
+        self.subcharts = {}  # Pour stocker les références aux sous-graphiques
+        self.subchart_states = {}  # Pour suivre l'état visible/caché des sous-graphiques
+        self.subchart_heights = {}  # Pour stocker les hauteurs originales des sous-graphiques
+        self.control_buttons = {}  # Pour stocker les références aux boutons de contrôle
+        self.main_chart = None  # Pour stocker la référence au graphique principal
         
     def create(self):
         """Crée le widget principal pour les graphiques."""
@@ -38,8 +44,21 @@ class ChartView(ResultView):
         if data is None:
             return
         
+        # Réinitialiser les dictionnaires de suivi des sous-graphiques
+        self.subcharts = {}
+        self.subchart_states = {}
+        self.subchart_heights = {}
+        self.control_buttons = {}
+        
         # Supprimer l'ancien graphique s'il existe
         self.clear_layout(self.chart_layout)
+        
+        # Création du contrôleur pour les sous-graphiques
+        controls_widget = QWidget()
+        controls_layout = QHBoxLayout(controls_widget)
+        controls_layout.setContentsMargins(5, 0, 5, 0)
+        controls_layout.setSpacing(10)
+        controls_layout.setAlignment(Qt.AlignLeft)
         
         # Création du conteneur pour le graphique
         chart_container = QWidget()
@@ -47,7 +66,8 @@ class ChartView(ResultView):
         chart_layout.setContentsMargins(0, 0, 0, 0)
         
         # Créer le graphique principal
-        chart = QtChart(chart_container, toolbox=True, inner_height=0.7)
+        chart = QtChart(chart_container, toolbox=True, inner_height=0.6)
+        self.main_chart = chart
 
         # Configurer l'apparence du graphique
         chart.layout(background_color='#f0f8ff', text_color='black')
@@ -61,10 +81,10 @@ class ChartView(ResultView):
         general_params = self.parent.general_params_panel.get_values()
         if general_params['candle_type'] == "Heikin Ashi":
             data = to_heikin_ashi(data)
-        import time
+        
         start_time = time.time()
         chart.set(data)
-        print(f"Chart set time: {(time.time() - start_time) * 1000:.2f} ms")            
+        logging.info(f"Chart set time: {(time.time() - start_time) * 1000:.2f} ms")            
             
         # Ajouter le graphique au layout
         chart_layout.addWidget(chart.get_webview())
@@ -75,28 +95,119 @@ class ChartView(ResultView):
         # Si des statistiques sont fournies, ajouter les indicateurs et les trades
         if stats is not None:
             start_time2 = time.time()
-            self._add_equity_subchart(chart, data, stats)
+            equity_chart = self._add_equity_subchart(chart, data, stats)
+            if equity_chart:
+                self.subcharts['equity'] = equity_chart
+                self.subchart_states['equity'] = True  # visible par défaut
+                self.subchart_heights['equity'] = 0.1  # hauteur originale
+                
+                # Ajouter un contrôle pour le sous-graphique d'équité
+                equity_control = QCheckBox("Équité")
+                equity_control.setChecked(True)
+                equity_control.stateChanged.connect(lambda state: self._toggle_subchart('equity', state))
+                controls_layout.addWidget(equity_control)
+                self.control_buttons['equity'] = equity_control
+                
             end_time2 = time.time()
-            print(f"_add_equity_subchart time: {(end_time2- start_time2) * 1000:.2f} ms")
-            self._add_indicators(chart, data)
+            logging.info(f"_add_equity_subchart time: {(end_time2- start_time2) * 1000:.2f} ms")
+            
+            created_subcharts = self._add_indicators(chart, data)
+            
+            # Ajouter des contrôles pour chaque sous-graphique d'indicateur
+            for name, subchart in created_subcharts.items():
+                self.subcharts[name] = subchart
+                self.subchart_states[name] = True  # visible par défaut
+                
+                # Stocker la hauteur originale
+                if name == 'stoch_chart':
+                    self.subchart_heights[name] = 0.1
+                elif name == 'atr_chart':
+                    self.subchart_heights[name] = 0.1
+                elif name == 'rsi_chart':
+                    self.subchart_heights[name] = 0.1
+                
+                # Créer un contrôle pour ce sous-graphique
+                friendly_name = name.split('_')[0].upper()  # Pour transformer 'rsi_chart' en 'RSI' par exemple
+                control = QCheckBox(friendly_name)
+                control.setChecked(True)
+                control.stateChanged.connect(lambda state, n=name: self._toggle_subchart(n, state))
+                controls_layout.addWidget(control)
+                self.control_buttons[name] = control
+            
             end_time3 = time.time()
-            print(f"_add_indicators time: {(end_time3 - end_time2) * 1000:.2f} ms")
+            logging.info(f"_add_indicators time: {(end_time3 - end_time2) * 1000:.2f} ms")
+            
             self._add_trade_markers(chart, stats)
             end_time4 = time.time()
-            print(f"_add_trade_markers time: {(end_time4 - end_time3) * 1000:.2f} ms")
+            logging.info(f"_add_trade_markers time: {(end_time4 - end_time3) * 1000:.2f} ms")
             
             # Fit the chart to show all data
             chart.fit()
         
-        # Ajouter le conteneur du graphique au layout
+        # Ajouter les contrôles en haut et le graphique en-dessous
+        self.chart_layout.addWidget(controls_widget)
         self.chart_layout.addWidget(chart_container)
+    
+    def _toggle_subchart(self, subchart_name, state):
+        """Active ou désactive l'affichage d'un sous-graphique."""
+        if subchart_name not in self.subcharts or subchart_name not in self.subchart_states:
+            return
+        
+        is_visible = bool(state)  # Convert Qt.CheckState to boolean
+        
+        if self.subchart_states[subchart_name] == is_visible:
+            # L'état n'a pas changé
+            return
+            
+        self.subchart_states[subchart_name] = is_visible
+        
+        # Modifier la hauteur du sous-graphique
+        if is_visible:
+            # Rendre visible - restaurer la hauteur originale
+            self.subcharts[subchart_name].resize(1, self.subchart_heights[subchart_name])
+        else:
+            # Cacher - mettre la hauteur à 0
+            self.subcharts[subchart_name].resize(1, 0)
+        
+        # Ajuster les hauteurs des sous-graphiques visibles
+        self._redistribute_heights()
+        
+        # Ajuster l'affichage
+        self.current_chart.fit()
+    
+    def _redistribute_heights(self):
+        """Redistribue les hauteurs des sous-graphiques visibles pour utiliser tout l'espace disponible."""
+        # Compter combien de sous-graphiques sont visibles
+        visible_count = sum(1 for state in self.subchart_states.values() if state)
+        
+        if visible_count == 0:
+            # Tous les sous-graphiques sont cachés, rien à redistribuer
+            return
+        
+        # Déterminer le pourcentage d'espace pour le graphique principal
+        main_height = 0.6  # Valeur par défaut
+        
+        # Calculer la hauteur qui sera occupée par tous les sous-graphiques visibles
+        subcharts_total_height = sum(
+            self.subchart_heights[name] for name, visible in self.subchart_states.items() 
+            if visible
+        )
+        
+        # Ajuster les hauteurs proportionnellement
+        if subcharts_total_height > 0:
+            scale_factor = (1 - main_height) / subcharts_total_height
+            
+            for name, visible in self.subchart_states.items():
+                if visible:
+                    adjusted_height = self.subchart_heights[name] * scale_factor
+                    self.subcharts[name].resize(1, adjusted_height)
     
     def _add_equity_subchart(self, chart, data, stats):
         """Ajoute le sous-graphique de l'équité - version hautement optimisée."""
         import numpy as np
         
         # Créer le sous-graphique
-        equity_chart = chart.create_subchart(height=0.1, width=1, sync=True)
+        equity_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
         equity_chart.layout(background_color='#f0f8ff')
         equity_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
         equity_chart.time_scale(visible=False, min_bar_spacing=0.0)
@@ -178,7 +289,8 @@ class ChartView(ResultView):
             'EMA': ['blue', 'purple', 'red', 'green', 'cyan', 'magenta'],
             'STOCH_K': ['blue'],
             'STOCH_D': ['red'],
-            'ATR': ['green', 'teal']
+            'ATR': ['green', 'teal'],
+            'RSI': ['purple']  # Définir une couleur pour le RSI
         }
         
         # Dictionnaire pour stocker les sous-graphiques créés
@@ -392,6 +504,64 @@ class ChartView(ResultView):
         atr_line.set(atr_df)
         logging.debug(f"Added ATR indicator: ATR_{atr_period}")
         
+        # --------------------------
+        # RSI
+        # --------------------------
+        # Vérifier si le RSI doit être affiché
+        show_rsi = strategy_config.get('use_rsi', False)
+        rsi_period = int(strategy_config.get('rsi_period', 14))
+        
+        if show_rsi:
+            # Créer et initialiser l'indicateur RSI C++
+            # Si la classe CppRSI n'existe pas, vous devrez l'implémenter ou utiliser une autre approche
+            rsi = CppRSI(rsi_period)
+            
+            # Calcul du nombre de bougies nécessaires pour l'initialisation
+            hist_size = rsi_period * 2  # Pour une bonne initialisation
+            
+            # Initialiser avec un historique suffisant
+            if len(close_values) > hist_size:
+                rsi.initialize_with_history(close_values[:hist_size].tolist())
+            
+            # Calculer les valeurs RSI pour toutes les bougies
+            rsi_values = np.zeros(len(close_values))
+            for j in range(hist_size, len(close_values)):
+                rsi_values[j] = rsi.update(close_values[j])
+            
+            # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
+            rsi_values[:hist_size] = np.nan
+            
+            # Créer le sous-graphique pour le RSI
+            rsi_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
+            rsi_chart.layout(background_color='#f0f8ff')
+            rsi_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
+            rsi_chart.time_scale(visible=False, min_bar_spacing=0.0)
+            rsi_chart.price_scale(minimum_width=120)
+            rsi_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
+            subcharts['rsi_chart'] = rsi_chart
+            
+            # Créer un DataFrame pour le RSI
+            rsi_df = pd.DataFrame({
+                'time': data['time'],
+                f'RSI_{rsi_period}': rsi_values
+            })
+            
+            # Ajouter la ligne RSI
+            rsi_line = rsi_chart.create_line(
+                name=f'RSI_{rsi_period}', 
+                color=indicator_colors['RSI'][0], 
+                width=1.5, 
+                price_line=False
+            )
+            rsi_line.set(rsi_df.dropna())
+            
+            # Ajouter les lignes de référence pour le RSI
+            rsi_line.horizontal_line(price=70, color='red', width=1, style='dashed', text='Overbought(70)')
+            rsi_line.horizontal_line(price=30, color='green', width=1, style='dashed', text='Oversold(30)')
+            rsi_line.horizontal_line(price=50, color='blue', width=1, style='dashed', text='Neutral(50)')
+            
+            logging.debug(f"Added RSI indicator: RSI_{rsi_period}")
+        
         # Synchroniser les tooltips entre les graphiques si nous avons des sous-graphiques
         if subcharts:
             sync_charts = [chart]
@@ -407,7 +577,7 @@ class ChartView(ResultView):
                 trigger_key="Shift",
                 toggle_mode=False)
         
-        print(f"C++ indicators calculation time: {(time.time() - start_time) * 1000:.2f} ms")
+        logging.info(f"C++ indicators calculation time: {(time.time() - start_time) * 1000:.2f} ms")
         return subcharts
     
     def _add_trade_markers(self, chart: QtChart, stats):

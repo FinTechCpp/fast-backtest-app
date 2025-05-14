@@ -61,6 +61,31 @@ class BuyHeikinGreenPanel(BasePanel):
         ema_long_group.setLayout(ema_long_layout)
         strategy_layout.addWidget(ema_long_group)
         
+        # NOUVELLE SECTION: RSI
+        rsi_group = QGroupBox("RSI")
+        rsi_layout = QVBoxLayout()
+        
+        # Checkbox pour activer/désactiver le RSI
+        self.widgets['rsi_check'] = QCheckBox("Afficher l'indicateur RSI")
+        self.widgets['rsi_check'].setChecked(False)
+        rsi_layout.addWidget(self.widgets['rsi_check'])
+        
+        # Frame pour les paramètres du RSI
+        rsi_params = QFrame()
+        rsi_params_layout = QHBoxLayout()
+        rsi_params_layout.addWidget(QLabel("Période:"))
+        self.widgets['rsi_period_spin'] = QSpinBox()
+        self.widgets['rsi_period_spin'].setRange(2, 100)
+        self.widgets['rsi_period_spin'].setValue(14)
+        self.widgets['rsi_period_spin'].setEnabled(False)  # Désactivé par défaut
+        rsi_params_layout.addWidget(self.widgets['rsi_period_spin'])
+        rsi_params_layout.addStretch()
+        rsi_params.setLayout(rsi_params_layout)
+        rsi_layout.addWidget(rsi_params)
+        
+        rsi_group.setLayout(rsi_layout)
+        strategy_layout.addWidget(rsi_group)
+        
         # Section Stochastique
         stoch_group = QGroupBox("Stochastique")
         stoch_layout = QVBoxLayout()
@@ -130,6 +155,10 @@ class BuyHeikinGreenPanel(BasePanel):
                 self.widgets['stoch_threshold_spin']
             ], checked))
         
+        # Connexion du signal pour le RSI
+        self.widgets['rsi_check'].toggled.connect(
+            lambda checked: self._toggle_widget_group([self.widgets['rsi_period_spin']], checked))
+        
         strategy_group.setLayout(strategy_layout)
         return strategy_group
     
@@ -152,10 +181,14 @@ class BuyHeikinGreenPanel(BasePanel):
             'stoch_slowd': self.widgets['slowd_spin'].value(),
             'stoch_threshold': self.widgets['stoch_threshold_spin'].value(),
             
+            # Paramètre RSI
+            'rsi_period': self.widgets['rsi_period_spin'].value(),
+            
             # Activation des filtres
             'use_ema_short_filter': self.widgets['ema_short_filter_check'].isChecked(),
             'use_ema_long_filter': self.widgets['ema_long_filter_check'].isChecked(),
             'use_stoch_filter': self.widgets['stoch_filter_check'].isChecked(),
+            'use_rsi': self.widgets['rsi_check'].isChecked(),
             'use_previous_ha_candle_red_filter': self.widgets['previous_ha_candle_red_check'].isChecked(),
         }
     
@@ -193,9 +226,12 @@ class BuyHeikinGreenPanel(BasePanel):
                 self.widgets['slowd_spin'].value()
             ]]
         
+        # RSI
+        if self.widgets['rsi_check'].isChecked():
+            indicators['RSI'] = [[self.widgets['rsi_period_spin'].value()]]
+        
         # ATR (pour le calcul des stops si nécessaire)
         if hasattr(self.widgets, 'atr_check') and self.widgets.get('atr_check') and self.widgets['atr_check'].isChecked():
             indicators['ATR'] = [[self.widgets['atr_period_spin'].value()]]
         
         return indicators
-    

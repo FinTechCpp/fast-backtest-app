@@ -21,11 +21,7 @@ class ChartView(ResultView):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.current_chart = None
-        self.subcharts = {}  # Pour stocker les références aux sous-graphiques
-        self.subchart_states = {}  # Pour suivre l'état visible/caché des sous-graphiques
-        self.subchart_heights = {}  # Pour stocker les hauteurs originales des sous-graphiques
-        self.control_buttons = {}  # Pour stocker les références aux boutons de contrôle
-        self.main_chart = None  # Pour stocker la référence au graphique principal
+
         
     def create(self):
         """Crée le widget principal pour les graphiques."""
@@ -44,21 +40,8 @@ class ChartView(ResultView):
         if data is None:
             return
         
-        # Réinitialiser les dictionnaires de suivi des sous-graphiques
-        self.subcharts = {}
-        self.subchart_states = {}
-        self.subchart_heights = {}
-        self.control_buttons = {}
-        
         # Supprimer l'ancien graphique s'il existe
         self.clear_layout(self.chart_layout)
-        
-        # Création du contrôleur pour les sous-graphiques
-        controls_widget = QWidget()
-        controls_layout = QHBoxLayout(controls_widget)
-        controls_layout.setContentsMargins(5, 0, 5, 0)
-        controls_layout.setSpacing(10)
-        controls_layout.setAlignment(Qt.AlignLeft)
         
         # Création du conteneur pour le graphique
         chart_container = QWidget()
@@ -67,7 +50,6 @@ class ChartView(ResultView):
         
         # Créer le graphique principal
         chart = QtChart(chart_container, toolbox=True, inner_height=0.6)
-        self.main_chart = chart
 
         # Configurer l'apparence du graphique
         chart.layout(background_color='#f0f8ff', text_color='black')
@@ -96,43 +78,11 @@ class ChartView(ResultView):
         if stats is not None:
             start_time2 = time.time()
             equity_chart = self._add_equity_subchart(chart, data, stats)
-            if equity_chart:
-                self.subcharts['equity'] = equity_chart
-                self.subchart_states['equity'] = True  # visible par défaut
-                self.subchart_heights['equity'] = 0.1  # hauteur originale
-                
-                # Ajouter un contrôle pour le sous-graphique d'équité
-                equity_control = QCheckBox("Équité")
-                equity_control.setChecked(True)
-                equity_control.stateChanged.connect(lambda state: self._toggle_subchart('equity', state))
-                controls_layout.addWidget(equity_control)
-                self.control_buttons['equity'] = equity_control
                 
             end_time2 = time.time()
             logging.info(f"_add_equity_subchart time: {(end_time2- start_time2) * 1000:.2f} ms")
             
-            created_subcharts = self._add_indicators(chart, data)
-            
-            # Ajouter des contrôles pour chaque sous-graphique d'indicateur
-            for name, subchart in created_subcharts.items():
-                self.subcharts[name] = subchart
-                self.subchart_states[name] = True  # visible par défaut
-                
-                # Stocker la hauteur originale
-                if name == 'stoch_chart':
-                    self.subchart_heights[name] = 0.1
-                elif name == 'atr_chart':
-                    self.subchart_heights[name] = 0.1
-                elif name == 'rsi_chart':
-                    self.subchart_heights[name] = 0.1
-                
-                # Créer un contrôle pour ce sous-graphique
-                friendly_name = name.split('_')[0].upper()  # Pour transformer 'rsi_chart' en 'RSI' par exemple
-                control = QCheckBox(friendly_name)
-                control.setChecked(True)
-                control.stateChanged.connect(lambda state, n=name: self._toggle_subchart(n, state))
-                controls_layout.addWidget(control)
-                self.control_buttons[name] = control
+            self._add_indicators(chart, data)
             
             end_time3 = time.time()
             logging.info(f"_add_indicators time: {(end_time3 - end_time2) * 1000:.2f} ms")
@@ -144,63 +94,7 @@ class ChartView(ResultView):
             # Fit the chart to show all data
             chart.fit()
         
-        # Ajouter les contrôles en haut et le graphique en-dessous
-        self.chart_layout.addWidget(controls_widget)
         self.chart_layout.addWidget(chart_container)
-    
-    def _toggle_subchart(self, subchart_name, state):
-        """Active ou désactive l'affichage d'un sous-graphique."""
-        if subchart_name not in self.subcharts or subchart_name not in self.subchart_states:
-            return
-        
-        is_visible = bool(state)  # Convert Qt.CheckState to boolean
-        
-        if self.subchart_states[subchart_name] == is_visible:
-            # L'état n'a pas changé
-            return
-            
-        self.subchart_states[subchart_name] = is_visible
-        
-        # Modifier la hauteur du sous-graphique
-        if is_visible:
-            # Rendre visible - restaurer la hauteur originale
-            self.subcharts[subchart_name].resize(1, self.subchart_heights[subchart_name])
-        else:
-            # Cacher - mettre la hauteur à 0
-            self.subcharts[subchart_name].resize(1, 0)
-        
-        # Ajuster les hauteurs des sous-graphiques visibles
-        self._redistribute_heights()
-        
-        # Ajuster l'affichage
-        self.current_chart.fit()
-    
-    def _redistribute_heights(self):
-        """Redistribue les hauteurs des sous-graphiques visibles pour utiliser tout l'espace disponible."""
-        # Compter combien de sous-graphiques sont visibles
-        visible_count = sum(1 for state in self.subchart_states.values() if state)
-        
-        if visible_count == 0:
-            # Tous les sous-graphiques sont cachés, rien à redistribuer
-            return
-        
-        # Déterminer le pourcentage d'espace pour le graphique principal
-        main_height = 0.6  # Valeur par défaut
-        
-        # Calculer la hauteur qui sera occupée par tous les sous-graphiques visibles
-        subcharts_total_height = sum(
-            self.subchart_heights[name] for name, visible in self.subchart_states.items() 
-            if visible
-        )
-        
-        # Ajuster les hauteurs proportionnellement
-        if subcharts_total_height > 0:
-            scale_factor = (1 - main_height) / subcharts_total_height
-            
-            for name, visible in self.subchart_states.items():
-                if visible:
-                    adjusted_height = self.subchart_heights[name] * scale_factor
-                    self.subcharts[name].resize(1, adjusted_height)
     
     def _add_equity_subchart(self, chart, data, stats):
         """Ajoute le sous-graphique de l'équité - version hautement optimisée."""

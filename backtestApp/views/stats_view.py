@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QScrollArea, QGroupBo
                            QTableWidget, QTableWidgetItem, QComboBox, QStackedWidget)
 from PyQt5.QtGui import QColor, QStandardItemModel, QStandardItem
 from PyQt5.QtCore import Qt, QAbstractTableModel, QModelIndex, QVariant, pyqtSlot
-
+import logging
 import time
 import pandas as pd
 import numpy as np
@@ -109,7 +109,7 @@ class StatsView(ResultView):
         self.scroll_stats.setWidget(self.stats_content)
         self.stats_layout.addWidget(self.scroll_stats)
         
-        print(f"StatsView création: {(time.time() - start_time) * 1000:.2f} ms")
+        logging.info(f"StatsView création: {(time.time() - start_time) * 1000:.2f} ms")
         return self.stats_tab
     
     def _create_stats_widgets(self):
@@ -427,4 +427,4 @@ class StatsView(ResultView):
         # Mettre à jour les tableaux avec pagination
         self._refresh_trades_table()
         
-        print(f"StatsView update: {(time.time() - start_time) * 1000:.2f} ms")
+        logging.info(f"StatsView update: {(time.time() - start_time) * 1000:.2f} ms")

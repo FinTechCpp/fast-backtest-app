@@ -402,9 +402,9 @@ class ChartView(ResultView):
         # RSI
         # --------------------------
         # Vérifier si le RSI doit être affiché
-        show_rsi = strategy_config.get('use_rsi', False)
+        show_rsi = strategy_config.get('use_rsi_filter', False)
         rsi_period = int(strategy_config.get('rsi_period', 14))
-        
+
         if show_rsi:
             # Créer et initialiser l'indicateur RSI C++
             # Si la classe CppRSI n'existe pas, vous devrez l'implémenter ou utiliser une autre approche
@@ -439,7 +439,6 @@ class ChartView(ResultView):
                 'time': data['time'],
                 f'RSI_{rsi_period}': rsi_values
             })
-            
             # Ajouter la ligne RSI
             rsi_line = rsi_chart.create_line(
                 name=f'RSI_{rsi_period}', 

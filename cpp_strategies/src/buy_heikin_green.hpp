@@ -82,7 +82,7 @@ private:
         if (current_stoch_k == 0.0) {
             return false;
         }
-        
+        cpp_log("STOCH_K: " + std::to_string(current_stoch_k), LogLevel::WARNING);
         int threshold = config.stoch_threshold;
         bool result = current_stoch_k < threshold || (k_previous > 0.0 && k_previous < threshold);
         
@@ -98,7 +98,7 @@ private:
         if (current_rsi == 0.0) {
             return false;
         }
-        
+        cpp_log("RSI: " + std::to_string(current_rsi), LogLevel::WARNING);
         // Vérifier si le RSI est inférieur au seuil défini
         return current_rsi < config.rsi_threshold;
     }

@@ -29,3 +29,4 @@ cpp_strategies/build/lib.linux-x86_64-cpython-311/cpp_strategies.cpython-311-x86
 cpp_strategies/build/temp.linux-x86_64-cpython-312/src/binding.o
 cpp_strategies/build/temp.linux-x86_64-cpython-311/src/binding.o
 .vscode/
+*.o

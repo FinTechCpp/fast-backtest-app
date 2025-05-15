@@ -143,7 +143,10 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def_readwrite("use_ema_short_filter", &BuyHeikinGreenConfig::use_ema_short_filter)
         .def_readwrite("use_ema_long_filter", &BuyHeikinGreenConfig::use_ema_long_filter)
         .def_readwrite("use_stoch_filter", &BuyHeikinGreenConfig::use_stoch_filter)
-        .def_readwrite("use_previous_ha_candle_red_filter", &BuyHeikinGreenConfig::use_previous_ha_candle_red_filter);
+        .def_readwrite("use_previous_ha_candle_red_filter", &BuyHeikinGreenConfig::use_previous_ha_candle_red_filter)
+        .def_readwrite("use_rsi_filter", &BuyHeikinGreenConfig::use_rsi_filter)
+        .def_readwrite("rsi_period", &BuyHeikinGreenConfig::rsi_period)
+        .def_readwrite("rsi_threshold", &BuyHeikinGreenConfig::rsi_threshold);
 
     // Expose SellHeikinRedConfig
     py::class_<SellHeikinRedConfig>(m, "CppSellHeikinRedConfig")

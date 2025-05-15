@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QTabWidget
-
+import logging
 from backtestApp.views.chart_view import ChartView
 from backtestApp.views.stats_view import StatsView
 from backtestApp.views.histogram_view_candle import HistogramViewCandle
@@ -46,10 +46,10 @@ class ResultManager:
             start_time = time.time()
             view.update(data, stats)
             end_time = time.time()
-            print(f"Mise à jour de {name}: {(end_time - start_time) * 1000:.2f} ms")
+            logging.info(f"Mise à jour de {name}: {(end_time - start_time) * 1000:.2f} ms")
 
         end = time.time()
-        print(f"Mise à jour de toutes les vues: {(end - start) * 1000:.2f} ms")
+        logging.info(f"Mise à jour de toutes les vues: {(end - start) * 1000:.2f} ms")
     
     def set_current_tab(self, index):
         """Définit l'onglet actif."""

@@ -12,10 +12,13 @@ struct BuyHeikinGreenConfig {
     int stoch_slowk = 7;
     int stoch_slowd = 3;
     int stoch_threshold = 20;
+    int rsi_period = 14;         // Période pour le calcul du RSI
+    int rsi_threshold = 30;      // Seuil pour le filtre RSI
     
     bool use_ema_short_filter = true;
     bool use_ema_long_filter = true;
     bool use_stoch_filter = true;
+    bool use_rsi_filter = false; // Désactivé par défaut
     bool use_previous_ha_candle_red_filter = true;
 };
 
@@ -27,6 +30,7 @@ private:
     std::unique_ptr<EMA> ema_short_calculator;
     std::unique_ptr<EMA> ema_long_calculator;
     std::unique_ptr<STOCH> stochastic_calculator;
+    std::unique_ptr<RSI> rsi_calculator;      // Ajout du calculateur RSI
     std::unique_ptr<ATR> atr_calculator;
     
     // Indicator names
@@ -34,6 +38,7 @@ private:
     std::string ema_long_name;
     std::string stoch_k_name;
     std::string stoch_d_name;
+    std::string rsi_name;                     // Nom pour le RSI
     std::string atr_name;
     
     // Indicator values
@@ -41,6 +46,7 @@ private:
     double current_ema_long = 0.0;
     double current_stoch_k = 0.0;
     double current_stoch_d = 0.0;
+    double current_rsi = 0.0;                 // Valeur actuelle du RSI
     double current_atr = 0.0;
     double k_previous = 0.0;
     double d_previous = 0.0;
@@ -87,6 +93,16 @@ private:
         return result;
     }
     
+    // Nouveau filtre pour le RSI
+    bool rsi_inf_threshold_filter() {
+        if (current_rsi == 0.0) {
+            return false;
+        }
+        
+        // Vérifier si le RSI est inférieur au seuil défini
+        return current_rsi < config.rsi_threshold;
+    }
+    
     bool previous_ha_candle_red_filter() {
         if (buffer.size() < 3) {
             return false;
@@ -96,7 +112,7 @@ private:
     }
     
     bool initialize_indicators() {
-        if (buffer.size() < static_cast<size_t>(std::max(config.ema_long_period, config.stoch_fastk + config.stoch_slowk))) {
+        if (buffer.size() < static_cast<size_t>(std::max({config.ema_long_period, config.stoch_fastk + config.stoch_slowk, config.rsi_period * 2}))) {
             return false;
         }
         
@@ -122,6 +138,9 @@ private:
         current_stoch_k = stoch_values.first;
         current_stoch_d = stoch_values.second;
         
+        // Initialize RSI
+        current_rsi = rsi_calculator->initialize_with_history(close_history);
+        
         // Initialize ATR
         current_atr = atr_calculator->initialize_with_history(
             high_history, low_history, close_history
@@ -130,7 +149,8 @@ private:
         return (current_ema_short > 0.0 && 
                 current_ema_long > 0.0 && 
                 current_stoch_k > 0.0 && 
-                current_stoch_d > 0.0);
+                current_stoch_d > 0.0 &&
+                current_rsi > 0.0);
     }
     
     bool update_indicators() {
@@ -141,6 +161,7 @@ private:
         if (!ema_short_calculator->initialized() ||
             !ema_long_calculator->initialized() ||
             !stochastic_calculator->initialized() ||
+            !rsi_calculator->initialized() ||
             (base_config.use_atr_for_sl_tp && !atr_calculator->initialized())) {
             
             // Try to initialize indicators if they're not initialized
@@ -161,6 +182,9 @@ private:
         );
         current_stoch_k = stoch_values.first;
         current_stoch_d = stoch_values.second;
+        
+        // Update RSI
+        current_rsi = rsi_calculator->update(current_candle.close);
         
         // Update ATR
         current_atr = atr_calculator->update(
@@ -184,6 +208,7 @@ public:
             config.stoch_slowk,
             config.stoch_slowd
         );
+        rsi_calculator = std::make_unique<RSI>(config.rsi_period);
         atr_calculator = std::make_unique<ATR>(base_cfg.atr_period);
         
         // Initialize indicator names
@@ -195,6 +220,7 @@ public:
         stoch_d_name = "STOCH_D_" + std::to_string(config.stoch_fastk) + "_" +
                       std::to_string(config.stoch_slowk) + "_" +
                       std::to_string(config.stoch_slowd);
+        rsi_name = "RSI_" + std::to_string(config.rsi_period);
         atr_name = "ATR_" + std::to_string(base_cfg.atr_period);
         
         // Setup active filters
@@ -206,6 +232,9 @@ public:
         }
         if (config.use_stoch_filter) {
             active_filters.push_back([this]() { return this->stoch_inf_threshold_filter(); });
+        }
+        if (config.use_rsi_filter) {
+            active_filters.push_back([this]() { return this->rsi_inf_threshold_filter(); });
         }
         if (config.use_previous_ha_candle_red_filter) {
             active_filters.push_back([this]() { return this->previous_ha_candle_red_filter(); });

@@ -15,10 +15,10 @@ struct BuyHeikinGreenConfig {
     int rsi_period = 14;         // Période pour le calcul du RSI
     int rsi_threshold = 30;      // Seuil pour le filtre RSI
     
-    bool use_ema_short_filter = true;
-    bool use_ema_long_filter = true;
-    bool use_stoch_filter = true;
-    bool use_rsi_filter = false; // Désactivé par défaut
+    bool use_ema_short_filter = false;
+    bool use_ema_long_filter = false;
+    bool use_stoch_filter = false;
+    bool use_rsi_filter = false;
     bool use_previous_ha_candle_red_filter = true;
 };
 
@@ -93,7 +93,6 @@ private:
         return result;
     }
     
-    // Nouveau filtre pour le RSI
     bool rsi_inf_threshold_filter() {
         if (current_rsi == 0.0) {
             return false;

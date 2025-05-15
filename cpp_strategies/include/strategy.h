@@ -9,8 +9,7 @@
 #include <ctime>
 #include <iomanip>
 #include <sstream>
-#include "indicators.hpp"
-
+#include "indicators/indicators.hpp"
 
 struct Time {
     int hour = 0;

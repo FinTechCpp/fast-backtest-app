@@ -4,7 +4,7 @@
 #include "strategy.h"
 #include "buy_heikin_green.hpp"
 #include "sell_heikin_red.hpp"
-#include "indicators.hpp"
+#include "indicators/indicators.hpp"
 
 namespace py = pybind11;
 

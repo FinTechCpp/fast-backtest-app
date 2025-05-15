@@ -51,13 +51,16 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         cpp_strategy_config.stoch_fastk = int(kwargs.pop('stoch_fastk'))
         cpp_strategy_config.stoch_slowk = int(kwargs.pop('stoch_slowk'))
         cpp_strategy_config.stoch_slowd = int(kwargs.pop('stoch_slowd'))
-        cpp_strategy_config.stoch_threshold = int(kwargs.pop('stoch_threshold', 50))
+        cpp_strategy_config.stoch_threshold = int(kwargs.pop('stoch_threshold'))
+        cpp_strategy_config.rsi_period = int(kwargs.pop('rsi_period'))
+        cpp_strategy_config.rsi_threshold = int(kwargs.pop('rsi_threshold'))
         
         # Filter settings
-        cpp_strategy_config.use_ema_short_filter = bool(kwargs.pop('use_ema_short_filter', True))
-        cpp_strategy_config.use_ema_long_filter = bool(kwargs.pop('use_ema_long_filter', True))
-        cpp_strategy_config.use_stoch_filter = bool(kwargs.pop('use_stoch_filter', True))
-        cpp_strategy_config.use_previous_ha_candle_red_filter = bool(kwargs.pop('use_previous_ha_candle_red_filter', True))
+        cpp_strategy_config.use_ema_short_filter = bool(kwargs.pop('use_ema_short_filter', False))
+        cpp_strategy_config.use_ema_long_filter = bool(kwargs.pop('use_ema_long_filter', False))
+        cpp_strategy_config.use_stoch_filter = bool(kwargs.pop('use_stoch_filter', False))
+        cpp_strategy_config.use_previous_ha_candle_red_filter = bool(kwargs.pop('use_previous_ha_candle_red_filter', False))
+        cpp_strategy_config.use_rsi_filter = bool(kwargs.pop('use_rsi_filter', False))
         
         # 3) Instantiate the C++ strategy with the configurations
         self.cpp_strategy = CppBuyHeikinGreen(cpp_base_config, cpp_strategy_config)

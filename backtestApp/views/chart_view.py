@@ -96,7 +96,7 @@ class ChartView(ResultView):
         
         self.chart_layout.addWidget(chart_container)
     
-    def _add_equity_subchart(self, chart, data, stats):
+    def _add_equity_subchart(self, chart: QtChart, data, stats):
         """Ajoute le sous-graphique de l'équité - version hautement optimisée."""
         import numpy as np
         
@@ -174,7 +174,7 @@ class ChartView(ResultView):
         
         return equity_chart
     
-    def _add_indicators(self, chart, data):
+    def _add_indicators(self, chart: QtChart, data):
         """Ajoute les indicateurs au graphique en les calculant avec les implémentations C++."""        
         start_time = time.time()
         
@@ -211,7 +211,7 @@ class ChartView(ResultView):
         # Récupérer les paramètres de la stratégie
         strategy_config = self.parent.get_strategy_config()
         strategy_name = strategy_config.get('strategy', '')
-        
+
         # --------------------------
         # EMAs
         # --------------------------
@@ -446,7 +446,7 @@ class ChartView(ResultView):
                 width=1.5, 
                 price_line=False
             )
-            rsi_line.set(rsi_df.dropna())
+            rsi_line.set(rsi_df)
             
             # Ajouter les lignes de référence pour le RSI
             rsi_line.horizontal_line(price=70, color='red', width=1, style='dashed', text='Overbought(70)')

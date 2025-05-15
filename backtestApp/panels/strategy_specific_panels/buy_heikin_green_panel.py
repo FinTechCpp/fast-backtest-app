@@ -67,7 +67,7 @@ class BuyHeikinGreenPanel(BasePanel):
         
         # Checkbox pour activer/désactiver le filtre RSI
         self.widgets['rsi_filter_check'] = QCheckBox("Activer le filtre RSI")
-        self.widgets['rsi_filter_check'].setChecked(False)
+        self.widgets['rsi_filter_check'].setChecked(True)
         rsi_layout.addWidget(self.widgets['rsi_filter_check'])
         
         # Frame pour les paramètres du RSI
@@ -83,7 +83,7 @@ class BuyHeikinGreenPanel(BasePanel):
         rsi_params_layout.addWidget(QLabel("Seuil filtre:"), 1, 0)
         self.widgets['rsi_threshold_spin'] = QSpinBox()
         self.widgets['rsi_threshold_spin'].setRange(1, 99)
-        self.widgets['rsi_threshold_spin'].setValue(30)
+        self.widgets['rsi_threshold_spin'].setValue(70)
         rsi_params_layout.addWidget(self.widgets['rsi_threshold_spin'], 1, 1)
         
         rsi_params.setLayout(rsi_params_layout)

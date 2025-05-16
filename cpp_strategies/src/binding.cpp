@@ -97,7 +97,7 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def_readwrite("high", &Candle::high)
         .def_readwrite("low", &Candle::low)
         .def_readwrite("close", &Candle::close)
-        .def_readwrite("indicators", &Candle::indicators)
+        // .def_readwrite("indicators", &Candle::indicators)
         .def_readwrite("in_position", &Candle::in_position)
         .def_readwrite("entry_price", &Candle::entry_price)
         .def_readwrite("position_size", &Candle::position_size)

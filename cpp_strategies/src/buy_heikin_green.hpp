@@ -47,9 +47,12 @@ private:
     double current_stoch_k = 0.0;
     double current_stoch_d = 0.0;
     double current_rsi = 0.0;                 // Valeur actuelle du RSI
+    double previous_rsi = 0.0;                 // Valeur précédente du RSI
+    double previous_2_rsi = 0.0;               // Valeur pré-précédente du RSI (two periods ago)
     double current_atr = 0.0;
     double k_previous = 0.0;
     double d_previous = 0.0;
+
     
     // Cache for Heikin Ashi candles
     struct HeikinAshiValue {
@@ -66,26 +69,54 @@ private:
     
     bool ema_short_filter() {
         if (current_ema_short == 0.0) {
+            logger->log_filter_result("EMA Court", false);
+            logger->log_filter_detail("EMA Court", "Valeur EMA non calculée (0.0)", LogLevel::DEBUG);
             return false;
         }
-        return price() > current_ema_short;
+        bool result = price() > current_ema_short;
+        logger->log_filter_result("EMA Court", result);
+        logger->log_indicator_comparison(ema_short_name, price(), current_ema_short, 
+                                       result ? ">" : "<=", result, LogLevel::DEBUG);
+        return result;
     }
     
     bool ema_long_filter() {
         if (current_ema_long == 0.0) {
+            logger->log_filter_result("EMA Long", false);
+            logger->log_filter_detail("EMA Long", "Valeur EMA non calculée (0.0)", LogLevel::DEBUG);
             return false;
         }
-        return price() > current_ema_long;
+        bool result = price() > current_ema_long;
+        logger->log_filter_result("EMA Long", result);
+        logger->log_indicator_comparison(ema_long_name, price(), current_ema_long, 
+                                       result ? ">" : "<=", result, LogLevel::DEBUG);
+        return result;
     }
     
     bool stoch_inf_threshold_filter() {
         if (current_stoch_k == 0.0) {
+            logger->log_filter_result("Stochastique", false);
+            logger->log_filter_detail("Stochastique", "Valeur K non calculée (0.0)", LogLevel::DEBUG);
             return false;
         }
-        cpp_log("STOCH_K: " + std::to_string(current_stoch_k), LogLevel::WARNING);
         int threshold = config.stoch_threshold;
         bool result = current_stoch_k < threshold || (k_previous > 0.0 && k_previous < threshold);
         
+        logger->log_filter_result("Stochastique", result);
+
+        if (current_stoch_k < threshold) {
+            logger->log_indicator_comparison(stoch_k_name, current_stoch_k, threshold, 
+                                           "<", true, LogLevel::DEBUG);
+        } else if (k_previous > 0.0 && k_previous < threshold) {
+            logger->log_filter_detail("Stochastique", 
+                                   "K précédent (" + std::to_string(k_previous) + 
+                                   ") < seuil (" + std::to_string(threshold) + ")", 
+                                   LogLevel::DEBUG);
+        } else {
+            logger->log_indicator_comparison(stoch_k_name, current_stoch_k, threshold, 
+                                           ">=", false, LogLevel::DEBUG);
+        }
+
         // Update previous values
         k_previous = current_stoch_k;
         d_previous = current_stoch_d;
@@ -95,19 +126,63 @@ private:
     
     bool rsi_inf_threshold_filter() {
         if (current_rsi == 0.0) {
+            logger->log_filter_result("RSI", false);
+            logger->log_filter_detail("RSI", "Valeur RSI non calculée (0.0)", LogLevel::DEBUG);
             return false;
         }
-        cpp_log("RSI: " + std::to_string(current_rsi), LogLevel::WARNING);
-        // Vérifier si le RSI est inférieur au seuil défini
-        return current_rsi < config.rsi_threshold;
+    
+        int threshold = config.rsi_threshold;
+        
+        // Vérifier les trois dernières valeurs
+        bool current_below = current_rsi < threshold;
+        bool prev_below = previous_rsi > 0.0 && previous_rsi < threshold;
+        bool prev2_below = previous_2_rsi > 0.0 && previous_2_rsi < threshold;
+        
+        bool result = current_below || prev_below || prev2_below;
+        
+        // Journalisation détaillée
+        logger->log_filter_result("RSI", result);
+        
+        if (result) {
+            if (current_below) {
+                logger->log_indicator_comparison("RSI actuel", current_rsi, threshold, "<", true, LogLevel::DEBUG);
+            } else if (prev_below) {
+                logger->log_indicator_comparison("RSI précédent", previous_rsi, threshold, "<", true, LogLevel::DEBUG);
+            } else {
+                logger->log_indicator_comparison("RSI antérieur", previous_2_rsi, threshold, "<", true, LogLevel::DEBUG);
+            }
+        } else {
+            logger->log_filter_detail("RSI", "Actuel: " + std::to_string(current_rsi) + 
+                                         ", Précédent: " + std::to_string(previous_rsi) + 
+                                         ", Antérieur: " + std::to_string(previous_2_rsi) + 
+                                         " - Tous au-dessus du seuil " + std::to_string(threshold), 
+                                         LogLevel::DEBUG);
+        }
+        
+        // Mettre à jour les valeurs historiques
+        previous_2_rsi = previous_rsi;
+        previous_rsi = current_rsi;
+        
+        return result;
     }
     
     bool previous_ha_candle_red_filter() {
         if (buffer.size() < 3) {
+            logger->log_filter_result("Bougie HA précédente", false);
+            logger->log_filter_detail("Bougie HA précédente", "Pas assez d'historique (min 3 bougies)", LogLevel::DEBUG);
             return false;
         }
         
-        return !ha_previous.is_green;
+        bool result = !ha_previous.is_green;
+        
+        logger->log_filter_result("Bougie HA précédente", result);
+        logger->log_filter_detail("Bougie HA précédente", 
+                              "Bougie précédente " + std::string(result ? "ROUGE" : "VERTE") + 
+                              " (open=" + std::to_string(ha_previous.open) + 
+                              ", close=" + std::to_string(ha_previous.close) + ")", 
+                              LogLevel::DEBUG);
+        
+        return result;
     }
     
     bool initialize_indicators() {
@@ -154,6 +229,7 @@ private:
     
     bool update_indicators() {
         if (buffer.empty()) {
+            logger->log_general("Buffer vide, impossible de mettre à jour les indicateurs", LogLevel::WARNING);
             return false;
         }
         
@@ -162,16 +238,24 @@ private:
             !stochastic_calculator->initialized() ||
             !rsi_calculator->initialized() ||
             (base_config.use_atr_for_sl_tp && !atr_calculator->initialized())) {
+
+            logger->log_general("Initialisation des indicateurs requise", LogLevel::INFO);
             
             // Try to initialize indicators if they're not initialized
             if (!initialize_indicators()) {
+                logger->log_general("Échec de l'initialisation des indicateurs", LogLevel::WARNING);
                 return false;
             }
+
+            logger->log_general("Indicateurs initialisés avec succès", LogLevel::INFO);
         }
         
         // Update EMAs
         current_ema_short = ema_short_calculator->update(current_candle.close);
         current_ema_long = ema_long_calculator->update(current_candle.close);
+
+        logger->log_indicator_value(ema_short_name, current_ema_short);
+        logger->log_indicator_value(ema_long_name, current_ema_long);
         
         // Update Stochastic
         auto stoch_values = stochastic_calculator->update(
@@ -181,9 +265,13 @@ private:
         );
         current_stoch_k = stoch_values.first;
         current_stoch_d = stoch_values.second;
+
+        logger->log_indicator_value(stoch_k_name, current_stoch_k);
+        logger->log_indicator_value(stoch_d_name, current_stoch_d);
         
         // Update RSI
         current_rsi = rsi_calculator->update(current_candle.close);
+        logger->log_indicator_value(rsi_name, current_rsi);
         
         // Update ATR
         current_atr = atr_calculator->update(
@@ -191,6 +279,7 @@ private:
             current_candle.low,
             current_candle.close
         );
+        logger->log_indicator_value(atr_name, current_atr);
         
         return true;
     }
@@ -246,6 +335,7 @@ public:
         
         // Need at least 2 candles for HA calculation
         if (buffer.size() < 2) {
+            logger->log_general("Pas assez de bougies pour le calcul Heikin Ashi", LogLevel::WARNING);
             return;
         }
         
@@ -255,6 +345,8 @@ public:
         
         // If we need to initialize HA candles
         if (ha_current.close == 0.0) {
+            logger->log_general("Initialisation des bougies Heikin Ashi", LogLevel::INFO);
+            
             // Initialize both candles
             if (buffer.size() >= 3) {
                 const Candle& prev2 = buffer[buffer.size() - 3];
@@ -266,15 +358,23 @@ public:
                 ha_previous.open = ha_open_prev;
                 ha_previous.close = ha_close_prev;
                 ha_previous.is_green = ha_close_prev > ha_open_prev;
+                
+                logger->log_general("Bougie HA précédente initialisée: Open=" + std::to_string(ha_open_prev) + 
+                                  ", Close=" + std::to_string(ha_close_prev) + 
+                                  ", Green=" + std::to_string(ha_previous.is_green), LogLevel::DEBUG);
             } else {
                 // Not enough history, initialize with basic values
                 ha_previous.open = prev.open;
                 ha_previous.close = prev.close;
                 ha_previous.is_green = prev.close > prev.open;
+                
+                logger->log_general(std::string("Bougie HA précédente initialisée avec valeurs de base: ") + 
+                    (ha_previous.is_green ? "VERTE" : "ROUGE"), LogLevel::DEBUG);
             }
         } else {
             // Move current values to previous (reuse calculations)
             ha_previous = ha_current;
+            logger->log_general("Décalage des valeurs HA: précédente <- courante", LogLevel::DEBUG);
         }
         
         // Calculate HA for current candle
@@ -285,6 +385,10 @@ public:
         ha_current.open = ha_open_current;
         ha_current.close = ha_close_current;
         ha_current.is_green = ha_close_current > ha_open_current;
+        
+        logger->log_general("Bougie HA courante calculée: Open=" + std::to_string(ha_open_current) + 
+                          ", Close=" + std::to_string(ha_close_current) + 
+                          ", Green=" + std::to_string(ha_current.is_green), LogLevel::INFO);
     }
     
     bool should_long() override {
@@ -297,37 +401,61 @@ public:
     }
     
     void go_long() override {
+        logger->log_general("Préparation d'un signal LONG", LogLevel::INFO);
+
         // If we use ATR for SL/TP
         if (base_config.use_atr_for_sl_tp && current_atr > 0.0) {
+            logger->log_general("Utilisation de l'ATR pour calculer SL/TP", LogLevel::INFO);
+
             // Verify ATR is not zero or negative
             if (current_atr <= 0.0) {
                 current_atr = base_config.min_stop_loss_distance / base_config.stop_loss_atr_multiplier;
+                logger->log_general("ATR non valide, utilisation d'une valeur de secours: " + 
+                    std::to_string(current_atr), LogLevel::WARNING);
             }
+
+            // Appliquer une transformation logarithmique à l'ATR pour réduire son amplitude
+            double log_atr = std::log(1.0 + current_atr);
+            logger->log_general("ATR brut: " + std::to_string(current_atr) + 
+                            ", ATR logarithmique: " + std::to_string(log_atr), LogLevel::INFO);
             
             // Calculate SL based on ATR with minimum
             stop_loss_distance = std::max(
-                current_atr * base_config.stop_loss_atr_multiplier,
+                log_atr * base_config.stop_loss_atr_multiplier,
                 base_config.min_stop_loss_distance
             );
             
             // Calculate TP based on ATR with minimum
             take_profit_distance = std::max(
-                current_atr * base_config.take_profit_atr_multiplier,
+                log_atr * base_config.take_profit_atr_multiplier,
                 base_config.min_take_profit_distance
             );
+
+            logger->log_general("SL/TP calculés avec ATR: SL=" + std::to_string(stop_loss_distance) + 
+                ", TP=" + std::to_string(take_profit_distance), LogLevel::INFO);
         } else {
             // Use fixed fallback values
             stop_loss_distance = base_config.stop_loss_distance;
             take_profit_distance = base_config.take_profit_distance;
+
+            logger->log_general("Utilisation des valeurs fixes pour SL/TP: SL=" + 
+                std::to_string(stop_loss_distance) + ", TP=" + 
+                std::to_string(take_profit_distance), LogLevel::INFO);
         }
         
         // Calculate position size based on risk if enabled
         if (base_config.use_risk_based_sizing) {
             double initial_capital = base_config.cash;
-            double risk_amount = initial_capital * base_config.risk_percentage / 100.0;
+            double risk_percentage = base_config.risk_percentage;
+            double risk_amount = initial_capital * risk_percentage / 100.0;
+
+            logger->log_risk_calculation(risk_amount, risk_percentage);
             
             // Calculate position size for SL to represent exactly risk_amount
             double risk_based_position_size = risk_amount / stop_loss_distance;
+
+            logger->log_position_sizing(risk_based_position_size, risk_based_position_size, 
+                "basé sur le risque", LogLevel::DEBUG);
             
             // Use total available capital with leverage
             double leveraged_capital = initial_capital * base_config.leverage_limit;
@@ -335,6 +463,9 @@ public:
             // Limit max position size to a percentage of capital with leverage
             double max_position_value = leveraged_capital * base_config.max_position_percentage / 100.0;
             double max_position_size = max_position_value / price();
+
+            logger->log_position_sizing(max_position_size, max_position_size, 
+                "limite maximale", LogLevel::DEBUG);
             
             // Take the MINIMUM between risk-based size and limit
             double raw_position_size = std::min(risk_based_position_size, max_position_size);
@@ -342,16 +473,22 @@ public:
             // If size >= 1, round to nearest integer
             if (raw_position_size >= 1.0) {
                 buy_quantity = std::floor(raw_position_size);
+                logger->log_position_sizing(raw_position_size, buy_quantity, 
+                                         "arrondi à l'entier inférieur", LogLevel::INFO);
             } else {
                 // Limit to minimum of 0.5
                 buy_quantity = std::max(0.5, std::min(raw_position_size, 0.99));
+                logger->log_position_sizing(raw_position_size, buy_quantity, 
+                                         "limité entre 0.5 et 0.99", LogLevel::INFO);
             }
         } else {
             // Fixed default size (integer)
             buy_quantity = 1.0;
+            logger->log_position_sizing(1.0, 1.0, "taille fixe", LogLevel::INFO);
         }
         
         buy_price = price();
+        logger->log_sl_tp(stop_loss_distance, take_profit_distance);
     }
     
     void go_short() override {

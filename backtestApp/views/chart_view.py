@@ -41,6 +41,9 @@ class ChartView(ResultView):
         if data is None:
             return
         
+        # Conserver les données originales pour les calculs d'indicateurs
+        original_data = data.copy()
+        
         # Supprimer l'ancien graphique s'il existe
         self.clear_layout(self.chart_layout)
         
@@ -60,15 +63,17 @@ class ChartView(ResultView):
         chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
         chart.legend(visible=True, color_based_on_candle=False, color='rgba(1,1,1,1)', font_size=12, font_family='Arial')
         
-        # Appliquer les paramètres généraux
+        # Appliquer les paramètres généraux - préparer les données d'affichage
         general_params = self.parent.general_params_panel.get_values()
+        display_data = data.copy()
         if general_params['candle_type'] == "Heikin Ashi":
-            data = to_heikin_ashi(data)
+            display_data = to_heikin_ashi(display_data)
         
         start_time = time.time()
-        chart.set(data)
+        # Utiliser les données transformées uniquement pour l'affichage
+        chart.set(display_data)
         logging.info(f"Chart set time: {(time.time() - start_time) * 1000:.2f} ms")            
-            
+        
         # Ajouter le graphique au layout
         chart_layout.addWidget(chart.get_webview())
         
@@ -78,12 +83,14 @@ class ChartView(ResultView):
         # Si des statistiques sont fournies, ajouter les indicateurs et les trades
         if stats is not None:
             start_time2 = time.time()
-            equity_chart = self._add_equity_subchart(chart, data, stats)
+            # Utiliser les données transformées pour le graphique d'équité (pour l'alignement visuel)
+            equity_chart = self._add_equity_subchart(chart, display_data, stats)
                 
             end_time2 = time.time()
             logging.info(f"_add_equity_subchart time: {(end_time2- start_time2) * 1000:.2f} ms")
             
-            self._add_indicators(chart, data)
+            # Utiliser les données originales pour le calcul des indicateurs
+            self._add_indicators(chart, original_data)
             
             end_time3 = time.time()
             logging.info(f"_add_indicators time: {(end_time3 - end_time2) * 1000:.2f} ms")

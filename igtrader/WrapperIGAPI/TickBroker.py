@@ -138,6 +138,62 @@ class TickBroker:
             logging.error(f"Error setting up streaming: {e}")
             logging.error(f"Details: {traceback.format_exc()}")
             raise
+        
+    def get_position_details(self):
+        """
+        Récupère les détails d'une position ouverte pour l'epic actuel.
+        
+        Returns:
+            dict: Un dictionnaire contenant les détails de la position, ou None si aucune position n'est ouverte
+                - entry_price: Prix d'entrée de la position
+                - position_size: Taille de la position
+                - position_pl_pct: Pourcentage de profit/perte
+                - deal_id: Identifiant de la transaction
+                - direction: Direction de la position (BUY ou SELL)
+        """
+        try:
+            # Vérifier d'abord si une position est ouverte
+            if not self.has_open_position():
+                return None
+            
+            # Récupérer toutes les positions ouvertes
+            open_positions = self.ig_service.fetch_open_positions()
+            
+            # Filtrer pour ne garder que celles correspondant à notre epic
+            positions_for_epic = open_positions[open_positions['epic'] == self.epic]
+            
+            if positions_for_epic.empty:
+                return None
+            
+            # Récupérer la première position (généralement il n'y en a qu'une par epic)
+            position = positions_for_epic.iloc[0]
+            
+            # Calculer le pourcentage de P&L
+            entry_price = float(position.get('openLevel', 0))
+            current_price = float(position.get('level', 0))
+            direction = position.get('direction', '')
+            profit_loss = float(position.get('profitLoss', 0))
+            
+            if entry_price > 0 and direction:
+                if direction == 'BUY':
+                    pl_pct = ((current_price - entry_price) / entry_price) * 100
+                else:  # SELL
+                    pl_pct = ((entry_price - current_price) / entry_price) * 100
+            else:
+                pl_pct = 0.0
+            
+            return {
+                'entry_price': entry_price,
+                'position_size': float(position.get('size', 0)),
+                'position_pl_pct': pl_pct,
+                'deal_id': position.get('dealId', ''),
+                'direction': direction,
+                'profit_loss': profit_loss
+            }
+        except Exception as e:
+            logging.error(f"Erreur lors de la récupération des détails de position: {e}")
+            logging.error(traceback.format_exc())
+            return None
     
     def _build_candles_from_ticks_loop(self):
         """Background thread that continuously builds candles from tick data."""

@@ -353,7 +353,7 @@ class ChartView(ResultView):
                 stoch_lines[0].horizontal_line(price=50, color='blue', width=1, style='dashed', text='Neutral(50)')
         
         # --------------------------
-        # ATR
+        # ATR (log)
         # --------------------------
         atr_period = int(strategy_config.get('atr_period', 14))
         
@@ -383,8 +383,12 @@ class ChartView(ResultView):
         # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
         atr_values[:atr_period*2] = np.nan
         atrc_values[:atr_period*2] = np.nan
+
+        # Appliquer le log (logarithme népérien) en évitant les valeurs <= 0
+        log_atr_values = np.where(atr_values > 0, np.log(atr_values), np.nan)
+        log_atrc_values = np.where(atrc_values > 0, np.log(atrc_values), np.nan)
         
-        # Créer le sous-graphique pour l'ATR
+        # Créer le sous-graphique pour l'ATR (log)
         atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
         atr_chart.layout(background_color='#f0f8ff')
         atr_chart.grid(color='lightgray', vert_enabled=False, horz_enabled=False, style='solid')
@@ -393,33 +397,33 @@ class ChartView(ResultView):
         atr_chart.crosshair(mode='normal', vert_visible=True, horz_visible=True)
         subcharts['atr_chart'] = atr_chart
         
-        # Ajouter la ligne ATR
+        # Ajouter la ligne ATR (log)
         atr_df = pd.DataFrame({
             'time': data['time'],
-            f'ATR_{atr_period}': atr_values,
+            f'log_ATR_{atr_period}': log_atr_values,
         })
         atr_line = atr_chart.create_line(
-            name=f'ATR_{atr_period}', 
+            name=f'log_ATR_{atr_period}', 
             color=indicator_colors['ATR'][0], 
             width=1, 
             price_line=False
         )
         atr_line.set(atr_df)
-        logging.debug(f"Added ATR indicator: ATR_{atr_period}")
+        logging.debug(f"Added log ATR indicator: log_ATR_{atr_period}")
 
-        # Ajouter la ligne ATRC
+        # Ajouter la ligne ATRC (log)
         atrc_df = pd.DataFrame({
             'time': data['time'],
-            f'ATRC_{atr_period}': atrc_values,
+            f'log_ATRC_{atr_period}': log_atrc_values,
         })
         atrc_line = atr_chart.create_line(
-            name=f'ATRC_{atr_period}', 
+            name=f'log_ATRC_{atr_period}', 
             color=indicator_colors['ATR'][1], 
             width=1, 
             price_line=False
         )
         atrc_line.set(atrc_df)
-        logging.debug(f"Added ATRC indicator: ATRC_{atr_period}")
+        logging.debug(f"Added log ATRC indicator: log_ATRC_{atr_period}")
         
         # --------------------------
         # RSI

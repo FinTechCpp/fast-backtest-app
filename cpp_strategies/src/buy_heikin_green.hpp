@@ -413,16 +413,21 @@ public:
                 logger->log_general("ATR non valide, utilisation d'une valeur de secours: " + 
                     std::to_string(current_atr), LogLevel::WARNING);
             }
+
+            // Appliquer une transformation logarithmique à l'ATR pour réduire son amplitude
+            double log_atr = std::log(1.0 + current_atr);
+            logger->log_general("ATR brut: " + std::to_string(current_atr) + 
+                            ", ATR logarithmique: " + std::to_string(log_atr), LogLevel::INFO);
             
             // Calculate SL based on ATR with minimum
             stop_loss_distance = std::max(
-                current_atr * base_config.stop_loss_atr_multiplier,
+                log_atr * base_config.stop_loss_atr_multiplier,
                 base_config.min_stop_loss_distance
             );
             
             // Calculate TP based on ATR with minimum
             take_profit_distance = std::max(
-                current_atr * base_config.take_profit_atr_multiplier,
+                log_atr * base_config.take_profit_atr_multiplier,
                 base_config.min_take_profit_distance
             );
 

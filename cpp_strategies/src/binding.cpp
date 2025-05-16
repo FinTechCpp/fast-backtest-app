@@ -48,6 +48,13 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def("get_value", &ATR::get_value)
         .def_property_readonly("is_initialized", &ATR::initialized);
 
+    py::class_<ATRC>(m, "CppATRC")
+        .def(py::init<int>())
+        .def("initialize_with_history", &ATRC::initialize_with_history)
+        .def("update", &ATRC::update)
+        .def("get_value", &ATRC::get_value)
+        .def_property_readonly("is_initialized", &ATRC::initialized);
+
     py::class_<RSI>(m, "CppRSI")
         .def(py::init<int>())
         .def("initialize_with_history", &RSI::initialize_with_history)

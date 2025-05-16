@@ -6,5 +6,6 @@
 #include "indicators/stoch.hpp"
 #include "indicators/rsi.hpp"
 #include "indicators/atr.hpp"
+#include "indicators/atrc.hpp"
 
 // Vous pouvez ajouter de nouveaux indicateurs ici à l'avenir

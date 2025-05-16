@@ -10,7 +10,8 @@ from cpp_strategies import (
     CppEMA, 
     CppSTOCH, 
     CppATR,
-    CppRSI
+    CppRSI,
+    CppATRC
 )
 
 from backtestApp.views.base_view import ResultView
@@ -358,6 +359,7 @@ class ChartView(ResultView):
         
         # Créer et initialiser l'indicateur ATR C++
         atr = CppATR(atr_period)
+        atrc = CppATRC(atr_period)
         
         # Initialiser avec un historique suffisant
         if len(high_values) > atr_period*2:
@@ -366,14 +368,21 @@ class ChartView(ResultView):
                 low_values[:atr_period*2].tolist(),
                 close_values[:atr_period*2].tolist()
             )
+            atrc.initialize_with_history(
+                high_values[:atr_period*2].tolist(),
+                low_values[:atr_period*2].tolist()
+            )
         
         # Calculer les valeurs ATR pour toutes les bougies
         atr_values = np.zeros(len(close_values))
+        atrc_values = np.zeros(len(close_values))
         for j in range(atr_period*2, len(close_values)):
             atr_values[j] = atr.update(high_values[j], low_values[j], close_values[j])
+            atrc_values[j] = atrc.update(high_values[j], low_values[j])
         
         # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
         atr_values[:atr_period*2] = np.nan
+        atrc_values[:atr_period*2] = np.nan
         
         # Créer le sous-graphique pour l'ATR
         atr_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
@@ -387,7 +396,7 @@ class ChartView(ResultView):
         # Ajouter la ligne ATR
         atr_df = pd.DataFrame({
             'time': data['time'],
-            f'ATR_{atr_period}': atr_values
+            f'ATR_{atr_period}': atr_values,
         })
         atr_line = atr_chart.create_line(
             name=f'ATR_{atr_period}', 
@@ -397,6 +406,20 @@ class ChartView(ResultView):
         )
         atr_line.set(atr_df)
         logging.debug(f"Added ATR indicator: ATR_{atr_period}")
+
+        # Ajouter la ligne ATRC
+        atrc_df = pd.DataFrame({
+            'time': data['time'],
+            f'ATRC_{atr_period}': atrc_values,
+        })
+        atrc_line = atr_chart.create_line(
+            name=f'ATRC_{atr_period}', 
+            color=indicator_colors['ATR'][1], 
+            width=1, 
+            price_line=False
+        )
+        atrc_line.set(atrc_df)
+        logging.debug(f"Added ATRC indicator: ATRC_{atr_period}")
         
         # --------------------------
         # RSI

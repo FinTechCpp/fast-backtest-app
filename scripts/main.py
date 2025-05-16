@@ -1,5 +1,7 @@
 import sys
 import os
+# Add the parent directory to Python's path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from backtestApp.app import BacktestApp
 from PyQt5.QtWidgets import QApplication
 import argparse
@@ -9,8 +11,6 @@ import datetime
 import matplotlib as mpl
 mpl.set_loglevel('warning')  # Ignore les messages DEBUG (niveau plus bas que WARNING)
 
-# Add the parent directory to Python's path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Create backtest logs directory with date
 current_date = datetime.datetime.now().strftime("%Y-%m-%d")

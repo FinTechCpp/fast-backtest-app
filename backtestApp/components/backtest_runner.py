@@ -92,10 +92,6 @@ class BacktestRunner(QObject):
                 self.backtest_error.emit(f"Stratégie {strategy_name} introuvable")
                 return
             
-            # Définir l'onglet à afficher à la fin de l'exécution du backtest (1 = Statistiques)
-            if hasattr(self.parent, 'result_manager'):
-                self.parent.result_manager.set_current_tab(1)
-            
             # Créer et exécuter le thread de backtest
             self.backtest_thread = BacktestWorker(
                 data=data,
@@ -174,9 +170,6 @@ class BacktestRunner(QObject):
 
             # Mettre à jour toutes les vues
             self.parent.result_manager.update_all(chart_data, stats)
-            
-            # Afficher l'onglet des statistiques
-            self.parent.result_manager.set_current_tab(1)  # Index 1 = Statistics tab
             
             logging.info("Backtest exécuté avec succès")
         

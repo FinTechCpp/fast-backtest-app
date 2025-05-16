@@ -47,9 +47,13 @@ private:
     double current_stoch_k = 0.0;
     double current_stoch_d = 0.0;
     double current_rsi = 0.0;                 // Valeur actuelle du RSI
+    double previous_rsi = 0.0;                 // Valeur précédente du RSI
+    double previous_2_rsi = 0.0;               // Valeur pré-précédente du RSI (two periods ago)
+    double current_atr = 0.0;
     double current_atr = 0.0;
     double k_previous = 0.0;
     double d_previous = 0.0;
+
     
     // Cache for Heikin Ashi candles
     struct HeikinAshiValue {
@@ -97,9 +101,16 @@ private:
         if (current_rsi == 0.0) {
             return false;
         }
+
+        int threshold = config.rsi_threshold;
+        bool result = current_rsi < threshold || previous_rsi < threshold || previous_2_rsi < threshold;
         cpp_log("RSI: " + std::to_string(current_rsi), LogLevel::WARNING);
+
+        previous_rsi = current_rsi;
+        previous_2_rsi = previous_rsi;
+        
         // Vérifier si le RSI est inférieur au seuil défini
-        return current_rsi < config.rsi_threshold;
+        return result;
     }
     
     bool previous_ha_candle_red_filter() {

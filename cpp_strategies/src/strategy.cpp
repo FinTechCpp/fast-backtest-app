@@ -2,45 +2,6 @@
 
 
 
-// Implementation of Time struct methods
-bool Time::operator<(const Time& other) const {
-    return std::tie(hour, minute, second) < std::tie(other.hour, other.minute, other.second);
-}
-
-bool Time::operator<=(const Time& other) const {
-    return std::tie(hour, minute, second) <= std::tie(other.hour, other.minute, other.second);
-}
-
-bool Time::operator==(const Time& other) const {
-    return hour == other.hour && minute == other.minute && second == other.second;
-}
-
-bool Time::operator!=(const Time& other) const {
-    return !(*this == other);
-}
-
-
-// Implementation of DateTime struct methods
-bool DateTime::is_valid() const {
-    return year > 0 && month > 0 && month <= 12 && day > 0 && day <= 31;
-}
-
-bool DateTime::operator==(const DateTime& other) const {
-    return year == other.year && month == other.month && day == other.day && time == other.time;
-}
-
-bool DateTime::operator!=(const DateTime& other) const {
-    return !(*this == other);
-}
-
-std::string DateTime::to_string() const {
-    char buffer[20];
-    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d", 
-            year, month, day, time.hour, time.minute, time.second);
-    return std::string(buffer);
-}
-
-
 // Fonction utilitaire pour parser une chaîne de date ISO
 DateTime parse_iso_datetime(const std::string& iso_date) {
     DateTime result;
@@ -82,14 +43,6 @@ int get_day_of_week(const DateTime& date) {
     
     // Convertir de Sunday=0 à Sunday=6
     return (weekday == 0) ? 6 : weekday - 1;
-}
-
-std::function<void(const std::string&, int)> g_py_log_callback;
-
-void cpp_log(const std::string& message, int level) {
-    if (g_py_log_callback) {
-        g_py_log_callback(message, level);
-    }
 }
     
 
@@ -139,7 +92,7 @@ void Strategy::update_daily_pnl_tracking() {
         return;
     }
     
-// Si c'est un nouveau jour, on réinitialise le compteur et on réactive le trading
+    // Si c'est un nouveau jour, on réinitialise le compteur et on réactive le trading
     if (is_new_trading_day()) {
         current_trading_day = current_candle.date;
         daily_pnl = 0.0;
@@ -147,16 +100,16 @@ void Strategy::update_daily_pnl_tracking() {
         // Calculer le montant maximum de perte autorisé pour cette journée
         double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
         
-        cpp_log("Nouveau jour de trading: " + current_trading_day.to_string() + 
-                " - Perte max autorisée: " + std::to_string(max_loss_amount) + 
-                " (" + std::to_string(base_config.daily_max_loss_percentage) + "%)", LogLevel::INFO);
+        logger->log_general("Nouveau jour de trading: " + current_trading_day.to_string() + 
+                          " - Perte max autorisée: " + std::to_string(max_loss_amount) + 
+                          " (" + std::to_string(base_config.daily_max_loss_percentage) + "%)", LogLevel::INFO);
     }
     
     if (last_trade_pnl != 0.0) {
         daily_pnl += last_trade_pnl;
         
-        cpp_log("P&L du trade: " + std::to_string(last_trade_pnl) + 
-                " - P&L journalier cumulé: " + std::to_string(daily_pnl), LogLevel::INFO);
+        logger->log_general("P&L du trade: " + std::to_string(last_trade_pnl) + 
+                          " - P&L journalier cumulé: " + std::to_string(daily_pnl), LogLevel::INFO);
         
         last_trade_pnl = 0.0;
     }
@@ -165,7 +118,8 @@ void Strategy::update_daily_pnl_tracking() {
 // Méthode pour vérifier si on est dans les horaires de trading
 bool Strategy::check_time() {
     if (!current_candle.date.is_valid()) {
-        cpp_log("Date de bougie invalide", LogLevel::WARNING);
+        // Utiliser log_time_check avec false pour indiquer qu'on est hors horaires
+        logger->log_time_check(false, "Date de bougie invalide", LogLevel::WARNING);
         return false;
     }
     
@@ -182,7 +136,8 @@ bool Strategy::check_time() {
                                   weekday) != base_config.trading_days.end();
         
         if (!weekday_check) {
-            cpp_log("Jour non autorisé pour le trading: " + current_candle.date.to_string(), LogLevel::INFO);
+            logger->log_time_check(false, "Jour non autorisé pour le trading: " + 
+                                 current_candle.date.to_string(), LogLevel::INFO);
             return false;
         }
         
@@ -198,8 +153,14 @@ bool Strategy::check_time() {
         time_check = after_start && before_end;
         
         if (!time_check) {
-            cpp_log("Hors des heures de trading: " + std::to_string(current_time.hour) + 
-                    ":" + std::to_string(current_time.minute), LogLevel::INFO);
+            logger->log_time_check(false, 
+                                 std::to_string(current_time.hour) + ":" + 
+                                 std::to_string(current_time.minute), LogLevel::INFO);
+        } else {
+            // Ajouter un message positif quand on est dans les heures de trading
+            logger->log_time_check(true, 
+                                 std::to_string(current_time.hour) + ":" +
+                                 std::to_string(current_time.minute), LogLevel::DEBUG);
         }
         
         return time_check;
@@ -223,9 +184,9 @@ std::unique_ptr<Signal> Strategy::check_break_even() {
     
     // Check if we've reached the threshold to activate break-even
     if (position_pl_pct > (base_config.break_even_threshold * threshold_pct)) {
-        cpp_log("Activation break-even: P&L = " + std::to_string(position_pl_pct) + 
-                "% > seuil (" + std::to_string(base_config.break_even_threshold * threshold_pct) + 
-                "%)", LogLevel::INFO);
+        logger->log_general("Activation break-even: P&L = " + std::to_string(position_pl_pct) + 
+                          "% > seuil (" + std::to_string(base_config.break_even_threshold * threshold_pct) + 
+                          "%)", LogLevel::INFO);
                 
         auto be_signal = std::make_unique<Signal>();
         be_signal->action = "MOVE_SL";
@@ -276,26 +237,30 @@ void Strategy::execute_long() {
     go_long();
     
     if (buy_quantity <= 0.0 || buy_price <= 0.0) {
-        cpp_log("Paramètres d'achat incorrects", LogLevel::ERROR);
+        logger->log_general("Paramètres d'achat incorrects", LogLevel::ERROR);
         throw std::runtime_error("Buy parameters not properly set");
     }
     
     // Calculer le risque et vérifier s'il est acceptable
     double risk = calculate_trade_risk(true);
+    logger->log_risk_calculation(risk, (risk / base_config.cash) * 100.0);
+    
     if (base_config.use_daily_max_loss && !is_trade_risk_acceptable(risk)) {
         // Le trade est trop risqué par rapport à notre limite quotidienne
         double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
-        cpp_log("Trade LONG rejeté: risque (" + std::to_string(risk) + 
-                ") trop élevé. PnL journalier: " + std::to_string(daily_pnl) + 
-                ", Limite max: " + std::to_string(-max_loss_amount), LogLevel::INFO);
+        
+        logger->log_general("Trade LONG rejeté: risque excessif", LogLevel::WARNING);
+        logger->log_filter_detail("Limite de risque", 
+                              "Risque calculé: " + std::to_string(risk) + 
+                              ", PnL journalier: " + std::to_string(daily_pnl) + 
+                              ", Limite max: " + std::to_string(-max_loss_amount), 
+                              LogLevel::INFO);
         reset();
         return;
     }
     
-    cpp_log("Signal BUY généré: prix=" + std::to_string(buy_price) + 
-            ", quantité=" + std::to_string(buy_quantity) +
-            ", SL=" + std::to_string(stop_loss_distance) +
-            ", TP=" + std::to_string(take_profit_distance), LogLevel::INFO);
+    logger->log_signal("BUY", buy_price, buy_quantity);
+    logger->log_sl_tp(stop_loss_distance, take_profit_distance);
             
     signal = generate_buy_signal();
 }
@@ -304,44 +269,52 @@ void Strategy::execute_short() {
     go_short();
     
     if (sell_quantity <= 0.0 || sell_price <= 0.0) {
-        cpp_log("Paramètres de vente incorrects", LogLevel::ERROR);
+        logger->log_general("Paramètres de vente incorrects", LogLevel::ERROR);
         throw std::runtime_error("Sell parameters not properly set");
     }
     
     // Calculer le risque et vérifier s'il est acceptable
     double risk = calculate_trade_risk(false);
+    logger->log_risk_calculation(risk, (risk / base_config.cash) * 100.0);
+    
     if (base_config.use_daily_max_loss && !is_trade_risk_acceptable(risk)) {
         // Le trade est trop risqué par rapport à notre limite quotidienne
         double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
-        cpp_log("Trade SHORT rejeté: risque (" + std::to_string(risk) + 
-                ") trop élevé. PnL journalier: " + std::to_string(daily_pnl) + 
-                ", Limite max: " + std::to_string(-max_loss_amount), LogLevel::INFO);
+        
+        logger->log_general("Trade SHORT rejeté: risque excessif", LogLevel::WARNING);
+        logger->log_filter_detail("Limite de risque", 
+                              "Risque calculé: " + std::to_string(risk) + 
+                              ", PnL journalier: " + std::to_string(daily_pnl) + 
+                              ", Limite max: " + std::to_string(-max_loss_amount), 
+                              LogLevel::INFO);
         reset();
         return;
     }
     
-    cpp_log("Signal SELL généré: prix=" + std::to_string(sell_price) + 
-            ", quantité=" + std::to_string(sell_quantity) +
-            ", SL=" + std::to_string(stop_loss_distance) +
-            ", TP=" + std::to_string(take_profit_distance), LogLevel::INFO);
-            
+    logger->log_signal("SELL", sell_price, sell_quantity);
+    logger->log_sl_tp(stop_loss_distance, take_profit_distance);
+    
     signal = generate_sell_signal();
 }
 
 // filepath: /home/max/ig-trading-bot/cpp_strategies/src/strategy.cpp
 bool Strategy::execute_filters() {
-    // Ajoutez ces logs pour déboguer
     auto all_filters = filters();
-    cpp_log("Executing " + std::to_string(all_filters.size()) + " filters", LogLevel::ERROR);
+    logger->log_general("Exécution de " + std::to_string(all_filters.size()) + " filtres", LogLevel::DEBUG);
+    
+    bool all_passed = true;
     
     for (size_t i = 0; i < all_filters.size(); ++i) {
-        if (!all_filters[i]()) {
-            cpp_log("Filter #" + std::to_string(i) + " failed", LogLevel::ERROR);
-            return false;
+        bool filter_passed = all_filters[i]();
+        if (!filter_passed) {
+            logger->log_general("Filtre #" + std::to_string(i) + " échoué", LogLevel::INFO);
+            all_passed = false;
+        } else {
+            logger->log_general("Filtre #" + std::to_string(i) + " passé", LogLevel::DEBUG);
         }
-        cpp_log("Filter #" + std::to_string(i) + " passed", LogLevel::ERROR);
     }
-    return true;
+    
+    return all_passed;
 }
 
 void Strategy::execute() {
@@ -356,31 +329,42 @@ void Strategy::execute() {
     
     // Quick time check before executing anything else
     if (!check_time()) {
+        logger->log_execution_step("Vérification horaires", false);
         if (in_position) {
-            cpp_log("Hors horaires de trading - Liquidation de position", LogLevel::INFO);
+            logger->log_general("Hors horaires de trading - Liquidation de position", LogLevel::INFO);
             signal = generate_liquidation_signal();
         }
         is_executing = false;
         return;
     }
+    logger->log_execution_step("Vérification horaires", true);
     
     before();
+    logger->log_execution_step("Before()", true);
     
     bool should_long_val = should_long();
     bool should_short_val = should_long_val ? false : should_short();
     
-    if (!should_long_val && !should_short_val) {
+    if (should_long_val) {
+        logger->log_execution_step("should_long()", true);
+    } else if (should_short_val) {
+        logger->log_execution_step("should_short()", true);
+    } else {
+        logger->log_execution_step("Conditions d'entrée", false);
+        logger->log_general("Aucune condition d'entrée remplie", LogLevel::INFO);
         reset();
         is_executing = false;
         return;
     }
     
     if (!execute_filters()) {
-        cpp_log("Filtres non passés - Pas de signal généré", LogLevel::DEBUG);
+        logger->log_execution_step("Filtres", false);
+        logger->log_general("Filtres non passés - Pas de signal généré", LogLevel::INFO);
         reset();
         is_executing = false;
         return;
     }
+    logger->log_execution_step("Filtres", true);
     
     if (should_long_val) {
         execute_long();
@@ -389,12 +373,15 @@ void Strategy::execute() {
     }
     
     after();
+    logger->log_execution_step("After()", true);
     is_executing = false;
 }
 
 
 Strategy::Strategy(const StrategyBaseConfig& config) 
-    : base_config(config), signal(std::make_unique<Signal>()) {
+    : base_config(config), 
+    signal(std::make_unique<Signal>()),
+    logger(std::make_unique<StrategyLogger>()) {
 
 }
 
@@ -403,16 +390,20 @@ Signal* Strategy::update_candle(const Candle& candle) {
     // Store the current candle
     current_candle = candle;
     
-    cpp_log("Traitement bougie: " + candle.date.to_string() + 
+    // Mettre à jour le logger avec la bougie actuelle
+    logger->set_current_candle(candle);
+    logger->clear();  // Vider les logs précédents
+    
+    logger->log_general("Traitement bougie: " + candle.date.to_string() + 
             " OHLC: " + std::to_string(candle.open) + "/" + 
             std::to_string(candle.high) + "/" + 
             std::to_string(candle.low) + "/" + 
-            std::to_string(candle.close), LogLevel::DEBUG);
+            std::to_string(candle.close), LogLevel::INFO);
     
     // Store the last trade P&L si fourni dans candle
     if (candle.closed_trade_pnl != 0.0) {
         last_trade_pnl = candle.closed_trade_pnl;
-        cpp_log("PnL du trade fermé: " + std::to_string(last_trade_pnl), LogLevel::INFO);
+        logger->log_general("PnL du trade fermé: " + std::to_string(last_trade_pnl), LogLevel::INFO);
     }
     
     // Update position information
@@ -420,6 +411,12 @@ Signal* Strategy::update_candle(const Candle& candle) {
     entry_price = candle.entry_price;
     position_size = candle.position_size;
     position_pl_pct = candle.position_pl_pct;
+
+    if (in_position) {
+        logger->log_general("En position: Prix d'entrée=" + std::to_string(entry_price) + 
+                          ", Taille=" + std::to_string(position_size) + 
+                          ", P&L=" + std::to_string(position_pl_pct) + "%", LogLevel::INFO);
+    }
     
     // Add to buffer for historical calculations
     buffer.push_back(candle);
@@ -430,12 +427,21 @@ Signal* Strategy::update_candle(const Candle& candle) {
     // Check for break-even signal before executing strategy
     auto be_signal = check_break_even();
     if (be_signal) {
+        logger->log_general("Signal de break-even généré: " + 
+                          std::to_string(be_signal->new_sl), LogLevel::INFO);
         signal = std::move(be_signal);
         return signal.get();
     }
     
     // Execute strategy
+    logger->log_execution_start();
     execute();
+    logger->log_execution_end();
+
+    // Obtenir tous les logs complets et les envoyer dans un seul message de log
+    if (logger->get_verbosity() >= 3) {  // Seulement au niveau DEBUG
+        cpp_log(logger->get_all_logs(), LogLevel::DEBUG);
+    }
     
     return signal.get();
 }
@@ -445,10 +451,3 @@ double Strategy::price() const {
     return current_candle.close;
 }
 
-double Strategy::get_indicator_value(const std::string& indicator_name) const {
-    auto it = current_candle.indicators.find(indicator_name);
-    if (it != current_candle.indicators.end()) {
-        return it->second;
-    }
-    return 0.0;
-}

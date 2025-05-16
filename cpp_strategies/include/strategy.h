@@ -1,72 +1,22 @@
 #pragma once
+#include "common.h"
 #include <string>
 #include <vector>
 #include <map>
 #include <unordered_map>
 #include <memory>
-#include <functional>
 #include <chrono>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
 #include "indicators/indicators.hpp"
-
-struct Time {
-    int hour = 0;
-    int minute = 0;
-    int second = 0;
-
-    bool operator<(const Time& other) const;
-    bool operator<=(const Time& other) const;
-    bool operator==(const Time& other) const;
-    bool operator!=(const Time& other) const;
-};
-
-struct DateTime {
-    int year = 0;
-    int month = 0;
-    int day = 0;
-    Time time;
-
-    bool is_valid() const;
-    bool operator==(const DateTime& other) const;
-    bool operator!=(const DateTime& other) const;
-    std::string to_string() const;
-};
+#include "strategyLogger.hpp"
 
 // Fonction utilitaire pour parser une chaîne de date ISO
 DateTime parse_iso_datetime(const std::string& iso_date);
 
 // Fonction pour obtenir le jour de la semaine (0=lundi, 6=dimanche)
 int get_day_of_week(const DateTime& date);
-
-extern std::function<void(const std::string&, int)> g_py_log_callback;
-
-enum LogLevel {
-    DEBUG = 0,
-    INFO = 1,
-    WARNING = 2,
-    ERROR = 3
-};
-
-// Fonction de log C++ qui appelle le callback Python
-void cpp_log(const std::string& message, int level = LogLevel::INFO);
-
-struct Candle {
-    DateTime date;
-    double open;
-    double high;
-    double low;
-    double close;
-    std::unordered_map<std::string, double> indicators;
-    
-    // Position information
-    bool in_position = false;
-    double entry_price = 0.0;
-    double position_size = 0.0;
-    double position_pl_pct = 0.0;
-    double closed_trade_pnl = 0.0; // P&L of the last closed trade
-};
 
 struct Signal {
     std::string action = ""; // "BUY", "SELL", "LIQUIDATE", "MOVE_SL"
@@ -141,7 +91,7 @@ public:
     
     // Properties
     double price() const;
-    double get_indicator_value(const std::string& indicator_name) const;
+    // double get_indicator_value(const std::string& indicator_name) const;
 
 protected:
     StrategyBaseConfig base_config;
@@ -176,6 +126,8 @@ protected:
     
     // Cache pour le dernier trade
     double last_trade_pnl = 0.0;
+
+    std::unique_ptr<StrategyLogger> logger;
 
     double calculate_trade_risk(bool is_long);
     bool is_trade_risk_acceptable(double risk);

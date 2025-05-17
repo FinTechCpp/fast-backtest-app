@@ -4,7 +4,6 @@ from igtrader.backtestingpy.backtesting.backtesting import Strategy as Backtesti
 import logging
 import numpy as np
 from datetime import time
-import talib
 from dataclasses import dataclass
 
 @dataclass

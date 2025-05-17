@@ -91,6 +91,38 @@ class StrategyBasePanel(BasePanel):
         atr_layout.addRow("TP minimal [pts]:", self.widgets['min_tp'])
         
         sl_tp_layout.addLayout(atr_layout)
+    
+        # Checkbox pour activer le minimum local pour SL
+        self.widgets['use_local_minimum_check'] = QCheckBox("Utiliser le minimum local pour SL")
+        sl_tp_layout.addWidget(self.widgets['use_local_minimum_check'])
+        
+        # Ajouter un disclaimer pour informer que cette fonctionnalité n'est pas opérationnelle
+        disclaimer_label = QLabel(f"⚠ ATTENTION: Fonctionnalité en développement\n- Non fonctionnelle actuellement")
+        disclaimer_label.setStyleSheet("color: red; font-style: italic; font-weight: bold;")
+        sl_tp_layout.addWidget(disclaimer_label)
+        
+        # Paramètres du minimum local
+        local_min_layout = QFormLayout()
+        
+        # Période pour calculer le minimum local
+        self.widgets['local_minimum_period'] = QDoubleSpinBox()
+        self.widgets['local_minimum_period'].setDecimals(0)
+        self.widgets['local_minimum_period'].setRange(2, 50)
+        self.widgets['local_minimum_period'].setSingleStep(1)
+        self.widgets['local_minimum_period'].setValue(5)
+        self.widgets['local_minimum_period'].setEnabled(False)
+        local_min_layout.addRow("Période minimum local:", self.widgets['local_minimum_period'])
+        
+        # Delta pour l'ajustement
+        self.widgets['local_minimum_delta'] = QDoubleSpinBox()
+        self.widgets['local_minimum_delta'].setDecimals(1)
+        self.widgets['local_minimum_delta'].setRange(0.1, 50.0)
+        self.widgets['local_minimum_delta'].setSingleStep(0.5)
+        self.widgets['local_minimum_delta'].setValue(1.0)
+        self.widgets['local_minimum_delta'].setEnabled(False)
+        local_min_layout.addRow("Delta minimum local:", self.widgets['local_minimum_delta'])
+        
+        sl_tp_layout.addLayout(local_min_layout)
         sl_tp_group.setLayout(sl_tp_layout)
         base_layout.addWidget(sl_tp_group)
         
@@ -189,6 +221,7 @@ class StrategyBasePanel(BasePanel):
         
         # Connexion des signaux
         self.widgets['use_atr_check'].toggled.connect(self._toggle_atr_controls)
+        self.widgets['use_local_minimum_check'].toggled.connect(self._toggle_local_minimum_controls)
         self.widgets['use_risk_based_sizing'].toggled.connect(self._toggle_risk_controls)
         
         base_group.setLayout(base_layout)
@@ -202,9 +235,27 @@ class StrategyBasePanel(BasePanel):
         self.widgets['min_tp'].setEnabled(checked)
         self.widgets['atr_period'].setEnabled(checked)
         
-        self.widgets['stop_loss_distance'].setEnabled(not checked)
+        # Si ATR est activé et que minimum local est activé, désactiver minimum local
+        if checked and self.widgets['use_local_minimum_check'].isChecked():
+            self.widgets['use_local_minimum_check'].setChecked(False)
+            
+        # Désactiver SL fixe si l'ATR ou le minimum local est activé
+        use_local_min = self.widgets['use_local_minimum_check'].isChecked()
+        self.widgets['stop_loss_distance'].setEnabled(not (checked or use_local_min))
         self.widgets['take_profit_distance'].setEnabled(not checked)
-    
+
+    def _toggle_local_minimum_controls(self, checked):
+        """Active ou désactive les contrôles pour le minimum local"""
+        self.widgets['local_minimum_period'].setEnabled(checked)
+        self.widgets['local_minimum_delta'].setEnabled(checked)
+        
+        # Si minimum local est activé et que ATR est activé, ne pas désactiver l'ATR
+        # car l'ATR est toujours utilisé pour le TP
+        
+        # Désactiver SL fixe si l'ATR ou le minimum local est activé
+        use_atr = self.widgets['use_atr_check'].isChecked()
+        self.widgets['stop_loss_distance'].setEnabled(not (checked or use_atr))
+
     def _toggle_risk_controls(self, checked):
         """Active ou désactive les contrôles pour le risk-based sizing"""
         self.widgets['risk_percentage'].setEnabled(checked)
@@ -236,6 +287,9 @@ class StrategyBasePanel(BasePanel):
             'take_profit_atr_multiplier': self.widgets['tp_atr_multiplier'].value(),
             'min_stop_loss_distance': self.widgets['min_sl'].value(),
             'min_take_profit_distance': self.widgets['min_tp'].value(),
+            'use_last_local_minimum': self.widgets['use_local_minimum_check'].isChecked(),
+            'last_local_minimum_period': int(self.widgets['local_minimum_period'].value()),
+            'last_local_minimum_delta': self.widgets['local_minimum_delta'].value(),
             'use_risk_based_sizing': self.widgets['use_risk_based_sizing'].isChecked(),
             'risk_percentage': self.widgets['risk_percentage'].value(),
             'use_break_even': self.widgets['use_break_even'].isChecked(),
@@ -252,4 +306,4 @@ class StrategyBasePanel(BasePanel):
         """Récupère les indicateurs requis pour la stratégie."""
         return {
             'ATR': [[self.widgets['atr_period'].value()]],
-        } 
+        }

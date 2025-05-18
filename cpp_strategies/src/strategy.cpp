@@ -332,8 +332,9 @@ void Strategy::execute() {
         logger->log_execution_step("Vérification horaires", false);
         if (in_position) {
             logger->log_general("Hors horaires de trading - Liquidation de position", LogLevel::INFO);
-            signal = generate_liquidation_signal();
         }
+        
+        signal = generate_liquidation_signal();
         is_executing = false;
         return;
     }

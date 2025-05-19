@@ -39,8 +39,19 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         self._last_trade_closed = False
         self._last_trade_pnl = 0.0  
 
+        # Ajouter des logs pour déboguer les paramètres
+        logging.debug(f"Initialisation de la stratégie avec paramètres: {kwargs}")
+        
+        # Vérifier si les paramètres SL/TP sont présents
+        if 'use_atr_for_sl' not in kwargs or 'use_atr_for_tp' not in kwargs:
+            logging.error("Paramètres use_atr_for_sl et use_atr_for_tp manquants")
+            
         # 1) Create and configure the C++ base config object
         cpp_base_config = create_base_config(kwargs=kwargs)
+        
+        # Log pour vérifier les paramètres après création
+        logging.debug(f"Base config use_atr_for_sl: {cpp_base_config.use_atr_for_sl}")
+        logging.debug(f"Base config use_atr_for_tp: {cpp_base_config.use_atr_for_tp}")
         
         # 2) Create and configure the C++ strategy config
         cpp_strategy_config = CppBuyHeikinGreenConfig()

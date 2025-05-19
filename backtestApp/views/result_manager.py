@@ -39,17 +39,24 @@ class ResultManager:
         
         return self.results_widget
     
-    def update_all(self, data=None, stats=None):
-        """Met à jour toutes les vues avec les nouvelles données."""
-        start = time.time()
-        for name, view in self.views.items():
-            start_time = time.time()
-            view.update(data, stats)
-            end_time = time.time()
-            logging.info(f"Mise à jour de {name}: {(end_time - start_time) * 1000:.2f} ms")
-
-        end = time.time()
-        logging.info(f"Mise à jour de toutes les vues: {(end - start) * 1000:.2f} ms")
+    def update_all(self, chart_data, stats):
+        """Met à jour toutes les vues avec les résultats du backtest"""
+        import logging
+        
+        # Déboguer les données reçues
+        logging.debug(f"update_all appelé avec chart_data de taille {len(chart_data)} et stats: {type(stats)}")
+        if '_trades' in stats:
+            logging.debug(f"Nombre de trades: {len(stats['_trades'])}")
+        
+        try:
+            # Mettre à jour chaque vue
+            for view_name, view in self.views.items():
+                logging.debug(f"Mise à jour de la vue: {view_name}")
+                view.update(chart_data, stats)
+            
+            logging.info("Toutes les vues ont été mises à jour avec succès")
+        except Exception as e:
+            logging.exception(f"Erreur lors de la mise à jour des vues: {str(e)}")
     
     def set_current_tab(self, index):
         """Définit l'onglet actif."""

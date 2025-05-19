@@ -33,20 +33,24 @@ struct StrategyBaseConfig {
     Time trading_to = {23, 0, 0};    // 11:00 PM
     std::vector<int> trading_days = {0, 1, 2, 3, 4};  // 0=Monday, 6=Sunday
     
-    // Fixed SL/TP values as fallback
+    // Fixed SL/TP values
     double take_profit_distance = 30.0;
     double stop_loss_distance = 20.0;
     
-    // ATR parameters
-    bool use_atr_for_sl_tp = false;
+    // Paramètres ATR pour SL et TP
+    bool use_atr_for_sl = false;     // Important: valeur par défaut false
+    bool use_atr_for_tp = false;     // Important: valeur par défaut false
     int atr_period = 14;
     double stop_loss_atr_multiplier = 2.0;
     double take_profit_atr_multiplier = 3.0;
-    
-    // Minimum values to avoid too tight SL/TP
     double min_stop_loss_distance = 5.0;
     double min_take_profit_distance = 5.0;
     
+    // Nouveaux paramètres Min/Max pour SL
+    bool use_minmax_for_sl = false;
+    int sl_minmax_periods = 5;
+    double sl_minmax_delta = 5.0;
+        
     // Risk management
     bool use_risk_based_sizing = false;
     double risk_percentage = 1.0;

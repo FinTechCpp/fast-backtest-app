@@ -128,6 +128,10 @@ class StrategyBasePanel(BasePanel):
         atr_layout.addRow("Période ATR:", self.widgets['atr_period'])
         
         sl_tp_layout.addLayout(atr_layout)
+    
+
+        sl_tp_group.setLayout(sl_tp_layout)
+        base_layout.addWidget(sl_tp_group)
         
         # Risk-based sizing
         risk_sizing_group = QGroupBox("Gestion du risque")

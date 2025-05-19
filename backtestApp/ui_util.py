@@ -20,17 +20,42 @@ class BacktestWorker(QThread):
             maximum_leverage = self.strategy_kwargs.get('maximal_leverage', 20.0)
             margin = 1 / maximum_leverage
             
+            # Logs critiques pour débogage
+            import logging
+            logging.critical("======== DÉMARRAGE DU BACKTEST ========")
+            logging.critical(f"Paramètres SL/TP: use_atr_for_sl={self.strategy_kwargs.get('use_atr_for_sl')}, use_atr_for_tp={self.strategy_kwargs.get('use_atr_for_tp')}")
+            
             # Exécuter le backtest
-            # margin = 1 / leverage donc pour IG avec un levier max de 20 : levier = 20 = 1/0.05
             bt = Backtest(self.data, self.strategy, cash=self.cash, commission=.00, 
                           spread=self.spread, exclusive_orders=False, 
                           strategy_kwargs=self.strategy_kwargs, margin=margin)
             stats = bt.run()
             
-            # Émettre le signal avec les résultats
+            # Vérifier si des trades ont été exécutés
+            logging.critical(f"Trades exécutés: {stats.get('_trades', pd.DataFrame()).shape[0]}")
+            
+            # Si aucun trade n'a été exécuté, investiguer pourquoi
+            if stats.get('_trades', pd.DataFrame()).empty:
+                logging.critical("ATTENTION: Aucun trade n'a été exécuté pendant le backtest!")
+                
+                # Vérifier si les données sont suffisantes
+                logging.critical(f"Nombre de barres dans les données: {len(self.data)}")
+                
+                # Vérifier si les filtres de la stratégie ont filtré tous les signaux potentiels
+                if 'Return [%]' in stats:
+                    logging.critical(f"Return [%]: {stats['Return [%]']}")
+                
+                # Émettre une notification spéciale d'absence de trades
+                self.error.emit("Aucun trade n'a été exécuté! Vérifiez les filtres de la stratégie ou les paramètres SL/TP.")
+                return
+            
+            # Si nous avons des trades, tout va bien
             self.finished.emit(self.data, stats)
         
         except Exception as e:
+            import traceback
+            logging.error(f"Erreur dans BacktestWorker: {str(e)}")
+            logging.error(traceback.format_exc())
             self.error.emit(str(e))
 
 class ChartWorker(QThread):

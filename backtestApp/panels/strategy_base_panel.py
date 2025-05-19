@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QGroupBox, QFormLayout, QCheckBox, QDoubleSpinBox,
-                            QTimeEdit, QLabel, QVBoxLayout, QHBoxLayout)
+                            QTimeEdit, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QGridLayout)
 from PyQt5.QtCore import QTime
 from .base_panel import BasePanel
 import logging
@@ -15,20 +15,60 @@ class StrategyBasePanel(BasePanel):
         base_group = QGroupBox("Paramètres de base")
         base_layout = QVBoxLayout()
 
-        # Section SL/TP avec choix entre valeurs fixes et ATR
+        # Section SL/TP avec disposition verticale pour plus d'espace
         sl_tp_group = QGroupBox("Stop Loss et Take Profit")
         sl_tp_layout = QVBoxLayout()
         
-        # Valeurs fixes de SL/TP
-        fixed_values_layout = QFormLayout()
-
+        # Groupe Stop Loss
+        sl_group = QGroupBox("Stop Loss")
+        sl_layout = QFormLayout()
+        
+        # Méthode de calcul pour le Stop Loss
+        self.widgets['sl_method'] = QComboBox()
+        self.widgets['sl_method'].addItems(["Fixe", "ATR"])
+        self.widgets['sl_method'].setCurrentIndex(0)
+        self.widgets['sl_method'].currentIndexChanged.connect(self._toggle_sl_method)
+        sl_layout.addRow("Méthode:", self.widgets['sl_method'])
+        
         # Stop Loss Distance (fixe)
         self.widgets['stop_loss_distance'] = QDoubleSpinBox()
         self.widgets['stop_loss_distance'].setDecimals(2)
         self.widgets['stop_loss_distance'].setRange(0, 1000)
         self.widgets['stop_loss_distance'].setSingleStep(1)
         self.widgets['stop_loss_distance'].setValue(20)
-        fixed_values_layout.addRow(QLabel("Stop Loss Distance [pts]:"), self.widgets['stop_loss_distance'])
+        sl_layout.addRow("Distance [pts]:", self.widgets['stop_loss_distance'])
+        
+        # Paramètres ATR - Multiplicateur SL
+        self.widgets['sl_atr_multiplier'] = QDoubleSpinBox()
+        self.widgets['sl_atr_multiplier'].setDecimals(1)
+        self.widgets['sl_atr_multiplier'].setRange(0.1, 10.0)
+        self.widgets['sl_atr_multiplier'].setSingleStep(0.1)
+        self.widgets['sl_atr_multiplier'].setValue(2.0)
+        self.widgets['sl_atr_multiplier'].setEnabled(False)
+        sl_layout.addRow("Multiplicateur ATR:", self.widgets['sl_atr_multiplier'])
+        
+        # Valeur minimale SL
+        self.widgets['min_sl'] = QDoubleSpinBox()
+        self.widgets['min_sl'].setDecimals(1)
+        self.widgets['min_sl'].setRange(1.0, 100.0)
+        self.widgets['min_sl'].setSingleStep(1.0)
+        self.widgets['min_sl'].setValue(5.0)
+        self.widgets['min_sl'].setEnabled(False)
+        sl_layout.addRow("Valeur min [pts]:", self.widgets['min_sl'])
+        
+        sl_group.setLayout(sl_layout)
+        sl_tp_layout.addWidget(sl_group)
+        
+        # Groupe Take Profit
+        tp_group = QGroupBox("Take Profit")
+        tp_layout = QFormLayout()
+        
+        # Méthode de calcul pour le Take Profit
+        self.widgets['tp_method'] = QComboBox()
+        self.widgets['tp_method'].addItems(["Fixe", "ATR"])
+        self.widgets['tp_method'].setCurrentIndex(0)
+        self.widgets['tp_method'].currentIndexChanged.connect(self._toggle_tp_method)
+        tp_layout.addRow("Méthode:", self.widgets['tp_method'])
         
         # Take Profit Distance (fixe)
         self.widgets['take_profit_distance'] = QDoubleSpinBox()
@@ -36,18 +76,31 @@ class StrategyBasePanel(BasePanel):
         self.widgets['take_profit_distance'].setRange(0, 1000)
         self.widgets['take_profit_distance'].setSingleStep(1)
         self.widgets['take_profit_distance'].setValue(30)
-        fixed_values_layout.addRow(QLabel("Take Profit Distance [pts]:"), self.widgets['take_profit_distance'])
+        tp_layout.addRow("Distance [pts]:", self.widgets['take_profit_distance'])
         
-        sl_tp_layout.addLayout(fixed_values_layout)
-
-        # Checkbox pour activer l'ATR pour SL/TP
-        self.widgets['use_atr_check'] = QCheckBox("Utiliser l'ATR pour SL/TP")
-        sl_tp_layout.addWidget(self.widgets['use_atr_check'])
+        # Paramètres ATR - Multiplicateur TP
+        self.widgets['tp_atr_multiplier'] = QDoubleSpinBox()
+        self.widgets['tp_atr_multiplier'].setDecimals(1)
+        self.widgets['tp_atr_multiplier'].setRange(0.1, 10.0)
+        self.widgets['tp_atr_multiplier'].setSingleStep(0.1)
+        self.widgets['tp_atr_multiplier'].setValue(3.0)
+        self.widgets['tp_atr_multiplier'].setEnabled(False)
+        tp_layout.addRow("Multiplicateur ATR:", self.widgets['tp_atr_multiplier'])
         
-        # Paramètres ATR
+        # Valeur minimale TP
+        self.widgets['min_tp'] = QDoubleSpinBox()
+        self.widgets['min_tp'].setDecimals(1)
+        self.widgets['min_tp'].setRange(1.0, 100.0)
+        self.widgets['min_tp'].setSingleStep(1.0)
+        self.widgets['min_tp'].setValue(5.0)
+        self.widgets['min_tp'].setEnabled(False)
+        tp_layout.addRow("Valeur min [pts]:", self.widgets['min_tp'])
+        
+        tp_group.setLayout(tp_layout)
+        sl_tp_layout.addWidget(tp_group)
+        
+        # Période ATR (commune)
         atr_layout = QFormLayout()
-
-        # Période ATR
         self.widgets['atr_period'] = QDoubleSpinBox()
         self.widgets['atr_period'].setDecimals(0)
         self.widgets['atr_period'].setRange(1, 100)
@@ -55,40 +108,6 @@ class StrategyBasePanel(BasePanel):
         self.widgets['atr_period'].setValue(14)
         self.widgets['atr_period'].setEnabled(False)
         atr_layout.addRow("Période ATR:", self.widgets['atr_period'])
-        
-        # Multiplicateurs ATR
-        self.widgets['sl_atr_multiplier'] = QDoubleSpinBox()
-        self.widgets['sl_atr_multiplier'].setDecimals(1)
-        self.widgets['sl_atr_multiplier'].setRange(0.1, 10.0)
-        self.widgets['sl_atr_multiplier'].setSingleStep(0.1)
-        self.widgets['sl_atr_multiplier'].setValue(2.0)
-        self.widgets['sl_atr_multiplier'].setEnabled(False)
-        atr_layout.addRow("Multiplicateur ATR pour SL:", self.widgets['sl_atr_multiplier'])
-        
-        self.widgets['tp_atr_multiplier'] = QDoubleSpinBox()
-        self.widgets['tp_atr_multiplier'].setDecimals(1)
-        self.widgets['tp_atr_multiplier'].setRange(0.1, 10.0)
-        self.widgets['tp_atr_multiplier'].setSingleStep(0.1)
-        self.widgets['tp_atr_multiplier'].setValue(3.0)
-        self.widgets['tp_atr_multiplier'].setEnabled(False)
-        atr_layout.addRow("Multiplicateur ATR pour TP:", self.widgets['tp_atr_multiplier'])
-        
-        # Valeurs minimales
-        self.widgets['min_sl'] = QDoubleSpinBox()
-        self.widgets['min_sl'].setDecimals(1)
-        self.widgets['min_sl'].setRange(1.0, 100.0)
-        self.widgets['min_sl'].setSingleStep(1.0)
-        self.widgets['min_sl'].setValue(5.0)
-        self.widgets['min_sl'].setEnabled(False)
-        atr_layout.addRow("SL minimal [pts]:", self.widgets['min_sl'])
-        
-        self.widgets['min_tp'] = QDoubleSpinBox()
-        self.widgets['min_tp'].setDecimals(1)
-        self.widgets['min_tp'].setRange(1.0, 100.0)
-        self.widgets['min_tp'].setSingleStep(1.0)
-        self.widgets['min_tp'].setValue(5.0)
-        self.widgets['min_tp'].setEnabled(False)
-        atr_layout.addRow("TP minimal [pts]:", self.widgets['min_tp'])
         
         sl_tp_layout.addLayout(atr_layout)
         sl_tp_group.setLayout(sl_tp_layout)
@@ -188,7 +207,6 @@ class StrategyBasePanel(BasePanel):
         base_layout.addWidget(trading_hours_group)
         
         # Connexion des signaux
-        self.widgets['use_atr_check'].toggled.connect(self._toggle_atr_controls)
         self.widgets['use_risk_based_sizing'].toggled.connect(self._toggle_risk_controls)
         
         base_group.setLayout(base_layout)
@@ -217,8 +235,36 @@ class StrategyBasePanel(BasePanel):
         """Active ou désactive les contrôles pour la perte maximale quotidienne"""
         self.widgets['daily_max_loss_percentage'].setEnabled(checked)
     
+    def _toggle_sl_method(self, index):
+        """Active/désactive les contrôles en fonction de la méthode SL sélectionnée"""
+        is_atr = index == 1  # 1 = ATR
+        self.widgets['sl_atr_multiplier'].setEnabled(is_atr)
+        self.widgets['min_sl'].setEnabled(is_atr)
+        self.widgets['stop_loss_distance'].setEnabled(not is_atr)
+        
+        # Activer la période ATR si l'une des méthodes utilise ATR
+        self._update_atr_period_status()
+
+    def _toggle_tp_method(self, index):
+        """Active/désactive les contrôles en fonction de la méthode TP sélectionnée"""
+        is_atr = index == 1  # 1 = ATR
+        self.widgets['tp_atr_multiplier'].setEnabled(is_atr)
+        self.widgets['min_tp'].setEnabled(is_atr)
+        self.widgets['take_profit_distance'].setEnabled(not is_atr)
+        
+        # Activer la période ATR si l'une des méthodes utilise ATR
+        self._update_atr_period_status()
+
+    def _update_atr_period_status(self):
+        """Active la période ATR si au moins une méthode utilise ATR"""
+        uses_atr = (self.widgets['sl_method'].currentIndex() == 1 or
+                   self.widgets['tp_method'].currentIndex() == 1)
+        self.widgets['atr_period'].setEnabled(uses_atr)
+
     def get_values(self):
         """Récupère les valeurs des widgets du panel."""
+        import logging
+        
         days = []
         for i, check in enumerate(self.widgets['trading_days_check']):
             if check.isChecked():
@@ -227,15 +273,25 @@ class StrategyBasePanel(BasePanel):
         trading_from = self.widgets['trading_from_hour'].time()
         trading_to = self.widgets['trading_to_hour'].time()
         
+        # Valeurs calculées pour vérification
+        use_atr_for_sl = self.widgets['sl_method'].currentIndex() == 1
+        use_atr_for_tp = self.widgets['tp_method'].currentIndex() == 1
+        
+        # Log des valeurs critiques
+        logging.debug(f"SL method index: {self.widgets['sl_method'].currentIndex()} (use_atr_for_sl={use_atr_for_sl})")
+        logging.debug(f"TP method index: {self.widgets['tp_method'].currentIndex()} (use_atr_for_tp={use_atr_for_tp})")
+        
         return {
             'stop_loss_distance': self.widgets['stop_loss_distance'].value(),
             'take_profit_distance': self.widgets['take_profit_distance'].value(),
-            'use_atr_for_sl_tp': self.widgets['use_atr_check'].isChecked(),
+            'use_atr_for_sl': use_atr_for_sl,
+            'use_atr_for_tp': use_atr_for_tp,
             'atr_period': self.widgets['atr_period'].value(),
             'stop_loss_atr_multiplier': self.widgets['sl_atr_multiplier'].value(),
             'take_profit_atr_multiplier': self.widgets['tp_atr_multiplier'].value(),
             'min_stop_loss_distance': self.widgets['min_sl'].value(),
             'min_take_profit_distance': self.widgets['min_tp'].value(),
+            # Reste inchangé
             'use_risk_based_sizing': self.widgets['use_risk_based_sizing'].isChecked(),
             'risk_percentage': self.widgets['risk_percentage'].value(),
             'use_break_even': self.widgets['use_break_even'].isChecked(),
@@ -252,4 +308,4 @@ class StrategyBasePanel(BasePanel):
         """Récupère les indicateurs requis pour la stratégie."""
         return {
             'ATR': [[self.widgets['atr_period'].value()]],
-        } 
+        }

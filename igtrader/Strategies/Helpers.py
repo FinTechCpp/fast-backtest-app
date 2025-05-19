@@ -349,7 +349,8 @@ def create_base_config(kwargs) -> CppStrategyBaseConfig:
     config.stop_loss_distance = float(kwargs.pop('stop_loss_distance'))
     
     # Paramètres ATR
-    config.use_atr_for_sl_tp = bool(kwargs.pop('use_atr_for_sl_tp', False))
+    config.use_atr_for_sl = bool(kwargs.pop('use_atr_for_sl', False))
+    config.use_atr_for_tp = bool(kwargs.pop('use_atr_for_tp', False))
     config.atr_period = int(kwargs.pop('atr_period', 14))
     config.stop_loss_atr_multiplier = float(kwargs.pop('stop_loss_atr_multiplier', 2.0))
     config.take_profit_atr_multiplier = float(kwargs.pop('take_profit_atr_multiplier', 3.0))

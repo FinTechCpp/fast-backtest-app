@@ -92,6 +92,9 @@ class BacktestRunner(QObject):
                 self.backtest_error.emit(f"Stratégie {strategy_name} introuvable")
                 return
             
+            # Ajoutez cette ligne juste avant de créer le thread
+            logging.debug("Configuration complète du backtest: %s", config)
+            
             # Créer et exécuter le thread de backtest
             self.backtest_thread = BacktestWorker(
                 data=data,
@@ -109,12 +112,25 @@ class BacktestRunner(QObject):
             self.backtest_thread.start()
             
         except Exception as e:
-            logging.exception(f"Erreur lors de l'exécution du backtest: {str(e)}")
-            self.backtest_error.emit(str(e))
+            logging.exception(f"Exception non capturée dans run_backtest: {str(e)}")
+            self.backtest_error.emit(f"Exception non capturée: {str(e)}")
     
     def on_backtest_finished(self, data, stats):
         """Fonction appelée lorsque le backtest est terminé avec succès"""
         try:
+            # Déboguer les résultats reçus
+            logging.debug(f"Type de stats reçu: {type(stats)}")
+            if isinstance(stats, dict):
+                logging.debug(f"Clés dans stats: {list(stats.keys())}")
+                if '_trades' in stats:
+                    logging.debug(f"Nombre de trades: {len(stats['_trades'])}")
+                    if len(stats['_trades']) > 0:
+                        logging.debug(f"Premier trade: {stats['_trades'].iloc[0].to_dict()}")
+                else:
+                    logging.warning("Pas de clé '_trades' dans les résultats!")
+            else:
+                logging.warning(f"stats n'est pas un dictionnaire: {stats}")
+            
             # Traiter les résultats en vérifiant d'abord le type des données
             if '_trades' in stats and isinstance(stats['_trades'], pd.DataFrame):
                 # Vérifier EntryTime
@@ -181,12 +197,21 @@ class BacktestRunner(QObject):
     
     def on_backtest_error(self, error_msg):
         """Fonction appelée en cas d'erreur pendant le backtest"""
+        from PyQt5.QtWidgets import QMessageBox
+        
         logging.error(f"Erreur pendant le backtest: {error_msg}")
         
         # Log the full traceback if available
         current_tb = traceback.format_exc()
         if current_tb and 'NoneType' not in current_tb:
             logging.error(f"Traceback complet:\n{current_tb}")
+        
+        # Afficher une boîte de dialogue pour informer l'utilisateur
+        QMessageBox.warning(
+            self.parent, 
+            "Erreur de backtest",
+            f"Le backtest a rencontré une erreur:\n{error_msg}"
+        )
         
         # Réinitialiser l'interface
         self.loading_indicator.setVisible(False)

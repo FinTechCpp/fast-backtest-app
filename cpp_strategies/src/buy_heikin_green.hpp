@@ -410,6 +410,12 @@ public:
             return false;
         }
         
+        // Vérifier si on a besoin de Min/Max mais qu'on n'a pas assez d'historique
+        if (base_config.use_minmax_for_sl && buffer.size() < base_config.sl_minmax_periods) {
+            logger->log_general("Pas assez d'historique pour le calcul Min/Max SL", LogLevel::WARNING);
+            return false;
+        }
+        
         // Log pour faciliter le débogage
         logger->log_general("Bougie HA courante: " + std::string(ha_current.is_green ? "VERTE" : "ROUGE"), LogLevel::INFO);
         
@@ -441,7 +447,37 @@ public:
             );
             
             logger->log_general("SL calculé avec ATR: " + std::to_string(stop_loss_distance), LogLevel::INFO);
-        } else {
+        } 
+        else if (base_config.use_minmax_for_sl && buffer.size() >= base_config.sl_minmax_periods) {
+            logger->log_general("Utilisation de Min/Max pour calculer SL (LONG)", LogLevel::INFO);
+            
+            // Recherche du minimum sur les n dernières périodes
+            double min_price = current_candle.low;
+            int n_periods = std::min(static_cast<int>(buffer.size()), base_config.sl_minmax_periods);
+            
+            for (int i = 1; i < n_periods; ++i) {
+                min_price = std::min(min_price, buffer[buffer.size() - i - 1].low);
+            }
+            
+            logger->log_general("Prix minimum trouvé: " + std::to_string(min_price), LogLevel::INFO);
+            
+            // SL = minimum - delta (pour LONG, le SL est sous le minimum)
+            double sl_price = min_price - base_config.sl_minmax_delta;
+            stop_loss_distance = price() - sl_price;
+            
+            // Assurer une distance minimale
+            if (stop_loss_distance <= 0.0 || sl_price >= price()) {
+                logger->log_general("SL Min/Max calculé invalide, utilisation de distance fixe", LogLevel::WARNING);
+                stop_loss_distance = base_config.stop_loss_distance;
+            }
+            
+            logger->log_general("SL Min/Max calculé: " + std::to_string(stop_loss_distance) + 
+                              " (min=" + std::to_string(min_price) + 
+                              ", delta=" + std::to_string(base_config.sl_minmax_delta) + 
+                              ", prix SL=" + std::to_string(sl_price) + ")", 
+                              LogLevel::INFO);
+        } 
+        else {
             // Utiliser valeur fixe pour SL
             stop_loss_distance = base_config.stop_loss_distance;
             logger->log_general("Utilisation de valeur fixe pour SL: " + 

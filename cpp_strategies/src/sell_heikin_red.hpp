@@ -271,6 +271,12 @@ public:
             return false;
         }
         
+        // Vérifier si on a besoin de Min/Max mais qu'on n'a pas assez d'historique
+        if (base_config.use_minmax_for_sl && buffer.size() < base_config.sl_minmax_periods) {
+            logger->log_general("Pas assez d'historique pour le calcul Min/Max SL", LogLevel::WARNING);
+            return false;
+        }
+        
         // Vérifier si la bougie actuelle est rouge (pas verte)
         return !ha_current.is_green;
     }
@@ -281,7 +287,7 @@ public:
     
     void go_short() override {
         logger->log_general("Préparation d'un signal SHORT", LogLevel::INFO);
-        
+
         // Calcul du Stop Loss
         if (base_config.use_atr_for_sl && current_atr > 0.0) {
             logger->log_general("Utilisation de l'ATR pour calculer SL", LogLevel::INFO);
@@ -303,7 +309,37 @@ public:
             );
             
             logger->log_general("SL calculé avec ATR: " + std::to_string(stop_loss_distance), LogLevel::INFO);
-        } else {
+        } 
+        else if (base_config.use_minmax_for_sl && buffer.size() >= base_config.sl_minmax_periods) {
+            logger->log_general("Utilisation de Min/Max pour calculer SL (SHORT)", LogLevel::INFO);
+            
+            // Recherche du maximum sur les n dernières périodes
+            double max_price = current_candle.high;
+            int n_periods = std::min(static_cast<int>(buffer.size()), base_config.sl_minmax_periods);
+            
+            for (int i = 1; i < n_periods; ++i) {
+                max_price = std::max(max_price, buffer[buffer.size() - i - 1].high);
+            }
+            
+            logger->log_general("Prix maximum trouvé: " + std::to_string(max_price), LogLevel::INFO);
+            
+            // SL = maximum + delta (pour SHORT, le SL est au-dessus du maximum)
+            double sl_price = max_price + base_config.sl_minmax_delta;
+            stop_loss_distance = sl_price - price();
+            
+            // Assurer une distance minimale
+            if (stop_loss_distance <= 0.0 || sl_price <= price()) {
+                logger->log_general("SL Min/Max calculé invalide, utilisation de distance fixe", LogLevel::WARNING);
+                stop_loss_distance = base_config.stop_loss_distance;
+            }
+            
+            logger->log_general("SL Min/Max calculé: " + std::to_string(stop_loss_distance) + 
+                              " (max=" + std::to_string(max_price) + 
+                              ", delta=" + std::to_string(base_config.sl_minmax_delta) + 
+                              ", prix SL=" + std::to_string(sl_price) + ")", 
+                              LogLevel::INFO);
+        } 
+        else {
             // Utiliser valeur fixe pour SL
             stop_loss_distance = base_config.stop_loss_distance;
             logger->log_general("Utilisation de valeur fixe pour SL: " + 

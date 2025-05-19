@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QGroupBox, QFormLayout, QCheckBox, QDoubleSpinBox,
-                            QTimeEdit, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QGridLayout)
+                            QTimeEdit, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QGridLayout, QSpinBox)
 from PyQt5.QtCore import QTime
 from .base_panel import BasePanel
 import logging
@@ -25,7 +25,7 @@ class StrategyBasePanel(BasePanel):
         
         # Méthode de calcul pour le Stop Loss
         self.widgets['sl_method'] = QComboBox()
-        self.widgets['sl_method'].addItems(["Fixe", "ATR"])
+        self.widgets['sl_method'].addItems(["Fixe", "ATR", "Min/Max"])  # Ajout de "Min/Max"
         self.widgets['sl_method'].setCurrentIndex(0)
         self.widgets['sl_method'].currentIndexChanged.connect(self._toggle_sl_method)
         sl_layout.addRow("Méthode:", self.widgets['sl_method'])
@@ -55,6 +55,24 @@ class StrategyBasePanel(BasePanel):
         self.widgets['min_sl'].setValue(5.0)
         self.widgets['min_sl'].setEnabled(False)
         sl_layout.addRow("Valeur min [pts]:", self.widgets['min_sl'])
+
+        # Paramètres Min/Max - Périodes pour SL
+        self.widgets['sl_minmax_periods'] = QSpinBox()
+        self.widgets['sl_minmax_periods'].setRange(1, 50)
+        self.widgets['sl_minmax_periods'].setValue(5)
+        self.widgets['sl_minmax_periods'].setEnabled(False)
+        self.widgets['sl_minmax_periods'].setToolTip("Nombre de périodes pour chercher le min/max")
+        sl_layout.addRow("Périodes Min/Max:", self.widgets['sl_minmax_periods'])
+
+        # Paramètres Min/Max - Delta pour SL
+        self.widgets['sl_minmax_delta'] = QDoubleSpinBox()
+        self.widgets['sl_minmax_delta'].setDecimals(1)
+        self.widgets['sl_minmax_delta'].setRange(0.0, 100.0)
+        self.widgets['sl_minmax_delta'].setSingleStep(0.5)
+        self.widgets['sl_minmax_delta'].setValue(5.0)
+        self.widgets['sl_minmax_delta'].setEnabled(False)
+        self.widgets['sl_minmax_delta'].setToolTip("Distance additionnelle au min/max")
+        sl_layout.addRow("Delta Min/Max [pts]:", self.widgets['sl_minmax_delta'])
         
         sl_group.setLayout(sl_layout)
         sl_tp_layout.addWidget(sl_group)
@@ -238,9 +256,18 @@ class StrategyBasePanel(BasePanel):
     def _toggle_sl_method(self, index):
         """Active/désactive les contrôles en fonction de la méthode SL sélectionnée"""
         is_atr = index == 1  # 1 = ATR
+        is_minmax = index == 2  # 2 = Min/Max
+        
+        # Contrôles ATR
         self.widgets['sl_atr_multiplier'].setEnabled(is_atr)
         self.widgets['min_sl'].setEnabled(is_atr)
-        self.widgets['stop_loss_distance'].setEnabled(not is_atr)
+        
+        # Contrôles Min/Max
+        self.widgets['sl_minmax_periods'].setEnabled(is_minmax)
+        self.widgets['sl_minmax_delta'].setEnabled(is_minmax)
+        
+        # Distance fixe
+        self.widgets['stop_loss_distance'].setEnabled(not (is_atr or is_minmax))
         
         # Activer la période ATR si l'une des méthodes utilise ATR
         self._update_atr_period_status()
@@ -274,17 +301,22 @@ class StrategyBasePanel(BasePanel):
         trading_to = self.widgets['trading_to_hour'].time()
         
         # Valeurs calculées pour vérification
-        use_atr_for_sl = self.widgets['sl_method'].currentIndex() == 1
+        sl_method_index = self.widgets['sl_method'].currentIndex()
+        use_atr_for_sl = sl_method_index == 1
+        use_minmax_for_sl = sl_method_index == 2
         use_atr_for_tp = self.widgets['tp_method'].currentIndex() == 1
         
         # Log des valeurs critiques
-        logging.debug(f"SL method index: {self.widgets['sl_method'].currentIndex()} (use_atr_for_sl={use_atr_for_sl})")
+        logging.debug(f"SL method index: {sl_method_index} (use_atr_for_sl={use_atr_for_sl}, use_minmax_for_sl={use_minmax_for_sl})")
         logging.debug(f"TP method index: {self.widgets['tp_method'].currentIndex()} (use_atr_for_tp={use_atr_for_tp})")
         
         return {
             'stop_loss_distance': self.widgets['stop_loss_distance'].value(),
             'take_profit_distance': self.widgets['take_profit_distance'].value(),
             'use_atr_for_sl': use_atr_for_sl,
+            'use_minmax_for_sl': use_minmax_for_sl,
+            'sl_minmax_periods': self.widgets['sl_minmax_periods'].value(),
+            'sl_minmax_delta': self.widgets['sl_minmax_delta'].value(),
             'use_atr_for_tp': use_atr_for_tp,
             'atr_period': self.widgets['atr_period'].value(),
             'stop_loss_atr_multiplier': self.widgets['sl_atr_multiplier'].value(),

@@ -46,8 +46,11 @@ struct StrategyBaseConfig {
     double min_stop_loss_distance = 5.0;
     double min_take_profit_distance = 5.0;
     
-    // Autres paramètres inchangés...
-    
+    // Nouveaux paramètres Min/Max pour SL
+    bool use_minmax_for_sl = false;
+    int sl_minmax_periods = 5;
+    double sl_minmax_delta = 5.0;
+        
     // Risk management
     bool use_risk_based_sizing = false;
     double risk_percentage = 1.0;

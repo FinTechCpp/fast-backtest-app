@@ -356,6 +356,10 @@ def create_base_config(kwargs) -> CppStrategyBaseConfig:
     config.take_profit_atr_multiplier = float(kwargs.pop('take_profit_atr_multiplier', 3.0))
     config.min_stop_loss_distance = float(kwargs.pop('min_stop_loss_distance', 5.0))
     config.min_take_profit_distance = float(kwargs.pop('min_take_profit_distance', 5.0))
+
+    config.use_minmax_for_sl = bool(kwargs.pop('use_minmax_for_sl', False))
+    config.sl_minmax_periods = int(kwargs.pop('sl_minmax_periods', 5))
+    config.sl_minmax_delta = float(kwargs.pop('sl_minmax_delta', 5.0))
     
     # Paramètres de gestion du risque
     config.use_risk_based_sizing = bool(kwargs.pop('use_risk_based_sizing', False))

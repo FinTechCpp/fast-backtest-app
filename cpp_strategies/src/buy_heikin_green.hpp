@@ -19,7 +19,7 @@ struct BuyHeikinGreenConfig {
     bool use_ema_long_filter = false;
     bool use_stoch_filter = false;
     bool use_rsi_filter = false;
-    bool use_previous_ha_candle_red_filter = true;
+    bool use_previous_ha_candle_red_filter = false;
 };
 
 class BuyHeikinGreen : public Strategy {
@@ -30,7 +30,7 @@ private:
     std::unique_ptr<EMA> ema_short_calculator;
     std::unique_ptr<EMA> ema_long_calculator;
     std::unique_ptr<STOCH> stochastic_calculator;
-    std::unique_ptr<RSI> rsi_calculator;      // Ajout du calculateur RSI
+    std::unique_ptr<RSI> rsi_calculator;
     std::unique_ptr<ATR> atr_calculator;
     
     // Indicator names
@@ -38,7 +38,7 @@ private:
     std::string ema_long_name;
     std::string stoch_k_name;
     std::string stoch_d_name;
-    std::string rsi_name;                     // Nom pour le RSI
+    std::string rsi_name;
     std::string atr_name;
     
     // Indicator values
@@ -46,23 +46,12 @@ private:
     double current_ema_long = 0.0;
     double current_stoch_k = 0.0;
     double current_stoch_d = 0.0;
-    double current_rsi = 0.0;                 // Valeur actuelle du RSI
-    double previous_rsi = 0.0;                 // Valeur précédente du RSI
-    double previous_2_rsi = 0.0;               // Valeur pré-précédente du RSI (two periods ago)
+    double current_rsi = 0.0;
+    double previous_rsi = 0.0;
+    double previous_2_rsi = 0.0;
     double current_atr = 0.0;
     double k_previous = 0.0;
     double d_previous = 0.0;
-
-    
-    // Cache for Heikin Ashi candles
-    struct HeikinAshiValue {
-        double open = 0.0;
-        double close = 0.0;
-        bool is_green = false;
-    };
-    
-    HeikinAshiValue ha_current;
-    HeikinAshiValue ha_previous;
     
     // Filters
     std::vector<std::function<bool()>> active_filters;
@@ -167,26 +156,43 @@ private:
     }
     
     bool previous_ha_candle_red_filter() {
-        if (buffer.size() < 3) {
+        try {
+            // Utiliser CandleManager pour obtenir l'information Heikin Ashi
+            if (candle_manager.size() < 3) {
+                logger->log_filter_result("Bougie HA précédente", false);
+                logger->log_filter_detail("Bougie HA précédente", "Pas assez d'historique (min 3 bougies)", LogLevel::DEBUG);
+                return false;
+            }
+            
+            // Récupérer les bougies HA
+            auto ha_candles = candle_manager.get_last_heikin_ashi_candles(2);
+            if (ha_candles.size() < 2) {
+                logger->log_filter_result("Bougie HA précédente", false);
+                logger->log_filter_detail("Bougie HA précédente", "Pas assez de bougies HA", LogLevel::DEBUG);
+                return false;
+            }
+            
+            // La bougie précédente est à l'index 0 (l'avant-dernière)
+            const BasicCandle& prev_ha = ha_candles[0];
+            bool is_red = prev_ha.close < prev_ha.open;
+            
+            logger->log_filter_result("Bougie HA précédente", is_red);
+            logger->log_filter_detail("Bougie HA précédente", 
+                                  "Bougie précédente " + std::string(is_red ? "ROUGE" : "VERTE") + 
+                                  " (open=" + std::to_string(prev_ha.open) + 
+                                  ", close=" + std::to_string(prev_ha.close) + ")", 
+                                  LogLevel::DEBUG);
+            
+            return is_red;
+        } catch (const std::exception& e) {
             logger->log_filter_result("Bougie HA précédente", false);
-            logger->log_filter_detail("Bougie HA précédente", "Pas assez d'historique (min 3 bougies)", LogLevel::DEBUG);
+            logger->log_filter_detail("Bougie HA précédente", "Erreur: " + std::string(e.what()), LogLevel::ERROR);
             return false;
         }
-        
-        bool result = !ha_previous.is_green;
-        
-        logger->log_filter_result("Bougie HA précédente", result);
-        logger->log_filter_detail("Bougie HA précédente", 
-                              "Bougie précédente " + std::string(result ? "ROUGE" : "VERTE") + 
-                              " (open=" + std::to_string(ha_previous.open) + 
-                              ", close=" + std::to_string(ha_previous.close) + ")", 
-                              LogLevel::DEBUG);
-        
-        return result;
     }
     
     bool initialize_indicators() {
-        if (buffer.size() < static_cast<size_t>(std::max({config.ema_long_period, config.stoch_fastk + config.stoch_slowk, config.rsi_period * 2}))) {
+        if (candle_manager.size() < static_cast<size_t>(std::max({config.ema_long_period, config.stoch_fastk + config.stoch_slowk, config.rsi_period * 2}))) {
             return false;
         }
         
@@ -228,7 +234,7 @@ private:
     }
     
     bool update_indicators() {
-        if (buffer.empty()) {
+        if (candle_manager.size() == 0) {
             logger->log_general("Buffer vide, impossible de mettre à jour les indicateurs", LogLevel::WARNING);
             return false;
         }
@@ -333,66 +339,21 @@ public:
         // Update all technical indicators
         update_indicators();
         
-        // Need at least 2 candles for HA calculation
-        if (buffer.size() < 2) {
-            logger->log_general("Pas assez de bougies pour le calcul Heikin Ashi", LogLevel::WARNING);
-            return;
-        }
-        
-        // Get current and previous candles
-        const Candle& current = current_candle;
-        const Candle& prev = buffer[buffer.size() - 2];
-        
-        // If we need to initialize HA candles
-        if (ha_current.close == 0.0) {
-            logger->log_general("Initialisation des bougies Heikin Ashi", LogLevel::INFO);
+        // Obtenir la dernière bougie HA pour journalisation
+        try {
+            BasicCandle ha_current = candle_manager.get_latest_heikin_ashi();
+            bool is_green = candle_manager.is_candle_green(ha_current);
             
-            // Initialize both candles
-            if (buffer.size() >= 3) {
-                const Candle& prev2 = buffer[buffer.size() - 3];
-                
-                // Calculate HA for previous candle
-                double ha_close_prev = (prev.open + prev.high + prev.low + prev.close) / 4.0;
-                double ha_open_prev = (prev2.open + prev2.close) / 2.0;
-                
-                ha_previous.open = ha_open_prev;
-                ha_previous.close = ha_close_prev;
-                ha_previous.is_green = ha_close_prev > ha_open_prev;
-                
-                logger->log_general("Bougie HA précédente initialisée: Open=" + std::to_string(ha_open_prev) + 
-                                  ", Close=" + std::to_string(ha_close_prev) + 
-                                  ", Green=" + std::to_string(ha_previous.is_green), LogLevel::DEBUG);
-            } else {
-                // Not enough history, initialize with basic values
-                ha_previous.open = prev.open;
-                ha_previous.close = prev.close;
-                ha_previous.is_green = prev.close > prev.open;
-                
-                logger->log_general(std::string("Bougie HA précédente initialisée avec valeurs de base: ") + 
-                    (ha_previous.is_green ? "VERTE" : "ROUGE"), LogLevel::DEBUG);
-            }
-        } else {
-            // Move current values to previous (reuse calculations)
-            ha_previous = ha_current;
-            logger->log_general("Décalage des valeurs HA: précédente <- courante", LogLevel::DEBUG);
+            logger->log_general("Bougie HA courante calculée: Open=" + std::to_string(ha_current.open) + 
+                            ", Close=" + std::to_string(ha_current.close) + 
+                            ", Green=" + std::to_string(is_green), LogLevel::INFO);
+        } catch (const std::exception& e) {
+            logger->log_general("Erreur lors de la récupération des bougies HA: " + std::string(e.what()), LogLevel::ERROR);
         }
-        
-        // Calculate HA for current candle
-        double ha_close_current = (current.open + current.high + current.low + current.close) / 4.0;
-        double ha_open_current = (ha_previous.open + ha_previous.close) / 2.0;
-        
-        // Update cache for current candle
-        ha_current.open = ha_open_current;
-        ha_current.close = ha_close_current;
-        ha_current.is_green = ha_close_current > ha_open_current;
-        
-        logger->log_general("Bougie HA courante calculée: Open=" + std::to_string(ha_open_current) + 
-                          ", Close=" + std::to_string(ha_close_current) + 
-                          ", Green=" + std::to_string(ha_current.is_green), LogLevel::INFO);
     }
     
     bool should_long() override {
-        if (buffer.size() < 3) {
+        if (candle_manager.size() < 3) {
             logger->log_general("Pas assez d'historique (min 3 bougies)", LogLevel::WARNING);
             return false;
         }
@@ -411,16 +372,24 @@ public:
         }
         
         // Vérifier si on a besoin de Min/Max mais qu'on n'a pas assez d'historique
-        if (base_config.use_minmax_for_sl && buffer.size() < base_config.sl_minmax_periods) {
+        if (base_config.use_minmax_for_sl && candle_manager.size() < base_config.sl_minmax_periods) {
             logger->log_general("Pas assez d'historique pour le calcul Min/Max SL", LogLevel::WARNING);
             return false;
         }
         
-        // Log pour faciliter le débogage
-        logger->log_general("Bougie HA courante: " + std::string(ha_current.is_green ? "VERTE" : "ROUGE"), LogLevel::INFO);
-        
-        // Only check if current candle is green
-        return ha_current.is_green;
+        try {
+            // Utiliser CandleManager pour vérifier si la bougie HA actuelle est verte
+            bool is_current_ha_green = candle_manager.is_latest_heikin_ashi_green();
+            
+            // Log pour faciliter le débogage
+            logger->log_general("Bougie HA courante: " + std::string(is_current_ha_green ? "VERTE" : "ROUGE"), LogLevel::INFO);
+            
+            // Only check if current candle is green
+            return is_current_ha_green;
+        } catch (const std::exception& e) {
+            logger->log_general("Erreur lors de la vérification de la bougie HA: " + std::string(e.what()), LogLevel::ERROR);
+            return false;
+        }
     }
     
     void go_long() override {

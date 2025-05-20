@@ -1,5 +1,6 @@
 #pragma once
 #include "common.h"
+#include "CandleManager.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -95,11 +96,11 @@ public:
     
     // Properties
     double price() const;
-    // double get_indicator_value(const std::string& indicator_name) const;
 
 protected:
     StrategyBaseConfig base_config;
-    std::vector<Candle> buffer;
+    CandleManager candle_manager;
+    std::vector<Candle> buffer; // Compatibility need to be deleted
     Candle current_candle;
     bool in_position = false;
     double entry_price = 0.0;

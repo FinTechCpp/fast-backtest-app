@@ -34,6 +34,26 @@ bool DateTime::operator!=(const DateTime& other) const {
     return !(*this == other);
 }
 
+bool DateTime::operator<(const DateTime &other) const
+{
+    return std::tie(year, month, day, time) < std::tie(other.year, other.month, other.day, other.time);
+}
+
+bool DateTime::operator<=(const DateTime &other) const
+{
+    return std::tie(year, month, day, time) <= std::tie(other.year, other.month, other.day, other.time);
+}
+
+bool DateTime::operator>(const DateTime &other) const
+{
+    return std::tie(year, month, day, time) > std::tie(other.year, other.month, other.day, other.time);
+}
+
+bool DateTime::operator>=(const DateTime &other) const
+{
+    return std::tie(year, month, day, time) >= std::tie(other.year, other.month, other.day, other.time);
+}
+
 std::string DateTime::to_string() const {
     char buffer[20];
     snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d", 

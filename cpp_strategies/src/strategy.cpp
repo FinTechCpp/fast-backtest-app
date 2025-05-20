@@ -419,6 +419,10 @@ Signal* Strategy::update_candle(const Candle& candle) {
     }
     
     // Add to buffer for historical calculations
+    BasicCandle basic_candle(candle.date, candle.open, candle.high, candle.low, candle.close);
+    candle_manager.add_candle(basic_candle);
+
+    // Maintien du buffer pour compatibilité
     buffer.push_back(candle);
     if (buffer.size() > 200) {  // Limit buffer size
         buffer.erase(buffer.begin());

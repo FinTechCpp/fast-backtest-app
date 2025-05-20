@@ -23,6 +23,10 @@ struct DateTime {
     bool is_valid() const;
     bool operator==(const DateTime& other) const;
     bool operator!=(const DateTime& other) const;
+    bool operator<(const DateTime& other) const;
+    bool operator<=(const DateTime& other) const;
+    bool operator>(const DateTime& other) const;
+    bool operator>=(const DateTime& other) const;
     std::string to_string() const;
 };
 
@@ -34,20 +38,36 @@ enum LogLevel {
     ERROR = 0
 };
 
-// Structure de bougie
-struct Candle {
+struct BasicCandle {
     DateTime date;
     double open;
     double high;
     double low;
     double close;
-    double volume = 0.0;
-    
+
+    BasicCandle() = default;
+
+    BasicCandle(const DateTime& dt, double o, double h, double l, double c)
+        : date(dt), open(o), high(h), low(l), close(c) {}
+};
+
+// Structure de bougie
+struct Candle : public BasicCandle {
     bool in_position = false;
     double entry_price = 0.0;
     double position_size = 0.0;
     double position_pl_pct = 0.0;
     double closed_trade_pnl = 0.0;
+
+    Candle() = default;
+
+    Candle(const DateTime& dt, double o, double h, double l, double c)
+        : BasicCandle(dt, o, h, l, c) {}
+
+    Candle(const DateTime& dt, double o, double h, double l, double c,
+           bool in_pos, double entry_price, double pos_size, double pos_pl_pct)
+        : BasicCandle(dt, o, h, l, c), in_position(in_pos), entry_price(entry_price),
+          position_size(pos_size), position_pl_pct(pos_pl_pct) {}
 };
 
 extern std::function<void(const std::string&, int)> g_py_log_callback;

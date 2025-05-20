@@ -13,11 +13,30 @@ import math
 from collections import deque
 import traceback
 from enum import Enum
+from dataclasses import dataclass, field, asdict
+from pandas import Timestamp
+from typing import Optional, Dict, Any, List
+
 
 EXPIRY = '-'
 CURRENCY = 'EUR'
 ORDER_TYPE = 'MARKET'
 
+@dataclass
+class BaseCandle:
+    """Classe de base pour les données de bougie communes à toutes les stratégies"""
+    date: Timestamp
+    Open: float
+    High: float
+    Low: float
+    Close: float
+
+    # Informations supplémentaires
+    in_position: bool = False
+    entry_price: float = 0.0
+    position_size: float = 0.0
+    position_pl_pct: float = 0.0
+    closed_trade_pnl: float = 0.0
 
 class PriceSource(Enum):
     BID = 'bid'
@@ -138,62 +157,6 @@ class TickBroker:
             logging.error(f"Error setting up streaming: {e}")
             logging.error(f"Details: {traceback.format_exc()}")
             raise
-        
-    def get_position_details(self):
-        """
-        Récupère les détails d'une position ouverte pour l'epic actuel.
-        
-        Returns:
-            dict: Un dictionnaire contenant les détails de la position, ou None si aucune position n'est ouverte
-                - entry_price: Prix d'entrée de la position
-                - position_size: Taille de la position
-                - position_pl_pct: Pourcentage de profit/perte
-                - deal_id: Identifiant de la transaction
-                - direction: Direction de la position (BUY ou SELL)
-        """
-        try:
-            # Vérifier d'abord si une position est ouverte
-            if not self.has_open_position():
-                return None
-            
-            # Récupérer toutes les positions ouvertes
-            open_positions = self.ig_service.fetch_open_positions()
-            
-            # Filtrer pour ne garder que celles correspondant à notre epic
-            positions_for_epic = open_positions[open_positions['epic'] == self.epic]
-            
-            if positions_for_epic.empty:
-                return None
-            
-            # Récupérer la première position (généralement il n'y en a qu'une par epic)
-            position = positions_for_epic.iloc[0]
-            
-            # Calculer le pourcentage de P&L
-            entry_price = float(position.get('openLevel', 0))
-            current_price = float(position.get('level', 0))
-            direction = position.get('direction', '')
-            profit_loss = float(position.get('profitLoss', 0))
-            
-            if entry_price > 0 and direction:
-                if direction == 'BUY':
-                    pl_pct = ((current_price - entry_price) / entry_price) * 100
-                else:  # SELL
-                    pl_pct = ((entry_price - current_price) / entry_price) * 100
-            else:
-                pl_pct = 0.0
-            
-            return {
-                'entry_price': entry_price,
-                'position_size': float(position.get('size', 0)),
-                'position_pl_pct': pl_pct,
-                'deal_id': position.get('dealId', ''),
-                'direction': direction,
-                'profit_loss': profit_loss
-            }
-        except Exception as e:
-            logging.error(f"Erreur lors de la récupération des détails de position: {e}")
-            logging.error(traceback.format_exc())
-            return None
     
     def _build_candles_from_ticks_loop(self):
         """Background thread that continuously builds candles from tick data."""
@@ -277,8 +240,7 @@ class TickBroker:
                                 
                                 # Appeler le callback avec la nouvelle bougie si défini
                                 if self.candle_callback is not None:
-                                    # Créer un BaseCandle à partir du dict
-                                    from igtrader.Strategies.Strategy import BaseCandle
+
                                     base_candle = BaseCandle(
                                         date=self.last_candle_time,
                                         Open=open_price,
@@ -286,9 +248,11 @@ class TickBroker:
                                         Low=low_price,
                                         Close=close_price,
                                         in_position=self.has_open_position(),
-                                        entry_price=None,  # À remplir si nécessaire
-                                        position_size=None,  # À remplir si nécessaire
-                                        position_pl_pct=None  # À remplir si nécessaire
+                                        entry_price=self.get_entry_price(),  
+                                        position_size=self.get_position_size(),  
+                                        position_pl_pct=self.get_position_pl_pct(),
+                                        closed_trade_pnl=self.get_closed_trade_pnl()  # P&L de la position fermée
+                                        
                                     )
                                     self.candle_callback(base_candle)
                             else:
@@ -327,6 +291,78 @@ class TickBroker:
         """
         self.candle_callback = callback
 
+    def get_closed_trade_pnl(self):
+        """
+        Récupère le profit and loss (P&L) réalisé de la dernière position fermée sur l'EPIC spécifié.
+        Cette méthode renvoie le P&L une seule fois après la fermeture d'une position.
+        
+        Returns:
+            float: P&L réalisé de la dernière position fermée, ou None si aucune nouvelle position fermée n'a été détectée.
+        """
+        # Vérifier si cet attribut existe déjà, sinon l'initialiser
+        if not hasattr(self, '_last_reported_deal_ids'):
+            self._last_reported_deal_ids = set()
+            self._last_closed_pnl = None
+        
+        try:
+            # Récupérer les transactions récentes (dernière minute)
+            # Le type 'ALL_DEAL' permet de récupérer toutes les transactions liées aux deals
+            transactions = self.ig_service.fetch_transaction_history(
+                trans_type='ALL_DEAL',
+                from_date=datetime.datetime.now() - datetime.timedelta(minutes=1),
+                to_date=datetime.datetime.now(),
+                page_size=10
+            )
+            
+            if self.ig_service.return_dataframe:
+                # Si le résultat est vide, retourner None
+                if transactions.empty:
+                    return self._last_closed_pnl
+                
+                # Filtrer les transactions pour ne garder que celles concernant notre EPIC
+                epic_transactions = transactions[transactions['instrumentName'].str.contains(self.epic, na=False)]
+                
+                if epic_transactions.empty:
+                    return self._last_closed_pnl
+                    
+                # Filtrer pour ne garder que les positions fermées (CLOSE)
+                closed_positions = epic_transactions[epic_transactions['transactionType'] == 'CLOSE']
+                
+                if closed_positions.empty:
+                    return self._last_closed_pnl
+                    
+                # Trier par date décroissante pour avoir la plus récente en premier
+                closed_positions = closed_positions.sort_values(by='date', ascending=False)
+                
+                # Récupérer la dernière position fermée
+                latest_closed = closed_positions.iloc[0]
+                deal_reference = latest_closed['reference']
+                
+                # Vérifier si cette position a déjà été rapportée
+                if deal_reference in self._last_reported_deal_ids:
+                    return self._last_closed_pnl
+                
+                # Si c'est une nouvelle fermeture, enregistrer son ID et le P&L
+                self._last_reported_deal_ids.add(deal_reference)
+                
+                # Limiter la taille de l'ensemble pour éviter une croissance indéfinie
+                if len(self._last_reported_deal_ids) > 100:
+                    self._last_reported_deal_ids = set(list(self._last_reported_deal_ids)[-50:])
+                
+                # Récupérer le P&L
+                if 'profitAndLoss' in latest_closed:
+                    pnl = float(latest_closed['profitAndLoss'])
+                    # Stocker le P&L pour le retourner une seule fois
+                    self._last_closed_pnl = pnl
+                    logging.info(f"Nouvelle position fermée détectée: {deal_reference} avec P&L: {pnl}")
+                    return pnl
+            
+            return self._last_closed_pnl
+            
+        except Exception as e:
+            logging.error(f"Erreur lors de la récupération du P&L de la position fermée: {e}")
+            logging.error(traceback.format_exc())
+            return self._last_closed_pnl
 
     def fetch_recent_ticks(self, count=100):
         """
@@ -350,7 +386,15 @@ class TickBroker:
         if signal is None:
             return
         
-        
+        if signal['action'] == 'MOVE_SL':
+            if not self.has_open_position():
+                logging.warning("Aucune position ouverte pour déplacer le stop loss.")
+                return
+
+            new_stop_level = signal['new_sl']
+            logging.info(f"Déplacement du stop loss à {new_stop_level}")
+            return self.move_sl(new_stop_level=new_stop_level)
+            
         # On ferme la position
         if signal['action'] == 'LIQUIDATE':
             return self.close_open_position()
@@ -361,6 +405,158 @@ class TickBroker:
         
         # On place l'ordre
         return self.place_order(signal)
+    
+    def get_entry_price(self):
+        """
+        Récupère le prix d'entrée de la position actuellement ouverte sur l'EPIC spécifié.
+        
+        Returns:
+            float: Prix d'entrée de la position, ou None si aucune position n'est ouverte.
+        """
+        # On récupère toutes les positions ouvertes
+        open_positions = self.ig_service.fetch_open_positions()
+        
+        # Si aucune position n'est ouverte, retourne None immédiatement
+        if open_positions.empty:
+            return None
+            
+        # On filtre pour ne garder que celles qui correspondent à notre epic
+        positions_for_epic = open_positions[open_positions['epic'] == self.epic]
+        
+        # Si positions_for_epic est vide, alors pas de position ouverte
+        if positions_for_epic.empty:
+            return None
+        
+        # On prend la première position (il ne devrait en principe y en avoir qu'une)
+        position = positions_for_epic.iloc[0]
+        
+        # Selon la version de l'API, le nom du champ peut être 'level' ou 'openLevel'
+        if 'level' in position:
+            return float(position['level'])
+        elif 'openLevel' in position:
+            return float(position['openLevel'])
+        else:
+            logging.warning("Impossible de trouver le prix d'entrée dans les données de position")
+            return None
+        
+    def get_position_pl(self):
+        """
+        Récupère le profit and loss (P&L) non réalisé de la position actuellement ouverte sur l'EPIC spécifié.
+        
+        Returns:
+            float: P&L de la position en valeur absolue, ou None si aucune position n'est ouverte.
+        """
+        # On récupère toutes les positions ouvertes
+        open_positions = self.ig_service.fetch_open_positions()
+        
+        # Si aucune position n'est ouverte, retourne None immédiatement
+        if open_positions.empty:
+            return None
+            
+        # On filtre pour ne garder que celles qui correspondent à notre epic
+        positions_for_epic = open_positions[open_positions['epic'] == self.epic]
+        
+        # Si positions_for_epic est vide, alors pas de position ouverte
+        if positions_for_epic.empty:
+            return None
+        
+        # On prend la première position (il ne devrait en principe y en avoir qu'une)
+        position = positions_for_epic.iloc[0]
+        
+        # Le champ pour le P&L peut avoir différents noms selon la version de l'API
+        if 'profitLoss' in position:
+            return float(position['profitLoss'])
+        elif 'profit' in position:
+            return float(position['profit'])
+        else:
+            logging.warning("Impossible de trouver le P&L dans les données de position")
+            return None
+        
+    def get_position_pl_pct(self):
+        """
+        Récupère le profit and loss (P&L) en pourcentage de la position actuellement ouverte.
+        
+        Returns:
+            float: P&L en pourcentage (ex: 5.2 pour +5.2%), ou None si aucune position n'est ouverte.
+        """
+        entry_price = self.get_entry_price()
+        if entry_price is None:
+            return None
+            
+        # On récupère toutes les positions ouvertes
+        open_positions = self.ig_service.fetch_open_positions()
+        
+        # Si aucune position n'est ouverte, retourne None immédiatement
+        if open_positions.empty:
+            return None
+            
+        # On filtre pour ne garder que celles qui correspondent à notre epic
+        positions_for_epic = open_positions[open_positions['epic'] == self.epic]
+        
+        # Si positions_for_epic est vide, alors pas de position ouverte
+        if positions_for_epic.empty:
+            return None
+        
+        # On prend la première position (il ne devrait en principe y en avoir qu'une)
+        position = positions_for_epic.iloc[0]
+        
+        # Selon la direction de la position, le calcul du pourcentage varie
+        if position['direction'] == 'BUY':
+            # Pour les positions longues, (prix actuel - prix d'entrée) / prix d'entrée
+            if 'bid' in position:
+                current_price = float(position['bid'])
+            else:
+                # Utiliser une autre méthode pour obtenir le prix actuel si nécessaire
+                return None
+                
+            return ((current_price - entry_price) / entry_price) * 100
+            
+        elif position['direction'] == 'SELL':
+            # Pour les positions courtes, (prix d'entrée - prix actuel) / prix d'entrée
+            if 'offer' in position:
+                current_price = float(position['offer'])
+            else:
+                # Utiliser une autre méthode pour obtenir le prix actuel si nécessaire
+                return None
+                
+            return ((entry_price - current_price) / entry_price) * 100
+        
+        return None
+    
+    def get_position_size(self):
+        """
+        Récupère la taille de la position actuellement ouverte sur l'EPIC spécifié.
+        
+        Returns:
+            float: Taille de la position, ou None si aucune position n'est ouverte.
+        """
+        # On récupère toutes les positions ouvertes
+        open_positions = self.ig_service.fetch_open_positions()
+        
+        # Si aucune position n'est ouverte, retourne None immédiatement
+        if open_positions.empty:
+            return None
+            
+        # On filtre pour ne garder que celles qui correspondent à notre epic
+        positions_for_epic = open_positions[open_positions['epic'] == self.epic]
+        
+        # Si positions_for_epic est vide, alors pas de position ouverte
+        if positions_for_epic.empty:
+            return None
+        
+        # On prend la première position (il ne devrait en principe y en avoir qu'une)
+        position = positions_for_epic.iloc[0]
+        
+        # Le champ pour la taille de la position est 'size' ou 'dealSize' selon la version
+        if 'size' in position:
+            return float(position['size'])
+        elif 'dealSize' in position:
+            return float(position['dealSize'])
+        else:
+            logging.warning("Impossible de trouver la taille dans les données de position")
+            return None
+
+
 
     def close_open_position(self):
         """
@@ -438,6 +634,52 @@ class TickBroker:
             trailing_stop_increment=None
         )
         
+    def move_sl(self, new_stop_level, deal_id=None, guaranteed_stop=False, trailing_stop=False, trailing_stop_distance=None, trailing_stop_increment=None, session=None):
+        """
+        Déplace le stop loss d'une position ouverte.
+        
+        Args:
+            new_stop_level (float): Nouveau niveau de stop loss.
+            deal_id (str, optional): ID de la position à modifier. Si None, utilise la position active sur l'EPIC actuel.
+            guaranteed_stop (bool, optional): Si True, utilise un stop garanti. Défaut à False.
+            trailing_stop (bool, optional): Si True, utilise un trailing stop. Défaut à False.
+            trailing_stop_distance (float, optional): Distance du trailing stop.
+            trailing_stop_increment (float, optional): Incrément du trailing stop.
+            session (Session, optional): Session de requête à utiliser.
+            
+        Returns:
+            dict: Détails de la confirmation de la mise à jour.
+            
+        Raises:
+            Exception: Si aucune position n'est ouverte ou si la mise à jour échoue.
+        """
+        # Si aucun deal_id n'est fourni, récupérer celui de la position active
+        if deal_id is None:
+            position_details = self.get_position_details()
+            if position_details is None:
+                raise Exception("Aucune position ouverte trouvée pour déplacer le stop loss.")
+            deal_id = position_details["deal_id"]
+        
+        try:
+            # Appel de update_open_position en passant uniquement les paramètres nécessaires
+            result = self.ig_service.update_open_position(
+                limit_level=None,  # Ne pas modifier le limit level
+                stop_level=new_stop_level,
+                deal_id=deal_id,
+                guaranteed_stop=guaranteed_stop,
+                trailing_stop=trailing_stop,
+                trailing_stop_distance=trailing_stop_distance,
+                trailing_stop_increment=trailing_stop_increment,
+                session=session
+            )
+            
+            logging.info(f"Stop loss mis à jour avec succès pour la position {deal_id}: nouveau niveau = {new_stop_level}")
+            return result
+        except Exception as e:
+            logging.error(f"Erreur lors de la mise à jour du stop loss: {e}")
+            logging.error(traceback.format_exc())
+            raise Exception(f"Échec de la mise à jour du stop loss: {str(e)}")
+    
     def has_open_position(self, direction=None):
         """
         Vérifie si une position est actuellement ouverte sur l'EPIC spécifié.

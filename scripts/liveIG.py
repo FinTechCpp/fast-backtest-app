@@ -74,7 +74,8 @@ def process_candle(candle: BaseCandle, broker: TickBroker, strategy):
         strategy: Stratégie de trading C++ à utiliser
     """
     try:
-        logging.info(f"Processing complete candle: {candle.date} - O:{candle.Open} H:{candle.High} L:{candle.Low} C:{candle.Close}")
+        logging.info(f"Processing complete candle: {candle.date} - O:{candle.Open} H:{candle.High} L:{candle.Low} C:{candle.Close}")        
+        
         
         # Convertir la bougie Python en bougie C++
         cpp_candle = CppCandle()
@@ -144,6 +145,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
+    
     # Créer et configurer l'objet de configuration C++ de base
     cpp_base_config = CppStrategyBaseConfig()
     
@@ -167,12 +169,18 @@ def main():
     cpp_base_config.stop_loss_distance = 20.0
     
     # Paramètres ATR
-    cpp_base_config.use_atr_for_sl_tp = True
+    cpp_base_config.use_atr_for_sl = True
+    cpp_base_config.use_atr_for_tp = True
     cpp_base_config.atr_period = 14
     cpp_base_config.stop_loss_atr_multiplier = 2.0
     cpp_base_config.take_profit_atr_multiplier = 6.0
     cpp_base_config.min_stop_loss_distance = 5.0
     cpp_base_config.min_take_profit_distance = 5.0
+    
+    # Paramètres de Min/Max pour SL
+    cpp_base_config.use_minmax_sl = False
+    cpp_base_config.sl_minmax_periods = 5
+    cpp_base_config.sl_minmax_delta = 5.0
     
     # Paramètres de gestion du risque
     cpp_base_config.use_risk_based_sizing = True
@@ -198,10 +206,15 @@ def main():
     cpp_strategy_config.stoch_slowk = 7
     cpp_strategy_config.stoch_slowd = 3
     cpp_strategy_config.stoch_threshold = 20
+    cpp_strategy_config.rsi_period = 14
+    cpp_strategy_config.rsi_threshold = 50
+    
     cpp_strategy_config.use_ema_short_filter = True
     cpp_strategy_config.use_ema_long_filter = True
     cpp_strategy_config.use_stoch_filter = True
+    cpp_strategy_config.use_rsi_filter = True
     cpp_strategy_config.use_previous_ha_candle_red_filter = True
+    
 
     # Instancier la stratégie C++
     strategy = CppBuyHeikinGreen(cpp_base_config, cpp_strategy_config)

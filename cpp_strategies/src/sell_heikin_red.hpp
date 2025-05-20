@@ -312,132 +312,165 @@ public:
     void go_long() override {
         throw std::runtime_error("SellHeikinRed strategy does not support long positions");
     }
-    
+
     void go_short() override {
         logger->log_general("Préparation d'un signal SHORT", LogLevel::INFO);
-
+    
         // Calcul du Stop Loss
-        if (base_config.use_atr_for_sl && current_atr > 0.0) {
-            logger->log_general("Utilisation de l'ATR pour calculer SL", LogLevel::INFO);
-
-            // Vérification ATR
-            if (current_atr <= 0.0) {
-                current_atr = base_config.min_stop_loss_distance / base_config.stop_loss_atr_multiplier;
-                logger->log_general("ATR non valide, utilisation d'une valeur de secours: " + 
-                    std::to_string(current_atr), LogLevel::WARNING);
-            }
-
-            // Transformation logarithmique pour SL
-            double log_atr = std::log(1.0 + current_atr);
-            
-            // Calcul SL basé sur ATR avec minimum
-            stop_loss_distance = std::max(
-                log_atr * base_config.stop_loss_atr_multiplier,
-                base_config.min_stop_loss_distance
-            );
-            
-            logger->log_general("SL calculé avec ATR: " + std::to_string(stop_loss_distance), LogLevel::INFO);
-        } 
-        else if (base_config.use_minmax_for_sl && candle_manager.size() >= base_config.sl_minmax_periods) {
-            logger->log_general("Utilisation de Min/Max pour calculer SL (SHORT)", LogLevel::INFO);
-            
-            // Recherche du maximum sur les n dernières périodes
-            double max_price = current_candle.high;
-            int n_periods = std::min(static_cast<int>(candle_manager.size()), base_config.sl_minmax_periods);
-            
-            // Récupérer les n dernières bougies
-            auto recent_candles = candle_manager.get_last_candles(n_periods);
-            
-            // Trouver le maximum
-            for (const auto& candle : recent_candles) {
-                max_price = std::max(max_price, candle.high);
-            }
-            
-            logger->log_general("Prix maximum trouvé: " + std::to_string(max_price), LogLevel::INFO);
-            
-            // SL = maximum + delta (pour SHORT, le SL est au-dessus du maximum)
-            double sl_price = max_price + base_config.sl_minmax_delta;
-            stop_loss_distance = sl_price - price();
-            
-            // Assurer une distance minimale
-            if (stop_loss_distance <= 0.0 || sl_price <= price()) {
-                logger->log_general("SL Min/Max calculé invalide, utilisation de distance fixe", LogLevel::WARNING);
-                stop_loss_distance = base_config.stop_loss_distance;
-            }
-            
-            logger->log_general("SL Min/Max calculé: " + std::to_string(stop_loss_distance) + 
-                              " (max=" + std::to_string(max_price) + 
-                              ", delta=" + std::to_string(base_config.sl_minmax_delta) + 
-                              ", prix SL=" + std::to_string(sl_price) + ")", 
-                              LogLevel::INFO);
-        } 
-        else {
-            // Utiliser valeur fixe pour SL
-            stop_loss_distance = base_config.stop_loss_distance;
-            logger->log_general("Utilisation de valeur fixe pour SL: " + 
-                std::to_string(stop_loss_distance), LogLevel::INFO);
-        }
+        stop_loss_distance = PositionManager::calculateStopLoss(
+            base_config, 
+            price(), 
+            current_atr, 
+            false,  // is_long = false (SHORT)
+            candle_manager, 
+            current_candle, 
+            logger
+        );
         
         // Calcul du Take Profit
-        if (base_config.use_atr_for_tp && current_atr > 0.0) {
-            logger->log_general("Utilisation de l'ATR pour calculer TP", LogLevel::INFO);
-
-            // Vérification ATR (uniquement si pas déjà fait)
-            if (current_atr <= 0.0) {
-                current_atr = base_config.min_take_profit_distance / base_config.take_profit_atr_multiplier;
-                logger->log_general("ATR non valide, utilisation d'une valeur de secours: " + 
-                    std::to_string(current_atr), LogLevel::WARNING);
-            }
-
-            // Transformation logarithmique pour TP
-            double log_atr = std::log(1.0 + current_atr);
-            
-            // Calcul TP basé sur ATR avec minimum
-            take_profit_distance = std::max(
-                log_atr * base_config.take_profit_atr_multiplier,
-                base_config.min_take_profit_distance
-            );
-            
-            logger->log_general("TP calculé avec ATR: " + std::to_string(take_profit_distance), LogLevel::INFO);
-        } else {
-            // Utiliser valeur fixe pour TP
-            take_profit_distance = base_config.take_profit_distance;
-            logger->log_general("Utilisation de valeur fixe pour TP: " + 
-                std::to_string(take_profit_distance), LogLevel::INFO);
-        }
+        take_profit_distance = PositionManager::calculateTakeProfit(
+            base_config,
+            current_atr,
+            logger
+        );
         
-        // Calculer la taille de position basée sur le risque si activé
-        if (base_config.use_risk_based_sizing) {
-            double initial_capital = base_config.cash;
-            double risk_amount = initial_capital * base_config.risk_percentage / 100.0;
-            
-            // Calculer la taille de position pour que le SL représente exactement risk_amount
-            double risk_based_position_size = risk_amount / stop_loss_distance;
-            
-            // Utiliser le capital total disponible avec effet de levier
-            double leveraged_capital = initial_capital * base_config.leverage_limit;
-            
-            // Limiter la taille max de position à un pourcentage du capital avec levier
-            double max_position_value = leveraged_capital * base_config.max_position_percentage / 100.0;
-            double max_position_size = max_position_value / price();
-            
-            // Prendre le MINIMUM entre la taille basée sur le risque et la limite
-            double raw_position_size = std::min(risk_based_position_size, max_position_size);
-            
-            // Si taille >= 1, arrondir à l'entier le plus proche
-            if (raw_position_size >= 1.0) {
-                sell_quantity = std::floor(raw_position_size);
-            } else {
-                // Limiter au minimum de 0.5
-                sell_quantity = std::max(0.5, std::min(raw_position_size, 0.99));
-            }
-        } else {
-            // Taille fixe par défaut (entier)
-            sell_quantity = 1.0;
-        }
+        // Calcul de la taille de position
+        sell_quantity = PositionManager::calculatePositionSize(
+            base_config,
+            price(),
+            stop_loss_distance,
+            logger
+        );
         
         sell_price = price();
+        logger->log_sl_tp(stop_loss_distance, take_profit_distance);
     }
+    
+    // void go_short() override {
+    //     logger->log_general("Préparation d'un signal SHORT", LogLevel::INFO);
+
+    //     // Calcul du Stop Loss
+    //     if (base_config.use_atr_for_sl && current_atr > 0.0) {
+    //         logger->log_general("Utilisation de l'ATR pour calculer SL", LogLevel::INFO);
+
+    //         // Vérification ATR
+    //         if (current_atr <= 0.0) {
+    //             current_atr = base_config.min_stop_loss_distance / base_config.stop_loss_atr_multiplier;
+    //             logger->log_general("ATR non valide, utilisation d'une valeur de secours: " + 
+    //                 std::to_string(current_atr), LogLevel::WARNING);
+    //         }
+
+    //         // Transformation logarithmique pour SL
+    //         double log_atr = std::log(1.0 + current_atr);
+            
+    //         // Calcul SL basé sur ATR avec minimum
+    //         stop_loss_distance = std::max(
+    //             log_atr * base_config.stop_loss_atr_multiplier,
+    //             base_config.min_stop_loss_distance
+    //         );
+            
+    //         logger->log_general("SL calculé avec ATR: " + std::to_string(stop_loss_distance), LogLevel::INFO);
+    //     } 
+    //     else if (base_config.use_minmax_for_sl && candle_manager.size() >= base_config.sl_minmax_periods) {
+    //         logger->log_general("Utilisation de Min/Max pour calculer SL (SHORT)", LogLevel::INFO);
+            
+    //         // Recherche du maximum sur les n dernières périodes
+    //         double max_price = current_candle.high;
+    //         int n_periods = std::min(static_cast<int>(candle_manager.size()), base_config.sl_minmax_periods);
+            
+    //         // Récupérer les n dernières bougies
+    //         auto recent_candles = candle_manager.get_last_candles(n_periods);
+            
+    //         // Trouver le maximum
+    //         for (const auto& candle : recent_candles) {
+    //             max_price = std::max(max_price, candle.high);
+    //         }
+            
+    //         logger->log_general("Prix maximum trouvé: " + std::to_string(max_price), LogLevel::INFO);
+            
+    //         // SL = maximum + delta (pour SHORT, le SL est au-dessus du maximum)
+    //         double sl_price = max_price + base_config.sl_minmax_delta;
+    //         stop_loss_distance = sl_price - price();
+            
+    //         // Assurer une distance minimale
+    //         if (stop_loss_distance <= 0.0 || sl_price <= price()) {
+    //             logger->log_general("SL Min/Max calculé invalide, utilisation de distance fixe", LogLevel::WARNING);
+    //             stop_loss_distance = base_config.stop_loss_distance;
+    //         }
+            
+    //         logger->log_general("SL Min/Max calculé: " + std::to_string(stop_loss_distance) + 
+    //                           " (max=" + std::to_string(max_price) + 
+    //                           ", delta=" + std::to_string(base_config.sl_minmax_delta) + 
+    //                           ", prix SL=" + std::to_string(sl_price) + ")", 
+    //                           LogLevel::INFO);
+    //     } 
+    //     else {
+    //         // Utiliser valeur fixe pour SL
+    //         stop_loss_distance = base_config.stop_loss_distance;
+    //         logger->log_general("Utilisation de valeur fixe pour SL: " + 
+    //             std::to_string(stop_loss_distance), LogLevel::INFO);
+    //     }
+        
+    //     // Calcul du Take Profit
+    //     if (base_config.use_atr_for_tp && current_atr > 0.0) {
+    //         logger->log_general("Utilisation de l'ATR pour calculer TP", LogLevel::INFO);
+
+    //         // Vérification ATR (uniquement si pas déjà fait)
+    //         if (current_atr <= 0.0) {
+    //             current_atr = base_config.min_take_profit_distance / base_config.take_profit_atr_multiplier;
+    //             logger->log_general("ATR non valide, utilisation d'une valeur de secours: " + 
+    //                 std::to_string(current_atr), LogLevel::WARNING);
+    //         }
+
+    //         // Transformation logarithmique pour TP
+    //         double log_atr = std::log(1.0 + current_atr);
+            
+    //         // Calcul TP basé sur ATR avec minimum
+    //         take_profit_distance = std::max(
+    //             log_atr * base_config.take_profit_atr_multiplier,
+    //             base_config.min_take_profit_distance
+    //         );
+            
+    //         logger->log_general("TP calculé avec ATR: " + std::to_string(take_profit_distance), LogLevel::INFO);
+    //     } else {
+    //         // Utiliser valeur fixe pour TP
+    //         take_profit_distance = base_config.take_profit_distance;
+    //         logger->log_general("Utilisation de valeur fixe pour TP: " + 
+    //             std::to_string(take_profit_distance), LogLevel::INFO);
+    //     }
+        
+    //     // Calculer la taille de position basée sur le risque si activé
+    //     if (base_config.use_risk_based_sizing) {
+    //         double initial_capital = base_config.cash;
+    //         double risk_amount = initial_capital * base_config.risk_percentage / 100.0;
+            
+    //         // Calculer la taille de position pour que le SL représente exactement risk_amount
+    //         double risk_based_position_size = risk_amount / stop_loss_distance;
+            
+    //         // Utiliser le capital total disponible avec effet de levier
+    //         double leveraged_capital = initial_capital * base_config.leverage_limit;
+            
+    //         // Limiter la taille max de position à un pourcentage du capital avec levier
+    //         double max_position_value = leveraged_capital * base_config.max_position_percentage / 100.0;
+    //         double max_position_size = max_position_value / price();
+            
+    //         // Prendre le MINIMUM entre la taille basée sur le risque et la limite
+    //         double raw_position_size = std::min(risk_based_position_size, max_position_size);
+            
+    //         // Si taille >= 1, arrondir à l'entier le plus proche
+    //         if (raw_position_size >= 1.0) {
+    //             sell_quantity = std::floor(raw_position_size);
+    //         } else {
+    //             // Limiter au minimum de 0.5
+    //             sell_quantity = std::max(0.5, std::min(raw_position_size, 0.99));
+    //         }
+    //     } else {
+    //         // Taille fixe par défaut (entier)
+    //         sell_quantity = 1.0;
+    //     }
+        
+    //     sell_price = price();
+    // }
     
     std::vector<std::function<bool()>> filters() override {
         return active_filters;

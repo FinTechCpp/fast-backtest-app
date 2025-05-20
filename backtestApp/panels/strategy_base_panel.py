@@ -41,7 +41,7 @@ class StrategyBasePanel(BasePanel):
         # Paramètres ATR - Multiplicateur SL
         self.widgets['sl_atr_multiplier'] = QDoubleSpinBox()
         self.widgets['sl_atr_multiplier'].setDecimals(1)
-        self.widgets['sl_atr_multiplier'].setRange(0.1, 10.0)
+        self.widgets['sl_atr_multiplier'].setRange(0.1, 100.0)
         self.widgets['sl_atr_multiplier'].setSingleStep(0.1)
         self.widgets['sl_atr_multiplier'].setValue(2.0)
         self.widgets['sl_atr_multiplier'].setEnabled(False)
@@ -99,9 +99,9 @@ class StrategyBasePanel(BasePanel):
         # Paramètres ATR - Multiplicateur TP
         self.widgets['tp_atr_multiplier'] = QDoubleSpinBox()
         self.widgets['tp_atr_multiplier'].setDecimals(1)
-        self.widgets['tp_atr_multiplier'].setRange(0.1, 10.0)
+        self.widgets['tp_atr_multiplier'].setRange(0.1, 100.0)
         self.widgets['tp_atr_multiplier'].setSingleStep(0.1)
-        self.widgets['tp_atr_multiplier'].setValue(3.0)
+        self.widgets['tp_atr_multiplier'].setValue(5.0)
         self.widgets['tp_atr_multiplier'].setEnabled(False)
         tp_layout.addRow("Multiplicateur ATR:", self.widgets['tp_atr_multiplier'])
         

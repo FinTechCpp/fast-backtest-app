@@ -1,7 +1,14 @@
 import sys
 import os
-# Add the parent directory to Python's path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Add the parent directory of scripts to the path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_root)
+
+# Add the cpp_strategies directory specifically
+cpp_strategies_dir = os.path.join(project_root, 'cpp_strategies')
+sys.path.append(cpp_strategies_dir)
+
 from backtestApp.app import BacktestApp
 from PyQt5.QtWidgets import QApplication
 import argparse

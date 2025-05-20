@@ -100,7 +100,6 @@ public:
 protected:
     StrategyBaseConfig base_config;
     CandleManager candle_manager;
-    std::vector<Candle> buffer; // Compatibility need to be deleted
     Candle current_candle;
     bool in_position = false;
     double entry_price = 0.0;

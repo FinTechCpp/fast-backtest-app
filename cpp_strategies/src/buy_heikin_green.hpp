@@ -197,14 +197,22 @@ private:
         }
         
         // Extract data for initialization
-        std::vector<double> close_history(buffer.size());
-        std::vector<double> high_history(buffer.size());
-        std::vector<double> low_history(buffer.size());
+        std::vector<double> close_history;
+        std::vector<double> high_history;
+        std::vector<double> low_history;
         
-        for (size_t i = 0; i < buffer.size(); ++i) {
-            close_history[i] = buffer[i].close;
-            high_history[i] = buffer[i].high;
-            low_history[i] = buffer[i].low;
+        // Récupérer toutes les bougies disponibles
+        auto candles = candle_manager.get_last_candles(candle_manager.size());
+    
+        // Extraire les données OHLC
+        close_history.reserve(candles.size());
+        high_history.reserve(candles.size());
+        low_history.reserve(candles.size());
+        
+        for (const auto& candle : candles) {
+            close_history.push_back(candle.close);
+            high_history.push_back(candle.high);
+            low_history.push_back(candle.low);
         }
         
         // Initialize EMAs
@@ -235,7 +243,7 @@ private:
     
     bool update_indicators() {
         if (candle_manager.size() == 0) {
-            logger->log_general("Buffer vide, impossible de mettre à jour les indicateurs", LogLevel::WARNING);
+            logger->log_general("candle_manager vide, impossible de mettre à jour les indicateurs", LogLevel::WARNING);
             return false;
         }
         
@@ -417,15 +425,19 @@ public:
             
             logger->log_general("SL calculé avec ATR: " + std::to_string(stop_loss_distance), LogLevel::INFO);
         } 
-        else if (base_config.use_minmax_for_sl && buffer.size() >= base_config.sl_minmax_periods) {
+        else if (base_config.use_minmax_for_sl && candle_manager.size() >= base_config.sl_minmax_periods) {
             logger->log_general("Utilisation de Min/Max pour calculer SL (LONG)", LogLevel::INFO);
             
             // Recherche du minimum sur les n dernières périodes
             double min_price = current_candle.low;
-            int n_periods = std::min(static_cast<int>(buffer.size()), base_config.sl_minmax_periods);
+            int n_periods = std::min(static_cast<int>(candle_manager.size()), base_config.sl_minmax_periods);
             
-            for (int i = 1; i < n_periods; ++i) {
-                min_price = std::min(min_price, buffer[buffer.size() - i - 1].low);
+            // Récupérer les n dernières bougies
+            auto recent_candles = candle_manager.get_last_candles(n_periods);
+            
+            // Trouver le minimum
+            for (const auto& candle : recent_candles) {
+                min_price = std::min(min_price, candle.low);
             }
             
             logger->log_general("Prix minimum trouvé: " + std::to_string(min_price), LogLevel::INFO);

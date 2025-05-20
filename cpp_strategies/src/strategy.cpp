@@ -422,11 +422,6 @@ Signal* Strategy::update_candle(const Candle& candle) {
     BasicCandle basic_candle(candle.date, candle.open, candle.high, candle.low, candle.close);
     candle_manager.add_candle(basic_candle);
 
-    // Maintien du buffer pour compatibilité
-    buffer.push_back(candle);
-    if (buffer.size() > 200) {  // Limit buffer size
-        buffer.erase(buffer.begin());
-    }
     
     // Check for break-even signal before executing strategy
     auto be_signal = check_break_even();

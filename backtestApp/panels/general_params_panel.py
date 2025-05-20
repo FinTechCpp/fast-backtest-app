@@ -16,21 +16,21 @@ class GeneralParamsPanel(BasePanel):
         params_layout = QFormLayout()
         
         # Symbole
-        self.widgets['symbol_combo'] = QComboBox()
-        self.widgets['symbol_combo'].addItems(["NDX", "IBUST100", "EURUSD"])
-        params_layout.addRow(QLabel("Symbole:"), self.widgets['symbol_combo'])
+        self.widgets['symbol'] = QComboBox()
+        self.widgets['symbol'].addItems(["NDX", "IBUST100", "EURUSD"])
+        params_layout.addRow(QLabel("Symbole:"), self.widgets['symbol'])
         
         # Période
-        self.widgets['period_combo'] = QComboBox()
-        self.widgets['period_combo'].addItems(["5d", "10d", "30d", "1m", "2m","3m", "6m", "1y", "2y"])
-        self.widgets['period_combo'].setCurrentIndex(1)
-        params_layout.addRow(QLabel("Période de données:"), self.widgets['period_combo'])
+        self.widgets['period'] = QComboBox()
+        self.widgets['period'].addItems(["5d", "10d", "30d", "1m", "2m","3m", "6m", "1y", "2y"])
+        self.widgets['period'].setCurrentIndex(1)
+        params_layout.addRow(QLabel("Période de données:"), self.widgets['period'])
         
         # Intervalle
-        self.widgets['interval_combo'] = QComboBox()
-        self.widgets['interval_combo'].addItems(["10secs", "20secs", "30secs", "1min", "2min", "3min", "5min", "10min", "15min", "30min", "1h", "2h", "4h", "1d"])
-        self.widgets['interval_combo'].setCurrentIndex(1)
-        params_layout.addRow(QLabel("Intervalle:"), self.widgets['interval_combo'])
+        self.widgets['interval'] = QComboBox()
+        self.widgets['interval'].addItems(["10secs", "20secs", "30secs", "1min", "2min", "3min", "5min", "10min", "15min", "30min", "1h", "2h", "4h", "1d"])
+        self.widgets['interval'].setCurrentIndex(1)
+        params_layout.addRow(QLabel("Intervalle:"), self.widgets['interval'])
         
         # Date de fin
         self.widgets['end_date'] = QDateEdit()
@@ -60,14 +60,14 @@ class GeneralParamsPanel(BasePanel):
         params_layout.addRow(QLabel("Cash initial:"), self.widgets['cash'])
         
         # Stratégie
-        self.widgets['strategy_combo'] = QComboBox()
-        self.widgets['strategy_combo'].addItems(list(self.strategy_map.keys()))
-        params_layout.addRow(QLabel("Stratégie:"), self.widgets['strategy_combo'])
+        self.widgets['strategy'] = QComboBox()
+        self.widgets['strategy'].addItems(list(self.strategy_map.keys()))
+        params_layout.addRow(QLabel("Stratégie:"), self.widgets['strategy'])
         
         # Type de bougie
-        self.widgets['candle_type_combo'] = QComboBox()
-        self.widgets['candle_type_combo'].addItems(["Heikin Ashi", "Standard"])
-        params_layout.addRow(QLabel("Type de bougie:"), self.widgets['candle_type_combo'])
+        self.widgets['candle_type'] = QComboBox()
+        self.widgets['candle_type'].addItems(["Heikin Ashi", "Standard"])
+        params_layout.addRow(QLabel("Type de bougie:"), self.widgets['candle_type'])
         
         # Sauvegarder les résultats
         self.widgets['save_results'] = QCheckBox("Sauvegarder les résultats")
@@ -79,15 +79,15 @@ class GeneralParamsPanel(BasePanel):
     def get_values(self):
         """Récupère les valeurs des widgets du panel."""
         return {
-            'symbol': self.widgets['symbol_combo'].currentText(),
-            'period': self.widgets['period_combo'].currentText(),
-            'interval': self.widgets['interval_combo'].currentText(),
+            'symbol': self.widgets['symbol'].currentText(),
+            'period': self.widgets['period'].currentText(),
+            'interval': self.widgets['interval'].currentText(),
             'end_date': self.widgets['end_date'].date().toString("dd/MM/yyyy"),
             # 'timezone': self.widgets['timezone'].currentText(),
             'spread': self.widgets['spread'].value(),
             'cash': self.widgets['cash'].value(),
-            'strategy': self.widgets['strategy_combo'].currentText(),
-            'candle_type': self.widgets['candle_type_combo'].currentText(),
+            'strategy': self.widgets['strategy'].currentText(),
+            'candle_type': self.widgets['candle_type'].currentText(),
             'save_results': self.widgets['save_results'].isChecked()
         }
     

@@ -323,7 +323,6 @@ class StrategyBasePanel(BasePanel):
             'take_profit_atr_multiplier': self.widgets['tp_atr_multiplier'].value(),
             'min_stop_loss_distance': self.widgets['min_sl'].value(),
             'min_take_profit_distance': self.widgets['min_tp'].value(),
-            # Reste inchangé
             'use_risk_based_sizing': self.widgets['use_risk_based_sizing'].isChecked(),
             'risk_percentage': self.widgets['risk_percentage'].value(),
             'use_break_even': self.widgets['use_break_even'].isChecked(),

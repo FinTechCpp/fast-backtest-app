@@ -83,13 +83,10 @@ private:
             if (logger) logger->log_general("ATR non valide, utilisation d'une valeur de secours: " + 
                 std::to_string(atr_to_use), LogLevel::WARNING);
         }
-
-        // Transformation logarithmique pour SL
-        double log_atr = std::log(1.0 + atr_to_use);
         
         // Calcul SL basé sur ATR avec minimum
         double stop_loss_distance = std::max(
-            log_atr * config.stop_loss_atr_multiplier,
+            atr_to_use * config.stop_loss_atr_multiplier,
             config.min_stop_loss_distance
         );
         
@@ -183,13 +180,10 @@ private:
             if (logger) logger->log_general("ATR non valide, utilisation d'une valeur de secours: " + 
                 std::to_string(atr_to_use), LogLevel::WARNING);
         }
-
-        // Transformation logarithmique pour TP
-        double log_atr = std::log(1.0 + atr_to_use);
         
         // Calcul TP basé sur ATR avec minimum
         double take_profit_distance = std::max(
-            log_atr * config.take_profit_atr_multiplier,
+            atr_to_use * config.take_profit_atr_multiplier,
             config.min_take_profit_distance
         );
         

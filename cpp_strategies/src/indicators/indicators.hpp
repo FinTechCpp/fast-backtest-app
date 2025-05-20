@@ -7,5 +7,6 @@
 #include "indicators/rsi.hpp"
 #include "indicators/atr.hpp"
 #include "indicators/atrc.hpp"
+#include "indicators/atrLog.hpp"
 
 // Vous pouvez ajouter de nouveaux indicateurs ici à l'avenir

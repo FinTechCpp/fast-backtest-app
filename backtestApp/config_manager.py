@@ -332,22 +332,7 @@ class ConfigManager:
         # Ajouter les widgets du panel de paramètres généraux
         if hasattr(app, 'general_params_panel') and app.general_params_panel:
             for key, widget in app.general_params_panel.widgets.items():
-                # Convertir les noms de widgets en noms de paramètres
-                param_name = key
-                if key == 'symbol_combo':
-                    param_name = 'symbol'
-                elif key == 'period_combo':
-                    param_name = 'period'
-                elif key == 'interval_combo':
-                    param_name = 'interval'
-                elif key == 'end_date':
-                    param_name = 'end_date'
-                elif key == 'strategy_combo':
-                    param_name = 'strategy'
-                elif key == 'candle_type_combo':
-                    param_name = 'candle_type'
-
-                mapping[param_name] = widget
+                mapping[key] = widget
 
         # Ajouter les widgets du panel de base de la stratégie
         if hasattr(app, 'strategy_base_panel') and app.strategy_base_panel:

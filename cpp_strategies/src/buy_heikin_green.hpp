@@ -31,7 +31,7 @@ private:
     std::unique_ptr<EMA> ema_long_calculator;
     std::unique_ptr<STOCH> stochastic_calculator;
     std::unique_ptr<RSI> rsi_calculator;
-    std::unique_ptr<ATR> atr_calculator;
+    std::unique_ptr<ATRLOG> atrlog_calculator;
     
     // Indicator names
     std::string ema_short_name;
@@ -39,7 +39,7 @@ private:
     std::string stoch_k_name;
     std::string stoch_d_name;
     std::string rsi_name;
-    std::string atr_name;
+    std::string atrlog_name;
     
     // Indicator values
     double current_ema_short = 0.0;
@@ -49,7 +49,7 @@ private:
     double current_rsi = 0.0;
     double previous_rsi = 0.0;
     double previous_2_rsi = 0.0;
-    double current_atr = 0.0;
+    double current_atrlog = 0.0;
     double k_previous = 0.0;
     double d_previous = 0.0;
     
@@ -229,8 +229,8 @@ private:
         // Initialize RSI
         current_rsi = rsi_calculator->initialize_with_history(close_history);
         
-        // Initialize ATR
-        current_atr = atr_calculator->initialize_with_history(
+        // Initialize ATRLOG
+        current_atrlog = atrlog_calculator->initialize_with_history(
             high_history, low_history, close_history
         );
         
@@ -238,7 +238,8 @@ private:
                 current_ema_long > 0.0 && 
                 current_stoch_k > 0.0 && 
                 current_stoch_d > 0.0 &&
-                current_rsi > 0.0);
+                current_rsi > 0.0 &&
+                current_atrlog > 0.0);
     }
     
     bool update_indicators() {
@@ -251,7 +252,7 @@ private:
             !ema_long_calculator->initialized() ||
             !stochastic_calculator->initialized() ||
             !rsi_calculator->initialized() ||
-            ((base_config.use_atr_for_sl || base_config.use_atr_for_tp) && !atr_calculator->initialized())) {
+            ((base_config.use_atr_for_sl || base_config.use_atr_for_tp) && !atrlog_calculator->initialized())) {
 
             logger->log_general("Initialisation des indicateurs requise", LogLevel::INFO);
             
@@ -287,13 +288,13 @@ private:
         current_rsi = rsi_calculator->update(current_candle.close);
         logger->log_indicator_value(rsi_name, current_rsi);
         
-        // Update ATR
-        current_atr = atr_calculator->update(
+        // Update ATRLOG
+        current_atrlog = atrlog_calculator->update(
             current_candle.high,
             current_candle.low,
             current_candle.close
         );
-        logger->log_indicator_value(atr_name, current_atr);
+        logger->log_indicator_value(atrlog_name, current_atrlog);
         
         return true;
     }
@@ -311,7 +312,7 @@ public:
             config.stoch_slowd
         );
         rsi_calculator = std::make_unique<RSI>(config.rsi_period);
-        atr_calculator = std::make_unique<ATR>(base_cfg.atr_period);
+        atrlog_calculator = std::make_unique<ATRLOG>(base_cfg.atr_period);
         
         // Initialize indicator names
         ema_short_name = "EMA_" + std::to_string(config.ema_short_period);
@@ -323,7 +324,7 @@ public:
                       std::to_string(config.stoch_slowk) + "_" +
                       std::to_string(config.stoch_slowd);
         rsi_name = "RSI_" + std::to_string(config.rsi_period);
-        atr_name = "ATR_" + std::to_string(base_cfg.atr_period);
+        atrlog_name = "ATRLOG_" + std::to_string(base_cfg.atr_period);
         
         // Setup active filters
         if (config.use_ema_short_filter) {
@@ -372,10 +373,10 @@ public:
             return false;
         }
         
-        // Vérifier si on a besoin d'ATR mais que celui-ci n'est pas disponible
-        bool needs_atr = base_config.use_atr_for_sl || base_config.use_atr_for_tp;
-        if (needs_atr && current_atr <= 0.0) {
-            logger->log_general("ATR requis mais non disponible", LogLevel::WARNING);
+        // Vérifier si on a besoin d'ATRLOG mais que celui-ci n'est pas disponible
+        bool needs_atrlog = base_config.use_atr_for_sl || base_config.use_atr_for_tp;
+        if (needs_atrlog && current_atrlog <= 0.0) {
+            logger->log_general("ATRLOG requis mais non disponible", LogLevel::WARNING);
             return false;
         }
         
@@ -407,7 +408,7 @@ public:
         stop_loss_distance = PositionManager::calculateStopLoss(
             base_config, 
             price(), 
-            current_atr, 
+            current_atrlog, 
             true,  // is_long = true 
             candle_manager, 
             current_candle, 
@@ -417,7 +418,7 @@ public:
         // Calcul du Take Profit
         take_profit_distance = PositionManager::calculateTakeProfit(
             base_config,
-            current_atr,
+            current_atrlog,
             logger
         );
         

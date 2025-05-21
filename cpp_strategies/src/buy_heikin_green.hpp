@@ -192,34 +192,67 @@ private:
     }
     
     bool initialize_indicators() {
-        if (candle_manager.size() < static_cast<size_t>(std::max({config.ema_long_period, config.stoch_fastk + config.stoch_slowk, config.rsi_period * 2}))) {
+        // Déterminer la période maximale nécessaire en fonction des indicateurs activés
+        int max_period = 0;
+        
+        if (config.use_ema_short_filter)
+            max_period = std::max(max_period, config.ema_short_period);
+        
+        if (config.use_ema_long_filter)
+            max_period = std::max(max_period, config.ema_long_period);
+        
+        if (config.use_stoch_filter)
+            max_period = std::max(max_period, config.stoch_fastk + config.stoch_slowk);
+        
+        if (config.use_rsi_filter)
+            max_period = std::max(max_period, config.rsi_period * 2);
+        
+        if (base_config.use_atr_for_sl || base_config.use_atr_for_tp)
+            max_period = std::max(max_period, base_config.atr_period * 2);
+    
+        // Vérifier si nous avons assez de bougies
+        if (candle_manager.size() < static_cast<size_t>(max_period)) {
             return false;
         }
-        
+
         // Récupérer toutes les bougies disponibles
         auto candles = candle_manager.get_last_candles(candle_manager.size());
         
+        // Initialiser chaque indicateur seulement si nécessaire
+        bool all_required_initialized = true;
+
         // Initialize EMAs
-        current_ema_short = ema_short_calculator->initialize_with_history(candles);
-        current_ema_long = ema_long_calculator->initialize_with_history(candles);
+        if (config.use_ema_short_filter) {
+            current_ema_short = ema_short_calculator->initialize_with_history(candles);
+            all_required_initialized = all_required_initialized && (current_ema_short > 0.0);
+        }
+        
+        if (config.use_ema_long_filter) {
+            current_ema_long = ema_long_calculator->initialize_with_history(candles);
+            all_required_initialized = all_required_initialized && (current_ema_long > 0.0);
+        }
         
         // Initialize Stochastic
-        auto stoch_values = stochastic_calculator->initialize_with_history(candles);
-        current_stoch_k = stoch_values.first;
-        current_stoch_d = stoch_values.second;
+        if (config.use_stoch_filter) {
+            std::pair<double, double> stoch_values = stochastic_calculator->initialize_with_history(candles);
+            current_stoch_k = stoch_values.first;
+            current_stoch_d = stoch_values.second;
+            all_required_initialized = all_required_initialized && (current_stoch_k > 0.0 && current_stoch_d > 0.0);
+        }
         
         // Initialize RSI
-        current_rsi = rsi_calculator->initialize_with_history(candles);
+        if (config.use_rsi_filter) {
+            current_rsi = rsi_calculator->initialize_with_history(candles);
+            all_required_initialized = all_required_initialized && (current_rsi > 0.0);
+        }
         
         // Initialize ATRLOG
-        current_atrlog = atrlog_calculator->initialize_with_history(candles);
+        if (base_config.use_atr_for_sl || base_config.use_atr_for_tp) {
+            current_atrlog = atrlog_calculator->initialize_with_history(candles);
+            all_required_initialized = all_required_initialized && (current_atrlog > 0.0);
+        }
         
-        return (current_ema_short > 0.0 && 
-                current_ema_long > 0.0 && 
-                current_stoch_k > 0.0 && 
-                current_stoch_d > 0.0 &&
-                current_rsi > 0.0 &&
-                current_atrlog > 0.0);
+        return all_required_initialized;
     }
     
     bool update_indicators() {
@@ -228,12 +261,14 @@ private:
             return false;
         }
         
-        if (!ema_short_calculator->initialized() ||
-            !ema_long_calculator->initialized() ||
-            !stochastic_calculator->initialized() ||
-            !rsi_calculator->initialized() ||
-            !atrlog_calculator->initialized()) {
-
+        // Vérifier si nous devons initialiser les indicateurs
+        bool need_ema_short = config.use_ema_short_filter && !ema_short_calculator->initialized();
+        bool need_ema_long = config.use_ema_long_filter && !ema_long_calculator->initialized();
+        bool need_stoch = config.use_stoch_filter && !stochastic_calculator->initialized();
+        bool need_rsi = config.use_rsi_filter && !rsi_calculator->initialized();
+        bool need_atrlog = (base_config.use_atr_for_sl || base_config.use_atr_for_tp) && !atrlog_calculator->initialized();
+        
+        if (need_ema_short || need_ema_long || need_stoch || need_rsi || need_atrlog) {
             logger->log_general("Initialisation des indicateurs requise", LogLevel::INFO);
             
             // Try to initialize indicators if they're not initialized
@@ -241,32 +276,44 @@ private:
                 logger->log_general("Échec de l'initialisation des indicateurs", LogLevel::WARNING);
                 return false;
             }
-
+            
             logger->log_general("Indicateurs initialisés avec succès", LogLevel::INFO);
         }
         
-        // Update EMAs
-        current_ema_short = ema_short_calculator->update(current_candle);
-        current_ema_long = ema_long_calculator->update(current_candle);
-
-        logger->log_indicator_value(ema_short_name, current_ema_short);
-        logger->log_indicator_value(ema_long_name, current_ema_long);
+        // Mettre à jour uniquement les indicateurs nécessaires
+    
+        // Update EMA Short si nécessaire
+        if (config.use_ema_short_filter) {
+            current_ema_short = ema_short_calculator->update(current_candle);
+            logger->log_indicator_value(ema_short_name, current_ema_short);
+        }
         
-        // Update Stochastic
-        auto stoch_values = stochastic_calculator->update(current_candle);
-        current_stoch_k = stoch_values.first;
-        current_stoch_d = stoch_values.second;
-
-        logger->log_indicator_value(stoch_k_name, current_stoch_k);
-        logger->log_indicator_value(stoch_d_name, current_stoch_d);
+        // Update EMA Long si nécessaire
+        if (config.use_ema_long_filter) {
+            current_ema_long = ema_long_calculator->update(current_candle);
+            logger->log_indicator_value(ema_long_name, current_ema_long);
+        }
         
-        // Update RSI
-        current_rsi = rsi_calculator->update(current_candle);
-        logger->log_indicator_value(rsi_name, current_rsi);
+        // Update Stochastic si nécessaire
+        if (config.use_stoch_filter) {
+            auto stoch_values = stochastic_calculator->update(current_candle);
+            current_stoch_k = stoch_values.first;
+            current_stoch_d = stoch_values.second;
+            logger->log_indicator_value(stoch_k_name, current_stoch_k);
+            logger->log_indicator_value(stoch_d_name, current_stoch_d);
+        }
         
-        // Update ATRLOG
-        current_atrlog = atrlog_calculator->update(current_candle);
-        logger->log_indicator_value(atrlog_name, current_atrlog);
+        // Update RSI si nécessaire
+        if (config.use_rsi_filter) {
+            current_rsi = rsi_calculator->update(current_candle);
+            logger->log_indicator_value(rsi_name, current_rsi);
+        }
+        
+        // Update ATRLOG si nécessaire pour SL ou TP
+        if (base_config.use_atr_for_sl || base_config.use_atr_for_tp) {
+            current_atrlog = atrlog_calculator->update(current_candle);
+            logger->log_indicator_value(atrlog_name, current_atrlog);
+        }
         
         return true;
     }
@@ -339,11 +386,11 @@ public:
             return false;
         }
         
-        // Vérifier si les indicateurs sont prêts
-        if (current_ema_short == 0.0 || current_ema_long == 0.0 || current_stoch_k == 0.0 || current_rsi == 0.0) {
-            logger->log_general("Les indicateurs ne sont pas tous initialisés", LogLevel::WARNING);
-            return false;
-        }
+        // // Vérifier si les indicateurs sont prêts
+        // if (current_ema_short == 0.0 || current_ema_long == 0.0 || current_stoch_k == 0.0 || current_rsi == 0.0) {
+        //     logger->log_general("Les indicateurs ne sont pas tous initialisés", LogLevel::WARNING);
+        //     return false;
+        // }
         
         // Vérifier si on a besoin d'ATRLOG mais que celui-ci n'est pas disponible
         bool needs_atrlog = base_config.use_atr_for_sl || base_config.use_atr_for_tp;
@@ -353,7 +400,7 @@ public:
         }
         
         // Vérifier si on a besoin de Min/Max mais qu'on n'a pas assez d'historique
-        if (base_config.use_minmax_for_sl && candle_manager.size() < base_config.sl_minmax_periods) {
+        if (base_config.use_minmax_for_sl && candle_manager.size() < static_cast<size_t>(base_config.sl_minmax_periods)) {
             logger->log_general("Pas assez d'historique pour le calcul Min/Max SL", LogLevel::WARNING);
             return false;
         }

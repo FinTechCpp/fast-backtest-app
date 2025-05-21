@@ -1,37 +1,37 @@
 #pragma once
 #include "base_indicator.hpp"
+#include "atr.hpp"
 #include <vector>
-#include <deque>
-#include <algorithm>
 #include <cmath>
+#include <memory>
 
 /**
  * Average True Range (ATR) logarithmique - retourne log(ATR + 1)
+ * Utilise la composition plutôt que l'héritage pour appliquer une transformation logarithmique
  */
-class ATRLOG : public ATR {
+class ATRLOG : public IncrementalIndicator<double> {
 private:
-
+    std::unique_ptr<ATR> atr_calculator;
     
 public:
-    ATRLOG(int period, const std::string& name = "ATRLOG")
-        : ATR(period, name) {}
+    ATRLOG(int period, const std::string& name = "")
+        : IncrementalIndicator<double>(name.empty() ? "ATRLOG_" + std::to_string(period) : name) {
+        atr_calculator = std::make_unique<ATR>(period);
+    }
 
-    double initialize_with_history(const std::vector<BasicCandle>& history) override;
-    double update(const BasicCandle& candle) override;
-    double get_value() const override;
+    double initialize_with_history(const std::vector<BasicCandle>& history) override {
+        double atr_value = atr_calculator->initialize_with_history(history);
+        is_initialized = atr_calculator->initialized();
+        return std::log(1.0 + atr_value);
+    }
+
+    double update(const BasicCandle& candle) override {
+        double atr_value = atr_calculator->update(candle);
+        is_initialized = atr_calculator->initialized();
+        return std::log(1.0 + atr_value);
+    }
+
+    double get_value() const override {
+        return std::log(1.0 + atr_calculator->get_value());
+    }
 };
-
-inline double ATRLOG::initialize_with_history(const std::vector<BasicCandle>& history)
-{
-    return std::log(1 + ATR::initialize_with_history(history));
-}
-
-inline double ATRLOG::update(const BasicCandle& candle)
-{
-    return std::log(1 + ATR::update(candle));
-}
-
-inline double ATRLOG::get_value() const
-{
-    return std::log(1 + ATR::get_value());
-}

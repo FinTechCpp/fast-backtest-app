@@ -18,7 +18,7 @@ public:
     bool requires_initialization() const { return !is_initialized; }
     bool initialized() const { return is_initialized; }
 
-    // Nom de l'indicateur (pour la journalisation et l'identification)
+    // Getters & setters pour le nom
     const std::string& get_name() const { return name; }
     void set_name(const std::string& indicator_name) { name = indicator_name; }
     

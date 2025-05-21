@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
-#include "CandleManager.hpp"
-#include "PositionManager.hpp"
+#include "Managers/CandleManager.hpp"
+#include "Managers/PositionManager.hpp"
 #include <string>
 #include <vector>
 #include <map>

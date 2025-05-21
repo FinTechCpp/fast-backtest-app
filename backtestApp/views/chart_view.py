@@ -16,6 +16,68 @@ from cpp_strategies import (
 
 from backtestApp.views.base_view import ResultView
 
+class CandleConverter:
+    """Utilitaire pour convertir des données pandas/numpy en objets BasicCandle pour les indicateurs C++"""
+    
+    @staticmethod
+    def create_cpp_candle(timestamp, open_val, high_val, low_val, close_val):
+        """Crée un objet BasicCandle C++ à partir des données d'une bougie"""
+        from cpp_strategies import CppBasicCandle, CppDateTime, CppTime
+        
+        # Convertir le timestamp en composants DateTime pour C++
+        dt = pd.to_datetime(timestamp)
+        
+        # Créer un objet Time C++
+        time_obj = CppTime()
+        time_obj.hour = dt.hour
+        time_obj.minute = dt.minute
+        time_obj.second = dt.second
+        
+        # Créer un objet DateTime C++
+        date_obj = CppDateTime()
+        date_obj.year = dt.year
+        date_obj.month = dt.month
+        date_obj.day = dt.day
+        date_obj.time = time_obj
+        
+        # Créer l'objet CppBasicCandle C++
+        cppCandle = CppBasicCandle()
+        cppCandle.date = date_obj
+        cppCandle.open = float(open_val)
+        cppCandle.high = float(high_val)
+        cppCandle.low = float(low_val)
+        cppCandle.close = float(close_val)
+
+        return cppCandle
+
+    
+    @staticmethod
+    def create_cpp_candles_from_dataframe(df, timestamp_col='time'):
+        """Crée une liste d'objets BasicCandle C++ à partir d'un DataFrame pandas"""
+        candles = []
+        
+        # Identifier les noms de colonnes OHLC
+        if 'close' in df.columns:
+            open_col, high_col, low_col, close_col = 'open', 'high', 'low', 'close'
+        elif 'Close' in df.columns:
+            open_col, high_col, low_col, close_col = 'Open', 'High', 'Low', 'Close'
+        else:
+            raise ValueError("Colonnes OHLC introuvables dans les données")
+        
+        # Créer les objets candle
+        for i, row in df.iterrows():
+            candle = CandleConverter.create_cpp_candle(
+                row[timestamp_col],
+                row[open_col],
+                row[high_col],
+                row[low_col],
+                row[close_col]
+            )
+            candles.append(candle)
+        
+        return candles
+    
+
 class ChartView(ResultView):
     """Vue pour afficher les graphiques de prix et d'indicateurs."""
     
@@ -193,10 +255,12 @@ class ChartView(ResultView):
         
         # Déterminer les noms corrects des colonnes (majuscules ou minuscules)
         if 'close' in data.columns:
+            open_col = 'open'
             close_col = 'close'
             high_col = 'high' 
             low_col = 'low'
         elif 'Close' in data.columns:
+            open_col = 'Open'
             close_col = 'Close'
             high_col = 'High'
             low_col = 'Low'
@@ -205,6 +269,7 @@ class ChartView(ResultView):
             return {}
         
         # Convertir les colonnes en tableaux NumPy pour des performances optimales
+        open_values = data[open_col].values
         close_values = data[close_col].values
         high_values = data[high_col].values
         low_values = data[low_col].values
@@ -237,16 +302,36 @@ class ChartView(ResultView):
             
             # Créer et initialiser l'indicateur EMA C++
             ema = CppEMA(period)
-            ema.initialize_with_history(close_values[:period*2].tolist())  # 2x la période pour une bonne initialisation
+
+            # Créer un sous-ensemble de données pour l'initialisation
+            init_data = data.iloc[:period*2]
+
+            # Convertir les données en objets BasicCandle
+            candles = CandleConverter.create_cpp_candles_from_dataframe(init_data)
             
+            # Initialiser avec l'historique de bougies
+            ema.initialize_with_history(candles)
+
             # Calculer les valeurs EMA pour toutes les bougies
             ema_values = np.zeros(len(close_values))
+
+            # Calculer pour les bougies initiales
+            for j in range(period*2):
+                if j < len(init_data):
+                    ema_values[j] = np.nan  # Ces valeurs sont déjà calculées par initialize_with_history
+            
+            # Calculer pour le reste des bougies
             for j in range(period*2, len(close_values)):
-                ema_values[j] = ema.update(close_values[j])
-            
-            # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
-            ema_values[:period*2] = np.nan
-            
+                # Créer un objet BasicCandle pour cette mise à jour
+                candle = CandleConverter.create_cpp_candle(
+                    data['time'].iloc[j],
+                    data[open_col].iloc[j],
+                    data[high_col].iloc[j],
+                    data[low_col].iloc[j],
+                    data[close_col].iloc[j]
+                )
+                ema_values[j] = ema.update(candle)
+
             # Créer un DataFrame pour la ligne
             ema_df = pd.DataFrame({
                 'time': data['time'],
@@ -284,25 +369,42 @@ class ChartView(ResultView):
             
             # Calcul du nombre de bougies nécessaires pour l'initialisation
             hist_size = stoch_k_period + max(stoch_slowing, stoch_d_period)
-            if len(high_values) > hist_size:
-                stoch.initialize_with_history(
-                    high_values[:hist_size].tolist(),
-                    low_values[:hist_size].tolist(),
-                    close_values[:hist_size].tolist()
-                )
+            
+            # Créer un sous-ensemble de données pour l'initialisation
+            init_data = data.iloc[:hist_size]
+            
+            # Convertir les données en objets BasicCandle
+            candles = CandleConverter.create_cpp_candles_from_dataframe(init_data)
+            
+            # Initialiser avec l'historique de bougies
+            if len(candles) > 0:
+                stoch.initialize_with_history(candles)
             
             # Calculer les valeurs stochastiques pour toutes les bougies
             stoch_k_values = np.zeros(len(close_values))
             stoch_d_values = np.zeros(len(close_values))
             
-            for j in range(hist_size, len(close_values)):
-                k, d = stoch.update(high_values[j], low_values[j], close_values[j])
-                stoch_k_values[j] = k
-                stoch_d_values[j] = d
+            # Calculer pour les bougies initiales
+            for j in range(hist_size):
+                if j < len(init_data):
+                    stoch_k_values[j] = np.nan
+                    stoch_d_values[j] = np.nan
             
-            # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
-            stoch_k_values[:hist_size] = np.nan
-            stoch_d_values[:hist_size] = np.nan
+            # Calculer pour le reste des bougies
+            for j in range(hist_size, len(close_values)):
+                # Créer un objet BasicCandle pour cette mise à jour
+                candle = CandleConverter.create_cpp_candle(
+                    data['time'].iloc[j],
+                    data[open_col].iloc[j],
+                    data[high_col].iloc[j],
+                    data[low_col].iloc[j],
+                    data[close_col].iloc[j]
+                )
+                
+                # Mise à jour avec la bougie
+                k_d_pair = stoch.update(candle)
+                stoch_k_values[j] = k_d_pair[0]  # K value
+                stoch_d_values[j] = k_d_pair[1]  # D value
             
             # Créer le sous-graphique pour le stochastique
             stoch_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)
@@ -361,28 +463,33 @@ class ChartView(ResultView):
         atr = CppATR(atr_period)
         atrc = CppATRC(atr_period)
         
-        # Initialiser avec un historique suffisant
-        if len(high_values) > atr_period*2:
-            atr.initialize_with_history(
-                high_values[:atr_period*2].tolist(),
-                low_values[:atr_period*2].tolist(),
-                close_values[:atr_period*2].tolist()
-            )
-            atrc.initialize_with_history(
-                high_values[:atr_period*2].tolist(),
-                low_values[:atr_period*2].tolist()
-            )
-        
+        init_data = data.iloc[:atr_period*2]
+        candles = CandleConverter.create_cpp_candles_from_dataframe(init_data)
+
+        if candles:
+            atr.initialize_with_history(candles)
+            atrc.initialize_with_history(candles)
+
         # Calculer les valeurs ATR pour toutes les bougies
         atr_values = np.zeros(len(close_values))
         atrc_values = np.zeros(len(close_values))
-        for j in range(atr_period*2, len(close_values)):
-            atr_values[j] = atr.update(high_values[j], low_values[j], close_values[j])
-            atrc_values[j] = atrc.update(high_values[j], low_values[j])
-        
-        # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
+
+        # Marquer les premières valeurs comme non-initialisées
         atr_values[:atr_period*2] = np.nan
         atrc_values[:atr_period*2] = np.nan
+
+        for j in range(atr_period*2, len(close_values)):
+            # Créer un objet BasicCandle pour cette mise à jour
+            candle = CandleConverter.create_cpp_candle(
+                data['time'].iloc[j],
+                data[open_col].iloc[j],
+                data[high_col].iloc[j],
+                data[low_col].iloc[j],
+                data[close_col].iloc[j]
+            )
+            
+            atr_values[j] = atr.update(candle)
+            atrc_values[j] = atrc.update(candle)
 
         # Appliquer le log (logarithme népérien) en évitant les valeurs <= 0
         log_atr_values = np.where(atr_values > 0, np.log(atr_values), np.nan)
@@ -437,20 +544,30 @@ class ChartView(ResultView):
             # Si la classe CppRSI n'existe pas, vous devrez l'implémenter ou utiliser une autre approche
             rsi = CppRSI(rsi_period)
             
-            # Calcul du nombre de bougies nécessaires pour l'initialisation
-            hist_size = rsi_period * 2  # Pour une bonne initialisation
-            
             # Initialiser avec un historique suffisant
-            if len(close_values) > hist_size:
-                rsi.initialize_with_history(close_values[:hist_size].tolist())
+            init_data = data.iloc[:hist_size]
+            candles = CandleConverter.create_cpp_candles_from_dataframe(init_data)
+
+            if candles:
+                rsi.initialize_with_history(candles)
             
             # Calculer les valeurs RSI pour toutes les bougies
             rsi_values = np.zeros(len(close_values))
-            for j in range(hist_size, len(close_values)):
-                rsi_values[j] = rsi.update(close_values[j])
-            
-            # Remplacer les 0 au début (non initialisés) par NaN pour ne pas les afficher
+
+            # Marquer les premières valeurs comme non-initialisées
             rsi_values[:hist_size] = np.nan
+
+            for j in range(hist_size, len(close_values)):
+                # Créer un objet BasicCandle pour cette mise à jour
+                candle = CandleConverter.create_cpp_candle(
+                    data['time'].iloc[j],
+                    data[open_col].iloc[j],
+                    data[high_col].iloc[j],
+                    data[low_col].iloc[j],
+                    data[close_col].iloc[j]
+                )
+                
+                rsi_values[j] = rsi.update(candle)
             
             # Créer le sous-graphique pour le RSI
             rsi_chart = chart.create_subchart(height=0.1, width=1, position="bottom", sync=True)

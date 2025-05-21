@@ -89,6 +89,15 @@ PYBIND11_MODULE(cpp_strategies, m) {
     m.def("parse_iso_datetime", &parse_iso_datetime);
     m.def("get_day_of_week", &get_day_of_week);
 
+    // Expose BasicCandle structure
+    py::class_<BasicCandle>(m, "CppBasicCandle")
+        .def(py::init<>())
+        .def_readwrite("date", &BasicCandle::date)
+        .def_readwrite("open", &BasicCandle::open)
+        .def_readwrite("high", &BasicCandle::high)
+        .def_readwrite("low", &BasicCandle::low)
+        .def_readwrite("close", &BasicCandle::close);
+
     // Expose the Candle structure
     py::class_<Candle>(m, "CppCandle")
         .def(py::init<>())

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Funnel Chart</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Funnel Chart</p>
+<hr class="separator">
+<div class="content">
+<img src="images/funnel.png" width='500' height='400'>
+<br><br>
+This example demonstrates using <a href="PyramidChart.setFunnelSize.htm">PyramidChart.setFunnelSize</a> to specify using a funnel instead of a pyramid to represent the data.
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/funnel". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+
+int main(int argc, char *argv[])
+{
+    // The data for the pyramid chart
+    double data[] = {156, 123, 211, 179};
+    const int data_size = (int)(sizeof(data)/sizeof(*data));
+
+    // The labels for the pyramid chart
+    const char* labels[] = {"Corporate Tax", "Working Capital", "Re-investment", "Dividend"};
+    const int labels_size = (int)(sizeof(labels)/sizeof(*labels));
+
+    // The colors for the pyramid layers
+    int colors[] = {0x66aaee, 0xeebb22, 0xcccccc, 0xcc88ff};
+    const int colors_size = (int)(sizeof(colors)/sizeof(*colors));
+
+    // Create a PyramidChart object of size 500 x 400 pixels
+    PyramidChart* c = new PyramidChart(500, 400);
+
+    // Set the funnel center at (200, 210), and width x height to 150 x 300 pixels
+    c-&gt;setFunnelSize(200, 210, 150, 300);
+
+    // Set the elevation to 5 degrees
+    c-&gt;setViewAngle(5);
+
+    // Set the pyramid data and labels
+    c-&gt;setData(DoubleArray(data, data_size), StringArray(labels, labels_size));
+
+    // Set the layer colors to the given colors
+    c-&gt;setColors(Chart::DataColor, IntArray(colors, colors_size));
+
+    // Leave 1% gaps between layers
+    c-&gt;setLayerGap(0.01);
+
+    // Add labels at the right side of the pyramid layers using Arial Bold font. The labels will
+    // have 3 lines showing the layer name, value and percentage.
+    c-&gt;setRightLabel("{label}\nUS ${value}K\n({percent}%)", "Arial Bold");
+
+    // Output the chart
+    c-&gt;makeChart("funnel.png");
+
+    //free up resources
+    delete c;
+
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

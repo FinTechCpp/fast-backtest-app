@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>DataAccelerator.addDataSeries</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="DataAccelerator.htm">DataAccelerator</a>.<wbr>addDataSeries</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+void addDataSeries(const char *id, const double *yData, int yDataLen);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Adds a data series.<br><br>
+The <b>yData</b> is an array for storing the y data values, and <b>yDataLen</b> is the number of valid values in the array.<br><br>
+To conserve memory, DataAccelerator will only keep a reference to the array and not copy it. The caller must ensure the array remains valid for as long as the DataAccelerator is in use.<br><br>
+For real time chart usage, the array acts as a buffer to store real time data. Initially the number of valid values can be 0. As new data come in, the values can be stored in the array and <a href="DataAccelerator.extendLength.htm">DataAccelerator.extendLength</a> can be called to update the number of valid values.<br><br>
+This method is specially designed to allow multiple data series to be updated concurrently with multiple threads.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>id</td><td>(Mandatory)</td><td>Name of the data series. Each data series in a DataAccelerator object must have a unique name.</td></tr><tr><td>yData</td><td>(Mandatory)</td><td>The array to store the data values.</td></tr><tr><td>yDataLen</td><td>(Mandatory)</td><td>The number of valid values.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+None
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

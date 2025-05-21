@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Image Maps, Hot Spots and CDML Tooltips</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Image Maps, Hot Spots and CDML Tooltips</p>
+<hr class="separator">
+<div class="content"> 
+A hot spot is a region on an image that can generate mouse events and can have tooltip. For example, on a bar chart, each bar can be a hot spot. The bar can then generate mouse click and other mouse events, and can pop up a tooltip box when the mouse hovers on it.<br><br>
+HTML image maps are a standard way to define hot spots. It defines the hot spot regions and their associate parameters and tooltips. ChartDirector can generate HTML image maps for the charts by using <a href="BaseChart.getHTMLImageMap.htm">BaseChart.getHTMLImageMap</a> and other similar methods. Many of the examples that come with ChartDirector use this method to configure tooltips for the charts.<br><br>
+Since HTML is an open standard, you can append custom image map entries to define custom hot spots on the chart. For example, if you include your company logo on the chart, you may define a hot spot for the logo to make it clickable.<br><br>
+Although HTML image map comes from web technology, ChartDirector desktop controls, such as <a href="CChartViewer.htm">CChartViewer</a> and <a href="QChartViewer.htm">QChartViewer</a> support it as well.
+</div><p class="heading2">CDML Tooltips</p><div class="content">
+The most common usage of image maps is to define tooltips for the chart objects.<br><br>
+In HTML image maps, tooltips are configured with the "title" attributes. For example, in <a href="BaseChart.getHTMLImageMap.htm">BaseChart.getHTMLImageMap</a>, the attribute <code>title='{xLabel}: {value}'</code> will configure the tooltip to display the x-axis label associated with the hot spot, followed by a colon and a space, and after that the data value associated with the hot spot.<br><br>
+By default, the tooltip will be displayed using the default tooltip mechanism of the programming framework. For a web application, it will be displayed using the tooltip mechanism provided by the browser. For a desktop application, it will be provided by the desktop GUI framework. Typically, the tooltip will be a small box with a line of text and the style is not configurable.<br><br>
+ChartDirector also supports enhanced CDML tooltips with rich formatting. The tooltip will be rendered by ChartDirector directly. It can include multiple fonts, colors, images, icons or even another chart, and can be semi-transparent. Unlikely the default tooltip which appears only when the mouse hovers on the hot spot for a short time, the CDML tooltip pops up instantaneously when the mouse enters the hot spot and will follow the mouse as it moves. The <a href='cdmltooltip.htm'>CDML Tooltips</a> sample code contains a few examples of using CDML tooltips.
+</div><p class="heading2">Desktop CDML Tooltips</p><div class="content">
+For desktop applications, CDML tooltips can be enabled by starting the tooltip with the <code>&lt;*cdml*&gt;</code> tag. The tooltip can them be formatted by using <a href="cdml.htm">CDML</a>. A simple example is:<br><br>
+<div class="indentedblock"><code>&lt;*cdml*&gt;&lt;*font=<wbr>bold,<wbr>color=<wbr>0000FF*&gt;{xLabel}:&lt;*/<wbr>font*&gt;; {value}</code></div><br>
+When displaying the tooltip, ChartDirector will substitute the <code>&lt;*cdml*&gt;</code> tag with the following CDML, which represents a container with white background, grey border, rounded corners and charcoal grey font color.<br><br>
+<div class="indentedblock"><code>&lt;*block,<wbr>bgColor=<wbr>F0F0F0,<wbr>edgeColor=<wbr>808080,<wbr>margin=<wbr>5,roundedCorners=<wbr>3*&gt;&lt;*font,<wbr>color=<wbr>222222*&gt;</code></div><br>
+To customize the container, you may use <a href="CChartViewer.setCDMLToolTipPrefix.htm">CChartViewer.setCDMLToolTipPrefix</a> or <a href="QChartViewer.setCDMLToolTipPrefix.htm">QChartViewer.setCDMLToolTipPrefix</a> to configure an alternative container. You can also omit the <code>&lt;*cdml*&gt;</code> tag. In this case, the tooltip should start with a CDML tag that defines its own container. This allows different tooltips to have different container styles. ChartDirector will still consider the tooltip to be a CDML tooltip as long as it starts with a CDML tag.</div><br>
+<hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div></body>
+</HTML>

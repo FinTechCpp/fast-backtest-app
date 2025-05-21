@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>ContourLayer.setContourLabelSpacing</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="ContourLayer.htm">ContourLayer</a>.<wbr>setContourLabelSpacing</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+void setContourLabelSpacing(int labelSpacing, int minContourLen);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Sets the spacing between contour labels.<br><br>
+ChartDirector will try to place labels at relative straight segments along the contour while ensuring the labels are not too close together. The default target label spacing is 300 pixels.<br><br>
+If the contour is short relative to the label length, all or a large part of the contour may become the label, and the contour line may become hard to see. By default, ChartDirector will not put a label on a contour if the contour length is less than 3 times that of the label length. This allows the contour on either side of the label to be as least as long as the label.<br><br>
+This method can be used to adjust what is the target label spacing and contour length for positioning labels.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>labelSpacing</td><td>(Mandatory)</td><td>The target label spacing in pixels. The actual spacing may be different as the labels can only be placed on relatively straight segments along the contour.</td></tr><tr><td>minContourLen</td><td>(Mandatory)</td><td>The minimum contour length in pixels below which there will be no contour label.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+None
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

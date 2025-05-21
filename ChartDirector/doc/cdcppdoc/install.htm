@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Installation</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Installation</p>
+<hr class="separator">
+<p class="heading1aa">Installing ChartDirector for C++</p><div class="content">
+ChartDirector for C++ is released as a zip file on Windows, and as a tar.gz file on Linux and MacOS. To install ChartDirector for C++, simply extract the files from distribution.
+</div><p class="heading1a">Running ChartDirector Sample Programs</p><div class="content">
+ChartDirector for C++ comes with four sets of sample programs.<br><br>
+<ul> <li><b><u>Command line sample programs</u></b><br> The command line sample programs are included in the "ChartDirector/cppdemo" subdirectory. They are compatible with any standard C++ compiler and work on all supported operating systems.<br><br>
+On the Windows edition of ChartDirector, Visual Studio project files are included. On the Linux and MacOS editions of ChartDirector, make files are included. Note that the make files assume the C++ compiler is "g++". You may need to modify the make files if you are using a different compiler.<br><br>
+<li><b><u>MFC sample programs</u></b><br> On the Windows edition of ChartDirector, MFC sample programs with Visual Studio project files are included in the "ChartDirector\mfcdemo" subdirectory.<br><br>
+<li><b><u>Qt Widget sample programs</u></b><br> Qt Widget sample programs with Qt ".pro" project files are included in the "ChartDirector/qtdemo" subdirectory. They can be opened using the QtCreator.<br><br>
+<li><b><u>QML/Qt Quick sample programs</u></b><br> QML/QtQuick sample programs with Qt ".pro" project files are included in the "ChartDirector/qmldemo" subdirectory. They can be opened using the QtCreator. Note that although ChartDirector is compatible with QML on Qt 5 and later, the QML sample code is written based on Qt 6.2. You may need to modify the sample code a bit if you are using earlier version of Qt.<br></ul>
+</div><p class="heading1a">Using ChartDirector in Your Projects on Windows</p><div class="content">
+When you develop a project using ChartDirector, the development environment should be configured so that it can find the ChartDirector header and library files.<br><br>
+<ul> <li><b><u>Compilation</u></b><br> All C++ modules that use ChartDirector need to include the file "chartdir.h". The "chartdir.h" will in turn include more header files. All these files are located in the "ChartDirector\include" subdirectory. The development environment header file search path must be configured to include that directory.<br><br>
+<ul>
+<li>For Visual Studio, the steps are: Select "Project/Properties" from the menu bar, go to "C/C++" -> "General", in the "Additional Include Directories" field, add the path for the "ChartDirector\include" subdirectory.<br><br>
+<li>For Qt Creator or qmake, you may edit the Qt project file and add the line:<br><br>
+<div class="indentedblock"><code>INCLUDEPATH += [path/<wbr>of/<wbr>ChartDirector/<wbr>include]</code></div></ul><br>
+<li><b><u>Linking</u></b><br> After compilation, the object file needs to link with "ChartDirector\lib\chartdir70.lib".<br><br>
+<ul>
+<li>For Visual Studio, the steps are: Select "Project/Properties" from the menu bar, go to "Linker" -> "Input", in the "Additional Dependencies" field, add the path of the file "chartdir70.lib".<br><br>
+<li>For Qt Creator or qmake, you may edit the Qt project file and add the line:<br><br>
+<div class="indentedblock"><code>LIBS += [path/<wbr>of/<wbr>chardir70.lib]</code></div></ul><br>
+<li><b><u>Execution</u></b><br> During execution, the executable would need to find the "chartdir70.dll". You may copy the "chartdir70.dll" to the same directory where the executable runs, or you may copy it to a directory in the operating system search path (eg. [system32]).<br></ul>
+</div><p class="heading1a">Using ChartDirector in Your Projects on macOS</p><div class="content">
+When you develop a project using ChartDirector, the development environment should be configured so that it can find the ChartDirector header and library files.<br><br>
+<ul> <li><b><u>Compilation</u></b><br> All C++ modules that use ChartDirector need to include the file "chartdir.h". The "chartdir.h" will in turn include more header files. All these files are located in the "ChartDirector/include" subdirectory. The compiler must be configured to include that directory in its header file search path. This can be achieved by using the following compiler flag:<br><br>
+<div class="indentedblock"><code>-I[path/<wbr>of/<wbr>ChartDirector/<wbr>include]</code></div><br>
+If you are using Qt, you may edit the Qt project file and add the line:<br><br>
+<div class="indentedblock"><code>INCLUDEPATH += [path/<wbr>of/<wbr>ChartDirector/<wbr>include]</code></div><br>
+<li><b><u>Linking</u></b><br> After compilation, the object file needs to link with "libchartdir.dylib" in "ChartDirector/lib". This can be achieved by using the following linker flag:<br><br>
+<div class="indentedblock"><code>-L[path/<wbr>of/<wbr>ChartDirector/<wbr>lib] -lchartdir</code></div><br>
+If you are using Qt, you may edit the Qt project file and add the line:<br><br>
+<div class="indentedblock"><code>LIBS += -L[path/<wbr>of/<wbr>ChartDirector/<wbr>lib] -lchartdir</code></div><br>
+<li><b><u>Execution</u></b><br> The install name of "libchartdir.7.dylib" is "@rpath/libchartdir.7.dylib". That means the executable will look for the "libchartdir.7.dylib" in the runtime search path of the executable. The "libchartdir.7.dylib" should therefore be copied to a directory in the runtime search path. The runtime search path can be configured by using the "-rpath" linker flag. If you are using Qt, it can also be configured using the QMAKE_RPATHDIR parameter in the Qt project file.<br><br>
+For application distributed as an application bundle, a common directory for dynamic libraries is the "Frameworks" subdirectory inside the app directory. In this case, you can copy "libchartdir.7.dylib" to that directory and configured the runtime search path to "@executable_path/../Frameworks".<br></ul>
+</div><p class="heading1a">Using ChartDirector in Your Projects on Linux</p><div class="content">
+When you develop a project using ChartDirector, the development environment should be configured so that it can find the ChartDirector header and library files.<br><br>
+<ul> <li><b><u>Compilation</u></b><br> All C++ modules that use ChartDirector need to include the file "chartdir.h". The "chartdir.h" will in turn include more header files. All these files are located in the "ChartDirector/include" subdirectory. The compiler must be configured to include that directory in its header file search path. This can be achieved by using the following compiler flag:<br><br>
+<div class="indentedblock"><code>-I[path/<wbr>of/<wbr>ChartDirector/<wbr>include]</code></div><br>
+If you are using Qt, you may edit the Qt project file and add the line:<br><br>
+<div class="indentedblock"><code>INCLUDEPATH += [path/<wbr>of/<wbr>ChartDirector/<wbr>include]</code></div><br>
+<li><b><u>Linking</u></b><br> After compilation, the object file needs to link with "libchartdir.so" in "ChartDirector/lib". This can be achieved by using the following linker flag:<br><br>
+<div class="indentedblock"><code>-L[path/<wbr>of/<wbr>ChartDirector/<wbr>lib] -lchartdir</code></div><br>
+If you are using Qt, you may edit the Qt project file and add the line:<br><br>
+<div class="indentedblock"><code>LIBS += -L[path/<wbr>of/<wbr>ChartDirector/<wbr>lib] -lchartdir</code></div><br>
+<li><b><u>Execution</u></b><br> In Linux, executables will look for shared objects in directories in the runtime search path. Linux typically includes several directories, such as "/usr/lib", in the runtime search path. You can also use the -R linker flag to add extra directories to the runtime search path of an executable. Please refer to the documentation of your development tools for details.<br><br>
+The ChartDirector shared object and its dependencies are in "ChartDirector/lib". To allow the executable to locate ChartDirector at runtime, please copy everything in "ChartDirector/lib" (including the fonts subdirectory inside) to a directory in the runtime search path, or to ensure the "ChartDirector/lib" is in the runtime search path of the executable.<br></ul>
+</div><p class="heading1a">Installing the ChartDirector License</p><div class="content">
+If you have purchased a license to use ChartDirector, you should have a license key delivered to your via email and postal mail. Please install the license key as according to the following instructions.<br><br>
+Even without a license key, ChartDirector will work normally, but the charts will include a yellow bar at the bottom that marks the charts as produced by the "unregistered" ChartDirector. You can freely test ChartDirector for as long as necessary.<br><br>
+If your license key is for upgrading from a previous version of ChartDirector, please append the upgrade license key to the previous version license key, and use the combined license key.
+</div><p class="heading2">ChartDirector Developer License</p><div class="content">
+Please follow the steps below to install the license key for the "ChartDirector Developer License":<br><br>
+<ul>
+<li>Create an ASCII file using Notepad or other text editor, and put the license key in it. The whole file should contain only the license key. Save the file as "chartdir.lic".<br><br>
+<div class="greyblock">
+Note that some text editors, such as Notepad, may automatically append ".txt" to the filename. If file is saved as "chartdir.lic", it may end up as "chartdir.lic.txt". In this case, please rename the file back to "chartdir.lic".
+</div><br>
+<li>Copy the "chartdir.lic" to the windows directory (normally "c:\windows" on Windows) or the "/etc" directory (for Linux/macOS).<br><br>
+<div class="greyblock">
+The above directory is a system directory and may require administrative privileges for write access. If you are copying using the command prompt, please make sure you use "Run As administrator" to start the command prompt (for Windows), or use "sudo" (for Linux/macOS).
+</div><br>
+<li>If you cannot copy to a system directory (eg. due to lack of administrative privilege), you can copy "chartdir.lic" to the same directory as the active "chartdir??.dll" (for Windows, ?? = version number)  or "libchartdir.so" (for Linux) or "libchartdir.dylib" (for macOS).<br></ul>
+The license file should remove the "unregistered" message on the charts. If the license file appears to have no effect, please refer to <a href="http://www.advsofteng.com/license_diag.html" target="_top">http://www.advsofteng.com/license_diag.html</a> for trouble-shooting instructions.
+</div><p class="heading2">ChartDirector Redistribute License</p><div class="content">
+The "ChartDirector Redistribute License" can be installed using the same method as that of the "ChartDirector Developer License". If your application is distributed as a compiled executable, you can compile the license key directly into the executable. This avoids redistributing the license file. To do this, simply add a line in your code to call <a href="Chart.setLicenseCode.htm">Chart::setLicenseCode</a> and pass the license key as the argument.<br><br>
+<div class="codeblock"><code class='pre'>Chart::setLicenseCode(".....your-license-key.....");</code></div></ul></div><br>
+<hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div></body>
+</HTML>

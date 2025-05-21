@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>CDML Tooltip</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">CDML Tooltip</p>
+<hr class="separator">
+<div class="content">
+<img src="images/cdmltooltip0.png" width='360' height='360'>&nbsp;&nbsp;<img src="images/cdmltooltip1.png" width='360' height='360'>&nbsp;&nbsp;<img src="images/cdmltooltip2.png" width='360' height='360'>&nbsp;&nbsp;<img src="images/cdmltooltip3.png" width='360' height='360'>
+<br><br>
+This example demonstrates various CDML tooltip styles.<br><br>
+By default, ChartDirector displays tooltips with the tooltip implementation provided by the GUI framework. For MFC applications, it will use the tooltip implementation provided by MFC. For Qt applications, it will use the tooltip implementation provided by Qt.<br><br>
+This example demonstrate several CDML tooltip styles. It also includes the default tooltip for comparison.
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the MFC version of the code in mfcdemo/mfccharts.cpp. The Qt version of the code is in qtdemo/democharts.cpp.<div class='codeblock'><code class='pre'>void cdmltooltip(CChartViewer *viewer, int /* chartIndex */)
+{
+    //
+    // Data for 4 scatter layers to demonstrate various tooltip styles
+    //
+
+    double dataX0[] = {1, 1, 2, 2};
+    const int dataX0_size = (int)(sizeof(dataX0)/sizeof(*dataX0));
+    double dataY0[] = {3, 4, 3, 4};
+    const int dataY0_size = (int)(sizeof(dataY0)/sizeof(*dataY0));
+
+    double dataX1[] = {3, 3, 4, 4};
+    const int dataX1_size = (int)(sizeof(dataX1)/sizeof(*dataX1));
+    double dataY1[] = {3, 4, 3, 4};
+    const int dataY1_size = (int)(sizeof(dataY1)/sizeof(*dataY1));
+
+    double dataX2[] = {1, 1, 2, 2};
+    const int dataX2_size = (int)(sizeof(dataX2)/sizeof(*dataX2));
+    double dataY2[] = {1, 2, 1, 2};
+    const int dataY2_size = (int)(sizeof(dataY2)/sizeof(*dataY2));
+
+    double dataX3[] = {3, 3, 4, 4};
+    const int dataX3_size = (int)(sizeof(dataX3)/sizeof(*dataX3));
+    double dataY3[] = {1, 2, 1, 2};
+    const int dataY3_size = (int)(sizeof(dataY3)/sizeof(*dataY3));
+
+    // Create a XYChart object of size 550 x 390 pixels
+    XYChart* c = new XYChart(550, 390);
+
+    // Set the plotarea at (30, 40) and size 300 x 300 pixels. Use a gradient color background,
+    // light grey (c0c0c0) border, and light grey horizontal and vertical grid lines.
+    c-&gt;setPlotArea(30, 40, 300, 300, c-&gt;linearGradientColor(0, 30, 0, 330, 0xf9fcff, 0xaaccff), -1,
+        0xc0c0c0, 0xc0c0c0, 0xc0c0c0);
+
+    // Add a legend box at the right side of the plot area. Use 10pt Arial Bold font and set
+    // background and border colors to Transparent.
+    c-&gt;addLegend(c-&gt;getPlotArea()-&gt;getRightX() + 20, c-&gt;getPlotArea()-&gt;getTopY(), true,
+        "Arial Bold Italic", 10)-&gt;setBackground(Chart::Transparent);
+
+    // Add a title to the chart using 18pt Times Bold Itatic font
+    c-&gt;addTitle("CDML Tooltip Demonstration", "Times New Roman Bold Italic", 18);
+
+    // Set the axes line width to 3 pixels, and ensure the auto axis labels are integers.
+    c-&gt;xAxis()-&gt;setWidth(3);
+    c-&gt;yAxis()-&gt;setWidth(3);
+    c-&gt;yAxis()-&gt;setMinTickInc(1);
+    c-&gt;yAxis()-&gt;setMinTickInc(1);
+
+    // Add a scatter chart layer with 19 pixel red (ff3333) sphere symbols. Use default CDML tooltip
+    // style.
+    ScatterLayer* layer0 = c-&gt;addScatterLayer(DoubleArray(dataX0, dataX0_size), DoubleArray(dataY0,
+        dataY0_size), "Default CDML Tooltip", Chart::GlassSphere2Shape, 19, 0xff3333);
+    layer0-&gt;setHTMLImageMap("", "", "title='&lt;*cdml*&gt;{dataSetName}&lt;*br*&gt;X = {x}, Y = {value}'");
+
+    // Add a scatter chart layer with 19 pixel green (33ff33) sphere symbols. Cconfigure the CDML
+    // tooltip to use a background background with text of different colors and fonts.
+    ScatterLayer* layer1 = c-&gt;addScatterLayer(DoubleArray(dataX1, dataX1_size), DoubleArray(dataY1,
+        dataY1_size), "Dark Style Tooltip", Chart::GlassSphere2Shape, 19, 0x33ff33);
+    layer1-&gt;setHTMLImageMap("", "",
+        "title='&lt;*block,bgcolor=000000,margin=5,roundedCorners=3*&gt;&lt;*font=Arial Bold "
+        "Italic,color=FFFF00*&gt;{dataSetName}&lt;*/font*&gt;&lt;*br*&gt;&lt;*font=Arial Bold,size=8,color=FFFFFF*&gt;X "
+        "= {x}, Y = {value}'");
+
+    // Add a scatter chart layer with 19 pixels sky blue (66ccff) symbols. Configure the CDML
+    // tooltip to ue a translucent background.
+    ScatterLayer* layer2 = c-&gt;addScatterLayer(DoubleArray(dataX2, dataX2_size), DoubleArray(dataY2,
+        dataY2_size), "Translucent Tooltip", Chart::GlassSphere2Shape, 19, 0x66ccff);
+    layer2-&gt;setHTMLImageMap("", "",
+        "title='&lt;*block,bgcolor=5fffff00,margin=5,roundedCorners=3*&gt;&lt;*font=Arial Bold*&gt;"
+        "&lt;*font,underline=1*&gt;{dataSetName}&lt;*/font*&gt;&lt;*br*&gt;X = {x}, Y = {value}'");
+
+    // Add a scatter chart layer with 19 pixels sky blue (ffff00) symbols. Use standard tooltips
+    // provided by the GUI framework.
+    ScatterLayer* layer3 = c-&gt;addScatterLayer(DoubleArray(dataX3, dataX3_size), DoubleArray(dataY3,
+        dataY3_size), "Classical Tooltip", Chart::GlassSphere2Shape, 19, 0xffff00);
+    layer3-&gt;setHTMLImageMap("", "", "title='[{dataSetName}] X = {x}, Y = {value}'");
+
+    // Output the chart
+    viewer-&gt;setChart(c);
+
+    // Include tool tip for the chart
+    viewer-&gt;setImageMap(c-&gt;getHTMLImageMap("clickable"));
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

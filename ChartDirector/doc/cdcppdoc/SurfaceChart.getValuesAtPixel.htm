@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>SurfaceChart.getValuesAtPixel</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="SurfaceChart.htm">SurfaceChart</a>.<wbr>getValuesAtPixel</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+DoubleArray getValuesAtPixel(int x, int y);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Gets the (x, y, z, w) values of the surface at the specified image pixel coordinates.<br><br>
+This method is valid only after the chart image has been drawn (eg. using <a href="BaseChart.makeChart.htm">BaseChart.makeChart</a>, <a href="BaseChart.makeChart2.htm">BaseChart.makeChart2</a> or <a href="BaseChart.makeChart3.htm">BaseChart.makeChart3</a>). It is typically used to provide user feedback when the mouse moves on the chart.<br><br>
+If w values are not provided to the surface chart, the returned w value will be set to the same as the z value. If the pixel is not on the plotted surface, the returned array will be empty or null.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>x</td><td>(Mandatory)</td><td>The x pixel coordinate.</td></tr><tr><td>y</td><td>(Mandatory)</td><td>The y pixel coordinate.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+An array of 4 numbers representing the x, y, z and w values at the image pixel location. If the pixel is not on the plotted surface, the returned array will be empty or null.
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

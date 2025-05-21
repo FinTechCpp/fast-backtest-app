@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>TreeMapNode.setLayoutMethod</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="TreeMapNode.htm">TreeMapNode</a>.<wbr>setLayoutMethod</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+void setLayoutMethod(int layoutMethod[, int layoutDirection[, bool swapXY]);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Sets the layout method used to layout the child nodes.<br><br>
+The layout method is specified by using the following predefined constants as the <b>layoutMethod</b> argument.<br><br>
+<div style="width:100%;box-sizing:border-box;"><table width="100%" border="1" cellpadding="5" cellspacing="0"> <tr><th width="19%">Constant<th width="19%%">Value<th>Description <tr><td><a href="Chart.TreeMapSquarify.htm">TreeMapSquarify</a><td>1<td>The nodes will be layout so that they are as close to a square as possible. This method may sort the nodes, so the ordering of the nodes on the chart may be different from the ordering in the data array.
+<tr><td><a href="Chart.TreeMapStrip.htm">TreeMapStrip</a><td>2<td>The nodes will flow according to the <b>layoutDirection</b> argument. The default is <a href="Chart.TopLeft.htm">TopLeft</a>, which means the nodes will flow from left to right and top to bottom like text. The number of nodes in each row will be such that on average, they are as close to squares as possible.
+<tr><td><a href="Chart.TreeMapBinaryBySize.htm">TreeMapBinaryBySize</a><td>3<td>Without changing the ordering of the nodes, the nodes will be partitioned into two groups so that their sizes are as equal as possible. The two groups will then become two rectangular region. If the width of the plot area is not smaller than its height, the two groups will be placed at the left and right sides of plot area, otherwise they will be placed at the top and bottom sides of the plot area. The splitting then recursively apply to each group to partition them, until each subgroup contains only one node and can no longer be partitioned.
+<tr><td><a href="Chart.TreeMapBinaryByCount.htm">TreeMapBinaryByCount</a><td>4<td>Same as TreeMapBinaryBySize except that the nodes will be partitioned so that the count of nodes are as equal as possible.
+<tr><td><a href="Chart.TreeMapSliceAndDice.htm">TreeMapSliceAndDice</a><td>5<td>This method is intended for multi-level tree maps. Assume the layout direction is <a href="Chart.TopLeft.htm">TopLeft</a>, the first level nodes will flow from left to right. The second level nodes will flow from top to bottom. If there are more levels, they will alternate between left/right and top/bottom flow directions. The <b>layoutDirection</b> argument can be used to specify other layout directions.
+</table></div><br>
+If a layout method argument is not specified, it will be obtained from the prototype node (see <a href="TreeMapChart.getLevelPrototype.htm">TreeMapChart.getLevelPrototype</a>). If it is still not specified, the parent node will be used. If the node is the root node with no parent, the default is to use TreeMapSquarify with <a href="Chart.TopLeft.htm">TopLeft</a> layout direction and without swapXY.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>layoutMethod</td><td>(Mandatory)</td><td>The layout method used to layout the child nodes. A value of 0 means the layout method is not specified.</td></tr><tr><td>layoutDirection</td><td>(Optional)</td><td>The layout direction. Must be one of <a href="Chart.TopLeft.htm">TopLeft</a>, <a href="Chart.TopRight.htm">TopRight</a>, <a href="Chart.BottomLeft.htm">BottomLeft</a> and <a href="Chart.BottomRight.htm">BottomRight</a>. By default, the horizontal direction will be applied first, followed by the vertical direction.</td></tr><tr><td>swapXY</td><td>(Optional)</td><td>If set to true, the vertical direction will be applied first, followed by the horizontal direction. A false value means the opposite.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+None
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

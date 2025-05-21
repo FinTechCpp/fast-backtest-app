@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Using ChartDirector with MFC</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Using ChartDirector with MFC</p>
+<hr class="separator">
+<div class="content">This section describes how to use ChartDirector with MFC on Windows.
+</div><p class="heading2">MFC Sample Programs</p><div class="content">
+ChartDirector comes with a lot of MFC examples. They are included in the Visual Studio solution at "ChartDirector/mfcdemo/mfcdemo.sln". The solution includes two projects:<br><br>
+<ul>
+<li><b>helloworld</b>: This is a basic MFC project that just displays a simple bar chart.<br><br>
+<li><b>mfcdemo</b>: This project includes all ChartDirector chart types. It demonstrates various advanced features such as tooltips with rich formatting, clickable chart objects, programmable track cursors, zooming and scrolling, realtime charts, contour cross section, 3D chart rotations, PDF reports and huge dataset support.
+</div><p class="heading2">The CChartViewer MFC Control</p><div class="content">
+All ChartDirector MFC sample programs uses the <a href="CChartViewer.htm">CChartViewer</a> control to display charts and handle user interactions. The CChartViewer is a derived class of the MFC CStatic control. It is released in source code format.<br><br>
+To use CChartViewer in your own project:<br><br>
+<ul>
+<li>Include "ChartViewer.h" and "ChartViewer.cpp" in your project.<br><br>
+<li>Use the VC++ Dialog Editor to put a "Picture Control" in your Form or Dialog. Set the "Type" to "Bitmap". Set a valid resource ID for the control.<br><br>
+<li>Add a member variable for the control (eg. right click on the control and select "Add variable"), and set the variable type to CChartViewer.<br><br>
+<li>Visual Studio should automatically add the following line in the header file of your Form or Dialog. You may open the header file to verify if this is the case.<br><br>
+<div class="indentedblock"><code>#include "ChartViewer.h"</code></div></ul>
+<div class="greyblock">
+<b><font color="#FF0000">NOTE for Precompiled Header:</font></b> When Visual Studio creates a new MFC projects, it usually configures the project to use precompiled headers. Depending on the Visual Studio version, the precompiled header can be called stdafx.h or pch.h. Visual Studio then requires all C++ files to include the precompiled header in its first line, otherwise it will produce error that the precompiled header is not included.<br><br>
+That means the CChartViewer.cpp must include the precompiled header. It currently uses <code>#include "stdafx.h"</code> to include the precompiled header. If your project uses another precompiled header filename, you may need to change the #include statement to that filename.
+</div></div><p class="heading2">Displaying Charts On Screen</p><div class="content">
+To display a chart using CChartViewer, only one line of code is needed:<br><br>
+<div class="codeblock"><code class='pre'>// m_ChartViewer is a CChartViewer control; myChart is a BaseChart pointer
+m_ChartViewer.<a href="CChartViewer.setChart.htm">setChart</a>(myChart);</code></div></div><p class="heading2">Handling Hot Spots Mouse Interactions</p><div class="content">
+Hot spots are special regions in on the chart that are usually used to represent chart objects, such as data representation objects (sectors for pie chart, bars for bar charts, etc). One can display tool tips when the mouse is over the hot spots, and/or to make the hot spots clickable with mouse cursor feedback.<br><br>
+In ChartDirector, hot spots for the charts are defined using standard HTML image maps (text strings containing HTML <AREA> tags). The <a href="BaseChart.getHTMLImageMap.htm">BaseChart.getHTMLImageMap</a> method can be used to generate image maps automatically for a chart. To set the image map to the CChartViewer control, one may use:<br><br>
+<div class="codeblock"><code class='pre'>m_ChartViewer.<a href="CChartViewer.setImageMap.htm">setImageMap</a>(myImageMap);</code></div><br>
+After setting the image map, the CChartViewer control will display the tool tips defined in the image map when the mouse is over the hot spots. For clickable hot spots, it will also change the mouse cursor into a "hand" shape.<br><br>
+When the mouse clicks on the CChartViewer control, a <a href="CChartViewer.BN_CLICKED.htm">BN_CLICKED</a> notification code will be sent to the parent container. The parent container can handle this message and use <a href="ImageMapHandler.htm">ImageMapHandler</a> to determine which hot spot has been clicked.<br><br>
+Microsoft MFC documentation contains the details on how to handle BN_CLICKED notification code. In brief, the steps are:<br><br>
+<ul>
+<li>Add an ON_BN_CLICKED entry to the message map section of the Window. An example is as follows, in which IDC_ChartViewer is the resource ID of the CChartViewer control, and OnClickChartViewer is the event handling method.<br><br>
+<div class="indentedblock"><code>ON_BN_CLICKED(<wbr>IDC_ChartViewer, OnClickChartViewer)</code></div><br>
+<li>Declare the event handling method in the message map function section of the header file.<br><br>
+<div class="indentedblock"><code>afx_msg void OnClickChartViewer(<wbr>);</code></div><br>
+<li>Add the implementation of the event handling method. For example:<br><br>
+<div class="codeblock"><code class='pre'>void CMyDialog::OnClickChartViewer()
+{
+    // m_ChartViewer = member variable representing the CChartViewer control
+    <a href="ImageMapHandler.htm">ImageMapHandler</a> *handler = m_ChartViewer.<a href="CChartViewer.getImageMapHandler.htm">getImageMapHandler</a>();
+    if (0 != handler)
+    {
+        //
+        // Query the ImageMapHandler to check if the mouse is on a clickable hot
+        // spot. A hot spot is considered clickable if its href ("path") parameter
+        // is not empty.
+        //
+        const char *path = handler-&gt;<a href="ImageMapHandler.getValue.htm">getValue</a>("path");
+        if ((0 != path) && (0 != *path))
+        {
+            // In a clickable hot spot - do something ......
+            // In the standard MFC sample code, we just show all hot spot
+            // parameters using the CHotSpotDlg included in the sample code.
+            CHotSpotDlg hs;
+            hs.SetData(handler);
+            hs.DoModal();
+        }
+    }
+}</code></div></div><p class="heading2">Adding Track Cursor to the Chart</p><div class="content">
+In ChartDirector, track cursors can be created by drawing them on a "dynamic layer" when the mouse moves on the chart. For example, drawing a horizontal line and a vertical line will create a crosshair cursor that tracks the mouse. Other things, such as legend entries, data labels and axis labels, can also be drawn, allowing them to update as the mouse moves over the chart.<br><br>
+CChartViewer will send <a href="CChartViewer.CVN_MouseMovePlotArea.htm">CVN_MouseMovePlotArea</a> notification codes to the parent container when the mouse moves over the extended plot area. The track cursor drawing code can be implemented in the handler of this message.
+</div><p class="heading2">Handling Viewport Interactions</p><div class="content">
+A viewport can be imagined as a window to an underlying surface. For example, a data series with 10 years of data can be imagined as a long surface. If only 1 year of data is displayed, we may consider this as the viewport showing 10% of the underlying surface.<br><br>
+Scrolling can be handled as moving the viewport, while zooming in and out can be handled as changing the viewport size.<br><br>
+CChartViewer supports using mouse click and drag to control the viewport (see <a href="CChartViewer.setMouseUsage.htm">CChartViewer.setMouseUsage</a>). When the viewport is changed by mouse actions, CChartViewer will send a <a href="CChartViewer.CVN_ViewPortChanged.htm">CVN_ViewPortChanged</a> notification code to its parent container. The parent can handle this message and redraw the chart to reflect the updated viewport.<br><br>
+CChartViewer also includes methods for changing the viewport programmatically. This allows external controls (such as scroll bars, mouse wheel, sliders, date picker, etc) to manipulate the viewport.<br><br>
+Microsoft MFC documentation contains the details on how to handle the control notification messages. In brief, the steps are:<br><br>
+<ul>
+<li>Add an ON_CONTROL entry to the message map section of the Window. An example is as follows, in which IDC_ChartViewer is the resource ID of the CChartViewer control, and OnViewPortChanged is the event handling method.<br><br>
+<div class="indentedblock"><code>ON_CONTROL(<wbr>CVN_ViewPortChanged, IDC_ChartViewer, OnViewPortChanged)</code></div><br>
+<li>Declare the event handling method in the message map function section of the header file.<br><br>
+<div class="indentedblock"><code>afx_msg void OnViewPortChanged(<wbr>);</code></div><br>
+<li>Add the implementation of the event handling method. For example:<br><br>
+<div class="codeblock"><code class='pre'>void CMyDialog::OnViewPortChanged()
+{
+    // Viewport may have changed
+    // - update other controls if necessary
+    // - redraw chart
+}</code></div></ul>
+</div><p class="heading2">The CViewPortControl</p><div class="content">
+The <a href="CViewPortControl.htm">CViewPortControl</a> is a MFC control introduced in ChartDirector 6.0. It allows user to visualize and control the CChartViewer viewport.<br><br>
+In typical usage, the CViewPortControl will display an "overall chart" that shows the full data range. Once the CViewPortControl is associated with the CChartViewer, it will draw a rectangle on the overall chart to represent the CChartViewer viewport, and dim out the region outside the rectangle. If the viewport changed, such as if the user zooms in the chart, the rectangle will automatically update.<br><br>
+The user can drag the rectangle to move the CChartViewer viewport (equivalent to scrolling). The user can also resize the viewport by dragging the border of the rectangle (equivalent to zooming), or drag a new rectangular region on the overall chart to be used as the new viewport, or click on a point on the chart to center the viewport at that point. In all these cases, as the viewport has changed, the CVN_ViewPortChanged message will be sent.<br><br>
+The steps to use CViewPortControl in your own project is similar to that of CChartViewer:<br><br>
+<ul>
+<li>Include "ChartViewer.h" and "ChartViewer.cpp" in your project.<br><br>
+<li>Use the VC++ Dialog Editor to put a "Picture Control" in your Form or Dialog. Set the "Type" to "Bitmap". Set a valid resource ID for the control.<br><br>
+<li>Add a member variable for the control (eg. right click on the control and select "Add variable"), and set the variable type to CViewPortControl.<br><br>
+<li>Visual Studio should automatically add the following line in the header file of your Form or Dialog. You may open the header file to verify if this is the case.<br><br>
+<div class="indentedblock"><code>#include "ChartViewer.h"</code></div></ul>
+The CViewPortControl requires an "overall chart" on which the viewport rectangle is drawn. It also requires connection to a CChartViewer so as to visualize and control its viewport. The code to do this is:<br><br>
+<div class="codeblock"><code class='pre'>// m_ViewPortControl is a CViewPortControl; myOverallChart is a BaseChart pointer
+m_ViewPortControl.<a href="CViewPortControl.setChart.htm">setChart</a>(myOverallChart);
+
+// m_ChartViewer is the CChartViewer to be associated with the CViewPortControl
+m_ViewPortControl.<a href="CViewPortControl.setViewer.htm">setViewer</a>(&m_ChartViewer);</code></div></div><p class="heading2">Saving the Charts</p><div class="content">
+ChartDirector can output the charts in PDF, SVG, PNG, JPG, GIF and BMP format to a file using <a href="BaseChart.makeChart.htm">BaseChart.makeChart</a>, or to memory using <a href="BaseChart.makeChart2.htm">BaseChart.makeChart2</a>. For example, to save the chart in a CChartViewer to a file, the code is:<br><br>
+<div class="codeblock"><code class='pre'>// m_ChartViewer is a CChartViewer object which contains the chart to save. The
+// format is determined by the file extension in pathname.
+m_ChartViewer.<a href="CChartViewer.getChart.htm">getChart</a>()-&gt;<a href="BaseChart.makeChart.htm">makeChart</a>(pathname);</code></div></div><p class="heading2">Printing Charts On Paper</p><div class="content">
+ChartDirector can output charts in BMP or DIB (Device Independent Bitmap) format in memory. The easiest method to print the chart is to blit the DIB directly to the printer device context. For example:<br><br>
+<div class="codeblock"><code class='pre'>// Output the chart as BMP
+MemBlock bmp = c-&gt;makeChart(Chart::BMP);
+
+// The BITMAPINFOHEADER is 14 bytes offset from the beginning
+LPBITMAPINFO header = (LPBITMAPINFO)(bmp.data + 14);
+
+// The bitmap data
+LPBYTE bitData = (LPBYTE)(bmp.data) +
+ ((LPBITMAPFILEHEADER)(bmp.data))-&gt;bfOffBits;
+
+// The scaling factor to adjust for printer resolution
+// (pDC = CDC pointer representing the printer device context)
+double xScaleFactor = pDC-&gt;GetDeviceCaps(LOGPIXELSX) / 96.0;
+double yScaleFactor = pDC-&gt;GetDeviceCaps(LOGPIXELSY) / 96.0;
+
+// Output to device context
+StretchDIBits(pDC-&gt;m_hDC, (int)(40 * xScaleFactor), (int)(40 * yScaleFactor),
+     (int)(header-&gt;bmiHeader.biWidth * xScaleFactor),
+     (int)(header-&gt;bmiHeader.biHeight * yScaleFactor),
+     0, 0, header-&gt;bmiHeader.biWidth, header-&gt;bmiHeader.biHeight,
+     bitData, header, DIB_RGB_COLORS, SRCCOPY);</code></div></div><br>
+<hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div></body>
+</HTML>

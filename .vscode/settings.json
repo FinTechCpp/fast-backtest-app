@@ -57,5 +57,6 @@
         "iostream": "cpp",
         "any": "cpp",
         "typeindex": "cpp"
-    }
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }

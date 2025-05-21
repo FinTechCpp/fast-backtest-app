@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>DrawArea.polyShape</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="DrawArea.htm">DrawArea</a>.<wbr>polyShape</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+void polyShape(IntArray xy, int edgeColor, int fillColor);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Draws a shape.<br><br>
+A simple shape can be a polygon or an ellipse. A polygon an be specified as an array of numbers (x0, y0, x1, y1, .....) representing the coordinates of the polygon vertices. As a polygon must have at least 3 vertices, the array must contain at least 6 numbers. If it contains only 4 numbers, it is will considered as an ellipse, with the numbers (x, y, rx, ry) interpreted as the coordinates of the center and the horizontal and vertical radii.<br><br>
+A complex shape is composed of multiple simple shapes. For example, a donut is a complex shape composed of two concentric circles. The shape is filled using the even-odd rule. (The web should have a lot of explanation on what is the even-odd rule in graphics.) A complex shape can be specified by including multiple simple shapes in the array, using the <a href="Chart.NewShape.htm">NewShape</a> constant to separate them.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>xy</td><td>(Mandatory)</td><td>An array of integers specifying the shape.</td></tr><tr><td>edgeColor</td><td>(Mandatory)</td><td>The border color. To disable border, set the edgeColor the same as the fillColor.</td></tr><tr><td>fillColor</td><td>(Mandatory)</td><td>The fill color. To disable filling, set the fillColor to Transparent.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+None
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Chart.setLicenseCode</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="Chart.htm">Chart</a>.<wbr>setLicenseCode</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+static bool setLicenseCode(const char *licCode, char *buffer = 0);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Sets the license code into ChartDirector.<br><br>
+This method is for applying the license code of a ChartDirector Redistribute License to an application. With this method, the license code will be compiled into the application executable and redistributed with the application, and ChartDirector will run in licensed mode when used by the application.<br><br>
+This method only needs to be called once per executable instance. Typically, it is called during program initialization.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>licCode</td><td>(Mandatory)</td><td>A text string containing the license code.</td></tr><tr><td>buffer</td><td>0</td><td>A buffer to hold the error message in case of error. The buffer should be at least 2048 bytes. If the buffer is 0 (null pointer), no error message will be returned.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+A true value indicates the license code is accepted. A false value indicates the license code is rejected. In the latter case, the error message will be stored in the buffer.
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

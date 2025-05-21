@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>CChartViewer.setDPI</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="CChartViewer.htm">CChartViewer</a>.<wbr>setDPI</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+void setDPI(int dpi);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Sets the DPI (scale factor) of the chart on the screen.<br><br>
+Due to historical reasons, in programming, the display is assumed to be 96dpi (dot per inch). Modern operating systems also allows using higher DPI. For example, on Windows 10, in "Settings / System / Display", it is possible set a display scale factor such as 150%, which corresponds to 144dpi.<br><br>
+If the application is configured as "not DPI aware", the OS will assume the application GUI is 96dpi. The operating system will then resize the application output before displaying it on the screen.<br><br>
+If the application is configured as "DPI aware", the OS will assume the application will resize its GUI to match the display DPI, and the OS will not resize the application output again.<br><br>
+CChartViewer will automatically detect if the application is "DPI aware" or not, and will automatically resize the chart to match the display DPI.<br><br>
+The setDPI method can be used to configure an alternative scale factor. For example, if the user code has already resized the chart, it is not necessary for the CChartViewer to resize the chart again. In this case, setDPI can be used to set the DPI to 96 to disable the CChartViewer from resizing the chart.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>dpi</td><td>(Mandatory)</td><td>The DPI to display the chart on the screen. A value of 0 means the DPI will be automatically determined.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+None
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

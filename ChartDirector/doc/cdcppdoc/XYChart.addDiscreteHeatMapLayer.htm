@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>XYChart.addDiscreteHeatMapLayer</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="XYChart.htm">XYChart</a>.<wbr>addDiscreteHeatMapLayer</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+DiscreteHeatMapLayer *addDiscreteHeatMapLayer(DoubleArray zData, int xCount);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Adds a discrete heat map layer to the XYChart by specifying the cell values and the cell count in the x direction.<br><br>
+The zData array contains the cell values. xCount is the cell count in the x direction. The cell count in the y direction will be computed as the total cell count (the size of the zData array) divided by xCount.<br><br>
+The boundary of the cells will be at integer axis coordinates 0, 1, 2, ..... In the x direction, the first column of cells will occupy the space between x = 0 and x = 1, the second column between x = 1 and x = 2, and so on. The same applies to the y direction. The first row of cells will be between y = 0 and y = 1, the second row between y = 1 and y = 2, and so on.<br><br>
+This method is often used with <a href="Axis.setLabels.htm">Axis.setLabels</a> and <a href="Axis.setLabelOffset.htm">Axis.setLabelOffset</a> for axis labelling. The Axis.setLabels put labels at coordinates 0, 1, 2, ... along the axis. The Axis.setLabelOffset can offset the labels by 0.5 units, so the labels will be at 0.5, 1.5, 2.5 ... which corresponds to the center of the cells.<br><br>
+A similar method <a href="XYChart.addDiscreteHeatMapLayer2.htm">XYChart.addDiscreteHeatMapLayer2</a> allows you to specify the exact x and y coordinates for the cells.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>zData</td><td>(Mandatory)</td><td>An array containing the data values of the cells.</td></tr><tr><td>xCount</td><td>(Mandatory)</td><td>The number of cells in the x direction. The number of cells in the y direction will be computed as the total number of cells (the size of the zData array) divided by xCount.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+A <a href="DiscreteHeatMapLayer.htm">DiscreteHeatMapLayer</a> object representing the discrete heat map layer created.
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

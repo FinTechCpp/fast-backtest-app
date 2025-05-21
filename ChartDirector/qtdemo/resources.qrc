@@ -1,0 +1,9 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+<qresource>
+    <file>qtdemo/icons/scroll_icon.png</file>
+    <file>qtdemo/icons/zoomin_icon.png</file>
+    <file>qtdemo/icons/zoomout_icon.png</file>
+    <file>qtdemo/icons/save_icon.png</file>
+</qresource>
+</RCC>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Donut Width</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Donut Width</p>
+<hr class="separator">
+<div class="content">
+<img src="images/donutwidth0.png" width='150' height='120'>&nbsp;&nbsp;<img src="images/donutwidth1.png" width='150' height='120'>&nbsp;&nbsp;<img src="images/donutwidth2.png" width='150' height='120'>&nbsp;&nbsp;<img src="images/donutwidth3.png" width='150' height='120'>&nbsp;&nbsp;<img src="images/donutwidth4.png" width='150' height='120'>
+<br><br>
+This example demonstrates the effects of different donut widths.<br><br>
+Donut widths are configured by using different inner and outer radii when calling <a href="PieChart.setDonutSize.htm">PieChart.setDonutSize</a>.
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/donutwidth". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+#include &lt;stdio.h&gt;
+
+void createChart(int chartIndex, const char *filename)
+{
+    char buffer[1024];
+
+    // Determine the donut inner radius (as percentage of outer radius) based on input parameter
+    int donutRadius = chartIndex * 25;
+
+    // The data for the pie chart
+    double data[] = {10, 10, 10, 10, 10};
+    const int data_size = (int)(sizeof(data)/sizeof(*data));
+
+    // The labels for the pie chart
+    const char* labels[] = {"Marble", "Wood", "Granite", "Plastic", "Metal"};
+    const int labels_size = (int)(sizeof(labels)/sizeof(*labels));
+
+    // Create a PieChart object of size 150 x 120 pixels, with a grey (EEEEEE) background, black
+    // border and 1 pixel 3D border effect
+    PieChart* c = new PieChart(150, 120, 0xeeeeee, 0x000000, 1);
+
+    // Set donut center at (75, 65) and the outer radius to 50 pixels. Inner radius is computed
+    // according donutWidth
+    c-&gt;setDonutSize(75, 60, 50, 50 * donutRadius / 100);
+
+    // Add a title to show the donut width
+    sprintf(buffer, "Inner Radius = %d %%", donutRadius);
+    c-&gt;addTitle(buffer, "Arial", 10)-&gt;setBackground(0xcccccc, 0);
+
+    // Draw the pie in 3D
+    c-&gt;set3D(12);
+
+    // Set the pie data and the pie labels
+    c-&gt;setData(DoubleArray(data, data_size), StringArray(labels, labels_size));
+
+    // Disable the sector labels by setting the color to Transparent
+    c-&gt;setLabelStyle("", 8, Chart::Transparent);
+
+    // Output the chart
+    c-&gt;makeChart(filename);
+
+    //free up resources
+    delete c;
+
+}
+
+int main(int argc, char *argv[])
+{
+    createChart(0, "donutwidth0.png");
+    createChart(1, "donutwidth1.png");
+    createChart(2, "donutwidth2.png");
+    createChart(3, "donutwidth3.png");
+    createChart(4, "donutwidth4.png");
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

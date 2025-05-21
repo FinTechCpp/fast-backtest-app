@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Mega Real-Time Chart with Zoom/Scroll and Track Line (MFC)</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Mega Real-Time Chart with Zoom/Scroll and Track Line (MFC)</p>
+<hr class="separator">
+<div class="content"><img src="images/megarealtimezoomscroll_cpp.png" width='805' height='502'><br><br>
+<div class="greyblock">
+<b><font color="#FF0000">NOTE:</font></b> This section describes Mega Real-Time Chart with Zoom/Scroll and Track Line for MFC only. For Qt, please refer to <a href="megarealtimezoomscrollqt.htm">Mega Real-Time Chart with Zoom/Scroll and Track Line (Qt)</a>.
+</div><br>
+This example demonstrates a real-time chart with a capacity of 3 x 10M data points, updating at 3 x 1000 points per second.<br><br>
+For demonstration purpose, this example will start with half of the data points already loaded. The other half will be filled with real-time data at a rate of 3 x 1000 points per second.<br><br>
+The charting, zooming, scrolling and track cursor part of the code is similar to <a href="realtimezoomscroll.htm">Real-Time Chart with Zooming and Scrolling (MFC)</a>, which you may refer to for more details. In this example, we will focus on the code that handles the huge number of data points.<br><br>
+The main source code listing of this sample program is included at the end of this section. The code consists of the following main parts:<br><br>
+<ul>
+<li>Initialization: The code uses 3 <a href="RanSeries.htm">RanSeries</a> objects to generate 3 random data series, each with 5M data points. To speed up, 3 threads are used to generate the random series in parallel.<br><br>
+<li>The plotting will start when the "Plot Chart" button is pressed. This allows you to determine how much time is needed to plot the initial 3 x 5M points. Note that for performance testing, make sure the code is compile and run in "Release" mode, and run it without debugging (eg. use "Start without Debugging" in Visual Studio).<br><br>
+<li>Data Acceleration: The first thing the plotting code does is to pass the data to the <a href="DataAccelerator.htm">DataAccelerator</a> for pre-processing. The DataAccelerator can significantly speed up chart plotting, especially if the chart needs to be updated or redrawn rapidly, such as for zoomable and scrollable charts and real-time charts. 3 threads are used to process the 3 data series in parallel.<br><br>
+<li>drawChart: The drawChart code is similar to that in <a href="realtimezoomscroll.htm">Real-Time Chart with Zooming and Scrolling (MFC)</a>, except the data are now supplied by the <a href="DataAccelerator.htm">DataAccelerator</a>.<br><br>
+<li>OnChartUpdateTimer: This determines the chart update rate, which is set to 100ms in this example. In this example, we use a <a href="RanSeries.htm">RanSeries</a> object to generating data and store them in the data arrays. When the chart updates, it will commit the new data to the DataAccelerator by calling <a href="DataAccelerator.extendLength.htm">DataAccelerator.extendLength</a>. In real applications, some other code should be used to acquire the data and store them in the data array. The data acquisition code can be triggered by another timer or run in a separate thread.<br></ul>
+</div><p class="heading1a">Source Code Listing</p><div class="content">
+<b>[MFC version]</b> mfcdemo/MegaRealTimeZoomScrollDlg.cpp<div class='codeblock'><code class='pre'>// CMegaRealTimeZoomScrollDlg.cpp : implementation file
+//
+
+#include "stdafx.h"
+#include "resource.h"
+#include "MegaRealTimeZoomScrollDlg.h"
+#include &lt;vector&gt;
+#include &lt;string&gt;
+#include &lt;sstream&gt;
+#include &lt;algorithm&gt;
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#endif
+
+// In this example, we plot 3 real-time series, each with 10,000,000 points maximum.
+// For demonstration purpose, we will pre-load half of the buffer with random data.
+// The remaining half wlll be filled with real-time random data at a rate of 1000 
+// points per series per second. 
+static int bufferSize  = 10000000;
+
+// Timer to update the chart every 100ms
+static const int ChartUpdateTimer = 1;
+static const int ChartUpdateInterval = 100;
+
+// The full x-axis range is at least 60 seconds (60000ms), and the maximum zooming
+// is 10ms visible x-axis range.
+static const double minXRange = 60000;
+static const double zoomInLimit = 10;
+
+//
+// Constructor
+//
+CMegaRealTimeZoomScrollDlg::CMegaRealTimeZoomScrollDlg(CWnd* pParent /*=nullptr*/)
+    : CDialog(IDD_MEGAREALTIMEZOOMSCROLL, pParent), m_realTimeData(999)
+{
+    m_currentIndex = 0;
+    m_fastData = 0;
+    m_hasFinishedInitialization = false;
+
+    m_lastUpdateTime = clock();
+}
+
+//
+// Destructor
+//
+CMegaRealTimeZoomScrollDlg::~CMegaRealTimeZoomScrollDlg()
+{
+    delete m_ChartViewer.getChart();
+    delete m_fastData;
+}
+
+void CMegaRealTimeZoomScrollDlg::DoDataExchange(CDataExchange* pDX)
+{
+    CDialog::DoDataExchange(pDX);
+    DDX_Control(pDX, IDC_ChartViewer, m_ChartViewer);
+    DDX_Control(pDX, IDC_HScrollBar, m_HScrollBar);
+    DDX_Control(pDX, IDC_PointerPB, m_PointerPB);
+    DDX_Control(pDX, IDC_PlotChartPB, m_PlotChartPB);
+}
+
+BEGIN_MESSAGE_MAP(CMegaRealTimeZoomScrollDlg, CDialog)
+    ON_WM_TIMER()
+    ON_BN_CLICKED(IDC_PointerPB, OnPointerPB)
+    ON_BN_CLICKED(IDC_ZoomInPB, OnZoomInPB)
+    ON_BN_CLICKED(IDC_ZoomOutPB, OnZoomOutPB)
+    ON_WM_HSCROLL()
+    ON_CONTROL(CVN_ViewPortChanged, IDC_ChartViewer, OnViewPortChanged)
+    ON_CONTROL(CVN_MouseMovePlotArea, IDC_ChartViewer, OnMouseMovePlotArea)
+    ON_BN_CLICKED(IDC_PlotChartPB, OnClickPlotChart)
+END_MESSAGE_MAP()
+
+
+//
+// Initialization
+//
+BOOL CMegaRealTimeZoomScrollDlg::OnInitDialog()
+{
+    CDialog::OnInitDialog();
+
+    // Load icons to mouse usage buttons
+    loadButtonIcon(IDC_PointerPB, IDI_Scroll, 20, 20);
+    loadButtonIcon(IDC_ZoomInPB, IDI_ZoomIn, 20, 20);
+    loadButtonIcon(IDC_ZoomOutPB, IDI_ZoomOut, 20, 20);
+
+    // The data buffer
+    m_dataSeriesA.resize(bufferSize);
+    m_dataSeriesB.resize(bufferSize);
+    m_dataSeriesC.resize(bufferSize);
+    m_timeStamps.resize(bufferSize);
+
+    // Pre-load half of the buffer with random data
+    loadData();
+
+    // Display initial Message
+    PieChart* c = new PieChart(800, 400, 0xd0e0ff);
+    c-&gt;addTitle(Chart::Center, "&lt;*block,halign=left,maxwidth=500*&gt;"
+        "&lt;*font=Arial Bold,size=18,underline=2*&gt;Mega Real-Time Chart&lt;*/font*&gt;&lt;*br*&gt;&lt;*br*&gt;"
+        "This example demonstrates a real time chart with huge amount of data. It contains "
+        "3 lines pre-loaded with 5 million points each, then 1000 points are added to each "
+        "line per second. We limit it to 3 x 10 million points so that it needs less than "
+        "1G of RAM (320M to store the data, 600M to plot the data and handle the GUI)."
+        "&lt;*br*&gt;&lt;*br*&gt;&lt;*br*&gt;Press the Plot Chart button to plot the chart.");
+    m_ChartViewer.setChart(c);
+
+    return TRUE;
+}
+
+//
+// User clicks on the Pointer pushbutton
+//
+void CMegaRealTimeZoomScrollDlg::OnPointerPB()
+{
+    m_ChartViewer.setMouseUsage(Chart::MouseUsageScroll);
+}
+
+//
+// User clicks on the Zoom In pushbutton
+//
+void CMegaRealTimeZoomScrollDlg::OnZoomInPB()
+{
+    m_ChartViewer.setMouseUsage(Chart::MouseUsageZoomIn);
+}
+
+//
+// User clicks on the Zoom Out pushbutton
+//
+void CMegaRealTimeZoomScrollDlg::OnZoomOutPB()
+{
+    m_ChartViewer.setMouseUsage(Chart::MouseUsageZoomOut);
+}
+
+//anonymouse namespace to avoid naming conflicts
+namespace
+{
+    //
+    // ThreadTask - A utility to run code in separate threads. 
+    // 
+    // Usage:
+    //   - Derived from ThreadTask, and override the "virtual void run()" method. Put the
+    //     code you want to run in this method.
+    //
+    //   - Create your derived object, and call the "start()" method. The object will then
+    //     execute the run() method in another thread. The "start()" method will return
+    //     immediately without blocking. In this way, you can create multiple objects to 
+    //     run code in separate threads.
+    //
+    //   - You can call the "wait()" method if you want to wait until the code in "run()"
+    //     has been completed.
+    //
+    class ThreadTask
+    {
+    private:
+        //disable copying
+        ThreadTask(const ThreadTask&amp; rhs);
+        ThreadTask&amp; operator=(const ThreadTask&amp; rhs);
+
+        HANDLE doneEvent;
+        static DWORD WINAPI threadHandler(_In_ LPVOID lpParameter)
+        {
+            ThreadTask* self = (ThreadTask*)lpParameter;
+            self-&gt;run();
+            SetEvent(self-&gt;doneEvent);
+            return 0;
+        }
+
+    public:
+        ThreadTask() : doneEvent(0)
+        {
+        }
+        virtual ~ThreadTask()
+        {
+            if (doneEvent)
+                CloseHandle(doneEvent);
+        }
+        void start()
+        {
+            doneEvent = CreateEventA(NULL, FALSE, FALSE, NULL);
+            QueueUserWorkItem(threadHandler, this, 0);
+        }
+        DWORD wait(DWORD timeout = INFINITE)
+        {
+            return doneEvent ? WaitForSingleObject(doneEvent, timeout) : WAIT_FAILED;
+        }
+        virtual void run() = 0;
+    };
+
+    // A thread task used for random number generator. Because of the large number of data
+    // points, we will create 3 random number generators running in 3 threads to speed up
+    // random number generation.
+    class RanSeriesTask : public ThreadTask
+    {
+    private:
+        int seed;            // random number seed
+        double* buffer;      // buffer to store the result
+        int count;           // the count of random numbers
+
+    public:
+        RanSeriesTask(int seed, double* buffer, int count)
+            : seed(seed), buffer(buffer), count(count)
+        {
+            start();         // auto start the thread after object creation
+        }
+        virtual void run()
+        {
+            // Generate random numbers 
+            RanSeries r(seed);
+            r.fillSeries(buffer, count, 2500, -1, 1);
+        }
+    };
+
+    // A thread task used for processing the data series in the data accelerator. We will
+    // create 3 threads so that 3 data series can be processed concurrently.
+    class FastSeriesTask : public ThreadTask
+    {
+    private:
+        DataAccelerator* fastDB;
+        const char* id;
+        const double* data;
+        int len;
+
+    public:
+        FastSeriesTask(DataAccelerator* fastDB, const char* id, const double* data, int len)
+            : fastDB(fastDB), id(id), data(data), len(len)
+        {
+            start();       // auto start the thread after object creation
+        }
+        virtual void run()
+        {
+            // Process the data series
+            fastDB-&gt;addDataSeries(id, data, len);
+        }
+    };
+}
+
+//
+// Pre-load half of the buffer with random data
+//
+void CMegaRealTimeZoomScrollDlg::loadData()
+{
+    int initialSize = bufferSize / 2;
+
+    RanSeriesTask taskA(109, &amp;m_dataSeriesA[0], initialSize);
+    RanSeriesTask taskB(110, &amp;m_dataSeriesB[0], initialSize);
+    RanSeriesTask taskC(111, &amp;m_dataSeriesC[0], initialSize);
+    for (int i = 0; i &lt; initialSize; ++i)
+        m_timeStamps[i] = i;
+
+    taskA.wait();
+    taskB.wait();
+    taskC.wait();
+
+    m_currentIndex = initialSize;
+}
+
+//
+// User clicks on the Plot Chart pushbutton
+// 
+void CMegaRealTimeZoomScrollDlg::OnClickPlotChart()
+{
+    // Has already initialized ??
+    if (m_hasFinishedInitialization)
+        return;
+
+    // This example uses a DataAccelerator to speed up the large amount of data. As we
+    // pre-load half of the buffer with random data, we need to process them first. 
+    // To speed up, we create two threads to process two of the data series, and use the
+    // current thread to process the third series.
+    m_fastData = new DataAccelerator(&amp;m_timeStamps[0], m_currentIndex);
+    FastSeriesTask task1(m_fastData, "mA", &amp;m_dataSeriesA[0], m_currentIndex);
+    FastSeriesTask task2(m_fastData, "mB", &amp;m_dataSeriesB[0], m_currentIndex);
+    m_fastData-&gt;addDataSeries("mC", &amp;m_dataSeriesC[0], m_currentIndex);
+    task1.wait();
+    task2.wait();
+
+    // Initialize the CChartViewer
+    initChartViewer(&amp;m_ChartViewer);
+    m_hasFinishedInitialization = true;
+
+    SetTimer(ChartUpdateTimer, ChartUpdateInterval, 0);
+
+    // Trigger the ViewPortChanged event to draw the chart
+    m_ChartViewer.updateViewPort(true, true);
+}
+
+//
+// Initialize the CChartViewer 
+//
+void CMegaRealTimeZoomScrollDlg::initChartViewer(CChartViewer* viewer)
+{
+    if (m_currentIndex &gt; 0)
+    {
+        // Set the full x range to be the data range, or at least minXRange.
+        double duration = (std::max)(m_timeStamps[m_currentIndex - 1] - m_timeStamps[0], minXRange);
+        viewer-&gt;setFullRange("x", m_timeStamps[0], m_timeStamps[0] + duration);
+
+        // Initialize the view port to show the latest 20% of the x range, or at least minXRange.
+        viewer-&gt;setViewPortWidth((std::max)(0.2, minXRange / duration));
+        viewer-&gt;setViewPortLeft(1 - viewer-&gt;getViewPortWidth());
+
+        // Set the maximum zoom to 10 x-units
+        viewer-&gt;setZoomInWidthLimit((std::min)(1.0, zoomInLimit / duration));
+    }
+
+    // Enable mouse wheel zooming by setting the zoom ratio to 1.1 per wheel event
+    viewer-&gt;setMouseWheelZoomRatio(1.1);
+
+    // Initially set the mouse to drag to scroll mode.
+    m_PointerPB.SetCheck(1);
+    viewer-&gt;setMouseUsage(Chart::MouseUsageScroll);
+}
+
+//
+// The ViewPortChanged event handler. This event occurs if the user scrolls or zooms in or 
+// out the chart by dragging or clicking on the chart. It can also be triggered by calling
+// CChartViewer.updateViewPort.
+//
+void CMegaRealTimeZoomScrollDlg::OnViewPortChanged()
+{
+    if (!m_hasFinishedInitialization)
+        return;
+
+    // In addition to updating the chart, we may also need to update other controls that
+    // changes based on the view port.
+    updateControls(&amp;m_ChartViewer);
+
+    // Update the chart if necessary
+    if (m_ChartViewer.needUpdateChart())
+        drawChart(&amp;m_ChartViewer);
+}
+
+//
+// User clicks on the the horizontal scroll bar 
+//
+void CMegaRealTimeZoomScrollDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+    double newViewPortLeft = moveScrollBar(nSBCode, nPos, pScrollBar);
+
+    // Update the view port if the scroll bar has really moved
+    if (m_hasFinishedInitialization &amp;&amp; (newViewPortLeft != m_ChartViewer.getViewPortLeft()))
+    {
+        m_ChartViewer.setViewPortLeft(newViewPortLeft);
+        m_ChartViewer.updateViewPort(true, false);
+    }
+}
+
+//
+// Draw track cursor when mouse is moving over plotarea
+//
+void CMegaRealTimeZoomScrollDlg::OnMouseMovePlotArea()
+{
+    if (!m_hasFinishedInitialization)
+        return;
+
+    trackLineLabel((XYChart*)m_ChartViewer.getChart(), m_ChartViewer.getPlotAreaMouseX());
+    m_ChartViewer.updateDisplay();
+}
+
+//
+// Handles timer events
+//
+void CMegaRealTimeZoomScrollDlg::OnTimer(UINT_PTR nIDEvent)
+{
+    switch (nIDEvent)
+    {
+    case ChartUpdateTimer:
+        // Is chart update timer
+        OnChartUpdateTimer();
+        break;
+    }
+
+    CDialog::OnTimer(nIDEvent);
+}
+
+//
+// Handles chart update timer
+//
+void CMegaRealTimeZoomScrollDlg::OnChartUpdateTimer()
+{
+    // Append real time data to the data arrays
+    if (getRealTimeData())
+    {
+        // Notify the DataAccelerator that new data are appended to the arrays, so it
+        // can accelerate them.
+        m_fastData-&gt;extendLength(m_currentIndex);
+
+        // We need to update the full x range to include the new data
+        updateAxisScale(&amp;m_ChartViewer);
+    }
+}
+
+//
+// Obtain real time data
+//
+bool CMegaRealTimeZoomScrollDlg::getRealTimeData()
+{
+    // In this example, we simulate a data source that can produced 3 x 1000 data points
+    // per second and store the data in a buffer. When the chart is updated, it will 
+    // retrieve the data in the buffer.
+
+    // In this example, we determine the time elapsed since last chart update and assume
+    // there are already the requirement amount of data points in the buffer.
+    clock_t currentTime = clock();
+    if (currentTime &lt; m_lastUpdateTime)
+        m_lastUpdateTime = currentTime;
+    int pointCount = (int)((currentTime - m_lastUpdateTime) * 1000.0 / CLOCKS_PER_SEC);
+    pointCount = (std::min)(pointCount, bufferSize - m_currentIndex);
+    m_lastUpdateTime += CLOCKS_PER_SEC * pointCount / 1000;
+
+    // We append the data to the arrays
+    for (int i = m_currentIndex; i &lt; m_currentIndex + pointCount; ++i)
+        m_timeStamps[i] = i;
+
+    // The data values are obtained from our random number generator. The following code
+    // ensures the random data series form a continuous line.
+    if (m_currentIndex == 0)
+    {
+        // If the data arrays are empty, just generate some random data series.
+        m_realTimeData.fillSeries(&amp;m_dataSeriesA[m_currentIndex], pointCount, 2500, -1, 1);
+        m_realTimeData.fillSeries(&amp;m_dataSeriesB[m_currentIndex], pointCount, 2500, -1, 1);
+        m_realTimeData.fillSeries(&amp;m_dataSeriesC[m_currentIndex], pointCount, 2500, -1, 1);
+    }
+    else
+    {
+        // If the data arrays are not empty, when append random data, ensure it starts from
+        // the last data point to make a continuous series.
+
+        --m_currentIndex;
+        ++pointCount;
+
+        m_realTimeData.fillSeries(&amp;m_dataSeriesA[m_currentIndex], pointCount, 
+            m_dataSeriesA[m_currentIndex], -1, 1);
+        m_realTimeData.fillSeries(&amp;m_dataSeriesB[m_currentIndex], pointCount, 
+            m_dataSeriesB[m_currentIndex], -1, 1);
+        m_realTimeData.fillSeries(&amp;m_dataSeriesC[m_currentIndex], pointCount, 
+            m_dataSeriesC[m_currentIndex], -1, 1);
+    }
+
+    m_currentIndex += pointCount;
+
+    // Displaying the point count in the pushbutton control to provide some feedback
+    char buffer[1024];
+    sprintf_s(buffer, sizeof(buffer), "Point Count = %d x 3", m_currentIndex);
+    m_PlotChartPB.SetWindowText(UTF8toTCHAR(buffer));
+
+    // Return true if new data are available
+    return pointCount &gt; 0;
+}
+
+//
+// As we added more data, we may need to update the full range. 
+//
+void CMegaRealTimeZoomScrollDlg::updateAxisScale(CChartViewer* viewer)
+{
+    double startTime = m_timeStamps[0];
+    double endTime = m_timeStamps[m_currentIndex - 1];
+
+    // Use x-axis range must be at least equal the minXRange.
+    double duration = endTime - startTime;
+    if (duration &lt; minXRange)
+        endTime = startTime + minXRange;
+
+    // Update the full range to reflect the actual duration of the data. In this case, 
+    // if the view port is viewing the latest data, we will scroll the view port as new
+    // data are added. If the view port is viewing historical data, we would keep the 
+    // axis scale unchanged to keep the chart stable.
+    int updateType = (viewer-&gt;getViewPortRight() &lt; 0.999) ? Chart::KeepVisibleRange :
+        Chart::ScrollWithMax;
+    bool axisScaleHasChanged = viewer-&gt;updateFullRangeH("x", startTime, endTime,
+        updateType);
+
+    // Set the zoom in limit as a ratio to the full range
+    viewer-&gt;setZoomInWidthLimit((std::min)(1.0, zoomInLimit / (viewer-&gt;getValueAtViewPort("x", 1)
+        - viewer-&gt;getValueAtViewPort("x", 0))));
+
+    // Trigger the viewPortChanged event to update the display if the axis scale has 
+    // changed or if new data are added to the existing axis scale.
+    if (axisScaleHasChanged || (duration &lt; minXRange))
+        viewer-&gt;updateViewPort(true, false);
+}
+
+//
+// Update other controls that may be affected by the viewport.
+//
+void CMegaRealTimeZoomScrollDlg::updateControls(CChartViewer* viewer)
+{
+    // In this demo, we need to update the scroll bar to reflect the view port position and
+    // width of the view port.
+
+    m_HScrollBar.EnableWindow(viewer-&gt;getViewPortWidth() &lt; 1);
+    if (viewer-&gt;getViewPortWidth() &lt; 1)
+    {
+        SCROLLINFO info;
+        info.cbSize = sizeof(SCROLLINFO);
+        info.fMask = SIF_ALL;
+        info.nMin = 0;
+        info.nMax = 0x1fffffff;
+        info.nPage = (int)ceil(viewer-&gt;getViewPortWidth() * (info.nMax - info.nMin));
+        info.nPos = (int)(0.5 + viewer-&gt;getViewPortLeft() * (info.nMax - info.nMin)) + info.nMin;
+        m_HScrollBar.SetScrollInfo(&amp;info);
+    }
+}
+
+//
+// Handle scroll bar events
+//
+double CMegaRealTimeZoomScrollDlg::moveScrollBar(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+    //
+    // Get current scroll bar position
+    //
+    SCROLLINFO info;
+    info.cbSize = sizeof(SCROLLINFO);
+    info.fMask = SIF_ALL;
+    pScrollBar-&gt;GetScrollInfo(&amp;info);
+
+    //
+    // Compute new position based on the type of scroll bar events
+    //
+    int newPos = info.nPos;
+    switch (nSBCode)
+    {
+    case SB_LEFT:
+        newPos = info.nMin;
+        break;
+    case SB_RIGHT:
+        newPos = info.nMax;
+        break;
+    case SB_LINELEFT:
+        newPos -= (info.nPage &gt; 10) ? info.nPage / 10 : 1;
+        break;
+    case SB_LINERIGHT:
+        newPos += (info.nPage &gt; 10) ? info.nPage / 10 : 1;
+        break;
+    case SB_PAGELEFT:
+        newPos -= info.nPage;
+        break;
+    case SB_PAGERIGHT:
+        newPos += info.nPage;
+        break;
+    case SB_THUMBTRACK:
+        newPos = info.nTrackPos;
+        break;
+    }
+    if (newPos &lt; info.nMin) newPos = info.nMin;
+    if (newPos &gt; info.nMax) newPos = info.nMax;
+
+    // Update the scroll bar with the new position
+    pScrollBar-&gt;SetScrollPos(newPos);
+
+    // Returns the position of the scroll bar as a ratio of its total length
+    return ((double)(newPos - info.nMin)) / (info.nMax - info.nMin);
+}
+
+//
+// Draw the chart and display it in the given viewer
+//
+void CMegaRealTimeZoomScrollDlg::drawChart(CChartViewer* viewer)
+{
+    // Get the start date and end date that are visible on the chart.
+    double viewPortStartDate = viewer-&gt;getValueAtViewPort("x", viewer-&gt;getViewPortLeft());
+    double viewPortEndDate = viewer-&gt;getValueAtViewPort("x", viewer-&gt;getViewPortRight());
+    m_fastData-&gt;setSubsetRange(viewPortStartDate, viewPortEndDate);
+
+    //
+    // At this stage, we have extracted the visible data. We can use those data to plot the chart.
+    //
+
+    //================================================================================
+    // Configure overall chart appearance.
+    //================================================================================
+
+    XYChart* c = new XYChart(800, 400);
+
+    // Set the plotarea at (0, 0) with width 1 pixel less than chart width, and height 20 pixels
+    // less than chart height. Use a vertical gradient from light blue (f0f6ff) to sky blue (a0c0ff)
+    // as background. Set border to transparent and grid lines to white (ffffff).
+    c-&gt;setPlotArea(0, 0, c-&gt;getWidth() - 1, c-&gt;getHeight() - 20, c-&gt;linearGradientColor(0, 0, 0,
+        c-&gt;getHeight() - 20, 0xf0f6ff, 0xa0c0ff), -1, Chart::Transparent, 0xffffff, 0xffffff);
+
+    // In our code, we can overdraw the line slightly, so we clip it to the plot area.
+    c-&gt;setClipping();
+
+    // Add a legend box at the right side using horizontal layout. Use 10pt Arial Bold as font. Set
+    // the background and border color to Transparent and use line style legend key.
+    LegendBox* b = c-&gt;addLegend(c-&gt;getWidth() - 1, 10, false, "Arial Bold", 10);
+    b-&gt;setBackground(Chart::Transparent);
+    b-&gt;setAlignment(Chart::Right);
+    b-&gt;setLineStyleKey();
+
+    // Set the x and y axis stems to transparent and the label font to 10pt Arial
+    c-&gt;xAxis()-&gt;setColors(Chart::Transparent);
+    c-&gt;yAxis()-&gt;setColors(Chart::Transparent);
+    c-&gt;xAxis()-&gt;setLabelStyle("Arial", 10);
+    c-&gt;yAxis()-&gt;setLabelStyle("Arial", 10, 0x336699);
+
+    // Configure the y-axis label to be inside the plot area and above the horizontal grid lines
+    c-&gt;yAxis()-&gt;setLabelGap(-1);
+    c-&gt;yAxis()-&gt;setMargin(20);
+    c-&gt;yAxis()-&gt;setLabelAlignment(1);
+
+    // Configure the x-axis labels to be to the left of the vertical grid lines
+    c-&gt;xAxis()-&gt;setLabelAlignment(1);
+
+    //================================================================================
+    // Add data to chart
+    //================================================================================
+
+    // Add line layers using the DataAccelerator. Each layer only supports one accelerated
+    // series, so we add 3 layers for the 3 data series.
+
+    LineLayer* layer = c-&gt;addLineLayer(m_fastData, "mA", 0xff0000, "Alpha");
+    layer-&gt;setLineWidth(2);
+
+    LineLayer* layer2 = c-&gt;addLineLayer(m_fastData, "mB", 0x00cc00, "Beta");
+    layer2-&gt;setLineWidth(2);
+
+    LineLayer* layer3 = c-&gt;addLineLayer(m_fastData, "mC", 0x0000ff, "Gamma");
+    layer3-&gt;setLineWidth(2);
+
+    //================================================================================
+    // Configure axis scale and labelling
+    //================================================================================
+
+    // Sync the x-axis with the view port if the chart is not empty
+    if (m_currentIndex &gt; 0)
+        viewer-&gt;syncLinearAxisWithViewPort("x", c-&gt;xAxis());
+
+    // For the automatic axis labels, set the minimum spacing to 75/40 pixels for the x/y axis.
+    c-&gt;xAxis()-&gt;setTickDensity(75);
+    c-&gt;yAxis()-&gt;setTickDensity(40);
+
+    // Set the auto-scale margin to 0.05, and the zero affinity to 0.2
+    c-&gt;yAxis()-&gt;setAutoScale(0.05, 0.05, 0.2);
+
+    //================================================================================
+    // Output the chart
+    //================================================================================
+
+    // We need to update the track line too. If the mouse is moving on the chart (eg. if 
+    // the user drags the mouse on the chart to scroll it), the track line will be updated
+    // in the MouseMovePlotArea event. Otherwise, we need to update the track line here.
+    if ((!viewer-&gt;isInMouseMoveEvent()) &amp;&amp; viewer-&gt;isMouseOnPlotArea())
+        trackLineLabel(c, viewer-&gt;getPlotAreaMouseX());
+
+    delete viewer-&gt;getChart();
+    viewer-&gt;setChart(c);
+}
+
+//
+// Draw the track line with legend
+//
+void CMegaRealTimeZoomScrollDlg::trackLineLabel(XYChart* c, int mouseX)
+{
+    // Obtain the dynamic layer of the chart
+    DrawArea* d = c-&gt;initDynamicLayer();
+
+    // The plot area object
+    PlotArea* plotArea = c-&gt;getPlotArea();
+
+    // Get the data x-value that is nearest to the mouse, and find its pixel coordinate.
+    double xValue = c-&gt;getNearestXValue(mouseX);
+    int xCoor = c-&gt;getXCoor(xValue);
+    if (xCoor &lt; plotArea-&gt;getLeftX())
+        return;
+
+    // Draw a vertical track line at the x-position
+    d-&gt;vline(plotArea-&gt;getTopY(), plotArea-&gt;getBottomY(), xCoor, 0x888888);
+
+    // Draw a label on the x-axis to show the track line position.
+    std::ostringstream xlabel;
+    xlabel &lt;&lt; "&lt;*font,bgColor=000000*&gt; " &lt;&lt; c-&gt;formatValue(xValue, "{value}") &lt;&lt; " &lt;*/font*&gt;";
+    TTFText* t = d-&gt;text(xlabel.str().c_str(), "Arial Bold", 10);
+
+    // Restrict the x-pixel position of the label to make sure it stays inside the chart image.
+    int xLabelPos = (std::max)(0, (std::min)(xCoor - t-&gt;getWidth() / 2, c-&gt;getWidth() - t-&gt;getWidth()));
+    t-&gt;draw(xLabelPos, plotArea-&gt;getBottomY() + 2, 0xffffff);
+    t-&gt;destroy();
+
+    // Iterate through all layers to draw the data labels
+    for (int i = 0; i &lt; c-&gt;getLayerCount(); ++i) {
+        Layer* layer = c-&gt;getLayerByZ(i);
+
+        // The data array index of the x-value
+        int xIndex = layer-&gt;getXIndexOf(xValue);
+
+        // Iterate through all the data sets in the layer
+        for (int j = 0; j &lt; layer-&gt;getDataSetCount(); ++j)
+        {
+            DataSet* dataSet = layer-&gt;getDataSetByZ(j);
+            const char* dataSetName = dataSet-&gt;getDataName();
+
+            // Get the color, name and position of the data label
+            int color = dataSet-&gt;getDataColor();
+            int yCoor = c-&gt;getYCoor(dataSet-&gt;getPosition(xIndex), dataSet-&gt;getUseYAxis());
+
+            // Draw a track dot with a label next to it for visible data points in the plot area
+            if ((yCoor &gt;= plotArea-&gt;getTopY()) &amp;&amp; (yCoor &lt;= plotArea-&gt;getBottomY()) &amp;&amp; (color !=
+                Chart::Transparent) &amp;&amp; dataSetName &amp;&amp; *dataSetName)
+            {
+                d-&gt;circle(xCoor, yCoor, 4, 4, color, color);
+
+                std::ostringstream label;
+                label &lt;&lt; "&lt;*font,bgColor=" &lt;&lt; std::hex &lt;&lt; color &lt;&lt; "*&gt; "
+                    &lt;&lt; c-&gt;formatValue(dataSet-&gt;getValue(xIndex), "{value|P4}") &lt;&lt; " &lt;*font*&gt;";
+                t = d-&gt;text(label.str().c_str(), "Arial Bold", 10);
+
+                // Draw the label on the right side of the dot if the mouse is on the left side the
+                // chart, and vice versa. This ensures the label will not go outside the chart image.
+                if (xCoor &lt;= (plotArea-&gt;getLeftX() + plotArea-&gt;getRightX()) / 2)
+                    t-&gt;draw(xCoor + 6, yCoor, 0xffffff, Chart::Left);
+                else
+                    t-&gt;draw(xCoor - 6, yCoor, 0xffffff, Chart::Right);
+
+                t-&gt;destroy();
+            }
+        }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+// General utilities
+
+//
+// Load an icon resource into a button
+//
+void CMegaRealTimeZoomScrollDlg::loadButtonIcon(int buttonId, int iconId, int width, int height)
+{
+    // Resize the icon to match the screen DPI for high DPI support
+    HDC screen = ::GetDC(0);
+    double scaleFactor = GetDeviceCaps(screen, LOGPIXELSX) / 96.0;
+    ::ReleaseDC(0, screen);
+    width = (int)(width * scaleFactor + 0.5);
+    height = (int)(height * scaleFactor + 0.5);
+
+    GetDlgItem(buttonId)-&gt;SendMessage(BM_SETIMAGE, IMAGE_ICON, (LPARAM)::LoadImage(
+        AfxGetResourceHandle(), MAKEINTRESOURCE(iconId), IMAGE_ICON, width, height,
+        LR_DEFAULTCOLOR));
+}</code></div></div><br>
+<hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div></body>
+</HTML>

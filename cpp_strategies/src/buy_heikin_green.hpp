@@ -196,43 +196,23 @@ private:
             return false;
         }
         
-        // Extract data for initialization
-        std::vector<double> close_history;
-        std::vector<double> high_history;
-        std::vector<double> low_history;
-        
         // Récupérer toutes les bougies disponibles
         auto candles = candle_manager.get_last_candles(candle_manager.size());
-    
-        // Extraire les données OHLC
-        close_history.reserve(candles.size());
-        high_history.reserve(candles.size());
-        low_history.reserve(candles.size());
-        
-        for (const auto& candle : candles) {
-            close_history.push_back(candle.close);
-            high_history.push_back(candle.high);
-            low_history.push_back(candle.low);
-        }
         
         // Initialize EMAs
-        current_ema_short = ema_short_calculator->initialize_with_history(close_history);
-        current_ema_long = ema_long_calculator->initialize_with_history(close_history);
+        current_ema_short = ema_short_calculator->initialize_with_history(candles);
+        current_ema_long = ema_long_calculator->initialize_with_history(candles);
         
         // Initialize Stochastic
-        auto stoch_values = stochastic_calculator->initialize_with_history(
-            high_history, low_history, close_history
-        );
+        auto stoch_values = stochastic_calculator->initialize_with_history(candles);
         current_stoch_k = stoch_values.first;
         current_stoch_d = stoch_values.second;
         
         // Initialize RSI
-        current_rsi = rsi_calculator->initialize_with_history(close_history);
+        current_rsi = rsi_calculator->initialize_with_history(candles);
         
         // Initialize ATRLOG
-        current_atrlog = atrlog_calculator->initialize_with_history(
-            high_history, low_history, close_history
-        );
+        current_atrlog = atrlog_calculator->initialize_with_history(candles);
         
         return (current_ema_short > 0.0 && 
                 current_ema_long > 0.0 && 
@@ -252,7 +232,7 @@ private:
             !ema_long_calculator->initialized() ||
             !stochastic_calculator->initialized() ||
             !rsi_calculator->initialized() ||
-            ((base_config.use_atr_for_sl || base_config.use_atr_for_tp) && !atrlog_calculator->initialized())) {
+            !atrlog_calculator->initialized()) {
 
             logger->log_general("Initialisation des indicateurs requise", LogLevel::INFO);
             
@@ -266,18 +246,14 @@ private:
         }
         
         // Update EMAs
-        current_ema_short = ema_short_calculator->update(current_candle.close);
-        current_ema_long = ema_long_calculator->update(current_candle.close);
+        current_ema_short = ema_short_calculator->update(current_candle);
+        current_ema_long = ema_long_calculator->update(current_candle);
 
         logger->log_indicator_value(ema_short_name, current_ema_short);
         logger->log_indicator_value(ema_long_name, current_ema_long);
         
         // Update Stochastic
-        auto stoch_values = stochastic_calculator->update(
-            current_candle.high,
-            current_candle.low,
-            current_candle.close
-        );
+        auto stoch_values = stochastic_calculator->update(current_candle);
         current_stoch_k = stoch_values.first;
         current_stoch_d = stoch_values.second;
 
@@ -285,15 +261,11 @@ private:
         logger->log_indicator_value(stoch_d_name, current_stoch_d);
         
         // Update RSI
-        current_rsi = rsi_calculator->update(current_candle.close);
+        current_rsi = rsi_calculator->update(current_candle);
         logger->log_indicator_value(rsi_name, current_rsi);
         
         // Update ATRLOG
-        current_atrlog = atrlog_calculator->update(
-            current_candle.high,
-            current_candle.low,
-            current_candle.close
-        );
+        current_atrlog = atrlog_calculator->update(current_candle);
         logger->log_indicator_value(atrlog_name, current_atrlog);
         
         return true;

@@ -7,7 +7,7 @@
 /**
  * Relative Strength Index (RSI) calculated incrementally
  */
-class RSI : public IncrementalIndicator {
+class RSI : public IncrementalIndicator<double> {
 private:
     int period;
     double current_rsi = 0.0;
@@ -20,18 +20,26 @@ private:
     bool first_avg_calculated = false;
     
 public:
-    RSI(int period);
-    double initialize_with_history(const std::vector<double>& price_history);
-    double update(double price);
-    double get_value() const;
+    RSI(int period, const std::string& name = "")
+    : IncrementalIndicator<double>(name.empty() ? "RSI_" + std::to_string(period) : name),
+    period(period) {}
+
+    double initialize_with_history(const std::vector<BasicCandle>& history) override;
+    double update(const BasicCandle& candle) override;
+    double get_value() const override;
 };
 
-// Implémentation des méthodes...
-inline RSI::RSI(int period) : period(period) {}
-
-inline double RSI::initialize_with_history(const std::vector<double>& price_history) {
-    if (price_history.size() < static_cast<size_t>(period + 1)) {
+inline double RSI::initialize_with_history(const std::vector<BasicCandle>& history) {
+    if (history.size() < static_cast<size_t>(period + 1)) {
         return 0.0;
+    }
+
+    // Initialize close history
+    std::vector<double> price_history;
+    price_history.reserve(history.size());
+
+    for (const auto& candle : history) {
+        price_history.push_back(candle.close);
     }
     
     // Calculate first average gain and loss
@@ -66,15 +74,26 @@ inline double RSI::initialize_with_history(const std::vector<double>& price_hist
     return current_rsi;
 }
 
-inline double RSI::update(double price) {
+inline double RSI::update(const BasicCandle& candle) {
+    double price = candle.close;
+
     if (!is_initialized) {
         close_history.push_back(price);
         
         if (close_history.size() >= static_cast<size_t>(period + 1)) {
-            std::vector<double> history(close_history.begin(), close_history.end());
+            std::vector<BasicCandle> history;
+            history.reserve(close_history.size());
+            
+            for (double close : close_history) {
+                BasicCandle c;
+                c.close = close;
+                history.push_back(c);
+            }
+
             return initialize_with_history(history);
         }
-        
+
+
         if (!close_history.empty() && close_history.size() > 1) {
             prev_close = close_history[close_history.size() - 2];
         }

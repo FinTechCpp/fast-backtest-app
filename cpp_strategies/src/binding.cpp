@@ -38,7 +38,7 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def(py::init<int, int, int>())
         .def("initialize_with_history", &STOCH::initialize_with_history)
         .def("update", &STOCH::update)
-        .def("get_values", &STOCH::get_values)
+        .def("get_value", &STOCH::get_value)
         .def_property_readonly("is_initialized", &STOCH::initialized);
         
     py::class_<ATR>(m, "CppATR")

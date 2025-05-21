@@ -141,35 +141,17 @@ private:
         // Extract data for initialization from candle_manager
         auto candles = candle_manager.get_last_candles(candle_manager.size());
         
-        std::vector<double> close_history;
-        std::vector<double> high_history;
-        std::vector<double> low_history;
-        
-        close_history.reserve(candles.size());
-        high_history.reserve(candles.size());
-        low_history.reserve(candles.size());
-        
-        for (const auto& candle : candles) {
-            close_history.push_back(candle.close);
-            high_history.push_back(candle.high);
-            low_history.push_back(candle.low);
-        }
-        
         // Initialize EMAs
-        current_ema_short = ema_short_calculator->initialize_with_history(close_history);
-        current_ema_long = ema_long_calculator->initialize_with_history(close_history);
+        current_ema_short = ema_short_calculator->initialize_with_history(candles);
+        current_ema_long = ema_long_calculator->initialize_with_history(candles);
         
         // Initialize Stochastic
-        auto stoch_values = stochastic_calculator->initialize_with_history(
-            high_history, low_history, close_history
-        );
+        auto stoch_values = stochastic_calculator->initialize_with_history(candles);
         current_stoch_k = stoch_values.first;
         current_stoch_d = stoch_values.second;
         
         // Initialize ATR
-        current_atr = atr_calculator->initialize_with_history(
-            high_history, low_history, close_history
-        );
+        current_atr = atr_calculator->initialize_with_history(candles);
         
         return (current_ema_short > 0.0 && 
                 current_ema_long > 0.0 && 
@@ -186,7 +168,7 @@ private:
         if (!ema_short_calculator->initialized() ||
             !ema_long_calculator->initialized() ||
             !stochastic_calculator->initialized() ||
-            ((base_config.use_atr_for_sl || base_config.use_atr_for_tp) && !atr_calculator->initialized())) {
+            atr_calculator->initialized()) {
 
             logger->log_general("Initialisation des indicateurs requise", LogLevel::INFO);
             
@@ -200,24 +182,16 @@ private:
         }
         
         // Update EMAs
-        current_ema_short = ema_short_calculator->update(current_candle.close);
-        current_ema_long = ema_long_calculator->update(current_candle.close);
+        current_ema_short = ema_short_calculator->update(current_candle);
+        current_ema_long = ema_long_calculator->update(current_candle);
         
         // Update Stochastic
-        auto stoch_values = stochastic_calculator->update(
-            current_candle.high,
-            current_candle.low,
-            current_candle.close
-        );
+        auto stoch_values = stochastic_calculator->update(current_candle);
         current_stoch_k = stoch_values.first;
         current_stoch_d = stoch_values.second;
         
         // Update ATR
-        current_atr = atr_calculator->update(
-            current_candle.high,
-            current_candle.low,
-            current_candle.close
-        );
+        current_atr = atr_calculator->update(current_candle);
         
         return true;
     }
@@ -290,7 +264,7 @@ public:
         }
         
         // Vérifier si on a besoin de Min/Max mais qu'on n'a pas assez d'historique
-        if (base_config.use_minmax_for_sl && candle_manager.size() < base_config.sl_minmax_periods) {
+        if (base_config.use_minmax_for_sl && candle_manager.size() < static_cast<size_t>(base_config.sl_minmax_periods)) {
             logger->log_general("Pas assez d'historique pour le calcul Min/Max SL", LogLevel::WARNING);
             return false;
         }

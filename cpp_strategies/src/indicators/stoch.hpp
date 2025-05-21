@@ -8,15 +8,13 @@
 /**
  * Stochastic Oscillator calculated incrementally
  */
-class STOCH : public IncrementalIndicator {
+class STOCH : public IncrementalIndicator<std::pair<double, double>> {
 private:
     int fastk_period;
     int slowk_period;
     int slowd_period;
     
-    std::deque<double> high_buffer;
-    std::deque<double> low_buffer;
-    std::deque<double> close_buffer;
+    std::deque<BasicCandle> candle_buffer;
     
     std::deque<double> raw_k_values;
     std::deque<double> k_values;
@@ -26,37 +24,40 @@ private:
     double current_d = 0.0;
     
 public:
-    STOCH(int fastk, int slowk, int slowd);
-    std::pair<double, double> initialize_with_history(
-        const std::vector<double>& high_history,
-        const std::vector<double>& low_history,
-        const std::vector<double>& close_history);
-    std::pair<double, double> update(double high, double low, double close);
-    std::pair<double, double> get_values() const;
+    STOCH(int fastk, int slowk, int slowd, const std::string& name = "")
+    : IncrementalIndicator<std::pair<double, double>>(
+        name.empty() ? "STOCH_" + std::to_string(fastk) + "_" + 
+                    std::to_string(slowk) + "_" + std::to_string(slowd) : name),
+    fastk_period(fastk), slowk_period(slowk), slowd_period(slowd) {}
+
+    std::pair<double, double> initialize_with_history(const std::vector<BasicCandle>& history) override;
+    std::pair<double, double> update(const BasicCandle& candle) override;
+    std::pair<double, double> get_value() const override;
 };
 
-inline STOCH::STOCH(int fastk, int slowk, int slowd) : fastk_period(fastk), slowk_period(slowk), slowd_period(slowd) {}
-
-inline std::pair<double, double> STOCH::initialize_with_history(
-    const std::vector<double>& high_history,
-    const std::vector<double>& low_history,
-    const std::vector<double>& close_history) 
-{
-
-    if (high_history.size() < static_cast<size_t>(fastk_period)) {
+inline std::pair<double, double> STOCH::initialize_with_history(const std::vector<BasicCandle>& history) {
+    if (history.size() < static_cast<size_t>(fastk_period)) {
         return {0.0, 0.0};
     }
 
-    // Initialize buffers
-    high_buffer.assign(high_history.end() - fastk_period, high_history.end());
-    low_buffer.assign(low_history.end() - fastk_period, low_history.end());
-    close_buffer.assign(close_history.end() - fastk_period, close_history.end());
+    // Store candles for processing
+    candle_buffer.clear();
+    for (const auto& candle : history) {
+        candle_buffer.push_back(candle);
+    }
 
     // Calculate initial raw K values
-    for (size_t i = 0; i <= high_history.size() - fastk_period; ++i) {
-        double period_high = *std::max_element(high_history.begin() + i, high_history.begin() + i + fastk_period);
-        double period_low = *std::min_element(low_history.begin() + i, low_history.begin() + i + fastk_period);
-        double close = close_history[i + fastk_period - 1];
+    raw_k_values.clear();
+    for (size_t i = 0; i <= candle_buffer.size() - fastk_period; ++i) {
+        double period_high = candle_buffer[i].high;
+        double period_low = candle_buffer[i].low;
+        
+        for (size_t j = i + 1; j < i + fastk_period; ++j) {
+            period_high = std::max(period_high, candle_buffer[j].high);
+            period_low = std::min(period_low, candle_buffer[j].low);
+        }
+        
+        double close = candle_buffer[i + fastk_period - 1].close;
         
         double raw_k = 0.0;
         if (period_high > period_low) {
@@ -67,6 +68,7 @@ inline std::pair<double, double> STOCH::initialize_with_history(
     }
 
     // Apply K smoothing
+    k_values.clear();
     if (raw_k_values.size() >= static_cast<size_t>(slowk_period)) {
         for (size_t i = 0; i <= raw_k_values.size() - slowk_period; ++i) {
             double sum = 0.0;
@@ -79,6 +81,7 @@ inline std::pair<double, double> STOCH::initialize_with_history(
     }
 
     // Calculate D values
+    d_values.clear();
     if (k_values.size() >= static_cast<size_t>(slowd_period)) {
         for (size_t i = 0; i <= k_values.size() - slowd_period; ++i) {
             double sum = 0.0;
@@ -99,39 +102,38 @@ inline std::pair<double, double> STOCH::initialize_with_history(
     return {current_k, current_d};
 }
 
-inline std::pair<double, double> STOCH::update(double high, double low, double close) {
-    // Add new prices and remove oldest if needed
-    high_buffer.push_back(high);
-    low_buffer.push_back(low);
-    close_buffer.push_back(close);
+inline std::pair<double, double> STOCH::update(const BasicCandle& candle) {
+    // Add new candle to buffer
+    candle_buffer.push_back(candle);
 
-    if (high_buffer.size() > static_cast<size_t>(fastk_period)) {
-        high_buffer.pop_front();
-        low_buffer.pop_front();
-        close_buffer.pop_front();
+    if (candle_buffer.size() > static_cast<size_t>(fastk_period + slowk_period + slowd_period)) {
+        candle_buffer.pop_front();
     }
 
     if (!is_initialized) {
-        if (high_buffer.size() == static_cast<size_t>(fastk_period)) {
-            std::vector<double> high_hist(high_buffer.begin(), high_buffer.end());
-            std::vector<double> low_hist(low_buffer.begin(), low_buffer.end());
-            std::vector<double> close_hist(close_buffer.begin(), close_buffer.end());
-            return initialize_with_history(high_hist, low_hist, close_hist);
+        if (candle_buffer.size() >= static_cast<size_t>(fastk_period + slowk_period + slowd_period)) {
+            std::vector<BasicCandle> history(candle_buffer.begin(), candle_buffer.end());
+            return initialize_with_history(history);
         }
         return {0.0, 0.0};
     }
 
     // Calculate new raw K value
-    double period_high = *std::max_element(high_buffer.begin(), high_buffer.end());
-    double period_low = *std::min_element(low_buffer.begin(), low_buffer.end());
+    double period_high = candle_buffer[candle_buffer.size() - fastk_period].high;
+    double period_low = candle_buffer[candle_buffer.size() - fastk_period].low;
+    
+    for (size_t i = candle_buffer.size() - fastk_period + 1; i < candle_buffer.size(); ++i) {
+        period_high = std::max(period_high, candle_buffer[i].high);
+        period_low = std::min(period_low, candle_buffer[i].low);
+    }
 
     double raw_k = 0.0;
     if (period_high > period_low) {
-        raw_k = 100.0 * ((close - period_low) / (period_high - period_low));
+        raw_k = 100.0 * ((candle.close - period_low) / (period_high - period_low));
     }
 
     raw_k_values.push_back(raw_k);
-    if (raw_k_values.size() > static_cast<size_t>(fastk_period + slowk_period)) {
+    if (raw_k_values.size() > static_cast<size_t>(fastk_period + slowk_period + slowd_period)) {
         raw_k_values.pop_front();
     }
 
@@ -172,6 +174,6 @@ inline std::pair<double, double> STOCH::update(double high, double low, double c
     return {current_k, current_d};
 }
 
-inline std::pair<double, double> STOCH::get_values() const {
+inline std::pair<double, double> STOCH::get_value() const {
     return {current_k, current_d};
 }

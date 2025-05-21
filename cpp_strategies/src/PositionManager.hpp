@@ -23,7 +23,7 @@ public:
         if (config.use_atr_for_sl && current_atr > 0.0) {
             return calculateStopLossWithATR(config, current_atr, logger);
         } 
-        else if (config.use_minmax_for_sl && candle_manager.size() >= config.sl_minmax_periods) {
+        else if (config.use_minmax_for_sl && candle_manager.size() >= static_cast<size_t>(config.sl_minmax_periods)) {
             return calculateStopLossWithMinMax(
                 config, current_price, candle_manager, current_candle, is_long, logger);
         } 

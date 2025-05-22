@@ -297,24 +297,12 @@ void Strategy::execute_short() {
     signal = generate_sell_signal();
 }
 
-// filepath: /home/max/ig-trading-bot/cpp_strategies/src/strategy.cpp
 bool Strategy::execute_filters() {
-    auto all_filters = filters();
-    logger->log_general("Exécution de " + std::to_string(all_filters.size()) + " filtres", LogLevel::DEBUG);
+    for (const auto& filter : filters())
+        if (!filter())
+            return false;  // Stop execution if any filter fails
     
-    bool all_passed = true;
-    
-    for (size_t i = 0; i < all_filters.size(); ++i) {
-        bool filter_passed = all_filters[i]();
-        if (!filter_passed) {
-            logger->log_general("Filtre #" + std::to_string(i) + " échoué", LogLevel::INFO);
-            all_passed = false;
-        } else {
-            logger->log_general("Filtre #" + std::to_string(i) + " passé", LogLevel::DEBUG);
-        }
-    }
-    
-    return all_passed;
+    return true;  // All filters passed
 }
 
 void Strategy::execute() {

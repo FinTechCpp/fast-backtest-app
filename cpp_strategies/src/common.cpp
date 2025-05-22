@@ -62,7 +62,7 @@ std::string DateTime::to_string() const {
 }
 
 void cpp_log(const std::string& message, int level) {
-    if (g_py_log_callback) {
+    if (g_py_log_callback && !message.empty()) {
         g_py_log_callback(message, level);
     }
 }

@@ -57,6 +57,7 @@ private:
         }
         
         std::string formatted = "[" + current_candle_date.to_string() + "] " + message;
+        // std::string formatted = indent(2) + message;
         
         switch (category) {
             case LogCategory::GENERAL:   general_logs.push_back(formatted); break;
@@ -113,7 +114,7 @@ public:
     
     // Logs de filtres
     void log_filter_result(const std::string& name, bool passed, 
-                          int level = LogLevel::DEBUG) {
+                          int level = LogLevel::INFO) {
         std::string status = passed ? "PASSÉ" : "REJETÉ";
         std::string msg = "Filtre " + name + ": " + status;
         add_log(LogCategory::FILTER, msg, level);
@@ -194,28 +195,49 @@ public:
     std::string get_all_logs() const {
         std::ostringstream all_logs;
         
+        // Check if there are any logs before showing the header
+        // Return early if there are no logs to show
+        if (general_logs.empty() && indicator_logs.empty() && filter_logs.empty() && 
+            signal_logs.empty() && execution_logs.empty() && risk_logs.empty() && time_logs.empty()) {
+            return "";
+        }
+        
         all_logs << "=== LOGS POUR " << current_candle_date.to_string() << " ===\n";
         
-        all_logs << "-- GENERAL --\n";
-        for (const auto& log : general_logs) all_logs << log << "\n";
+        if (!general_logs.empty()) {
+            all_logs << "-- GENERAL --\n";
+            for (const auto& log : general_logs) all_logs << log << "\n";
+        }
         
-        all_logs << "-- INDICATEURS --\n";
-        for (const auto& log : indicator_logs) all_logs << log << "\n";
+        if (!indicator_logs.empty()) {
+            all_logs << "-- INDICATEURS --\n";
+            for (const auto& log : indicator_logs) all_logs << log << "\n";
+        }
         
-        all_logs << "-- FILTRES --\n";
-        for (const auto& log : filter_logs) all_logs << log << "\n";
+        if (!filter_logs.empty()) {
+            all_logs << "-- FILTRES --\n";
+            for (const auto& log : filter_logs) all_logs << log << "\n";
+        }
         
-        all_logs << "-- SIGNAUX --\n";
-        for (const auto& log : signal_logs) all_logs << log << "\n";
+        if (!signal_logs.empty()) {
+            all_logs << "-- SIGNAUX --\n";
+            for (const auto& log : signal_logs) all_logs << log << "\n";
+        }
         
-        all_logs << "-- EXÉCUTION --\n";
-        for (const auto& log : execution_logs) all_logs << log << "\n";
+        if (!execution_logs.empty()) {
+            all_logs << "-- EXÉCUTION --\n";
+            for (const auto& log : execution_logs) all_logs << log << "\n";
+        }
         
-        all_logs << "-- RISQUE --\n";
-        for (const auto& log : risk_logs) all_logs << log << "\n";
+        if (!risk_logs.empty()) {
+            all_logs << "-- RISQUE --\n";
+            for (const auto& log : risk_logs) all_logs << log << "\n";
+        }
         
-        all_logs << "-- TEMPS --\n";
-        for (const auto& log : time_logs) all_logs << log << "\n";
+        if (!time_logs.empty()) {
+            all_logs << "-- TEMPS --\n";
+            for (const auto& log : time_logs) all_logs << log << "\n";
+        }
         
         return all_logs.str();
     }

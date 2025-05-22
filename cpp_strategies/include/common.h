@@ -32,10 +32,14 @@ struct DateTime {
 
 // Niveaux de log
 enum LogLevel {
-    DEBUG = 3,
-    WARNING = 2,
-    INFO = 1,
-    ERROR = 0
+    CRITICAL = 50,
+    FATAL = CRITICAL,
+    ERROR = 40,
+    WARNING = 30,
+    WARN = WARNING,
+    INFO = 20,
+    DEBUG = 10,
+    NOTSET = 0
 };
 
 struct BasicCandle {

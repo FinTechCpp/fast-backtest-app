@@ -438,9 +438,7 @@ Signal* Strategy::update_candle(const Candle& candle) {
     logger->log_execution_end();
 
     // Obtenir tous les logs complets et les envoyer dans un seul message de log
-    if (logger->get_verbosity() >= 3) {  // Seulement au niveau DEBUG
-        cpp_log(logger->get_all_logs(), LogLevel::DEBUG);
-    }
+    cpp_log(logger->get_all_logs(), logger->get_verbosity());
     
     return signal.get();
 }

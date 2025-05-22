@@ -31,20 +31,20 @@ logging.basicConfig(
     ]
 )
 
-# Ajouter après la configuration de logging
-
+from cpp_strategies import LogLevel
+# Configurer le callback pour les logs C++
 def cpp_log_callback(message, level):
     """Fonction de callback pour les logs provenant du code C++"""
-    if level == 0:  # DEBUG
-        logging.debug(f"C++: {message}")
-    elif level == 1:  # INFO
-        logging.info(f"C++: {message}")
-    elif level == 2:  # WARNING
-        logging.warning(f"C++: {message}")
-    elif level == 3:  # ERROR
+    if level == LogLevel.ERROR:
         logging.error(f"C++: {message}")
+    elif level == LogLevel.WARNING:
+        logging.warning(f"C++: {message}")
+    elif level == LogLevel.INFO:
+        logging.info(f"C++: {message}")
+    elif level == LogLevel.DEBUG:
+        logging.debug(f"C++: {message}")
     else:
-        logging.info(f"C++: {message}")  # Fallback pour les autres niveaux
+        logging.info(f"C++: {message}")
 
 from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
 from igtrader.Strategies.CrossEMA import CrossEMA, CrossEMAConfig

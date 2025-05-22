@@ -184,7 +184,8 @@ PYBIND11_MODULE(cpp_strategies, m) {
 
     // Expose base Strategy class as abstract
     py::class_<Strategy, std::unique_ptr<Strategy>>(m, "CppStrategy")
-        .def("update_candle", &Strategy::update_candle, py::return_value_policy::reference);
+        .def("update_candle", &Strategy::update_candle, py::return_value_policy::reference)
+        .def("set_log_level", &Strategy::set_log_level);
 
     // Expose BuyHeikinGreen strategy
     py::class_<BuyHeikinGreen, Strategy>(m, "CppBuyHeikinGreen")

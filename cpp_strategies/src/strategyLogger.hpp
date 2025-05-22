@@ -15,10 +15,17 @@ enum class LogCategory {
     TIME
 };
 
+// enum LogLevel {
+//     DEBUG = 0,
+//     WARNING = 1,
+//     INFO = 2,
+//     ERROR = 3
+// };
+
 class StrategyLogger {
 private:
     bool enabled = true;
-    int verbosity_level = 3;  // 0=minimal, 1=standard, 2=verbose, 3=debug
+    LogLevel verbosity_level = LogLevel::DEBUG;
     DateTime current_candle_date;
     
     // Buffer pour stocker les logs par catégorie
@@ -45,7 +52,7 @@ private:
     
     // Ajout d'un log à la catégorie appropriée
     void add_log(LogCategory category, const std::string& message, int level = LogLevel::INFO) {
-        if (!enabled || level > verbosity_level) {
+        if (!enabled || level < verbosity_level) {
             return;
         }
         
@@ -70,8 +77,8 @@ public:
     
     // Configuration du logger
     void set_enabled(bool state) { enabled = state; }
-    void set_verbosity(int level) { verbosity_level = level; }
-    int get_verbosity() const { return verbosity_level; }  // <-- Ajouter cette ligne
+    void set_verbosity(int level) { verbosity_level = static_cast<LogLevel>(level); }
+    LogLevel get_verbosity() const { return verbosity_level; }
     void set_current_candle(const Candle& candle) { current_candle_date = candle.date; }
     void clear() {
         general_logs.clear();
@@ -114,7 +121,7 @@ public:
     
     void log_filter_detail(const std::string& name, const std::string& detail, 
                           int level = LogLevel::DEBUG) {
-        std::string msg = indent(1) + "Détail filtre " + name + ": " + detail;
+        std::string msg = indent(1) + detail;
         add_log(LogCategory::FILTER, msg, level);
     }
 

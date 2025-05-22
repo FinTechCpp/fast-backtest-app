@@ -31,36 +31,22 @@ struct Signal {
 
 class Strategy {
 public:
-    // Constructor
     Strategy(const StrategyBaseConfig& config);
-    
     virtual ~Strategy() = default;
-    
-    // Core strategy methods to implement in derived classes
-    virtual void before() {}
-    virtual void after() {}
-    virtual bool should_long() = 0;
-    virtual bool should_short() { return false; }
-    virtual void go_long() = 0;
-    virtual void go_short() {
-        throw std::runtime_error("Short not implemented");
-    }
-    
-    // Default implementation for filters
-    virtual std::vector<std::function<bool()>> filters() {
-        return {};
-    }
     
     // Main update method
     Signal* update_candle(const Candle& candle);
+
+    void set_log_level(int level) {
+        logger->set_verbosity(level);
+    }
     
-    // Properties
-    double price() const;
 
 protected:
     StrategyBaseConfig base_config;
     CandleManager candle_manager;
-    Candle current_candle;
+    std::unique_ptr<StrategyLogger> logger;
+    Candle current_candle; // TODO : a supprimer faut trouver un moyen de stocker ce qui est important dans le candle autrelment
 
     bool in_position = false;
     double entry_price = 0.0;
@@ -92,7 +78,6 @@ protected:
     // Cache pour le dernier trade
     double last_trade_pnl = 0.0;
 
-    std::unique_ptr<StrategyLogger> logger;
 
     double calculate_trade_risk(bool is_long);
     bool is_trade_risk_acceptable(double risk);
@@ -112,4 +97,20 @@ protected:
     void execute_short();
     bool execute_filters();
     void execute();
+
+    // Core strategy methods to implement in derived classes
+    virtual void before() {}
+    virtual void after() {}
+    virtual bool should_long() = 0;
+    virtual bool should_short() { return false; }
+    virtual void go_long() = 0;
+    virtual void go_short() {
+        throw std::runtime_error("Short not implemented");
+    }
+    virtual std::vector<std::function<bool()>> filters() {
+        return {};
+    }
+
+    // Properties
+    double price() const;
 };

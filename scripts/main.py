@@ -59,26 +59,21 @@ logging.info(f"Niveau de log: {args.log_level}")
 # Configurer le callback pour les logs C++
 def cpp_log_callback(message, level):
     """Fonction de callback pour les logs provenant du code C++"""
-    if level == 0:  # ERROR
+    if level == LogLevel.ERROR:
         logging.error(f"C++: {message}")
-    elif level == 1:  # INFO
-        logging.info(f"C++: {message}")
-    elif level == 2:  # WARNING
+    elif level == LogLevel.WARNING:
         logging.warning(f"C++: {message}")
-    elif level == 3:  # DEBUG
+    elif level == LogLevel.INFO:
+        logging.info(f"C++: {message}")
+    elif level == LogLevel.DEBUG:
         logging.debug(f"C++: {message}")
     else:
-        logging.info(f"C++: {message}")  # Fallback pour les autres niveaux
+        logging.info(f"C++: {message}")
 
-# Essayer d'importer et de configurer le callback C++ si disponible
-try:
-    from cpp_strategies import set_log_callback
-    set_log_callback(cpp_log_callback)
-    logging.info("Callback C++ configuré avec succès")
-except ImportError:
-    logging.warning("Module cpp_strategies non disponible, les logs C++ ne seront pas redirigés")
-except Exception as e:
-    logging.error(f"Erreur lors de la configuration du callback C++: {e}")
+from cpp_strategies import set_log_callback, LogLevel
+set_log_callback(cpp_log_callback)
+logging.info("Callback C++ configuré avec succès")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

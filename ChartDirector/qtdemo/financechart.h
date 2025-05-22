@@ -61,7 +61,6 @@ private:
     QButtonGroup *mouseUsage;
     QLineEdit *m_TickerSymbol;
     QLineEdit *m_CompareWith;
-    QComboBox *m_TimeRange;
     QCheckBox *m_VolumeBars;
     QCheckBox *m_ParabolicSAR;
     QCheckBox *m_LogScale;
@@ -95,7 +94,6 @@ private slots:
     void onCheckBoxChanged();
     void onLineEditChanged();
     void onMouseMovePlotArea(QMouseEvent*);
-    void onTimeRangeChanged(int);
     void onViewPortChanged();
 };
 

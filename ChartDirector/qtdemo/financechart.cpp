@@ -14,21 +14,6 @@
 #include <cfloat>
 
 // Contents of the combo boxes
-static const char* timeRanges[] =
-{
-    "30", "1 month",
-    "60", "2 months",
-    "90", "3 months",
-    "180", "6 months",
-    "360", "1 year",
-    "720", "2 years",
-    "1080", "3 years",
-    "1440", "4 years",
-    "1800", "5 years",
-    "3600", "10 years"
-};
-static int timeRangeCount = (int)(sizeof(timeRanges) / sizeof(*timeRanges));
-
 static const char* chartTypes[] =
 {
     "None", "None",
@@ -120,15 +105,19 @@ void FinanceChartWindow::initComboBox(QComboBox* b, const char* list[], int coun
 
 
 
-FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
+FinanceChartWindow::FinanceChartWindow(QWidget *parent) :
+    QMainWindow(parent)
 {
+    // Set window title
+    setWindowTitle("Finance Chart Demonstration");
+    setMinimumSize(800, 600); // Explicitly set a minimum size
+
     // Set up the window properties
     setWindowTitle("NDX Raw OHLC Data Chart - No Resampling");
-    resize(1900, 900);
     setStyleSheet("QMainWindow {background:#FFFFFF;}");
     
     // Set Parquet file path
-    m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_1min_20220214_to_20250502_TRADES.csv";
+    m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
     
     // Create a central widget and layout
     QWidget *centralWidget = new QWidget(this);
@@ -187,12 +176,6 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
     m_CompareWith = new QLineEdit(leftPanel);
     m_CompareWith->setGeometry(8, yCursor += 16, 140, 20);
 
-    // Time Period
-    (new QLabel("Time Period", leftPanel))->setGeometry(8, yCursor += 28, 140, 18);
-    m_TimeRange = new QComboBox(leftPanel);
-    m_TimeRange->setGeometry(8, yCursor += 16, 140, 20);
-    connect(m_TimeRange, SIGNAL(currentIndexChanged(int)), SLOT(onTimeRangeChanged(int)));
-
     // Value bars/Log Scale/Grid Lines
     m_VolumeBars = new QCheckBox("Show Volume Bars", leftPanel);
     m_ParabolicSAR = new QCheckBox("Parabolic SAR", leftPanel);
@@ -234,17 +217,24 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
 
     // Chart Viewer
     m_ChartViewer = new QChartViewer(rightPanel);
-    m_ChartViewer->move(8, 12);
+    // Remove fixed move/geometry
+    // m_ChartViewer->move(8, 12);
+    // Set Expanding size policy
+    m_ChartViewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // Add to layout
+    QVBoxLayout *rightLayout = new QVBoxLayout(rightPanel);
+    rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(0);
+    rightLayout->addWidget(m_ChartViewer);
     connect(m_ChartViewer, SIGNAL(viewPortChanged()), SLOT(onViewPortChanged()));
     connect(m_ChartViewer, SIGNAL(mouseMovePlotArea(QMouseEvent*)),
         SLOT(onMouseMovePlotArea(QMouseEvent*)));
 
     // Fill the contents of the combo boxes
-    initComboBox(m_TimeRange, timeRanges, timeRangeCount, "90");  // 3 months
     initComboBox(m_ChartType, chartTypes, chartTypeCount, "CandleStick");
-    initComboBox(m_PriceBand, bandTypes, bandTypeCount, "BB");  // Bollinger Band
-    initComboBox(m_AvgType1, avgTypes, avgTypeCount, "SMA");    // Simple Moving Average
-    initComboBox(m_AvgType2, avgTypes, avgTypeCount, "SMA");    // Simple Moving Average
+    initComboBox(m_PriceBand, bandTypes, bandTypeCount, "None");  // Bollinger Band
+    initComboBox(m_AvgType1, avgTypes, avgTypeCount, "None");    // Simple Moving Average
+    initComboBox(m_AvgType2, avgTypes, avgTypeCount, "None");    // Simple Moving Average
     initComboBox(m_Indicator1, indicatorTypes, indicatorTypeCount, "RSI");
     initComboBox(m_Indicator2, indicatorTypes, indicatorTypeCount, "MACD");
 
@@ -252,9 +242,6 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
     const QObjectList &allControls = leftPanel->children();
     for (int i = 0; i < allControls.count(); ++i)
     {
-        if (allControls[i] == m_TimeRange)
-            continue;
-
         QObject *obj;
         if ((obj = qobject_cast<QComboBox *>(allControls[i])) != 0)
             connect(obj, SIGNAL(currentIndexChanged(int)), SLOT(onComboBoxChanged(int)));
@@ -295,14 +282,6 @@ void FinanceChartWindow::onMouseUsageChanged(QAbstractButton *b)
 // View port has changed - update the chart if necessary
 void FinanceChartWindow::onViewPortChanged()
 {
-    drawChart(m_ChartViewer);
-}
-
-// User selects a new time period - update the chart accordingly
-void FinanceChartWindow::onTimeRangeChanged(int)
-{
-    // We need to update the chart because the new time range may affect which chart data
-    // to use (daily, weekly, monthly)
     drawChart(m_ChartViewer);
 }
 
@@ -366,7 +345,7 @@ void FinanceChartWindow::loadData(const QString& ticker, const QString& compare)
         m_tickerKey = ticker;
         
         // Check if there's a CSV file we can use
-        QString csvFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_1min_20220214_to_20250502_TRADES.csv";
+        QString csvFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
 
         bool dataLoaded = false;
         

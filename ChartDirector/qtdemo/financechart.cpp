@@ -118,115 +118,17 @@ void FinanceChartWindow::initComboBox(QComboBox* b, const char* list[], int coun
     }
 }
 
-// Resampler les données selon un intervalle de temps spécifié (en secondes)
-void FinanceChartWindow::resampleData(int intervalSeconds) 
-{
-    if (m_rawPrice.timeStamps.empty() || intervalSeconds <= 0)
-        return;
-        
-    // Si l'intervalle demandé est le même que l'intervalle d'origine (10 secondes),
-    // ne pas faire de resampling
-    double originalInterval = 10; // 10 secondes, intervalle d'origine
-    if (intervalSeconds <= originalInterval)
-        return;
-        
-    // Conteneurs pour les données resamplées
-    std::vector<double> newTimeStamps;
-    std::vector<double> newOpenData;
-    std::vector<double> newHighData;
-    std::vector<double> newLowData;
-    std::vector<double> newCloseData;
-    std::vector<double> newVolData;
-    
-    // Pre-allocation pour optimisation
-    size_t estimatedSize = m_rawPrice.timeStamps.size() / (intervalSeconds / originalInterval);
-    newTimeStamps.reserve(estimatedSize);
-    newOpenData.reserve(estimatedSize);
-    newHighData.reserve(estimatedSize);
-    newLowData.reserve(estimatedSize);
-    newCloseData.reserve(estimatedSize);
-    newVolData.reserve(estimatedSize);
-    
-    // Trouver le timestamp de départ (arrondi à l'intervalle)
-    double firstTime = m_rawPrice.timeStamps[0];
-    double periodStartTime = firstTime - std::fmod(firstTime, intervalSeconds);
-    
-    double currentOpen = Chart::NoValue;
-    double currentHigh = -DBL_MAX;
-    double currentLow = DBL_MAX;
-    double currentClose = Chart::NoValue;
-    double currentVol = 0;
-    bool hasBars = false;
-    
-    // Parcourir toutes les bougies
-    for (size_t i = 0; i < m_rawPrice.timeStamps.size(); ++i) {
-        double currentTime = m_rawPrice.timeStamps[i];
-        
-        // Si on dépasse la période courante, créer une nouvelle bougie
-        if (currentTime >= periodStartTime + intervalSeconds) {
-            // Ajouter la bougie complétée si elle contient des données
-            if (hasBars) {
-                newTimeStamps.push_back(periodStartTime);
-                newOpenData.push_back(currentOpen);
-                newHighData.push_back(currentHigh);
-                newLowData.push_back(currentLow);
-                newCloseData.push_back(currentClose);
-                newVolData.push_back(currentVol);
-            }
-            
-            // Avancer à la prochaine période qui contient le timestamp courant
-            while (currentTime >= periodStartTime + intervalSeconds) {
-                periodStartTime += intervalSeconds;
-            }
-            
-            // Réinitialiser les accumulateurs pour la nouvelle période
-            currentOpen = m_rawPrice.openData[i];
-            currentHigh = m_rawPrice.highData[i];
-            currentLow = m_rawPrice.lowData[i];
-            currentClose = m_rawPrice.closeData[i];
-            currentVol = m_rawPrice.volData[i];
-            hasBars = true;
-        } else {
-            // Mettre à jour les valeurs pour la période courante
-            if (!hasBars) {
-                currentOpen = m_rawPrice.openData[i];
-                hasBars = true;
-            }
-            currentHigh = std::max(currentHigh, m_rawPrice.highData[i]);
-            currentLow = std::min(currentLow, m_rawPrice.lowData[i]);
-            currentClose = m_rawPrice.closeData[i];
-            currentVol += m_rawPrice.volData[i];
-        }
-    }
-    
-    // Ajouter la dernière bougie si nécessaire
-    if (hasBars) {
-        newTimeStamps.push_back(periodStartTime);
-        newOpenData.push_back(currentOpen);
-        newHighData.push_back(currentHigh);
-        newLowData.push_back(currentLow);
-        newCloseData.push_back(currentClose);
-        newVolData.push_back(currentVol);
-    }
-    
-    // Remplacer les données brutes par les données resamplées
-    m_rawPrice.timeStamps = std::move(newTimeStamps);
-    m_rawPrice.openData = std::move(newOpenData);
-    m_rawPrice.highData = std::move(newHighData);
-    m_rawPrice.lowData = std::move(newLowData);
-    m_rawPrice.closeData = std::move(newCloseData);
-    m_rawPrice.volData = std::move(newVolData);
-}
+
 
 FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
 {
     // Set up the window properties
-    setWindowTitle("NDX 10-Second OHLC Data Chart");
+    setWindowTitle("NDX Raw OHLC Data Chart - No Resampling");
     resize(1900, 900);
     setStyleSheet("QMainWindow {background:#FFFFFF;}");
     
     // Set Parquet file path
-    m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
+    m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_1min_20220214_to_20250502_TRADES.csv";
     
     // Create a central widget and layout
     QWidget *centralWidget = new QWidget(this);
@@ -330,23 +232,6 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
     m_Indicator1->setGeometry(8, yCursor += 16, 140, 20);
     m_Indicator2->setGeometry(8, yCursor += 22, 140, 20);
 
-    // Dans le constructeur de FinanceChartWindow, après les autres contrôles :
-    (new QLabel("Time Interval", leftPanel))->setGeometry(8, yCursor += 28, 140, 18);
-    m_TimeInterval = new QComboBox(leftPanel);
-    m_TimeInterval->setGeometry(8, yCursor += 16, 140, 20);
-
-    // Ajouter les options d'intervalle
-    m_TimeInterval->addItem("10 seconds (original)", 10);
-    m_TimeInterval->addItem("1 minute", 60);
-    m_TimeInterval->addItem("5 minutes", 300);
-    m_TimeInterval->addItem("15 minutes", 900);
-    m_TimeInterval->addItem("1 hour", 3600);
-    m_TimeInterval->addItem("4 hours", 14400);
-    m_TimeInterval->addItem("1 day", 86400);
-
-    // Connecter le signal au slot
-    connect(m_TimeInterval, SIGNAL(currentIndexChanged(int)), SLOT(onTimeIntervalChanged(int)));
-
     // Chart Viewer
     m_ChartViewer = new QChartViewer(rightPanel);
     m_ChartViewer->move(8, 12);
@@ -381,7 +266,7 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
 
     // Enable mouse wheel zooming by setting the zoom ratio to 1.1 per wheel event
     // Dans le constructeur, modifiez la configuration du ratio de zoom de la roue de souris
-    m_ChartViewer->setMouseWheelZoomRatio(1.0);  // Ratio plus petit pour un zoom plus précis
+    m_ChartViewer->setMouseWheelZoomRatio(2.0);  // Ratio significatif pour un zoom visible
     
     // Et ajoutez ces configurations supplémentaires après la ligne ci-dessus
     m_ChartViewer->setScrollDirection(Chart::DirectionHorizontalVertical);  // Autorise le défilement dans les deux directions
@@ -399,25 +284,6 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
 FinanceChartWindow::~FinanceChartWindow()
 {
     delete m_ChartViewer->getChart();
-}
-
-// Gérer le changement d'intervalle de temps
-void FinanceChartWindow::onTimeIntervalChanged(int)
-{
-    int intervalSeconds = m_TimeInterval->currentData().toInt();
-    
-    // Charger les données brutes d'origine
-    loadData(m_tickerKey, m_compareKey);
-    
-    // Effectuer le resampling avec le nouvel intervalle
-    resampleData(intervalSeconds);
-    
-    // Mettre à jour la vue
-    m_ChartViewer->setViewPortWidth(1);  // Afficher toutes les données
-    m_ChartViewer->setViewPortLeft(0);
-    
-    // Redessiner le graphique
-    drawChart(m_ChartViewer);
 }
 
 // The Pointer, Zoom In or Zoom out button is pressed
@@ -492,16 +358,16 @@ void FinanceChartWindow::onLineEditChanged()
     drawChart(m_ChartViewer);
 }
 
-// Modifiez loadData pour stocker les données d'origine avant tout resampling
+// Load data from file only - no sample data generation
 void FinanceChartWindow::loadData(const QString& ticker, const QString& compare)
 {
     if (m_tickerKey != ticker)
     {
         m_tickerKey = ticker;
         
-        // First check if there's a CSV file we can use
-        QString csvFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
-        
+        // Check if there's a CSV file we can use
+        QString csvFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_1min_20220214_to_20250502_TRADES.csv";
+
         bool dataLoaded = false;
         
         // Try to load data from CSV file
@@ -509,70 +375,35 @@ void FinanceChartWindow::loadData(const QString& ticker, const QString& compare)
             dataLoaded = loadCSVData(csvFilePath);
         }
         
-        // If CSV loading failed or file doesn't exist, use sample data
+        // If CSV loading failed or file doesn't exist, log error and return
         if (!dataLoaded) {
-            qDebug() << "Could not load real data, generating sample data";
-            
-            // Generate sample data for testing
-            const int sampleSize = 1000;
-            double baseTime = QDateTime::currentDateTime().addDays(-30).toSecsSinceEpoch();
-            double timeStep = 10; // 10 seconds
-            
-            m_rawPrice.timeStamps.resize(sampleSize);
-            m_rawPrice.openData.resize(sampleSize);
-            m_rawPrice.highData.resize(sampleSize);
-            m_rawPrice.lowData.resize(sampleSize);
-            m_rawPrice.closeData.resize(sampleSize);
-            m_rawPrice.volData.resize(sampleSize);
-            
-            double lastClose = 14000.0;
-            for (int i = 0; i < sampleSize; ++i) {
-                m_rawPrice.timeStamps[i] = baseTime + i * timeStep;
-                
-                // Generate random price movements
-                double change = (rand() % 100 - 50) * 0.1;
-                double open = lastClose;
-                double close = open + change;
-                double high = std::max(open, close) + (rand() % 20) * 0.1;
-                double low = std::min(open, close) - (rand() % 20) * 0.1;
-                
-                m_rawPrice.openData[i] = open;
-                m_rawPrice.highData[i] = high;
-                m_rawPrice.lowData[i] = low;
-                m_rawPrice.closeData[i] = close;
-                m_rawPrice.volData[i] = (rand() % 1000) * 100.0; // Random volume
-                
-                lastClose = close;
-            }
-            
-            dataLoaded = true;
+            qDebug() << "ERROR: Could not load data from file" << csvFilePath;
+            // Clear all data to ensure nothing is displayed
+            m_rawPrice.timeStamps.clear();
+            m_rawPrice.openData.clear();
+            m_rawPrice.highData.clear();
+            m_rawPrice.lowData.clear();
+            m_rawPrice.closeData.clear();
+            m_rawPrice.volData.clear();
+            return; // Exit early, no data to show
         }
         
-        if (dataLoaded) {
-            // Set up the viewport to show the entire data range
-            m_ChartViewer->setFullRange("x", 0, (int)m_rawPrice.timeStamps.size() - 1);
-            
-            // Configure zoom/scroll properties
-            m_ChartViewer->setZoomInWidthLimit(10.0 / m_rawPrice.timeStamps.size());  // Limite de zoom minimal
-            m_ChartViewer->setMouseWheelZoomRatio(1.05);  // Ratio plus petit pour un zoom plus fluide
-            
-            // Start by showing the last 100 data points
-            int totalPoints = (int)m_rawPrice.timeStamps.size();
-            if (totalPoints > 100) {
-                double visiblePortion = 100.0 / totalPoints;
-                m_ChartViewer->setViewPortWidth(visiblePortion);
-                m_ChartViewer->setViewPortLeft(1.0 - visiblePortion);
-            } else {
-                m_ChartViewer->setViewPortWidth(1.0);
-                m_ChartViewer->setViewPortLeft(0);
-            }
-        }
+        // Set up the viewport to show the entire data range
+        m_ChartViewer->setFullRange("x", 0, (int)m_rawPrice.timeStamps.size() - 1);
         
-        // Après avoir chargé les données, si l'intervalle sélectionné est différent de l'original,
-        // effectuer le resampling
-        int intervalSeconds = m_TimeInterval->currentData().toInt();
-        if (intervalSeconds > 10) { // 10 secondes est l'intervalle d'origine
-            resampleData(intervalSeconds);
+        // Configure zoom/scroll properties
+        m_ChartViewer->setZoomInWidthLimit(10.0 / m_rawPrice.timeStamps.size());  // Limite de zoom minimal
+        // Ne pas écraser la valeur du ratio de zoom déjà configurée dans le constructeur
+        
+        // Start by showing the last 100 data points
+        int totalPoints = (int)m_rawPrice.timeStamps.size();
+        if (totalPoints > 100) {
+            double visiblePortion = 100.0 / totalPoints;
+            m_ChartViewer->setViewPortWidth(visiblePortion);
+            m_ChartViewer->setViewPortLeft(1.0 - visiblePortion);
+        } else {
+            m_ChartViewer->setViewPortWidth(1.0);
+            m_ChartViewer->setViewPortLeft(0);
         }
     }
     
@@ -686,7 +517,7 @@ static XYChart* addIndicator(FinanceChart *m, QString indicator, int height)
 // Draw the chart according to user selections
 void FinanceChartWindow::drawChart(QChartViewer *viewer)
 {
-    // Use raw data directly - no resampling
+    // Always use raw data without any resampling
     PriceData* p = &m_rawPrice;
     
     // Get the start and end indices based on the view port
@@ -738,13 +569,13 @@ void FinanceChartWindow::drawChart(QChartViewer *viewer)
     
     // Configure chart appearance for 10-second data
     // Set specific date/time formats for 10-second data
-    c->setDateLabelFormat("yyyy", "<*font=bold*>{value|mmm dd}", "{value|mmm}",
-                         "<*font=bold*>{value|dd hh:nn}", "{value|hh:nn}",
-                         "<*font=bold*>{value|hh:nn:ss}", "{value|nn:ss}");
+    c->setDateLabelFormat("yyyy", "<*font=bold*>{value|yyyy MMM d}", "{value|MMM d}",
+                         "<*font=bold*>{value|d h:nn}", "{value|h:nn}",
+                         "<*font=bold*>{value|h:nn:ss}", "{value|nn:ss}");
                          
     // Set the tool tip format to show seconds
-    c->setToolTipDateFormat("[{xLabel|mmm dd, yyyy}]", "[{xLabel|mmm dd, yyyy}]", 
-                           "[{xLabel|mmm dd, yyyy hh:nn:ss}]");
+    c->setToolTipDateFormat("[{xLabel|yyyy MMM d}]", "[{xLabel|yyyy MMM d}]", 
+                           "[{xLabel|yyyy MMM d h:nn:ss}]");
     
     // Configure chart appearance
     if (m_LogScale->isChecked())
@@ -959,11 +790,13 @@ void FinanceChartWindow::trackFinance(MultiChart* m, int mouseX)
         PlotArea *plotArea = c->getPlotArea();
         int plotAreaLeftX = plotArea->getLeftX() + c->getAbsOffsetX();
         int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
+        int plotAreaWidth = plotArea->getWidth();
+        int plotAreaHeight = plotArea->getHeight();
         
         // Create the legend text
         std::ostringstream legendText;
-        legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
-            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "mmm dd, yyyy")
+        legendText << "<*block,valign=top,maxWidth=" << (plotAreaWidth - 5)
+            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "yyyy MMM d h:nn:ss")
             << "]<*/font*>" << ohlcLegend.str();
         for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
             legendText << "      " << legendEntries[i];
@@ -971,12 +804,26 @@ void FinanceChartWindow::trackFinance(MultiChart* m, int mouseX)
         legendText << "<*/*>";
         
         // Draw a vertical track line at the x-position
-        d->vline(plotAreaTopY, plotAreaTopY + plotArea->getHeight(), c->getXCoor(xValue) +
-            c->getAbsOffsetX(), d->dashLineColor(0x000000, 0x0101));
+        int xCoor = c->getXCoor(xValue) + c->getAbsOffsetX();
+        d->vline(plotAreaTopY, plotAreaTopY + plotAreaHeight, xCoor, d->dashLineColor(0x000000, 0x0101));
         
-        // Display the legend on the top of the plot area
+        // Display the date at the bottom of the plot area
+        std::ostringstream dateText;
+        dateText << "<*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "yyyy MMM d h:nn:ss") << "]<*/font*>";
+        TTFText *dateLabel = d->text(dateText.str().c_str(), "Arial", 8);
+        dateLabel->draw(xCoor, plotAreaTopY + plotAreaHeight + 2, 0x000000, Chart::Top);
+        dateLabel->destroy();
+        
+        // Position the tooltip based on mouse position to avoid overlap
+        // If mouse is on right half of chart, put tooltip on left side
         TTFText *t = d->text(legendText.str().c_str(), "Arial", 8);
-        t->draw(plotAreaLeftX + 5, plotAreaTopY + 3, 0x000000, Chart::TopLeft);
+        if (mouseX > plotAreaLeftX + plotAreaWidth / 2) {
+            // Mouse is on right side, put tooltip on left
+            t->draw(plotAreaLeftX + 5, plotAreaTopY + 25, 0x000000, Chart::TopLeft);
+        } else {
+            // Mouse is on left side, put tooltip on right
+            t->draw(plotAreaLeftX + plotAreaWidth - 5, plotAreaTopY + 25, 0x000000, Chart::TopRight);
+        }
         t->destroy();
     }
 }
@@ -1049,18 +896,32 @@ bool FinanceChartWindow::loadCSVData(const QString& filePath)
         QString line = in.readLine();
         QStringList parts = line.split(',');
         
-        if (parts.size() >= 5) {  // At least date, open, high, low, close
+        if (parts.size() >= 5)  // At least date, open, high, low, close
+            {
             // Parse date time - expected format: "2022-02-14 14:30:10+00:00"
             QString dateStr = parts[0];
-            QDateTime dt = QDateTime::fromString(dateStr, "yyyy-MM-dd hh:mm:ss+00:00");
+            QDateTime dt = QDateTime::fromString(dateStr, "yyyy-MM-dd HH:mm:ss+00:00");
             if (!dt.isValid()) {
                 // Try an alternative format without timezone
-                dt = QDateTime::fromString(dateStr.split('+')[0].trimmed(), "yyyy-MM-dd hh:mm:ss");
+                dt = QDateTime::fromString(dateStr.split('+')[0].trimmed(), "yyyy-MM-dd HH:mm:ss");
+            }
+            
+            // Si toujours invalide, essayez d'autres formats possibles
+            if (!dt.isValid()) {
+                dt = QDateTime::fromString(dateStr.split('+')[0].trimmed(), "yyyy-MM-dd HH:mm");
             }
             
             if (dt.isValid()) {
-                // Convert to chartTime (seconds since Jan 1, 1970)
-                double chartTime = dt.toSecsSinceEpoch();
+                // Convert to Unix timestamp (seconds since Jan 1, 1970)
+                qint64 unixTime = dt.toSecsSinceEpoch();
+                
+                // Convert Unix timestamp to ChartDirector time format
+                double chartTime = Chart::chartTime2(unixTime);
+                
+                // Debug: print the date and its chartTime
+                qDebug() << "Date from CSV:" << dt.toString("yyyy-MM-dd HH:mm:ss") 
+                         << "Unix time:" << unixTime 
+                         << "ChartDir time:" << chartTime;
                 
                 m_rawPrice.timeStamps.push_back(chartTime);
                 m_rawPrice.openData.push_back(parts[1].toDouble());

@@ -43,7 +43,7 @@ private:
         std::vector<double> compareData;
     };
 
-    // In this example, we use raw 10-second data without resampling
+    // In this example, we use raw data without any resampling
     PriceData m_rawPrice;
 
     // Add method to load data from CSV or convert Parquet to CSV first
@@ -75,7 +75,6 @@ private:
     QComboBox *m_Indicator1;
     QComboBox *m_Indicator2;
     QChartViewer *m_ChartViewer;
-    QComboBox *m_TimeInterval;  // Sélecteur d'intervalle de temps
 
     // Chart drawing functions
     void drawChart(QChartViewer *viewer);
@@ -88,8 +87,7 @@ private:
     DoubleArray vectorToArray(const std::vector<double>& v, int startIndex = 0, int length = -1);
     std::vector<double> arrayToVector(DoubleArray a);
 
-    // Method to resample data
-    void resampleData(int intervalSeconds);
+
 
 private slots:
     void onMouseUsageChanged(QAbstractButton *b);
@@ -99,7 +97,6 @@ private slots:
     void onMouseMovePlotArea(QMouseEvent*);
     void onTimeRangeChanged(int);
     void onViewPortChanged();
-    void onTimeIntervalChanged(int);
 };
 
 #endif // FINANCECHART_H

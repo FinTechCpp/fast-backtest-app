@@ -227,7 +227,7 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) : QMainWindow(parent)
     
     // Set Parquet file path
     m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
-
+    
     // Create a central widget and layout
     QWidget *centralWidget = new QWidget(this);
     setCentralWidget(centralWidget);

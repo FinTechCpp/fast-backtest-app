@@ -2,7 +2,6 @@ venv
 .env
 __pycache__/
 *.pyc
-*.csv
 .bash_history
 .cache/conda/notices/notices.cache
 .cache/pip/*

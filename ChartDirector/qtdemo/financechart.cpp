@@ -114,11 +114,14 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) :
     setMinimumSize(800, 600); // Explicitly set a minimum size
 
     // Set up the window properties
-    setWindowTitle("NDX Raw OHLC Data Chart - No Resampling");
+    setWindowTitle("NDX Raw OHLC Data Chart - Dynamic Resampling");
     setStyleSheet("QMainWindow {background:#FFFFFF;}");
     
+    // Initialize resampling configuration
+    initializeResamplingConfig();
+    
     // Set Parquet file path
-    m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_1min_20220214_to_20250502_TRADES.csv";
+    m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
     
     // Create a central widget and layout
     QWidget *centralWidget = new QWidget(this);
@@ -254,7 +257,7 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) :
 
     // Enable mouse wheel zooming by setting the zoom ratio to 1.1 per wheel event
     // Dans le constructeur, modifiez la configuration du ratio de zoom de la roue de souris
-    m_ChartViewer->setMouseWheelZoomRatio(2.0);  // Ratio significatif pour un zoom visible
+    m_ChartViewer->setMouseWheelZoomRatio(1.1);  // Ratio significatif pour un zoom visible
     
     // Et ajoutez ces configurations supplémentaires après la ligne ci-dessus
     m_ChartViewer->setScrollDirection(Chart::DirectionHorizontalVertical);  // Autorise le défilement dans les deux directions
@@ -346,7 +349,7 @@ void FinanceChartWindow::loadData(const QString& ticker, const QString& compare)
         m_tickerKey = ticker;
         
         // Check if there's a CSV file we can use
-        QString csvFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_1min_20220214_to_20250502_TRADES.csv";
+        QString csvFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
 
         bool dataLoaded = false;
         
@@ -497,52 +500,83 @@ static XYChart* addIndicator(FinanceChart *m, QString indicator, int height)
 // Draw the chart according to user selections
 void FinanceChartWindow::drawChart(QChartViewer *viewer)
 {
-    // Always use raw data without any resampling
-    PriceData* p = &m_rawPrice;
-    
-    // Get the start and end indices based on the view port
-    int startIndex = (int)floor(viewer->getValueAtViewPort("x", viewer->getViewPortLeft()));
-    int endIndex = (int)ceil(viewer->getValueAtViewPort("x", viewer->getViewPortLeft() + 
+    // Get initial viewport bounds using raw data indices
+    int rawStartIndex = (int)floor(viewer->getValueAtViewPort("x", viewer->getViewPortLeft()));
+    int rawEndIndex = (int)ceil(viewer->getValueAtViewPort("x", viewer->getViewPortLeft() + 
         viewer->getViewPortWidth())) - 1;
     
-    // Ensure the indices are within bounds
-    int noOfPoints = (int)p->timeStamps.size();
-    if (startIndex < 0)
-        startIndex = 0;
-    if (startIndex > noOfPoints - 1)
-        startIndex = noOfPoints - 1;
-    if (endIndex < 0)
-        endIndex = 0;
-    if (endIndex > noOfPoints - 1)
-        endIndex = noOfPoints - 1;
+    // Ensure the raw indices are within bounds
+    int totalRawPoints = (int)m_rawPrice.timeStamps.size();
+    if (rawStartIndex < 0) rawStartIndex = 0;
+    if (rawStartIndex > totalRawPoints - 1) rawStartIndex = totalRawPoints - 1;
+    if (rawEndIndex < 0) rawEndIndex = 0;
+    if (rawEndIndex > totalRawPoints - 1) rawEndIndex = totalRawPoints - 1;
+    if (rawEndIndex < rawStartIndex) rawEndIndex = rawStartIndex;
 
-    // Ajoutez cette vérification pour assurer un nombre minimal de points visibles
-    if (endIndex - startIndex < 3 && noOfPoints > 3) {
-        int midPoint = (startIndex + endIndex) / 2;
-        startIndex = std::max(0, midPoint - 2);
-        endIndex = std::min(noOfPoints - 1, midPoint + 2);
+    // Select optimal dataset based on viewport and zoom level
+    int actualStartIndex, actualEndIndex;
+    PriceData* p = selectOptimalDataset(rawStartIndex, rawEndIndex, actualStartIndex, actualEndIndex);
+    
+    // Ensure the actual indices are within bounds of the selected dataset
+    int noOfPoints = (int)p->timeStamps.size();
+    if (actualStartIndex < 0) actualStartIndex = 0;
+    if (actualStartIndex > noOfPoints - 1) actualStartIndex = noOfPoints - 1;
+    if (actualEndIndex < 0) actualEndIndex = 0;
+    if (actualEndIndex > noOfPoints - 1) actualEndIndex = noOfPoints - 1;
+
+    // Ensure minimum number of visible points
+    if (actualEndIndex - actualStartIndex < 3 && noOfPoints > 3) {
+        int midPoint = (actualStartIndex + actualEndIndex) / 2;
+        actualStartIndex = std::max(0, midPoint - 2);
+        actualEndIndex = std::min(noOfPoints - 1, midPoint + 2);
     }
     
-    if (endIndex < startIndex)
-        endIndex = startIndex;
+    if (actualEndIndex < actualStartIndex)
+        actualEndIndex = actualStartIndex;
     
-    // Extract the data to be viewed
-    int noOfPointsToDisplay = endIndex - startIndex + 1;
-    DoubleArray timeStamps = vectorToArray(p->timeStamps, startIndex, noOfPointsToDisplay);
-    DoubleArray highData = vectorToArray(p->highData, startIndex, noOfPointsToDisplay);
-    DoubleArray lowData = vectorToArray(p->lowData, startIndex, noOfPointsToDisplay);
-    DoubleArray openData = vectorToArray(p->openData, startIndex, noOfPointsToDisplay);
-    DoubleArray closeData = vectorToArray(p->closeData, startIndex, noOfPointsToDisplay);
-    DoubleArray volData = vectorToArray(p->volData, startIndex, noOfPointsToDisplay);
+    // Extract the data to be viewed using the optimal dataset
+    int noOfPointsToDisplay = actualEndIndex - actualStartIndex + 1;
+    DoubleArray timeStamps = vectorToArray(p->timeStamps, actualStartIndex, noOfPointsToDisplay);
+    DoubleArray highData = vectorToArray(p->highData, actualStartIndex, noOfPointsToDisplay);
+    DoubleArray lowData = vectorToArray(p->lowData, actualStartIndex, noOfPointsToDisplay);
+    DoubleArray openData = vectorToArray(p->openData, actualStartIndex, noOfPointsToDisplay);
+    DoubleArray closeData = vectorToArray(p->closeData, actualStartIndex, noOfPointsToDisplay);
+    DoubleArray volData = vectorToArray(p->volData, actualStartIndex, noOfPointsToDisplay);
     DoubleArray compareData;
     if (p->compareData.size() > 0)
-        compareData = vectorToArray(p->compareData, startIndex, noOfPointsToDisplay);
+        compareData = vectorToArray(p->compareData, actualStartIndex, noOfPointsToDisplay);
     
     // Create a FinanceChart object of width n pixels
     FinanceChart *c = new FinanceChart(2000);
     
-    // Set the chart title
-    c->addTitle(m_tickerKey.toStdString().c_str());
+    // Set the chart title with resampling information
+    std::string title = m_tickerKey.toStdString();
+    if (p != &m_rawPrice) {
+        // Add resampling indicator to title
+        int aggregationFactor = 1;
+        double originalInterval = m_resamplingConfig.originalIntervalSeconds;
+        double resampledInterval = originalInterval;
+        for (const auto& cache : m_resampledCache) {
+            if (cache.isValid && &cache.data == p) {
+                aggregationFactor = cache.aggregationFactor;
+                resampledInterval = cache.intervalSeconds;
+                break;
+            }
+        }
+        // Format interval display
+        std::string intervalStr;
+        if (resampledInterval >= 3600) {
+            intervalStr = std::to_string((int)(resampledInterval / 3600)) + "h";
+        } else if (resampledInterval >= 60) {
+            intervalStr = std::to_string((int)(resampledInterval / 60)) + "m";
+        } else {
+            intervalStr = std::to_string((int)resampledInterval) + "s";
+        }
+        title += " [" + intervalStr + " aggregated - " + std::to_string(noOfPointsToDisplay) + " points]";
+    } else {
+        title += " [Original data - " + std::to_string(noOfPointsToDisplay) + " points]";
+    }
+    c->addTitle(title.c_str());
     
     // Set the data into the finance chart object
     c->setData(timeStamps, highData, lowData, openData, closeData, volData, 0);
@@ -976,4 +1010,247 @@ void FinanceChartWindow::calculateHeikinAshi(const DoubleArray &open, const Doub
         ha_high[i] = std::max(high[i], std::max(ha_open[i], ha_close[i]));
         ha_low[i] = std::min(low[i], std::min(ha_open[i], ha_close[i]));
     }
+}
+
+// Initialize resampling configuration
+void FinanceChartWindow::initializeResamplingConfig()
+{
+    m_resamplingConfig.originalIntervalSeconds = 0; // Will be auto-detected
+    m_resamplingConfig.maxPointsForOriginalData = 5000; // Seuil pour déclencher le resampling
+    m_resamplingConfig.targetPointsWhenResampled = 2000; // Nombre cible de points après resampling
+    m_resamplingConfig.autoDetectOriginalInterval = true;
+}
+
+// Detect the original time interval of the data
+double FinanceChartWindow::detectOriginalTimeInterval(const std::vector<double>& timestamps)
+{
+    if (timestamps.size() < 2) {
+        return 60.0; // Default to 1 minute if we can't detect
+    }
+    
+    // Calculate intervals for the first 100 points (or all if less)
+    std::vector<double> intervals;
+    int sampleSize = std::min(100, (int)timestamps.size() - 1);
+    
+    for (int i = 0; i < sampleSize; ++i) {
+        double interval = timestamps[i + 1] - timestamps[i];
+        intervals.push_back(interval);
+    }
+    
+    // Sort intervals and find the most common one
+    std::sort(intervals.begin(), intervals.end());
+    
+    // Find the median interval as the most likely original interval
+    size_t medianIndex = intervals.size() / 2;
+    double detectedInterval = intervals[medianIndex];
+    
+    // Convert from ChartDirector time to seconds
+    // ChartDirector time is in days, so multiply by 86400 to get seconds
+    return detectedInterval * 86400.0;
+}
+
+// Determine if resampling should be used based on current view
+bool FinanceChartWindow::shouldUseResampling(int startIndex, int endIndex, int totalPoints) const
+{
+    int pointsToDisplay = endIndex - startIndex + 1;
+    return pointsToDisplay > m_resamplingConfig.maxPointsForOriginalData;
+}
+
+// Calculate optimal aggregation factor based on data points and viewport
+int FinanceChartWindow::calculateOptimalAggregationFactor(int pointsToDisplay, double viewPortWidth) const
+{
+    if (pointsToDisplay <= m_resamplingConfig.targetPointsWhenResampled) {
+        return 1; // No aggregation needed
+    }
+    
+    // Calculate the minimum aggregation factor needed
+    int minFactor = (int)std::ceil((double)pointsToDisplay / m_resamplingConfig.targetPointsWhenResampled);
+    
+    // Round to sensible aggregation factors based on the original interval
+    double originalInterval = m_resamplingConfig.originalIntervalSeconds;
+    
+    // Common time intervals for aggregation
+    std::vector<int> commonFactors;
+    if (originalInterval <= 1) { // Sub-second data
+        commonFactors = {2, 5, 10, 15, 30, 60, 120, 300, 600, 1800, 3600};
+    } else if (originalInterval <= 10) { // Seconds
+        commonFactors = {2, 3, 5, 6, 10, 12, 15, 30, 60, 120, 180, 360};
+    } else if (originalInterval <= 60) { // Up to minute
+        commonFactors = {2, 3, 5, 10, 15, 30, 60, 120};
+    } else { // Minutes or more
+        commonFactors = {2, 3, 5, 10, 15, 30, 60};
+    }
+    
+    // Find the smallest common factor that meets our needs
+    for (int factor : commonFactors) {
+        if (factor >= minFactor) {
+            return factor;
+        }
+    }
+    
+    // If no common factor works, use the minimum factor
+    return minFactor;
+}
+
+// Generate resampled data with the given aggregation factor
+void FinanceChartWindow::generateResampledData(int aggregationFactor)
+{
+    // Check if we already have this aggregation factor cached
+    for (auto& cached : m_resampledCache) {
+        if (cached.aggregationFactor == aggregationFactor && cached.isValid) {
+            return; // Already cached
+        }
+    }
+    
+    // Remove old cache entry for this factor if it exists
+    m_resampledCache.erase(
+        std::remove_if(m_resampledCache.begin(), m_resampledCache.end(),
+            [aggregationFactor](const ResampledData& item) {
+                return item.aggregationFactor == aggregationFactor;
+            }),
+        m_resampledCache.end()
+    );
+    
+    // Create new resampled data
+    ResampledData newData;
+    newData.aggregationFactor = aggregationFactor;
+    newData.intervalSeconds = m_resamplingConfig.originalIntervalSeconds * aggregationFactor;
+    newData.isValid = true;
+    
+    // Aggregate the raw data
+    aggregateOHLCData(m_rawPrice, newData.data, aggregationFactor);
+    
+    // Add to cache
+    m_resampledCache.push_back(newData);
+}
+
+// Aggregate OHLC data with the given factor
+void FinanceChartWindow::aggregateOHLCData(const PriceData& source, PriceData& target, int aggregationFactor)
+{
+    if (source.timeStamps.empty() || aggregationFactor <= 1) {
+        target = source;
+        return;
+    }
+    
+    int sourceSize = source.timeStamps.size();
+    int targetSize = (sourceSize + aggregationFactor - 1) / aggregationFactor;
+    
+    target.timeStamps.clear();
+    target.openData.clear();
+    target.highData.clear();
+    target.lowData.clear();
+    target.closeData.clear();
+    target.volData.clear();
+    target.compareData.clear();
+    
+    target.timeStamps.reserve(targetSize);
+    target.openData.reserve(targetSize);
+    target.highData.reserve(targetSize);
+    target.lowData.reserve(targetSize);
+    target.closeData.reserve(targetSize);
+    target.volData.reserve(targetSize);
+    
+    for (int i = 0; i < sourceSize; i += aggregationFactor) {
+        int endIdx = std::min(i + aggregationFactor, sourceSize);
+        
+        // Timestamp: use the timestamp of the first point in the group
+        target.timeStamps.push_back(source.timeStamps[i]);
+        
+        // Open: first open in the group
+        target.openData.push_back(source.openData[i]);
+        
+        // Close: last close in the group
+        target.closeData.push_back(source.closeData[endIdx - 1]);
+        
+        // High: maximum high in the group
+        double maxHigh = source.highData[i];
+        for (int j = i + 1; j < endIdx; ++j) {
+            maxHigh = std::max(maxHigh, source.highData[j]);
+        }
+        target.highData.push_back(maxHigh);
+        
+        // Low: minimum low in the group
+        double minLow = source.lowData[i];
+        for (int j = i + 1; j < endIdx; ++j) {
+            minLow = std::min(minLow, source.lowData[j]);
+        }
+        target.lowData.push_back(minLow);
+        
+        // Volume: sum of volumes in the group
+        double totalVol = 0;
+        for (int j = i; j < endIdx; ++j) {
+            totalVol += source.volData[j];
+        }
+        target.volData.push_back(totalVol);
+    }
+    
+    // Handle compare data if it exists
+    if (!source.compareData.empty()) {
+        target.compareData.reserve(targetSize);
+        for (int i = 0; i < sourceSize; i += aggregationFactor) {
+            int endIdx = std::min(i + aggregationFactor, sourceSize);
+            target.compareData.push_back(source.compareData[endIdx - 1]);
+        }
+    }
+}
+
+// Select the optimal dataset based on the current view
+FinanceChartWindow::PriceData* FinanceChartWindow::selectOptimalDataset(int startIndex, int endIndex, int& outStartIndex, int& outEndIndex)
+{
+    int pointsToDisplay = endIndex - startIndex + 1;
+    int totalPoints = m_rawPrice.timeStamps.size();
+    
+    // Auto-detect original interval if not set
+    if (m_resamplingConfig.autoDetectOriginalInterval && m_resamplingConfig.originalIntervalSeconds == 0) {
+        m_resamplingConfig.originalIntervalSeconds = detectOriginalTimeInterval(m_rawPrice.timeStamps);
+        qDebug() << "Auto-detected original interval:" << m_resamplingConfig.originalIntervalSeconds << "seconds";
+    }
+    
+    // Check if resampling is needed
+    if (!shouldUseResampling(startIndex, endIndex, totalPoints)) {
+        outStartIndex = startIndex;
+        outEndIndex = endIndex;
+        return &m_rawPrice; // Use original data
+    }
+    
+    // Calculate optimal aggregation factor
+    double viewPortWidth = m_ChartViewer->getViewPortWidth();
+    int aggregationFactor = calculateOptimalAggregationFactor(pointsToDisplay, viewPortWidth);
+    
+    // Generate resampled data if needed
+    generateResampledData(aggregationFactor);
+    
+    // Find the cached resampled data
+    for (auto& cached : m_resampledCache) {
+        if (cached.aggregationFactor == aggregationFactor && cached.isValid) {
+            // Adjust indices for the resampled data
+            outStartIndex = startIndex / aggregationFactor;
+            outEndIndex = endIndex / aggregationFactor;
+            
+            // Ensure indices are within bounds
+            int resampledSize = cached.data.timeStamps.size();
+            outStartIndex = std::max(0, std::min(outStartIndex, resampledSize - 1));
+            outEndIndex = std::max(outStartIndex, std::min(outEndIndex, resampledSize - 1));
+            
+            qDebug() << "Using resampled data with factor" << aggregationFactor 
+                     << "- Points reduced from" << pointsToDisplay 
+                     << "to" << (outEndIndex - outStartIndex + 1);
+            
+            return &cached.data;
+        }
+    }
+    
+    // Fallback to original data if resampling failed
+    outStartIndex = startIndex;
+    outEndIndex = endIndex;
+    return &m_rawPrice;
+}
+
+// Invalidate resampling cache (call when raw data changes)
+void FinanceChartWindow::invalidateResamplingCache()
+{
+    for (auto& cached : m_resampledCache) {
+        cached.isValid = false;
+    }
+    m_resamplingConfig.originalIntervalSeconds = 0; // Force re-detection
 }

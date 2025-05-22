@@ -92,7 +92,35 @@ private:
     DoubleArray vectorToArray(const std::vector<double>& v, int startIndex = 0, int length = -1);
     std::vector<double> arrayToVector(DoubleArray a);
 
-
+    // Dynamic resampling configuration
+    struct ResamplingConfig {
+        double originalIntervalSeconds;  // Intervalle original des données en secondes
+        int maxPointsForOriginalData;    // Nombre max de points avant resampling
+        int targetPointsWhenResampled;   // Nombre cible de points après resampling
+        bool autoDetectOriginalInterval; // Auto-détection de l'intervalle original
+    };
+    
+    ResamplingConfig m_resamplingConfig;
+    
+    // Cache pour les données resamplees à différents niveaux
+    struct ResampledData {
+        int aggregationFactor;           // Facteur d'agrégation (combien d'intervalles originaux)
+        double intervalSeconds;          // Intervalle en secondes après agrégation
+        PriceData data;                  // Données agrégées
+        bool isValid;                    // Validité du cache
+    };
+    
+    std::vector<ResampledData> m_resampledCache;
+    
+    // Helper functions for dynamic resampling
+    void initializeResamplingConfig();
+    double detectOriginalTimeInterval(const std::vector<double>& timestamps);
+    bool shouldUseResampling(int startIndex, int endIndex, int totalPoints) const;
+    int calculateOptimalAggregationFactor(int pointsToDisplay, double viewPortWidth) const;
+    void generateResampledData(int aggregationFactor);
+    void aggregateOHLCData(const PriceData& source, PriceData& target, int aggregationFactor);
+    PriceData* selectOptimalDataset(int startIndex, int endIndex, int& outStartIndex, int& outEndIndex);
+    void invalidateResamplingCache();
 
 private slots:
     void onMouseUsageChanged(QAbstractButton *b);

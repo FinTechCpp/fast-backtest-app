@@ -22,7 +22,7 @@ enum class LogCategory {
 //     ERROR = 3
 // };
 
-class StrategyLogger {
+class LoggerManager {
 private:
     bool enabled = true;
     LogLevel verbosity_level = LogLevel::DEBUG;
@@ -74,7 +74,7 @@ private:
     }
 
 public:
-    StrategyLogger() = default;
+    LoggerManager() = default;
     
     // Configuration du logger
     void set_enabled(bool state) { enabled = state; }
@@ -189,6 +189,22 @@ public:
         std::string status = in_trading_hours ? "DANS" : "HORS";
         std::string msg = status + " horaires de trading: " + detail;
         add_log(LogCategory::TIME, msg, level);
+    }
+
+    // Logs de performance
+    void log_execution_time(double duration_ms, int level = LogLevel::DEBUG) {
+        std::string msg = "Temps d'exécution: " + format_value(duration_ms, 2) + " ms";
+        
+        // Changer le niveau si le traitement prend trop de temps
+        if (duration_ms > 1.0) {  // Plus de 100ms
+            level = LogLevel::WARNING;
+            msg += " (LENT)";
+        } else if (duration_ms > 0.1) {  // Plus de 50ms
+            level = LogLevel::INFO;
+            msg += " (Modéré)";
+        }
+        
+        add_log(LogCategory::EXECUTION, msg, level);
     }
     
     // Obtention de tous les logs pour la bougie actuelle

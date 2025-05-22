@@ -368,12 +368,13 @@ void Strategy::execute() {
 Strategy::Strategy(const StrategyBaseConfig& config) 
     : base_config(config), 
     signal(std::make_unique<Signal>()),
-    logger(std::make_unique<StrategyLogger>()) {
+    logger(std::make_unique<LoggerManager>()) {
 
 }
 
 // Main update method
 Signal* Strategy::update_candle(const Candle& candle) {    
+    auto start_time = std::chrono::high_resolution_clock::now();
 
     // TODO: C'est probablement a supprimer cela sert juste dans les stratégies de fille pour avoir les information extra (in_position, entry_price, position_size, position_pl_pct)
     current_candle = candle;
@@ -403,7 +404,7 @@ Signal* Strategy::update_candle(const Candle& candle) {
     if (in_position) {
         logger->log_general("En position: Prix d'entrée=" + std::to_string(entry_price) + 
                           ", Taille=" + std::to_string(position_size) + 
-                          ", P&L=" + std::to_string(position_pl_pct) + "%", LogLevel::INFO);
+                          ", P&L=" + std::to_string(position_pl_pct) + "%");
     }
     
     // Add to buffer for historical calculations
@@ -415,8 +416,18 @@ Signal* Strategy::update_candle(const Candle& candle) {
     auto be_signal = check_break_even();
     if (be_signal) {
         logger->log_general("Signal de break-even généré: " + 
-                          std::to_string(be_signal->new_sl), LogLevel::INFO);
+                          std::to_string(be_signal->new_sl));
         signal = std::move(be_signal);
+
+        // Calculer le temps d'exécution avant de retourner
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        double duration_ms = duration.count() / 1000.0;
+        logger->log_execution_time(duration_ms);
+        
+        // Obtenir tous les logs complets et les envoyer dans un seul message de log
+        cpp_log(logger->get_all_logs(), logger->get_verbosity());
+
         return signal.get();
     }
     
@@ -424,6 +435,14 @@ Signal* Strategy::update_candle(const Candle& candle) {
     logger->log_execution_start();
     execute();
     logger->log_execution_end();
+
+    // Arrêter le chronomètre et calculer la durée
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+    double duration_ms = duration.count() / 1000.0;
+    
+    // Logger le temps d'exécution
+    logger->log_execution_time(duration_ms);
 
     // Obtenir tous les logs complets et les envoyer dans un seul message de log
     cpp_log(logger->get_all_logs(), logger->get_verbosity());

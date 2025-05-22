@@ -1,7 +1,7 @@
 #pragma once
 #include "common.h"
 #include "CandleManager.hpp"
-#include "strategyLogger.hpp"
+#include "Managers/LoggerManager.hpp"
 #include "strategy.h"
 #include <cmath>
 #include <algorithm>
@@ -18,7 +18,7 @@ public:
         bool is_long,
         const CandleManager& candle_manager,
         const Candle& current_candle,
-        const std::unique_ptr<StrategyLogger>& logger
+        const std::unique_ptr<LoggerManager>& logger
     ) {
         if (config.use_atr_for_sl && current_atr > 0.0) {
             return calculateStopLossWithATR(config, current_atr, logger);
@@ -39,7 +39,7 @@ public:
     static double calculateTakeProfit(
         const StrategyBaseConfig& config,
         double current_atr,
-        const std::unique_ptr<StrategyLogger>& logger
+        const std::unique_ptr<LoggerManager>& logger
     ) {
         if (config.use_atr_for_tp && current_atr > 0.0) {
             return calculateTakeProfitWithATR(config, current_atr, logger);
@@ -56,7 +56,7 @@ public:
         const StrategyBaseConfig& config,
         double current_price,
         double stop_loss_distance,
-        const std::unique_ptr<StrategyLogger>& logger
+        const std::unique_ptr<LoggerManager>& logger
     ) {
         if (config.use_risk_based_sizing) {
             return calculateRiskBasedPositionSize(config, current_price, stop_loss_distance, logger);
@@ -72,7 +72,7 @@ private:
     static double calculateStopLossWithATR(
         const StrategyBaseConfig& config,
         double current_atr,
-        const std::unique_ptr<StrategyLogger>& logger
+        const std::unique_ptr<LoggerManager>& logger
     ) {
         if (logger) logger->log_general("Utilisation de l'ATR pour calculer SL", LogLevel::INFO);
 
@@ -101,7 +101,7 @@ private:
         const CandleManager& candle_manager,
         const Candle& current_candle,
         bool is_long,
-        const std::unique_ptr<StrategyLogger>& logger
+        const std::unique_ptr<LoggerManager>& logger
     ) {
         if (logger) logger->log_general("Utilisation de Min/Max pour calculer SL " + 
             std::string(is_long ? "(LONG)" : "(SHORT)"), LogLevel::INFO);
@@ -169,7 +169,7 @@ private:
     static double calculateTakeProfitWithATR(
         const StrategyBaseConfig& config,
         double current_atr,
-        const std::unique_ptr<StrategyLogger>& logger
+        const std::unique_ptr<LoggerManager>& logger
     ) {
         if (logger) logger->log_general("Utilisation de l'ATR pour calculer TP", LogLevel::INFO);
 
@@ -196,7 +196,7 @@ private:
         const StrategyBaseConfig& config,
         double current_price,
         double stop_loss_distance,
-        const std::unique_ptr<StrategyLogger>& logger
+        const std::unique_ptr<LoggerManager>& logger
     ) {
         double initial_capital = config.cash;
         double risk_percentage = config.risk_percentage;

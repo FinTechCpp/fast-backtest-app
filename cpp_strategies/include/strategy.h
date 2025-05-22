@@ -99,6 +99,7 @@ protected:
     void execute();
 
     // Core strategy methods to implement in derived classes
+    virtual bool update_indicators() { return true; };
     virtual void before() {}
     virtual void after() {}
     virtual bool should_long() = 0;

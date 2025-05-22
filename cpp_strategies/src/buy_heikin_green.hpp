@@ -336,7 +336,7 @@ private:
         return all_required_initialized;
     }
     
-    bool update_indicators() {
+    bool update_indicators() override {
         if (candle_manager.size() == 0) {
             logger->log_general("candle_manager vide, impossible de mettre à jour les indicateurs", LogLevel::WARNING);
             return false;
@@ -435,21 +435,15 @@ public:
         }
     }
 
-    void before() override {
-        // Update all technical indicators
-        update_indicators();
-        
+    // peut etre plus besoin de la methode before
+    void before() override {        
         // Obtenir la dernière bougie HA pour journalisation
-        try {
-            BasicCandle ha_current = candle_manager.get_latest_heikin_ashi();
-            bool is_green = candle_manager.is_candle_green(ha_current);
-            
-            logger->log_general("Bougie HA courante calculée: Open=" + std::to_string(ha_current.open) + 
-                            ", Close=" + std::to_string(ha_current.close) + 
-                            ", Green=" + std::to_string(is_green));
-        } catch (const std::exception& e) {
-            logger->log_general("Erreur lors de la récupération des bougies HA: " + std::string(e.what()), LogLevel::ERROR);
-        }
+        BasicCandle ha_current = candle_manager.get_latest_heikin_ashi();
+        bool is_green = candle_manager.is_candle_green(ha_current);
+        
+        logger->log_general("Bougie HA courante calculée: Open=" + std::to_string(ha_current.open) + 
+                        ", Close=" + std::to_string(ha_current.close) + 
+                        ", Green=" + std::to_string(is_green));
     }
     
     bool should_long() override {
@@ -458,38 +452,14 @@ public:
             return false;
         }
         
-        // // Vérifier si les indicateurs sont prêts
-        // if (current_ema_short == 0.0 || current_ema_long == 0.0 || current_stoch_k == 0.0 || current_rsi == 0.0) {
-        //     logger->log_general("Les indicateurs ne sont pas tous initialisés", LogLevel::WARNING);
-        //     return false;
-        // }
-        
-        // Vérifier si on a besoin d'ATRLOG mais que celui-ci n'est pas disponible
-        bool needs_atrlog = base_config.use_atr_for_sl || base_config.use_atr_for_tp;
-        if (needs_atrlog && current_atrlog <= 0.0) {
-            logger->log_general("ATRLOG requis mais non disponible", LogLevel::WARNING);
-            return false;
-        }
-        
         // Vérifier si on a besoin de Min/Max mais qu'on n'a pas assez d'historique
         if (base_config.use_minmax_for_sl && candle_manager.size() < static_cast<size_t>(base_config.sl_minmax_periods)) {
             logger->log_general("Pas assez d'historique pour le calcul Min/Max SL", LogLevel::WARNING);
             return false;
         }
-        
-        try {
-            // Utiliser CandleManager pour vérifier si la bougie HA actuelle est verte
-            bool is_current_ha_green = candle_manager.is_latest_heikin_ashi_green();
-            
-            // Log pour faciliter le débogage
-            logger->log_general("Bougie HA courante: " + std::string(is_current_ha_green ? "VERTE" : "ROUGE"), LogLevel::INFO);
-            
-            // Only check if current candle is green
-            return is_current_ha_green;
-        } catch (const std::exception& e) {
-            logger->log_general("Erreur lors de la vérification de la bougie HA: " + std::string(e.what()), LogLevel::ERROR);
-            return false;
-        }
+    
+        // Only check if current candle is green
+        return candle_manager.is_latest_heikin_ashi_green();
     }
 
     void go_long() override {

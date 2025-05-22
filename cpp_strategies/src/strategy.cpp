@@ -327,6 +327,16 @@ void Strategy::execute() {
         return;
     }
     logger->log_execution_step("Vérification horaires", true);
+
+    // Mise à jour des indicateurs
+    if (!update_indicators()) {
+        logger->log_execution_step("Mise à jour indicateurs", false);
+        logger->log_general("Indicateurs non prêts - Arrêt de l'exécution", LogLevel::INFO);
+        reset();
+        is_executing = false;
+        return;
+    }
+    logger->log_execution_step("Mise à jour indicateurs", true);
     
     before();
     
@@ -338,7 +348,7 @@ void Strategy::execute() {
     } else if (should_short_val) {
         logger->log_execution_step("should_short()", true);
     } else {
-        logger->log_execution_step("Conditions d'entrée", false);
+        logger->log_execution_step("Conditions d entrée", false);
         reset();
         is_executing = false;
         return;
@@ -360,7 +370,6 @@ void Strategy::execute() {
     }
     
     after();
-    logger->log_execution_step("After()", true);
     is_executing = false;
 }
 

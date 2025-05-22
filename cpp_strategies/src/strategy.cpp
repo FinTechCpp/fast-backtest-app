@@ -78,13 +78,13 @@ bool Strategy::is_trade_risk_acceptable(double risk) {
 }
 
 bool Strategy::is_new_trading_day() {
-    if (!current_candle.date.is_valid() || !current_trading_day.is_valid()) {
+    if (!candle_manager.get_latest_candle().date.is_valid() || !current_trading_day.is_valid()) {
         return true;
     }
     
-    return (current_candle.date.year != current_trading_day.year ||
-            current_candle.date.month != current_trading_day.month ||
-            current_candle.date.day != current_trading_day.day);
+    return (candle_manager.get_latest_candle().date.year != current_trading_day.year ||
+            candle_manager.get_latest_candle().date.month != current_trading_day.month ||
+            candle_manager.get_latest_candle().date.day != current_trading_day.day);
 }
     
 void Strategy::update_daily_pnl_tracking() {
@@ -94,7 +94,7 @@ void Strategy::update_daily_pnl_tracking() {
     
     // Si c'est un nouveau jour, on réinitialise le compteur et on réactive le trading
     if (is_new_trading_day()) {
-        current_trading_day = current_candle.date;
+        current_trading_day = candle_manager.get_latest_candle().date;
         daily_pnl = 0.0;
         
         // Calculer le montant maximum de perte autorisé pour cette journée
@@ -117,18 +117,18 @@ void Strategy::update_daily_pnl_tracking() {
 
 // Méthode pour vérifier si on est dans les horaires de trading
 bool Strategy::check_time() {
-    if (!current_candle.date.is_valid()) {
+    if (!candle_manager.get_latest_candle().date.is_valid()) {
         // Utiliser log_time_check avec false pour indiquer qu'on est hors horaires
         logger->log_time_check(false, "Date de bougie invalide", LogLevel::WARNING);
         return false;
     }
     
     // Vérifier si la date a changé depuis la dernière vérification
-    if (current_candle.date != last_check_date) {
-        last_check_date = current_candle.date;
+    if (candle_manager.get_latest_candle().date != last_check_date) {
+        last_check_date = candle_manager.get_latest_candle().date;
         
         // Calculer le jour de la semaine (0=lundi, 6=dimanche)
-        int weekday = get_day_of_week(current_candle.date);
+        int weekday = get_day_of_week(candle_manager.get_latest_candle().date);
         
         // Vérifier si c'est un jour de trading
         weekday_check = std::find(base_config.trading_days.begin(), 
@@ -137,12 +137,12 @@ bool Strategy::check_time() {
         
         if (!weekday_check) {
             logger->log_time_check(false, "Jour non autorisé pour le trading: " + 
-                                 current_candle.date.to_string(), LogLevel::INFO);
+                                 candle_manager.get_latest_candle().date.to_string(), LogLevel::INFO);
             return false;
         }
         
         // Vérifier les heures de trading
-        const Time& current_time = current_candle.date.time;
+        const Time& current_time = candle_manager.get_latest_candle().date.time;
         
         bool after_start = (base_config.trading_from < current_time || 
                             base_config.trading_from == current_time);
@@ -319,6 +319,7 @@ bool Strategy::execute_filters() {
 
 void Strategy::execute() {
     if (is_executing) {
+        logger->log_execution_step("Exécution déjà en cours", false);
         return;
     }
     
@@ -340,7 +341,6 @@ void Strategy::execute() {
     logger->log_execution_step("Vérification horaires", true);
     
     before();
-    logger->log_execution_step("Before()", true);
     
     bool should_long_val = should_long();
     bool should_short_val = should_long_val ? false : should_short();
@@ -351,7 +351,6 @@ void Strategy::execute() {
         logger->log_execution_step("should_short()", true);
     } else {
         logger->log_execution_step("Conditions d'entrée", false);
-        logger->log_general("Aucune condition d'entrée remplie", LogLevel::INFO);
         reset();
         is_executing = false;
         return;
@@ -386,10 +385,11 @@ Strategy::Strategy(const StrategyBaseConfig& config)
 }
 
 // Main update method
-Signal* Strategy::update_candle(const Candle& candle) {
-    // Store the current candle
+Signal* Strategy::update_candle(const Candle& candle) {    
+
+    // TODO: C'est probablement a supprimer cela sert juste dans les stratégies de fille pour avoir les information extra (in_position, entry_price, position_size, position_pl_pct)
     current_candle = candle;
-    
+
     // Mettre à jour le logger avec la bougie actuelle
     logger->set_current_candle(candle);
     logger->clear();  // Vider les logs précédents
@@ -447,6 +447,6 @@ Signal* Strategy::update_candle(const Candle& candle) {
 
 // Properties
 double Strategy::price() const {
-    return current_candle.close;
+    return candle_manager.get_latest_candle().close;
 }
 

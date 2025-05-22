@@ -61,6 +61,7 @@ protected:
     StrategyBaseConfig base_config;
     CandleManager candle_manager;
     Candle current_candle;
+
     bool in_position = false;
     double entry_price = 0.0;
     double position_size = 0.0;

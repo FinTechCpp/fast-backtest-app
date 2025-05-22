@@ -61,7 +61,7 @@ from cpp_strategies import (
     CppSignal
 )
 
-CANDLE_TIME_UNIT = 20  # n-second time unit candles to trade with
+CANDLE_TIME_UNIT = 10  # n-second time unit candles to trade with
 
 # Variable globale pour arrêter proprement le programme
 running = True

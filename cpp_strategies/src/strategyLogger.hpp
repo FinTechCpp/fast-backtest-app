@@ -117,6 +117,16 @@ public:
         std::string msg = indent(1) + "Détail filtre " + name + ": " + detail;
         add_log(LogCategory::FILTER, msg, level);
     }
+
+    void log_filter_comparison(const std::string& name, double value, 
+                            double threshold, const std::string& comparison_op, 
+                            bool result, int level = LogLevel::DEBUG) {
+        std::string status = result ? "PASSÉ" : "REJETÉ";
+        std::string msg = indent(1) + "Filtre " + name + " " + status + ": " + 
+                         format_value(value) + " " + comparison_op + " " + 
+                         format_value(threshold);
+        add_log(LogCategory::FILTER, msg, level);
+    }
     
     // Logs de signaux
     void log_signal(const std::string& action, double price, 

@@ -59,7 +59,12 @@
         "typeindex": "cpp",
         "set": "cpp",
         "fstream": "cpp",
-        "list": "cpp"
+        "list": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp"
     },
     "cmake.ignoreCMakeListsMissing": true
 }

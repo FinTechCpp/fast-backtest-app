@@ -96,14 +96,14 @@ public:
     }
     
     // Logs d'indicateurs
-    void log_indicator_value(const std::string& name, double value, int level = LogLevel::INFO) {
+    void log_indicator_value(const std::string& name, double value, int level = LogLevel::DEBUG) {
         std::string msg = "Indicateur " + name + " = " + format_value(value);
         add_log(LogCategory::INDICATOR, msg, level);
     }
     
     void log_indicator_comparison(const std::string& name, double value, 
                                   double threshold, const std::string& comparison_op, 
-                                  bool result, int level = LogLevel::INFO) {
+                                  bool result, int level = LogLevel::DEBUG) {
         std::string status = result ? "VALIDÉ" : "REJETÉ";
         std::string msg = "Indicateur " + name + " " + status + ": " + 
                          format_value(value) + " " + comparison_op + " " + 
@@ -113,7 +113,7 @@ public:
     
     // Logs de filtres
     void log_filter_result(const std::string& name, bool passed, 
-                          int level = LogLevel::INFO) {
+                          int level = LogLevel::DEBUG) {
         std::string status = passed ? "PASSÉ" : "REJETÉ";
         std::string msg = "Filtre " + name + ": " + status;
         add_log(LogCategory::FILTER, msg, level);

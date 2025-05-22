@@ -19,6 +19,7 @@ static const char* chartTypes[] =
     "None", "None",
     "CandleStick", "CandleStick",
     "Close", "Closing Price",
+    "HeikinAshi", "Heikin Ashi",
     "Median", "Median Price",
     "OHLC", "OHLC",
     "TP", "Typical Price",
@@ -117,7 +118,7 @@ FinanceChartWindow::FinanceChartWindow(QWidget *parent) :
     setStyleSheet("QMainWindow {background:#FFFFFF;}");
     
     // Set Parquet file path
-    m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
+    m_dataFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_1min_20220214_to_20250502_TRADES.csv";
     
     // Create a central widget and layout
     QWidget *centralWidget = new QWidget(this);
@@ -345,7 +346,7 @@ void FinanceChartWindow::loadData(const QString& ticker, const QString& compare)
         m_tickerKey = ticker;
         
         // Check if there's a CSV file we can use
-        QString csvFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_10secs_20220214_to_20250502_TRADES.csv";
+        QString csvFilePath = QDir::homePath() + "/ig-trading-bot/marketData/NDX_1min_20220214_to_20250502_TRADES.csv";
 
         bool dataLoaded = false;
         
@@ -573,6 +574,32 @@ void FinanceChartWindow::drawChart(QChartViewer *viewer)
         c->addCandleStick(0x00ff00, 0xff0000);
     else if (selectedType == "OHLC")
         c->addHLOC(0x00ff00, 0xff0000);
+    else if (selectedType == "HeikinAshi") {
+        // Calculate Heikin Ashi values
+        std::vector<double> ha_open, ha_high, ha_low, ha_close;
+        calculateHeikinAshi(openData, highData, lowData, closeData, ha_open, ha_high, ha_low, ha_close);
+        
+        // Convert vectors to DoubleArray for ChartDirector
+        DoubleArray haOpenArray = vectorToArray(ha_open);
+        DoubleArray haHighArray = vectorToArray(ha_high);
+        DoubleArray haLowArray = vectorToArray(ha_low);
+        DoubleArray haCloseArray = vectorToArray(ha_close);
+        
+        // Save original OHLC data as copies
+        DoubleArray originalOpen = openData;
+        DoubleArray originalHigh = highData;
+        DoubleArray originalLow = lowData;
+        DoubleArray originalClose = closeData;
+        
+        // Set Heikin Ashi data for drawing
+        c->setData(timeStamps, haHighArray, haLowArray, haOpenArray, haCloseArray, volData, 0);
+        
+        // Add candlestick chart with Heikin Ashi data
+        c->addCandleStick(0x00dd00, 0xee0000);
+        
+        // Restore original OHLC data for other indicators
+        c->setData(timeStamps, originalHigh, originalLow, originalOpen, originalClose, volData, 0);
+    }
     else if (selectedType == "Close")
         c->addCloseLine(0x000040);
     else if (selectedType == "TP")
@@ -919,4 +946,34 @@ bool FinanceChartWindow::loadCSVData(const QString& filePath)
     
     // Check if we loaded any data
     return !m_rawPrice.timeStamps.empty();
+}
+
+// Helper function to calculate Heikin Ashi values from OHLC data
+void FinanceChartWindow::calculateHeikinAshi(const DoubleArray &open, const DoubleArray &high, 
+                                            const DoubleArray &low, const DoubleArray &close,
+                                            std::vector<double> &ha_open, std::vector<double> &ha_high, 
+                                            std::vector<double> &ha_low, std::vector<double> &ha_close)
+{
+    int size = open.len;
+    ha_open.resize(size);
+    ha_high.resize(size);
+    ha_low.resize(size);
+    ha_close.resize(size);
+    
+    // Calculate HA_Close values: (Open + High + Low + Close) / 4
+    for (int i = 0; i < size; ++i) {
+        ha_close[i] = (open[i] + high[i] + low[i] + close[i]) / 4.0;
+    }
+    
+    // Calculate HA_Open values: (HA_Open_previous + HA_Close_previous) / 2
+    ha_open[0] = open[0]; // For the first candle, HA_Open = Open
+    for (int i = 1; i < size; ++i) {
+        ha_open[i] = (ha_open[i-1] + ha_close[i-1]) / 2.0;
+    }
+    
+    // Calculate HA_High and HA_Low values
+    for (int i = 0; i < size; ++i) {
+        ha_high[i] = std::max(high[i], std::max(ha_open[i], ha_close[i]));
+        ha_low[i] = std::min(low[i], std::min(ha_open[i], ha_close[i]));
+    }
 }

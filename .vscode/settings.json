@@ -58,7 +58,8 @@
         "any": "cpp",
         "typeindex": "cpp",
         "set": "cpp",
-        "fstream": "cpp"
+        "fstream": "cpp",
+        "list": "cpp"
     },
     "cmake.ignoreCMakeListsMissing": true
 }

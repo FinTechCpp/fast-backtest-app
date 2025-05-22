@@ -61,7 +61,6 @@ private:
     QButtonGroup *mouseUsage;
     QLineEdit *m_TickerSymbol;
     QLineEdit *m_CompareWith;
-    QComboBox *m_TimeRange;
     QCheckBox *m_VolumeBars;
     QCheckBox *m_ParabolicSAR;
     QCheckBox *m_LogScale;
@@ -83,6 +82,12 @@ private:
     // Helper function to initialize combo boxes
     void initComboBox(QComboBox* b, const char* list[], int count, const char* initial);
     
+    // Helper function to calculate Heikin Ashi values
+    void calculateHeikinAshi(const DoubleArray &open, const DoubleArray &high, 
+                            const DoubleArray &low, const DoubleArray &close,
+                            std::vector<double> &ha_open, std::vector<double> &ha_high, 
+                            std::vector<double> &ha_low, std::vector<double> &ha_close);
+    
     // Utility to convert between std::vector and DoubleArray
     DoubleArray vectorToArray(const std::vector<double>& v, int startIndex = 0, int length = -1);
     std::vector<double> arrayToVector(DoubleArray a);
@@ -95,7 +100,6 @@ private slots:
     void onCheckBoxChanged();
     void onLineEditChanged();
     void onMouseMovePlotArea(QMouseEvent*);
-    void onTimeRangeChanged(int);
     void onViewPortChanged();
 };
 

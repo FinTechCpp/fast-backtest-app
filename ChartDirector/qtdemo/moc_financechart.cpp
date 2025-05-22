@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_FinanceChartWindow_t {
-    QByteArrayData data[12];
-    char stringdata0[183];
+    QByteArrayData data[11];
+    char stringdata0[164];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -42,15 +42,14 @@ QT_MOC_LITERAL(6, 77, 17), // "onCheckBoxChanged"
 QT_MOC_LITERAL(7, 95, 17), // "onLineEditChanged"
 QT_MOC_LITERAL(8, 113, 19), // "onMouseMovePlotArea"
 QT_MOC_LITERAL(9, 133, 12), // "QMouseEvent*"
-QT_MOC_LITERAL(10, 146, 18), // "onTimeRangeChanged"
-QT_MOC_LITERAL(11, 165, 17) // "onViewPortChanged"
+QT_MOC_LITERAL(10, 146, 17) // "onViewPortChanged"
 
     },
     "FinanceChartWindow\0onMouseUsageChanged\0"
     "\0QAbstractButton*\0b\0onComboBoxChanged\0"
     "onCheckBoxChanged\0onLineEditChanged\0"
     "onMouseMovePlotArea\0QMouseEvent*\0"
-    "onTimeRangeChanged\0onViewPortChanged"
+    "onViewPortChanged"
 };
 #undef QT_MOC_LITERAL
 
@@ -60,7 +59,7 @@ static const uint qt_meta_data_FinanceChartWindow[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       7,   14, // methods
+       6,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -68,13 +67,12 @@ static const uint qt_meta_data_FinanceChartWindow[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    1,   49,    2, 0x08 /* Private */,
-       5,    1,   52,    2, 0x08 /* Private */,
-       6,    0,   55,    2, 0x08 /* Private */,
-       7,    0,   56,    2, 0x08 /* Private */,
-       8,    1,   57,    2, 0x08 /* Private */,
-      10,    1,   60,    2, 0x08 /* Private */,
-      11,    0,   63,    2, 0x08 /* Private */,
+       1,    1,   44,    2, 0x08 /* Private */,
+       5,    1,   47,    2, 0x08 /* Private */,
+       6,    0,   50,    2, 0x08 /* Private */,
+       7,    0,   51,    2, 0x08 /* Private */,
+       8,    1,   52,    2, 0x08 /* Private */,
+      10,    0,   55,    2, 0x08 /* Private */,
 
  // slots: parameters
     QMetaType::Void, 0x80000000 | 3,    4,
@@ -82,7 +80,6 @@ static const uint qt_meta_data_FinanceChartWindow[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void, 0x80000000 | 9,    2,
-    QMetaType::Void, QMetaType::Int,    2,
     QMetaType::Void,
 
        0        // eod
@@ -99,8 +96,7 @@ void FinanceChartWindow::qt_static_metacall(QObject *_o, QMetaObject::Call _c, i
         case 2: _t->onCheckBoxChanged(); break;
         case 3: _t->onLineEditChanged(); break;
         case 4: _t->onMouseMovePlotArea((*reinterpret_cast< QMouseEvent*(*)>(_a[1]))); break;
-        case 5: _t->onTimeRangeChanged((*reinterpret_cast< int(*)>(_a[1]))); break;
-        case 6: _t->onViewPortChanged(); break;
+        case 5: _t->onViewPortChanged(); break;
         default: ;
         }
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
@@ -146,13 +142,13 @@ int FinanceChartWindow::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 7)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 7;
+        _id -= 6;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 7)
+        if (_id < 6)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 7;
+        _id -= 6;
     }
     return _id;
 }

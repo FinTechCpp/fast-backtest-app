@@ -417,8 +417,8 @@ class TickBroker:
                 # Calculer les secondes jusqu'à la prochaine bougie
                 seconds_until_next_candle = (next_candle_time - now).total_seconds()
                 
-                # Précharger EXACTEMENT UNE FOIS à 5 secondes avant chaque bougie
-                if 4.5 <= seconds_until_next_candle <= 5.5 and next_candle_time != last_preloaded_candle:
+                # Précharger UNE SEULE FOIS quand la prochaine bougie est à moins de 5 secondes
+                if seconds_until_next_candle <= 5 and next_candle_time != last_preloaded_candle:
                     logging.debug(f"Preloading data for upcoming candle at {next_candle_time}")
                     
                     # Marquer cette bougie comme préchargée
@@ -461,7 +461,6 @@ class TickBroker:
             self._cache.set('recent_transactions', transactions, 10)
             logging.debug("Transaction data loaded and cached")
             
-            logging.debug("Position and transaction data preloaded successfully")
         except Exception as e:
             logging.error(f"Error preloading position data: {e}")
             logging.error(traceback.format_exc())

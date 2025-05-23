@@ -22,30 +22,41 @@ from functools import wraps
 
 # Ajouter cette classe au début du fichier
 class Cache:
-    """Simple cache avec durée d'expiration"""
+    """Cache thread-safe avec durée d'expiration courte pour garantir la fraîcheur des données"""
     def __init__(self):
         self._data = {}
+        self._lock = threading.RLock()
         
     def get(self, key):
         """Récupère une valeur du cache si elle existe et n'est pas expirée"""
-        if key in self._data:
-            value, expiry = self._data[key]
-            if expiry > time.time():
-                return value
-            # Supprimer la valeur expirée
-            del self._data[key]
-        return None
+        with self._lock:
+            if key in self._data:
+                value, expiry = self._data[key]
+                if expiry > time.time():
+                    return value
+                # Supprimer automatiquement la valeur expirée
+                del self._data[key]
+            return None
         
-    def set(self, key, value, ttl=5):
-        """Stocke une valeur dans le cache avec une durée de vie en secondes"""
-        self._data[key] = (value, time.time() + ttl)
-        
+    def set(self, key, value, ttl=10):  # Réduit à 10 secondes maximum
+        """Stocke une valeur dans le cache avec une durée de vie courte en secondes"""
+        with self._lock:
+            self._data[key] = (value, time.time() + ttl)
     def invalidate(self, key=None):
         """Invalide une entrée spécifique ou tout le cache"""
-        if key is None:
-            self._data = {}
-        elif key in self._data:
-            del self._data[key]
+        with self._lock:
+            if key is None:
+                self._data = {}
+            elif key in self._data:
+                del self._data[key]
+                
+    def cleanup(self):
+        """Nettoie les entrées expirées du cache"""
+        with self._lock:
+            now = time.time()
+            expired_keys = [k for k, (_, exp) in self._data.items() if exp <= now]
+            for k in expired_keys:
+                del self._data[k]
 
 # Décorateur pour mettre en cache les résultats des méthodes
 def cached(ttl=5):
@@ -146,6 +157,11 @@ class TickBroker:
 
         self._cache = Cache()  # Initialiser le cache
         self.should_continue = True
+    
+        # Variables de contrôle pour le préchargement
+        self._last_preload_time = None
+        self._preload_lock = threading.Lock()
+        self._preload_interval = max(10, candle_interval // 6)  # Précharger au maximum toutes les 10 secondes
         
         # Ajouter un thread pour gérer le rafraîchissement du token
         self.token_refresh_thread = threading.Thread(target=self._token_refresh_loop, daemon=True)
@@ -350,22 +366,34 @@ class TickBroker:
         """Thread qui rafraîchit le token proactivement"""
         logging.info("Starting token refresh thread")
         
+        # Variable pour éviter les rafraîchissements trop fréquents
+        last_refresh_time = None
+        
         while self.should_continue:
             try:
-                # Vérifier si le token est sur le point d'expirer (dans moins de 15 seconds)
+                now = datetime.datetime.now()
+                
+                # Ne pas rafraîchir plus d'une fois toutes les 30 secondes
+                if last_refresh_time and (now - last_refresh_time).total_seconds() < 30:
+                    time.sleep(1)
+                    continue
+                    
+                # Vérifier si le token est sur le point d'expirer
                 if hasattr(self.ig_service, '_valid_until') and self.ig_service._valid_until is not None:
-                    now = datetime.datetime.now()
                     time_until_expiry = (self.ig_service._valid_until - now).total_seconds()
                     
-                    # Rafraîchir 15 secondes avant l'expiration
-                    if 0 < time_until_expiry < 15:
+                    # Rafraîchir de manière plus agressive pour garantir la disponibilité
+                    if 5 <= time_until_expiry <= 20:
                         logging.info(f"Proactively refreshing token (expires in {time_until_expiry:.1f} seconds)")
-                        self.ig_service.refresh_session()
-                        # Invalider le cache après le rafraîchissement du token
-                        self._cache.invalidate()
+                        
+                        try:
+                            self.ig_service.refresh_session()
+                            last_refresh_time = now
+                            logging.info("Token refreshed successfully")
+                        except Exception as e:
+                            logging.error(f"Error refreshing token: {e}")
                 
-                # Vérifier toutes les 5 secondes
-                time.sleep(5)
+                time.sleep(1)
             except Exception as e:
                 logging.error(f"Error in token refresh thread: {e}")
                 logging.error(traceback.format_exc())
@@ -375,19 +403,38 @@ class TickBroker:
         """Thread qui pré-charge les données avant le traitement des bougies"""
         logging.info("Starting data preload thread")
         
+        # Suivi du préchargement
+        last_preloaded_candle = None
+
         while self.should_continue:
             try:
                 now = datetime.datetime.now()
-                seconds_in_interval = now.second % self.candle_interval
                 
-                # Si on est proche de la fin de l'intervalle (5 secondes avant), pré-charger les données
-                if self.candle_interval - seconds_in_interval <= 5:
-                    logging.debug("Preloading data for upcoming candle processing")
-                    # Pré-charger les positions et autres données nécessaires
+                # Déterminer la bougie actuelle et la suivante
+                current_candle_time = self._align_time_to_interval(now)
+                next_candle_time = current_candle_time + datetime.timedelta(seconds=self.candle_interval)
+                
+                # Calculer les secondes jusqu'à la prochaine bougie
+                seconds_until_next_candle = (next_candle_time - now).total_seconds()
+                
+                # Précharger EXACTEMENT UNE FOIS à 5 secondes avant chaque bougie
+                if 4.5 <= seconds_until_next_candle <= 5.5 and next_candle_time != last_preloaded_candle:
+                    logging.debug(f"Preloading data for upcoming candle at {next_candle_time}")
+                    
+                    # Marquer cette bougie comme préchargée
+                    last_preloaded_candle = next_candle_time
+                    
+                    # Forcer l'invalidation du cache pour garantir des données fraîches
+                    self._cache.invalidate('open_positions')
+                    self._cache.invalidate('recent_transactions')
+                    
+                    # Précharger les données
                     self._preload_position_data()
-                
-                # Dormir une seconde pour ne pas surcharger le processeur
-                time.sleep(1)
+
+                # Dormir moins longtemps pour être plus précis
+                sleep_time = min(0.5, max(0.1, seconds_until_next_candle / 20))
+                time.sleep(sleep_time)
+                    
             except Exception as e:
                 logging.error(f"Error in data preload thread: {e}")
                 logging.error(traceback.format_exc())
@@ -396,23 +443,28 @@ class TickBroker:
     def _preload_position_data(self):
         """Pré-charge toutes les données nécessaires pour le traitement des bougies"""
         try:
-            # Récupérer les positions actuelles
-            open_positions = self.ig_service.fetch_open_positions()
-            # Mettre en cache ces données pour 10 secondes
-            self._cache.set('open_positions', open_positions, 10)
+            # Récupérer les positions actuelles (toujours forcer une nouvelle requête)
+            positions = self.ig_service.fetch_open_positions()
+            # Mettre en cache ces données pour 10 secondes seulement
+            self._cache.set('open_positions', positions, 10)
+            logging.debug("Positions data loaded and cached")
             
-            # Pré-charger l'historique des transactions
+            # Récupérer l'historique des transactions récentes
+            from_date = datetime.datetime.now() - datetime.timedelta(minutes=1)
+            to_date = datetime.datetime.now()
             transactions = self.ig_service.fetch_transaction_history(
                 trans_type='ALL_DEAL',
-                from_date=datetime.datetime.now() - datetime.timedelta(minutes=1),
-                to_date=datetime.datetime.now(),
+                from_date=from_date,
+                to_date=to_date,
                 page_size=10
             )
             self._cache.set('recent_transactions', transactions, 10)
+            logging.debug("Transaction data loaded and cached")
             
             logging.debug("Position and transaction data preloaded successfully")
         except Exception as e:
             logging.error(f"Error preloading position data: {e}")
+            logging.error(traceback.format_exc())
 
     def set_candle_callback(self, callback):
         """

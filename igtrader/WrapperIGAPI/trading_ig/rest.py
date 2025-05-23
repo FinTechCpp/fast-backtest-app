@@ -2106,7 +2106,23 @@ class IGService:
             - if not, a new session will be created
         """
         logger.debug("Checking session status...")
-        if self._valid_until is not None and datetime.now() > self._valid_until:
+
+        # Refresh token if it will expire within 10 seconds
+        if self._valid_until is not None:
+            time_until_expiry = (self._valid_until - datetime.now()).total_seconds()
+            
+            if time_until_expiry < 10:  # If token expires in less than 10 seconds
+                if self._refresh_token:
+                    try:
+                        logger.info(f"Proactively refreshing session (expires in {time_until_expiry:.1f} seconds)")
+                        self.refresh_session()
+                    except IGException:
+                        logger.info("Proactive refresh failed, logging in again...")
+                        self._refresh_token = None
+                        self._valid_until = None
+                        del self.session.headers["Authorization"]
+                        self.create_session(version="3")
+        elif datetime.now() > self._valid_until:
             if self._refresh_token:
                 # we are in a v3 session, need to refresh
                 try:

@@ -4,16 +4,31 @@ TARGET = backtest_app_cpp
 TEMPLATE = app
 CONFIG += c++17
 
+# Obtenir les chemins Python dynamiquement (Conda)
+PYTHON_INCLUDES = $$system(python3-config --includes | sed 's/-I//g')
+PYTHON_LDFLAGS = $$system(python3-config --ldflags)
+PYTHON_LIBS = $$system(python3-config --libs)
+
+# Extraire TOUS les chemins de librairies Python
+PYTHON_LIB_DIRS = $$system(python3-config --ldflags | grep -o '\-L[^ ]*' | sed 's/-L//')
+
+# Ajouter RPATH pour ChartDirector ET Python (version explicite)
+QMAKE_LFLAGS += -Wl,-rpath,$$PWD/../ChartDirector/lib
+QMAKE_LFLAGS += -Wl,-rpath,/home/hugo/miniconda3/envs/IGTradingBot/lib
+QMAKE_LFLAGS += -Wl,-rpath,/home/hugo/miniconda3/envs/IGTradingBot/lib/python3.11/config-3.11-x86_64-linux-gnu
+
 # Répertoires d'inclusion
 INCLUDEPATH += src \
-               /usr/local/include/pybind11 \
-               /usr/include/python3.10 \
+               /usr/include/pybind11 \
+               $$PYTHON_INCLUDES \
                ../ChartDirector/include \
                ../ChartDirector/qtdemo/qtdemo
 
-# Librairies
+# Librairies avec support Conda complet
 LIBS += -L$$PWD/../ChartDirector/lib -lchartdir \
-        -lpython3.10
+        $$PYTHON_LDFLAGS \
+        $$PYTHON_LIBS \
+        -lpython3.11
 
 # Sources
 SOURCES += src/main.cpp \

@@ -61,22 +61,41 @@ bool PyBindingManager::initialize()
     }
 
     try {
-        py::initialize_interpreter();
+        qDebug() << "Initialisation de Python...";
         
-        // Ajouter le chemin du projet Python
-        QString projectRoot = findProjectRoot(QCoreApplication::applicationDirPath());
-        if (!projectRoot.isEmpty()) {
-            py::module_ sys = py::module_::import("sys");
-            sys.attr("path").attr("append")(projectRoot.toStdString());
-            qDebug() << "Chemin Python ajouté:" << projectRoot;
+        // Initialiser Python avec support multi-threading
+        if (!Py_IsInitialized()) {
+            py::initialize_interpreter();
+            // Libérer le GIL pour permettre l'utilisation dans d'autres threads
+            PyEval_SaveThread();
+        }
+        
+        // Tester l'acquisition du GIL
+        {
+            py::gil_scoped_acquire acquire;
+            
+            QString projectRoot = findProjectRoot(QCoreApplication::applicationDirPath());
+            if (!projectRoot.isEmpty()) {
+                py::module sys = py::module::import("sys");
+                py::list path = sys.attr("path");
+                path.append(projectRoot.toStdString());
+                qDebug() << "Chemin Python ajouté:" << projectRoot;
+            }
+            
+            // Test des imports critiques
+            py::module::import("pandas");
+            py::module::import("numpy");
+            py::module::import("igtrader.backtestingpy.backtesting");
+            qDebug() << "Modules Python importés avec succès";
         }
         
         m_initialized = true;
-        qInfo() << "PyBindingManager initialisé avec succès";
+        qDebug() << "PyBindingManager initialisé avec succès";
         return true;
-    }
-    catch (const std::exception& e) {
-        qCritical() << "Erreur lors de l'initialisation Python:" << e.what();
+        
+    } catch (const std::exception& e) {
+        setError(QString("Erreur lors de l'initialisation: %1").arg(e.what()));
+        qCritical() << m_lastError;
         return false;
     }
 }
@@ -94,86 +113,169 @@ QString PyBindingManager::findProjectRoot(const QString& startPath)
 }
 
 QVariant PyBindingManager::runPythonBacktest(const std::vector<OHLCBar>& data,
-                                            const QString& strategyClass,
-                                            double cash,
-                                            double spread,
-                                            const QMap<QString, QVariant>& strategyParams)
+                                           const QString& strategyClass,
+                                           double cash,
+                                           double spread,
+                                           const QMap<QString, QVariant>& strategyParams)
 {
     if (!m_initialized) {
-        setError("PyBindingManager not initialized");
+        setError("PyBindingManager non initialisé");
         return QVariant();
     }
 
+    qDebug() << "runPythonBacktest - Début";
+    qDebug() << "Données:" << data.size() << "barres";
+    qDebug() << "Stratégie:" << strategyClass;
+
     try {
+        qDebug() << "Acquisition du GIL Python...";
+        py::gil_scoped_acquire acquire;
+        qDebug() << "GIL acquis avec succès";
+
         // Créer le DataFrame pandas
-        py::module_ pd = py::module_::import("pandas");
-        py::dict df_data;
+        qDebug() << "Création du DataFrame pandas...";
+        py::module pd = py::module::import("pandas");
         
-        std::vector<double> timestamps, open_vals, high_vals, low_vals, close_vals, volumes;
-        for (const auto& bar : data) {
-            timestamps.push_back(bar.timestamp.toMSecsSinceEpoch() / 1000.0);
-            open_vals.push_back(bar.open);
-            high_vals.push_back(bar.high);
-            low_vals.push_back(bar.low);
-            close_vals.push_back(bar.close);
+        // Créer les listes pour chaque colonne
+        std::vector<std::string> timestamps;
+        std::vector<double> opens, highs, lows, closes, volumes;
+        
+        timestamps.reserve(data.size());
+        opens.reserve(data.size());
+        highs.reserve(data.size());
+        lows.reserve(data.size());
+        closes.reserve(data.size());
+        volumes.reserve(data.size());
+
+        qDebug() << "Conversion des données OHLC...";
+        for (size_t i = 0; i < data.size(); ++i) {
+            if (i % 1000 == 0) {
+                qDebug() << "Conversion:" << i << "/" << data.size();
+            }
+            
+            const OHLCBar& bar = data[i];
+            timestamps.push_back(bar.timestamp.toString(Qt::ISODate).toStdString());
+            opens.push_back(bar.open);
+            highs.push_back(bar.high);
+            lows.push_back(bar.low);
+            closes.push_back(bar.close);
             volumes.push_back(bar.volume);
         }
         
-        df_data["Open"] = py::cast(open_vals);
-        df_data["High"] = py::cast(high_vals);
-        df_data["Low"] = py::cast(low_vals);
-        df_data["Close"] = py::cast(close_vals);
-        df_data["Volume"] = py::cast(volumes);
+        qDebug() << "Données converties, création du DataFrame...";
         
-        py::object df = pd.attr("DataFrame")(df_data);
-        
-        // Créer l'index timestamp
-        py::object timestamp_index = pd.attr("to_datetime")(timestamps, py::arg("unit")="s");
-        df.attr("set_index")(timestamp_index, py::arg("inplace")=true);
-        
-        // Importer la classe de stratégie
-        py::object strategy_module;
+        // Créer le DataFrame
+        py::dict data_dict;
+        data_dict["Open"] = opens;
+        data_dict["High"] = highs;
+        data_dict["Low"] = lows;
+        data_dict["Close"] = closes;
+        data_dict["Volume"] = volumes;
+
+        qDebug() << "Données converties, création du DataFrame...";
+        py::object data_df = pd.attr("DataFrame")(data_dict);
+        qDebug() << "DataFrame créé";
+
+        // Conversion de l'index datetime
+        qDebug() << "Conversion de l'index datetime...";
+        data_df.attr("set_index")(timestamps, py::arg("inplace")=true);
+
+        qDebug() << "Index datetime défini";
+
+        // Importer la stratégie
+        qDebug() << "Import de la stratégie:" << strategyClass;
+        py::module strategies_module;
         
         if (strategyClass == "BuyHeikinGreenBA") {
-            strategy_module = py::module_::import("igtrader.Strategies.BuyHeikinGreen");
+            strategies_module = py::module::import("igtrader.Strategies.BuyHeikinGreen");
         } else if (strategyClass == "SellHeikinRedBA") {
-            strategy_module = py::module_::import("igtrader.Strategies.SellHeikinRed");
+            strategies_module = py::module::import("igtrader.Strategies.SellHeikinRed");
         } else {
-            setError("Unknown strategy class: " + strategyClass);
+            setError(QString("Stratégie non supportée: %1").arg(strategyClass));
             return QVariant();
         }
         
-        py::object strategy_class = strategy_module.attr(strategyClass.toStdString().c_str());
-        
+        py::object strategy_class = strategies_module.attr(strategyClass.toStdString().c_str());
+        qDebug() << "Stratégie importée avec succès";
+
         // Convertir les paramètres
+        qDebug() << "Conversion des paramètres de stratégie...";
         py::dict py_params = convertParamsToPython(strategyParams);
-        
-        // Créer le backtest
-        py::object backtest_module = py::module_::import("igtrader.backtestingpy.backtesting.backtesting");
+        qDebug() << "Paramètres convertis";
+
+        // Importer Backtest
+        qDebug() << "Import du module Backtest...";
+        py::module backtest_module = py::module::import("igtrader.backtestingpy.backtesting.backtesting");
         py::object backtest_class = backtest_module.attr("Backtest");
+        qDebug() << "Module Backtest importé";
+
+        // Calculer la marge
+        double leverage = py_params.contains("maximal_leverage") ? 
+            py_params["maximal_leverage"].cast<double>() : 20.0;
+        double margin = 1.0 / leverage;
         
-        double margin = 1.0;
+        qDebug() << "Configuration du backtest avec:";
+        qDebug() << "- Cash:" << cash;
+        qDebug() << "- Spread:" << spread;
+        qDebug() << "- Margin:" << margin;
+
+        // Créer l'instance Backtest
+        qDebug() << "Création de l'instance Backtest...";
         py::object bt = backtest_class(
-            df,
+            data_df, 
             strategy_class,
-            py::arg("cash")=cash,
-            py::arg("commission")=0.0,
-            py::arg("spread")=spread,
-            py::arg("exclusive_orders")=false,
-            py::arg("strategy_kwargs")=py_params,
-            py::arg("margin")=margin
+            py::arg("cash") = cash,
+            py::arg("commission") = 0.0,
+            py::arg("spread") = spread,
+            py::arg("exclusive_orders") = false,
+            py::arg("strategy_kwargs") = py_params,
+            py::arg("margin") = margin
         );
+        qDebug() << "Instance Backtest créée";
+
+        // Exécuter le backtest avec timeout
+        qDebug() << "Démarrage de l'exécution du backtest...";
+        py::object stats;
         
-        // Exécuter le backtest
-        py::object stats = bt.attr("run")();
+        // Ajouter un mécanisme de timeout simple
+        auto start_time = std::chrono::steady_clock::now();
+        const auto timeout_duration = std::chrono::minutes(5); // 5 minutes timeout
         
-        // Retourner un pointeur opaque vers les stats Python
-        // CORRECTION: Allouer dynamiquement pour éviter les problèmes de durée de vie
-        py::object* stats_ptr = new py::object(stats);
-        return QVariant::fromValue(reinterpret_cast<void*>(stats_ptr));
+        try {
+            stats = bt.attr("run")();
+            auto end_time = std::chrono::steady_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
+            qDebug() << "Backtest terminé en" << duration.count() << "secondes";
+        } catch (const py::error_already_set& e) {
+            qCritical() << "Erreur Python lors de l'exécution du backtest:" << e.what();
+            setError(QString("Erreur Python: %1").arg(e.what()));
+            return QVariant();
+        }
         
+        qDebug() << "Backtest exécuté avec succès";
+
+        // Vérifier les résultats
+        if (stats.is_none()) {
+            setError("Le backtest a retourné des résultats vides");
+            return QVariant();
+        }
+
+        // Convertir les résultats en QVariant (stockage opaque)
+        void* stats_ptr = stats.ptr();
+        qDebug() << "Résultats convertis, pointeur:" << stats_ptr;
+        
+        // Incrémenter la référence pour éviter la destruction
+        stats.inc_ref();
+        
+        return QVariant::fromValue(stats_ptr);
+
+    } catch (const py::error_already_set& e) {
+        qCritical() << "Erreur Python:" << e.what();
+        setError(QString("Erreur Python: %1").arg(e.what()));
+        return QVariant();
     } catch (const std::exception& e) {
-        setError(QString("Error in Python backtest: %1").arg(e.what()));
+        qCritical() << "Erreur C++:" << e.what();
+        setError(QString("Erreur C++: %1").arg(e.what()));
         return QVariant();
     }
 }
@@ -185,24 +287,40 @@ py::dict PyBindingManager::convertParamsToPython(const QMap<QString, QVariant>& 
     for (auto it = params.begin(); it != params.end(); ++it) {
         const QString& key = it.key();
         const QVariant& value = it.value();
-        std::string key_str = key.toStdString();
         
-        switch (value.type()) {
-            case QVariant::Bool:
-                result[key_str.c_str()] = value.toBool();
-                break;
-            case QVariant::Int:
-                result[key_str.c_str()] = value.toInt();
-                break;
-            case QVariant::Double:
-                result[key_str.c_str()] = value.toDouble();
-                break;
-            case QVariant::String:
-                result[key_str.c_str()] = value.toString().toStdString();
-                break;
-            default:
-                result[key_str.c_str()] = value.toString().toStdString();
-                break;
+        // Conversion selon le type QVariant
+        if (value.type() == QVariant::Bool) {
+            result[py::str(key.toStdString())] = py::bool_(value.toBool());
+        }
+        else if (value.type() == QVariant::Int) {
+            result[py::str(key.toStdString())] = py::int_(value.toInt());
+        }
+        else if (value.type() == QVariant::Double) {
+            result[py::str(key.toStdString())] = py::float_(value.toDouble());
+        }
+        else if (value.type() == QVariant::String) {
+            result[py::str(key.toStdString())] = py::str(value.toString().toStdString());
+        }
+        else if (value.type() == QVariant::Time) {
+            QTime time = value.toTime();
+            result[py::str(key.toStdString())] = py::str(time.toString("hh:mm:ss").toStdString());
+        }
+        else if (value.type() == QVariant::Date) {
+            QDate date = value.toDate();
+            result[py::str(key.toStdString())] = py::str(date.toString("dd/MM/yyyy").toStdString());
+        }
+        else if (value.type() == QVariant::List) {
+            py::list py_list;
+            QVariantList list = value.toList();
+            for (const QVariant& item : list) {
+                py_list.append(py::int_(item.toInt()));  // Supposant que ce sont des entiers
+            }
+            result[py::str(key.toStdString())] = py_list;
+        }
+        else {
+            qWarning() << "Type non supporté pour la clé" << key << ":" << value.typeName();
+            // Convertir en string comme fallback
+            result[py::str(key.toStdString())] = py::str(value.toString().toStdString());
         }
     }
     

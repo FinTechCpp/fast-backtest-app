@@ -79,7 +79,7 @@ void BacktestRunner::runBacktest()
     if (allParams.contains("end_date")) {
         QVariant dateVariant = allParams["end_date"];
         if (dateVariant.type() == QVariant::Date) {
-            endDate = QDateTime(dateVariant.toDate());
+            endDate = dateVariant.toDate().startOfDay();
         } else if (dateVariant.type() == QVariant::DateTime) {
             endDate = dateVariant.toDateTime();
         } else {
@@ -192,39 +192,52 @@ BacktestWorker::~BacktestWorker()
 
 void BacktestWorker::run()
 {
+    qDebug() << "BacktestWorker::run() - Début de l'exécution";
+    
     try {
-        qInfo() << "Démarrage du BacktestWorker dans le thread:" << QThread::currentThreadId();
-        
-        // Initialiser PyBindingManager si nécessaire
+        // Vérification de l'initialisation de Python
         PyBindingManager& pyManager = PyBindingManager::getInstance();
         if (!pyManager.isInitialized()) {
-            if (!pyManager.initialize()) {
-                emit error("Erreur d'initialisation de Python: " + pyManager.getLastError());
-                return;
-            }
-        }
-        
-        // Exécuter le backtest Python
-        QVariant result = pyManager.runPythonBacktest(
-            m_data, m_strategyClass, m_cash, m_spread, m_strategyParams
-        );
-        
-        if (result.isNull()) {
-            emit error("Erreur lors de l'exécution du backtest: " + pyManager.getLastError());
+            qCritical() << "PyBindingManager non initialisé";
+            emit error("Python n'est pas initialisé");
             return;
         }
         
-        // Pour l'instant, nous émettons des pointeurs nullptr car nous devons 
-        // implémenter la conversion des résultats Python vers les structures C++
-        // TODO: Implémenter la conversion des résultats
-        void* data = nullptr;
-        void* stats = reinterpret_cast<void*>(0x1); // Pointeur factice non-null pour indiquer le succès
+        qDebug() << "Données disponibles:" << m_data.size() << "barres";
+        qDebug() << "Stratégie:" << m_strategyClass;
+        qDebug() << "Cash:" << m_cash;
+        qDebug() << "Paramètres:" << m_strategyParams;
         
-        emit finished(data, stats);
+        // AJOUT: Timeout pour éviter le blocage indéfini
+        qDebug() << "Démarrage du backtest Python...";
+        
+        QVariant result = pyManager.runPythonBacktest(
+            m_data, 
+            m_strategyClass, 
+            m_cash, 
+            m_spread, 
+            m_strategyParams
+        );
+        
+        qDebug() << "Backtest Python terminé";
+        
+        if (result.isNull()) {
+            QString error = pyManager.getLastError();
+            qCritical() << "Erreur du backtest:" << error;
+            emit this->error(error.isEmpty() ? "Erreur inconnue du backtest" : error);
+            return;
+        }
+        
+        qDebug() << "Émission du signal finished";
+        emit finished(&m_data, result.data());
         
     } catch (const std::exception& e) {
-        emit error(QString("Exception dans BacktestWorker: %1").arg(e.what()));
+        qCritical() << "Exception dans BacktestWorker::run():" << e.what();
+        emit error(QString("Erreur d'exécution: %1").arg(e.what()));
     } catch (...) {
-        emit error("Erreur inconnue dans BacktestWorker");
+        qCritical() << "Exception inconnue dans BacktestWorker::run()";
+        emit error("Erreur d'exécution inconnue");
     }
+    
+    qDebug() << "BacktestWorker::run() - Fin de l'exécution";
 }

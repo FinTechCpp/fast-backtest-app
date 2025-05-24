@@ -318,24 +318,44 @@ def create_base_config(kwargs) -> CppStrategyBaseConfig:
     from_time = CppTime()
     to_time = CppTime()
     
-    if hasattr(trading_from, 'hour') and callable(trading_from.hour):
-        # QTime objects
-        from_time.hour = trading_from.hour()
-        from_time.minute = trading_from.minute()
-        from_time.second = 0
-        
-        to_time.hour = trading_to.hour()
-        to_time.minute = trading_to.minute()
-        to_time.second = 0
-    else:
-        # datetime.time objects
-        from_time.hour = trading_from.hour
-        from_time.minute = trading_from.minute
-        from_time.second = 0
-        
-        to_time.hour = trading_to.hour
-        to_time.minute = trading_to.minute
-        to_time.second = 0
+    # CORRECTION: Gérer les différents types d'entrée
+    def parse_time_object(time_obj, cpp_time):
+        if hasattr(time_obj, 'hour') and callable(time_obj.hour):
+            # QTime objects
+            cpp_time.hour = time_obj.hour()
+            cpp_time.minute = time_obj.minute()
+            cpp_time.second = 0
+        elif hasattr(time_obj, 'hour') and not callable(time_obj.hour):
+            # datetime.time objects
+            cpp_time.hour = time_obj.hour
+            cpp_time.minute = time_obj.minute
+            cpp_time.second = 0
+        elif isinstance(time_obj, str):
+            # String format "HH:MM" ou "HH:MM:SS"
+            time_parts = time_obj.split(':')
+            cpp_time.hour = int(time_parts[0])
+            cpp_time.minute = int(time_parts[1])
+            cpp_time.second = int(time_parts[2]) if len(time_parts) > 2 else 0
+        else:
+            # Fallback: essayer de convertir en string puis parser
+            time_str = str(time_obj)
+            if ':' in time_str:
+                time_parts = time_str.split(':')
+                cpp_time.hour = int(time_parts[0])
+                cpp_time.minute = int(time_parts[1])
+                cpp_time.second = int(time_parts[2]) if len(time_parts) > 2 else 0
+            else:
+                raise ValueError(f"Format de temps non reconnu: {time_obj} (type: {type(time_obj)})")
+    
+    # Appliquer la fonction de parsing
+    try:
+        parse_time_object(trading_from, from_time)
+        parse_time_object(trading_to, to_time)
+    except Exception as e:
+        logging.error(f"Erreur lors du parsing des heures de trading: {e}")
+        logging.error(f"trading_from: {trading_from} (type: {type(trading_from)})")
+        logging.error(f"trading_to: {trading_to} (type: {type(trading_to)})")
+        raise
     
     # Affecter les objets CppTime
     config.trading_from = from_time

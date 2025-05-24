@@ -119,13 +119,14 @@ void BacktestRunner::onBacktestFinished(void* data, void* stats)
     m_isRunning = false;
     resetUI();
     
-    if (!stats) {
-        qCritical() << "Pas de résultats de backtest reçus";
+    if (!data || !stats) {
+        qCritical() << "Pas de résultats de backtest reçus - data:" << data << "stats:" << stats;
         showError("Aucun résultat de backtest reçu");
         return;
     }
     
     qInfo() << "Backtest terminé avec succès, transmission des résultats";
+    qDebug() << "Données à transmettre - data:" << data << "stats:" << stats;
     
     // Transmettre les résultats au gestionnaire principal
     if (m_mainWindow) {
@@ -208,7 +209,6 @@ void BacktestWorker::run()
         qDebug() << "Cash:" << m_cash;
         qDebug() << "Paramètres:" << m_strategyParams;
         
-        // AJOUT: Timeout pour éviter le blocage indéfini
         qDebug() << "Démarrage du backtest Python...";
         
         QVariant result = pyManager.runPythonBacktest(
@@ -228,8 +228,28 @@ void BacktestWorker::run()
             return;
         }
         
-        qDebug() << "Émission du signal finished";
-        emit finished(&m_data, result.data());
+        // CORRECTION: Extraire les bonnes données du QVariantMap
+        QVariantMap resultMap = result.toMap();
+        
+        if (!resultMap.contains("data") || !resultMap.contains("stats")) {
+            qCritical() << "Format de résultat invalide - manque data ou stats";
+            emit error("Format de résultat invalide");
+            return;
+        }
+        
+        void* data = resultMap["data"].value<void*>();
+        void* stats = resultMap["stats"].value<void*>();
+        
+        qDebug() << "Données extraites - data:" << data << "stats:" << stats;
+        
+        if (!data || !stats) {
+            qCritical() << "Pointeurs de données invalides";
+            emit error("Données invalides reçues du backtest");
+            return;
+        }
+        
+        qDebug() << "Émission du signal finished avec les bonnes données";
+        emit finished(data, stats);  // ✅ Correct !
         
     } catch (const std::exception& e) {
         qCritical() << "Exception dans BacktestWorker::run():" << e.what();

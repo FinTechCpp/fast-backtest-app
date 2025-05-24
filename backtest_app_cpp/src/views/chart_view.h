@@ -25,6 +25,11 @@
 #include "../../ChartDirector/include/chartdir.h"
 #include "../../ChartDirector/include/FinanceChart.h"
 
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+
 // Constantes pour les couleurs des marqueurs
 const int BUY_MARKER_COLOR = 0x00FF00;
 const int SELL_MARKER_COLOR = 0xFF0000;

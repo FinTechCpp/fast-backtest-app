@@ -178,9 +178,47 @@ QVariant PyBindingManager::runPythonBacktest(const std::vector<OHLCBar>& data,
 
         // Conversion de l'index datetime
         qDebug() << "Conversion de l'index datetime...";
-        data_df.attr("set_index")(timestamps, py::arg("inplace")=true);
+        try {
+            // Convertir std::vector<std::string> en py::list
+            py::list timestamps_list;
+            for (const auto& ts : timestamps) {
+                timestamps_list.append(py::str(ts));
+            }
+            
+            // Créer un DatetimeIndex pandas
+            py::object to_datetime = pd.attr("to_datetime");
+            py::object datetime_index = to_datetime(timestamps_list);
+            
+            // Assigner l'index au DataFrame
+            data_df.attr("index") = datetime_index;
+            
+            qDebug() << "Index datetime défini avec succès";
+        } catch (const py::error_already_set& e) {
+            qCritical() << "Erreur lors de la création de l'index datetime:" << e.what();
+            setError(QString("Erreur pandas index: %1").arg(e.what()));
+            return QVariant();
+        }
 
-        qDebug() << "Index datetime défini";
+        try {
+            // Ajouter le chemin du module cpp_strategies au sys.path
+            py::module sys = py::module::import("sys");
+            py::list path = sys.attr("path");
+            
+            // Trouver dynamiquement le chemin du projet
+            QString projectRoot = findProjectRoot(QCoreApplication::applicationDirPath());
+            QString cppStrategiesPath = projectRoot + "/cpp_strategies";
+            qDebug() << "Ajout du chemin cpp_strategies:" << cppStrategiesPath;
+            path.append(cppStrategiesPath.toStdString());
+            
+            // Vérifier que le module peut être importé
+            py::module cpp_strategies = py::module::import("cpp_strategies");
+            qDebug() << "Module cpp_strategies importé avec succès";
+            
+        } catch (const py::error_already_set& e) {
+            qCritical() << "Erreur lors de l'import cpp_strategies:" << e.what();
+            setError(QString("Erreur import cpp_strategies: %1").arg(e.what()));
+            return QVariant();
+        }
 
         // Importer la stratégie
         qDebug() << "Import de la stratégie:" << strategyClass;
@@ -253,22 +291,30 @@ QVariant PyBindingManager::runPythonBacktest(const std::vector<OHLCBar>& data,
         }
         
         qDebug() << "Backtest exécuté avec succès";
-
+    
         // Vérifier les résultats
         if (stats.is_none()) {
             setError("Le backtest a retourné des résultats vides");
             return QVariant();
         }
-
-        // Convertir les résultats en QVariant (stockage opaque)
-        void* stats_ptr = stats.ptr();
-        qDebug() << "Résultats convertis, pointeur:" << stats_ptr;
+    
+        // CORRECTION: Créer un QVariantMap pour stocker les deux objets
+        QVariantMap result;
         
-        // Incrémenter la référence pour éviter la destruction
-        stats.inc_ref();
+        // Stocker data_df
+        py::object* data_df_copy = new py::object(data_df);
+        data_df_copy->inc_ref();
+        result["data"] = QVariant::fromValue(static_cast<void*>(data_df_copy));
         
-        return QVariant::fromValue(stats_ptr);
-
+        // Stocker stats
+        py::object* stats_copy = new py::object(stats);
+        stats_copy->inc_ref();
+        result["stats"] = QVariant::fromValue(static_cast<void*>(stats_copy));
+        
+        qDebug() << "Résultats préparés avec data et stats";
+        
+        return QVariant::fromValue(result);
+    
     } catch (const py::error_already_set& e) {
         qCritical() << "Erreur Python:" << e.what();
         setError(QString("Erreur Python: %1").arg(e.what()));

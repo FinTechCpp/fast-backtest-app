@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Font Specification</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Font Specification</p>
+<hr class="separator">
+<div class="content">ChartDirector supports TrueType and OpenType fonts. Many ChartDirector API expects a font name as one of its arguments. This section explains the font name format.
+</div><p class="heading2">Font Family Name</p><div class="content">
+On Windows or macOS, a font name consists of a font family name, followed by optional Bold and/or Italic keywords. The followings are some examples:<br><br>
+<div class="indentedblock"><code>Arial<br>Arial Bold Italic<br>Times New Roman Italic</code></div></div><p class="heading2">Font File Name</p><div class="content">
+On Linux, the font subsystem is not standardized. In many cases, the operating system may not have a GUI or a font subsystem installed. To support Linux, ChartDirector allows using the font file name as the font name. Using font file name also works on Windows and macOS. This is often used for custom fonts.<br><br>
+For font file name, ChartDirector will search for the font in the "fonts" subdirectory under the directory that contains the ChartDirector DLL or shared object (chartdir??.dll, libchartdir.so or libchartdir.dylib, depending on the OS). On Windows and macOS, ChartDirector will also search the operating system fonts directories for the font file. If you want ChartDirector to search other directories, you can list the directories in an environment variable called "FONTPATH". ChartDirector also supports absolute path names and <a href="pathspec.htm">resource path names</a>. The latter allows fonts to be embedded in the executable, without having to distribute as separate files.<br><br>
+Some font files, usually with extension ".ttc", may contain multiple fonts. In this case, after the file name, a vertical bar character and a font index number can be used to specify the font inside the file. The first font inside the file will have font index 0, the second font with font index 1 and so on. For example, "mingliu.ttc|0" is the first font in "mingliu.ttc", and "mingliu.ttc|1" is the second font. If no font index is provided, the first font is assumed.<br><br>
+Fonts with the same family name but different styles are different fonts and have different file names. For example, on Windows, the "Arial" and "Arial Bold" fonts are "arial.ttf" and "arialbd.ttf". Some fonts have no bold or italic versions. In this case the Bold and Italic keywords can be used to ask ChartDirector to artificially bolden and/or italicize the font. An example is "mingliu.ttc Bold".
+</div><p class="heading2">Fallback Font</p><div class="content">
+All fonts only support a limited set of characters. For example, the Arial font does not have Korean characters. On Windows or macOS, if a font does not support a required character, ChartDirector will ask the operating system for a suitable fallback font for that character. On Linux, instead of a single font file name, a list of file names delimited by semicolons can be used. An example is "arial.ttf;malgun.ttf". ChartDirector will then try the fonts one by one until it can find a font that supports the character.
+</div><p class="heading2">Indirect Font Names</p><div class="content">
+ChartDirector supports several special keywords for specifying the font name indirectly. When these keywords are used as font names, ChartDirector will look up the actual font names from a font table. The keywords are as follows:<br><br>
+<div style="width:100%;box-sizing:border-box;"><table width="100%" border="1" cellpadding="5" cellspacing="0"> <tr><th width="19%">Keywords<th>Description <tr><td>"normal"<td>This default normal font, which is the first font in the font table. This is initially mapped to "Arial".
+<tr><td>"bold"<td>The default bold font, which is the second font in the font table. This is initially mapped to "Arial Bold".
+<tr><td>"italic"<td>The default italic font, which is the third font in the font table. This is initially mapped to "Arial Italic".
+<tr><td>"boldItalic"<td>The default bold-italic font, which is the fourth font in the font table. This is initially mapped to "Arial Bold Italic".
+<tr><td>"font<i>N</i>"<td>The (N + 1)th font in the font table (the first font is "font0").
+</table></div><br>
+The font table can be modified using <a href="BaseChart.setFontTable.htm">BaseChart.setFontTable</a> or <a href="DrawArea.setFontTable.htm">DrawArea.setFontTable</a>.<br><br>
+The advantage of using indirect font names is that you can change the fonts in your charts in one place.
+</div><p class="heading2">Built-In Font Mapping</p><div class="content">
+The sample programs that come with ChartDirector use only the Arial and Times New Roman fonts. On Linux, these fonts may not exist. To allow the sample code to run unmodified, the Linux edition of ChartDirector includes the Liberation family of fonts. They are metric compatible with Arial and Times New Roman. If the Arial or Times New Roman fonts are not found, they will be substituted with to the corresponding Liberation fonts.<br><br>
+For compatibility with previous versions of ChartDirector, windows font file names for the Arial and Times New Roman fonts, including the bold and italic variants, can also be used on macOS. They will automatically be converted to macOS compatible names. The windows file names are "arial.ttf", "arialbd.ttf", "ariali.ttf", "arialbi.ttf", "times.ttf", "timesbd.ttf", "timesbi.ttf" and "timesbi.ttf".</div><br>
+<hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div></body>
+</HTML>

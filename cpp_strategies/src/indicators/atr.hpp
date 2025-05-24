@@ -8,7 +8,7 @@
 /**
  * Average True Range (ATR) calculated incrementally
  */
-class ATR : public IncrementalIndicator {
+class ATR : public IncrementalIndicator<double> {
 private:
     int period;
     double current_atr = 0.0;
@@ -16,28 +16,31 @@ private:
     std::deque<double> true_range_history;
     
 public:
-    ATR(int period);
-    double initialize_with_history(
-        const std::vector<double>& high_history,
-        const std::vector<double>& low_history,
-        const std::vector<double>& close_history);
-    double update(double high, double low, double close);
-    double get_value() const;
+    ATR(int period, const std::string& name = "ATR")
+        : IncrementalIndicator<double>(name), period(period) {}
+    virtual double initialize_with_history(const std::vector<BasicCandle>& history) override;
+    virtual double update(const BasicCandle& candle) override;
+    virtual double get_value() const override;
 };
 
-// Implémentation des méthodes...
-inline ATR::ATR(int period) : period(period) {}
 
-inline double ATR::initialize_with_history(
-    const std::vector<double>& high_history,
-    const std::vector<double>& low_history,
-    const std::vector<double>& close_history) 
+inline double ATR::initialize_with_history(const std::vector<BasicCandle>& history)
 {
-    if (high_history.size() < static_cast<size_t>(period + 1)) {
+    if (history.size() < static_cast<size_t>(period + 1)) {
         return 0.0;
     }
     
-    // Calculate True Ranges for the entire period
+    std::vector<double> high_history;
+    std::vector<double> low_history;
+    std::vector<double> close_history;
+    
+    for (const auto& candle : history) {
+        high_history.push_back(candle.high);
+        low_history.push_back(candle.low);
+        close_history.push_back(candle.close);
+    }
+    
+    // Calculate True Range (TR) for the history
     std::vector<double> true_ranges;
     for (size_t i = 1; i < high_history.size(); ++i) {
         double high = high_history[i];
@@ -51,36 +54,33 @@ inline double ATR::initialize_with_history(
         });
         true_ranges.push_back(tr);
     }
-    
     // Calculate initial ATR as simple average of TR
-    if (true_ranges.size() >= static_cast<size_t>(period)) {
-        double sum = 0.0;
-        for (size_t i = true_ranges.size() - period; i < true_ranges.size(); ++i) {
-            sum += true_ranges[i];
-        }
-        current_atr = sum / period;
-        previous_close = close_history.back();
-        is_initialized = true;
+    double sum = 0.0;
+    for (size_t i = true_ranges.size() - period; i < true_ranges.size(); ++i) {
+        sum += true_ranges[i];
     }
-    
+    current_atr = sum / period;
+    previous_close = close_history.back();
+    is_initialized = true;
     return current_atr;
 }
 
-inline double ATR::update(double high, double low, double close) {
+inline double ATR::update(const BasicCandle& candle)
+{
     if (!is_initialized) {
         if (previous_close == 0.0) {
-            previous_close = close;
+            previous_close = candle.close;
             return 0.0;
         }
         
         double tr = std::max({
-            high - low,
-            std::abs(high - previous_close),
-            std::abs(low - previous_close)
+            candle.high - candle.low,
+            std::abs(candle.high - previous_close),
+            std::abs(candle.low - previous_close)
         });
         
         true_range_history.push_back(tr);
-        previous_close = close;
+        previous_close = candle.close;
         
         if (true_range_history.size() >= static_cast<size_t>(period)) {
             double sum = 0.0;
@@ -97,14 +97,14 @@ inline double ATR::update(double high, double low, double close) {
     
     // Calculate new True Range
     double tr = std::max({
-        high - low,
-        std::abs(high - previous_close),
-        std::abs(low - previous_close)
+        candle.high - candle.low,
+        std::abs(candle.high - previous_close),
+        std::abs(candle.low - previous_close)
     });
     
     // Update ATR using Wilder's smoothing method
     current_atr = ((current_atr * (period - 1)) + tr) / period;
-    previous_close = close;
+    previous_close = candle.close;
     
     return current_atr;
 }

@@ -8,53 +8,56 @@
 /**
  * Average True Range (ATR) calculated incrementally
  */
-class ATRC : public IncrementalIndicator {
+class ATRC : public IncrementalIndicator<double> {
 private:
     int period;
     double current_atr = 0.0;
     std::deque<double> true_range_history;
     
 public:
-    ATRC(int period);
-    double initialize_with_history(
-        const std::vector<double>& high_history,
-        const std::vector<double>& low_history);
-    double update(double high, double low);
-    double get_value() const;
+    ATRC(int period, const std::string& name = "ATRC")
+        : IncrementalIndicator<double>(name), period(period) {}
+    double initialize_with_history(const std::vector<BasicCandle>& history) override;
+    double update(const BasicCandle& candle) override;
+    double get_value() const override;
 };
 
-inline ATRC::ATRC(int period) : period(period) {}
-
-inline double ATRC::initialize_with_history(
-    const std::vector<double>& high_history,
-    const std::vector<double>& low_history) 
+inline double ATRC::initialize_with_history(const std::vector<BasicCandle>& history)
 {
-    if (high_history.size() < static_cast<size_t>(period + 1)) {
+    if (history.size() < static_cast<size_t>(period + 1)) {
         return 0.0;
     }
     
-    // Calculate True Ranges for the entire period
+    std::vector<double> high_history;
+    std::vector<double> low_history;
+    
+    for (const auto& candle : history) {
+        high_history.push_back(candle.high);
+        low_history.push_back(candle.low);
+    }
+    
+    // Calculate True Range (TR) for the history
     std::vector<double> true_ranges;
     for (size_t i = 1; i < high_history.size(); ++i) {
         true_ranges.push_back(high_history[i] - low_history[i]);
     }
     
     // Calculate initial ATR as simple average of TR
-    if (true_ranges.size() >= static_cast<size_t>(period)) {
-        double sum = 0.0;
-        for (size_t i = true_ranges.size() - period; i < true_ranges.size(); ++i) {
-            sum += true_ranges[i];
-        }
-        current_atr = sum / period;
-        is_initialized = true;
+    double sum = 0.0;
+    for (size_t i = true_ranges.size() - period; i < true_ranges.size(); ++i) {
+        sum += true_ranges[i];
     }
     
+    current_atr = sum / period;
+    is_initialized = true;
+    
     return current_atr;
-}
+} 
 
-inline double ATRC::update(double high, double low) {
+inline double ATRC::update(const BasicCandle& candle)
+{
     if (!is_initialized) {
-        double tr = high - low;
+        double tr = candle.high - candle.low;
         
         true_range_history.push_back(tr);
         
@@ -72,7 +75,7 @@ inline double ATRC::update(double high, double low) {
     }
     
     // Calculate new True Range
-    double tr = high - low;
+    double tr = candle.high - candle.low;
     
     // Update ATR using Wilder's smoothing method
     current_atr = ((current_atr * (period - 1)) + tr) / period;

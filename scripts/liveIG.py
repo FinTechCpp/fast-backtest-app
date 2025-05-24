@@ -1,11 +1,20 @@
+import sys
+import os
+
+# Add the parent directory of scripts to the path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_root)
+
+# Add the cpp_strategies directory specifically
+cpp_strategies_dir = os.path.join(project_root, 'cpp_strategies')
+sys.path.append(cpp_strategies_dir)
+
 import logging
 import datetime
 import time
 import pandas as pd
-import os
 import traceback
 import signal
-import sys
 
 # Create logs directory if it doesn't exist
 log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logs')
@@ -22,23 +31,22 @@ logging.basicConfig(
     ]
 )
 
-# Ajouter après la configuration de logging
-
+from cpp_strategies import LogLevel
+# Configurer le callback pour les logs C++
 def cpp_log_callback(message, level):
     """Fonction de callback pour les logs provenant du code C++"""
-    if level == 0:  # DEBUG
-        logging.debug(f"C++: {message}")
-    elif level == 1:  # INFO
-        logging.info(f"C++: {message}")
-    elif level == 2:  # WARNING
-        logging.warning(f"C++: {message}")
-    elif level == 3:  # ERROR
+    if level == LogLevel.ERROR:
         logging.error(f"C++: {message}")
+    elif level == LogLevel.WARNING:
+        logging.warning(f"C++: {message}")
+    elif level == LogLevel.INFO:
+        logging.info(f"C++: {message}")
+    elif level == LogLevel.DEBUG:
+        logging.debug(f"C++: {message}")
     else:
-        logging.info(f"C++: {message}")  # Fallback pour les autres niveaux
+        logging.info(f"C++: {message}")
 
-from igtrader.Strategies.BuyTrendFollowing import BuyTrendFollowing
-from igtrader.Strategies.CrossEMA import CrossEMA, CrossEMAConfig
+
 from igtrader.WrapperIGAPI.TickBroker import TickBroker, PriceSource
 from igtrader.Strategies.Strategy import BaseCandle
 # Importer les classes C++ à la place des classes Python
@@ -52,7 +60,7 @@ from cpp_strategies import (
     CppSignal
 )
 
-CANDLE_TIME_UNIT = 10  # n-second time unit candles to trade with
+CANDLE_TIME_UNIT = 20  # n-second time unit candles to trade with
 
 # Variable globale pour arrêter proprement le programme
 running = True
@@ -74,7 +82,8 @@ def process_candle(candle: BaseCandle, broker: TickBroker, strategy):
         strategy: Stratégie de trading C++ à utiliser
     """
     try:
-        logging.info(f"Processing complete candle: {candle.date} - O:{candle.Open} H:{candle.High} L:{candle.Low} C:{candle.Close}")
+        logging.info(f"Processing complete candle: {candle.date} - O:{candle.Open} H:{candle.High} L:{candle.Low} C:{candle.Close}")        
+        
         
         # Convertir la bougie Python en bougie C++
         cpp_candle = CppCandle()
@@ -144,6 +153,7 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
+    
     # Créer et configurer l'objet de configuration C++ de base
     cpp_base_config = CppStrategyBaseConfig()
     
@@ -167,23 +177,29 @@ def main():
     cpp_base_config.stop_loss_distance = 20.0
     
     # Paramètres ATR
-    cpp_base_config.use_atr_for_sl_tp = True
+    cpp_base_config.use_atr_for_sl = True
+    cpp_base_config.use_atr_for_tp = True
     cpp_base_config.atr_period = 14
-    cpp_base_config.stop_loss_atr_multiplier = 2.0
-    cpp_base_config.take_profit_atr_multiplier = 6.0
+    cpp_base_config.stop_loss_atr_multiplier = 3.0
+    cpp_base_config.take_profit_atr_multiplier = 15.0
     cpp_base_config.min_stop_loss_distance = 5.0
     cpp_base_config.min_take_profit_distance = 5.0
+    
+    # Paramètres de Min/Max pour SL
+    cpp_base_config.use_minmax_for_sl = False
+    cpp_base_config.sl_minmax_periods = 5
+    cpp_base_config.sl_minmax_delta = 5.0
     
     # Paramètres de gestion du risque
     cpp_base_config.use_risk_based_sizing = True
     cpp_base_config.risk_percentage = 1.0
     cpp_base_config.cash = 100000.0
-    cpp_base_config.max_position_percentage = 100.0
-    cpp_base_config.leverage_limit = 20.0
+    cpp_base_config.max_position_percentage = 2.0
+    cpp_base_config.leverage_limit = 100.0
     
     # Paramètres de break-even
     cpp_base_config.use_break_even = True
-    cpp_base_config.break_even_threshold = 0.7
+    cpp_base_config.break_even_threshold = 0.3
     
     # Paramètres de perte maximale journalière
     cpp_base_config.use_daily_max_loss = True
@@ -192,16 +208,21 @@ def main():
     
     # Créer et configurer la configuration de la stratégie C++
     cpp_strategy_config = CppBuyHeikinGreenConfig()
-    cpp_strategy_config.ema_short_period = 150
+    cpp_strategy_config.ema_short_period = 20
     cpp_strategy_config.ema_long_period = 198
     cpp_strategy_config.stoch_fastk = 10
     cpp_strategy_config.stoch_slowk = 7
     cpp_strategy_config.stoch_slowd = 3
-    cpp_strategy_config.stoch_threshold = 20
+    cpp_strategy_config.stoch_threshold = 30
+    cpp_strategy_config.rsi_period = 14
+    cpp_strategy_config.rsi_threshold = 50
+    
     cpp_strategy_config.use_ema_short_filter = True
-    cpp_strategy_config.use_ema_long_filter = True
+    cpp_strategy_config.use_ema_long_filter = False
     cpp_strategy_config.use_stoch_filter = True
+    cpp_strategy_config.use_rsi_filter = False
     cpp_strategy_config.use_previous_ha_candle_red_filter = True
+    
 
     # Instancier la stratégie C++
     strategy = CppBuyHeikinGreen(cpp_base_config, cpp_strategy_config)

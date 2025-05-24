@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Borderless Bar Chart</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Borderless Bar Chart</p>
+<hr class="separator">
+<div class="content">
+<img src="images/hbar.png" width='600' height='250'>
+<br><br>
+This example demonstrates a horizontal bar chart with no axes, grid lines or and plot area border. It also demonstrates using gradient colors for the bars, and a number of other ChartDirector features.<br><br>
+The key features demonstrated in this example are:<br><br>
+<ul><li> Swap the x and y axes to create a horizontal bar chart using <a href="XYChart.swapXY.htm">XYChart.swapXY</a>.<br><br>
+<li> Create a gradient color that changes smoothly from dark green to white along a horizontal direction using <a href="BaseChart.gradientColor.htm">BaseChart.gradientColor</a>, then use it as the bar color in <a href="XYChart.addBarLayer.htm">XYChart.addBarLayer</a>.<br><br>
+<li> Set the plot area background, border and grid line colors to <a href="Chart.Transparent.htm">Transparent</a> using <a href="XYChart.setPlotArea.htm">XYChart.setPlotArea</a>.<br><br>
+<li> Set the x-axis, y-axis and y-axis labels to <a href="Chart.Transparent.htm">Transparent</a> using <a href="Axis.setColors.htm">Axis.setColors</a>.<br><br>
+<li> Set the x-axis font style to deep red 10 points Arial Bold Italic by using the <a href="TextBox.setFontStyle.htm">TextBox.setFontStyle</a> and <a href="TextBox.setFontColor.htm">TextBox.setFontColor</a> of the <a href="TextBox.htm">TextBox</a> object that represents the x-axis label prototype (obtained using <a href="Axis.setLabels.htm">Axis.setLabels</a>).<br><br>
+<li> Set the aggregate bar label style to deep red 10 points Times Bold Italic using <a href="Layer.setAggregateLabelStyle.htm">Layer.setAggregateLabelStyle</a>.<br><br>
+<li> Customize the aggregate bar labels by using <a href="Layer.setAggregateLabelFormat.htm">Layer.setAggregateLabelFormat</a>.</ul>
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/hbar". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+
+int main(int argc, char *argv[])
+{
+    // The data for the bar chart
+    double data[] = {3.9, 8.1, 10.9, 14.2, 18.1, 19.0, 21.2, 23.2, 25.7, 36};
+    const int data_size = (int)(sizeof(data)/sizeof(*data));
+
+    // The labels for the bar chart
+    const char* labels[] = {"Bastic Group", "Simpa", "YG Super", "CID", "Giga Tech", "Indo Digital",
+        "Supreme", "Electech", "THP Thunder", "Flash Light"};
+    const int labels_size = (int)(sizeof(labels)/sizeof(*labels));
+
+    // Create a XYChart object of size 600 x 250 pixels
+    XYChart* c = new XYChart(600, 250);
+
+    // Add a title to the chart using Arial Bold Italic font
+    c-&gt;addTitle("Revenue Estimation - Year 2002", "Arial Bold Italic");
+
+    // Set the plotarea at (100, 30) and of size 400 x 200 pixels. Set the plotarea border,
+    // background and grid lines to Transparent
+    c-&gt;setPlotArea(100, 30, 400, 200, Chart::Transparent, Chart::Transparent, Chart::Transparent,
+        Chart::Transparent, Chart::Transparent);
+
+    // Add a bar chart layer using the given data. Use a gradient color for the bars, where the
+    // gradient is from dark green (0x008000) to white (0xffffff)
+    BarLayer* layer = c-&gt;addBarLayer(DoubleArray(data, data_size), c-&gt;gradientColor(100, 0, 500, 0,
+        0x008000, 0xffffff));
+
+    // Swap the axis so that the bars are drawn horizontally
+    c-&gt;swapXY(true);
+
+    // Set the bar gap to 10%
+    layer-&gt;setBarGap(0.1);
+
+    // Use the format "US$ xxx millions" as the bar label
+    layer-&gt;setAggregateLabelFormat("US$ {value} millions");
+
+    // Set the bar label font to 10pt Times Bold Italic/dark red (0x663300)
+    layer-&gt;setAggregateLabelStyle("Times New Roman Bold Italic", 10, 0x663300);
+
+    // Set the labels on the x axis
+    TextBox* textbox = c-&gt;xAxis()-&gt;setLabels(StringArray(labels, labels_size));
+
+    // Set the x axis label font to 10pt Arial Bold Italic
+    textbox-&gt;setFontStyle("Arial Bold Italic");
+    textbox-&gt;setFontSize(10);
+
+    // Set the x axis to Transparent, with labels in dark red (0x663300)
+    c-&gt;xAxis()-&gt;setColors(Chart::Transparent, 0x663300);
+
+    // Set the y axis and labels to Transparent
+    c-&gt;yAxis()-&gt;setColors(Chart::Transparent, Chart::Transparent);
+
+    // Output the chart
+    c-&gt;makeChart("hbar.png");
+
+    //free up resources
+    delete c;
+
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Discrete Heat Map</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Discrete Heat Map</p>
+<hr class="separator">
+<div class="content">
+<img src="images/discreteheatmap.png" width='520' height='470'>
+<br><br>
+This example demonstrates the basic steps in creating a discrete heat map.<br><br>
+A discrete heat map consists of rectangular cells in a grid of which the cell color depends on its data value.<br><br>
+<ul><li> Create an <a href="XYChart.htm">XYChart</a> object using <a href="XYChart.XYChart.htm">XYChart.XYChart</a>.<br><br>
+<li> Specify the plot area of the chart using <a href="XYChart.setPlotArea.htm">XYChart.setPlotArea</a>. The plot area is the rectangle bounded by the x and y axes. You should leave some margin on the outside of the plot area for axis labels, chart titles, etc.<br><br>
+<li> Add a discrete heat map layer using <a href="XYChart.addDiscreteHeatMapLayer.htm">XYChart.addDiscreteHeatMapLayer</a>.<br><br>
+<li> Specify the labels on the x-axis and y-axis using <a href="Axis.setLabels.htm">Axis.setLabels</a>. Shift the labels    by 0.5 units using <a href="Axis.setOffset.htm">Axis.setOffset</a> to align the labels with the cell center. (The    default is to align the labels with the grid lines.)<br><br>
+<li> The color axis (visually represented as the color legend) is positioned vertically to the right of the plot area using <a href="DiscreteHeatMapLayer.setColorAxis.htm">DiscreteHeatMapLayer.setColorAxis</a>.<br><br>
+<li> Pass the chart to the CChartViewer for display using <a href="CChartViewer.setChart.htm">CChartViewer.setChart</a> (MFC version) or <a href="QChartViewer.setChart.htm">QChartViewer.setChart</a> (Qt version), or generate the chart as an image file using <a href="BaseChart.makeChart.htm">BaseChart.makeChart</a> (Command Line version).<br><br>
+<li> Generate tool tips for the chart using <a href="BaseChart.getHTMLImageMap.htm">BaseChart.getHTMLImageMap</a>. (MFC/Qt version)</ul>
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/discreteheatmap". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+
+int main(int argc, char *argv[])
+{
+    // The x-axis and y-axis labels
+    const char* xLabels[] = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
+    const int xLabels_size = (int)(sizeof(xLabels)/sizeof(*xLabels));
+    const char* yLabels[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+    const int yLabels_size = (int)(sizeof(yLabels)/sizeof(*yLabels));
+
+    // Random data for the 10 x 10 cells
+    RanSeries* r = new RanSeries(2);
+    DoubleArray zData = r-&gt;get2DSeries(xLabels_size, yLabels_size, 0, 100);
+
+    // Create an XYChart object of size 520 x 470 pixels.
+    XYChart* c = new XYChart(520, 470);
+
+    // Set the plotarea at (50, 30) and of size 400 x 400 pixels.
+    PlotArea* p = c-&gt;setPlotArea(50, 30, 400, 400);
+
+    // Create a discrete heat map with 10 x 10 cells
+    DiscreteHeatMapLayer* layer = c-&gt;addDiscreteHeatMapLayer(zData, xLabels_size);
+
+    // Set the x-axis labels. Use 8pt Arial Bold font. Set axis stem to transparent, so only the
+    // labels are visible. Set 0.5 offset to position the labels in between the grid lines.
+    c-&gt;xAxis()-&gt;setLabels(StringArray(xLabels, xLabels_size));
+    c-&gt;xAxis()-&gt;setLabelStyle("Arial Bold", 8);
+    c-&gt;xAxis()-&gt;setColors(Chart::Transparent, Chart::TextColor);
+    c-&gt;xAxis()-&gt;setLabelOffset(0.5);
+    c-&gt;xAxis()-&gt;setTitle("X Axis Title Placeholder", "Arial Bold", 12);
+
+    // Set the y-axis labels. Use 8pt Arial Bold font. Set axis stem to transparent, so only the
+    // labels are visible. Set 0.5 offset to position the labels in between the grid lines.
+    c-&gt;yAxis()-&gt;setLabels(StringArray(yLabels, yLabels_size));
+    c-&gt;yAxis()-&gt;setLabelStyle("Arial Bold", 8);
+    c-&gt;yAxis()-&gt;setColors(Chart::Transparent, Chart::TextColor);
+    c-&gt;yAxis()-&gt;setLabelOffset(0.5);
+    c-&gt;yAxis()-&gt;setTitle("Y Axis Title Placeholder", "Arial Bold", 12);
+
+    // Position the color axis 20 pixels to the right of the plot area and of the same height as the
+    // plot area. Put the labels on the right side of the color axis. Use 8pt Arial Bold font for
+    // the labels.
+    ColorAxis* cAxis = layer-&gt;setColorAxis(p-&gt;getRightX() + 20, p-&gt;getTopY(), Chart::TopLeft,
+        p-&gt;getHeight(), Chart::Right);
+    cAxis-&gt;setLabelStyle("Arial Bold", 8);
+
+    // Output the chart
+    c-&gt;makeChart("discreteheatmap.png");
+
+    //free up resources
+    delete r;
+    delete c;
+
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

@@ -2,7 +2,6 @@ venv
 .env
 __pycache__/
 *.pyc
-*.csv
 .bash_history
 .cache/conda/notices/notices.cache
 .cache/pip/*
@@ -22,11 +21,13 @@ backtest_interface/PyQt/*.spec
 *.bak
 backtest_interface/PyQt/backtest_config.ini.bak
 *.ini.bakbot_v3/docker/postgres-data/
-cpp_strategies/cpp_strategies.cpython-312-x86_64-linux-gnu.so
-cpp_strategies/cpp_strategies.cpython-311-x86_64-linux-gnu.so
-cpp_strategies/build/lib.linux-x86_64-cpython-312/cpp_strategies.cpython-312-x86_64-linux-gnu.so
-cpp_strategies/build/lib.linux-x86_64-cpython-311/cpp_strategies.cpython-311-x86_64-linux-gnu.so
-cpp_strategies/build/temp.linux-x86_64-cpython-312/src/binding.o
-cpp_strategies/build/temp.linux-x86_64-cpython-311/src/binding.o
 .vscode/
 *.o
+# C++ extension files
+*.so
+*.pyd
+*.dll
+# Build directories
+build/
+dist/
+*.egg-info/

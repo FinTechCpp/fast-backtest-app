@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Tree Map Layout</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Tree Map Layout</p>
+<hr class="separator">
+<div class="content">
+<img src="images/treemaplayout0.png" width='300' height='300'>&nbsp;&nbsp;<img src="images/treemaplayout1.png" width='300' height='300'>&nbsp;&nbsp;<img src="images/treemaplayout2.png" width='300' height='300'>&nbsp;&nbsp;<img src="images/treemaplayout3.png" width='300' height='300'>&nbsp;&nbsp;<img src="images/treemaplayout4.png" width='300' height='300'>
+<br><br>
+The example demonstrates various tree map layout methods configurable using <a href="TreeMapNode.setLayoutMethod.htm">TreeMapNode.setLayoutMethod</a>.
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/treemaplayout". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+
+void createChart(int chartIndex, const char *filename)
+{
+    // Random data for the tree map
+    RanSeries* r = new RanSeries(3);
+    DoubleArray data = r-&gt;getSeries(20, 20, 400);
+
+    // Create a Tree Map object of size 300 x 300 pixels
+    TreeMapChart* c = new TreeMapChart(300, 300);
+    c-&gt;setPlotArea(20, 20, 260, 260);
+
+    // Obtain the root of the tree map, which is the entire plot area
+    TreeMapNode* root = c-&gt;getRootNode();
+
+    // Add first level nodes to the root.
+    root-&gt;setData(data);
+
+    if (chartIndex == 0) {
+        // Squarity - Layout the cells so that they are as square as possible.
+        c-&gt;addTitle("Squarify");
+        root-&gt;setLayoutMethod(Chart::TreeMapSquarify);
+    } else if (chartIndex == 1) {
+        // Strip layout - Cells flow from left to right, top to bottom. The number of cells in each
+        // row is such that they will be as close to a square as possible. (The setLayoutMethod also
+        // supports other flow directions.)
+        c-&gt;addTitle("Strip");
+        root-&gt;setLayoutMethod(Chart::TreeMapStrip);
+    } else if (chartIndex == 2) {
+        // Binary Split by Size - Split the cells into left/right groups so that their size are as
+        // close as possible. For each group, split the cells into top/bottom groups using the same
+        // criteria. Continue until each group contains one cell. (The setLayoutMethod also supports
+        // other flow directions.)
+        c-&gt;addTitle("Binary Split by Size");
+        root-&gt;setLayoutMethod(Chart::TreeMapBinaryBySize);
+    } else if (chartIndex == 3) {
+        // Binary Split by Count - Same as "Binary Split by Size", except that the cell count
+        // (instead of the size) is used to split the cells.
+        c-&gt;addTitle("Binary Split by Count");
+        root-&gt;setLayoutMethod(Chart::TreeMapBinaryByCount);
+    } else if (chartIndex == 4) {
+        // Binary Split by Size (Sorted) - Same as "Binary Split by Size" except the cells are
+        // sorted first.
+        c-&gt;addTitle("Binary Split by Size (Sorted)");
+        root-&gt;setSorting(-1);
+        root-&gt;setLayoutMethod(Chart::TreeMapBinaryBySize);
+    }
+
+    // Get the prototype (template) for the first level nodes.
+    TreeMapNode* nodeConfig = c-&gt;getLevelPrototype(1);
+
+    // Set the label format for the nodes to show the label and value with 8pt Arial Bold font in
+    // black color (000000) and center aligned in the node.
+    nodeConfig-&gt;setLabelFormat("{index}", "Arial", 8, 0x000000, Chart::Center);
+
+    // Set automatic fill color and white (ffffff) border
+    nodeConfig-&gt;setColors(Chart::DataColor, 0xffffff);
+
+    // Output the chart
+    c-&gt;makeChart(filename);
+
+    //free up resources
+    delete r;
+    delete c;
+
+}
+
+int main(int argc, char *argv[])
+{
+    createChart(0, "treemaplayout0.png");
+    createChart(1, "treemaplayout1.png");
+    createChart(2, "treemaplayout2.png");
+    createChart(3, "treemaplayout3.png");
+    createChart(4, "treemaplayout4.png");
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

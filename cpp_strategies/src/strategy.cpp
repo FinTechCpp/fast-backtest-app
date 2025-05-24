@@ -78,13 +78,13 @@ bool Strategy::is_trade_risk_acceptable(double risk) {
 }
 
 bool Strategy::is_new_trading_day() {
-    if (!current_candle.date.is_valid() || !current_trading_day.is_valid()) {
+    if (!candle_manager.get_latest_candle().date.is_valid() || !current_trading_day.is_valid()) {
         return true;
     }
     
-    return (current_candle.date.year != current_trading_day.year ||
-            current_candle.date.month != current_trading_day.month ||
-            current_candle.date.day != current_trading_day.day);
+    return (candle_manager.get_latest_candle().date.year != current_trading_day.year ||
+            candle_manager.get_latest_candle().date.month != current_trading_day.month ||
+            candle_manager.get_latest_candle().date.day != current_trading_day.day);
 }
     
 void Strategy::update_daily_pnl_tracking() {
@@ -94,7 +94,7 @@ void Strategy::update_daily_pnl_tracking() {
     
     // Si c'est un nouveau jour, on réinitialise le compteur et on réactive le trading
     if (is_new_trading_day()) {
-        current_trading_day = current_candle.date;
+        current_trading_day = candle_manager.get_latest_candle().date;
         daily_pnl = 0.0;
         
         // Calculer le montant maximum de perte autorisé pour cette journée
@@ -117,18 +117,18 @@ void Strategy::update_daily_pnl_tracking() {
 
 // Méthode pour vérifier si on est dans les horaires de trading
 bool Strategy::check_time() {
-    if (!current_candle.date.is_valid()) {
+    if (!candle_manager.get_latest_candle().date.is_valid()) {
         // Utiliser log_time_check avec false pour indiquer qu'on est hors horaires
         logger->log_time_check(false, "Date de bougie invalide", LogLevel::WARNING);
         return false;
     }
     
     // Vérifier si la date a changé depuis la dernière vérification
-    if (current_candle.date != last_check_date) {
-        last_check_date = current_candle.date;
+    if (candle_manager.get_latest_candle().date != last_check_date) {
+        last_check_date = candle_manager.get_latest_candle().date;
         
         // Calculer le jour de la semaine (0=lundi, 6=dimanche)
-        int weekday = get_day_of_week(current_candle.date);
+        int weekday = get_day_of_week(candle_manager.get_latest_candle().date);
         
         // Vérifier si c'est un jour de trading
         weekday_check = std::find(base_config.trading_days.begin(), 
@@ -137,12 +137,12 @@ bool Strategy::check_time() {
         
         if (!weekday_check) {
             logger->log_time_check(false, "Jour non autorisé pour le trading: " + 
-                                 current_candle.date.to_string(), LogLevel::INFO);
+                                 candle_manager.get_latest_candle().date.to_string(), LogLevel::INFO);
             return false;
         }
         
         // Vérifier les heures de trading
-        const Time& current_time = current_candle.date.time;
+        const Time& current_time = candle_manager.get_latest_candle().date.time;
         
         bool after_start = (base_config.trading_from < current_time || 
                             base_config.trading_from == current_time);
@@ -297,28 +297,17 @@ void Strategy::execute_short() {
     signal = generate_sell_signal();
 }
 
-// filepath: /home/max/ig-trading-bot/cpp_strategies/src/strategy.cpp
 bool Strategy::execute_filters() {
-    auto all_filters = filters();
-    logger->log_general("Exécution de " + std::to_string(all_filters.size()) + " filtres", LogLevel::DEBUG);
+    for (const auto& filter : filters())
+        if (!filter())
+            return false;  // Stop execution if any filter fails
     
-    bool all_passed = true;
-    
-    for (size_t i = 0; i < all_filters.size(); ++i) {
-        bool filter_passed = all_filters[i]();
-        if (!filter_passed) {
-            logger->log_general("Filtre #" + std::to_string(i) + " échoué", LogLevel::INFO);
-            all_passed = false;
-        } else {
-            logger->log_general("Filtre #" + std::to_string(i) + " passé", LogLevel::DEBUG);
-        }
-    }
-    
-    return all_passed;
+    return true;  // All filters passed
 }
 
 void Strategy::execute() {
     if (is_executing) {
+        logger->log_execution_step("Exécution déjà en cours", false);
         return;
     }
     
@@ -339,9 +328,18 @@ void Strategy::execute() {
         return;
     }
     logger->log_execution_step("Vérification horaires", true);
+
+    // Mise à jour des indicateurs
+    if (!update_indicators()) {
+        logger->log_execution_step("Mise à jour indicateurs", false);
+        logger->log_general("Indicateurs non prêts - Arrêt de l'exécution", LogLevel::INFO);
+        reset();
+        is_executing = false;
+        return;
+    }
+    logger->log_execution_step("Mise à jour indicateurs", true);
     
     before();
-    logger->log_execution_step("Before()", true);
     
     bool should_long_val = should_long();
     bool should_short_val = should_long_val ? false : should_short();
@@ -351,8 +349,7 @@ void Strategy::execute() {
     } else if (should_short_val) {
         logger->log_execution_step("should_short()", true);
     } else {
-        logger->log_execution_step("Conditions d'entrée", false);
-        logger->log_general("Aucune condition d'entrée remplie", LogLevel::INFO);
+        logger->log_execution_step("Conditions d entrée", false);
         reset();
         is_executing = false;
         return;
@@ -374,7 +371,6 @@ void Strategy::execute() {
     }
     
     after();
-    logger->log_execution_step("After()", true);
     is_executing = false;
 }
 
@@ -382,15 +378,17 @@ void Strategy::execute() {
 Strategy::Strategy(const StrategyBaseConfig& config) 
     : base_config(config), 
     signal(std::make_unique<Signal>()),
-    logger(std::make_unique<StrategyLogger>()) {
+    logger(std::make_unique<LoggerManager>()) {
 
 }
 
 // Main update method
-Signal* Strategy::update_candle(const Candle& candle) {
-    // Store the current candle
+Signal* Strategy::update_candle(const Candle& candle) {    
+    auto start_time = std::chrono::high_resolution_clock::now();
+
+    // TODO: C'est probablement a supprimer cela sert juste dans les stratégies de fille pour avoir les information extra (in_position, entry_price, position_size, position_pl_pct)
     current_candle = candle;
-    
+
     // Mettre à jour le logger avec la bougie actuelle
     logger->set_current_candle(candle);
     logger->clear();  // Vider les logs précédents
@@ -416,21 +414,30 @@ Signal* Strategy::update_candle(const Candle& candle) {
     if (in_position) {
         logger->log_general("En position: Prix d'entrée=" + std::to_string(entry_price) + 
                           ", Taille=" + std::to_string(position_size) + 
-                          ", P&L=" + std::to_string(position_pl_pct) + "%", LogLevel::INFO);
+                          ", P&L=" + std::to_string(position_pl_pct) + "%");
     }
     
     // Add to buffer for historical calculations
-    buffer.push_back(candle);
-    if (buffer.size() > 200) {  // Limit buffer size
-        buffer.erase(buffer.begin());
-    }
+    BasicCandle basic_candle(candle.date, candle.open, candle.high, candle.low, candle.close);
+    candle_manager.add_candle(basic_candle);
+
     
     // Check for break-even signal before executing strategy
     auto be_signal = check_break_even();
     if (be_signal) {
         logger->log_general("Signal de break-even généré: " + 
-                          std::to_string(be_signal->new_sl), LogLevel::INFO);
+                          std::to_string(be_signal->new_sl));
         signal = std::move(be_signal);
+
+        // Calculer le temps d'exécution avant de retourner
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        double duration_ms = duration.count() / 1000.0;
+        logger->log_execution_time(duration_ms);
+        
+        // Obtenir tous les logs complets et les envoyer dans un seul message de log
+        cpp_log(logger->get_all_logs(), logger->get_verbosity());
+
         return signal.get();
     }
     
@@ -439,16 +446,22 @@ Signal* Strategy::update_candle(const Candle& candle) {
     execute();
     logger->log_execution_end();
 
+    // Arrêter le chronomètre et calculer la durée
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+    double duration_ms = duration.count() / 1000.0;
+    
+    // Logger le temps d'exécution
+    logger->log_execution_time(duration_ms);
+
     // Obtenir tous les logs complets et les envoyer dans un seul message de log
-    if (logger->get_verbosity() >= 3) {  // Seulement au niveau DEBUG
-        cpp_log(logger->get_all_logs(), LogLevel::DEBUG);
-    }
+    cpp_log(logger->get_all_logs(), logger->get_verbosity());
     
     return signal.get();
 }
 
 // Properties
 double Strategy::price() const {
-    return current_candle.close;
+    return candle_manager.get_latest_candle().close;
 }
 

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>DataAccelerator.extendLength</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="DataAccelerator.htm">DataAccelerator</a>.<wbr>extendLength</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+void extendLength(int length);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Extends the number of valid values in the arrays.<br><br>
+This method is usually used by real time charts. After storing the real time data into the data arrays, the extendLength method should be used to notify the DataAccelerator of the new data. You must ensure all data arrays in the DataAccelerator are updated to contain valid data before calling this method.<br><br>
+You can only increase the number of valid values, but not decrease it.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>length</td><td>(Mandatory)</td><td>The number of valid values in the arrays.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+None
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

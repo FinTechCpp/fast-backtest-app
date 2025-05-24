@@ -54,6 +54,29 @@
         "streambuf": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "iostream": "cpp"
-    }
+        "iostream": "cpp",
+        "any": "cpp",
+        "typeindex": "cpp",
+        "set": "cpp",
+        "fstream": "cpp",
+        "list": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp",
+        "*.txx": "cpp",
+        "*.moc": "cpp",
+        "ranges": "cpp",
+        "cstring": "cpp",
+        "bitset": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "forward_list": "cpp",
+        "unordered_set": "cpp",
+        "future": "cpp",
+        "cinttypes": "cpp",
+        "valarray": "cpp"
+    },
+    "cmake.ignoreCMakeListsMissing": true
 }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>BaseChart.getHTMLImageMap</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="BaseChart.htm">BaseChart</a>.<wbr>getHTMLImageMap</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+const char *getHTMLImageMap(const char *url, const char *queryFormat = 0, const char *extraAttr = 0, int offsetX = 0, int offsetY = 0);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Generates an HTML image map to define hot spots and tooltips for the chart.<br><br>
+HTML image maps are a standard way to define hot spots on an image. It defines the hot spot regions and their associate parameters and tooltips. This method generates image maps for the data representation objects (bars for a bar chart, sectors for a pie chart, line segments for a line chart, etc) on a chart. Other methods, such as <a href="Axis.getHTMLImageMap.htm">Axis.getHTMLImageMap</a> and <a href="LegendBox.getHTMLImageMap.htm">LegendBox.getHTMLImageMap</a>, can be used to generate image maps for other parts of the chart.<br><br>
+Since HTML is an open standard, you can append custom image map entries to define custom hot spots on the chart. For example, if you include your company logo on the chart using <a href="BaseChart.addText.htm">BaseChart.addText</a>, you may define a hot spot for the logo to make it clickable. The <a href="Box.getImageCoor.htm">Box.getImageCoor</a> can be used to obtain the image map coordinates for this purpose.<br><br>
+Although HTML image map comes from web technology, ChartDirector desktop controls support it as well.<br><br>
+This method should be called only after creating the chart image (eg. using <a href="BaseChart.makeChart.htm">BaseChart.makeChart</a>, <a href="BaseChart.makeChart2.htm">BaseChart.makeChart2</a> or <a href="BaseChart.makeChart3.htm">BaseChart.makeChart3</a>). The image map cannot be determined without creating the chart image first.<br><br>
+This method accepts a URL as its argument. When generating an image map, it appends query parameters to the URL to indicate which data point the user has clicked.<br><br>
+The following is an example image map generated for a bar chart with 3 bars.<br><br>
+<div class="codeblock"><code>&lt;area shape=<wbr>"rect" coords=<wbr>"34,<wbr>219,<wbr>63,<wbr>139" href=<wbr>"myurl.cpp?x=<wbr>0&xLabel=<wbr>Mon&dataSet=<wbr>0&dataSetName=<wbr>Revenue&value=<wbr>100" title=<wbr>"Apple: 174"&gt;<br>&lt;area shape=<wbr>"rect" coords=<wbr>"74,<wbr>219,<wbr>103,<wbr>119" href=<wbr>"myurl.cpp?x=<wbr>1&xLabel=<wbr>Tue&dataSet=<wbr>0&dataSetName=<wbr>Revenue&value=<wbr>125" title=<wbr>"Orangle: 99"&gt;<br>&lt;area shape=<wbr>"rect" coords=<wbr>"114,<wbr>219,<wbr>143,<wbr>22" href=<wbr>"myurl.cpp?x=<wbr>2&xLabel=<wbr>Wed&dataSet=<wbr>0&dataSetName=<wbr>Revenue&value=<wbr>245.78" title=<wbr>"Mango: 201"&gt;</code></div><br>
+The image map consists of multiple &lt;area&gt; tags, one for each bar in the chart. In the "href" attribute, query parameters are appended to the URL to provide information on the bar clicked. The image map can also include extra attributes, most commonly used to provide tooltips (the "title" attribute in this example). See also <a href="imagemapspec.htm">Image Maps, Hot Spots and CDML Tooltips</a> for more information about tooltips.<br><br>
+The image map produces by ChartDirector does not include the &lt;map&gt; and &lt;/map&gt; tag. This is intentional so that you can add additional custom &lt;area&gt; tags to the image map, or append multiple image maps together.<br><br>
+The type of query parameters to append to the URL depends on the chart type and layer type. The default query parameters are as follows .<br><br>
+<div style="width:100%;box-sizing:border-box;"><table width="100%" border="1" cellpadding="5" cellspacing="0"> <tr><th width="38%">Chart/Layer Type<th>Default Query Format
+<tr><td>Pie chart<td>sector={sector}&label={label}&value={value}&percent={percent}
+<tr><td>Bar, Line, Spline, Step Line, Area and Scatter layers<td>x={x}&xLabel={xLabel}&dataSet={dataSet}&dataSetName={dataSetName}&value={value}
+<tr><td>Percentage Bar and Percentage Area layers<td>x={x}&xLabel={xLabel}&dataSet={dataSet}&dataSetName={dataSetName}&value={value}&percent={percent}
+<tr><td>HLOC and CandleStick layers<td>x={x}&xLabel={xLabel}&high={high}&low={low}&open={open}&close={close}
+<tr><td>Box-Whisker layer<td>x={x}&xLabel={xLabel}&top={top}&bottom={bottom}&max={max}&min={min}&med={med}
+<tr><td>Trend layer<td>dataSetName={dataSetName}
+<tr><td>Vector layer and Polar Vector layer<td>x={x}&xLabel={xLabel}&dataSetName={dataSetName}&value={value}&dir={dir}&len={len}
+<tr><td>Polar Line, Area, Spline Line and Spline Area layers<td>"x={x}&label={label}&name={name}&value={value}"
+<tr><td>Pyramid chart<td>"index={index}&label={label}&value={value}&percent={percent}"
+<tr><td>3D Scatter Chart<td>"x={x}&y={y}&z={z}&dataSet={dataSet}&dataSetName={name}"
+</table></div><br>
+The texts in curly brackets (e.g. {sector}, {dataSet}, etc.) will be replaced by the actual values when generating the image map. For example, {sector} will be replaced by the sector number of the sector.<br><br>
+ChartDirector allows developers to modify the query parameters by using the <b>queryFormat</b> argument. For example, if "x={x}&v={value}" is used as the <b>queryFormat</b> for an XYChart, only the x position and the value of the data point will be included in query parameters.<br><br>
+Please refer to <a href="paramsub.htm">Parameter Substitution and Formatting</a> on all available parameters and their meanings.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>url</td><td>(Mandatory)</td><td>The URL to be used in the "href" attribute of the image map. <a href="paramsub.htm">Parameter Substitution and Formatting</a> is supported. Use an empty string if no href attribute is needed.</td></tr><tr><td>queryFormat</td><td>""</td><td>A text string representing the template of the query parameters to be appended to the URL. <a href="paramsub.htm">Parameter Substitution and Formatting</a> is supported.<br><br>
+The special keyword "{default}" represents the default query parameters. This is useful for specifying appending to the default.<br><br>
+Note that an empty string means to use the default query query parameters. To specify no query parameter, use a space character.</td></tr><tr><td>extraAttr</td><td>""</td><td>A text string to specify additional attributes to add to the &lt;area&gt; tag. <a href="paramsub.htm">Parameter Substitution and Formatting</a> is supported.</td></tr><tr><td>offsetX</td><td>0</td><td>An offset to be added to all x coordinates in the image map. This is useful if the current image will be shifted and inserted into another image. In this case, the image map will need to be shifted by the same offset.</td></tr><tr><td>offsetY</td><td>0</td><td>An offset to be added to all y coordinates in the image map. See offsetX above for description.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+A text string containing the image map generated.
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

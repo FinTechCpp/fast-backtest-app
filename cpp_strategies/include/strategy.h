@@ -1,5 +1,8 @@
 #pragma once
 #include "common.h"
+#include "Managers/CandleManager.hpp"
+#include "Managers/PositionManager.hpp"
+#include "Managers/LoggerManager.hpp"
 #include <string>
 #include <vector>
 #include <map>
@@ -10,7 +13,6 @@
 #include <iomanip>
 #include <sstream>
 #include "indicators/indicators.hpp"
-#include "strategyLogger.hpp"
 
 // Fonction utilitaire pour parser une chaîne de date ISO
 DateTime parse_iso_datetime(const std::string& iso_date);
@@ -27,80 +29,25 @@ struct Signal {
     double new_sl = 0.0;  // For MOVE_SL action
 };
 
-struct StrategyBaseConfig {
-    // Time settings
-    Time trading_from = {7, 0, 0};   // 7:00 AM
-    Time trading_to = {23, 0, 0};    // 11:00 PM
-    std::vector<int> trading_days = {0, 1, 2, 3, 4};  // 0=Monday, 6=Sunday
-    
-    // Fixed SL/TP values
-    double take_profit_distance = 30.0;
-    double stop_loss_distance = 20.0;
-    
-    // Paramètres ATR pour SL et TP
-    bool use_atr_for_sl = false;     // Important: valeur par défaut false
-    bool use_atr_for_tp = false;     // Important: valeur par défaut false
-    int atr_period = 14;
-    double stop_loss_atr_multiplier = 2.0;
-    double take_profit_atr_multiplier = 3.0;
-    double min_stop_loss_distance = 5.0;
-    double min_take_profit_distance = 5.0;
-    
-    // Nouveaux paramètres Min/Max pour SL
-    bool use_minmax_for_sl = false;
-    int sl_minmax_periods = 5;
-    double sl_minmax_delta = 5.0;
-        
-    // Risk management
-    bool use_risk_based_sizing = false;
-    double risk_percentage = 1.0;
-    double cash = 100000.0;
-    double max_position_percentage = 100.0;
-    double leverage_limit = 20.0;
-    
-    // Break-even parameters
-    bool use_break_even = false;
-    double break_even_threshold = 0.7;
-
-    // Perte maximale journalière
-    bool use_daily_max_loss = false;
-    double daily_max_loss_percentage = 2.0;
-    double daily_max_loss_amount = 0.0; // Calculé à partir de cash et daily_max_loss_percentage
-};
-
 class Strategy {
 public:
-    // Constructor
     Strategy(const StrategyBaseConfig& config);
-    
     virtual ~Strategy() = default;
-    
-    // Core strategy methods to implement in derived classes
-    virtual void before() {}
-    virtual void after() {}
-    virtual bool should_long() = 0;
-    virtual bool should_short() { return false; }
-    virtual void go_long() = 0;
-    virtual void go_short() {
-        throw std::runtime_error("Short not implemented");
-    }
-    
-    // Default implementation for filters
-    virtual std::vector<std::function<bool()>> filters() {
-        return {};
-    }
     
     // Main update method
     Signal* update_candle(const Candle& candle);
+
+    void set_log_level(int level) {
+        logger->set_verbosity(level);
+    }
     
-    // Properties
-    double price() const;
-    // double get_indicator_value(const std::string& indicator_name) const;
 
 protected:
     StrategyBaseConfig base_config;
-    std::vector<Candle> buffer;
-    Candle current_candle;
+    CandleManager candle_manager;
+    std::unique_ptr<LoggerManager> logger;
+    Candle current_candle; // TODO : a supprimer faut trouver un moyen de stocker ce qui est important dans le candle autrelment
+
     bool in_position = false;
     double entry_price = 0.0;
     double position_size = 0.0;
@@ -131,7 +78,6 @@ protected:
     // Cache pour le dernier trade
     double last_trade_pnl = 0.0;
 
-    std::unique_ptr<StrategyLogger> logger;
 
     double calculate_trade_risk(bool is_long);
     bool is_trade_risk_acceptable(double risk);
@@ -151,4 +97,21 @@ protected:
     void execute_short();
     bool execute_filters();
     void execute();
+
+    // Core strategy methods to implement in derived classes
+    virtual bool update_indicators() { return true; };
+    virtual void before() {}
+    virtual void after() {}
+    virtual bool should_long() = 0;
+    virtual bool should_short() { return false; }
+    virtual void go_long() = 0;
+    virtual void go_short() {
+        throw std::runtime_error("Short not implemented");
+    }
+    virtual std::vector<std::function<bool()>> filters() {
+        return {};
+    }
+
+    // Properties
+    double price() const;
 };

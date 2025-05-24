@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Simple Tree Map</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Simple Tree Map</p>
+<hr class="separator">
+<div class="content">
+<img src="images/simpletreemap.png" width='400' height='400'>
+<br><br>
+This example demonstrates the basic steps in creating a tree map.<br><br>
+<ul><li> Create a <a href="TreeMapChart.htm">TreeMapChart</a> object using <a href="TreeMapChart.TreeMapChart.htm">TreeMapChart.TreeMapChart</a>.<br><br>
+<li> Specify the plot area of the chart using <a href="TreeMapChart.setPlotArea.htm">TreeMapChart.setPlotArea</a>.<br><br>
+<li> Obtain the root node of the tree map using <a href="TreeMapChart.htm">TreeMapChart</a>,getRootNode and add child nodes to it using <a href="TreeMapNode.setData.htm">TreeMapNode.setData</a>.<br><br>
+<li> Get the child node prototype using <a href="TreeMapChart.getLevelPrototype.htm">TreeMapChart.getLevelPrototype</a> and use it to configure the styles of all the child nodes.<br><br>
+<li> Pass the chart to the CChartViewer for display using <a href="CChartViewer.setChart.htm">CChartViewer.setChart</a> (MFC version) or <a href="QChartViewer.setChart.htm">QChartViewer.setChart</a> (Qt version), or generate the chart as an image file using <a href="BaseChart.makeChart.htm">BaseChart.makeChart</a> (Command Line version).<br><br>
+<li> Generate tool tips for the chart using <a href="BaseChart.getHTMLImageMap.htm">BaseChart.getHTMLImageMap</a>. (MFC/Qt version)</ul>
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/simpletreemap". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+
+int main(int argc, char *argv[])
+{
+    // Data for the tree map
+    double data[] = {25, 18, 15, 12, 8, 30, 35};
+    const int data_size = (int)(sizeof(data)/sizeof(*data));
+
+    // Labels for the tree map
+    const char* labels[] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon", "Zeta", "Eta"};
+    const int labels_size = (int)(sizeof(labels)/sizeof(*labels));
+
+    // Colors for the tree map
+    int colors[] = {0xff5555, 0xff9933, 0xffff44, 0x66ff66, 0x44ccff, 0x6699ee, 0xdd99dd};
+    const int colors_size = (int)(sizeof(colors)/sizeof(*colors));
+
+    // Create a Tree Map object of size 400 x 400 pixels
+    TreeMapChart* c = new TreeMapChart(400, 400);
+
+    // Set the plotarea at (10, 10) and of size 380 x 380 pixels
+    c-&gt;setPlotArea(10, 10, 380, 380);
+
+    // Obtain the root of the tree map, which is the entire plot area
+    TreeMapNode* root = c-&gt;getRootNode();
+
+    // Add first level nodes to the root.
+    root-&gt;setData(DoubleArray(data, data_size), StringArray(labels, labels_size), IntArray(colors,
+        colors_size));
+
+    // Get the prototype (template) for the first level nodes.
+    TreeMapNode* nodeConfig = c-&gt;getLevelPrototype(1);
+
+    // Set the label format for the nodes to show the label and value with 8pt Arial Bold font in
+    // black color (000000) and center aligned in the node.
+    nodeConfig-&gt;setLabelFormat("{label}&lt;*br*&gt;{value}", "Arial Bold", 8, 0x000000, Chart::Center);
+
+    // Set the node fill color to the provided color and the border color to white (ffffff)
+    nodeConfig-&gt;setColors(-1, 0xffffff);
+
+    // Output the chart
+    c-&gt;makeChart("simpletreemap.png");
+
+    //free up resources
+    delete c;
+
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

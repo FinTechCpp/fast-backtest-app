@@ -15,19 +15,19 @@ from cpp_strategies import (
     LogLevel
 )
 
-# Configuration du callback
-def log_from_cpp(message, level):
-    if level == LogLevel.DEBUG:
-        logging.debug(f"C++: {message}")
-    elif level == LogLevel.INFO:
-        logging.info(f"C++: {message}")
-    elif level == LogLevel.WARNING:
-        logging.warning(f"C++: {message}")
-    elif level == LogLevel.ERROR:
-        logging.error(f"C++: {message}")
+# # Configuration du callback
+# def log_from_cpp(message, level):
+#     if level == LogLevel.DEBUG:
+#         logging.debug(f"C++: {message}")
+#     elif level == LogLevel.INFO:
+#         logging.info(f"C++: {message}")
+#     elif level == LogLevel.WARNING:
+#         logging.warning(f"C++: {message}")
+#     elif level == LogLevel.ERROR:
+#         logging.error(f"C++: {message}")
 
-# Enregistrer le callback
-set_log_callback(log_from_cpp)
+# # Enregistrer le callback
+# set_log_callback(log_from_cpp)
 
 class BuyHeikinGreenBA(BacktestingStrategy):
     """
@@ -75,7 +75,8 @@ class BuyHeikinGreenBA(BacktestingStrategy):
         
         # 3) Instantiate the C++ strategy with the configurations
         self.cpp_strategy = CppBuyHeikinGreen(cpp_base_config, cpp_strategy_config)
-        
+        self.cpp_strategy.set_log_level(logging.getLogger().getEffectiveLevel())
+
         # Store configs for reference
         self.base_config = cpp_base_config
         self.strategy_config = cpp_strategy_config

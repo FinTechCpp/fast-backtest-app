@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Log Scale Axis</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Log Scale Axis</p>
+<hr class="separator">
+<div class="content">
+<img src="images/logaxis0.png" width='200' height='180'>&nbsp;&nbsp;<img src="images/logaxis1.png" width='200' height='180'>
+<br><br>
+This example demonstrates using a log scale axis versus a linear scale axis.<br><br>
+In ChartDirector, log scale axis can be configured using <a href="Axis.setLogScale.htm">Axis.setLogScale</a>, <a href="Axis.setLogScale2.htm">Axis.setLogScale2</a> or <a href="Axis.setLogScale3.htm">Axis.setLogScale3</a>.
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/logaxis". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+
+void createChart(int chartIndex, const char *filename)
+{
+    // The data for the chart
+    double data[] = {100, 125, 260, 147, 67};
+    const int data_size = (int)(sizeof(data)/sizeof(*data));
+    const char* labels[] = {"Mon", "Tue", "Wed", "Thu", "Fri"};
+    const int labels_size = (int)(sizeof(labels)/sizeof(*labels));
+
+    // Create a XYChart object of size 200 x 180 pixels
+    XYChart* c = new XYChart(200, 180);
+
+    // Set the plot area at (30, 10) and of size 140 x 130 pixels
+    c-&gt;setPlotArea(30, 10, 140, 130);
+
+    // Ise log scale axis if required
+    if (chartIndex == 1) {
+        c-&gt;yAxis()-&gt;setLogScale();
+    }
+
+    // Set the labels on the x axis
+    c-&gt;xAxis()-&gt;setLabels(StringArray(labels, labels_size));
+
+    // Add a color bar layer using the given data. Use a 1 pixel 3D border for the bars.
+    c-&gt;addBarLayer(DoubleArray(data, data_size), IntArray(0, 0))-&gt;setBorderColor(-1, 1);
+
+    // Output the chart
+    c-&gt;makeChart(filename);
+
+    //free up resources
+    delete c;
+
+}
+
+int main(int argc, char *argv[])
+{
+    createChart(0, "logaxis0.png");
+    createChart(1, "logaxis1.png");
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

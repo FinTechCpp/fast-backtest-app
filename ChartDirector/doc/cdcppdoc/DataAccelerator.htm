@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>DataAccelerator</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">DataAccelerator</p>
+<hr class="separator">
+<div class="content">
+The DataAccelerator class is for speeding up processing of huge data series. With the DataAccelerator, it is possible to plot a chart with 1 billion data points with programmable track cursor support. The chart can smoothly zoom out to display all data points and zoom in 100,000,000X to see individual data points. At the same time, the chart can update in real time with thousands of data points per second.<br><br>
+Even if DataAccelerator is not used, ChartDirector can often achieve adequate performance for up to a few million data points depending on chart complexity. That means you do not need to use DataAccelerator if you have less than 100000 data points.<br><br>
+Each DataAccelerator can support one x data series shared by multiple y data series. Multi-threading can be used to process the series in parallel. You can use multiple DataAccelerator objects if you have multiple x data series.<br><br>
+The DataAccelerator needs around 12 bytes of RAM per data value. Since the application must store the data in RAM before passing it to DataAccelerator, it needs at least 8 bytes per double precision number. That means the application would consume around 20 bytes per value, or 20G of RAM for 1 billion values.<br><br>
+In the current version of ChartDirector, only XY chart line layers can support DataAccelerator with the <a href="XYChart.addLineLayer3.htm">XYChart.addLineLayer3</a> method. Area charts can be created from line layers with <a href="XYChart.addInterLineLayer.htm">XYChart.addInterLineLayer</a>.
+<br><br>
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Method</th><th width="19%">Inherited</th><th>Description</th>
+</tr>
+<tr>
+<td><a href="DataAccelerator.DataAccelerator.htm">DataAccelerator</a></td><td>(Self)</td><td>Creates a DataAccelerator object.</td></tr><tr><td><a href="DataAccelerator.addDataSeries.htm">addDataSeries</a></td><td>(Self)</td><td>Adds a data series.</td></tr><tr><td><a href="DataAccelerator.extendLength.htm">extendLength</a></td><td>(Self)</td><td>Extends the number of valid values in the arrays.</td></tr><tr><td><a href="DataAccelerator.setSubsetRange.htm">setSubsetRange</a></td><td>(Self)</td><td>Set the data range used for chart plotting.</td>
+</tr>
+</table>
+</div>
+
+</div>
+<hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

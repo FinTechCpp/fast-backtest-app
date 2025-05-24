@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Axis.syncScale</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="Axis.htm">Axis</a>.<wbr>syncScale</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+void syncScale(const Axis* axis, double slope = 1, double intercept = 0);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Synchronizes the scale of this axis with another axis using a linear formula.<br><br>
+The scale of this axis (value) will be related to the scale of the source axis (value2) using the following formula:<br><br>
+<div class="indentedblock"><code>value = value2 * slope + intercept</code></div><br>
+The differences between syncScale and <a href="Axis.syncAxis.htm">Axis.syncAxis</a> are:<br><br>
+<ul> <li><a href="Axis.syncAxis.htm">Axis.syncAxis</a> assumes the two axes are of the same length. In addition to the scale, it will also synchronize the ticks and labels, and configurations that may affect the positions of ticks and labels, such as axis margins and axis indentation. This ensures the two axes scale align properly.<br><br>
+<li>syncScale does not assume the two axes are of the same length. For example, the y-axis of one chart can be synchronized with the <a href="ColorAxis.htm">ColorAxis</a> of a different chart. The two axes can have different labels to fit their different lengths. </ul>
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>axis</td><td>(Mandatory)</td><td>The axis to synchronize to. A value of null means not to synchronize to any axis.</td></tr><tr><td>slope</td><td>1</td><td>The slope for synchronizing this axis to the other axis.</td></tr><tr><td>intercept</td><td>0</td><td>The intercept parameter for synchronizing this axis to the other axis.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+None
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

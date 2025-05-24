@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Heat Map Cell Labels</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Heat Map Cell Labels</p>
+<hr class="separator">
+<div class="content">
+<img src="images/heatmapcelllabels.png" width='480' height='540'>
+<br><br>
+This example demonstrates adding labels to the cells, adding gaps between cells and using a custom color scale.<br><br>
+This example is similar to <a href="discreteheatmap.htm">Discrete Heat Map</a>, with the following additions:<br><br>
+<ul><li> Some cells are set to <a href="Chart.NoValue.htm">NoValue</a> to hide them.<br><br>
+<li> <a href="Layer.setDataLabelFormat.htm">Layer.setDataLabelFormat</a> is used to set the cell labels to "{z|0}", which means to display the cell value with no decimal place. Please refer to <a href="paramsub.htm">Parameter Substitution and Formatting</a> for available formatting options.<br><br>
+<li> <a href="DiscreteHeatMapLayer.setCellGap.htm">DiscreteHeatMapLayer.setCellGap</a> is used to configured the gaps between cells.<br><br>
+<li> <a href="ColorAxis.setColorScale.htm">ColorAxis.setColorScale</a> is used to configured a custom color scale.</ul>
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/heatmapcelllabels". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+
+int main(int argc, char *argv[])
+{
+    // The x-axis and y-axis labels
+    const char* xLabels[] = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
+    const int xLabels_size = (int)(sizeof(xLabels)/sizeof(*xLabels));
+    const char* yLabels[] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+    const int yLabels_size = (int)(sizeof(yLabels)/sizeof(*yLabels));
+
+    // Random data for the 10 x 10 cells
+    RanSeries* rand = new RanSeries(2);
+    DoubleArray zData = rand-&gt;get2DSeries(xLabels_size, yLabels_size, 0, 100);
+
+    // We set the middle 5 x 5 cells to NoValue to remove them from the chart
+    for(int x = 3; x &lt; 7; ++x) {
+        for(int y = 3; y &lt; 7; ++y) {
+            ((double*)(zData.data))[y * xLabels_size + x] = Chart::NoValue;
+        }
+    }
+
+    // Create an XYChart object of size 480 x 540 pixels.
+    XYChart* c = new XYChart(480, 540);
+
+    // Set the plotarea at (50, 40) and of size 400 x 400 pixels. Set the background, border, and
+    // grid lines to transparent.
+    PlotArea* p = c-&gt;setPlotArea(50, 40, 400, 400, -1, -1, Chart::Transparent, Chart::Transparent);
+
+    // Create a discrete heat map with 10 x 10 cells
+    DiscreteHeatMapLayer* layer = c-&gt;addDiscreteHeatMapLayer(zData, xLabels_size);
+
+    // Set the x-axis labels. Use 8pt Arial Bold font. Set axis stem to transparent, so only the
+    // labels are visible. Set 0.5 offset to position the labels in between the grid lines. Position
+    // the x-axis at the top of the chart.
+    c-&gt;xAxis()-&gt;setLabels(StringArray(xLabels, xLabels_size));
+    c-&gt;xAxis()-&gt;setLabelStyle("Arial Bold", 8);
+    c-&gt;xAxis()-&gt;setColors(Chart::Transparent, Chart::TextColor);
+    c-&gt;xAxis()-&gt;setLabelOffset(0.5);
+    c-&gt;xAxis()-&gt;setTitle("X axis title placeholder", "Arial Bold", 12);
+    c-&gt;setXAxisOnTop();
+
+    // Set the y-axis labels. Use 8pt Arial Bold font. Set axis stem to transparent, so only the
+    // labels are visible. Set 0.5 offset to position the labels in between the grid lines. Reverse
+    // the y-axis so that the labels are flowing top-down instead of bottom-up.
+    c-&gt;yAxis()-&gt;setLabels(StringArray(yLabels, yLabels_size));
+    c-&gt;yAxis()-&gt;setLabelStyle("Arial Bold", 8);
+    c-&gt;yAxis()-&gt;setColors(Chart::Transparent, Chart::TextColor);
+    c-&gt;yAxis()-&gt;setLabelOffset(0.5);
+    c-&gt;yAxis()-&gt;setTitle("Y axis title placeholder", "Arial Bold", 12);
+    c-&gt;yAxis()-&gt;setReverse();
+
+    // Set a 3-pixel gap between cells
+    layer-&gt;setCellGap(3);
+
+    // Use the z value as the cell label
+    layer-&gt;setDataLabelFormat("{z|0}");
+
+    // Position the color axis 20 pixels below the plot area and of the width as the plot area. Put
+    // the labels at the bottom side of the color axis. Use 8pt Arial Bold font for the labels.
+    ColorAxis* cAxis = layer-&gt;setColorAxis(p-&gt;getLeftX(), p-&gt;getBottomY() + 20, Chart::TopLeft,
+        p-&gt;getWidth(), Chart::Bottom);
+    cAxis-&gt;setLabelStyle("Arial Bold", 8);
+    cAxis-&gt;setTitle("Color legend title placeholder", "Arial Bold", 12);
+
+    // Set the color stops and scale of the color axis
+    double colorScale[] = {0, 0x00ff00, 50, 0xffff00, 80, 0xff6600, 100, 0xff0000};
+    const int colorScale_size = (int)(sizeof(colorScale)/sizeof(*colorScale));
+    cAxis-&gt;setColorScale(DoubleArray(colorScale, colorScale_size));
+    cAxis-&gt;setLinearScale(0, 100, 10);
+
+    // Output the chart
+    c-&gt;makeChart("heatmapcelllabels.png");
+
+    //free up resources
+    delete rand;
+    delete c;
+
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

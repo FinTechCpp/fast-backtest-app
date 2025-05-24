@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>Path Specification</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">Path Specification</p>
+<hr class="separator">
+<div class="content">Many ChartDirector APIs expect a path for loading a file. Examples include <a href="BaseChart.setBgImage.htm">BaseChart.setBgImage</a> and the <a href="cdml.htm">CDML</a> &lt;*img*&gt; tag.<br><br>
+ChartDirector supports two types of paths - file system path and resource path. If the path starts with "@/", it is a resource path, otherwise it is a file system path.
+</div><p class="heading2">File System Path</p><div class="content">
+The file system path is the path used to access files in the file system.<br><br>
+If a relative path is used, it will be relative to the "current working directory" determined by the operating system. This may not be the same as the directory that contains the executing code.<br><br>
+You may use <a href="BaseChart.setSearchPath.htm">BaseChart.setSearchPath</a> to specify other directories to search if a relative path is used.
+</div><p class="heading2">What is a Resource</p><div class="content">
+Many applications require images. For example, the application icon is an image. Pushbuttons or toolbars may have images or icons on them. To avoid having to distribute many images files with the application, many application frameworks have facilities to allow these contents to be embedded into the executable. These embedded contents are referred to as resources.<br><br>
+There are many different resource systems. For example, Windows and MacOS have different resource systems. Qt, which is a cross platform framework, has its own resource system different from that of the operating system. The .NET and Java frameworks also have their own resource systems. In the followings, we will discuss resource systems that are commonly used in C++.
+</div><p class="heading2">Windows Resource</p><div class="content">
+Windows has built-in support for resources in executable files (EXE or DLL). They are commonly used in C++ applications developed with Microsoft frameworks (such as MFC). For this resource system, each resource must have a type and a resource ID.<br><br>
+You can add a resource into a C++ project by using the Visual Studio resource view. For ChartDirector, we are interested only in file-like resources, such as PNG, JPG GIF or font files. To add them as resources, right click on the resource file and select "Add Resource". Then press the “Import” button to import the file. For PNG files, recent versions of Visual Studio will assign them to the PNG resource type. For JPG, GIF or font files, Visual Studio does not have a default resource type, so it will prompt for the a resource type. You can use any unique type name, such as "images" or "JPG" (without quotes), as the resource type.<br><br>
+When you add a resource, Visual Studio will automatically allocate an integer as the resource ID, It will also create a macro, such as IDB_PNG1, to represent the integer. As the integer or macro is not meaningful, it is recommended to change the ID to a meaningful name. In ChartDirector sample code, we use the filename as the resource ID. Note that in Visual Studio, if you use a text string as the resource ID, you would need to enter it enclosed in double quotes.<br><br>
+In the ChartDirector API, to specify a resource path, the path should be in the format "@/resource_type/resource_id". An example is "@/PNG/abc.png". The "@/" tells ChartDirector that it is a resource path. This is followed by the resource type ("PNG" in the example), a slash, and the resource ID ("abc.png" in the example). If you use an integer as the resource ID, it can be included in the resource path in decimal.<br><br>
+<div class="greyblock">
+Note that the macro (eg. IDB_PNG1) created by Visual Studio is not the resource ID. It is a macro containing the resource ID. As macros are not expanded in text strings, a resource path like "@/PNG/IDB_PNG1" would not work. Instead, code like the followings would be required:<br><br>
+<div class="codeblock"><code class='pre'>char resource_path[256];
+sprintf(resource_path, "@/PNG/%d", IDB_PNG1);</code></div><br>
+Due to the above, it is more convenient to use a meaningful name (text string) as the resource ID, rather than a macro containing an integer.
+</div></div><p class="heading2">Qt Resource</p><div class="content">
+Qt is cross platform, so it does not rely on the resource system of the operating system. Instead, it has its own resource system. Please refer to Qt documentation for details. ChartDirector supports the Qt resource system if the project includes qchartviewer.cpp (the ChartDirector QChartViewer). Qt resource can be referenced in ChartDirector using the path "@/res_path" , in which "res_path" is the Qt resource path.
+</div><p class="heading2">MacOS Resource</p><div class="content">
+For MacOS, if the application is based on the Qt framework, Qt resources can be used. Otherwise, the MacOS resource system can be used.<br><br>
+In MacOS, an application can be distributed as an application bundle, in which resources are stored in the "Contents/Resources" subdirectory of the bundle. So in MacOS, a resource is a file in the file system, and is accessible using a file system path.
+</div><p class="heading2">Hard Coded Resource</p><div class="content">
+Some OS, such as Linux, do not have a built-in resource system. If the application is based on the Qt framework, Qt resources can be used. Otherwise, a common method is to hard code the content in the source code. For an image, it is like:<br><br>
+<div class="codeblock"><code class='pre'>unsigned char my_image[] = { 0x89, 0x50, 0x4e, 0x47, ... };
+unsigned int my_image_len = 405;</code></div><br>
+In the above, the my_image array can include the bytes of an image file, and my_image_len is the length of that array. In this way, the image can be compiled into the executable and be accessed using the my_image and my_image_len variables. In many Linux distributions, there is a utility "xxd" that can generate the code similar to the above for an image.<br><br>
+To use a hard coded resource in ChartDirector, the resource would need to be assigned a resource ID using <a href="Chart.setResource.htm">Chart::setResource</a>, <a href="BaseChart.setResource.htm">BaseChart.setResource</a> or <a href="DrawArea.setResource.htm">DrawArea.setResource</a>. The resource can then be referenced using "@/res_id", in which "res_id" is the resource ID.
+</div><p class="heading2">Other Resource System</p><div class="content">
+Just like Qt has its own resource system, other frameworks may also have their own resource systems. To use this type of resource in ChartDirector, first read the resource content into memory with the framework API, then use <a href="Chart.setResource.htm">Chart::setResource</a>, <a href="BaseChart.setResource.htm">BaseChart.setResource</a> or <a href="DrawArea.setResource.htm">DrawArea.setResource</a> to assigned a resource ID to the memory. The resource can then be referenced as "@/res_id", in which "res_id" is the resource ID.
+</div><p class="heading2">Dynamic Resource</p><div class="content">
+Normally, resources are static contents embedded into an application. ChartDirector also allows dynamic resources, which are contents generated or obtained at runtime. This allows dynamic contents to be used in APIs that expect a file or resource path. For example, you can use a dynamically generated image in <a href="cdml.htm">CDML</a> &lt;*img*&gt;, or retrieve an image (such as a map) from a database and use it as the background image of a chart, without having to save the image as a file first.<br><br>
+A dynamic resource can be a DrawArea object or an array of bytes containing the content. It can be assigned a resource ID using <a href="Chart.setResource.htm">Chart::setResource</a>, <a href="BaseChart.setResource.htm">BaseChart.setResource</a>, <a href="BaseChart.setResource2.htm">BaseChart.setResource2</a>, <a href="DrawArea.setResource.htm">DrawArea.setResource</a> or <a href="DrawArea.setResource2.htm">DrawArea.setResource2</a>.  The resource can then be referenced as "@/res_id", in which "res_id" is the resource ID.</div><br>
+<hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div></body>
+</HTML>

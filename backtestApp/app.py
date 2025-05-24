@@ -111,14 +111,14 @@ class BacktestApp(QMainWindow):
         self.update_strategy_specific_panel()
         
         # Connecter le changement de stratégie pour mettre à jour le panel spécifique
-        self.general_params_panel.widgets['strategy_combo'].currentTextChanged.connect(
+        self.general_params_panel.widgets['strategy'].currentTextChanged.connect(
             self.update_strategy_specific_panel
         )
 
     def update_strategy_specific_panel(self):
         """Met à jour le panel spécifique en fonction de la stratégie sélectionnée."""
         # Obtenir la stratégie sélectionnée
-        selected_strategy = self.general_params_panel.widgets['strategy_combo'].currentText()
+        selected_strategy = self.general_params_panel.widgets['strategy'].currentText()
         
         # Supprimer l'ancien panel spécifique s'il existe
         if hasattr(self, 'current_strategy_widget') and self.current_strategy_widget:

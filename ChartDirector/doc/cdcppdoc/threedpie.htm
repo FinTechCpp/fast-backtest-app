@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>3D Pie Chart</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1">3D Pie Chart</p>
+<hr class="separator">
+<div class="content">
+<img src="images/threedpie.png" width='360' height='300'>
+<br><br>
+This example extends the <a href="simplepie.htm">Simple Pie Chart</a> example by drawing the chart in 3D, adding a title, and exploding a sector.<br><br>
+<ul><li> Add a title to the chart using <a href="BaseChart.addTitle.htm">BaseChart.addTitle</a>.<br><br>
+<li> Draw the pie in 3D using <a href="PieChart.set3D.htm">PieChart.set3D</a>.<br><br>
+<li> Explode a sector using <a href="PieChart.setExplode.htm">PieChart.setExplode</a>.</ul>
+</div>
+<p class="heading1a">Source Code Listing</p>
+<div class="content">
+The following is the command line version of the code in "cppdemo/threedpie". The MFC version of the code is in "mfcdemo/mfcdemo". The Qt Widgets version of the code is in "qtdemo/qtdemo". The QML/Qt Quick version of the code is in "qmldemo/qmldemo".
+<div class='codeblock'><code class='pre'>#include "chartdir.h"
+
+int main(int argc, char *argv[])
+{
+    // The data for the pie chart
+    double data[] = {25, 18, 15, 12, 8, 30, 35};
+    const int data_size = (int)(sizeof(data)/sizeof(*data));
+
+    // The labels for the pie chart
+    const char* labels[] = {"Labor", "Licenses", "Taxes", "Legal", "Insurance", "Facilities",
+        "Production"};
+    const int labels_size = (int)(sizeof(labels)/sizeof(*labels));
+
+    // Create a PieChart object of size 360 x 300 pixels
+    PieChart* c = new PieChart(360, 300);
+
+    // Set the center of the pie at (180, 140) and the radius to 100 pixels
+    c-&gt;setPieSize(180, 140, 100);
+
+    // Add a title to the pie chart
+    c-&gt;addTitle("Project Cost Breakdown");
+
+    // Draw the pie in 3D
+    c-&gt;set3D();
+
+    // Set the pie data and the pie labels
+    c-&gt;setData(DoubleArray(data, data_size), StringArray(labels, labels_size));
+
+    // Explode the 1st sector (index = 0)
+    c-&gt;setExplode(0);
+
+    // Output the chart
+    c-&gt;makeChart("threedpie.png");
+
+    //free up resources
+    delete c;
+
+    return 0;
+}</code></div>
+</div>
+<br><hr class="separator"><div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

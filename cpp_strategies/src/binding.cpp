@@ -38,7 +38,7 @@ PYBIND11_MODULE(cpp_strategies, m) {
         .def(py::init<int, int, int>())
         .def("initialize_with_history", &STOCH::initialize_with_history)
         .def("update", &STOCH::update)
-        .def("get_values", &STOCH::get_values)
+        .def("get_value", &STOCH::get_value)
         .def_property_readonly("is_initialized", &STOCH::initialized);
         
     py::class_<ATR>(m, "CppATR")
@@ -88,6 +88,15 @@ PYBIND11_MODULE(cpp_strategies, m) {
     // Add utility function
     m.def("parse_iso_datetime", &parse_iso_datetime);
     m.def("get_day_of_week", &get_day_of_week);
+
+    // Expose BasicCandle structure
+    py::class_<BasicCandle>(m, "CppBasicCandle")
+        .def(py::init<>())
+        .def_readwrite("date", &BasicCandle::date)
+        .def_readwrite("open", &BasicCandle::open)
+        .def_readwrite("high", &BasicCandle::high)
+        .def_readwrite("low", &BasicCandle::low)
+        .def_readwrite("close", &BasicCandle::close);
 
     // Expose the Candle structure
     py::class_<Candle>(m, "CppCandle")
@@ -175,7 +184,8 @@ PYBIND11_MODULE(cpp_strategies, m) {
 
     // Expose base Strategy class as abstract
     py::class_<Strategy, std::unique_ptr<Strategy>>(m, "CppStrategy")
-        .def("update_candle", &Strategy::update_candle, py::return_value_policy::reference);
+        .def("update_candle", &Strategy::update_candle, py::return_value_policy::reference)
+        .def("set_log_level", &Strategy::set_log_level);
 
     // Expose BuyHeikinGreen strategy
     py::class_<BuyHeikinGreen, Strategy>(m, "CppBuyHeikinGreen")

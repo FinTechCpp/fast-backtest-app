@@ -13,11 +13,95 @@ import math
 from collections import deque
 import traceback
 from enum import Enum
+from dataclasses import dataclass, field, asdict
+from pandas import Timestamp
+from typing import Optional, Dict, Any, List
+# Ajouter ces imports
+import time
+from functools import wraps
+
+# Ajouter cette classe au début du fichier
+class Cache:
+    """Cache thread-safe avec durée d'expiration courte pour garantir la fraîcheur des données"""
+    def __init__(self):
+        self._data = {}
+        self._lock = threading.RLock()
+        
+    def get(self, key):
+        """Récupère une valeur du cache si elle existe et n'est pas expirée"""
+        with self._lock:
+            if key in self._data:
+                value, expiry = self._data[key]
+                if expiry > time.time():
+                    return value
+                # Supprimer automatiquement la valeur expirée
+                del self._data[key]
+            return None
+        
+    def set(self, key, value, ttl=10):  # Réduit à 10 secondes maximum
+        """Stocke une valeur dans le cache avec une durée de vie courte en secondes"""
+        with self._lock:
+            self._data[key] = (value, time.time() + ttl)
+    def invalidate(self, key=None):
+        """Invalide une entrée spécifique ou tout le cache"""
+        with self._lock:
+            if key is None:
+                self._data = {}
+            elif key in self._data:
+                del self._data[key]
+                
+    def cleanup(self):
+        """Nettoie les entrées expirées du cache"""
+        with self._lock:
+            now = time.time()
+            expired_keys = [k for k, (_, exp) in self._data.items() if exp <= now]
+            for k in expired_keys:
+                del self._data[k]
+
+# Décorateur pour mettre en cache les résultats des méthodes
+def cached(ttl=5):
+    """Décorateur qui met en cache le résultat d'une méthode pour ttl secondes"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            # Générer une clé unique basée sur le nom de la fonction et ses arguments
+            key = f"{func.__name__}:{str(args)}:{str(kwargs)}"
+            # Vérifier si la valeur est en cache
+            cache = getattr(self, '_cache', None)
+            if cache is None:
+                self._cache = Cache()
+                cache = self._cache
+                
+            cached_value = cache.get(key)
+            if cached_value is not None:
+                return cached_value
+                
+            # Sinon, appeler la fonction et mettre en cache son résultat
+            result = func(self, *args, **kwargs)
+            cache.set(key, result, ttl)
+            return result
+        return wrapper
+    return decorator
 
 EXPIRY = '-'
 CURRENCY = 'EUR'
 ORDER_TYPE = 'MARKET'
 
+@dataclass
+class BaseCandle:
+    """Classe de base pour les données de bougie communes à toutes les stratégies"""
+    date: Timestamp
+    Open: float
+    High: float
+    Low: float
+    Close: float
+
+    # Informations supplémentaires
+    in_position: bool = False
+    entry_price: float = 0.0
+    position_size: float = 0.0
+    position_pl_pct: float = 0.0
+    closed_trade_pnl: float = 0.0
 
 class PriceSource(Enum):
     BID = 'bid'
@@ -70,9 +154,24 @@ class TickBroker:
         
         # Initialize streaming connection
         self._setup_streaming()
-        
-        # Start candle builder thread
+
+        self._cache = Cache()  # Initialiser le cache
         self.should_continue = True
+    
+        # Variables de contrôle pour le préchargement
+        self._last_preload_time = None
+        self._preload_lock = threading.Lock()
+        self._preload_interval = max(10, candle_interval // 6)  # Précharger au maximum toutes les 10 secondes
+        
+        # Ajouter un thread pour gérer le rafraîchissement du token
+        self.token_refresh_thread = threading.Thread(target=self._token_refresh_loop, daemon=True)
+        self.token_refresh_thread.start()
+        
+        # Ajouter un thread pour pré-charger les données
+        self.preload_thread = threading.Thread(target=self._preload_data_loop, daemon=True)
+        self.preload_thread.start()
+
+        # Start candle builder thread
         self.candle_thread = threading.Thread(target=self._build_candles_from_ticks_loop, daemon=True)
         self.candle_thread.start()
         
@@ -138,62 +237,6 @@ class TickBroker:
             logging.error(f"Error setting up streaming: {e}")
             logging.error(f"Details: {traceback.format_exc()}")
             raise
-        
-    def get_position_details(self):
-        """
-        Récupère les détails d'une position ouverte pour l'epic actuel.
-        
-        Returns:
-            dict: Un dictionnaire contenant les détails de la position, ou None si aucune position n'est ouverte
-                - entry_price: Prix d'entrée de la position
-                - position_size: Taille de la position
-                - position_pl_pct: Pourcentage de profit/perte
-                - deal_id: Identifiant de la transaction
-                - direction: Direction de la position (BUY ou SELL)
-        """
-        try:
-            # Vérifier d'abord si une position est ouverte
-            if not self.has_open_position():
-                return None
-            
-            # Récupérer toutes les positions ouvertes
-            open_positions = self.ig_service.fetch_open_positions()
-            
-            # Filtrer pour ne garder que celles correspondant à notre epic
-            positions_for_epic = open_positions[open_positions['epic'] == self.epic]
-            
-            if positions_for_epic.empty:
-                return None
-            
-            # Récupérer la première position (généralement il n'y en a qu'une par epic)
-            position = positions_for_epic.iloc[0]
-            
-            # Calculer le pourcentage de P&L
-            entry_price = float(position.get('openLevel', 0))
-            current_price = float(position.get('level', 0))
-            direction = position.get('direction', '')
-            profit_loss = float(position.get('profitLoss', 0))
-            
-            if entry_price > 0 and direction:
-                if direction == 'BUY':
-                    pl_pct = ((current_price - entry_price) / entry_price) * 100
-                else:  # SELL
-                    pl_pct = ((entry_price - current_price) / entry_price) * 100
-            else:
-                pl_pct = 0.0
-            
-            return {
-                'entry_price': entry_price,
-                'position_size': float(position.get('size', 0)),
-                'position_pl_pct': pl_pct,
-                'deal_id': position.get('dealId', ''),
-                'direction': direction,
-                'profit_loss': profit_loss
-            }
-        except Exception as e:
-            logging.error(f"Erreur lors de la récupération des détails de position: {e}")
-            logging.error(traceback.format_exc())
-            return None
     
     def _build_candles_from_ticks_loop(self):
         """Background thread that continuously builds candles from tick data."""
@@ -277,8 +320,7 @@ class TickBroker:
                                 
                                 # Appeler le callback avec la nouvelle bougie si défini
                                 if self.candle_callback is not None:
-                                    # Créer un BaseCandle à partir du dict
-                                    from igtrader.Strategies.Strategy import BaseCandle
+
                                     base_candle = BaseCandle(
                                         date=self.last_candle_time,
                                         Open=open_price,
@@ -286,9 +328,11 @@ class TickBroker:
                                         Low=low_price,
                                         Close=close_price,
                                         in_position=self.has_open_position(),
-                                        entry_price=None,  # À remplir si nécessaire
-                                        position_size=None,  # À remplir si nécessaire
-                                        position_pl_pct=None  # À remplir si nécessaire
+                                        entry_price=self.get_entry_price(),  
+                                        position_size=self.get_position_size(),  
+                                        position_pl_pct=self.get_position_pl_pct(),
+                                        closed_trade_pnl=self.get_closed_trade_pnl()  # P&L de la position fermée
+                                        
                                     )
                                     self.candle_callback(base_candle)
                             else:
@@ -318,6 +362,109 @@ class TickBroker:
                 logging.error(traceback.format_exc())
                 time.sleep(1)  # Sleep on error to avoid rapid looping
 
+    def _token_refresh_loop(self):
+        """Thread qui rafraîchit le token proactivement"""
+        logging.info("Starting token refresh thread")
+        
+        # Variable pour éviter les rafraîchissements trop fréquents
+        last_refresh_time = None
+        
+        while self.should_continue:
+            try:
+                now = datetime.datetime.now()
+                
+                # Ne pas rafraîchir plus d'une fois toutes les 30 secondes
+                if last_refresh_time and (now - last_refresh_time).total_seconds() < 30:
+                    time.sleep(1)
+                    continue
+                    
+                # Vérifier si le token est sur le point d'expirer
+                if hasattr(self.ig_service, '_valid_until') and self.ig_service._valid_until is not None:
+                    time_until_expiry = (self.ig_service._valid_until - now).total_seconds()
+                    
+                    # Rafraîchir de manière plus agressive pour garantir la disponibilité
+                    if 5 <= time_until_expiry <= 20:
+                        logging.info(f"Proactively refreshing token (expires in {time_until_expiry:.1f} seconds)")
+                        
+                        try:
+                            self.ig_service.refresh_session()
+                            last_refresh_time = now
+                            logging.info("Token refreshed successfully")
+                        except Exception as e:
+                            logging.error(f"Error refreshing token: {e}")
+                
+                time.sleep(1)
+            except Exception as e:
+                logging.error(f"Error in token refresh thread: {e}")
+                logging.error(traceback.format_exc())
+                time.sleep(5)
+
+    def _preload_data_loop(self):
+        """Thread qui pré-charge les données avant le traitement des bougies"""
+        logging.info("Starting data preload thread")
+        
+        # Suivi du préchargement
+        last_preloaded_candle = None
+
+        while self.should_continue:
+            try:
+                now = datetime.datetime.now()
+                
+                # Déterminer la bougie actuelle et la suivante
+                current_candle_time = self._align_time_to_interval(now)
+                next_candle_time = current_candle_time + datetime.timedelta(seconds=self.candle_interval)
+                
+                # Calculer les secondes jusqu'à la prochaine bougie
+                seconds_until_next_candle = (next_candle_time - now).total_seconds()
+                
+                # Précharger UNE SEULE FOIS quand la prochaine bougie est à moins de 5 secondes
+                if seconds_until_next_candle <= 5 and next_candle_time != last_preloaded_candle:
+                    logging.debug(f"Preloading data for upcoming candle at {next_candle_time}")
+                    
+                    # Marquer cette bougie comme préchargée
+                    last_preloaded_candle = next_candle_time
+                    
+                    # Forcer l'invalidation du cache pour garantir des données fraîches
+                    self._cache.invalidate('open_positions')
+                    self._cache.invalidate('recent_transactions')
+                    
+                    # Précharger les données
+                    self._preload_position_data()
+
+                # Dormir moins longtemps pour être plus précis
+                sleep_time = min(0.5, max(0.1, seconds_until_next_candle / 20))
+                time.sleep(sleep_time)
+                    
+            except Exception as e:
+                logging.error(f"Error in data preload thread: {e}")
+                logging.error(traceback.format_exc())
+                time.sleep(5)
+    
+    def _preload_position_data(self):
+        """Pré-charge toutes les données nécessaires pour le traitement des bougies"""
+        try:
+            # Récupérer les positions actuelles (toujours forcer une nouvelle requête)
+            positions = self.ig_service.fetch_open_positions()
+            # Mettre en cache ces données pour 10 secondes seulement
+            self._cache.set('open_positions', positions, 10)
+            logging.debug("Positions data loaded and cached")
+            
+            # Récupérer l'historique des transactions récentes
+            from_date = datetime.datetime.now() - datetime.timedelta(minutes=1)
+            to_date = datetime.datetime.now()
+            transactions = self.ig_service.fetch_transaction_history(
+                trans_type='ALL_DEAL',
+                from_date=from_date,
+                to_date=to_date,
+                page_size=10
+            )
+            self._cache.set('recent_transactions', transactions, 10)
+            logging.debug("Transaction data loaded and cached")
+            
+        except Exception as e:
+            logging.error(f"Error preloading position data: {e}")
+            logging.error(traceback.format_exc())
+
     def set_candle_callback(self, callback):
         """
         Définit une fonction de rappel pour traiter les bougies construites.
@@ -327,6 +474,74 @@ class TickBroker:
         """
         self.candle_callback = callback
 
+    def get_closed_trade_pnl(self):
+        """Version optimisée utilisant le cache"""
+        # Code existant mais avec vérification du cache d'abord
+        if not hasattr(self, '_last_reported_deal_ids'):
+            self._last_reported_deal_ids = set()
+            self._last_closed_pnl = None
+        
+        try:
+            # Utiliser les transactions mises en cache si disponibles
+            transactions = self._cache.get('recent_transactions')
+            if transactions is None:
+                transactions = self.ig_service.fetch_transaction_history(
+                    trans_type='ALL_DEAL',
+                    from_date=datetime.datetime.now() - datetime.timedelta(minutes=1),
+                    to_date=datetime.datetime.now(),
+                    page_size=10
+                )
+                self._cache.set('recent_transactions', transactions, 10)
+            
+            if self.ig_service.return_dataframe:
+                # Si le résultat est vide, retourner None
+                if transactions.empty:
+                    return self._last_closed_pnl
+                
+                # Filtrer les transactions pour ne garder que celles concernant notre EPIC
+                epic_transactions = transactions[transactions['instrumentName'].str.contains(self.epic, na=False)]
+                
+                if epic_transactions.empty:
+                    return self._last_closed_pnl
+                    
+                # Filtrer pour ne garder que les positions fermées (CLOSE)
+                closed_positions = epic_transactions[epic_transactions['transactionType'] == 'CLOSE']
+                
+                if closed_positions.empty:
+                    return self._last_closed_pnl
+                    
+                # Trier par date décroissante pour avoir la plus récente en premier
+                closed_positions = closed_positions.sort_values(by='date', ascending=False)
+                
+                # Récupérer la dernière position fermée
+                latest_closed = closed_positions.iloc[0]
+                deal_reference = latest_closed['reference']
+                
+                # Vérifier si cette position a déjà été rapportée
+                if deal_reference in self._last_reported_deal_ids:
+                    return self._last_closed_pnl
+                
+                # Si c'est une nouvelle fermeture, enregistrer son ID et le P&L
+                self._last_reported_deal_ids.add(deal_reference)
+                
+                # Limiter la taille de l'ensemble pour éviter une croissance indéfinie
+                if len(self._last_reported_deal_ids) > 100:
+                    self._last_reported_deal_ids = set(list(self._last_reported_deal_ids)[-50:])
+                
+                # Récupérer le P&L
+                if 'profitAndLoss' in latest_closed:
+                    pnl = float(latest_closed['profitAndLoss'])
+                    # Stocker le P&L pour le retourner une seule fois
+                    self._last_closed_pnl = pnl
+                    logging.info(f"Nouvelle position fermée détectée: {deal_reference} avec P&L: {pnl}")
+                    return pnl
+            
+            return self._last_closed_pnl
+            
+        except Exception as e:
+            logging.error(f"Erreur lors de la récupération du P&L de la position fermée: {e}")
+            logging.error(traceback.format_exc())
+            return self._last_closed_pnl
 
     def fetch_recent_ticks(self, count=100):
         """
@@ -350,7 +565,15 @@ class TickBroker:
         if signal is None:
             return
         
-        
+        if signal['action'] == 'MOVE_SL':
+            if not self.has_open_position():
+                logging.warning("Aucune position ouverte pour déplacer le stop loss.")
+                return
+
+            new_stop_level = signal['new_sl']
+            logging.info(f"Déplacement du stop loss à {new_stop_level}")
+            return self.move_sl(new_stop_level=new_stop_level)
+            
         # On ferme la position
         if signal['action'] == 'LIQUIDATE':
             return self.close_open_position()
@@ -361,6 +584,54 @@ class TickBroker:
         
         # On place l'ordre
         return self.place_order(signal)
+    
+    def get_entry_price(self):
+        """Version optimisée utilisant le cache"""
+        details = self.get_position_details()
+        return details['entry_price'] if details else None
+        
+    def get_position_pl(self):
+        """
+        Récupère le profit and loss (P&L) non réalisé de la position actuellement ouverte sur l'EPIC spécifié.
+        
+        Returns:
+            float: P&L de la position en valeur absolue, ou None si aucune position n'est ouverte.
+        """
+        # On récupère toutes les positions ouvertes
+        open_positions = self.ig_service.fetch_open_positions()
+        
+        # Si aucune position n'est ouverte, retourne None immédiatement
+        if open_positions.empty:
+            return None
+            
+        # On filtre pour ne garder que celles qui correspondent à notre epic
+        positions_for_epic = open_positions[open_positions['epic'] == self.epic]
+        
+        # Si positions_for_epic est vide, alors pas de position ouverte
+        if positions_for_epic.empty:
+            return None
+        
+        # On prend la première position (il ne devrait en principe y en avoir qu'une)
+        position = positions_for_epic.iloc[0]
+        
+        # Le champ pour le P&L peut avoir différents noms selon la version de l'API
+        if 'profitLoss' in position:
+            return float(position['profitLoss'])
+        elif 'profit' in position:
+            return float(position['profit'])
+        else:
+            logging.warning("Impossible de trouver le P&L dans les données de position")
+            return None
+        
+    def get_position_pl_pct(self):
+        """Version optimisée utilisant le cache"""
+        details = self.get_position_details()
+        return details['pl_pct'] if details else None
+    
+    def get_position_size(self):
+        """Version optimisée utilisant le cache"""
+        details = self.get_position_details()
+        return details['size'] if details else None
 
     def close_open_position(self):
         """
@@ -438,6 +709,53 @@ class TickBroker:
             trailing_stop_increment=None
         )
         
+    def move_sl(self, new_stop_level, deal_id=None, guaranteed_stop=False, trailing_stop=False, trailing_stop_distance=None, trailing_stop_increment=None, session=None):
+        """
+        Déplace le stop loss d'une position ouverte.
+        
+        Args:
+            new_stop_level (float): Nouveau niveau de stop loss.
+            deal_id (str, optional): ID de la position à modifier. Si None, utilise la position active sur l'EPIC actuel.
+            guaranteed_stop (bool, optional): Si True, utilise un stop garanti. Défaut à False.
+            trailing_stop (bool, optional): Si True, utilise un trailing stop. Défaut à False.
+            trailing_stop_distance (float, optional): Distance du trailing stop.
+            trailing_stop_increment (float, optional): Incrément du trailing stop.
+            session (Session, optional): Session de requête à utiliser.
+            
+        Returns:
+            dict: Détails de la confirmation de la mise à jour.
+            
+        Raises:
+            Exception: Si aucune position n'est ouverte ou si la mise à jour échoue.
+        """
+        # Si aucun deal_id n'est fourni, récupérer celui de la position active
+        if deal_id is None:
+            position_details = self.get_position_details()
+            if position_details is None:
+                raise Exception("Aucune position ouverte trouvée pour déplacer le stop loss.")
+            deal_id = position_details["deal_id"]
+        
+        try:
+            # Appel de update_open_position en passant uniquement les paramètres nécessaires
+            result = self.ig_service.update_open_position(
+                limit_level=None,  # Ne pas modifier le limit level
+                stop_level=new_stop_level,
+                deal_id=deal_id,
+                guaranteed_stop=guaranteed_stop,
+                trailing_stop=trailing_stop,
+                trailing_stop_distance=trailing_stop_distance,
+                trailing_stop_increment=trailing_stop_increment,
+                session=session
+            )
+            
+            logging.info(f"Stop loss mis à jour avec succès pour la position {deal_id}: nouveau niveau = {new_stop_level}")
+            return result
+        except Exception as e:
+            logging.error(f"Erreur lors de la mise à jour du stop loss: {e}")
+            logging.error(traceback.format_exc())
+            raise Exception(f"Échec de la mise à jour du stop loss: {str(e)}")
+    
+    @cached(ttl=10)
     def has_open_position(self, direction=None):
         """
         Vérifie si une position est actuellement ouverte sur l'EPIC spécifié.
@@ -449,8 +767,13 @@ class TickBroker:
         Returns:
             bool: True si une position est ouverte, False sinon.
         """
-        # On récupère toutes les positions ouvertes
-        open_positions = self.ig_service.fetch_open_positions()
+        # Essayer d'utiliser les données du cache
+        open_positions = self._cache.get('open_positions')
+        
+        # Si pas en cache, charger depuis l'API
+        if open_positions is None:
+            open_positions = self.ig_service.fetch_open_positions()
+            self._cache.set('open_positions', open_positions, 10)
         
         # Si aucune position n'est ouverte, retourne False immédiatement
         if open_positions.empty:
@@ -466,6 +789,44 @@ class TickBroker:
         # Si positions_for_epic est vide, alors pas de position ouverte
         return not positions_for_epic.empty
     
+    @cached(ttl=10)
+    def get_position_details(self):
+        """Récupère tous les détails de la position en une seule requête"""
+        open_positions = self._cache.get('open_positions')
+        
+        if open_positions is None:
+            open_positions = self.ig_service.fetch_open_positions()
+            self._cache.set('open_positions', open_positions, 10)
+            
+        if open_positions.empty:
+            return None
+            
+        positions_for_epic = open_positions[open_positions['epic'] == self.epic]
+        
+        if positions_for_epic.empty:
+            return None
+            
+        position = positions_for_epic.iloc[0]
+        
+        # Construire un dictionnaire avec toutes les informations utiles
+        details = {
+            'deal_id': position['dealId'] if 'dealId' in position else None,
+            'size': float(position['size']) if 'size' in position else (float(position['dealSize']) if 'dealSize' in position else None),
+            'direction': position['direction'],
+            'entry_price': float(position['level']) if 'level' in position else (float(position['openLevel']) if 'openLevel' in position else None),
+            'current_price': float(position['bid']) if position['direction'] == 'BUY' and 'bid' in position else (float(position['offer']) if position['direction'] == 'SELL' and 'offer' in position else None),
+            'pl': float(position['profitLoss']) if 'profitLoss' in position else (float(position['profit']) if 'profit' in position else None)
+        }
+        
+        # Calculer le P&L en pourcentage
+        if details['entry_price'] is not None and details['current_price'] is not None:
+            if position['direction'] == 'BUY':
+                details['pl_pct'] = ((details['current_price'] - details['entry_price']) / details['entry_price']) * 100
+            else:
+                details['pl_pct'] = ((details['entry_price'] - details['current_price']) / details['entry_price']) * 100
+        
+        return details
+        
     def __del__(self):
         """Clean up resources when the broker instance is destroyed."""
         try:

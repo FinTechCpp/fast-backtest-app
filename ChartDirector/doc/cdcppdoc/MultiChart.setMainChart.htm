@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD><meta name="viewport" content="width=device-width, initial-scale=1">
+<Title>MultiChart.setMainChart</Title>
+<link type='text/css' rel='Stylesheet' href="maxchartapi.css" />
+</HEAD>
+<body bgcolor="#FFFFFF" text="#000000" topmargin="0" leftmargin="0" rightmargin="0" marginwidth="0" marginheight="0">
+
+<p class="heading0">ChartDirector 7.1 (C++ Edition)</p>
+<p class="heading1"><a href="MultiChart.htm">MultiChart</a>.<wbr>setMainChart</p>
+<hr class="separator">
+<p class="heading2a">Usage</p>
+<div class="content">
+void setMainChart(const BaseChart *c);
+</div>
+<p class="heading2">Description</p>
+<div class="content">
+Sets the chart that provides the plot area for plot area features.<br><br>
+Many ChartDirector features are related to the <a href="PlotArea.htm">PlotArea</a> of an <a href="XYChart.htm">XYChart</a>. For example, in zooming support, ChartDirector allows the user to drag a rectangle over the plot area to select the part of the chart to zoom in. For track cursor support, the MouseMovePlotArea event is often used to update the cursor.<br><br>
+A MultiChart can include charts of different types and they can be at any arbitrary location. The setMainChart method can be used to specify which chart provides the plot area for plot area features.<br><br>
+A common usage of the MultiChart is for stacking up several XYCharts. In this case, the setMainChart can use the MultiChart itself as the argument. The effective plot area will then be the bounding box of the plot areas in all the charts.
+</div>
+<p class="heading2">Arguments</p>
+<div class="content">
+<div style="width:100%;box-sizing:border-box;">
+<table border="1" cellpadding="5" cellspacing="0" width="100%"> 
+<tr>
+<th width="19%">Argument</th><th width="19%">Default</th><th>Description</th>
+</tr>
+<tr>
+<td>c</td><td>(Mandatory)</td><td>The chart that defines the plot area for plot area features.</td>
+</tr>
+</table>
+</div>
+</div>
+<p class="heading2">Return Value</p>
+<div class="content">
+None
+</div>
+<br><hr class="separator">
+<div class="copyright">&copy; 2023 Advanced Software Engineering Limited. All rights reserved.</div>
+</body>
+</HTML>

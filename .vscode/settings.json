@@ -65,7 +65,18 @@
         "semaphore": "cpp",
         "stop_token": "cpp",
         "thread": "cpp",
-        "*.txx": "cpp"
+        "*.txx": "cpp",
+        "*.moc": "cpp",
+        "ranges": "cpp",
+        "cstring": "cpp",
+        "bitset": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "forward_list": "cpp",
+        "unordered_set": "cpp",
+        "future": "cpp",
+        "cinttypes": "cpp",
+        "valarray": "cpp"
     },
     "cmake.ignoreCMakeListsMissing": true
 }

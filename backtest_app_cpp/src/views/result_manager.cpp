@@ -6,16 +6,15 @@
 #include <QTime>
 
 ResultManager::ResultManager(QObject* parent) :
-    QObject(parent),
-    BaseView(qobject_cast<QWidget*>(parent)),
+    BaseView(parent), 
     m_resultsWidget(nullptr),
     m_resultsLayout(nullptr),
     m_tabWidget(nullptr),
     m_statsView(nullptr),
-    m_chartView(nullptr),        // CORRECTION: Initialiser dans le bon ordre
-    m_histogramView(nullptr)     // CORRECTION: Après m_chartView
+    m_chartView(nullptr),
+    m_histogramView(nullptr)
 {
-    // Les vues seront créées dans create()
+    qDebug() << "ResultManager créé avec parent:" << parent;
 }
 
 ResultManager::~ResultManager()
@@ -23,26 +22,42 @@ ResultManager::~ResultManager()
     // Qt gère automatiquement la destruction des widgets enfants
 }
 
-QWidget* ResultManager::create()
+QWidget* ResultManager::create(QWidget* parentWidget)
 {
     QTime start = QTime::currentTime();
     
     // Créer le widget principal des résultats
-    m_resultsWidget = new QWidget();
+    m_resultsWidget = new QWidget(parentWidget);
     m_resultsLayout = new QVBoxLayout(m_resultsWidget);
     
     // Créer les onglets pour séparer les différentes vues
     m_tabWidget = new QTabWidget();
     
-    // Créer les vues avec le bon parent
-    m_statsView = new StatsView(m_resultsWidget);
-    m_histogramView = new HistogramView(m_resultsWidget);
-    m_chartView = new ChartView(m_resultsWidget);
+    // Passer 'this' comme parent QObject pour les vues
+    m_statsView = new StatsView(this);
+    m_histogramView = new HistogramView(this);
+    m_chartView = new ChartView(this);
     
-    // Ajouter les vues aux onglets
-    m_tabWidget->addTab(m_statsView->create(), "📊 Statistiques");
-    m_tabWidget->addTab(m_histogramView->create(), "📊 Histogramme PnL");
-    m_tabWidget->addTab(m_chartView->create(), "📈 Graphiques");
+    // Vérifier que les vues ont été créées correctement
+    if (!m_statsView || !m_histogramView || !m_chartView) {
+        qCritical() << "Erreur lors de la création des vues";
+        return nullptr;
+    }
+    
+    // Créer les widgets des vues en passant le widget parent approprié
+    QWidget* statsWidget = m_statsView->create(m_resultsWidget);
+    QWidget* histogramWidget = m_histogramView->create(m_resultsWidget);
+    QWidget* chartWidget = m_chartView->create(m_resultsWidget);
+    
+    // Vérifier que les widgets ont été créés
+    if (!statsWidget || !histogramWidget || !chartWidget) {
+        qCritical() << "Erreur lors de la création des widgets de vue";
+        return nullptr;
+    }
+    
+    m_tabWidget->addTab(statsWidget, "📊 Statistiques");
+    m_tabWidget->addTab(histogramWidget, "📊 Histogramme PnL");
+    m_tabWidget->addTab(chartWidget, "📈 Graphiques");
     
     // Ajouter au map pour faciliter l'accès
     m_views["stats"] = m_statsView;
@@ -60,13 +75,11 @@ QWidget* ResultManager::create()
 
 void ResultManager::update(void* data, void* stats)
 {
-    // Déléguer à updateAll pour compatibilité
     updateAll(data, stats);
 }
 
 void ResultManager::clear()
 {
-    // Effacer toutes les vues
     for (auto it = m_views.begin(); it != m_views.end(); ++it) {
         it.value()->clear();
     }
@@ -79,13 +92,10 @@ void ResultManager::updateAll(void* data, void* stats)
     qDebug() << "updateAll appelé avec des pointeurs opaques data et stats";
     
     try {
-        // Mettre à jour chaque vue
         for (auto it = m_views.begin(); it != m_views.end(); ++it) {
             qDebug() << "Mise à jour de la vue:" << it.key();
             it.value()->update(data, stats);
         }
-        
-        qInfo() << "Toutes les vues ont été mises à jour avec succès";
     }
     catch (const std::exception& e) {
         qCritical() << "Erreur lors de la mise à jour des vues:" << e.what();

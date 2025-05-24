@@ -84,15 +84,34 @@ QMap<QString, QVariant> GeneralParamsPanel::getValues()
     QMap<QString, QVariant> values;
     
     for (auto it = m_widgets.begin(); it != m_widgets.end(); ++it) {
-        QString key = it.key();
         QWidget* widget = it.value();
+        QString key = it.key();
         
         if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
             values[key] = combo->currentText();
-        } else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
+        }
+        else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
             values[key] = spinBox->value();
-        } else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
-            values[key] = dateEdit->date().toString("dd/MM/yyyy");
+        }
+        else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
+            // CORRECTION: Retourner la date sous le bon format
+            QDate date = dateEdit->date();
+            QString dateString = date.toString("dd/MM/yyyy");
+            values[key] = dateString;
+            qDebug() << "Date extraite du widget:" << key << "=" << dateString;
+        }
+        else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
+            values[key] = lineEdit->text();
+        }
+    }
+    
+    // CORRECTION: S'assurer que end_date est correctement extraite
+    if (m_widgets.contains("end_date")) {
+        QDateEdit* dateEdit = static_cast<QDateEdit*>(m_widgets["end_date"]);
+        if (dateEdit) {
+            QDate date = dateEdit->date();
+            values["end_date"] = date;
+            qDebug() << "Date extraite du widget end_date:" << date.toString("dd/MM/yyyy");
         }
     }
     
@@ -109,18 +128,42 @@ void GeneralParamsPanel::setValues(const QMap<QString, QVariant>& values)
             QWidget* widget = m_widgets[key];
             
             if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
-                QString textValue = value.toString();
-                int index = combo->findText(textValue);
+                QString text = value.toString();
+                int index = combo->findText(text);
                 if (index >= 0) {
                     combo->setCurrentIndex(index);
                 }
-            } else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
+            }
+            else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
                 spinBox->setValue(value.toDouble());
-            } else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
-                QDate date = QDate::fromString(value.toString(), "dd/MM/yyyy");
-                if (date.isValid()) {
-                    dateEdit->setDate(date);
+            }
+            else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
+                // CORRECTION: Parser correctement la date
+                if (value.type() == QVariant::String) {
+                    QString dateStr = value.toString();
+                    QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
+                    
+                    QDate date;
+                    for (const QString& format : dateFormats) {
+                        date = QDate::fromString(dateStr, format);
+                        if (date.isValid()) {
+                            break;
+                        }
+                    }
+                    
+                    if (date.isValid()) {
+                        dateEdit->setDate(date);
+                        qDebug() << "Date définie dans le widget:" << key << "=" << date.toString("dd/MM/yyyy");
+                    } else {
+                        qWarning() << "Impossible de parser la date:" << dateStr;
+                    }
                 }
+                else if (value.type() == QVariant::Date) {
+                    dateEdit->setDate(value.toDate());
+                }
+            }
+            else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
+                lineEdit->setText(value.toString());
             }
         }
     }

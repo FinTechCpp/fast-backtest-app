@@ -23,15 +23,15 @@ QT_CHARTS_USE_NAMESPACE
 /**
  * @brief Vue pour afficher l'histogramme des profits et pertes
  */
-class HistogramView : public QObject, public BaseView
+class HistogramView : public BaseView
 {
     Q_OBJECT
 
 public:
-    HistogramView(QWidget* parent = nullptr);
+    HistogramView(QObject* parent = nullptr);
     ~HistogramView();
-    
-    QWidget* create() override;
+
+    QWidget* create(QWidget* parentWidget = nullptr) override;
     void update(void* data, void* stats) override;
     void clear() override;
 

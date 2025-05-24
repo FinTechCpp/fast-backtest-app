@@ -3,6 +3,7 @@
 #include "panels/general_params_panel.h"
 #include "panels/strategy_base_panel.h"
 #include "panels/profile_panel.h"
+#include <QCoreApplication>
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
@@ -35,8 +36,38 @@ ConfigManager::~ConfigManager()
 
 QString ConfigManager::getConfigFilePath() const
 {
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QDir currentDir(exeDir);
+    
+    // Remonte dans l'arborescence pour trouver le dossier ig-trading-bot
+    QString projectRoot;
+    do {
+        QString currentPath = currentDir.absolutePath();
+        
+        // Vérifie si c'est le dossier ig-trading-bot
+        if (currentDir.dirName() == "ig-trading-bot") {
+            projectRoot = currentPath;
+            break;
+        }
+        
+        // Cherche un sous-dossier ig-trading-bot
+        QString igTradingBotPath = currentDir.absoluteFilePath("ig-trading-bot");
+        if (QFileInfo(igTradingBotPath).isDir()) {
+            projectRoot = igTradingBotPath;
+            break;
+        }
+        
+    } while (currentDir.cdUp());
+    
+    QString configDir;
+    if (!projectRoot.isEmpty()) {
+        configDir = QDir(projectRoot).absoluteFilePath("backtest_app_cpp");
+    } else {
+        // Fallback vers le répertoire home
+        configDir = QDir::homePath() + "/ig-trading-bot-config/backtest_app_cpp";
+    }
+    
     // Créer le répertoire de configuration s'il n'existe pas
-    QString configDir = QDir::homePath() + "/ig-trading-bot/backtest_app_cpp";
     QDir().mkpath(configDir);
     
     return configDir + "/backtest_config.ini";
@@ -54,7 +85,7 @@ void ConfigManager::setupDefaultValues()
     m_defaultValues["symbol"] = "NDX";
     m_defaultValues["period"] = "10d";
     m_defaultValues["interval"] = "20secs";
-    m_defaultValues["end_date"] = QDate(2025, 4, 30);
+    m_defaultValues["end_date"] = "30/04/2025";  // Format dd/MM/yyyy
     m_defaultValues["spread"] = 0.0001;
     m_defaultValues["cash"] = 100000.0;
     m_defaultValues["strategy"] = "BuyHeikinGreenBA";

@@ -11,9 +11,11 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QMessageBox>
+#include <QMetaType>  // AJOUT
 #include <iostream>
 #include "app.h"
-#include "binding/pybinding.h"  // AJOUT OBLIGATOIRE
+#include "binding/pybinding.h"
+#include "data_loader.h"  // AJOUT
 
 // Variables globales pour la configuration du logging
 static bool g_consoleOutput = false;
@@ -30,14 +32,15 @@ void messageHandler(QtMsgType type, const QMessageLogContext& /*context*/, const
     
     // Écrire dans le fichier si disponible
     if (g_logStream) {
-        QString formattedMsg = QString("[%1] [%2] %3\n")
+        QString formattedMsg = QString("[%1] [%2] %3")
             .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"))
-            .arg(type == QtDebugMsg ? "debug" : 
-                 type == QtInfoMsg ? "info" : 
-                 type == QtWarningMsg ? "warning" : 
-                 type == QtCriticalMsg ? "error" : "critical")
+            .arg(type == QtDebugMsg ? "DEBUG" : 
+                 type == QtInfoMsg ? "INFO" : 
+                 type == QtWarningMsg ? "WARNING" : 
+                 type == QtCriticalMsg ? "CRITICAL" : "FATAL")
             .arg(msg);
-        *g_logStream << formattedMsg;
+        
+        *g_logStream << formattedMsg << "\n";
         g_logStream->flush();
     }
     
@@ -47,6 +50,32 @@ void messageHandler(QtMsgType type, const QMessageLogContext& /*context*/, const
     }
 }
 
+// Fonction pour trouver le répertoire racine du projet
+QString findProjectRoot()
+{
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QDir currentDir(exeDir);
+    
+    // Remonte dans l'arborescence pour trouver le dossier ig-trading-bot
+    do {
+        QString currentPath = currentDir.absolutePath();
+        
+        // Vérifie si c'est le dossier ig-trading-bot
+        if (currentDir.dirName() == "ig-trading-bot") {
+            return currentPath;
+        }
+        
+        // Cherche un sous-dossier ig-trading-bot
+        QString igTradingBotPath = currentDir.absoluteFilePath("ig-trading-bot");
+        if (QFileInfo(igTradingBotPath).isDir()) {
+            return igTradingBotPath;
+        }
+        
+    } while (currentDir.cdUp());
+    
+    return QString(); // Not found
+}
+
 // Fonction pour configurer les logs
 void setupLogging(QtMsgType logLevel, bool consoleOutput)
 {
@@ -54,9 +83,20 @@ void setupLogging(QtMsgType logLevel, bool consoleOutput)
     g_logLevel = logLevel;
     g_consoleOutput = consoleOutput;
     
-    QString currentDate = QDateTime::currentDateTime().toString("yyyy-MM-dd");
-    QString logDir = QDir::homePath() + "/ig-trading-bot/logs/backtest/" + currentDate;
-    QDir().mkpath(logDir);
+    // Trouver le répertoire racine du projet
+    QString projectRoot = findProjectRoot();
+    QString logDir;
+    
+    if (!projectRoot.isEmpty()) {
+        QString currentDate = QDateTime::currentDateTime().toString("yyyy-MM-dd");
+        logDir = QDir(projectRoot).absoluteFilePath("logs/backtest/" + currentDate);
+        QDir().mkpath(logDir);
+    } else {
+        // Fallback vers le répertoire home
+        logDir = QDir::homePath() + "/ig-trading-bot-logs/backtest/" + 
+                QDateTime::currentDateTime().toString("yyyy-MM-dd");
+        QDir().mkpath(logDir);
+    }
     
     QString logTime = QDateTime::currentDateTime().toString("hh-mm-ss");
     QString logFile = logDir + "/backtest_" + logTime + ".log";
@@ -67,14 +107,13 @@ void setupLogging(QtMsgType logLevel, bool consoleOutput)
     g_logFile = new QFile(logFile);
     if (g_logFile->open(QIODevice::WriteOnly | QIODevice::Append)) {
         g_logStream = new QTextStream(g_logFile);
-        g_logStream->setCodec("UTF-8");
     } else {
-        qWarning() << "Impossible d'ouvrir le fichier de log:" << logFile;
-        delete g_logFile;
+        std::cerr << "Impossible d'ouvrir le fichier de log: " << logFile.toStdString() << std::endl;
         g_logFile = nullptr;
+        g_logStream = nullptr;
     }
     
-    // CORRECTION: Installer le handler de messages
+    // Installer le handler de messages
     qInstallMessageHandler(messageHandler);
     
     qInfo() << "Logs configurés dans le fichier:" << logFile;
@@ -101,6 +140,11 @@ int main(int argc, char *argv[])
     qInfo() << "=== Démarrage de l'application ===";
     qInfo() << "Arguments:" << QStringList(argv, argv + argc);
     
+    // AJOUT : Enregistrer les types personnalisés
+    qRegisterMetaType<OHLCBar>("OHLCBar");
+    qRegisterMetaType<std::vector<OHLCBar>>("std::vector<OHLCBar>");
+    qInfo() << "Types personnalisés enregistrés dans Qt";
+    
     // Configuration Qt
 #if QT_VERSION >= 0x050600 && QT_VERSION < 0x060000
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -109,84 +153,74 @@ int main(int argc, char *argv[])
     QGuiApplication::setHighDpiScaleFactorRoundingPolicy(Qt::HighDpiScaleFactorRoundingPolicy::PassThrough);
 #endif
 
-    qInfo() << "Création de QApplication...";
     QApplication app(argc, argv);
-    
-    // Configuration du style pour une apparence cohérente
     app.setStyle(QStyleFactory::create("Fusion"));
-    app.setStyleSheet("QWidget {font-size:12px}");
     
-    // Configuration des paramètres de l'application
-    app.setApplicationName("Backtest App C++");
-    app.setApplicationVersion("1.0");
-    app.setOrganizationName("IG Trading Bot");
-    
-    // Parser les arguments de ligne de commande
+    // Configuration de la ligne de commande
     QCommandLineParser parser;
-    parser.setApplicationDescription("Application de backtesting en C++ avec Qt");
+    parser.setApplicationDescription("Application de backtesting avec interface C++/Qt");
     parser.addHelpOption();
     parser.addVersionOption();
     
-    QCommandLineOption logLevelOption(QStringList() << "log-level",
-        "Niveau de log (debug, info, warning, error, critical)", "level", "warning");
+    QCommandLineOption logLevelOption(QStringList() << "l" << "log-level",
+        "Définit le niveau de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)", "level", "WARNING");
     parser.addOption(logLevelOption);
     
-    QCommandLineOption consoleOption(QStringList() << "console",
-        "Afficher les logs dans la console aussi");
+    QCommandLineOption consoleOption(QStringList() << "c" << "console",
+        "Affiche aussi les logs dans la console");
     parser.addOption(consoleOption);
     
-    // Analyser les arguments
     parser.process(app);
     
-    // Déterminer le niveau de log
-    QString logLevelStr = parser.value(logLevelOption).toLower();
-    QtMsgType logLevel = QtWarningMsg; // Par défaut
-    
-    if (logLevelStr == "debug") logLevel = QtDebugMsg;
-    else if (logLevelStr == "info") logLevel = QtInfoMsg;
-    else if (logLevelStr == "warning") logLevel = QtWarningMsg;
-    else if (logLevelStr == "error" || logLevelStr == "critical") logLevel = QtCriticalMsg;
-    
+    // Configuration du logging
+    qInfo() << "Configuration du système de logging...";
+    QString logLevelStr = parser.value(logLevelOption).toUpper();
     bool consoleOutput = parser.isSet(consoleOption);
     
-    // Configurer le système de logging
-    qInfo() << "Configuration du système de logging...";
+    QtMsgType logLevel = QtWarningMsg;  // Par défaut
+    if (logLevelStr == "DEBUG") logLevel = QtDebugMsg;
+    else if (logLevelStr == "INFO") logLevel = QtInfoMsg;
+    else if (logLevelStr == "WARNING") logLevel = QtWarningMsg;
+    else if (logLevelStr == "ERROR" || logLevelStr == "CRITICAL") logLevel = QtCriticalMsg;
+    
     setupLogging(logLevel, consoleOutput);
     
-    // Initialiser Python et pybind11
-    qInfo() << "Initialisation du système Python...";
-    PyBindingManager* pyManager = PyBindingManager::getInstance();
-    if (!pyManager->initialize()) {
-        qCritical() << "Échec de l'initialisation de Python";
-        QMessageBox::critical(nullptr, "Erreur", 
-            "Impossible d'initialiser le système Python.\n"
-            "Vérifiez que Python 3.10 et pybind11 sont installés.");
-        return 1;
+    // Initialiser Python et PyBindingManager
+    qInfo() << "Initialisation de Python...";
+    try {
+        PyBindingManager& pyManager = PyBindingManager::getInstance();
+        if (!pyManager.initialize()) {
+            qCritical() << "Échec de l'initialisation de PyBindingManager";
+            cleanupLogging();
+            return -1;
+        }
+
+        qInfo() << "Python initialisé avec succès";
+        
+        // Créer et afficher la fenêtre principale
+        qInfo() << "Création de la fenêtre principale...";
+        App mainWindow;
+        mainWindow.show();
+        
+        qInfo() << "Application prête";
+        
+        // Exécuter la boucle d'événements
+        int result = app.exec();
+        
+        // Nettoyer Python AVANT de quitter
+        qInfo() << "Finalisation de Python...";
+        pyManager.finalize();
+        
+        // Nettoyer les logs
+        cleanupLogging();
+        
+        return result;
     }
-    qInfo() << "Système Python initialisé avec succès";
-    
-    // Créer et afficher la fenêtre principale
-    qInfo() << "Création de la fenêtre principale...";
-    App mainWindow;
-    
-    qInfo() << "Affichage de la fenêtre...";
-    mainWindow.show();
-    
-    qInfo() << "Application prête, démarrage de la boucle d'événements...";
-    
-    // Démarrer la boucle d'événements
-    int result = app.exec();
-    
-    qInfo() << "Application fermée avec code:" << result;
-    
-    // Nettoyage
-    qInfo() << "Finalisation du système Python...";
-    pyManager->finalize();
-    
-    qInfo() << "Nettoyage du système de logging...";
-    cleanupLogging();
-    
-    qInfo() << "=== Fin de l'application ===";
-    
-    return result;
+    catch (const std::exception& e) {
+        qCritical() << "Erreur lors de l'initialisation de Python:" << e.what();
+        QMessageBox::critical(nullptr, "Erreur", 
+            QString("Impossible d'initialiser Python: %1").arg(e.what()));
+        cleanupLogging();
+        return -1;
+    }
 }

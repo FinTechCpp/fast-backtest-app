@@ -1,27 +1,26 @@
 #ifndef BASEVIEW_H
 #define BASEVIEW_H
 
+#include <QObject>  
 #include <QWidget>
 #include <QVBoxLayout>
-#include <QMap>  // AJOUT MANQUANT
-#include <QString>  // AJOUT MANQUANT
+#include <QMap>
+#include <QString>
 #include <memory>
 
 /**
  * @brief Classe de base abstraite pour toutes les vues de résultats du backtest
- * 
- * Cette classe définit l'interface commune à toutes les vues de résultats.
- * Chaque vue spécifique doit hériter de cette classe et implémenter 
- * les méthodes abstraites create() et update().
  */
-class BaseView
+class BaseView : public QObject  
 {
+    Q_OBJECT  
+
 public:
     /**
      * @brief Constructeur
-     * @param parent Pointeur vers le widget parent
+     * @param parent Pointeur vers l'objet parent (doit être un QObject)
      */
-    BaseView(QWidget* parent = nullptr);
+    explicit BaseView(QObject* parent = nullptr);  
     
     /**
      * @brief Destructeur virtuel
@@ -30,9 +29,10 @@ public:
     
     /**
      * @brief Crée et retourne le widget principal de la vue
+     * @param parentWidget Widget parent pour les widgets créés
      * @return Widget contenant l'interface de la vue
      */
-    virtual QWidget* create() = 0;
+    virtual QWidget* create(QWidget* parentWidget = nullptr) = 0;
     
     /**
      * @brief Met à jour la vue avec les nouvelles données du backtest
@@ -47,11 +47,11 @@ public:
     virtual void clear();
 
 protected:
-    /** Parent widget */
-    QWidget* m_parent;
-    
     /** Dictionnaire des widgets de la vue */
-    QMap<QString, QWidget*> m_widgets;  // Maintenant défini correctement
+    QMap<QString, QWidget*> m_widgets;
+    
+    /** Widget parent pour la création des widgets enfants */
+    QWidget* m_parentWidget;
     
     /**
      * @brief Utilitaire pour vider complètement un layout

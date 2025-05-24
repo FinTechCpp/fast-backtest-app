@@ -12,8 +12,6 @@
 #include <map>
 #include <memory>
 
-
-
 /**
  * @brief Structure pour stocker une barre OHLC
  */
@@ -29,6 +27,9 @@ struct OHLCBar {
     OHLCBar(const QDateTime& dt, double o, double h, double l, double c, double v = 0.0)
         : timestamp(dt), open(o), high(h), low(l), close(c), volume(v) {}
 };
+
+Q_DECLARE_METATYPE(OHLCBar)
+Q_DECLARE_METATYPE(std::vector<OHLCBar>)
 
 /**
  * @brief Classe pour charger et traiter les données de marché

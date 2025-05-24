@@ -8,57 +8,54 @@
 #include <QStringList>
 #include <algorithm>
 #include <cmath>
-
-// CORRECTION: Ajouter les includes manquants pour PyBindingManager et pybind11
 #include "binding/pybinding.h"
 
-// And add the pybind11 namespace
 namespace py = pybind11;
 
-const QString DataLoader::MARKET_DATA_PATH = "/home/max/ig-trading-bot/marketData";
+const QString DataLoader::MARKET_DATA_PATH = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("../../marketData");
 
-DataLoader::DataLoader()
-{
-}
+DataLoader::DataLoader() {}
+DataLoader::~DataLoader() {}
 
-DataLoader::~DataLoader()
+QString DataLoader::findMarketDataDirectory()
 {
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QDir currentDir(exeDir);
+
+    // Remonte dans l'arborescence pour trouver le dossier ig-trading-bot
+    do {
+        QString currentPath = currentDir.absolutePath();
+
+        // Vérifie si c'est le dossier ig-trading-bot
+        if (currentDir.dirName() == "ig-trading-bot") {
+            QString marketDataPath = currentDir.absoluteFilePath("marketData");
+            if (QFileInfo(marketDataPath).isDir()) {
+                return marketDataPath;
+            }
+        }
+
+        // Cherche un sous-dossier ig-trading-bot
+        QString igTradingBotPath = currentDir.absoluteFilePath("ig-trading-bot");
+        if (QFileInfo(igTradingBotPath).isDir()) {
+            QString marketDataPath = QDir(igTradingBotPath).absoluteFilePath("marketData");
+            if (QFileInfo(marketDataPath).isDir()) {
+                return marketDataPath;
+            }
+        }
+
+    } while (currentDir.cdUp());
+
+    return QString(); // Not found
 }
 
 QStringList DataLoader::getMarketDataPaths()
 {
     QStringList paths;
-    
-    // Chemin principal fixe
-    paths << MARKET_DATA_PATH;
-    
-    // Chemin relatif au répertoire courant
-    QString currentDir = QDir::currentPath();
-    paths << QDir(currentDir).absoluteFilePath("../marketData");
-    paths << QDir(currentDir).absoluteFilePath("marketData");
-    
-    // Chemin depuis variable d'environnement
-    QString envPath = qgetenv("BOT_REPO_PATH");
-    if (!envPath.isEmpty()) {
-        paths << QDir(envPath).absoluteFilePath("marketData");
+    QString marketDataPath = findMarketDataDirectory();
+    if (!marketDataPath.isEmpty()) {
+        paths << marketDataPath;
     }
-    
     return paths;
-}
-
-QString DataLoader::findMarketDataDirectory()
-{
-    QStringList possiblePaths = getMarketDataPaths();
-    
-    for (const QString& path : possiblePaths) {
-        if (QDir(path).exists()) {
-            qDebug() << "Répertoire marketData trouvé:" << path;
-            return path;
-        }
-    }
-    
-    qWarning() << "Aucun répertoire marketData trouvé dans les chemins:" << possiblePaths;
-    return QString();
 }
 
 QString DataLoader::findDataFile(const QString& symbol, const QString& interval)
@@ -67,65 +64,26 @@ QString DataLoader::findDataFile(const QString& symbol, const QString& interval)
     if (marketDataDir.isEmpty()) {
         return QString();
     }
-    
-    // Rechercher un fichier correspondant au pattern symbol_interval_*.parquet
+
+    // Rechercher un fichier correspondant au pattern symbol_interval_*.csv
     QDir dir(marketDataDir);
-    QStringList filters;
-    filters << QString("%1_%2_*.parquet").arg(symbol, interval);
-    
-    QStringList files = dir.entryList(filters, QDir::Files, QDir::Time);
-    if (!files.isEmpty()) {
-        QString filePath = dir.absoluteFilePath(files.first());
-        qDebug() << "Fichier de données trouvé:" << filePath;
-        return filePath;
-    }
-    
-    qWarning() << "Aucun fichier trouvé pour" << symbol << interval;
-    return QString();
-}
+    QStringList nameFilters;
+    nameFilters << QString("%1_%2_*.csv").arg(symbol, interval);
 
-std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line, bool hasHeader)
-{
-    if (hasHeader) return nullptr;
-    
-    QStringList parts = line.split(',');
-    if (parts.size() < 5) return nullptr;
-    
-    auto bar = std::make_unique<OHLCBar>();
-    
-    // Parse timestamp (assume first column is timestamp)
-    bar->timestamp = QDateTime::fromString(parts[0], Qt::ISODate);
-    
-    // Parse OHLC values
-    bar->open = parts[1].toDouble();
-    bar->high = parts[2].toDouble();
-    bar->low = parts[3].toDouble();
-    bar->close = parts[4].toDouble();
-    
-    // Parse volume if available
-    if (parts.size() > 5) {
-        bar->volume = parts[5].toDouble();
-    }
-    
-    return bar;
-}
+    QStringList files = dir.entryList(nameFilters, QDir::Files, QDir::Time);
 
-QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString& period)
-{
-    QDateTime startDate = endDate;
-    
-    if (period.endsWith("d")) {
-        int days = period.left(period.length() - 1).toInt();
-        startDate = endDate.addDays(-days);
-    } else if (period.endsWith("m")) {
-        int months = period.left(period.length() - 1).toInt();
-        startDate = endDate.addMonths(-months);
-    } else if (period.endsWith("y")) {
-        int years = period.left(period.length() - 1).toInt();
-        startDate = endDate.addYears(-years);
+    if (files.isEmpty()) {
+        qWarning() << "Aucun fichier trouvé pour le pattern:"
+                   << QString("%1_%2_*.csv").arg(symbol, interval)
+                   << "dans" << marketDataDir;
+        return QString();
     }
-    
-    return startDate;
+
+    // Retourner le fichier le plus récent
+    QString mostRecentFile = dir.absoluteFilePath(files.first());
+    qDebug() << "Fichier trouvé:" << mostRecentFile;
+
+    return mostRecentFile;
 }
 
 std::vector<OHLCBar> DataLoader::filterByPeriod(
@@ -134,13 +92,12 @@ std::vector<OHLCBar> DataLoader::filterByPeriod(
     const QDateTime& endDate)
 {
     std::vector<OHLCBar> filtered;
-    
+    filtered.reserve(data.size());
     for (const auto& bar : data) {
         if (bar.timestamp >= startDate && bar.timestamp <= endDate) {
             filtered.push_back(bar);
         }
     }
-    
     return filtered;
 }
 
@@ -148,17 +105,19 @@ std::vector<OHLCBar> DataLoader::filterByTradingDays(
     const std::vector<OHLCBar>& data,
     const std::vector<int>& tradingDays)
 {
-    if (tradingDays.empty()) return data;
-    
+    if (tradingDays.empty()) {
+        return data;
+    }
     std::vector<OHLCBar> filtered;
-    
+    filtered.reserve(data.size());
     for (const auto& bar : data) {
-        int dayOfWeek = bar.timestamp.date().dayOfWeek() - 1; // Qt: 1=Monday -> 0=Monday
+        // Qt: 1=Lundi, 7=Dimanche, mais nous utilisons 0=Lundi, 6=Dimanche
+        int dayOfWeek = bar.timestamp.date().dayOfWeek() - 1;
+        if (dayOfWeek == -1) dayOfWeek = 6; // Dimanche
         if (std::find(tradingDays.begin(), tradingDays.end(), dayOfWeek) != tradingDays.end()) {
             filtered.push_back(bar);
         }
     }
-    
     return filtered;
 }
 
@@ -167,68 +126,96 @@ std::vector<OHLCBar> DataLoader::filterByTradingHours(
     const QTime& tradingFrom,
     const QTime& tradingTo)
 {
-    if (tradingFrom.isNull() || tradingTo.isNull()) return data;
-    
+    if (!tradingFrom.isValid() || !tradingTo.isValid()) {
+        return data;
+    }
     std::vector<OHLCBar> filtered;
-    
+    filtered.reserve(data.size());
+    qDebug() << "Filtrage par heures de trading:"
+             << tradingFrom.toString("hh:mm")
+             << "à" << tradingTo.toString("hh:mm");
     for (const auto& bar : data) {
         QTime barTime = bar.timestamp.time();
-        if (barTime >= tradingFrom && barTime <= tradingTo) {
+        bool inRange;
+        if (tradingTo > tradingFrom) {
+            inRange = (barTime >= tradingFrom && barTime <= tradingTo);
+        } else {
+            inRange = (barTime >= tradingFrom || barTime <= tradingTo);
+        }
+        if (inRange) {
             filtered.push_back(bar);
         }
     }
-    
     return filtered;
 }
 
 int DataLoader::intervalToSeconds(const QString& interval)
 {
-    if (interval.endsWith("secs")) {
-        return interval.left(interval.length() - 4).toInt();
-    } else if (interval.endsWith("min")) {
-        return interval.left(interval.length() - 3).toInt() * 60;
-    } else if (interval.endsWith("h")) {
-        return interval.left(interval.length() - 1).toInt() * 3600;
-    } else if (interval.endsWith("d")) {
-        return interval.left(interval.length() - 1).toInt() * 86400;
+    QString lowerInterval = interval.toLower();
+    if (lowerInterval.endsWith("secs")) {
+        bool ok;
+        int seconds = lowerInterval.leftRef(lowerInterval.length() - 4).toInt(&ok);
+        return ok ? seconds : 0;
+    } else if (lowerInterval.endsWith("min")) {
+        bool ok;
+        int minutes = lowerInterval.leftRef(lowerInterval.length() - 3).toInt(&ok);
+        return ok ? minutes * 60 : 0;
+    } else if (lowerInterval.endsWith("h")) {
+        bool ok;
+        int hours = lowerInterval.leftRef(lowerInterval.length() - 1).toInt(&ok);
+        return ok ? hours * 3600 : 0;
+    } else if (lowerInterval.endsWith("d")) {
+        bool ok;
+        int days = lowerInterval.leftRef(lowerInterval.length() - 1).toInt(&ok);
+        return ok ? days * 86400 : 0;
     }
-    return 60; // Défaut: 1 minute
+    return 0;
 }
 
 std::vector<OHLCBar> DataLoader::resampleData(
     const std::vector<OHLCBar>& data,
     const QString& targetInterval)
 {
-    if (data.empty()) return data;
-    
+    if (data.empty()) {
+        return data;
+    }
     int targetSeconds = intervalToSeconds(targetInterval);
+    if (targetSeconds <= 0) {
+        qWarning() << "Intervalle cible invalide:" << targetInterval;
+        return data;
+    }
     std::vector<OHLCBar> resampled;
-    
-    // Implémentation simplifiée du resampling
-    // Dans un cas réel, vous voudriez une logique plus sophistiquée
-    
-    auto currentBar = data[0];
-    QDateTime nextBoundary = currentBar.timestamp.addSecs(targetSeconds);
-    
+    QDateTime currentPeriodStart = data[0].timestamp;
+    QDateTime currentPeriodEnd = currentPeriodStart.addSecs(targetSeconds);
+    double open = data[0].open;
+    double high = data[0].high;
+    double low = data[0].low;
+    double close = data[0].close;
+    double volume = data[0].volume;
     for (size_t i = 1; i < data.size(); ++i) {
-        if (data[i].timestamp >= nextBoundary) {
-            resampled.push_back(currentBar);
-            currentBar = data[i];
-            nextBoundary = currentBar.timestamp.addSecs(targetSeconds);
+        const auto& bar = data[i];
+        if (bar.timestamp < currentPeriodEnd) {
+            high = std::max(high, bar.high);
+            low = std::min(low, bar.low);
+            close = bar.close;
+            volume += bar.volume;
         } else {
-            // Agréger les données
-            currentBar.high = std::max(currentBar.high, data[i].high);
-            currentBar.low = std::min(currentBar.low, data[i].low);
-            currentBar.close = data[i].close;
-            currentBar.volume += data[i].volume;
+            resampled.emplace_back(currentPeriodStart, open, high, low, close, volume);
+            currentPeriodStart = currentPeriodEnd;
+            currentPeriodEnd = currentPeriodStart.addSecs(targetSeconds);
+            open = bar.open;
+            high = bar.high;
+            low = bar.low;
+            close = bar.close;
+            volume = bar.volume;
         }
     }
-    
-    resampled.push_back(currentBar);
+    resampled.emplace_back(currentPeriodStart, open, high, low, close, volume);
+    qDebug() << "Resampling de" << data.size() << "à" << resampled.size()
+             << "barres pour l'intervalle" << targetInterval;
     return resampled;
 }
 
-// CORRECTION: Nouvelle implémentation de loadData qui correspond à la signature du header
 std::vector<OHLCBar> DataLoader::loadData(
     const QString& symbol,
     const QString& interval,
@@ -238,92 +225,37 @@ std::vector<OHLCBar> DataLoader::loadData(
     const QTime& tradingTo,
     const std::vector<int>& tradingDays)
 {
-    std::vector<OHLCBar> result;
-    
     try {
-        PyBindingManager* pyManager = PyBindingManager::getInstance();
-        if (!pyManager || !pyManager->isInitialized()) {
-            qWarning() << "PyBindingManager non initialisé";
-            return result;
+        qDebug() << "DataLoader::loadData called with symbol:" << symbol 
+                 << "interval:" << interval << "period:" << period;
+        qDebug() << "End date:" << endDate.toString("dd/MM/yyyy");
+        
+        QString dataFile = findDataFile(symbol, interval);
+        if (dataFile.isEmpty()) {
+            qWarning() << "Aucun fichier de données trouvé pour" << symbol << interval;
+            return std::vector<OHLCBar>();
+        }
+
+        qDebug() << "Fichier de données trouvé:" << dataFile;
+        
+        QDateTime actualEndDate = endDate.isValid() ? endDate : QDateTime::currentDateTime();
+        QString endDateString = actualEndDate.toString("dd/MM/yyyy");
+
+        std::vector<OHLCBar> result = loadFromCSV(dataFile, period, endDateString, tradingFrom, tradingTo);
+        
+        // Filtrage par jours de trading si spécifiés
+        if (!tradingDays.empty()) {
+            result = filterByTradingDays(result, tradingDays);
+            qDebug() << "Après filtrage par jours:" << result.size() << "barres de prix";
         }
         
-        // Utiliser la fonction Python helper pour charger les données
-        void* pyData = pyManager->loadData(symbol, interval, period, 
-                                          endDate.toString("dd/MM/yyyy"),
-                                          tradingFrom, tradingTo);
-        
-        if (!pyData) {
-            qWarning() << "Échec du chargement des données Python";
-            return result;
-        }
-        
-        // CORRECTION: Conversion correcte des données Python
-        py::object data_obj = *static_cast<py::object*>(pyData);
-        
-        if (data_obj.is_none()) {
-            qWarning() << "Données Python vides";
-            return result;
-        }
-        
-        // Obtenir les colonnes avec la syntaxe correcte
-        py::object open_col = data_obj["open"];
-        py::object high_col = data_obj["high"];
-        py::object low_col = data_obj["low"];
-        py::object close_col = data_obj["close"];
-        py::object index = data_obj.attr("index");
-        
-        // Obtenir la taille
-        int data_len = py::len(data_obj);
-        
-        // CORRECTION: Utilisation correcte de l'indexation iloc
-        for (int i = 0; i < data_len; ++i) {
-            try {
-                // Utiliser py::int_(i) pour créer un objet entier Python
-                py::int_ py_index(i);
-                
-                double open = py::float_(open_col.attr("iloc")[py_index]);
-                double high = py::float_(high_col.attr("iloc")[py_index]);
-                double low = py::float_(low_col.attr("iloc")[py_index]);
-                double close = py::float_(close_col.attr("iloc")[py_index]);
-                
-                // Pour l'index (timestamp)
-                py::object timestamp = index[py_index];
-                
-                // Conversion du timestamp Python vers QDateTime
-                QString timestamp_str = py::str(timestamp).cast<std::string>().c_str();
-                QDateTime dt = QDateTime::fromString(timestamp_str, Qt::ISODate);
-                
-                if (dt.isValid()) {
-                    result.emplace_back(dt, open, high, low, close);
-                }
-            } catch (const std::exception& e) {
-                qWarning() << "Erreur lors de la conversion de la ligne" << i << ":" << e.what();
-                continue;
-            }
-        }
-        
-        qInfo() << "Chargé" << result.size() << "barres depuis Python";
-        
+        return result;
     } catch (const std::exception& e) {
-        qWarning() << "Erreur lors du chargement des données:" << e.what();
+        qCritical() << "Exception in loadData:" << e.what();
+        return std::vector<OHLCBar>();
     }
-    
-    // Appliquer les filtres si spécifiés
-    if (!tradingDays.empty()) {
-        result = filterByTradingDays(result, tradingDays);
-    }
-    
-    if (!tradingFrom.isNull() && !tradingTo.isNull()) {
-        result = filterByTradingHours(result, tradingFrom, tradingTo);
-    }
-    
-    return result;
 }
 
-// CORRECTION: Supprimer la méthode en doublon qui retourne void*
-// Cette méthode entre en conflit avec celle du header
-
-// CORRECTION: Nouvelle implémentation de loadFromCSV avec les bons types
 std::vector<OHLCBar> DataLoader::loadFromCSV(
     const QString& filePath,
     const QString& period,
@@ -331,39 +263,179 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     const QTime& tradingFrom,
     const QTime& tradingTo)
 {
-    std::vector<OHLCBar> result;
-    
+    std::vector<OHLCBar> data;
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qWarning() << "Impossible d'ouvrir le fichier:" << filePath;
-        return result;
+        return data;
+    }
+    QTextStream in(&file);
+    QString line;
+    bool isFirstLine = true;
+    int lineCount = 0;
+    qDebug() << "Chargement des données depuis:" << filePath;
+    while (in.readLineInto(&line)) {
+        lineCount++;
+        if (isFirstLine) {
+            isFirstLine = false;
+            if (line.contains("date", Qt::CaseInsensitive) ||
+                line.contains("time", Qt::CaseInsensitive) ||
+                line.contains("open", Qt::CaseInsensitive)) {
+                continue;
+            }
+        }
+        auto bar = parseCSVLine(line, false);
+        if (bar) {
+            data.push_back(*bar);
+        }
+        if (lineCount % 100000 == 0) {
+            qDebug() << "Lignes traitées:" << lineCount;
+        }
+    }
+    file.close();
+    qDebug() << "Données chargées:" << data.size() << "barres de prix depuis" << filePath;
+    if (data.empty()) {
+        qWarning() << "Aucune donnée valide trouvée dans le fichier";
+        return data;
+    }
+    std::sort(data.begin(), data.end(),
+              [](const OHLCBar& a, const OHLCBar& b) {
+                  return a.timestamp < b.timestamp;
+              });
+    // Standardiser les timestamps en heure française (NY + 6h)
+    for (auto& bar : data) {
+        bar.timestamp = bar.timestamp.addSecs(6 * 3600);
+    }
+    QDateTime endDateTime;
+    if (endDate.isEmpty()) {
+        endDateTime = data.back().timestamp;
+        qDebug() << "Date de fin automatique:" << endDateTime.toString("dd/MM/yyyy hh:mm:ss");
+    } else {
+        // Parser la date fournie (supposée au format dd/MM/yyyy)
+        endDateTime = QDateTime::fromString(endDate, "dd/MM/yyyy");
+        if (!endDateTime.isValid()) {
+            endDateTime = QDateTime::fromString(endDate, "yyyy-MM-dd");
+        }
+        if (!endDateTime.isValid()) {
+            qWarning() << "Format de date invalide:" << endDate;
+            endDateTime = data.back().timestamp;
+        } else {
+            // S'assurer que l'heure est à la fin de la journée
+            endDateTime.setTime(QTime(23, 59, 59));
+            qDebug() << "Date de fin parsée:" << endDateTime.toString("dd/MM/yyyy hh:mm:ss");
+        }
     }
     
-    QTextStream in(&file);
-    bool isFirstLine = true;
+    QDateTime startDateTime = calculateStartDate(endDateTime, period);
+    qDebug() << "Filtrage des données pour la période"
+             << startDateTime.toString("dd/MM/yyyy hh:mm")
+             << "à" << endDateTime.toString("dd/MM/yyyy hh:mm");
+    data = filterByPeriod(data, startDateTime, endDateTime);
+    qDebug() << "Après filtrage par période:" << data.size() << "barres de prix";
+    if (tradingFrom.isValid() && tradingTo.isValid()) {
+        data = filterByTradingHours(data, tradingFrom, tradingTo);
+        qDebug() << "Après trading hours filter:" << data.size() << "bars";
+    }
     
-    while (!in.atEnd()) {
-        QString line = in.readLine();
+    qDebug() << "Vérification des données chargées:";
+    if (!data.empty()) {
+        const auto& first = data.front();
+        const auto& last = data.back();
+        qDebug() << "Première barre:" << first.timestamp << "OHLC:" 
+                 << first.open << first.high << first.low << first.close;
+        qDebug() << "Dernière barre:" << last.timestamp << "OHLC:" 
+                 << last.open << last.high << last.low << last.close;
+    }
+    
+    return data;
+}
+
+std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line, bool hasHeader)
+{
+    Q_UNUSED(hasHeader);
+    if (line.trimmed().isEmpty()) {
+        return nullptr;
+    }
+    QStringList fields = line.split(',');
+    if (fields.size() < 5) {
+        return nullptr;
+    }
+    try {
+        QString dateStr = fields[0].trimmed();
+        QDateTime timestamp;
         
-        auto bar = parseCSVLine(line, isFirstLine);
-        if (bar) {
-            result.push_back(*bar);
+        // CORRECTION: Add support for ISO 8601 format with timezone
+        timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss+00:00");
+        if (!timestamp.isValid()) {
+            timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss.zzz+00:00");
+        }
+        if (!timestamp.isValid()) {
+            timestamp = QDateTime::fromString(dateStr, Qt::ISODate);
+        }
+        if (!timestamp.isValid()) {
+            timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss");
+        }
+        if (!timestamp.isValid()) {
+            timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss.zzz");
+        }
+        if (!timestamp.isValid()) {
+            timestamp = QDateTime::fromString(dateStr, "MM/dd/yyyy hh:mm:ss");
+        }
+        if (!timestamp.isValid()) {
+            timestamp = QDateTime::fromString(dateStr, "dd/MM/yyyy hh:mm:ss");
+        }
+        if (!timestamp.isValid()) {
+            timestamp = QDateTime::fromString(dateStr, "yyyy-MM-dd hh:mm:ss");
         }
         
-        isFirstLine = false;
+        if (!timestamp.isValid()) {
+            qWarning() << "Format de date non reconnu:" << dateStr;
+            return nullptr;
+        }
+        
+        // Parse OHLC values
+        double open = fields[1].trimmed().toDouble();
+        double high = fields[2].trimmed().toDouble();
+        double low = fields[3].trimmed().toDouble();
+        double close = fields[4].trimmed().toDouble();
+        
+        double volume = 0.0;
+        if (fields.size() > 5) {
+            volume = fields[5].trimmed().toDouble();
+        }
+        
+        return std::make_unique<OHLCBar>(timestamp, open, high, low, close, volume);
+        
+    } catch (const std::exception& e) {
+        qWarning() << "Erreur lors de l'analyse de la ligne CSV:" << e.what();
+        return nullptr;
     }
-    
-    // Appliquer les filtres de période et d'heures de trading
-    QDateTime actualEndDate = QDateTime::fromString(endDate, "dd/MM/yyyy");
-    if (actualEndDate.isValid()) {
-        QDateTime startDate = calculateStartDate(actualEndDate, period);
-        result = filterByPeriod(result, startDate, actualEndDate);
+}
+
+QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString& period)
+{
+    QDateTime startDate = endDate;
+    if (period.endsWith("y")) {
+        bool ok;
+        int years = period.leftRef(period.length() - 1).toInt(&ok);
+        if (ok) {
+            startDate = endDate.addYears(-years);
+        }
+    } else if (period.endsWith("m")) {
+        bool ok;
+        int months = period.leftRef(period.length() - 1).toInt(&ok);
+        if (ok) {
+            startDate = endDate.addMonths(-months);
+        }
+    } else if (period.endsWith("d")) {
+        bool ok;
+        int days = period.leftRef(period.length() - 1).toInt(&ok);
+        if (ok) {
+            startDate = endDate.addDays(-days);
+        }
+    } else {
+        qWarning() << "Période non reconnue:" << period << ". Utilisez '1y', '6m', '30d', etc.";
+        startDate = endDate.addMonths(-1);
     }
-    
-    if (!tradingFrom.isNull() && !tradingTo.isNull()) {
-        result = filterByTradingHours(result, tradingFrom, tradingTo);
-    }
-    
-    qInfo() << "Chargé" << result.size() << "barres depuis CSV:" << filePath;
-    return result;
+    return startDate;
 }

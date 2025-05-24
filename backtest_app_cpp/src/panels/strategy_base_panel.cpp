@@ -1,9 +1,9 @@
 #include "strategy_base_panel.h"
 #include <QDebug>
 #include <QObject>
-#include <QFormLayout>  // AJOUT OBLIGATOIRE
-#include <QComboBox>    // AJOUT OBLIGATOIRE
-#include <QFrame>       // AJOUT OBLIGATOIRE
+#include <QFormLayout>  
+#include <QComboBox>    
+#include <QFrame>       
 
 StrategyBasePanel::StrategyBasePanel(QWidget* parent)
     : QObject(parent), BasePanel(parent)
@@ -330,7 +330,6 @@ QMap<QString, QVariant> StrategyBasePanel::getValues()
         }
     }
     
-    // AJOUT OBLIGATOIRE: Récupérer les jours de trading
     QList<QVariant> tradingDaysList;
     for (int i = 0; i < 7; ++i) {
         QString widgetName = QString("trading_day_%1").arg(i);

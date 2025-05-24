@@ -19,13 +19,15 @@
 #include <map>
 #include "baseview.h"
 #include "../binding/pybinding.h"
-#include "qchartviewer.h"
-#include "chartdir.h"
-#include "FinanceChart.h"
+
+// Include ChartDirector headers BEFORE any slots redefinition
+#include "../../ChartDirector/qtdemo/qtdemo/qchartviewer.h"
+#include "../../ChartDirector/include/chartdir.h"
+#include "../../ChartDirector/include/FinanceChart.h"
 
 // Constantes pour les couleurs des marqueurs
-const int BUY_MARKER_COLOR = 0x00FF00;   // Vert
-const int SELL_MARKER_COLOR = 0xFF0000;  // Rouge
+const int BUY_MARKER_COLOR = 0x00FF00;
+const int SELL_MARKER_COLOR = 0xFF0000;
 
 /**
  * @brief Structure pour stocker les données de prix
@@ -63,14 +65,15 @@ struct EquityData {
 /**
  * @brief Vue pour afficher les graphiques de prix et d'indicateurs
  */
-class ChartView : public QObject, public BaseView
+class ChartView : public BaseView
 {
     Q_OBJECT
 
 public:
-    ChartView(QWidget* parent = nullptr);
+    ChartView(QObject* parent = nullptr);  
     ~ChartView();
-    QWidget* create() override;
+    
+    QWidget* create(QWidget* parentWidget = nullptr) override;
     void update(void* data, void* stats) override;
     void clear() override;
 
@@ -83,34 +86,37 @@ private slots:
     void updateChart();
 
 private:
-    // Widgets UI
+    // UI Components
     QWidget* m_chartContainer;
     QVBoxLayout* m_chartLayout;
     QLabel* m_chartPlaceholder;
-    QWidget* m_controlsWidget;
-    QHBoxLayout* m_controlsLayout;
+    
+    // Controls
+    QWidget* m_controlsWidget;           // Widget conteneur des contrôles
+    QHBoxLayout* m_controlsLayout;       // Layout des contrôles
     QCheckBox* m_heikinAshiCheckbox;
     QCheckBox* m_volumeCheckbox;
     QCheckBox* m_equityCheckbox;
-    QComboBox* m_indicatorsCombo;
     QPushButton* m_addIndicatorBtn;
-    
-    // ChartDirector
-    QChartViewer* m_chartViewer;
+    QComboBox* m_indicatorsCombo;        // ComboBox pour sélectionner les indicateurs
+
+    // Chart components
     FinanceChart* m_financeChart;
+    QChartViewer* m_chartViewer;
     
-    // Données
+    // Data storage
     PriceData m_priceData;
     TradeData m_tradeData;
     EquityData m_equityData;
-    void* m_currentData;
-    void* m_currentStats;
+    std::map<QString, QVariant> m_indicatorsList;
+
+    // AJOUT DES MEMBRES MANQUANTS
+    void* m_currentData;                                    // Données courantes
+    void* m_currentStats;                                   // Stats courantes
+    QMap<QString, QVariant> m_indicatorConfigs;            // Configurations des indicateurs
+    QStringList m_activeIndicators;                         // Liste des indicateurs actifs
     
-    // Configuration des indicateurs
-    std::map<QString, QVariantMap> m_indicatorConfigs;
-    std::vector<QString> m_activeIndicators;
-    
-    // Méthodes privées
+    // Private methods
     void setupControls();
     void setupIndicatorsList();
     void extractDataFromPython(void* data, void* stats);
@@ -128,13 +134,14 @@ private:
     void addStochasticIndicator(int fastK, int slowK, int slowD);
     void addATRIndicator(int period);
     void calculateHeikinAshi(const std::vector<double>& open, 
-                           const std::vector<double>& high,
-                           const std::vector<double>& low, 
-                           const std::vector<double>& close,
-                           std::vector<double>& ha_open, 
-                           std::vector<double>& ha_high,
-                           std::vector<double>& ha_low,
-                           std::vector<double>& ha_close);
+                            const std::vector<double>& high,
+                            const std::vector<double>& low, 
+                            const std::vector<double>& close,
+                            std::vector<double>& ha_open, 
+                            std::vector<double>& ha_high,
+                            std::vector<double>& ha_low,
+                            std::vector<double>& ha_close);
+    
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
     std::vector<double> extractDoubleVector(void* pyObj);
     std::vector<QString> extractStringVector(void* pyObj);

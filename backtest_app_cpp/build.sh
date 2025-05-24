@@ -1,7 +1,6 @@
 #!/bin/bash
-# filepath: /home/max/ig-trading-bot/backtest_app_cpp/build.sh
 
-PROJECT_DIR="/home/max/ig-trading-bot/backtest_app_cpp"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/backtest_app_cpp"
 BUILD_DIR="$PROJECT_DIR/build"
 QT_VERSION="5"
 

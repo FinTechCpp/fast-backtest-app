@@ -1,105 +1,71 @@
 #ifndef PYBINDING_H
 #define PYBINDING_H
 
-// Include Qt headers first - before any Python includes
+// CORRECTION: Définir Qt slots avant Python pour éviter le conflit
+#ifdef slots
+#undef slots
+#endif
+
+#include <QObject>
+#include <QString>
 #include <QMap>
 #include <QVariant>
-#include <QTime>
-#include <QDate>
-#include <QDebug>
-#include <QString>
-#include <QObject>
-#include <QList>
+#include <QDateTime>
+#include <vector>
+#include "../data_loader.h"
 
-// Temporarily undefine Qt's slots for Python compatibility
-#pragma push_macro("slots")
-#undef slots
-
-// Include Python headers
-#include <Python.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
 #include <pybind11/embed.h>
+#include <pybind11/stl.h>
 
-// Restore Qt's slots definition
-#pragma pop_macro("slots")
+// Redéfinir slots pour Qt après les includes Python
+#ifndef QT_NO_KEYWORDS
+#define slots Q_SLOTS
+#endif
 
-#include <string>
-#include <functional>
-#include <memory>
+namespace py = pybind11;
 
-// Forward declarations
-class QWidget;
-
-/**
- * @brief Gestionnaire pour l'interface Python-C++
- */
-class PyBindingManager : public QObject
+class PyBindingManager
 {
-    Q_OBJECT
-
 public:
-    static PyBindingManager* getInstance();
-    
-    // AJOUT: Déclaration explicite du constructeur et destructeur
-    PyBindingManager();
-    virtual ~PyBindingManager();
+    static PyBindingManager& getInstance();
     
     bool initialize();
-    void finalize();
     bool isInitialized() const;
     
-    // Méthodes pour le backtest
-    void* runBacktest(
-        void* data,
-        const QString& strategyClass,
-        double cash,
-        double spread,
-        const QMap<QString, QVariant>& strategyParams);
+    // Méthode principale - simple appel au backtest Python
+    QVariant runPythonBacktest(const std::vector<OHLCBar>& data,
+                              const QString& strategyClass,
+                              double cash,
+                              double spread,
+                              const QMap<QString, QVariant>& strategyParams);
     
-    void freeBacktestResults(void* data, void* stats);
-    
-    // Méthodes pour récupérer les résultats
-    QVariant getStatValue(void* stats, const QString& key);
+    // Récupération des résultats
     QList<QVariantMap> getTrades(void* stats);
-    QList<QVariantMap> getEquity(void* stats);
+    QList<QVariantMap> getEquityCurve(void* stats);
+    QVariant getStatValue(void* stats, const QString& key);
     
-    // Méthodes utilitaires
-    bool strategyExists(const QString& strategyName);
-    void* loadData(
-        const QString& symbol,
-        const QString& interval,
-        const QString& period,
-        const QString& endDate,
-        const QTime& tradingFrom,
-        const QTime& tradingTo);
-    
-    // Conversion de types
-    void* variantToPython(const QVariant& var);
-    QVariant pythonToVariant(void* pyObj);
-    pybind11::dict mapToPythonDict(const QMap<QString, QVariant>& map);
-    
-    // Exécution de scripts Python
-    void* executePythonScript(const QString& scriptPath, 
-                             const QMap<QString, QVariant>& params);
-    bool loadModule(const QString& moduleName);
-    void* callFunction(const QString& moduleName, 
-                      const QString& functionName,
-                      const QMap<QString, QVariant>& args);
-    pybind11::object qVariantToPython(const QVariant& value);
-    QVariant pythonToQVariant(const pybind11::object& obj);
+    // Gestion des erreurs
     QString getLastError() const;
     void clearError();
+    
+    // AJOUT: Méthode pour finaliser Python
+    void finalize();
 
 private:
+    PyBindingManager();
+    ~PyBindingManager();
+    
     static PyBindingManager* instance;
     bool m_initialized;
     QString m_lastError;
-    void* m_pyHelpers;
-    void* m_pyBacktest;
+    // CORRECTION: Supprimer m_lastResults pour éviter l'avertissement de visibilité
     
+    // Méthodes utilitaires
+    py::dict convertParamsToPython(const QMap<QString, QVariant>& params);
+    QVariant pythonToQVariant(const py::object& obj);
+    QString findProjectRoot(const QString& startPath);
     void setError(const QString& error);
-    bool handlePythonException();
 };
 
 #endif // PYBINDING_H

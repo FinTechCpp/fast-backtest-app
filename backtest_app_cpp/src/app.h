@@ -81,13 +81,15 @@ private:
     // Managers and Configuration
     ConfigManager* m_configManager;
     ResultManager* m_resultManager;
-    BacktestRunner* m_backtestRunner;
     
-    // Panels
+    // Panels - AJOUT MANQUANT
     GeneralParamsPanel* m_generalParamsPanel;
     StrategyBasePanel* m_strategyBasePanel;
     ProfilePanel* m_profilePanel;
-    BasePanel* m_strategySpecificPanel;
+    BasePanel* m_strategySpecificPanel;  // Panel spécifique à la stratégie actuelle
+    
+    // Components - AJOUT MANQUANT
+    BacktestRunner* m_backtestRunner;
     
     // Views
     StatsView* m_statsView;

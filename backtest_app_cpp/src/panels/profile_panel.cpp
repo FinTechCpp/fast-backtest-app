@@ -7,17 +7,23 @@
 ProfilePanel::ProfilePanel(QWidget* parent)
     : QObject(parent), BasePanel(parent)
 {
-    // Récupérer le gestionnaire de configuration depuis le parent App
-    if (parent) {
-        App* mainApp = qobject_cast<App*>(parent->window());
-        if (mainApp) {
-            m_configManager = mainApp->getConfigManager();
-        } else {
-            qWarning() << "Impossible de récupérer l'instance App";
-            m_configManager = nullptr;
+    // CORRECTION : Recherche plus robuste
+    m_configManager = nullptr;
+    
+    // Chercher dans la hiérarchie des parents
+    QObject* obj = this->parent();
+    while (obj && !m_configManager) {
+        if (App* app = qobject_cast<App*>(obj)) {
+            m_configManager = app->getConfigManager();
+            break;
         }
+        obj = obj->parent();
+    }
+    
+    if (!m_configManager) {
+        qWarning() << "ConfigManager non trouvé dans ProfilePanel";
     } else {
-        m_configManager = nullptr;
+        qDebug() << "ConfigManager trouvé dans ProfilePanel";
     }
 }
 

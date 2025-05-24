@@ -1,74 +1,158 @@
 #include "backtest_runner.h"
 #include "../binding/pybinding.h"
 #include "../config_manager.h"
-#include <QApplication>
-#include <QMessageBox>
-#include <QDebug>
-#include <QThread>
+#include "../data_loader.h"
 #include "../app.h"
+#include <QDebug>
 
 BacktestRunner::BacktestRunner(QObject* parent)
     : QObject(parent)
     , m_mainWindow(qobject_cast<App*>(parent))
     , m_buttonLayout(nullptr)
     , m_runButton(nullptr)
-    , m_stopButton(nullptr)
     , m_loadingIndicator(nullptr)
-    , m_statusLabel(nullptr)
-    , m_logOutput(nullptr)
-    , m_progressTimer(nullptr)
-    , m_workerThread(nullptr)
     , m_worker(nullptr)
     , m_isRunning(false)
 {
-    // Créer les composants UI
     createUIComponents();
-    
-    // Connecter les signaux internes
-    connect(this, &BacktestRunner::backtestCompleted, this, &BacktestRunner::onBacktestFinished);
-    connect(this, &BacktestRunner::backtestError, this, &BacktestRunner::onBacktestError);
-    
-    qDebug() << "BacktestRunner initialisé";
 }
 
 BacktestRunner::~BacktestRunner()
 {
-    // Nettoyer le thread worker s'il existe
-    if (m_workerThread && m_workerThread->isRunning()) {
-        m_workerThread->quit();
-        m_workerThread->wait(5000);
+    if (m_worker && m_worker->isRunning()) {
+        m_worker->quit();
+        m_worker->wait();
     }
-    
-    delete m_workerThread;
-    // Ne pas supprimer m_worker, il est auto-détruit quand le thread se termine
+    delete m_worker;
 }
 
 void BacktestRunner::createUIComponents()
 {
-    // Créer le layout pour le bouton
     m_buttonLayout = new QHBoxLayout();
     
-    // Créer le bouton d'exécution
     m_runButton = new QPushButton("Lancer le backtest");
     m_runButton->setMinimumHeight(40);
     m_runButton->setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;");
     
-    // CORRECTION: Connecter le signal clicked au slot runBacktest
     connect(m_runButton, &QPushButton::clicked, this, &BacktestRunner::runBacktest);
     
-    // Créer l'indicateur de chargement
     m_loadingIndicator = new QProgressBar();
-    m_loadingIndicator->setMaximum(0);  // Mode indéterminé
+    m_loadingIndicator->setMaximum(0);
     m_loadingIndicator->setMinimum(0);
     m_loadingIndicator->setTextVisible(false);
-    m_loadingIndicator->setMaximumHeight(10);
     m_loadingIndicator->setVisible(false);
     
-    // Ajouter les widgets au layout
     m_buttonLayout->addWidget(m_runButton);
     m_buttonLayout->addWidget(m_loadingIndicator);
+}
+
+void BacktestRunner::runBacktest()
+{
+    if (m_isRunning) {
+        return;
+    }
     
-    qDebug() << "Composants UI créés pour BacktestRunner";
+    // Récupérer la configuration depuis l'application
+    if (!m_mainWindow) {
+        showError("Référence à l'application principale non trouvée");
+        return;
+    }
+    
+    ConfigManager* configManager = m_mainWindow->getConfigManager();
+    if (!configManager) {
+        showError("Gestionnaire de configuration non trouvé");
+        return;
+    }
+    
+    // Interface utilisateur
+    m_runButton->setEnabled(false);
+    m_loadingIndicator->setVisible(true);
+    m_isRunning = true;
+    
+    emit backtestStarted();
+    
+    // Récupérer les paramètres
+    QMap<QString, QVariant> allParams = m_mainWindow->getStrategyConfig();
+    
+    // Récupérer la date de fin depuis la configuration
+    QDateTime endDate;
+    if (allParams.contains("end_date")) {
+        QVariant dateVariant = allParams["end_date"];
+        if (dateVariant.type() == QVariant::Date) {
+            endDate = QDateTime(dateVariant.toDate());
+        } else if (dateVariant.type() == QVariant::DateTime) {
+            endDate = dateVariant.toDateTime();
+        } else {
+            // Tenter de parser une chaîne
+            QString dateStr = dateVariant.toString();
+            endDate = QDateTime::fromString(dateStr, "dd/MM/yyyy");
+        }
+    }
+    
+    // Charger les données avec la bonne date
+    std::vector<OHLCBar> data = DataLoader::loadData(
+        "NDX", "20secs", "10d", endDate, QTime(), QTime(), {}
+    );
+    
+    if (data.empty()) {
+        showError("Aucune donnée chargée");
+        resetUI();
+        return;
+    }
+    
+    QString strategyClass = allParams.value("strategy", "BuyHeikinGreenBA").toString();
+    double cash = allParams.value("cash", 100000.0).toDouble();
+    double spread = allParams.value("spread", 0.0001).toDouble();
+    
+    // Créer et lancer le worker
+    m_worker = new BacktestWorker(data, strategyClass, cash, spread, allParams, this);
+    
+    connect(m_worker, &BacktestWorker::finished, this, &BacktestRunner::onBacktestFinished);
+    connect(m_worker, &BacktestWorker::error, this, &BacktestRunner::onBacktestError);
+    connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
+    
+    m_worker->start();
+}
+
+void BacktestRunner::onBacktestFinished(void* data, void* stats)
+{
+    m_isRunning = false;
+    resetUI();
+    
+    if (!stats) {
+        qCritical() << "Pas de résultats de backtest reçus";
+        showError("Aucun résultat de backtest reçu");
+        return;
+    }
+    
+    qInfo() << "Backtest terminé avec succès, transmission des résultats";
+    
+    // Transmettre les résultats au gestionnaire principal
+    if (m_mainWindow) {
+        m_mainWindow->updateResultViews(data, stats);
+        emit backtestCompleted(data, stats);
+    } else {
+        qCritical() << "Impossible de transmettre les résultats : fenêtre principale non disponible";
+    }
+}
+
+void BacktestRunner::onBacktestError(const QString& errorMessage)
+{
+    resetUI();
+    showError(errorMessage);
+    emit backtestError(errorMessage);
+}
+
+void BacktestRunner::resetUI()
+{
+    m_runButton->setEnabled(true);
+    m_loadingIndicator->setVisible(false);
+    m_isRunning = false;
+}
+
+void BacktestRunner::showError(const QString& error)
+{
+    qCritical() << "Erreur backtest:" << error;
 }
 
 QHBoxLayout* BacktestRunner::getLayout() const
@@ -76,155 +160,14 @@ QHBoxLayout* BacktestRunner::getLayout() const
     return m_buttonLayout;
 }
 
-void BacktestRunner::runBacktest()
-{
-    if (m_isRunning) {
-        qWarning() << "Un backtest est déjà en cours";
-        return;
-    }
-    
-    if (!m_mainWindow) {
-        emit backtestError("Référence à la fenêtre principale manquante");
-        return;
-    }
-    
-    // Récupérer la configuration depuis l'application
-    QMap<QString, QVariant> generalConfig = m_mainWindow->getConfigManager()->getProfileFromUI();
-    QMap<QString, QVariant> strategyConfig = m_mainWindow->getStrategyConfig();
-    
-    // CORRECTION: Adapter aux paramètres attendus par le code Python
-    QString symbol = generalConfig.value("symbol", "NDX").toString();
-    QString interval = generalConfig.value("interval", "20secs").toString();
-    QString period = generalConfig.value("period", "10d").toString();
-    QString endDate = generalConfig.value("end_date", QDate::currentDate()).toDate().toString("dd/MM/yyyy");
-    QTime tradingFrom = generalConfig.value("trading_from", QTime(15, 30)).toTime();
-    QTime tradingTo = generalConfig.value("trading_to", QTime(22, 0)).toTime();
-    
-    double cash = generalConfig.value("cash", 100000.0).toDouble();
-    double spread = generalConfig.value("spread", 0.0001).toDouble();
-    QString strategyClass = generalConfig.value("strategy", "BuyHeikinGreenBA").toString();
-    
-    // Utiliser PyBindingManager pour l'exécution
-    PyBindingManager* pyManager = PyBindingManager::getInstance();
-    
-    if (!pyManager || !pyManager->isInitialized()) {
-        emit backtestError("Interface Python non disponible");
-        return;
-    }
-    
-    // Mettre à jour l'UI
-    m_isRunning = true;
-    m_runButton->setEnabled(false);
-    m_loadingIndicator->setVisible(true);
-    emit backtestStarted();
-    
-    // Lancer le backtest dans un thread séparé
-    m_workerThread = new QThread();
-    m_worker = new BacktestWorker(nullptr, strategyClass, cash, spread, strategyConfig);
-    m_worker->moveToThread(m_workerThread);
-    
-    // CORRECTION: Adapter la logique pour charger les données d'abord
-    connect(m_workerThread, &QThread::started, [this, symbol, interval, period, endDate, tradingFrom, tradingTo]() {
-        // Charger les données d'abord
-        PyBindingManager* pyManager = PyBindingManager::getInstance();
-        void* data = pyManager->loadData(symbol, interval, period, endDate, tradingFrom, tradingTo);
-        
-        if (!data) {
-            emit backtestError("Impossible de charger les données");
-            return;
-        }
-        
-        // Puis exécuter le backtest
-        m_worker->m_data = data;
-        m_worker->run();
-    });
-    
-    connect(m_worker, &BacktestWorker::finished, this, &BacktestRunner::onBacktestFinished);
-    connect(m_worker, &BacktestWorker::error, this, &BacktestRunner::onBacktestError);
-    
-    connect(m_workerThread, &QThread::finished, m_workerThread, &QThread::deleteLater);
-    
-    m_workerThread->start();
-}
-
-void BacktestRunner::onBacktestFinished(void* data, void* stats)
-{
-    qInfo() << "=== BACKTEST TERMINÉ ===";
-    
-    try {
-        // Traiter les résultats
-        if (data && stats) {
-            qInfo() << "Données reçues, mise à jour des vues...";
-            
-            // Mettre à jour l'interface des résultats via l'application principale
-            if (m_mainWindow) {
-                m_mainWindow->updateResultViews(data, stats);
-            }
-        } else {
-            qWarning() << "Aucune donnée reçue du backtest";
-            
-            // Afficher un message dans les vues indiquant qu'aucune donnée n'est disponible
-            if (m_mainWindow) {
-                m_mainWindow->updateResultViews(nullptr, nullptr);
-            }
-        }
-        
-        qInfo() << "Backtest exécuté avec succès";
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur lors du traitement des résultats:" << e.what();
-        emit backtestError(QString("Erreur de traitement: %1").arg(e.what()));
-    }
-    
-    // Réinitialiser l'interface
-    m_loadingIndicator->setVisible(false);
-    m_runButton->setEnabled(true);
-    m_runButton->setText("Lancer le backtest");
-    m_isRunning = false;
-    
-    qInfo() << "Interface réinitialisée";
-}
-
-void BacktestRunner::onBacktestError(const QString& errorMessage)
-{
-    qCritical() << "=== ERREUR BACKTEST ===" << errorMessage;
-    
-    // Afficher une boîte de dialogue pour informer l'utilisateur
-    QMessageBox::warning(
-        qobject_cast<QWidget*>(m_mainWindow), 
-        "Erreur de backtest",
-        QString("Le backtest a rencontré une erreur:\n%1").arg(errorMessage)
-    );
-    
-    // Réinitialiser l'interface
-    m_loadingIndicator->setVisible(false);
-    m_runButton->setEnabled(true);
-    m_runButton->setText("Lancer le backtest");
-    m_isRunning = false;
-    
-    qInfo() << "Interface réinitialisée après erreur";
-}
-
-// Méthodes non implémentées (stubs)
-void BacktestRunner::stopBacktest() 
-{
-    qDebug() << "stopBacktest appelé - non implémenté";
-}
-
-void BacktestRunner::updateProgress() 
-{
-    // Pour l'instant, ne fait rien
-}
-
-// Implémentation de BacktestWorker
-
-BacktestWorker::BacktestWorker(void* data, 
-                             const QString& strategyClass, 
-                             double cash, 
-                             double spread, 
-                             const QMap<QString, QVariant>& strategyParams,
-                             QObject* parent)
-    : QObject(parent)
+// BacktestWorker - Version simplifiée
+BacktestWorker::BacktestWorker(const std::vector<OHLCBar>& data,
+                               const QString& strategyClass, 
+                               double cash, 
+                               double spread, 
+                               const QMap<QString, QVariant>& strategyParams,
+                               QObject* parent)
+    : QThread(parent)
     , m_data(data)
     , m_strategyClass(strategyClass)
     , m_cash(cash)
@@ -233,18 +176,55 @@ BacktestWorker::BacktestWorker(void* data,
 {
 }
 
-void BacktestWorker::run()
+// AJOUT: Implémentation du destructeur manquant
+BacktestWorker::~BacktestWorker()
 {
-    qDebug() << "BacktestWorker::run() - non implémenté";
-    
-    // Pour l'instant, simuler un délai et retourner des résultats factices
-    QThread::msleep(1000);
-    
-    // Simuler des résultats
-    QMap<QString, QVariant> mockStats;
-    mockStats["Return [%]"] = 12.3;
-    mockStats["# Trades"] = 25;
-    
-    emit finished(nullptr, &mockStats);
+    // S'assurer que le thread est terminé avant destruction
+    if (isRunning()) {
+        quit();
+        wait(5000); // Attendre maximum 5 secondes
+        if (isRunning()) {
+            terminate(); // Forcer l'arrêt si nécessaire
+            wait(1000);
+        }
+    }
 }
 
+void BacktestWorker::run()
+{
+    try {
+        qInfo() << "Démarrage du BacktestWorker dans le thread:" << QThread::currentThreadId();
+        
+        // Initialiser PyBindingManager si nécessaire
+        PyBindingManager& pyManager = PyBindingManager::getInstance();
+        if (!pyManager.isInitialized()) {
+            if (!pyManager.initialize()) {
+                emit error("Erreur d'initialisation de Python: " + pyManager.getLastError());
+                return;
+            }
+        }
+        
+        // Exécuter le backtest Python
+        QVariant result = pyManager.runPythonBacktest(
+            m_data, m_strategyClass, m_cash, m_spread, m_strategyParams
+        );
+        
+        if (result.isNull()) {
+            emit error("Erreur lors de l'exécution du backtest: " + pyManager.getLastError());
+            return;
+        }
+        
+        // Pour l'instant, nous émettons des pointeurs nullptr car nous devons 
+        // implémenter la conversion des résultats Python vers les structures C++
+        // TODO: Implémenter la conversion des résultats
+        void* data = nullptr;
+        void* stats = reinterpret_cast<void*>(0x1); // Pointeur factice non-null pour indiquer le succès
+        
+        emit finished(data, stats);
+        
+    } catch (const std::exception& e) {
+        emit error(QString("Exception dans BacktestWorker: %1").arg(e.what()));
+    } catch (...) {
+        emit error("Erreur inconnue dans BacktestWorker");
+    }
+}

@@ -1,6 +1,11 @@
 #ifndef STATS_VIEW_H
 #define STATS_VIEW_H
 
+// IMPORTANT: Protéger contre le conflit slots
+#ifdef slots
+#undef slots
+#endif
+
 #include <QObject>
 #include <QWidget>
 #include <QVBoxLayout>
@@ -20,6 +25,11 @@
 #include "../metric_widget.h"
 #include "../binding/pybinding.h"
 
+// Redéfinir slots pour Qt
+#ifndef QT_NO_KEYWORDS
+#define slots Q_SLOTS
+#endif
+
 /**
  * @brief Modèle de données pour la table des trades
  */
@@ -36,14 +46,14 @@ public:
 /**
  * @brief Vue pour afficher les statistiques du backtest
  */
-class StatsView : public QObject, public BaseView
+class StatsView : public BaseView  
 {
     Q_OBJECT
 
 public:
-    StatsView(QWidget* parent = nullptr);
+    StatsView(QObject* parent = nullptr);  
     ~StatsView();
-    QWidget* create() override;
+    QWidget* create(QWidget* parentWidget = nullptr) override;  // CORRECTION: Ajout du paramètre
     void update(void* data, void* stats) override;
     void clear() override;
 

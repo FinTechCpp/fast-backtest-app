@@ -2,15 +2,15 @@
 #include <QDebug>
 #include <QDateTime>
 #include <QTime>
-#include <algorithm>
 
-HistogramView::HistogramView(QWidget* parent)
-    : QObject(parent), BaseView(parent)
+HistogramView::HistogramView(QObject* parent)
+    : BaseView(parent)
     , m_timeUnitCombo(nullptr)
     , m_chartView(nullptr)
     , m_chart(nullptr)
     , m_currentStats(nullptr)
 {
+    qDebug() << "HistogramView créée avec parent:" << parent;
 }
 
 HistogramView::~HistogramView()
@@ -18,11 +18,12 @@ HistogramView::~HistogramView()
     // Les widgets enfants sont détruits automatiquement par Qt
 }
 
-QWidget* HistogramView::create()
+QWidget* HistogramView::create(QWidget* parentWidget)
 {
     QTime start = QTime::currentTime();
+    m_parentWidget = parentWidget;    
     
-    QWidget* histogramTab = new QWidget(m_parent);
+    QWidget* histogramTab = new QWidget(parentWidget);
     QVBoxLayout* histogramLayout = new QVBoxLayout(histogramTab);
     
     // Créer les contrôles pour sélectionner l'unité de temps
@@ -37,7 +38,7 @@ QWidget* HistogramView::create()
     m_timeUnitCombo = new QComboBox();
     m_timeUnitCombo->addItems({"Jour", "Semaine", "Mois", "Trimestre", "Année"});
     m_timeUnitCombo->setCurrentIndex(0);
-    connect(m_timeUnitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+    QObject::connect(m_timeUnitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &HistogramView::updateHistogram);
     controlsLayout->addWidget(m_timeUnitCombo);
     
@@ -65,12 +66,15 @@ QWidget* HistogramView::create()
     return histogramTab;
 }
 
-void HistogramView::update(void* /*data*/, void* stats)  // CORRECTION: Marqué comme unused
+void HistogramView::update(void* data, void* stats)
 {
+    Q_UNUSED(data);
     QTime start = QTime::currentTime();
     
     // Stocker les données pour les mises à jour ultérieures
     m_currentStats = stats;
+    
+    qDebug() << "HistogramView::update() appelé avec stats:" << stats;
     
     // Mettre à jour l'histogramme
     if (stats) {
@@ -87,14 +91,6 @@ void HistogramView::clear()
 {
     if (m_chart) {
         m_chart->removeAllSeries();
-        
-        // CORRECTION: Utiliser les nouvelles API QtCharts
-        const auto axes = m_chart->axes();
-        for (auto axis : axes) {
-            m_chart->removeAxis(axis);
-            delete axis;
-        }
-        
         m_chart->setTitle("Exécutez le backtest pour afficher l'histogramme des gains/pertes");
     }
     m_currentStats = nullptr;
@@ -109,8 +105,6 @@ void HistogramView::updateHistogram()
     // TODO: Implémenter la récupération des données depuis PyBindingManager
     // Pour l'instant, créer des données de test
     GroupedData testData;
-    
-    // ALTERNATIVE: Utiliser les constructeurs explicites
     testData.categories = QStringList({"Jan", "Feb", "Mar", "Apr", "May"});
     testData.values = QList<double>({100.0, -50.0, 75.0, -25.0, 150.0});
     
@@ -126,11 +120,9 @@ void HistogramView::createChart(const GroupedData& data)
     // Nettoyer le graphique existant
     m_chart->removeAllSeries();
     
-    // CORRECTION: Utiliser les nouvelles API QtCharts
     const auto axes = m_chart->axes();
     for (auto axis : axes) {
         m_chart->removeAxis(axis);
-        delete axis;
     }
     
     // Créer la série de barres
@@ -139,15 +131,15 @@ void HistogramView::createChart(const GroupedData& data)
     
     // Ajouter les données
     for (double value : data.values) {
-        *set << value;
+        set->append(value);
     }
     
     // Colorer les barres selon les gains/pertes
     for (int i = 0; i < data.values.size(); ++i) {
         if (data.values[i] >= 0) {
-            set->setColor(QColor(0, 150, 0));  // Vert pour les gains
+            set->setColor(QColor(0, 255, 0)); // Vert pour les gains
         } else {
-            set->setColor(QColor(150, 0, 0));  // Rouge pour les pertes
+            set->setColor(QColor(255, 0, 0)); // Rouge pour les pertes
         }
     }
     
@@ -175,9 +167,8 @@ HistogramView::GroupedData HistogramView::groupDataByTimeUnit(const QList<QVaria
     GroupedData result;
     
     // TODO: Implémenter le regroupement des trades par unité de temps
-    // Pour l'instant, retourner des données de test
-    Q_UNUSED(trades)
-    Q_UNUSED(timeUnit)
+    Q_UNUSED(trades);
+    Q_UNUSED(timeUnit);
     
     return result;
 }

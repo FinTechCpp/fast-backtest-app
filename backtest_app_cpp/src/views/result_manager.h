@@ -16,19 +16,14 @@ class HistogramView;
 
 /**
  * @brief Gestionnaire des vues de résultats du backtest
- * 
- * Cette classe coordonne l'affichage des différentes vues de résultats:
- * - Statistiques (stats_view)
- * - Histogramme des profits/pertes (histogram_view)
- * - Graphique financier (financechart)
  */
-class ResultManager : public QObject, public BaseView
+class ResultManager : public BaseView  
 {
     Q_OBJECT
 
 public:
     /**
-     * @brief Constructeur - CORRIGER: QObject* au lieu de QWidget*
+     * @brief Constructeur
      * @param parent Pointeur vers l'objet parent
      */
     explicit ResultManager(QObject* parent = nullptr);
@@ -40,9 +35,10 @@ public:
     
     /**
      * @brief Crée la zone d'affichage des résultats avec les différentes vues
+     * @param parentWidget Widget parent pour les widgets créés
      * @return Widget contenant l'ensemble des vues de résultats
      */
-    QWidget* create() override;
+    QWidget* create(QWidget* parentWidget = nullptr) override;
     
     /**
      * @brief Met à jour toutes les vues avec les résultats du backtest
@@ -81,7 +77,7 @@ private:
     QVBoxLayout* m_resultsLayout;    // Layout principal
     QTabWidget* m_tabWidget;         // Widget d'onglets
     
-    // Vues - CORRECTION: Ordre des déclarations pour éviter l'avertissement
+    // Vues
     StatsView* m_statsView;          // Vue des statistiques
     ChartView* m_chartView;          // Vue du graphique financier
     HistogramView* m_histogramView;  // Vue de l'histogramme des profits/pertes

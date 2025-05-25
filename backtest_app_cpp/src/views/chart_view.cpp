@@ -96,6 +96,12 @@ void ChartView::setupControls()
     
     m_controlsLayout->addStretch();
     m_chartLayout->addWidget(m_controlsWidget);
+
+    setupMouseControls();
+    setupNavigationControls();
+    
+    m_controlsLayout->addStretch();
+    m_chartLayout->addWidget(m_controlsWidget);
 }
 
 // Toutes les autres méthodes restent inchangées avec des implémentations TODO
@@ -221,9 +227,189 @@ void ChartView::onViewPortChanged()
     
     qDebug() << "ViewPort changed - redrawing chart";
     
-    // Ne pas recréer le graphique, juste mettre à jour l'affichage
-    // ChartDirector gère automatiquement le zoom/scroll
-    m_chartViewer->updateDisplay();
+    // NOUVEAU : Redessiner le graphique avec les données visibles
+    drawChartWithViewport();
+}
+
+void ChartView::drawChartWithViewport()
+{
+    if (m_priceData.timestamps.empty()) {
+        return;
+    }
+    
+    qDebug() << "=== DÉBUT drawChartWithViewport ===";
+    
+    try {
+        // Calculer les indices de début et fin basés sur le viewport
+        int totalPoints = m_priceData.timestamps.size();
+        
+        double viewPortLeft = m_chartViewer->getViewPortLeft();
+        double viewPortWidth = m_chartViewer->getViewPortWidth();
+        
+        int startIndex = (int)floor(viewPortLeft * totalPoints);
+        int endIndex = (int)ceil((viewPortLeft + viewPortWidth) * totalPoints) - 1;
+        
+        // S'assurer que les indices sont dans les limites
+        startIndex = std::max(0, std::min(startIndex, totalPoints - 1));
+        endIndex = std::max(startIndex, std::min(endIndex, totalPoints - 1));
+        
+        int pointsToShow = endIndex - startIndex + 1;
+        
+        qDebug() << "Redessinage - Points totaux:" << totalPoints 
+                 << "Visibles:" << pointsToShow 
+                 << "De" << startIndex << "à" << endIndex;
+        
+        // Extraire les données visibles
+        DoubleArray timeStamps = DoubleArray(&m_priceData.timestamps[startIndex], pointsToShow);
+        DoubleArray openData = DoubleArray(&m_priceData.open[startIndex], pointsToShow);
+        DoubleArray highData = DoubleArray(&m_priceData.high[startIndex], pointsToShow);
+        DoubleArray lowData = DoubleArray(&m_priceData.low[startIndex], pointsToShow);
+        DoubleArray closeData = DoubleArray(&m_priceData.close[startIndex], pointsToShow);
+        DoubleArray volumeData = DoubleArray(&m_priceData.volume[startIndex], pointsToShow);
+        
+        // Créer un nouveau FinanceChart avec seulement les données visibles
+        if (m_financeChart) {
+            delete m_financeChart;
+        }
+        
+        m_financeChart = new FinanceChart(800);
+        m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+        
+        // Reconfigurer le graphique
+        std::string title = "Backtest - Points " + std::to_string(startIndex) + 
+                           " à " + std::to_string(endIndex);
+        m_financeChart->addTitle(title.c_str());
+        m_financeChart->addMainChart(300);
+        m_financeChart->addCandleStick(0x00AA00, 0xFF3333);
+        
+        // Ajouter le volume si demandé
+        if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
+            m_financeChart->addVolBars(80, 0x99ff99, 0xff9999, 0x808080);
+        }
+        
+        // Assigner le nouveau graphique
+        m_chartViewer->setChart(m_financeChart);
+        
+        qDebug() << "=== FIN drawChartWithViewport ===";
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Erreur dans drawChartWithViewport:" << e.what();
+    }
+}
+
+void ChartView::setupMouseControls()
+{
+    // Créer un groupe de boutons pour les modes de souris
+    QWidget* mouseControlsWidget = new QWidget();
+    QHBoxLayout* mouseLayout = new QHBoxLayout(mouseControlsWidget);
+    
+    QPushButton* scrollBtn = new QPushButton("📜 Scroll", mouseControlsWidget);
+    QPushButton* zoomInBtn = new QPushButton("🔍 Zoom In", mouseControlsWidget);
+    QPushButton* zoomOutBtn = new QPushButton("🔍 Zoom Out", mouseControlsWidget);
+    
+    scrollBtn->setCheckable(true);
+    zoomInBtn->setCheckable(true);
+    zoomOutBtn->setCheckable(true);
+    
+    // Créer un groupe mutuellement exclusif
+    QButtonGroup* mouseGroup = new QButtonGroup(this);
+    mouseGroup->addButton(scrollBtn, Chart::MouseUsageScroll);
+    mouseGroup->addButton(zoomInBtn, Chart::MouseUsageZoomIn);
+    mouseGroup->addButton(zoomOutBtn, Chart::MouseUsageZoomOut);
+    
+    // Connecter le signal pour changer le mode de souris
+    connect(mouseGroup, QOverload<QAbstractButton*>::of(&QButtonGroup::buttonPressed),
+            [this](QAbstractButton* button) {
+                QButtonGroup* group = qobject_cast<QButtonGroup*>(sender());
+                int mouseUsage = group->id(button);
+                if (m_chartViewer) {
+                    m_chartViewer->setMouseUsage(mouseUsage);
+                    qDebug() << "Mode souris changé vers:" << mouseUsage;
+                }
+            });
+    
+    // Par défaut, mode scroll
+    scrollBtn->setChecked(true);
+    
+    mouseLayout->addWidget(scrollBtn);
+    mouseLayout->addWidget(zoomInBtn);
+    mouseLayout->addWidget(zoomOutBtn);
+    mouseLayout->addStretch();
+    
+    // Ajouter au layout principal des contrôles
+    m_controlsLayout->addWidget(mouseControlsWidget);
+}
+
+void ChartView::setupNavigationControls()
+{
+    QWidget* navWidget = new QWidget();
+    QHBoxLayout* navLayout = new QHBoxLayout(navWidget);
+    
+    QPushButton* homeBtn = new QPushButton("🏠 Tout", navWidget);
+    QPushButton* leftBtn = new QPushButton("⬅️", navWidget);
+    QPushButton* rightBtn = new QPushButton("➡️", navWidget);
+    QPushButton* zoomInBtn = new QPushButton("➕", navWidget);
+    QPushButton* zoomOutBtn = new QPushButton("➖", navWidget);
+    
+    // Connecter les boutons
+    connect(homeBtn, &QPushButton::clicked, [this]() {
+        if (m_chartViewer) {
+            m_chartViewer->setViewPortLeft(0);
+            m_chartViewer->setViewPortWidth(1.0);
+            m_chartViewer->updateViewPort(true, false);
+        }
+    });
+    
+    connect(leftBtn, &QPushButton::clicked, [this]() {
+        if (m_chartViewer) {
+            double left = m_chartViewer->getViewPortLeft();
+            double width = m_chartViewer->getViewPortWidth();
+            m_chartViewer->setViewPortLeft(std::max(0.0, left - width * 0.1));
+            m_chartViewer->updateViewPort(true, false);
+        }
+    });
+    
+    connect(rightBtn, &QPushButton::clicked, [this]() {
+        if (m_chartViewer) {
+            double left = m_chartViewer->getViewPortLeft();
+            double width = m_chartViewer->getViewPortWidth();
+            m_chartViewer->setViewPortLeft(std::min(1.0 - width, left + width * 0.1));
+            m_chartViewer->updateViewPort(true, false);
+        }
+    });
+    
+    connect(zoomInBtn, &QPushButton::clicked, [this]() {
+        if (m_chartViewer) {
+            double left = m_chartViewer->getViewPortLeft();
+            double width = m_chartViewer->getViewPortWidth();
+            double newWidth = width * 0.8;
+            double newLeft = left + (width - newWidth) / 2;
+            m_chartViewer->setViewPortLeft(newLeft);
+            m_chartViewer->setViewPortWidth(newWidth);
+            m_chartViewer->updateViewPort(true, false);
+        }
+    });
+    
+    connect(zoomOutBtn, &QPushButton::clicked, [this]() {
+        if (m_chartViewer) {
+            double left = m_chartViewer->getViewPortLeft();
+            double width = m_chartViewer->getViewPortWidth();
+            double newWidth = std::min(1.0, width * 1.25);
+            double newLeft = std::max(0.0, left - (newWidth - width) / 2);
+            m_chartViewer->setViewPortLeft(newLeft);
+            m_chartViewer->setViewPortWidth(newWidth);
+            m_chartViewer->updateViewPort(true, false);
+        }
+    });
+    
+    navLayout->addWidget(homeBtn);
+    navLayout->addWidget(leftBtn);
+    navLayout->addWidget(rightBtn);
+    navLayout->addWidget(zoomInBtn);
+    navLayout->addWidget(zoomOutBtn);
+    navLayout->addStretch();
+    
+    m_controlsLayout->addWidget(navWidget);
 }
 
 void ChartView::onMouseMovePlotArea(QMouseEvent *event)
@@ -550,7 +736,7 @@ void ChartView::createChart()
     }
     
     debugChart();
-    
+
     qDebug() << "=== FIN createChart ===";
 }
 

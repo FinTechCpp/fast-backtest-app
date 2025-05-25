@@ -160,6 +160,11 @@ private:
     void showPlaceholder(const QString& message);
     void debugChart();
 
+private:
+    void drawChartWithViewport();
+    void setupMouseControls();
+    void setupNavigationControls();
+
 };
 
 #endif // CHART_VIEW_H

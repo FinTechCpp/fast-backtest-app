@@ -61,8 +61,16 @@ private slots:
     void onBacktestCompleted();
     void onBacktestError(const QString& error);
     void updateStrategySpecificPanel();
+    void onAbout();
 
 private:
+    QMenuBar* m_menuBar;
+    QMenu* m_helpMenu;
+    QAction* m_aboutAction;
+
+    void createMenus();
+    void createActions();
+
     // UI Components
     QWidget* m_centralWidget;
     QHBoxLayout* m_mainLayout;

@@ -84,17 +84,13 @@ public:
 
 protected:
     void setupUI() override;
+    void resizeEvent(QResizeEvent* event) override;
 
 public slots:
     void resizeChart(int newWidth);
 
 private slots:
-    void onHeikinAshiToggled(bool checked);
-    void onVolumeToggled(bool checked);
-    void onEquityToggled(bool checked);
-    void onAddIndicatorClicked();
     void onMouseMovePlotArea(QMouseEvent* event);
-    void updateChart();
     void onViewPortChanged();
 
 private:
@@ -105,17 +101,8 @@ private:
     void* m_currentData;
     void* m_currentStats;
 
-    // UI Components
+    // UI Components (simplifiés)
     QLabel* m_chartPlaceholder;
-    
-    // Controls
-    QWidget* m_controlsWidget;
-    QHBoxLayout* m_controlsLayout;
-    QCheckBox* m_heikinAshiCheckbox;
-    QCheckBox* m_volumeCheckbox;
-    QCheckBox* m_equityCheckbox;
-    QPushButton* m_addIndicatorBtn;
-    QComboBox* m_indicatorsCombo;
 
     // Chart components
     FinanceChart* m_financeChart;
@@ -126,47 +113,20 @@ private:
     TradeData m_tradeData;
     EquityData m_equityData;
     
-    // Configuration
-    QMap<QString, QVariant> m_indicatorConfigs;
-    QStringList m_activeIndicators;                      // Liste des indicateurs actifs
-    
-    // Private methods
-    void createControls();
-    void setupIndicatorsList();
+    // Private methods (simplifiés)
     void extractDataFromPython(void* data, void* stats);
     void extractPriceData(void* data);
     void extractTradeData(void* stats);
     void extractEquityData(void* stats);
     void createChart();
-    void addMainChart();
-    void addVolumeChart();
-    void addEquityChart();
-    void addTradeMarkers();
-    void addIndicators();
-    void addEMAIndicator(int period, int color);
-    void addRSIIndicator(int period);
-    void addStochasticIndicator(int fastK, int slowK, int slowD);
-    void addATRIndicator(int period);
-    void calculateHeikinAshi(const std::vector<double>& open, 
-                            const std::vector<double>& high,
-                            const std::vector<double>& low, 
-                            const std::vector<double>& close,
-                            std::vector<double>& ha_open, 
-                            std::vector<double>& ha_high,
-                            std::vector<double>& ha_low,
-                            std::vector<double>& ha_close);
+    void drawChartWithViewport();
+    void trackFinance(MultiChart* m, int mouseX);
     
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
     std::vector<double> extractDoubleVector(void* pyObj);
-    std::vector<QString> extractStringVector(void* pyObj);
-    QVariant extractPythonValue(void* pyObj);
     bool hasValidData() const;
     void showPlaceholder(const QString& message);
     void debugChart();
-    void drawChartWithViewport();
-    void setupMouseControls();
-    void setupNavigationControls();
-    void trackFinance(MultiChart* m, int mouseX);
 };
 
 #endif // CHART_VIEW_H

@@ -1,20 +1,11 @@
 #include "baseview.h"
 #include <QDebug>
 
-BaseView::BaseView(QWidget* parent)  // Changé de QObject* à QWidget*
-    : QWidget(parent), m_parentWidget(nullptr)  // Changé de QObject à QWidget
+BaseView::BaseView(QWidget *parent) : QWidget(parent)
 {
-    qDebug() << "BaseView créée avec parent:" << parent;
-}
-
-BaseView::~BaseView()
-{
-    qDebug() << "Destruction d'une vue";
-}
-
-void BaseView::clear()
-{
-    qDebug() << "BaseView::clear() appelé - à surcharger dans les classes dérivées";
+    m_mainLayout = new QVBoxLayout(this);
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->setSpacing(0);
 }
 
 void BaseView::clearLayout(QLayout* layout)

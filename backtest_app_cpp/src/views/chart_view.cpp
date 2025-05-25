@@ -7,8 +7,11 @@
 
 ChartView::ChartView(QWidget* parent)  // Changé de QObject* à QWidget*
     : BaseView(parent)
-    , m_chartContainer(nullptr)
-    , m_chartLayout(nullptr)
+    , m_cachedData(nullptr)
+    , m_cachedStats(nullptr)
+    , m_dataExtracted(false)
+    , m_currentData(nullptr)
+    , m_currentStats(nullptr)
     , m_chartPlaceholder(nullptr)
     , m_controlsWidget(nullptr)
     , m_controlsLayout(nullptr)
@@ -18,11 +21,7 @@ ChartView::ChartView(QWidget* parent)  // Changé de QObject* à QWidget*
     , m_addIndicatorBtn(nullptr)
     , m_indicatorsCombo(nullptr)
     , m_financeChart(nullptr)
-    , m_chartViewer(nullptr)           // Déplacer avant m_cachedData
-    , m_cachedData(nullptr)           // Respecter l'ordre de déclaration
-    , m_cachedStats(nullptr)          // Respecter l'ordre de déclaration
-    , m_currentStats(nullptr)         // Déplacer après m_cachedStats
-    , m_dataExtracted(false)
+    , m_chartViewer(nullptr)
 {
     qDebug() << "ChartView créée avec parent:" << parent;
     
@@ -30,6 +29,9 @@ ChartView::ChartView(QWidget* parent)  // Changé de QObject* à QWidget*
     m_priceData = PriceData();
     m_tradeData = TradeData();
     m_equityData = EquityData();
+    
+    // Construire l'interface dans le constructeur
+    setupUI();
 }
 
 ChartView::~ChartView()
@@ -40,58 +42,61 @@ ChartView::~ChartView()
     }
 }
 
-QWidget* ChartView::create(QWidget* parentWidget)
-{   
-    m_parentWidget = parentWidget;
-    m_chartContainer = new QWidget(parentWidget);
+void ChartView::setupUI()
+{
+    QTime start = QTime::currentTime();
     
-    // CORRECTION : Configurer le chartContainer pour qu'il s'étende
-    m_chartContainer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    
-    m_chartLayout = new QVBoxLayout(m_chartContainer);
-    
-    // CORRECTION : Réduire les marges pour maximiser l'espace du graphique
-    m_chartLayout->setContentsMargins(5, 5, 5, 5);
-    m_chartLayout->setSpacing(5);
-    
-    setupIndicatorsList();
-    setupControls();
-    
-    // Placeholder initial
+    // Créer le placeholder initial
     m_chartPlaceholder = new QLabel("Exécutez le backtest pour afficher les graphiques");
     m_chartPlaceholder->setAlignment(Qt::AlignCenter);
     m_chartPlaceholder->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    m_chartLayout->addWidget(m_chartPlaceholder);
     
-    return m_chartContainer;
+    // Initialiser la configuration des indicateurs
+    setupIndicatorsList();
+    
+    // Créer les contrôles
+    createControls();
+    
+    // Ajouter au layout principal (hérité de BaseView)
+    m_mainLayout->addWidget(m_controlsWidget);
+    m_mainLayout->addWidget(m_chartPlaceholder);
+    
+    // Configurer les marges pour maximiser l'espace du graphique
+    m_mainLayout->setContentsMargins(5, 5, 5, 5);
+    m_mainLayout->setSpacing(5);
+    
+    int elapsed = start.msecsTo(QTime::currentTime());
+    qInfo() << "ChartView::setupUI() took" << elapsed << "ms";
 }
 
 void ChartView::setupIndicatorsList()
 {
-    // Utiliser m_indicatorConfigs correctement déclaré
+    // Configuration des indicateurs disponibles
     m_indicatorConfigs["EMA_20"] = QVariantMap{{"type", "EMA"}, {"period", 20}, {"color", 0x0000FF}};
     m_indicatorConfigs["EMA_50"] = QVariantMap{{"type", "EMA"}, {"period", 50}, {"color", 0xFF0000}};
     m_indicatorConfigs["RSI_14"] = QVariantMap{{"type", "RSI"}, {"period", 14}};
+    m_indicatorConfigs["Stoch_14"] = QVariantMap{{"type", "Stochastic"}, {"fastK", 14}, {"slowK", 3}, {"slowD", 3}};
+    m_indicatorConfigs["ATR_14"] = QVariantMap{{"type", "ATR"}, {"period", 14}};
 }
 
-void ChartView::setupControls()
+void ChartView::createControls()
 {
     m_controlsWidget = new QWidget();
     m_controlsLayout = new QHBoxLayout(m_controlsWidget);
     
     // Checkbox Heikin-Ashi
     m_heikinAshiCheckbox = new QCheckBox("Heikin-Ashi");
-    QObject::connect(m_heikinAshiCheckbox, &QCheckBox::toggled, this, &ChartView::onHeikinAshiToggled);
+    connect(m_heikinAshiCheckbox, &QCheckBox::toggled, this, &ChartView::onHeikinAshiToggled);
     m_controlsLayout->addWidget(m_heikinAshiCheckbox);
     
     // Checkbox Volume
     m_volumeCheckbox = new QCheckBox("Volume");
-    QObject::connect(m_volumeCheckbox, &QCheckBox::toggled, this, &ChartView::onVolumeToggled);
+    connect(m_volumeCheckbox, &QCheckBox::toggled, this, &ChartView::onVolumeToggled);
     m_controlsLayout->addWidget(m_volumeCheckbox);
     
     // Checkbox Equity
     m_equityCheckbox = new QCheckBox("Equity");
-    QObject::connect(m_equityCheckbox, &QCheckBox::toggled, this, &ChartView::onEquityToggled);
+    connect(m_equityCheckbox, &QCheckBox::toggled, this, &ChartView::onEquityToggled);
     m_controlsLayout->addWidget(m_equityCheckbox);
     
     // Combo indicateurs
@@ -103,205 +108,14 @@ void ChartView::setupControls()
     
     // Bouton ajouter indicateur
     m_addIndicatorBtn = new QPushButton("Ajouter indicateur");
-    QObject::connect(m_addIndicatorBtn, &QPushButton::clicked, this, &ChartView::onAddIndicatorClicked);
+    connect(m_addIndicatorBtn, &QPushButton::clicked, this, &ChartView::onAddIndicatorClicked);
     m_controlsLayout->addWidget(m_addIndicatorBtn);
     
-    m_controlsLayout->addStretch();
-    m_chartLayout->addWidget(m_controlsWidget);
-
+    // Ajouter les contrôles de souris et navigation
     setupMouseControls();
     setupNavigationControls();
     
     m_controlsLayout->addStretch();
-    m_chartLayout->addWidget(m_controlsWidget);
-}
-
-// Toutes les autres méthodes restent inchangées avec des implémentations TODO
-void ChartView::update(void* data, void* stats)
-{
-    m_currentData = data;
-    m_currentStats = stats;
-    
-    qDebug() << "=== DÉBUT ChartView::update() ===";
-    qDebug() << "Data pointer:" << data << "Stats pointer:" << stats;
-
-    // Vérifier si les données ont déjà été extraites pour ces pointeurs
-    if (m_dataExtracted && m_cachedData == data && m_cachedStats == stats) {
-        qDebug() << "Données déjà en cache, pas de ré-extraction nécessaire";
-        updateChart();
-        qDebug() << "=== FIN ChartView::update() (depuis cache) ===";
-        return;
-    }
-    
-    // Mettre en cache les nouveaux pointeurs
-    m_cachedData = data;
-    m_cachedStats = stats;
-    
-    if (!data || !stats) {
-        qDebug() << "Données nulles détectées";
-        clear();
-        showPlaceholder("Aucune donnée disponible");
-        return;
-    }
-    
-    try {
-        qDebug() << "Acquisition du GIL...";
-        py::gil_scoped_acquire acquire;
-        qDebug() << "GIL acquis avec succès";
-        
-        qDebug() << "Début extraction des données Python...";
-        extractDataFromPython(data, stats);
-        qDebug() << "Extraction terminée";
-        
-        qDebug() << "Vérification des données...";
-        if (!hasValidData()) {
-            qDebug() << "Données invalides détectées";
-            showPlaceholder("Données invalides");
-            return;
-        }
-        qDebug() << "Données validées";
-        
-        qDebug() << "Masquage du placeholder...";
-        if (m_chartPlaceholder) {
-            m_chartPlaceholder->setVisible(false);
-        }
-        qDebug() << "Placeholder masqué";
-        
-        qDebug() << "Création du graphique...";
-        createChart();
-        qDebug() << "Graphique créé";
-        
-        qDebug() << "=== FIN ChartView::update() ===";
-        
-    } catch (const py::error_already_set& e) {
-        qCritical() << "Erreur Python:" << e.what();
-        showPlaceholder("Erreur Python lors de la création du graphique");
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur C++:" << e.what();
-        showPlaceholder("Erreur lors de la création du graphique");
-    } catch (...) {
-        qCritical() << "Erreur inconnue dans ChartView::update()";
-        showPlaceholder("Erreur inconnue");
-    }
-
-    m_dataExtracted = true; // Marquer les données comme extraites
-    qDebug() << "=== FIN ChartView::update() ===";
-}
-
-void ChartView::clear()
-{
-    m_activeIndicators.clear();
-    m_currentData = nullptr;
-    m_currentStats = nullptr;
-    
-    if (m_chartPlaceholder) {
-        m_chartPlaceholder->setVisible(true);
-    }
-}
-
-// Implémentations des slots
-void ChartView::onHeikinAshiToggled(bool checked)
-{
-    Q_UNUSED(checked);
-    updateChart();
-}
-
-void ChartView::onVolumeToggled(bool checked)
-{
-    Q_UNUSED(checked);
-    updateChart();
-}
-
-void ChartView::onEquityToggled(bool checked)
-{
-    Q_UNUSED(checked);
-    updateChart();
-}
-
-void ChartView::onAddIndicatorClicked()
-{
-    if (!m_indicatorsCombo) {
-        return;
-    }
-    
-    QString indicator = m_indicatorsCombo->currentData().toString();
-    if (!indicator.isEmpty() && !m_activeIndicators.contains(indicator)) {
-        m_activeIndicators.append(indicator);
-        updateChart();
-    }
-}
-
-void ChartView::onViewPortChanged()
-{
-    if (!m_financeChart || !m_chartViewer) {
-        return;
-    }
-    
-    // qDebug() << "ViewPort changed - redrawing chart";
-    
-    // NOUVEAU : Redessiner le graphique avec les données visibles
-    drawChartWithViewport();
-}
-
-void ChartView::drawChartWithViewport()
-{
-    if (m_priceData.timestamps.empty()) {
-        return;
-    }
-    
-    try {
-        // Calculer les indices de début et fin basés sur le viewport
-        int totalPoints = m_priceData.timestamps.size();
-        
-        double viewPortLeft = m_chartViewer->getViewPortLeft();
-        double viewPortWidth = m_chartViewer->getViewPortWidth();
-        
-        int startIndex = (int)floor(viewPortLeft * totalPoints);
-        int endIndex = (int)ceil((viewPortLeft + viewPortWidth) * totalPoints) - 1;
-        
-        // S'assurer que les indices sont dans les limites
-        startIndex = std::max(0, std::min(startIndex, totalPoints - 1));
-        endIndex = std::max(startIndex, std::min(endIndex, totalPoints - 1));
-        
-        int pointsToShow = endIndex - startIndex + 1;
-        
-        // Extraire les données visibles
-        DoubleArray timeStamps = DoubleArray(&m_priceData.timestamps[startIndex], pointsToShow);
-        DoubleArray openData = DoubleArray(&m_priceData.open[startIndex], pointsToShow);
-        DoubleArray highData = DoubleArray(&m_priceData.high[startIndex], pointsToShow);
-        DoubleArray lowData = DoubleArray(&m_priceData.low[startIndex], pointsToShow);
-        DoubleArray closeData = DoubleArray(&m_priceData.close[startIndex], pointsToShow);
-        DoubleArray volumeData = DoubleArray(&m_priceData.volume[startIndex], pointsToShow);
-        
-        // CORRECTION : NE PAS recalculer la largeur - utiliser la largeur actuelle du FinanceChart
-        int chartWidth = m_financeChart ? m_financeChart->getWidth() : 800;
-        
-        // Créer un nouveau FinanceChart avec la MÊME largeur
-        if (m_financeChart) {
-            delete m_financeChart;
-        }
-        
-        m_financeChart = new FinanceChart(chartWidth);
-        m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
-        
-        // Reconfigurer le graphique
-        std::string title = "Backtest - Points " + std::to_string(startIndex) + 
-                           " à " + std::to_string(endIndex);
-        m_financeChart->addTitle(title.c_str());
-        m_financeChart->addMainChart(300);
-        m_financeChart->addCandleStick(0x00AA00, 0xFF3333);
-        
-        // Ajouter le volume si demandé
-        if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
-            m_financeChart->addVolBars(80, 0x99ff99, 0xff9999, 0x808080);
-        }
-        
-        // Assigner le nouveau graphique
-        m_chartViewer->setChart(m_financeChart);
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur dans drawChartWithViewport:" << e.what();
-    }
 }
 
 void ChartView::setupMouseControls()
@@ -419,17 +233,423 @@ void ChartView::setupNavigationControls()
     m_controlsLayout->addWidget(navWidget);
 }
 
+void ChartView::updateData(void* data, void* stats)
+{
+    QTime start = QTime::currentTime();
+    
+    m_currentData = data;
+    m_currentStats = stats;
+    
+    qDebug() << "=== DÉBUT ChartView::updateData() ===";
+    qDebug() << "Data pointer:" << data << "Stats pointer:" << stats;
+
+    // Vérifier si les données ont déjà été extraites pour ces pointeurs
+    if (m_dataExtracted && m_cachedData == data && m_cachedStats == stats) {
+        qDebug() << "Données déjà en cache, pas de ré-extraction nécessaire";
+        updateChart();
+        qDebug() << "=== FIN ChartView::updateData() (depuis cache) ===";
+        return;
+    }
+    
+    // Mettre en cache les nouveaux pointeurs
+    m_cachedData = data;
+    m_cachedStats = stats;
+    
+    if (!data || !stats) {
+        qDebug() << "Données nulles détectées";
+        clear();
+        showPlaceholder("Aucune donnée disponible");
+        return;
+    }
+    
+    try {
+        qDebug() << "Acquisition du GIL...";
+        py::gil_scoped_acquire acquire;
+        qDebug() << "GIL acquis avec succès";
+        
+        qDebug() << "Début extraction des données Python...";
+        extractDataFromPython(data, stats);
+        qDebug() << "Extraction terminée";
+        
+        qDebug() << "Vérification des données...";
+        if (!hasValidData()) {
+            qDebug() << "Données invalides détectées";
+            showPlaceholder("Données invalides");
+            return;
+        }
+        qDebug() << "Données validées";
+        
+        qDebug() << "Masquage du placeholder...";
+        if (m_chartPlaceholder) {
+            m_chartPlaceholder->setVisible(false);
+        }
+        qDebug() << "Placeholder masqué";
+        
+        qDebug() << "Création du graphique...";
+        createChart();
+        qDebug() << "Graphique créé";
+        
+        m_dataExtracted = true; // Marquer les données comme extraites
+        
+    } catch (const py::error_already_set& e) {
+        qCritical() << "Erreur Python:" << e.what();
+        showPlaceholder("Erreur Python lors de la création du graphique");
+    } catch (const std::exception& e) {
+        qCritical() << "Erreur C++:" << e.what();
+        showPlaceholder("Erreur lors de la création du graphique");
+    } catch (...) {
+        qCritical() << "Erreur inconnue dans ChartView::updateData()";
+        showPlaceholder("Erreur inconnue");
+    }
+
+    int elapsed = start.msecsTo(QTime::currentTime());
+    qInfo() << "ChartView::updateData() took" << elapsed << "ms";
+    qDebug() << "=== FIN ChartView::updateData() ===";
+}
+
+void ChartView::clear()
+{
+    qDebug() << "ChartView::clear() appelé";
+    
+    m_activeIndicators.clear();
+    m_currentData = nullptr;
+    m_currentStats = nullptr;
+    m_cachedData = nullptr;
+    m_cachedStats = nullptr;
+    m_dataExtracted = false;
+    
+    // Nettoyer les données
+    m_priceData = PriceData();
+    m_tradeData = TradeData();
+    m_equityData = EquityData();
+    
+    // Supprimer le graphique existant
+    if (m_financeChart) {
+        delete m_financeChart;
+        m_financeChart = nullptr;
+    }
+    
+    if (m_chartViewer) {
+        m_mainLayout->removeWidget(m_chartViewer);
+        delete m_chartViewer;
+        m_chartViewer = nullptr;
+    }
+    
+    // Réafficher le placeholder
+    if (m_chartPlaceholder) {
+        m_chartPlaceholder->setText("Exécutez un backtest pour afficher les graphiques");
+        m_chartPlaceholder->setVisible(true);
+    }
+    
+    qDebug() << "ChartView nettoyée";
+}
+
+void ChartView::createChart()
+{
+    qDebug() << "=== DÉBUT createChart ===";
+    qDebug() << "Taille des données timestamps:" << m_priceData.timestamps.size();
+    
+    if (m_priceData.timestamps.empty()) {
+        qWarning() << "Aucune donnée de prix disponible";
+        return;
+    }
+    
+    qDebug() << "Données disponibles - création du graphique FinanceChart...";
+    
+    try {
+        // Nettoyer le graphique précédent
+        if (m_financeChart) {
+            delete m_financeChart;
+            m_financeChart = nullptr;
+        }
+        
+        if (m_chartViewer) {
+            m_mainLayout->removeWidget(m_chartViewer);
+            delete m_chartViewer;
+            m_chartViewer = nullptr;
+        }
+        
+        qDebug() << "Conversion des données en DoubleArray...";
+        DoubleArray timeStamps = vectorToDoubleArray(m_priceData.timestamps);
+        DoubleArray openData = vectorToDoubleArray(m_priceData.open);
+        DoubleArray highData = vectorToDoubleArray(m_priceData.high);
+        DoubleArray lowData = vectorToDoubleArray(m_priceData.low);
+        DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
+        DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
+        
+        qDebug() << "Données converties - timeStamps:" << timeStamps.len << "points";
+        
+        // Calculer la largeur du graphique en fonction du widget parent
+        int chartWidth = 800; // Valeur par défaut
+
+        // Utiliser la largeur du widget (this) plutôt qu'un conteneur séparé
+        this->updateGeometry();
+        QApplication::processEvents();
+        
+        int widgetWidth = this->width();
+        qDebug() << "Largeur du widget ChartView:" << widgetWidth;
+        
+        if (widgetWidth > 100) {
+            chartWidth = std::max(1200, widgetWidth - 40); // -40 pour marges, minimum 1200
+            qDebug() << "Largeur calculée:" << chartWidth;
+        }
+        
+        qDebug() << "Largeur FINALE du graphique:" << chartWidth;
+        
+        // Créer FinanceChart avec la largeur dynamique
+        m_financeChart = new FinanceChart(chartWidth);
+        
+        // Configurer les données
+        m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+        
+        // Ajouter le titre du graphique
+        std::string title = "Données de backtest - " + std::to_string(timeStamps.len) + " points";
+        m_financeChart->addTitle(title.c_str());
+        
+        // Ajouter le graphique principal avec hauteur appropriée
+        m_financeChart->addMainChart(300);
+        
+        // Ajouter les chandelles
+        m_financeChart->addCandleStick(0x00AA00, 0xFF3333);
+        
+        // Ajouter le volume si demandé
+        if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
+            m_financeChart->addVolBars(80, 0x99ff99, 0xff9999, 0x808080);
+        }
+        
+        qDebug() << "FinanceChart configuré, création du QChartViewer...";
+        
+        // Créer le QChartViewer APRÈS le FinanceChart
+        m_chartViewer = new QChartViewer(this);
+        
+        // Configurer le viewer
+        m_chartViewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        m_chartViewer->setMouseUsage(Chart::MouseUsageScroll);
+        m_chartViewer->setMouseTracking(true);
+        m_chartViewer->setMouseWheelZoomRatio(1.1);
+        m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
+        m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
+        
+        // Configurer le range complet
+        m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
+        
+        // Assigner le graphique au viewer
+        m_chartViewer->setChart(m_financeChart);
+        
+        // Configurer le viewport pour afficher les dernières données
+        int totalPoints = timeStamps.len;
+        if (totalPoints > 100) {
+            double visiblePortion = 100.0 / totalPoints;
+            m_chartViewer->setViewPortWidth(visiblePortion);
+            m_chartViewer->setViewPortLeft(1.0 - visiblePortion);
+        } else {
+            m_chartViewer->setViewPortWidth(1.0);
+            m_chartViewer->setViewPortLeft(0);
+        }
+        
+        // Ajouter au layout principal (hérité de BaseView)
+        m_mainLayout->addWidget(m_chartViewer);
+        
+        // Connecter les signaux
+        connect(m_chartViewer, &QChartViewer::viewPortChanged, 
+                this, &ChartView::onViewPortChanged);
+        connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, 
+                this, &ChartView::onMouseMovePlotArea);
+        
+        // Forcer la mise à jour initiale
+        m_chartViewer->updateViewPort(true, false);
+        
+        qDebug() << "Graphique FinanceChart créé avec succès !";
+        
+        // Debug des données
+        if (!m_priceData.close.empty()) {
+            double minPrice = *std::min_element(m_priceData.close.begin(), m_priceData.close.end());
+            double maxPrice = *std::max_element(m_priceData.close.begin(), m_priceData.close.end());
+            qDebug() << "Range de prix:" << minPrice << "à" << maxPrice;
+            qDebug() << "Premier prix:" << m_priceData.close[0] << "Dernier prix:" << m_priceData.close.back();
+        }
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Erreur lors de la création du FinanceChart:" << e.what();
+        showPlaceholder(QString("Erreur graphique: %1").arg(e.what()));
+    }
+    
+    debugChart();
+    qDebug() << "=== FIN createChart ===";
+}
+
+// Implémentations des slots
+void ChartView::onHeikinAshiToggled(bool checked)
+{
+    Q_UNUSED(checked);
+    updateChart();
+}
+
+void ChartView::onVolumeToggled(bool checked)
+{
+    Q_UNUSED(checked);
+    updateChart();
+}
+
+void ChartView::onEquityToggled(bool checked)
+{
+    Q_UNUSED(checked);
+    updateChart();
+}
+
+void ChartView::onAddIndicatorClicked()
+{
+    if (!m_indicatorsCombo) {
+        return;
+    }
+    
+    QString indicator = m_indicatorsCombo->currentData().toString();
+    if (!indicator.isEmpty() && !m_activeIndicators.contains(indicator)) {
+        m_activeIndicators.append(indicator);
+        updateChart();
+    }
+}
+
+void ChartView::onViewPortChanged()
+{
+    if (!m_financeChart || !m_chartViewer) {
+        return;
+    }
+    
+    // Redessiner le graphique avec les données visibles
+    drawChartWithViewport();
+}
+
 void ChartView::onMouseMovePlotArea(QMouseEvent *event)
 {
-    Q_UNUSED(event);  // Ajouter cette ligne
+    Q_UNUSED(event);
     
     if (!m_financeChart || !m_chartViewer) {
         return;
     }
     
-    // Ajouter le tracking avec ligne verticale comme dans la démo
+    // Ajouter le tracking avec ligne verticale
     trackFinance(m_financeChart, m_chartViewer->getPlotAreaMouseX());
     m_chartViewer->updateDisplay();
+}
+
+void ChartView::updateChart()
+{
+    if (m_currentData) {
+        qDebug() << "Mise à jour du graphique demandée";
+        // Recréer le graphique si nécessaire
+        if (hasValidData()) {
+            createChart();
+        }
+    }
+}
+
+void ChartView::resizeChart(int newWidth)
+{
+    if (!m_financeChart || newWidth <= 0) {
+        return;
+    }
+    
+    qDebug() << "Redimensionnement du graphique vers:" << newWidth;
+    
+    // Sauvegarder l'état du viewport actuel
+    double currentLeft = m_chartViewer ? m_chartViewer->getViewPortLeft() : 0;
+    double currentWidth = m_chartViewer ? m_chartViewer->getViewPortWidth() : 1.0;
+    
+    // Forcer la recréation du graphique avec la nouvelle largeur
+    if (m_priceData.timestamps.empty()) {
+        return;
+    }
+    
+    // Recréer le graphique avec la nouvelle largeur
+    DoubleArray timeStamps = vectorToDoubleArray(m_priceData.timestamps);
+    DoubleArray openData = vectorToDoubleArray(m_priceData.open);
+    DoubleArray highData = vectorToDoubleArray(m_priceData.high);
+    DoubleArray lowData = vectorToDoubleArray(m_priceData.low);
+    DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
+    DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
+    
+    delete m_financeChart;
+    m_financeChart = new FinanceChart(newWidth);
+    m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+    
+    std::string title = "Données de backtest - " + std::to_string(timeStamps.len) + " points";
+    m_financeChart->addTitle(title.c_str());
+    m_financeChart->addMainChart(300);
+    m_financeChart->addCandleStick(0x00AA00, 0xFF3333);
+    
+    if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
+        m_financeChart->addVolBars(80, 0x99ff99, 0xff9999, 0x808080);
+    }
+    
+    // Réassigner le graphique et restaurer le viewport
+    if (m_chartViewer) {
+        m_chartViewer->setChart(m_financeChart);
+        m_chartViewer->setViewPortLeft(currentLeft);
+        m_chartViewer->setViewPortWidth(currentWidth);
+        m_chartViewer->updateViewPort(true, false);
+    }
+}
+
+void ChartView::drawChartWithViewport()
+{
+    if (m_priceData.timestamps.empty()) {
+        return;
+    }
+    
+    try {
+        // Calculer les indices de début et fin basés sur le viewport
+        int totalPoints = m_priceData.timestamps.size();
+        
+        double viewPortLeft = m_chartViewer->getViewPortLeft();
+        double viewPortWidth = m_chartViewer->getViewPortWidth();
+        
+        int startIndex = (int)floor(viewPortLeft * totalPoints);
+        int endIndex = (int)ceil((viewPortLeft + viewPortWidth) * totalPoints) - 1;
+        
+        // S'assurer que les indices sont dans les limites
+        startIndex = std::max(0, std::min(startIndex, totalPoints - 1));
+        endIndex = std::max(startIndex, std::min(endIndex, totalPoints - 1));
+        
+        int pointsToShow = endIndex - startIndex + 1;
+        
+        // Extraire les données visibles
+        DoubleArray timeStamps = DoubleArray(&m_priceData.timestamps[startIndex], pointsToShow);
+        DoubleArray openData = DoubleArray(&m_priceData.open[startIndex], pointsToShow);
+        DoubleArray highData = DoubleArray(&m_priceData.high[startIndex], pointsToShow);
+        DoubleArray lowData = DoubleArray(&m_priceData.low[startIndex], pointsToShow);
+        DoubleArray closeData = DoubleArray(&m_priceData.close[startIndex], pointsToShow);
+        DoubleArray volumeData = DoubleArray(&m_priceData.volume[startIndex], pointsToShow);
+        
+        // CORRECTION : NE PAS recalculer la largeur - utiliser la largeur actuelle du FinanceChart
+        int chartWidth = m_financeChart ? m_financeChart->getWidth() : 800;
+        
+        // Créer un nouveau FinanceChart avec la MÊME largeur
+        if (m_financeChart) {
+            delete m_financeChart;
+        }
+        
+        m_financeChart = new FinanceChart(chartWidth);
+        m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+        
+        // Reconfigurer le graphique
+        std::string title = "Backtest - Points " + std::to_string(startIndex) + 
+                           " à " + std::to_string(endIndex);
+        m_financeChart->addTitle(title.c_str());
+        m_financeChart->addMainChart(300);
+        m_financeChart->addCandleStick(0x00AA00, 0xFF3333);
+        
+        // Ajouter le volume si demandé
+        if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
+            m_financeChart->addVolBars(80, 0x99ff99, 0xff9999, 0x808080);
+        }
+        
+        // Assigner le nouveau graphique
+        m_chartViewer->setChart(m_financeChart);
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Erreur dans drawChartWithViewport:" << e.what();
+    }
 }
 
 void ChartView::trackFinance(MultiChart* m, int mouseX)
@@ -587,15 +807,6 @@ void ChartView::trackFinance(MultiChart* m, int mouseX)
     }
 }
 
-void ChartView::updateChart()
-{
-    if (m_currentData) {
-        // TODO: Implémenter la mise à jour du graphique
-        qDebug() << "Mise à jour du graphique demandée";
-    }
-}
-
-// Toutes les autres méthodes avec des implémentations TODO...
 void ChartView::extractDataFromPython(void* data, void* stats)
 {
     qDebug() << "=== DÉBUT extractDataFromPython ===";
@@ -787,143 +998,6 @@ void ChartView::extractEquityData(void* stats)
     Q_UNUSED(stats); 
 }
 
-void ChartView::createChart()
-{
-    qDebug() << "=== DÉBUT createChart ===";
-    qDebug() << "Taille des données timestamps:" << m_priceData.timestamps.size();
-    
-    if (m_priceData.timestamps.empty()) {
-        qWarning() << "Aucune donnée de prix disponible";
-        return;
-    }
-    
-    qDebug() << "Données disponibles - création du graphique FinanceChart...";
-    
-    try {
-        // Nettoyer le graphique précédent
-        if (m_financeChart) {
-            delete m_financeChart;
-            m_financeChart = nullptr;
-        }
-        
-        if (m_chartViewer) {
-            m_chartLayout->removeWidget(m_chartViewer);
-            delete m_chartViewer;
-            m_chartViewer = nullptr;
-        }
-        
-        qDebug() << "Conversion des données en DoubleArray...";
-        DoubleArray timeStamps = vectorToDoubleArray(m_priceData.timestamps);
-        DoubleArray openData = vectorToDoubleArray(m_priceData.open);
-        DoubleArray highData = vectorToDoubleArray(m_priceData.high);
-        DoubleArray lowData = vectorToDoubleArray(m_priceData.low);
-        DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
-        DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
-        
-        qDebug() << "Données converties - timeStamps:" << timeStamps.len << "points";
-        
-        // CORRECTION 1 : Utiliser la taille du conteneur parent
-        int chartWidth = 800; // Valeur par défaut
-
-        if (m_chartContainer) {
-            // Forcer la mise à jour de la géométrie
-            m_chartContainer->updateGeometry();
-            QApplication::processEvents();
-            
-            int containerWidth = m_chartContainer->width();
-            qDebug() << "Largeur du conteneur:" << containerWidth;
-            
-            if (containerWidth > 100) {
-                // CORRECTION : Utiliser réellement la largeur du conteneur
-                chartWidth = std::max(1200, containerWidth - 40); // -40 pour marges, minimum 1200
-                qDebug() << "CRÉATION avec largeur conteneur:" << containerWidth << "-> chartWidth:" << chartWidth;
-            }
-        }
-        
-        qDebug() << "Largeur FINALE du graphique calculée:" << chartWidth;
-        
-        // CORRECTION 2 : Créer FinanceChart avec la largeur dynamique
-        m_financeChart = new FinanceChart(chartWidth);
-        
-        // Configurer les données
-        m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
-        
-        // Ajouter le titre du graphique
-        std::string title = "Données de backtest - " + std::to_string(timeStamps.len) + " points";
-        m_financeChart->addTitle(title.c_str());
-        
-        // Ajouter le graphique principal avec hauteur appropriée
-        m_financeChart->addMainChart(300);
-        
-        // Ajouter les chandelles
-        m_financeChart->addCandleStick(0x00AA00, 0xFF3333);
-        
-        // Ajouter le volume si demandé
-        if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
-            m_financeChart->addVolBars(80, 0x99ff99, 0xff9999, 0x808080);
-        }
-        
-        qDebug() << "FinanceChart configuré, création du QChartViewer...";
-        
-        // CORRECTION 3 : Créer le QChartViewer APRÈS le FinanceChart
-        m_chartViewer = new QChartViewer(m_chartContainer);
-        
-        // Configurer le viewer
-        m_chartViewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        m_chartViewer->setMouseUsage(Chart::MouseUsageScroll);
-        m_chartViewer->setMouseTracking(true);
-        m_chartViewer->setMouseWheelZoomRatio(1.1);
-        m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
-        m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
-        
-        // Configurer le range complet
-        m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
-        
-        // Assigner le graphique au viewer
-        m_chartViewer->setChart(m_financeChart);
-        
-        // Configurer le viewport pour afficher les dernières données
-        int totalPoints = timeStamps.len;
-        if (totalPoints > 100) {
-            double visiblePortion = 100.0 / totalPoints;
-            m_chartViewer->setViewPortWidth(visiblePortion);
-            m_chartViewer->setViewPortLeft(1.0 - visiblePortion);
-        } else {
-            m_chartViewer->setViewPortWidth(1.0);
-            m_chartViewer->setViewPortLeft(0);
-        }
-        
-        // Ajouter au layout
-        m_chartLayout->addWidget(m_chartViewer);
-        
-        // Connecter les signaux
-        connect(m_chartViewer, &QChartViewer::viewPortChanged, 
-                this, &ChartView::onViewPortChanged);
-        connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, 
-                this, &ChartView::onMouseMovePlotArea);
-        
-        // Forcer la mise à jour initiale
-        m_chartViewer->updateViewPort(true, false);
-        
-        qDebug() << "Graphique FinanceChart créé avec succès !";
-        
-        // Debug des données
-        if (!m_priceData.close.empty()) {
-            double minPrice = *std::min_element(m_priceData.close.begin(), m_priceData.close.end());
-            double maxPrice = *std::max_element(m_priceData.close.begin(), m_priceData.close.end());
-            qDebug() << "Range de prix:" << minPrice << "à" << maxPrice;
-            qDebug() << "Premier prix:" << m_priceData.close[0] << "Dernier prix:" << m_priceData.close.back();
-        }
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur lors de la création du FinanceChart:" << e.what();
-        showPlaceholder(QString("Erreur graphique: %1").arg(e.what()));
-    }
-    
-    debugChart();
-    qDebug() << "=== FIN createChart ===";
-}
-
 void ChartView::addMainChart()
 {
     // Cette méthode n'est plus nécessaire car tout est fait dans createChart()
@@ -1074,51 +1148,4 @@ void ChartView::debugChart()
     qDebug() << "- Timestamps:" << m_priceData.timestamps.size();
     qDebug() << "- Close:" << m_priceData.close.size();
     qDebug() << "=== FIN DEBUG CHART ===";
-}
-
-void ChartView::resizeChart(int newWidth)
-{
-    if (!m_financeChart || newWidth <= 0) {
-        return;
-    }
-    
-    qDebug() << "Redimensionnement du graphique vers:" << newWidth;
-    
-    // Sauvegarder l'état du viewport actuel
-    double currentLeft = m_chartViewer ? m_chartViewer->getViewPortLeft() : 0;
-    double currentWidth = m_chartViewer ? m_chartViewer->getViewPortWidth() : 1.0;
-    
-    // Forcer la recréation du graphique avec la nouvelle largeur
-    if (m_priceData.timestamps.empty()) {
-        return;
-    }
-    
-    // Recréer le graphique avec la nouvelle largeur en utilisant TOUTES les données
-    DoubleArray timeStamps = vectorToDoubleArray(m_priceData.timestamps);
-    DoubleArray openData = vectorToDoubleArray(m_priceData.open);
-    DoubleArray highData = vectorToDoubleArray(m_priceData.high);
-    DoubleArray lowData = vectorToDoubleArray(m_priceData.low);
-    DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
-    DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
-    
-    delete m_financeChart;
-    m_financeChart = new FinanceChart(newWidth);
-    m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
-    
-    std::string title = "Données de backtest - " + std::to_string(timeStamps.len) + " points";
-    m_financeChart->addTitle(title.c_str());
-    m_financeChart->addMainChart(300);
-    m_financeChart->addCandleStick(0x00AA00, 0xFF3333);
-    
-    if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
-        m_financeChart->addVolBars(80, 0x99ff99, 0xff9999, 0x808080);
-    }
-    
-    // Réassigner le graphique et restaurer le viewport
-    if (m_chartViewer) {
-        m_chartViewer->setChart(m_financeChart);
-        m_chartViewer->setViewPortLeft(currentLeft);
-        m_chartViewer->setViewPortWidth(currentWidth);
-        m_chartViewer->updateViewPort(true, false);
-    }
 }

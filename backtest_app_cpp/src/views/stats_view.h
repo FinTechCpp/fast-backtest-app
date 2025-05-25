@@ -53,9 +53,12 @@ class StatsView : public BaseView
 public:
     StatsView(QWidget* parent = nullptr);  
     ~StatsView();
-    QWidget* create(QWidget* parentWidget = nullptr) override;  // CORRECTION: Ajout du paramètre
-    void update(void* data, void* stats) override;
+
+    void updateData(void* data, void* stats) override;
     void clear() override;
+
+protected:
+    void setupUI() override;
 
 private slots:
     void refreshTradesTable();
@@ -63,35 +66,47 @@ private slots:
     void toggleEquityTable();
 
 private:
+    // Modèles de données
     TradesTableModel* m_tradesModel;
     TradesTableModel* m_equityModel;
+    
+    // Widgets d'interface
     QScrollArea* m_scrollStats;
     QWidget* m_statsContent;
     QVBoxLayout* m_statsContentLayout;
     QLabel* m_statsPlaceholder;
-    QLabel* m_title;
+    
+    // Groupes de métriques
     QGroupBox* m_performanceGroup;
     QGridLayout* m_performanceLayout;
     QGroupBox* m_riskGroup;
     QGridLayout* m_riskLayout;
     QGroupBox* m_generalGroup;
     QGridLayout* m_generalLayout;
+    
+    // Section trades
     QGroupBox* m_tradesGroup;
     QVBoxLayout* m_tradesLayout;
     QTableView* m_tradesTable;
     QComboBox* m_tradesLimitCombo;
     QPushButton* m_showAllTradesBtn;
     
+    // Section equity
     QGroupBox* m_equityGroup;
     QVBoxLayout* m_equityLayout;
     QTableView* m_equityTable;
     QPushButton* m_showEquityBtn;
     QComboBox* m_equityLimitCombo;
     QStackedWidget* m_equityStack;
+
+    // Map des widgets de métriques
     QMap<QString, MetricWidget*> m_metricWidgets;
-    bool m_tablesCreated;
-    void* m_currentStats;  
     
+    // État
+    bool m_tablesCreated;
+    void* m_currentStats;
+    
+    // Méthodes privées
     void createStatsWidgets();
     void createPerformanceSection(QGridLayout* layout);
     void createRiskSection(QGridLayout* layout);
@@ -101,7 +116,6 @@ private:
     MetricWidget* createMetricWidget(const QString& key, const QString& label, 
                                      const QString& value, int row, int col, 
                                      QGridLayout* layout);
-    int getLimitValue(QComboBox* combo);
     void populateMetrics(void* stats);
     void populateTrades(void* stats);
     void populateEquity(void* stats);

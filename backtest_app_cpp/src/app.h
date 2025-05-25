@@ -123,6 +123,9 @@ private:
     void showResults();
     void clearResults();
     QWidget* createStrategySpecificPanel(const QString& strategy);
+
+protected:
+    void resizeEvent(QResizeEvent* event) override;
 };
 
 #endif // APP_H

@@ -11,6 +11,8 @@ HistogramView::HistogramView(QWidget* parent)
     , m_currentStats(nullptr)
 {
     qDebug() << "HistogramView créée avec parent:" << parent;
+
+    setupUI();
 }
 
 HistogramView::~HistogramView()
@@ -18,13 +20,9 @@ HistogramView::~HistogramView()
     // Les widgets enfants sont détruits automatiquement par Qt
 }
 
-QWidget* HistogramView::create(QWidget* parentWidget)
+void HistogramView::setupUI()
 {
     QTime start = QTime::currentTime();
-    m_parentWidget = parentWidget;    
-    
-    QWidget* histogramTab = new QWidget(parentWidget);
-    QVBoxLayout* histogramLayout = new QVBoxLayout(histogramTab);
     
     // Créer les contrôles pour sélectionner l'unité de temps
     QWidget* controlsWidget = new QWidget();
@@ -38,14 +36,14 @@ QWidget* HistogramView::create(QWidget* parentWidget)
     m_timeUnitCombo = new QComboBox();
     m_timeUnitCombo->addItems({"Jour", "Semaine", "Mois", "Trimestre", "Année"});
     m_timeUnitCombo->setCurrentIndex(0);
-    QObject::connect(m_timeUnitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+    connect(m_timeUnitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &HistogramView::updateHistogram);
     controlsLayout->addWidget(m_timeUnitCombo);
     
     controlsLayout->addStretch();
     
-    // Ajouter les contrôles au layout principal
-    histogramLayout->addWidget(controlsWidget);
+    // Ajouter les contrôles au layout principal (hérité de BaseView)
+    m_mainLayout->addWidget(controlsWidget);
     
     // Créer le widget pour le graphique
     m_chart = new QChart();
@@ -58,15 +56,13 @@ QWidget* HistogramView::create(QWidget* parentWidget)
     // Message placeholder initial
     m_chart->setTitle("Exécutez le backtest pour afficher l'histogramme des gains/pertes");
     
-    histogramLayout->addWidget(m_chartView);
+    m_mainLayout->addWidget(m_chartView);
     
     int elapsed = start.msecsTo(QTime::currentTime());
-    qInfo() << "HistogramView::create() took" << elapsed << "ms";
-    
-    return histogramTab;
+    qInfo() << "HistogramView::setupUI() took" << elapsed << "ms";
 }
 
-void HistogramView::update(void* data, void* stats)
+void HistogramView::updateData(void* data, void* stats)
 {
     Q_UNUSED(data);
     QTime start = QTime::currentTime();
@@ -74,7 +70,7 @@ void HistogramView::update(void* data, void* stats)
     // Stocker les données pour les mises à jour ultérieures
     m_currentStats = stats;
     
-    qDebug() << "HistogramView::update() appelé avec stats:" << stats;
+    qDebug() << "HistogramView::updateData() appelé avec stats:" << stats;
     
     // Mettre à jour l'histogramme
     if (stats) {
@@ -84,7 +80,7 @@ void HistogramView::update(void* data, void* stats)
     }
     
     int elapsed = start.msecsTo(QTime::currentTime());
-    qInfo() << "HistogramView::update() took" << elapsed << "ms";
+    qInfo() << "HistogramView::updateData() took" << elapsed << "ms";
 }
 
 void HistogramView::clear()

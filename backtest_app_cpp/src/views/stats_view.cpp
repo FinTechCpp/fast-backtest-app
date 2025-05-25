@@ -65,13 +65,12 @@ QString TradesTableModel::formatNumber(double value, int precision)
 // Implémentation de StatsView
 StatsView::StatsView(QWidget* parent)
     : BaseView(parent)
-    , m_tradesModel(nullptr)  // CORRECTION: Initialiser à nullptr
-    , m_equityModel(nullptr)  // CORRECTION: Initialiser à nullptr
+    , m_tradesModel(nullptr)
+    , m_equityModel(nullptr)
     , m_scrollStats(nullptr)
     , m_statsContent(nullptr)
     , m_statsContentLayout(nullptr)
     , m_statsPlaceholder(nullptr)
-    , m_title(nullptr)
     , m_performanceGroup(nullptr)
     , m_performanceLayout(nullptr)
     , m_riskGroup(nullptr)
@@ -90,9 +89,16 @@ StatsView::StatsView(QWidget* parent)
     , m_equityLimitCombo(nullptr)
     , m_equityStack(nullptr)
     , m_tablesCreated(false)
+    , m_currentStats(nullptr)
 {
-    // CORRECTION: Ne pas créer de widgets Qt dans le constructeur
     qDebug() << "StatsView créée avec parent:" << parent;
+    
+    // Créer les modèles de données
+    m_tradesModel = new TradesTableModel(this);
+    m_equityModel = new TradesTableModel(this);
+    
+    // Construire l'interface dans le constructeur
+    setupUI();
 }
 
 StatsView::~StatsView()
@@ -100,26 +106,19 @@ StatsView::~StatsView()
     // Les modèles et widgets sont automatiquement détruits par Qt
 }
 
-QWidget* StatsView::create(QWidget* parentWidget)
+void StatsView::setupUI()
 {
     QTime start = QTime::currentTime();
     
-    // Stocker le widget parent pour utilisation ultérieure
-    m_parentWidget = parentWidget;
-    
-    // CORRECTION: Créer les modèles ici, pas dans le constructeur
-    m_tradesModel = new TradesTableModel(this);
-    m_equityModel = new TradesTableModel(this);
-    
-    QWidget* statsTab = new QWidget(parentWidget);
-    QVBoxLayout* statsLayout = new QVBoxLayout(statsTab);
-    
+    // Créer le scroll area principal
     m_scrollStats = new QScrollArea();
     m_scrollStats->setWidgetResizable(true);
     
+    // Créer le widget de contenu
     m_statsContent = new QWidget();
     m_statsContentLayout = new QVBoxLayout(m_statsContent);
     
+    // Placeholder initial
     m_statsPlaceholder = new QLabel("Exécutez le backtest pour afficher les statistiques");
     m_statsPlaceholder->setAlignment(Qt::AlignCenter);
     m_statsContentLayout->addWidget(m_statsPlaceholder);
@@ -137,21 +136,22 @@ QWidget* StatsView::create(QWidget* parentWidget)
     m_generalLayout = new QGridLayout();
     m_generalGroup->setLayout(m_generalLayout);
     
-    // Maintenant créer les widgets de métriques
+    // Créer les widgets de métriques
     createStatsWidgets();
     
-    // Ajouter les groupes au layout principal
+    // Ajouter les groupes au layout du contenu
     m_statsContentLayout->addWidget(m_performanceGroup);
     m_statsContentLayout->addWidget(m_riskGroup);
     m_statsContentLayout->addWidget(m_generalGroup);
     
+    // Configurer le scroll area
     m_scrollStats->setWidget(m_statsContent);
-    statsLayout->addWidget(m_scrollStats);
+    
+    // Ajouter le scroll area au layout principal (hérité de BaseView)
+    m_mainLayout->addWidget(m_scrollStats);
     
     int elapsed = start.msecsTo(QTime::currentTime());
-    qInfo() << "StatsView::create() took" << elapsed << "ms";
-    
-    return statsTab;
+    qInfo() << "StatsView::setupUI() took" << elapsed << "ms";
 }
 
 void StatsView::createStatsWidgets()
@@ -423,57 +423,6 @@ void StatsView::updateMetricWidget(const QString& key, const QString& label, con
     }
 }
 
-void StatsView::clear()
-{
-    qDebug() << "StatsView::clear() appelé";
-    
-    // Réinitialiser tous les widgets de métriques
-    for (auto it = m_metricWidgets.begin(); it != m_metricWidgets.end(); ++it) {
-        it.value()->updateValues("N/A");
-    }
-    
-    // Vider les modèles de tables
-    if (m_tradesModel) {
-        m_tradesModel->clear();
-        m_tradesModel->setHorizontalHeaderLabels({
-            "Date d'entrée", "Date de sortie", "Type", "Taille", 
-            "Prix d'entrée", "Prix de sortie", "P&L", "P&L %", "Durée"
-        });
-    }
-    
-    if (m_equityModel) {
-        m_equityModel->clear();
-        m_equityModel->setHorizontalHeaderLabels({
-            "Date", "Equity", "Drawdown", "Drawdown %"
-        });
-    }
-    
-    // Réafficher le placeholder si nécessaire
-    if (m_statsPlaceholder) {
-        m_statsPlaceholder->setText("Exécutez un backtest pour voir les statistiques");
-        m_statsPlaceholder->setVisible(true);
-    }
-    
-    // Masquer les sections si elles existent
-    if (m_performanceGroup) {
-        m_performanceGroup->setVisible(false);
-    }
-    if (m_riskGroup) {
-        m_riskGroup->setVisible(false);
-    }
-    if (m_generalGroup) {
-        m_generalGroup->setVisible(false);
-    }
-    if (m_tradesGroup) {
-        m_tradesGroup->setVisible(false);
-    }
-    if (m_equityGroup) {
-        m_equityGroup->setVisible(false);
-    }
-    
-    qDebug() << "StatsView nettoyée";
-}
-
 void StatsView::refreshTradesTable()
 {
     qDebug() << "StatsView::refreshTradesTable() appelé";
@@ -538,12 +487,12 @@ void StatsView::toggleEquityTable()
     }
 }
 
-void StatsView::update(void* data, void* stats)
+void StatsView::updateData(void* data, void* stats)
 {
     Q_UNUSED(data);  // Les données ne sont pas utilisées pour les stats
     
     QTime start = QTime::currentTime();
-    qDebug() << "StatsView::update() appelé";
+    qDebug() << "StatsView::updateData() appelé";
     
     // Stocker les stats pour les mises à jour ultérieures
     m_currentStats = stats;
@@ -555,12 +504,22 @@ void StatsView::update(void* data, void* stats)
     }
     
     try {
-        // Créer les widgets si ce n'est pas déjà fait
+        // Créer les tables si ce n'est pas déjà fait
         if (!m_tablesCreated) {
             createTradesTable();
             createEquityTable();
             m_tablesCreated = true;
         }
+        
+        // Masquer le placeholder
+        if (m_statsPlaceholder) {
+            m_statsPlaceholder->setVisible(false);
+        }
+        
+        // Afficher les sections
+        if (m_performanceGroup) m_performanceGroup->setVisible(true);
+        if (m_riskGroup) m_riskGroup->setVisible(true);
+        if (m_generalGroup) m_generalGroup->setVisible(true);
         
         // Mettre à jour les métriques
         populateMetrics(stats);
@@ -576,5 +535,49 @@ void StatsView::update(void* data, void* stats)
     }
     
     int elapsed = start.msecsTo(QTime::currentTime());
-    qInfo() << "StatsView::update() took" << elapsed << "ms";
+    qInfo() << "StatsView::updateData() took" << elapsed << "ms";
+}
+
+void StatsView::clear()
+{
+    qDebug() << "StatsView::clear() appelé";
+    
+    // Réinitialiser tous les widgets de métriques
+    for (auto it = m_metricWidgets.begin(); it != m_metricWidgets.end(); ++it) {
+        it.value()->updateValues("N/A");
+    }
+    
+    // Vider les modèles de tables
+    if (m_tradesModel) {
+        m_tradesModel->clear();
+        m_tradesModel->setHorizontalHeaderLabels({
+            "Date d'entrée", "Date de sortie", "Type", "Taille", 
+            "Prix d'entrée", "Prix de sortie", "P&L", "P&L %", "Durée"
+        });
+    }
+    
+    if (m_equityModel) {
+        m_equityModel->clear();
+        m_equityModel->setHorizontalHeaderLabels({
+            "Date", "Equity", "Drawdown", "Drawdown %"
+        });
+    }
+    
+    // Réafficher le placeholder
+    if (m_statsPlaceholder) {
+        m_statsPlaceholder->setText("Exécutez un backtest pour voir les statistiques");
+        m_statsPlaceholder->setVisible(true);
+    }
+    
+    // Masquer les sections
+    if (m_performanceGroup) m_performanceGroup->setVisible(false);
+    if (m_riskGroup) m_riskGroup->setVisible(false);
+    if (m_generalGroup) m_generalGroup->setVisible(false);
+    if (m_tradesGroup) m_tradesGroup->setVisible(false);
+    if (m_equityGroup) m_equityGroup->setVisible(false);
+    
+    // Réinitialiser l'état
+    m_currentStats = nullptr;
+    
+    qDebug() << "StatsView nettoyée";
 }

@@ -1,59 +1,65 @@
 #ifndef RESULT_MANAGER_H
 #define RESULT_MANAGER_H
 
-#include <QObject>
 #include <QWidget>
 #include <QTabWidget>
 #include <QVBoxLayout>
 #include <QMap>
 #include <QString>
-#include <QResizeEvent>  // AJOUT
-#include "baseview.h"
+#include <QResizeEvent>
 
 // Forward declarations
+class BaseView;
 class StatsView;
 class ChartView;
 class HistogramView;
+class QTimer;
 
-class ResultManager : public BaseView  
+/**
+ * @brief Gestionnaire principal des résultats - GÈRE les vues, n'EST PAS une vue
+ */
+class ResultManager : public QWidget  
 {
     Q_OBJECT
 
 public:
     explicit ResultManager(QWidget* parent = nullptr);
-    ~ResultManager();
     
-    QWidget* create(QWidget* parentWidget = nullptr) override;
-    void update(void* data, void* stats) override;
-    void clear() override;
-    void updateAll(void* data, void* stats);
+    // Méthodes de gestion (pas d'interface BaseView)
+    void updateAllViews(void* data, void* stats);
+    void clearAllViews();
     void setCurrentTab(int index);
-    QTabWidget* getTabWidget() const;
+    QTabWidget* getTabWidget() const { return m_tabWidget; }
 
 protected:
-    void resizeEvent(QResizeEvent* event) override;  // AJOUT DE LA DÉCLARATION
+    void resizeEvent(QResizeEvent* event) override;
 
 private slots:
-    void onTabResized();  // AJOUT DE LA DÉCLARATION
+    void onTabResized();
+    void onTabChanged(int index);
 
 private:
-    // Widgets UI
-    QWidget* m_resultsWidget;
-    QVBoxLayout* m_resultsLayout;
+    // Layout principal
+    QVBoxLayout* m_mainLayout;
+    
+    // Widget principal des onglets
     QTabWidget* m_tabWidget;
     
-    // Vues
+    // Les vues (qui sont des widgets)
     StatsView* m_statsView;
     ChartView* m_chartView;
     HistogramView* m_histogramView;
     
-    // AJOUT : Références aux widgets créés
-    QWidget* m_chartWidget;     // AJOUT
-    QWidget* m_statsWidget;     // AJOUT
-    QWidget* m_histogramWidget; // AJOUT
-    
     // Map pour accès facile aux vues
     QMap<QString, BaseView*> m_views;
+    
+    // Timer pour les redimensionnements
+    QTimer* m_resizeTimer;
+    
+    // Méthodes privées d'initialisation
+    void setupUI();
+    void setupViews();
+    void setupConnections();
 };
 
 #endif // RESULT_MANAGER_H

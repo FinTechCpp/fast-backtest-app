@@ -28,18 +28,21 @@ class HistogramView : public BaseView
     Q_OBJECT
 
 public:
-    HistogramView(QWidget* parent = nullptr);
+    explicit HistogramView(QWidget* parent = nullptr);
     ~HistogramView();
 
-    QWidget* create(QWidget* parentWidget = nullptr) override;
-    void update(void* data, void* stats) override;
+    // Implémentation des méthodes virtuelles de BaseView
+    void updateData(void* data, void* stats) override;
     void clear() override;
+
+protected:
+    void setupUI() override;
 
 private slots:  
     void updateHistogram();
 
 private:
-    // Membres de données
+    // Widgets de l'interface
     QComboBox* m_timeUnitCombo;
     QChartView* m_chartView;
     QChart* m_chart;
@@ -54,8 +57,6 @@ private:
     };
     
     GroupedData groupDataByTimeUnit(const QList<QVariantMap>& trades, const QString& timeUnit);
-    
-    // Méthode de création du graphique
     void createChart(const GroupedData& data);
 };
 

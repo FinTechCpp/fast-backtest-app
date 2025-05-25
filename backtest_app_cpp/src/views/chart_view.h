@@ -75,12 +75,15 @@ class ChartView : public BaseView
     Q_OBJECT
 
 public:
-    ChartView(QWidget* parent = nullptr);  // Changé de QObject* à QWidget*    
+    explicit ChartView(QWidget* parent = nullptr);
     ~ChartView();
     
-    QWidget* create(QWidget* parentWidget = nullptr) override;
-    void update(void* data, void* stats) override;
+    // Implémentation des méthodes virtuelles de BaseView
+    void updateData(void* data, void* stats) override;
     void clear() override;
+
+protected:
+    void setupUI() override;
 
 public slots:
     void resizeChart(int newWidth);
@@ -95,23 +98,24 @@ private slots:
     void onViewPortChanged();
 
 private:
-    void* m_cachedData;                // Pointeur vers les données du backtest
-    void* m_cachedStats;               // Pointeur vers les statistiques du backtest
-    bool m_dataExtracted;            // Indique si les données ont été extraites
+    // Cache des données
+    void* m_cachedData;
+    void* m_cachedStats;
+    bool m_dataExtracted;
+    void* m_currentData;
+    void* m_currentStats;
 
     // UI Components
-    QWidget* m_chartContainer;
-    QVBoxLayout* m_chartLayout;
     QLabel* m_chartPlaceholder;
     
     // Controls
-    QWidget* m_controlsWidget;           // Widget conteneur des contrôles
-    QHBoxLayout* m_controlsLayout;       // Layout des contrôles
+    QWidget* m_controlsWidget;
+    QHBoxLayout* m_controlsLayout;
     QCheckBox* m_heikinAshiCheckbox;
     QCheckBox* m_volumeCheckbox;
     QCheckBox* m_equityCheckbox;
     QPushButton* m_addIndicatorBtn;
-    QComboBox* m_indicatorsCombo;        // ComboBox pour sélectionner les indicateurs
+    QComboBox* m_indicatorsCombo;
 
     // Chart components
     FinanceChart* m_financeChart;
@@ -121,16 +125,13 @@ private:
     PriceData m_priceData;
     TradeData m_tradeData;
     EquityData m_equityData;
-    std::map<QString, QVariant> m_indicatorsList;
-
-    // AJOUT DES MEMBRES MANQUANTS
-    void* m_currentData;                                    // Données courantes
-    void* m_currentStats;                                   // Stats courantes
-    QMap<QString, QVariant> m_indicatorConfigs;            // Configurations des indicateurs
-    QStringList m_activeIndicators;                         // Liste des indicateurs actifs
+    
+    // Configuration
+    QMap<QString, QVariant> m_indicatorConfigs;
+    QStringList m_activeIndicators;                      // Liste des indicateurs actifs
     
     // Private methods
-    void setupControls();
+    void createControls();
     void setupIndicatorsList();
     void extractDataFromPython(void* data, void* stats);
     void extractPriceData(void* data);
@@ -162,12 +163,10 @@ private:
     bool hasValidData() const;
     void showPlaceholder(const QString& message);
     void debugChart();
-
-private:
     void drawChartWithViewport();
     void setupMouseControls();
     void setupNavigationControls();
-    void trackFinance(MultiChart* m, int mouseX);  // NOUVEAU
+    void trackFinance(MultiChart* m, int mouseX);
 };
 
 #endif // CHART_VIEW_H

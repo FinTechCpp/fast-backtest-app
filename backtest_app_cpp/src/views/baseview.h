@@ -19,44 +19,43 @@ public:
      * @brief Constructeur
      * @param parent Pointeur vers l'objet parent (maintenant un QWidget)
      */
-    explicit BaseView(QWidget* parent = nullptr);  // Changé de QObject* à QWidget*
+    explicit BaseView(QWidget* parent = nullptr);
     
     /**
      * @brief Destructeur virtuel
      */
-    virtual ~BaseView();
-    
-    /**
-     * @brief Crée et retourne le widget principal de la vue
-     * @param parentWidget Widget parent pour les widgets créés
-     * @return Widget contenant l'interface de la vue
-     */
-    virtual QWidget* create(QWidget* parentWidget = nullptr) = 0;
+    virtual ~BaseView() = default;
     
     /**
      * @brief Met à jour la vue avec les nouvelles données du backtest
      * @param data Pointeur vers les données utilisées pour le backtest
      * @param stats Pointeur vers les statistiques résultantes
      */
-    virtual void update(void* data, void* stats) = 0;
+    virtual void updateData(void* data, void* stats) = 0;
     
     /**
      * @brief Réinitialise la vue à son état initial
      */
-    virtual void clear();
+    virtual void clear() = 0;
 
-protected:
+    protected:
     /** Dictionnaire des widgets de la vue */
     QMap<QString, QWidget*> m_widgets;
     
-    /** Widget parent pour la création des widgets enfants */
-    QWidget* m_parentWidget;
+    /** Layout principal de la vue */
+    QVBoxLayout* m_mainLayout;
     
     /**
      * @brief Utilitaire pour vider complètement un layout
      * @param layout Layout à vider
      */
     void clearLayout(QLayout* layout);
+    
+    /**
+     * @brief Méthode virtuelle pour construire l'interface
+     * À implémenter dans les classes filles
+     */
+    virtual void setupUI() = 0;
 };
 
 #endif // BASEVIEW_H

@@ -1,8 +1,8 @@
 #include "baseview.h"
 #include <QDebug>
 
-BaseView::BaseView(QObject* parent)  
-    : QObject(parent), m_parentWidget(nullptr)
+BaseView::BaseView(QWidget* parent)  // Changé de QObject* à QWidget*
+    : QWidget(parent), m_parentWidget(nullptr)  // Changé de QObject à QWidget
 {
     qDebug() << "BaseView créée avec parent:" << parent;
 }

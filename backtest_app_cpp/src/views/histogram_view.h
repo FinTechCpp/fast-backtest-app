@@ -28,7 +28,7 @@ class HistogramView : public BaseView
     Q_OBJECT
 
 public:
-    HistogramView(QObject* parent = nullptr);
+    HistogramView(QWidget* parent = nullptr);
     ~HistogramView();
 
     QWidget* create(QWidget* parentWidget = nullptr) override;

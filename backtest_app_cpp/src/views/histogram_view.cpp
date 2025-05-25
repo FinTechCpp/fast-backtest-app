@@ -3,7 +3,7 @@
 #include <QDateTime>
 #include <QTime>
 
-HistogramView::HistogramView(QObject* parent)
+HistogramView::HistogramView(QWidget* parent)
     : BaseView(parent)
     , m_timeUnitCombo(nullptr)
     , m_chartView(nullptr)

@@ -1,8 +1,7 @@
 #ifndef BASEVIEW_H
 #define BASEVIEW_H
 
-#include <QObject>  
-#include <QWidget>
+#include <QWidget>  // Changé de QObject
 #include <QVBoxLayout>
 #include <QMap>
 #include <QString>
@@ -11,16 +10,16 @@
 /**
  * @brief Classe de base abstraite pour toutes les vues de résultats du backtest
  */
-class BaseView : public QObject  
+class BaseView : public QWidget  // Changé de QObject à QWidget
 {
     Q_OBJECT  
 
 public:
     /**
      * @brief Constructeur
-     * @param parent Pointeur vers l'objet parent (doit être un QObject)
+     * @param parent Pointeur vers l'objet parent (maintenant un QWidget)
      */
-    explicit BaseView(QObject* parent = nullptr);  
+    explicit BaseView(QWidget* parent = nullptr);  // Changé de QObject* à QWidget*
     
     /**
      * @brief Destructeur virtuel

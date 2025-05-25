@@ -75,12 +75,15 @@ class ChartView : public BaseView
     Q_OBJECT
 
 public:
-    ChartView(QObject* parent = nullptr);  
+    ChartView(QWidget* parent = nullptr);  // Changé de QObject* à QWidget*    
     ~ChartView();
     
     QWidget* create(QWidget* parentWidget = nullptr) override;
     void update(void* data, void* stats) override;
     void clear() override;
+
+public slots:
+    void resizeChart(int newWidth);
 
 private slots:
     void onHeikinAshiToggled(bool checked);

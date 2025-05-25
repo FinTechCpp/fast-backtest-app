@@ -4,19 +4,116 @@
 #include "histogram_view.h"
 #include <QDebug>
 #include <QTime>
+#include <QResizeEvent>
+#include <QTimer>
 
-ResultManager::ResultManager(QObject* parent) :
+void ResultManager::resizeEvent(QResizeEvent* event)
+{
+    qDebug() << "🔧 🔧 🔧 RESIZE EVENT DETECTED! 🔧 🔧 🔧";
+    qDebug() << "🔧 Old size:" << event->oldSize();
+    qDebug() << "🔧 New size:" << event->size();
+    
+    BaseView::resizeEvent(event);
+    
+    // Utiliser un timer pour éviter trop de redimensionnements
+    static QTimer* resizeTimer = nullptr;
+    if (!resizeTimer) {
+        resizeTimer = new QTimer(this);
+        resizeTimer->setSingleShot(true);
+        connect(resizeTimer, &QTimer::timeout, this, &ResultManager::onTabResized);
+        qDebug() << "🔧 Timer créé et connecté";
+    }
+    
+    resizeTimer->stop();
+    resizeTimer->start(150); // Attendre 150ms après la fin du redimensionnement
+    qDebug() << "🔧 Timer démarré (150ms)";
+}
+
+void ResultManager::onTabResized()
+{
+    qDebug() << "🔧 === RESIZE EVENT TRIGGERED ===";
+    
+    if (!m_tabWidget) {
+        qDebug() << "🔧 ERROR: m_tabWidget is null";
+        return;
+    }
+    
+    if (!m_chartView) {
+        qDebug() << "🔧 ERROR: m_chartView is null";
+        return;
+    }
+    
+    if (!m_chartWidget) {
+        qDebug() << "🔧 ERROR: m_chartWidget is null";
+        return;
+    }
+    
+    // DEBUG DÉTAILLÉ DES TAILLES
+    qDebug() << "🔧 === TAILLES DÉTECTÉES ===";
+    
+    // Taille du TabWidget
+    int tabWidth = m_tabWidget->width();
+    int tabHeight = m_tabWidget->height();
+    qDebug() << "🔧 TabWidget:" << tabWidth << "x" << tabHeight;
+    
+    // Taille du ResultsWidget
+    if (m_resultsWidget) {
+        int resultsWidth = m_resultsWidget->width();
+        int resultsHeight = m_resultsWidget->height();
+        qDebug() << "🔧 ResultsWidget:" << resultsWidth << "x" << resultsHeight;
+    }
+    
+    // Taille du ChartWidget
+    int chartWidth = m_chartWidget->width();
+    int chartHeight = m_chartWidget->height();
+    qDebug() << "🔧 ChartWidget:" << chartWidth << "x" << chartHeight;
+    
+    // Onglet actuel
+    int currentIndex = m_tabWidget->currentIndex();
+    qDebug() << "🔧 Onglet actuel:" << currentIndex;
+    
+    if (currentIndex >= 0) {
+        QWidget* currentTab = m_tabWidget->widget(currentIndex);
+        if (currentTab) {
+            qDebug() << "🔧 Onglet actuel size:" << currentTab->width() << "x" << currentTab->height();
+        }
+    }
+    
+    qDebug() << "🔧 === FIN TAILLES ===";
+    
+    // CALCUL ET APPLICATION DU REDIMENSIONNEMENT
+    if (tabWidth > 100) {
+        // Calculer la largeur du graphique (largeur onglet - marges)
+        int newChartWidth = std::max(800, tabWidth - 40);
+        
+        qDebug() << "🔧 REDIMENSIONNEMENT: tabWidth:" << tabWidth << "-> newChartWidth:" << newChartWidth;
+        
+        // Redimensionner le graphique
+        m_chartView->resizeChart(newChartWidth);
+        
+        qDebug() << "🔧 resizeChart() appelé avec:" << newChartWidth;
+        
+    } else {
+        qDebug() << "🔧 REDIMENSIONNEMENT IGNORÉ: tabWidth trop petit:" << tabWidth;
+    }
+    
+    qDebug() << "🔧 === FIN RESIZE EVENT ===";
+}
+
+ResultManager::ResultManager(QWidget* parent) :
     BaseView(parent), 
     m_resultsWidget(nullptr),
     m_resultsLayout(nullptr),
     m_tabWidget(nullptr),
     m_statsView(nullptr),
     m_chartView(nullptr),
-    m_histogramView(nullptr)
+    m_histogramView(nullptr),
+    m_chartWidget(nullptr),     // AJOUT
+    m_statsWidget(nullptr),     // AJOUT
+    m_histogramWidget(nullptr)  // AJOUT
 {
     qDebug() << "ResultManager créé avec parent:" << parent;
 }
-
 ResultManager::~ResultManager()
 {
     // Qt gère automatiquement la destruction des widgets enfants
@@ -34,9 +131,9 @@ QWidget* ResultManager::create(QWidget* parentWidget)
     m_tabWidget = new QTabWidget();
     
     // Passer 'this' comme parent QObject pour les vues
-    m_statsView = new StatsView(this);
-    m_histogramView = new HistogramView(this);
-    m_chartView = new ChartView(this);
+    m_statsView = new StatsView(m_resultsWidget);
+    m_histogramView = new HistogramView(m_resultsWidget);
+    m_chartView = new ChartView(m_resultsWidget);
     
     // Vérifier que les vues ont été créées correctement
     if (!m_statsView || !m_histogramView || !m_chartView) {
@@ -44,20 +141,20 @@ QWidget* ResultManager::create(QWidget* parentWidget)
         return nullptr;
     }
     
-    // Créer les widgets des vues en passant le widget parent approprié
-    QWidget* statsWidget = m_statsView->create(m_resultsWidget);
-    QWidget* histogramWidget = m_histogramView->create(m_resultsWidget);
-    QWidget* chartWidget = m_chartView->create(m_resultsWidget);
+    // CORRECTION : Créer les widgets et stocker les références
+    m_statsWidget = m_statsView->create(m_resultsWidget);
+    m_histogramWidget = m_histogramView->create(m_resultsWidget);
+    m_chartWidget = m_chartView->create(m_resultsWidget);  // STOCKER LA RÉFÉRENCE
     
     // Vérifier que les widgets ont été créés
-    if (!statsWidget || !histogramWidget || !chartWidget) {
+    if (!m_statsWidget || !m_histogramWidget || !m_chartWidget) {
         qCritical() << "Erreur lors de la création des widgets de vue";
         return nullptr;
     }
     
-    m_tabWidget->addTab(statsWidget, "📊 Statistiques");
-    m_tabWidget->addTab(histogramWidget, "📊 Histogramme PnL");
-    m_tabWidget->addTab(chartWidget, "📈 Graphiques");
+    m_tabWidget->addTab(m_statsWidget, "📊 Statistiques");
+    m_tabWidget->addTab(m_histogramWidget, "📊 Histogramme PnL");
+    m_tabWidget->addTab(m_chartWidget, "📈 Graphiques");
     
     // Ajouter au map pour faciliter l'accès
     m_views["stats"] = m_statsView;
@@ -69,6 +166,33 @@ QWidget* ResultManager::create(QWidget* parentWidget)
     
     int elapsed = start.msecsTo(QTime::currentTime());
     qInfo() << "ResultManager::create() took" << elapsed << "ms";
+
+    // AJOUT : Connecter un timer récurrent pour surveiller les changements de taille
+    QTimer* sizeMonitor = new QTimer(this);
+    connect(sizeMonitor, &QTimer::timeout, [this]() {
+        static int lastWidth = 0;
+        static int lastHeight = 0;
+        
+        if (m_tabWidget) {
+            int currentWidth = m_tabWidget->width();
+            int currentHeight = m_tabWidget->height();
+            
+            if (currentWidth != lastWidth || currentHeight != lastHeight) {
+                qDebug() << "🔧 🔧 🔧 TAILLE CHANGÉE DÉTECTÉE VIA TIMER! 🔧 🔧 🔧";
+                qDebug() << "🔧 Ancienne taille:" << lastWidth << "x" << lastHeight;
+                qDebug() << "🔧 Nouvelle taille:" << currentWidth << "x" << currentHeight;
+                
+                lastWidth = currentWidth;
+                lastHeight = currentHeight;
+                
+                // Déclencher le redimensionnement
+                onTabResized();
+            }
+        }
+    });
+    sizeMonitor->start(250); // Vérifier toutes les 250ms
+    qDebug() << "🔧 Timer de surveillance de taille démarré";
+        
     
     return m_resultsWidget;
 }

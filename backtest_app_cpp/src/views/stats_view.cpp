@@ -63,7 +63,7 @@ QString TradesTableModel::formatNumber(double value, int precision)
 }
 
 // Implémentation de StatsView
-StatsView::StatsView(QObject* parent)
+StatsView::StatsView(QWidget* parent)
     : BaseView(parent)
     , m_tradesModel(nullptr)  // CORRECTION: Initialiser à nullptr
     , m_equityModel(nullptr)  // CORRECTION: Initialiser à nullptr

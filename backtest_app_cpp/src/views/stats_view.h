@@ -51,7 +51,7 @@ class StatsView : public BaseView
     Q_OBJECT
 
 public:
-    StatsView(QObject* parent = nullptr);  
+    StatsView(QWidget* parent = nullptr);  
     ~StatsView();
     QWidget* create(QWidget* parentWidget = nullptr) override;  // CORRECTION: Ajout du paramètre
     void update(void* data, void* stats) override;

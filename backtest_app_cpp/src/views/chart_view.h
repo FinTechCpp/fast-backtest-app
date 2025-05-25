@@ -89,6 +89,7 @@ private slots:
     void onAddIndicatorClicked();
     void onMouseMovePlotArea(QMouseEvent* event);
     void updateChart();
+    void onViewPortChanged();
 
 private:
     void* m_cachedData;                // Pointeur vers les données du backtest
@@ -157,6 +158,8 @@ private:
     QVariant extractPythonValue(void* pyObj);
     bool hasValidData() const;
     void showPlaceholder(const QString& message);
+    void debugChart();
+
 };
 
 #endif // CHART_VIEW_H

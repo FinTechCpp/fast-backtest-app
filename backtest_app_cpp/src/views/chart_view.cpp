@@ -22,8 +22,12 @@ ChartView::ChartView(QObject* parent)
     , m_dataExtracted(false)
 {
     qDebug() << "ChartView créée avec parent:" << parent;
+    
+    // Initialiser les structures de données
+    m_priceData = PriceData();
+    m_tradeData = TradeData();
+    m_equityData = EquityData();
 }
-
 ChartView::~ChartView()
 {
     if (m_financeChart) {
@@ -209,9 +213,28 @@ void ChartView::onAddIndicatorClicked()
     }
 }
 
-void ChartView::onMouseMovePlotArea(QMouseEvent* event)
+void ChartView::onViewPortChanged()
 {
-    Q_UNUSED(event);
+    if (!m_financeChart || !m_chartViewer) {
+        return;
+    }
+    
+    qDebug() << "ViewPort changed - redrawing chart";
+    
+    // Ne pas recréer le graphique, juste mettre à jour l'affichage
+    // ChartDirector gère automatiquement le zoom/scroll
+    m_chartViewer->updateDisplay();
+}
+
+void ChartView::onMouseMovePlotArea(QMouseEvent *event)
+{
+    if (!m_financeChart || !m_chartViewer) {
+        return;
+    }
+    
+    // Ajouter une ligne de suivi comme dans la démo
+    // Pour l'instant, on peut laisser vide ou ajouter un simple debug
+    qDebug() << "Mouse at plot area:" << event->x() << event->y();
 }
 
 void ChartView::updateChart()
@@ -424,7 +447,7 @@ void ChartView::createChart()
         return;
     }
     
-    qDebug() << "Données disponibles - création du graphique...";
+    qDebug() << "Données disponibles - création du graphique FinanceChart...";
     
     try {
         // Nettoyer le graphique précédent
@@ -439,7 +462,6 @@ void ChartView::createChart()
             m_chartViewer = nullptr;
         }
         
-        // Convertir les données en DoubleArray pour ChartDirector
         qDebug() << "Conversion des données en DoubleArray...";
         DoubleArray timeStamps = vectorToDoubleArray(m_priceData.timestamps);
         DoubleArray openData = vectorToDoubleArray(m_priceData.open);
@@ -448,156 +470,94 @@ void ChartView::createChart()
         DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
         DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
         
-        qDebug() << "Création du FinanceChart...";
+        qDebug() << "Données converties - timeStamps:" << timeStamps.len << "points";
+        
+        // CORRECTION 1 : Créer FinanceChart avec une largeur fixe
         m_financeChart = new FinanceChart(800);
         
-        qDebug() << "Configuration des données...";
+        // CORRECTION 2 : Configurer les données AVANT d'ajouter des éléments
         m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
         
-        qDebug() << "Ajout du graphique principal...";
-        addMainChart();
+        // CORRECTION 3 : Ajouter le titre du graphique
+        std::string title = "Données de backtest - " + std::to_string(timeStamps.len) + " points";
+        m_financeChart->addTitle(title.c_str());
         
-        qDebug() << "Création du QChartViewer...";
+        // CORRECTION 4 : Ajouter le graphique principal avec hauteur appropriée
+        m_financeChart->addMainChart(300);  // Hauteur en pixels
+        
+        // CORRECTION 5 : Ajouter les chandelles APRÈS avoir ajouté le graphique principal
+        m_financeChart->addCandleStick(0x00AA00, 0xFF3333);
+        
+        // CORRECTION 6 : Ajouter le volume si demandé
+        if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
+            m_financeChart->addVolBars(80, 0x99ff99, 0xff9999, 0x808080);
+        }
+        
+        qDebug() << "FinanceChart configuré, création du QChartViewer...";
+        
+        // CORRECTION 7 : Créer le QChartViewer avec configuration complète
         m_chartViewer = new QChartViewer(m_chartContainer);
         
-        // Utiliser MultiChart ou getChart selon ce qui est disponible
-        BaseChart* chart = static_cast<BaseChart*>(m_financeChart);
-        m_chartViewer->setChart(chart);
+        // Configuration du viewer comme dans la démo
+        m_chartViewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+        m_chartViewer->setMouseUsage(Chart::MouseUsageScroll);
+        m_chartViewer->setMouseWheelZoomRatio(1.1);
+        m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
+        m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
+        
+        // CORRECTION 8 : Configurer le range complet AVANT setChart
+        m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
+        
+        // CORRECTION 9 : Assigner le graphique au viewer
+        m_chartViewer->setChart(m_financeChart);
+        
+        // CORRECTION 10 : Configurer le viewport pour afficher les dernières données
+        int totalPoints = timeStamps.len;
+        if (totalPoints > 100) {
+            double visiblePortion = 100.0 / totalPoints;
+            m_chartViewer->setViewPortWidth(visiblePortion);
+            m_chartViewer->setViewPortLeft(1.0 - visiblePortion);
+        } else {
+            m_chartViewer->setViewPortWidth(1.0);
+            m_chartViewer->setViewPortLeft(0);
+        }
+        
+        // Connecter les signaux
+        connect(m_chartViewer, &QChartViewer::viewPortChanged, 
+                this, &ChartView::onViewPortChanged);
+        connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, 
+                this, &ChartView::onMouseMovePlotArea);
+        
+        // CORRECTION 11 : Forcer la mise à jour initiale
+        m_chartViewer->updateViewPort(true, false);
         
         // Ajouter au layout
         m_chartLayout->addWidget(m_chartViewer);
         
-        qDebug() << "Graphique créé avec succès !";
+        qDebug() << "Graphique FinanceChart créé avec succès !";
+        
+        // Debug des données
+        if (!m_priceData.close.empty()) {
+            double minPrice = *std::min_element(m_priceData.close.begin(), m_priceData.close.end());
+            double maxPrice = *std::max_element(m_priceData.close.begin(), m_priceData.close.end());
+            qDebug() << "Range de prix:" << minPrice << "à" << maxPrice;
+            qDebug() << "Premier prix:" << m_priceData.close[0] << "Dernier prix:" << m_priceData.close.back();
+        }
         
     } catch (const std::exception& e) {
-        qCritical() << "Erreur lors de la création du graphique:" << e.what();
-        showPlaceholder("Erreur lors de la création du graphique");
+        qCritical() << "Erreur lors de la création du FinanceChart:" << e.what();
+        showPlaceholder(QString("Erreur graphique: %1").arg(e.what()));
     }
+    
+    debugChart();
     
     qDebug() << "=== FIN createChart ===";
 }
-// void ChartView::createChart()
-// {
-//     if (m_priceData.timestamps.empty()) {
-//         qWarning() << "Aucune donnée de prix disponible";
-//         return;
-//     }
-    
-//     try {
-//         // Nettoyer le graphique précédent
-//         if (m_financeChart) {
-//             delete m_financeChart;
-//             m_financeChart = nullptr;
-//         }
-        
-//         if (m_chartViewer) {
-//             m_chartLayout->removeWidget(m_chartViewer);
-//             delete m_chartViewer;
-//             m_chartViewer = nullptr;
-//         }
-        
-//         // Convertir les données en DoubleArray pour ChartDirector
-//         DoubleArray timeStamps = vectorToDoubleArray(m_priceData.timestamps);
-//         DoubleArray openData = vectorToDoubleArray(m_priceData.open);
-//         DoubleArray highData = vectorToDoubleArray(m_priceData.high);
-//         DoubleArray lowData = vectorToDoubleArray(m_priceData.low);
-//         DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
-//         DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
-        
-//         // Créer le graphique financier
-//         m_financeChart = new FinanceChart(800);
-        
-//         // setData avec 7 arguments (ajouter extraDays = 0)
-//         m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
-        
-//         // Ajouter le graphique principal
-//         addMainChart();
-        
-//         // Ajouter les graphiques optionnels
-//         if (m_volumeCheckbox && m_volumeCheckbox->isChecked()) {
-//             addVolumeChart();
-//         }
-        
-//         if (m_equityCheckbox && m_equityCheckbox->isChecked()) {
-//             addEquityChart();
-//         }
-        
-//         // Ajouter les indicateurs
-//         addIndicators();
-        
-//         // Ajouter les marqueurs de trades
-//         addTradeMarkers();
-        
-//         // Créer le QChartViewer
-//         m_chartViewer = new QChartViewer(m_chartContainer);
-        
-//         // CORRECTION: Utiliser getChart() qui retourne BaseChart*
-//         BaseChart* chart = m_financeChart->getChart();
-//         if (chart) {
-//             m_chartViewer->setChart(chart);
-//         } else {
-//             qWarning() << "Impossible de récupérer le graphique BaseChart";
-//             showPlaceholder("Erreur lors de la récupération du graphique");
-//             return;
-//         }
-        
-//         // Connecter les événements de souris
-//         QObject::connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, 
-//                         this, &ChartView::onMouseMovePlotArea);
-        
-//         // Ajouter au layout
-//         m_chartLayout->addWidget(m_chartViewer);
-        
-//         qDebug() << "Graphique créé avec succès";
-        
-//     } catch (const std::exception& e) {
-//         qCritical() << "Erreur lors de la création du graphique:" << e.what();
-//         showPlaceholder("Erreur lors de la création du graphique");
-//     }
-// }
 
 void ChartView::addMainChart()
 {
-    if (!m_financeChart) {
-        return;
-    }
-    
-    try {
-        // Configurer le graphique principal
-        XYChart* mainChart = m_financeChart->addMainChart(300);
-        
-        // Utiliser Heikin-Ashi si demandé
-        if (m_heikinAshiCheckbox && m_heikinAshiCheckbox->isChecked()) {
-            std::vector<double> ha_open, ha_high, ha_low, ha_close;
-            calculateHeikinAshi(m_priceData.open, m_priceData.high, 
-                               m_priceData.low, m_priceData.close,
-                               ha_open, ha_high, ha_low, ha_close);
-            
-            DoubleArray ha_openData = vectorToDoubleArray(ha_open);
-            DoubleArray ha_highData = vectorToDoubleArray(ha_high);
-            DoubleArray ha_lowData = vectorToDoubleArray(ha_low);
-            DoubleArray ha_closeData = vectorToDoubleArray(ha_close);
-            
-            // Ajouter le layer Heikin-Ashi
-            CandleStickLayer* layer = mainChart->addCandleStickLayer(
-                ha_highData, ha_lowData, ha_openData, ha_closeData);
-            layer->setDataLabelFormat("{value|P}");
-        } else {
-            // CORRECTION: addCandleStick avec seulement 2 arguments (couleurs)
-            m_financeChart->addCandleStick(0x008000, 0xFF0000);
-        }
-        
-        // Configurer les axes
-        if (mainChart) {
-            mainChart->yAxis()->setTitle("Prix");
-            mainChart->xAxis()->setTitle("Temps");
-        }
-        
-        qDebug() << "Graphique principal ajouté";
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur lors de l'ajout du graphique principal:" << e.what();
-    }
+    // Cette méthode n'est plus nécessaire car tout est fait dans createChart()
+    qDebug() << "addMainChart() appelé - logique déplacée dans createChart()";
 }
 
 void ChartView::addVolumeChart() {}
@@ -628,19 +588,9 @@ DoubleArray ChartView::vectorToDoubleArray(const std::vector<double>& vec)
         return DoubleArray();
     }
     
-    // CORRECTION: Créer un tableau temporaire puis le passer au constructeur
-    double* tempArray = new double[vec.size()];
-    for (size_t i = 0; i < vec.size(); ++i) {
-        tempArray[i] = vec[i];
-    }
-    
-    // Créer le DoubleArray avec le pointeur et la taille
-    DoubleArray result(tempArray, static_cast<int>(vec.size()));
-    
-    // Note: ChartDirector copie les données, donc on peut libérer le tableau temporaire
-    delete[] tempArray;
-    
-    return result;
+    // CORRECTION : Utiliser directement le pointeur du vector
+    // ChartDirector copie les données, donc c'est sécurisé
+    return DoubleArray(&vec[0], static_cast<int>(vec.size()));
 }
 
 std::vector<double> ChartView::extractDoubleVector(void* pyObj)
@@ -731,4 +681,27 @@ void ChartView::showPlaceholder(const QString& message)
         m_chartPlaceholder->setText(message);
         m_chartPlaceholder->setVisible(true);
     }
+}
+
+void ChartView::debugChart()
+{
+    qDebug() << "=== DEBUG CHART ===";
+    qDebug() << "m_financeChart:" << m_financeChart;
+    qDebug() << "m_chartViewer:" << m_chartViewer;
+    
+    if (m_financeChart) {
+        qDebug() << "FinanceChart existe";
+    }
+    
+    if (m_chartViewer) {
+        qDebug() << "ChartViewer existe";
+        qDebug() << "Chart assigné:" << m_chartViewer->getChart();
+        qDebug() << "ViewPort Width:" << m_chartViewer->getViewPortWidth();
+        qDebug() << "ViewPort Left:" << m_chartViewer->getViewPortLeft();
+    }
+    
+    qDebug() << "Données:";
+    qDebug() << "- Timestamps:" << m_priceData.timestamps.size();
+    qDebug() << "- Close:" << m_priceData.close.size();
+    qDebug() << "=== FIN DEBUG CHART ===";
 }

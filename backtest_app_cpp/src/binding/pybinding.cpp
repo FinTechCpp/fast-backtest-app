@@ -270,6 +270,10 @@ QVariant PyBindingManager::runPythonBacktest(const std::vector<OHLCBar>& data,
             py::arg("margin") = margin
         );
         qDebug() << "Instance Backtest créée";
+
+        py::object stats;
+        auto start_time = std::chrono::steady_clock::now();
+
         
         try {
             stats = bt.attr("run")();

@@ -418,9 +418,164 @@ void ChartView::onMouseMovePlotArea(QMouseEvent *event)
         return;
     }
     
-    // Ajouter une ligne de suivi comme dans la démo
-    // Pour l'instant, on peut laisser vide ou ajouter un simple debug
-    qDebug() << "Mouse at plot area:" << event->x() << event->y();
+    // Ajouter le tracking avec ligne verticale comme dans la démo
+    trackFinance(m_financeChart, m_chartViewer->getPlotAreaMouseX());
+    m_chartViewer->updateDisplay();
+}
+
+void ChartView::trackFinance(MultiChart* m, int mouseX)
+{
+    // Nettoyer la couche dynamique actuelle et obtenir l'objet DrawArea pour dessiner dessus
+    DrawArea *d = m->initDynamicLayer();
+    
+    // Il est possible qu'un FinanceChart soit vide, donc nous devons le vérifier
+    if (m->getChartCount() == 0)
+        return;
+    
+    // Obtenir la valeur x des données la plus proche de la souris
+    int xValue = (int)(((XYChart *)m->getChart(0))->getNearestXValue(mouseX));
+    
+    // Itérer à travers tous les graphiques dans le MultiChart
+    XYChart *c = 0;
+    for (int i = 0; i < m->getChartCount(); ++i) {
+        c = (XYChart *)m->getChart(i);
+        
+        // Variables pour contenir les entrées de légende
+        std::ostringstream ohlcLegend;
+        std::vector<std::string> legendEntries;
+        
+        // Itérer à travers toutes les couches pour trouver les points de données
+        for (int j = 0; j < c->getLayerCount(); ++j) {
+            Layer *layer = c->getLayerByZ(j);
+            
+            // Ignorer les couches vides
+            if (!layer->getDataSetCount())
+                continue;
+            
+            // Obtenir le jeu de données
+            DataSet *dataSet = layer->getDataSetByZ(0);
+            
+            // Vérifier si c'est une couche OHLC
+            int ohlcLayer = 0;
+            const char *name = dataSet->getDataName();
+            if (name && ((std::string)name == "Open" || (std::string)name == "High" ||
+                (std::string)name == "Low" || (std::string)name == "Close")) {
+                ohlcLayer = 1;
+            }
+            
+            // Obtenir l'index du tableau correspondant à la valeur x
+            int xIndex = layer->getXIndexOf(xValue);
+            if (xIndex < 0)
+                continue;
+            
+            // Traitement spécial pour les couches OHLC
+            if (ohlcLayer) {
+                // Supposer l'ordre OHLC standard : Open(0), High(1), Low(2), Close(3)
+                double openValue = layer->getDataSetByZ(0)->getValue(xIndex);
+                double highValue = layer->getDataSetByZ(1)->getValue(xIndex);
+                double lowValue = layer->getDataSetByZ(2)->getValue(xIndex);
+                double closeValue = layer->getDataSetByZ(3)->getValue(xIndex);
+                
+                if (openValue != Chart::NoValue) {
+                    // Construire la légende OHLC - valeurs Open, High, Low, Close
+                    ohlcLegend << "      <*block*>";
+                    ohlcLegend << "Open: " << c->formatValue(openValue, "{value|P4}");
+                    ohlcLegend << ", High: " << c->formatValue(highValue, "{value|P4}");
+                    ohlcLegend << ", Low: " << c->formatValue(lowValue, "{value|P4}");
+                    ohlcLegend << ", Close: " << c->formatValue(closeValue, "{value|P4}");
+                    
+                    // Ajouter le changement en pourcentage pour la valeur de clôture
+                    if (xIndex > 0) {
+                        double lastCloseValue = layer->getDataSetByZ(3)->getValue(xIndex - 1);
+                        if (lastCloseValue != Chart::NoValue) {
+                            double change = closeValue - lastCloseValue;
+                            double percent = change * 100 / lastCloseValue;
+                            
+                            // Utiliser les couleurs et icônes appropriées pour les changements à la hausse/baisse
+                            std::string symbol = (change >= 0) ?
+                                "<*font,color=008800*><*img=@triangle,width=8,color=008800*>" :
+                                "<*font,color=CC0000*><*img=@invertedtriangle,width=8,color=CC0000*>";
+                            
+                            ohlcLegend << "  " << symbol << " " << c->formatValue(change, "{value|P4}");
+                            ohlcLegend << " (" << c->formatValue(percent, "{value|2}") << "%)<*/font*>";
+                        }
+                    }
+                    
+                    ohlcLegend << "<*/*>";
+                }
+            }
+            else {
+                // Collecter les valeurs pour tous les jeux de données dans la couche
+                for (int k = 0; k < layer->getDataSetCount(); ++k) {
+                    DataSet *dataSet = layer->getDataSetByZ(k);
+                    
+                    // Obtenir le nom et la valeur du jeu de données
+                    const char *dataName = dataSet->getDataName();
+                    int color = dataSet->getDataColor();
+                    double value = dataSet->getValue(xIndex);
+                    
+                    // Ignorer les jeux de données vides ou le point de données manquant
+                    if (!dataName || !*dataName || (color == (int)Chart::Transparent) || 
+                        (value == Chart::NoValue))
+                        continue;
+                    
+                    // Dans une légende standard, la ligne ou le symbole est coloré avec la même couleur que les données
+                    // Cependant, nous voulons que la légende soit plus jolie, donc nous utilisons un carré coloré à la place
+                    std::ostringstream legendEntry;
+                    legendEntry << "<*block*><*img=@square,width=8,edgeColor=000000,color="
+                        << std::hex << color << "*> " << dataName << ": ";
+                    
+                    // Formater la valeur (avec unité si disponible)
+                    std::string formatString = "{value|P4}";
+                    legendEntry << c->formatValue(value, formatString.c_str());
+                    legendEntry << "<*/*>";
+                    
+                    legendEntries.push_back(legendEntry.str());
+                }
+            }
+        }
+        
+        // Obtenir la position de la zone de tracé relative à l'ensemble du FinanceChart
+        PlotArea *plotArea = c->getPlotArea();
+        int plotAreaLeftX = plotArea->getLeftX() + c->getAbsOffsetX();
+        int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
+        int plotAreaWidth = plotArea->getWidth();
+        int plotAreaHeight = plotArea->getHeight();
+        
+        // Créer le texte de la légende
+        std::ostringstream legendText;
+        // Par celle-ci pour inclure la date :
+        legendText << "<*block,valign=top,maxWidth=" << (plotAreaWidth - 5)
+            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "yyyy-MM-dd hh:nn:ss")
+            << "]<*/font*>" << ohlcLegend.str();
+        for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
+            legendText << "      " << legendEntries[i];
+        }
+        legendText << "<*/*>";
+        
+        // Dessiner une ligne de suivi verticale à la position x
+        int xCoor = c->getXCoor(xValue) + c->getAbsOffsetX();
+        d->vline(plotAreaTopY, plotAreaTopY + plotAreaHeight, xCoor, d->dashLineColor(0x000000, 0x0101));
+        
+        // Afficher la date en bas de la zone de tracé
+        std::ostringstream dateText;
+        dateText << "<*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "hh:nn:ss") << "]<*/font*>";
+        TTFText *dateLabel = d->text(dateText.str().c_str(), "Arial", 8);
+        dateLabel->draw(xCoor, plotAreaTopY + plotAreaHeight + 2, 0x000000, Chart::Top);
+        dateLabel->destroy();
+        
+        // Positionner l'infobulle en fonction de la position de la souris pour éviter le chevauchement
+        // Si la souris est sur la moitié droite du graphique, mettre l'infobulle sur le côté gauche
+        TTFText *t = d->text(legendText.str().c_str(), "Arial", 8);
+        if (mouseX > plotAreaLeftX + plotAreaWidth / 2) {
+            // La souris est sur le côté droit, mettre l'infobulle à gauche
+            t->draw(plotAreaLeftX + 5, plotAreaTopY + 25, 0x000000, Chart::TopLeft);
+        } else {
+            // La souris est sur le côté gauche, mettre l'infobulle à droite
+            t->draw(plotAreaLeftX + plotAreaWidth - 5, plotAreaTopY + 25, 0x000000, Chart::TopRight);
+        }
+        t->destroy();
+    }
 }
 
 void ChartView::updateChart()
@@ -687,6 +842,7 @@ void ChartView::createChart()
         // Configuration du viewer comme dans la démo
         m_chartViewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
         m_chartViewer->setMouseUsage(Chart::MouseUsageScroll);
+        m_chartViewer->setMouseTracking(true);  // Activer le suivi de la souris
         m_chartViewer->setMouseWheelZoomRatio(1.1);
         m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
         m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
@@ -713,6 +869,8 @@ void ChartView::createChart()
                 this, &ChartView::onViewPortChanged);
         connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, 
                 this, &ChartView::onMouseMovePlotArea);
+        connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, 
+            this, &ChartView::onMouseMovePlotArea);
         
         // CORRECTION 11 : Forcer la mise à jour initiale
         m_chartViewer->updateViewPort(true, false);

@@ -164,7 +164,7 @@ private:
     void drawChartWithViewport();
     void setupMouseControls();
     void setupNavigationControls();
-
+    void trackFinance(MultiChart* m, int mouseX);  // NOUVEAU
 };
 
 #endif // CHART_VIEW_H

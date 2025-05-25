@@ -15,10 +15,10 @@ ChartView::ChartView(QObject* parent)
     , m_addIndicatorBtn(nullptr)
     , m_indicatorsCombo(nullptr)
     , m_financeChart(nullptr)
-    , m_chartViewer(nullptr)
-    , m_cachedData(nullptr)          // Ceci doit venir avant m_currentStats
-    , m_currentStats(nullptr)        // dans l'ordre de déclaration du header
-    , m_cachedStats(nullptr)
+    , m_chartViewer(nullptr)           // Déplacer avant m_cachedData
+    , m_cachedData(nullptr)           // Respecter l'ordre de déclaration
+    , m_cachedStats(nullptr)          // Respecter l'ordre de déclaration
+    , m_currentStats(nullptr)         // Déplacer après m_cachedStats
     , m_dataExtracted(false)
 {
     qDebug() << "ChartView créée avec parent:" << parent;

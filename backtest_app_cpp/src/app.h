@@ -43,6 +43,11 @@ public:
     // Getter pour ConfigManager
     ConfigManager* getConfigManager() const { return m_configManager; }
     
+    GeneralParamsPanel* getGeneralParamsPanel() const { return m_generalParamsPanel; }
+    StrategyBasePanel* getStrategyBasePanel() const { return m_strategyBasePanel; }
+    ProfilePanel* getProfilePanel() const { return m_profilePanel; }
+    BasePanel* getStrategySpecificPanel() const { return m_strategySpecificPanel; }
+    
     // Getters pour les configurations
     QMap<QString, QVariant> getStrategyConfig() const;
     QMap<QString, QVariant> getIndicatorConfig() const;

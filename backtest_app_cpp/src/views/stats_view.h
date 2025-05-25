@@ -90,6 +90,7 @@ private:
     QStackedWidget* m_equityStack;
     QMap<QString, MetricWidget*> m_metricWidgets;
     bool m_tablesCreated;
+    void* m_currentStats;  
     
     void createStatsWidgets();
     void createPerformanceSection(QGridLayout* layout);
@@ -104,6 +105,9 @@ private:
     void populateMetrics(void* stats);
     void populateTrades(void* stats);
     void populateEquity(void* stats);
+    QString formatCurrency(double value);
+    QString formatPercentage(double value);
+    void updateMetricWidget(const QString& key, const QString& label, const QString& value);
 };
 
 #endif // STATS_VIEW_H

@@ -45,6 +45,13 @@ public:
     QList<QVariantMap> getEquityCurve(void* stats);
     QVariant getStatValue(void* stats, const QString& key);
     
+    // Nouvelles méthodes pour extraire les statistiques
+    QVariantMap getBacktestStats(void* stats);
+    QList<QVariantMap> getTradesData(void* stats);
+    QList<QVariantMap> getEquityData(void* stats);
+    QString getStatString(void* stats, const QString& key);
+    double getStatDouble(void* stats, const QString& key);
+    
     // Gestion des erreurs
     QString getLastError() const;
     void clearError();
@@ -66,6 +73,9 @@ private:
     QVariant pythonToQVariant(const py::object& obj);
     QString findProjectRoot(const QString& startPath);
     void setError(const QString& error);
+    
+    QVariant extractStatValue(void* stats, const QString& key);
+    QList<QVariantMap> extractDataFrame(void* stats, const QString& key);
 };
 
 #endif // PYBINDING_H

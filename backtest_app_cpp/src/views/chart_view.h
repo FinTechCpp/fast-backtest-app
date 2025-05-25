@@ -91,6 +91,10 @@ private slots:
     void updateChart();
 
 private:
+    void* m_cachedData;                // Pointeur vers les données du backtest
+    void* m_cachedStats;               // Pointeur vers les statistiques du backtest
+    bool m_dataExtracted;            // Indique si les données ont été extraites
+
     // UI Components
     QWidget* m_chartContainer;
     QVBoxLayout* m_chartLayout;

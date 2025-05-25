@@ -413,15 +413,51 @@ QList<QVariantMap> PyBindingManager::getTrades(void* stats)
 QVariant PyBindingManager::getStatValue(void* stats, const QString& key)
 {
     if (!stats || !m_initialized) {
+        qWarning() << "Stats invalides ou PyBinding non initialisé";
         return QVariant();
     }
     
     try {
-        py::object* stats_obj = reinterpret_cast<py::object*>(stats);
-        py::object value = (*stats_obj)[key.toStdString().c_str()];
-        return pythonToQVariant(value);
+        py::gil_scoped_acquire acquire;
+        py::object* statsObj = static_cast<py::object*>(stats);
+        py::object& statsRef = *statsObj;
+        
+        // Mapping des clés Qt vers les clés Python réelles
+        QMap<QString, QString> keyMapping = {
+            {"total_return", "Return [%]"},
+            {"sharpe_ratio", "Sharpe Ratio"},
+            {"max_drawdown", "Max. Drawdown [%]"},
+            {"volatility", "Volatility [%]"},
+            {"total_trades", "# Trades"},
+            {"win_rate", "Win Rate [%]"},
+            {"buy_hold_return", "Buy & Hold Return [%]"},
+            {"exposure_time", "Exposure Time [%]"},
+            {"equity_final", "Equity Final [$]"},
+            {"equity_peak", "Equity Peak [$]"},
+            {"calmar_ratio", "Calmar Ratio"},
+            {"sortino_ratio", "Sortino Ratio"},
+            {"sqn", "SQN"},
+            {"start", "Start"},
+            {"end", "End"},
+            {"duration", "Duration"}
+        };
+        
+        QString pythonKey = keyMapping.value(key, key);
+        qDebug() << "Mapping clé" << key << "vers" << pythonKey;
+        
+        if (py::hasattr(statsRef, "__getitem__")) {
+            py::object value = statsRef[pythonKey.toUtf8().constData()];
+            return pythonToQVariant(value);
+        } else {
+            qWarning() << "L'objet stats n'est pas subscriptable";
+            return QVariant();
+        }
+        
+    } catch (const py::key_error& e) {
+        qDebug() << "Clé non trouvée dans les stats:" << key << "- Error:" << e.what();
+        return QVariant();
     } catch (const std::exception& e) {
-        setError(QString("Error getting stat value %1: %2").arg(key, e.what()));
+        qWarning() << "Erreur extraction valeur" << key << ":" << e.what();
         return QVariant();
     }
 }
@@ -505,4 +541,128 @@ void PyBindingManager::clearError()
 bool PyBindingManager::isInitialized() const
 {
     return m_initialized;
+}
+
+QVariantMap PyBindingManager::getBacktestStats(void* stats)
+{
+    QVariantMap result;
+    
+    if (!stats || !m_initialized) {
+        qWarning() << "Stats invalides ou Python non initialisé";
+        return result;
+    }
+    
+    try {
+        py::gil_scoped_acquire acquire;
+        py::object* statsObj = static_cast<py::object*>(stats);
+        
+        // Liste des clés statistiques principales à extraire
+        QStringList statKeys = {
+            "Start", "End", "Duration", "Exposure Time [%]",
+            "Equity Final [$]", "Equity Peak [$]", "Return [%]",
+            "Buy & Hold Return [%]", "Return (Ann.) [%]", "Volatility (Ann.) [%]",
+            "Sharpe Ratio", "Sortino Ratio", "Calmar Ratio",
+            "Max. Drawdown [%]", "Avg. Drawdown [%]", "Max. Drawdown Duration",
+            "Avg. Drawdown Duration", "# Trades", "Win Rate [%]",
+            "Best Trade [%]", "Worst Trade [%]", "Avg. Trade [%]",
+            "Max. Trade Duration", "Avg. Trade Duration", "Profit Factor",
+            "Expectancy [%]", "SQN", "Kelly Criterion"
+        };
+        
+        for (const QString& key : statKeys) {
+            try {
+                py::object value = (*statsObj)[key.toUtf8().constData()];
+                result[key] = pythonToQVariant(value);
+            } catch (const std::exception& e) {
+                qDebug() << "Erreur extraction stat" << key << ":" << e.what();
+                result[key] = QVariant(); // Valeur par défaut
+            }
+        }
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Erreur extraction statistiques:" << e.what();
+        setError(QString("Erreur extraction statistiques: %1").arg(e.what()));
+    }
+    
+    return result;
+}
+
+QList<QVariantMap> PyBindingManager::getTradesData(void* stats)
+{
+    return extractDataFrame(stats, "_trades");
+}
+
+QList<QVariantMap> PyBindingManager::getEquityData(void* stats)
+{
+    return extractDataFrame(stats, "_equity_curve");
+}
+
+QList<QVariantMap> PyBindingManager::extractDataFrame(void* stats, const QString& key)
+{
+    QList<QVariantMap> result;
+    
+    if (!stats || !m_initialized) {
+        qWarning() << "Stats invalides ou Python non initialisé";
+        return result;
+    }
+    
+    try {
+        py::gil_scoped_acquire acquire;
+        py::object* statsObj = static_cast<py::object*>(stats);
+        py::object df = (*statsObj)[key.toUtf8().constData()];
+
+        if (df.is_none()) {
+            return result;
+        }
+        
+        // Convertir le DataFrame en dictionnaire
+        py::object df_dict = df.attr("to_dict")("records");
+        
+        // Itérer sur les enregistrements
+        for (auto item : df_dict) {
+            QVariantMap record;
+            py::dict item_dict = item.cast<py::dict>();
+            for (auto pair : item_dict) {
+                QString key = QString::fromStdString(py::str(pair.first));
+                QVariant value = pythonToQVariant(py::reinterpret_borrow<py::object>(pair.second));
+                record[key] = value;
+            }
+            result.append(record);
+        }
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Erreur extraction DataFrame:" << e.what();
+        setError(QString("Erreur extraction DataFrame: %1").arg(e.what()));
+    }
+    
+    return result;
+}
+
+QString PyBindingManager::getStatString(void* stats, const QString& key)
+{
+    QVariant value = extractStatValue(stats, key);
+    return value.toString();
+}
+
+double PyBindingManager::getStatDouble(void* stats, const QString& key)
+{
+    QVariant value = extractStatValue(stats, key);
+    return value.toDouble();
+}
+
+QVariant PyBindingManager::extractStatValue(void* stats, const QString& key)
+{
+    if (!stats || !m_initialized) {
+        return QVariant();
+    }
+    
+    try {
+        py::gil_scoped_acquire acquire;
+        py::object* statsObj = static_cast<py::object*>(stats);
+        py::object value = (*statsObj)[key.toUtf8().constData()];
+        return pythonToQVariant(value);
+    } catch (const std::exception& e) {
+        qDebug() << "Erreur extraction valeur" << key << ":" << e.what();
+        return QVariant();
+    }
 }

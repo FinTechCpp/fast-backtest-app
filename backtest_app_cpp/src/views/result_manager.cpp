@@ -92,10 +92,17 @@ void ResultManager::updateAll(void* data, void* stats)
     qDebug() << "updateAll appelé avec des pointeurs opaques data et stats";
     
     try {
-        for (auto it = m_views.begin(); it != m_views.end(); ++it) {
-            qDebug() << "Mise à jour de la vue:" << it.key();
-            it.value()->update(data, stats);
+        // Définir l'ordre d'exécution pour éviter les conflits
+        QStringList updateOrder = {"stats", "histogram", "chart"};
+        
+        for (const QString& viewName : updateOrder) {
+            if (m_views.contains(viewName)) {
+                qDebug() << "Mise à jour de la vue:" << viewName;
+                m_views[viewName]->update(data, stats);
+            }
         }
+        
+        qInfo() << "Toutes les vues ont été mises à jour avec succès";
     }
     catch (const std::exception& e) {
         qCritical() << "Erreur lors de la mise à jour des vues:" << e.what();

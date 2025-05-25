@@ -16,10 +16,11 @@ ChartView::ChartView(QObject* parent)
     , m_indicatorsCombo(nullptr)
     , m_financeChart(nullptr)
     , m_chartViewer(nullptr)
-    , m_currentData(nullptr)
-    , m_currentStats(nullptr)
+    , m_cachedData(nullptr)          // Ceci doit venir avant m_currentStats
+    , m_currentStats(nullptr)        // dans l'ordre de déclaration du header
+    , m_cachedStats(nullptr)
+    , m_dataExtracted(false)
 {
-    // CORRECTION: Ne pas appeler setupIndicatorsList() dans le constructeur
     qDebug() << "ChartView créée avec parent:" << parent;
 }
 
@@ -101,6 +102,18 @@ void ChartView::update(void* data, void* stats)
     
     qDebug() << "=== DÉBUT ChartView::update() ===";
     qDebug() << "Data pointer:" << data << "Stats pointer:" << stats;
+
+    // Vérifier si les données ont déjà été extraites pour ces pointeurs
+    if (m_dataExtracted && m_cachedData == data && m_cachedStats == stats) {
+        qDebug() << "Données déjà en cache, pas de ré-extraction nécessaire";
+        updateChart();
+        qDebug() << "=== FIN ChartView::update() (depuis cache) ===";
+        return;
+    }
+    
+    // Mettre en cache les nouveaux pointeurs
+    m_cachedData = data;
+    m_cachedStats = stats;
     
     if (!data || !stats) {
         qDebug() << "Données nulles détectées";
@@ -148,6 +161,9 @@ void ChartView::update(void* data, void* stats)
         qCritical() << "Erreur inconnue dans ChartView::update()";
         showPlaceholder("Erreur inconnue");
     }
+
+    m_dataExtracted = true; // Marquer les données comme extraites
+    qDebug() << "=== FIN ChartView::update() ===";
 }
 
 void ChartView::clear()

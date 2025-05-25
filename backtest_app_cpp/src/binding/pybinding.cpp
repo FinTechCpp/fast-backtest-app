@@ -270,14 +270,6 @@ QVariant PyBindingManager::runPythonBacktest(const std::vector<OHLCBar>& data,
             py::arg("margin") = margin
         );
         qDebug() << "Instance Backtest créée";
-
-        // Exécuter le backtest avec timeout
-        qDebug() << "Démarrage de l'exécution du backtest...";
-        py::object stats;
-        
-        // Ajouter un mécanisme de timeout simple
-        auto start_time = std::chrono::steady_clock::now();
-        const auto timeout_duration = std::chrono::minutes(5); // 5 minutes timeout
         
         try {
             stats = bt.attr("run")();
@@ -297,8 +289,8 @@ QVariant PyBindingManager::runPythonBacktest(const std::vector<OHLCBar>& data,
             setError("Le backtest a retourné des résultats vides");
             return QVariant();
         }
+        qDebug() << "Statistiques du backtest obtenues : " << QString::fromStdString(py::str(stats));
     
-        // CORRECTION: Créer un QVariantMap pour stocker les deux objets
         QVariantMap result;
         
         // Stocker data_df
@@ -568,6 +560,9 @@ QVariantMap PyBindingManager::getBacktestStats(void* stats)
             "Max. Trade Duration", "Avg. Trade Duration", "Profit Factor",
             "Expectancy [%]", "SQN", "Kelly Criterion"
         };
+
+        qDebug() << "Extraction des statistiques du backtest...";
+        qDebug() << "Nombre de clés statistiques à extraire:" << statKeys.size();
         
         for (const QString& key : statKeys) {
             try {
@@ -578,6 +573,8 @@ QVariantMap PyBindingManager::getBacktestStats(void* stats)
                 result[key] = QVariant(); // Valeur par défaut
             }
         }
+
+        qDebug() << "Statistiques extraites avec succès, nombre de clés:" << result.size();
         
     } catch (const std::exception& e) {
         qCritical() << "Erreur extraction statistiques:" << e.what();

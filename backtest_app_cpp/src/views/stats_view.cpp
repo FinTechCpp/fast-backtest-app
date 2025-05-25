@@ -490,7 +490,7 @@ void StatsView::toggleEquityTable()
 void StatsView::updateData(void* data, void* stats)
 {
     Q_UNUSED(data);  // Les données ne sont pas utilisées pour les stats
-    
+
     QTime start = QTime::currentTime();
     qDebug() << "StatsView::updateData() appelé";
     

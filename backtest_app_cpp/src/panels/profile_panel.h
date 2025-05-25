@@ -60,6 +60,12 @@ public:
      */
     void updateProfileUI(const QString& profileName);
 
+    /**
+     * @brief Initialise le panel avec le ConfigManager
+     * @param configManager Pointeur vers le gestionnaire de configuration
+     */
+    void setConfigManager(ConfigManager* configManager);
+
 public slots:
     /**
      * @brief Charge le profil sélectionné dans le menu déroulant

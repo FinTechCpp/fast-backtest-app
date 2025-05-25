@@ -7,24 +7,10 @@
 ProfilePanel::ProfilePanel(QWidget* parent)
     : QObject(parent), BasePanel(parent)
 {
-    // CORRECTION : Recherche plus robuste
+    // Ne pas chercher le ConfigManager dans le constructeur
+    // Il sera récupéré plus tard via une méthode dédiée
     m_configManager = nullptr;
-    
-    // Chercher dans la hiérarchie des parents
-    QObject* obj = this->parent();
-    while (obj && !m_configManager) {
-        if (App* app = qobject_cast<App*>(obj)) {
-            m_configManager = app->getConfigManager();
-            break;
-        }
-        obj = obj->parent();
-    }
-    
-    if (!m_configManager) {
-        qWarning() << "ConfigManager non trouvé dans ProfilePanel";
-    } else {
-        qDebug() << "ConfigManager trouvé dans ProfilePanel";
-    }
+    qDebug() << "ProfilePanel créé avec parent:" << parent;
 }
 
 QGroupBox* ProfilePanel::create()
@@ -50,9 +36,13 @@ QGroupBox* ProfilePanel::create()
     QPushButton* saveProfileBtn = new QPushButton("💾 Sauvegarder");
     saveProfileBtn->setToolTip("Sauvegarder les paramètres actuels dans le profil courant");
     
-    // CORRECTION : Utiliser une connexion directe avec vérification
     connect(saveProfileBtn, &QPushButton::clicked, this, [this]() {
-        if (m_configManager && m_parent) {
+        if (!m_configManager) {
+            qWarning() << "ConfigManager non disponible pour la sauvegarde";
+            return;
+        }
+        
+        if (m_parent) {
             App* mainApp = qobject_cast<App*>(m_parent->window());
             if (mainApp) {
                 bool success = m_configManager->saveCurrentProfile(mainApp);
@@ -169,6 +159,29 @@ QGroupBox* ProfilePanel::create()
     // Finaliser le groupe de profils
     profileGroup->setLayout(profileLayout);
     return profileGroup;
+}
+
+void ProfilePanel::setConfigManager(ConfigManager* configManager)
+{
+    m_configManager = configManager;
+    if (m_configManager) {
+        qDebug() << "ConfigManager configuré dans ProfilePanel";
+        
+        // Mettre à jour l'interface si elle existe déjà
+        if (m_widgets.contains("profile_combo")) {
+            QComboBox* combo = static_cast<QComboBox*>(m_widgets["profile_combo"]);
+            combo->clear();
+            combo->addItems(m_configManager->listProfiles());
+            combo->setCurrentText(m_configManager->getCurrentProfile());
+        }
+        
+        if (m_widgets.contains("current_profile_label")) {
+            QLabel* label = static_cast<QLabel*>(m_widgets["current_profile_label"]);
+            label->setText(QString("Profil actif: %1").arg(m_configManager->getCurrentProfile()));
+        }
+    } else {
+        qWarning() << "ConfigManager null passé à ProfilePanel";
+    }
 }
 
 QMap<QString, QVariant> ProfilePanel::getValues()

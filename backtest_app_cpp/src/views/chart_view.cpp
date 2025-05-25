@@ -18,10 +18,10 @@ ChartView::ChartView(QWidget* parent)  // Changé de QObject* à QWidget*
     , m_addIndicatorBtn(nullptr)
     , m_indicatorsCombo(nullptr)
     , m_financeChart(nullptr)
-    , m_chartViewer(nullptr)
-    , m_cachedData(nullptr)
-    , m_currentStats(nullptr)
-    , m_cachedStats(nullptr)
+    , m_chartViewer(nullptr)           // Déplacer avant m_cachedData
+    , m_cachedData(nullptr)           // Respecter l'ordre de déclaration
+    , m_cachedStats(nullptr)          // Respecter l'ordre de déclaration
+    , m_currentStats(nullptr)         // Déplacer après m_cachedStats
     , m_dataExtracted(false)
 {
     qDebug() << "ChartView créée avec parent:" << parent;

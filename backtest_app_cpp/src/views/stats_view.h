@@ -20,6 +20,7 @@
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QHeaderView>
+#include <QVariant>  
 #include <memory>
 #include "baseview.h"
 #include "../metric_widget.h"
@@ -121,6 +122,7 @@ private:
     void populateEquity(void* stats);
     QString formatCurrency(double value);
     QString formatPercentage(double value);
+    QString formatDuration(const QVariant& value);  // AJOUT MANQUANT
     void updateMetricWidget(const QString& key, const QString& label, const QString& value);
 };
 

@@ -127,6 +127,7 @@ QVariant PyBindingManager::runPythonBacktest(const std::vector<OHLCBar>& data,
     qDebug() << "Données:" << data.size() << "barres";
     qDebug() << "Stratégie:" << strategyClass;
 
+
     try {
         qDebug() << "Acquisition du GIL Python...";
         py::gil_scoped_acquire acquire;
@@ -237,9 +238,11 @@ QVariant PyBindingManager::runPythonBacktest(const std::vector<OHLCBar>& data,
         qDebug() << "Stratégie importée avec succès";
 
         // Convertir les paramètres
+        qDebug() << "Paramètres de stratégie avant conversion python:" << strategyParams;
         qDebug() << "Conversion des paramètres de stratégie...";
         py::dict py_params = convertParamsToPython(strategyParams);
         qDebug() << "Paramètres convertis";
+        qDebug() << "Paramètres de stratégie après conversion python:" << QString::fromStdString(py::str(py_params));
 
         // Importer Backtest
         qDebug() << "Import du module Backtest...";
@@ -418,42 +421,17 @@ QVariant PyBindingManager::getStatValue(void* stats, const QString& key)
         py::object* statsObj = static_cast<py::object*>(stats);
         py::object& statsRef = *statsObj;
         
-        // Mapping des clés Qt vers les clés Python réelles
-        QMap<QString, QString> keyMapping = {
-            {"total_return", "Return [%]"},
-            {"sharpe_ratio", "Sharpe Ratio"},
-            {"max_drawdown", "Max. Drawdown [%]"},
-            {"volatility", "Volatility [%]"},
-            {"total_trades", "# Trades"},
-            {"win_rate", "Win Rate [%]"},
-            {"buy_hold_return", "Buy & Hold Return [%]"},
-            {"exposure_time", "Exposure Time [%]"},
-            {"equity_final", "Equity Final [$]"},
-            {"equity_peak", "Equity Peak [$]"},
-            {"calmar_ratio", "Calmar Ratio"},
-            {"sortino_ratio", "Sortino Ratio"},
-            {"sqn", "SQN"},
-            {"start", "Start"},
-            {"end", "End"},
-            {"duration", "Duration"}
-        };
-        
-        QString pythonKey = keyMapping.value(key, key);
-        qDebug() << "Mapping clé" << key << "vers" << pythonKey;
-        
-        if (py::hasattr(statsRef, "__getitem__")) {
-            py::object value = statsRef[pythonKey.toUtf8().constData()];
+        // Essayer d'accéder directement à la clé
+        try {
+            py::object value = statsRef[key.toUtf8().constData()];
             return pythonToQVariant(value);
-        } else {
-            qWarning() << "L'objet stats n'est pas subscriptable";
+        } catch (const py::key_error& e) {
+            qDebug() << "Clé non trouvée:" << key;
             return QVariant();
         }
         
-    } catch (const py::key_error& e) {
-        qDebug() << "Clé non trouvée dans les stats:" << key << "- Error:" << e.what();
-        return QVariant();
     } catch (const std::exception& e) {
-        qWarning() << "Erreur extraction valeur" << key << ":" << e.what();
+        qCritical() << "Erreur lors de l'extraction de" << key << ":" << e.what();
         return QVariant();
     }
 }

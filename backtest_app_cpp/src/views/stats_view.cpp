@@ -177,63 +177,90 @@ void StatsView::createStatsWidgets()
 
 void StatsView::createPerformanceSection(QGridLayout* layout)
 {
+    if (!layout) {
+        qWarning() << "Layout de performance null";
+        return;
+    }
+    
     int row = 0;
     
-    qDebug() << "Création de la section Performance...";
+    // Période
+    createMetricWidget("start", "Début", "N/A", row, 0, layout);
+    createMetricWidget("end", "Fin", "N/A", row++, 1, layout);
+    createMetricWidget("duration", "Durée", "N/A", row++, 0, layout);
     
-    // Performance metrics - Ligne 1
-    createMetricWidget("total_return", "Return [%]", "0.00%", row, 0, layout);
-    createMetricWidget("buy_hold_return", "Buy & Hold Return [%]", "0.00%", row, 1, layout);
-    row++;
+    // Performance principale
+    createMetricWidget("total_return", "Rendement Total", "N/A", row, 0, layout);
+    createMetricWidget("return_ann", "Rendement Annualisé", "N/A", row++, 1, layout);
+    createMetricWidget("buy_hold_return", "Buy & Hold", "N/A", row, 0, layout);
+    createMetricWidget("cagr", "CAGR", "N/A", row++, 1, layout);
     
-    // Performance metrics - Ligne 2
-    createMetricWidget("sharpe_ratio", "Sharpe Ratio", "0.00", row, 0, layout);
-    createMetricWidget("sortino_ratio", "Sortino Ratio", "0.00", row, 1, layout);
-    row++;
+    // Alpha/Beta
+    createMetricWidget("alpha", "Alpha", "N/A", row, 0, layout);
+    createMetricWidget("beta", "Beta", "N/A", row++, 1, layout);
     
-    // Performance metrics - Ligne 3
-    createMetricWidget("calmar_ratio", "Calmar Ratio", "0.00", row, 0, layout);
-    createMetricWidget("sqn", "SQN", "0.00", row, 1, layout);
-    
-    qDebug() << "Section Performance créée avec" << (row + 1) * 2 << "widgets";
+    // Equity
+    createMetricWidget("equity_final", "Equity Final", "N/A", row, 0, layout);
+    createMetricWidget("equity_peak", "Equity Peak", "N/A", row++, 1, layout);
 }
 
 void StatsView::createRiskSection(QGridLayout* layout)
 {
+    if (!layout) {
+        qWarning() << "Layout de risque null";
+        return;
+    }
+    
     int row = 0;
     
-    qDebug() << "Création de la section Risque...";
+    // Ratios de risque
+    createMetricWidget("sharpe_ratio", "Ratio de Sharpe", "N/A", row, 0, layout);
+    createMetricWidget("sortino_ratio", "Ratio de Sortino", "N/A", row++, 1, layout);
+    createMetricWidget("calmar_ratio", "Ratio de Calmar", "N/A", row++, 0, layout);
     
-    // Risk metrics - Ligne 1
-    createMetricWidget("max_drawdown", "Max. Drawdown [%]", "0.00%", row, 0, layout);
-    createMetricWidget("volatility", "Volatility (Ann.) [%]", "0.00%", row, 1, layout);
-    row++;
+    // Drawdown
+    createMetricWidget("max_drawdown", "Drawdown Max", "N/A", row, 0, layout);
+    createMetricWidget("avg_drawdown", "Drawdown Moyen", "N/A", row++, 1, layout);
+    createMetricWidget("max_drawdown_duration", "Durée DD Max", "N/A", row, 0, layout);
+    createMetricWidget("avg_drawdown_duration", "Durée DD Moy", "N/A", row++, 1, layout);
     
-    // Risk metrics - Ligne 2
-    createMetricWidget("exposure_time", "Exposure Time [%]", "0.00%", row, 0, layout);
-    // Ajouter un widget vide pour équilibrer la ligne
-    QLabel* emptyLabel = new QLabel();
-    layout->addWidget(emptyLabel, row, 1);
-    
-    qDebug() << "Section Risque créée avec" << (row * 2 + 1) << "widgets";
+    // Volatilité
+    createMetricWidget("volatility", "Volatilité Ann.", "N/A", row++, 0, layout);
 }
 
 void StatsView::createGeneralSection(QGridLayout* layout)
 {
+    if (!layout) {
+        qWarning() << "Layout général null";
+        return;
+    }
+    
     int row = 0;
     
-    qDebug() << "Création de la section Général...";
+    // Exposition et trades
+    createMetricWidget("exposure_time", "Temps d'Exposition", "N/A", row, 0, layout);
+    createMetricWidget("total_trades", "Nombre de Trades", "N/A", row++, 1, layout);
     
-    // General metrics - Ligne 1
-    createMetricWidget("total_trades", "# Trades", "0", row, 0, layout);
-    createMetricWidget("win_rate", "Win Rate [%]", "0.00%", row, 1, layout);
-    row++;
+    // Statistiques de trades
+    createMetricWidget("win_rate", "Taux de Réussite", "N/A", row, 0, layout);
+    createMetricWidget("winning_trades", "Trades Gagnants", "N/A", row++, 1, layout);
+    createMetricWidget("losing_trades", "Trades Perdants", "N/A", row, 0, layout);
+    createMetricWidget("neutral_trades", "Trades Neutres", "N/A", row++, 1, layout);
     
-    // General metrics - Ligne 2
-    createMetricWidget("equity_final", "Equity Final [$]", "$0.00", row, 0, layout);
-    createMetricWidget("equity_peak", "Equity Peak [$]", "$0.00", row, 1, layout);
+    // Performance des trades
+    createMetricWidget("best_trade", "Meilleur Trade", "N/A", row, 0, layout);
+    createMetricWidget("worst_trade", "Pire Trade", "N/A", row++, 1, layout);
+    createMetricWidget("avg_trade", "Trade Moyen", "N/A", row, 0, layout);
+    createMetricWidget("profit_factor", "Facteur de Profit", "N/A", row++, 1, layout);
     
-    qDebug() << "Section Général créée avec" << (row + 1) * 2 << "widgets";
+    // Durées des trades
+    createMetricWidget("max_trade_duration", "Durée Max Trade", "N/A", row, 0, layout);
+    createMetricWidget("avg_trade_duration", "Durée Moy Trade", "N/A", row++, 1, layout);
+    
+    // Métriques avancées
+    createMetricWidget("expectancy", "Espérance", "N/A", row, 0, layout);
+    createMetricWidget("sqn", "SQN", "N/A", row++, 1, layout);
+    createMetricWidget("kelly_criterion", "Critère de Kelly", "N/A", row++, 0, layout);
 }
 
 MetricWidget* StatsView::createMetricWidget(const QString& key, const QString& label, 
@@ -279,58 +306,102 @@ void StatsView::populateMetrics(void* stats)
     
     // Mapping correct des clés selon compute_stats()
     QMap<QString, QString> keyMapping = {
+        // Période et durée
+        {"start", "Start"},
+        {"end", "End"},
+        {"duration", "Duration"},
+        
+        // Performance
         {"total_return", "Return [%]"},
+        {"return_ann", "Return (Ann.) [%]"},
         {"buy_hold_return", "Buy & Hold Return [%]"},
+        {"cagr", "CAGR [%]"},
+        {"alpha", "Alpha [%]"},
+        {"beta", "Beta"},
+        
+        // Risque
         {"sharpe_ratio", "Sharpe Ratio"},
-        {"calmar_ratio", "Calmar Ratio"},
         {"sortino_ratio", "Sortino Ratio"},
-        {"sqn", "SQN"},
+        {"calmar_ratio", "Calmar Ratio"},
         {"max_drawdown", "Max. Drawdown [%]"},
+        {"avg_drawdown", "Avg. Drawdown [%]"},
+        {"max_drawdown_duration", "Max. Drawdown Duration"},
+        {"avg_drawdown_duration", "Avg. Drawdown Duration"},
         {"volatility", "Volatility (Ann.) [%]"},
+        
+        // Trading
         {"exposure_time", "Exposure Time [%]"},
         {"total_trades", "# Trades"},
         {"win_rate", "Win Rate [%]"},
+        {"winning_trades", "# Winning Trades"},
+        {"losing_trades", "# Losing Trades"},
+        {"neutral_trades", "# Neutral Trades"},
+        
+        // Equity
         {"equity_final", "Equity Final [$]"},
-        {"equity_peak", "Equity Peak [$]"}
+        {"equity_peak", "Equity Peak [$]"},
+        
+        // Trade performance
+        {"best_trade", "Best Trade [%]"},
+        {"worst_trade", "Worst Trade [%]"},
+        {"avg_trade", "Avg. Trade [%]"},
+        {"max_trade_duration", "Max. Trade Duration"},
+        {"avg_trade_duration", "Avg. Trade Duration"},
+        {"profit_factor", "Profit Factor"},
+        {"expectancy", "Expectancy [%]"},
+        {"sqn", "SQN"},
+        {"kelly_criterion", "Kelly Criterion"}
     };
     
     PyBindingManager& pyManager = PyBindingManager::getInstance();
     
     for (auto it = keyMapping.begin(); it != keyMapping.end(); ++it) {
-        QString cppKey = it.key();
+        QString qtKey = it.key();
         QString pythonKey = it.value();
         
-        qDebug() << "Mapping clé" << cppKey << "vers" << pythonKey;
-        
-        // Vérifier que le widget existe
-        if (!m_metricWidgets.contains(cppKey)) {
-            qWarning() << "Widget métrique non trouvé pour la clé:" << cppKey;
-            continue;
-        }
-        
-        try {
-            QVariant value = pyManager.getStatValue(stats, pythonKey);
-            if (value.isValid()) {
+        if (m_metricWidgets.contains(qtKey)) {
+            try {
+                QVariant rawValue = pyManager.getStatValue(stats, pythonKey);
                 QString formattedValue;
                 
                 // Formatage spécifique selon le type de métrique
-                if (pythonKey.contains("[%]")) {
-                    formattedValue = formatPercentage(value.toDouble());
-                } else if (pythonKey.contains("[$]")) {
-                    formattedValue = formatCurrency(value.toDouble());
-                } else if (pythonKey == "# Trades") {
-                    formattedValue = QString::number(value.toInt());
+                if (qtKey.contains("return") || qtKey.contains("drawdown") || 
+                    qtKey.contains("volatility") || qtKey.contains("cagr") || 
+                    qtKey.contains("alpha") || qtKey.contains("expectancy") ||
+                    qtKey.endsWith("_trade")) {
+                    // Pourcentages
+                    formattedValue = formatPercentage(rawValue.toDouble());
+                } else if (qtKey.contains("equity") || qtKey.contains("final") || 
+                          qtKey.contains("peak")) {
+                    // Valeurs monétaires
+                    formattedValue = formatCurrency(rawValue.toDouble());
+                } else if (qtKey.contains("duration")) {
+                    // Durées
+                    formattedValue = rawValue.toString();
+                } else if (qtKey == "start" || qtKey == "end") {
+                    // Dates - convertir le timestamp Python en date lisible
+                    QDateTime dateTime = QDateTime::fromString(rawValue.toString(), Qt::ISODate);
+                    if (dateTime.isValid()) {
+                        formattedValue = dateTime.toString("yyyy-MM-dd hh:mm");
+                    } else {
+                        formattedValue = rawValue.toString();
+                    }
                 } else {
-                    formattedValue = QString::number(value.toDouble(), 'f', 2);
+                    // Valeurs numériques standard
+                    double value = rawValue.toDouble();
+                    if (std::isnan(value) || std::isinf(value)) {
+                        formattedValue = "N/A";
+                    } else {
+                        formattedValue = QString::number(value, 'f', 4);
+                    }
                 }
                 
-                m_metricWidgets[cppKey]->updateValues(formattedValue);
-                qDebug() << "Métrique mise à jour:" << cppKey << "=" << formattedValue;
-            } else {
-                qWarning() << "Valeur invalide pour la clé:" << cppKey;
+                updateMetricWidget(qtKey, pythonKey, formattedValue);
+                
+            } catch (const std::exception& e) {
+                qWarning() << "Erreur lors de l'extraction de" << pythonKey << ":" << e.what();
+                updateMetricWidget(qtKey, pythonKey, "N/A");
             }
-        } catch (const std::exception& e) {
-            qWarning() << "Erreur extraction valeur" << cppKey << ":" << e.what();
         }
     }
     
@@ -411,6 +482,28 @@ QString StatsView::formatPercentage(double value)
     
     // Convertir en pourcentage (multiplier par 100) et formater
     return QString("%1%").arg(QString::number(value * 100, 'f', 2));
+}
+
+QString StatsView::formatDuration(const QVariant& value)
+{
+    QString strValue = value.toString();
+    
+    // Si c'est déjà une chaîne formatée (ex: "584 days 00:00:00"), la retourner telle quelle
+    if (strValue.contains("days") || strValue.contains("hours") || strValue.contains("minutes")) {
+        return strValue;
+    }
+    
+    // Sinon, essayer de la convertir
+    bool ok;
+    double numValue = value.toDouble(&ok);
+    if (ok) {
+        // Supposer que c'est en jours
+        int days = static_cast<int>(numValue);
+        double hours = (numValue - days) * 24;
+        return QString("%1 jours %2h").arg(days).arg(QString::number(hours, 'f', 1));
+    }
+    
+    return strValue;
 }
 
 void StatsView::updateMetricWidget(const QString& key, const QString& label, const QString& value)

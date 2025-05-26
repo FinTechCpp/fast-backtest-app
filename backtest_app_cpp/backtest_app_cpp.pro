@@ -39,12 +39,12 @@ SOURCES += src/main.cpp \
            src/panels/base_panel.cpp \
            src/panels/general_params_panel.cpp \
            src/panels/strategy_base_panel.cpp \
-           src/panels/profile_panel.cpp \
            src/panels/strategy_specific_panels/buy_heikin_green_panel.cpp \
            src/panels/strategy_specific_panels/sell_heikin_red_panel.cpp \
            src/panels/strategy_specific_panels/cross_ema_panel.cpp \
            src/components/backtest_runner.cpp \
            src/data_loader.cpp \
+           src/menu/profile_menu_manager.cpp \
            ../ChartDirector/qtdemo/qtdemo/qchartviewer.cpp
 
 # Headers avec Q_OBJECT
@@ -60,12 +60,12 @@ HEADERS += src/app.h \
            src/panels/base_panel.h \
            src/panels/general_params_panel.h \
            src/panels/strategy_base_panel.h \
-           src/panels/profile_panel.h \
            src/panels/strategy_specific_panels/buy_heikin_green_panel.h \
            src/panels/strategy_specific_panels/cross_ema_panel.h \
            src/panels/strategy_specific_panels/sell_heikin_red_panel.h \
            src/components/backtest_runner.h \
            src/data_loader.h \
+           src/menu/profile_menu_manager.h \
            ../ChartDirector/qtdemo/qtdemo/qchartviewer.h \
            ../ChartDirector/include/chartdir.h \
            ../ChartDirector/include/FinanceChart.h

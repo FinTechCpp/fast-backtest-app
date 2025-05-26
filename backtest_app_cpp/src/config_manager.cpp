@@ -263,56 +263,48 @@ QMap<QString, QVariant> ConfigManager::getProfileFromUI() const
 
 bool ConfigManager::applyProfileToUI(const QString& profileName)
 {
-    if (!profileExists(profileName)) {
-        qWarning() << "Le profil" << profileName << "n'existe pas";
+    if (!m_mainWindow) {
+        qWarning() << "MainWindow non définie";
         return false;
     }
     
-    qDebug() << "Application du profil" << profileName << "à l'interface";
-    
-    // Récupérer les données du profil
     QMap<QString, QVariant> profileData = getProfile(profileName);
-    
     if (profileData.isEmpty()) {
-        qWarning() << "Données du profil" << profileName << "vides";
+        qWarning() << "Profil" << profileName << "non trouvé ou vide";
         return false;
     }
     
-    qDebug() << "Données du profil récupérées:" << profileData.size() << "éléments";
+    qDebug() << "Application du profil" << profileName << "à l'UI";
     
-    // Appliquer les valeurs aux panels
-    if (m_mainWindow) {
-        // CORRECTION: Utiliser les getters au lieu d'accès direct
+    try {
+        // Appliquer les valeurs aux panels
         if (m_mainWindow->getGeneralParamsPanel()) {
             m_mainWindow->getGeneralParamsPanel()->setValues(profileData);
-            qDebug() << "Valeurs appliquées au panel général";
         }
         
         if (m_mainWindow->getStrategyBasePanel()) {
             m_mainWindow->getStrategyBasePanel()->setValues(profileData);
-            qDebug() << "Valeurs appliquées au panel de base";
         }
         
-        // Appliquer au panel spécifique à la stratégie
         if (m_mainWindow->getStrategySpecificPanel()) {
             m_mainWindow->getStrategySpecificPanel()->setValues(profileData);
-            qDebug() << "Valeurs appliquées au panel spécifique";
         }
         
-        // Mettre à jour le panel de profils
-        if (m_mainWindow->getProfilePanel()) {
-            m_mainWindow->getProfilePanel()->updateProfileUI(profileName);
-        }
+        // SUPPRESSION de l'appel au ProfilePanel (maintenant géré par le menu)
+        
+        // Mettre à jour le profil actuel
+        m_currentProfile = profileName;
+        
+        // Émettre le signal de changement
+        emit profileChanged(profileName);
+        
+        qInfo() << "Profil" << profileName << "appliqué avec succès";
+        return true;
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Erreur lors de l'application du profil:" << e.what();
+        return false;
     }
-    
-    // Mettre à jour le profil actuel
-    m_currentProfile = profileName;
-    
-    // Émettre le signal de changement de profil
-    emit profileChanged(profileName);
-    
-    qInfo() << "Profil" << profileName << "appliqué avec succès";
-    return true;
 }
 
 bool ConfigManager::saveCurrentProfile(QWidget* parentWidget)

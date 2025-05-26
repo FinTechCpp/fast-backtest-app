@@ -24,13 +24,13 @@
 class ConfigManager;
 class GeneralParamsPanel;
 class StrategyBasePanel;
-class ProfilePanel;
 class StatsView;
 class ChartView;
 class HistogramView;
 class ResultManager;
 class BacktestRunner;
 class BasePanel;
+class ProfileMenuManager;  // AJOUT
 
 class App : public QMainWindow
 {
@@ -45,7 +45,6 @@ public:
     
     GeneralParamsPanel* getGeneralParamsPanel() const { return m_generalParamsPanel; }
     StrategyBasePanel* getStrategyBasePanel() const { return m_strategyBasePanel; }
-    ProfilePanel* getProfilePanel() const { return m_profilePanel; }
     BasePanel* getStrategySpecificPanel() const { return m_strategySpecificPanel; }
     
     // Getters pour les configurations
@@ -64,9 +63,13 @@ private slots:
     void onAbout();
 
 private:
+    // Menus
     QMenuBar* m_menuBar;
     QMenu* m_helpMenu;
     QAction* m_aboutAction;
+    
+    // Gestionnaire de menu des profils
+    ProfileMenuManager* m_profileMenuManager;  // AJOUT
 
     void createMenus();
     void createActions();
@@ -95,13 +98,12 @@ private:
     ConfigManager* m_configManager;
     ResultManager* m_resultManager;
     
-    // Panels - AJOUT MANQUANT
+    // Panels - SUPPRESSION de ProfilePanel
     GeneralParamsPanel* m_generalParamsPanel;
     StrategyBasePanel* m_strategyBasePanel;
-    ProfilePanel* m_profilePanel;
-    BasePanel* m_strategySpecificPanel;  // Panel spécifique à la stratégie actuelle
+    BasePanel* m_strategySpecificPanel;
     
-    // Components - AJOUT MANQUANT
+    // Components
     BacktestRunner* m_backtestRunner;
     
     // Views

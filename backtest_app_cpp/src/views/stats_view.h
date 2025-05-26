@@ -122,7 +122,8 @@ private:
     void populateEquity(void* stats);
     QString formatCurrency(double value);
     QString formatPercentage(double value);
-    QString formatDuration(const QVariant& value);  // AJOUT MANQUANT
+    QString formatDuration(const QVariant& value);
+    QString formatDetailedDuration(int days, int hours, int minutes, int seconds);
     void updateMetricWidget(const QString& key, const QString& label, const QString& value);
 };
 

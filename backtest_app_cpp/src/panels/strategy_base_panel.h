@@ -53,9 +53,8 @@ public:
      */
     void setValues(const QMap<QString, QVariant>& values) override;
 
-private slots:  // CORRECTION: Déclarer comme slots
+private slots:  
     // Méthodes pour gérer l'interface utilisateur en fonction des checkboxes
-    void _toggleAtrControls(bool checked);
     void _toggleRiskControls(bool checked);
     void _toggleBreakEvenControls(bool checked);
     void _toggleDailyMaxLossControls(bool checked);

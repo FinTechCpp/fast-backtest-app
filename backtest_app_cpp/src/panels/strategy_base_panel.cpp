@@ -17,7 +17,15 @@ QGroupBox* StrategyBasePanel::create()
 
     // Section SL/TP
     QGroupBox* slTpGroup = new QGroupBox("Stop Loss et Take Profit");
-    QVBoxLayout* slTpLayout = new QVBoxLayout();
+    QVBoxLayout* slTpLayout = new QVBoxLayout();    
+    // Période ATR commune (en haut du groupe)
+    QFormLayout* atrLayout = new QFormLayout();
+    m_widgets["atr_period"] = new QSpinBox();
+    static_cast<QSpinBox*>(m_widgets["atr_period"])->setRange(1, 100);
+    static_cast<QSpinBox*>(m_widgets["atr_period"])->setValue(14);
+    static_cast<QSpinBox*>(m_widgets["atr_period"])->setEnabled(false);
+    atrLayout->addRow(new QLabel("Période ATR:"), m_widgets["atr_period"]);
+    slTpLayout->addLayout(atrLayout);
     
     // Groupe Stop Loss
     QGroupBox* slGroup = new QGroupBox("Stop Loss");
@@ -118,38 +126,17 @@ QGroupBox* StrategyBasePanel::create()
     slTpGroup->setLayout(slTpLayout);
     baseLayout->addWidget(slTpGroup);
     
-    // Section ATR
-    QGroupBox* atrGroup = new QGroupBox("ATR (Average True Range)");
-    QFormLayout* atrLayout = new QFormLayout();
-    
-    m_widgets["use_atr_for_sl"] = new QCheckBox("Utiliser ATR pour SL");
-    QObject::connect(static_cast<QCheckBox*>(m_widgets["use_atr_for_sl"]), 
-                     &QCheckBox::toggled,
-                     this, &StrategyBasePanel::_toggleAtrControls);
-    atrLayout->addRow(m_widgets["use_atr_for_sl"]);
-    
-    m_widgets["use_atr_for_tp"] = new QCheckBox("Utiliser ATR pour TP");
-    atrLayout->addRow(m_widgets["use_atr_for_tp"]);
-    
-    m_widgets["atr_period"] = new QSpinBox();
-    static_cast<QSpinBox*>(m_widgets["atr_period"])->setRange(1, 100);
-    static_cast<QSpinBox*>(m_widgets["atr_period"])->setValue(14);
-    atrLayout->addRow(new QLabel("Période ATR:"), m_widgets["atr_period"]);
-    
-    atrGroup->setLayout(atrLayout);
-    baseLayout->addWidget(atrGroup);
-    
     // Section Heures de trading
     QGroupBox* tradingHoursGroup = new QGroupBox("Heures de trading");
     QFormLayout* tradingHoursLayout = new QFormLayout();
     
     m_widgets["trading_from"] = new QTimeEdit();
-    static_cast<QTimeEdit*>(m_widgets["trading_from"])->setTime(QTime(7, 0));
+    static_cast<QTimeEdit*>(m_widgets["trading_from"])->setTime(QTime(15, 30));
     static_cast<QTimeEdit*>(m_widgets["trading_from"])->setDisplayFormat("hh:mm");
     tradingHoursLayout->addRow(new QLabel("Heure de début:"), m_widgets["trading_from"]);
     
     m_widgets["trading_to"] = new QTimeEdit();
-    static_cast<QTimeEdit*>(m_widgets["trading_to"])->setTime(QTime(23, 0));
+    static_cast<QTimeEdit*>(m_widgets["trading_to"])->setTime(QTime(22, 0));
     static_cast<QTimeEdit*>(m_widgets["trading_to"])->setDisplayFormat("hh:mm");
     tradingHoursLayout->addRow(new QLabel("Heure de fin:"), m_widgets["trading_to"]);
     
@@ -176,6 +163,9 @@ QGroupBox* StrategyBasePanel::create()
     QFormLayout* riskLayout = new QFormLayout();
     
     m_widgets["use_risk_based_sizing"] = new QCheckBox("Taille basée sur le risque");
+    QObject::connect(static_cast<QCheckBox*>(m_widgets["use_risk_based_sizing"]), 
+                     &QCheckBox::toggled,
+                     this, &StrategyBasePanel::_toggleRiskControls);
     riskLayout->addRow(m_widgets["use_risk_based_sizing"]);
     
     m_widgets["risk_percentage"] = new QDoubleSpinBox();
@@ -183,9 +173,13 @@ QGroupBox* StrategyBasePanel::create()
     static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setRange(0.1, 100.0);
     static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setValue(1.0);
     static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setSuffix("%");
+    static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setEnabled(false);
     riskLayout->addRow(new QLabel("Risque par trade:"), m_widgets["risk_percentage"]);
     
     m_widgets["use_daily_max_loss"] = new QCheckBox("Perte max journalière");
+    QObject::connect(static_cast<QCheckBox*>(m_widgets["use_daily_max_loss"]), 
+                     &QCheckBox::toggled,
+                     this, &StrategyBasePanel::_toggleDailyMaxLossControls);
     riskLayout->addRow(m_widgets["use_daily_max_loss"]);
     
     m_widgets["daily_max_loss_percentage"] = new QDoubleSpinBox();
@@ -193,6 +187,7 @@ QGroupBox* StrategyBasePanel::create()
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setRange(0.1, 50.0);
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setValue(2.0);
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setSuffix("%");
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setEnabled(false);
     riskLayout->addRow(new QLabel("Perte max journalière:"), m_widgets["daily_max_loss_percentage"]);
     
     riskGroup->setLayout(riskLayout);
@@ -203,12 +198,16 @@ QGroupBox* StrategyBasePanel::create()
     QFormLayout* breakEvenLayout = new QFormLayout();
     
     m_widgets["use_break_even"] = new QCheckBox("Activer Break Even");
+    QObject::connect(static_cast<QCheckBox*>(m_widgets["use_break_even"]), 
+                     &QCheckBox::toggled,
+                     this, &StrategyBasePanel::_toggleBreakEvenControls);
     breakEvenLayout->addRow(m_widgets["use_break_even"]);
     
     m_widgets["break_even_threshold"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setDecimals(2);
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setRange(0.1, 5.0);
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setValue(0.7);
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setEnabled(false);
     breakEvenLayout->addRow(new QLabel("Seuil Break Even:"), m_widgets["break_even_threshold"]);
     
     breakEvenGroup->setLayout(breakEvenLayout);
@@ -243,6 +242,17 @@ QMap<QString, QVariant> StrategyBasePanel::getValues()
         }
     }
     
+    // Ajouter les paramètres use_atr_for_sl et use_atr_for_tp basés sur les méthodes sélectionnées
+    if (m_widgets.contains("sl_method")) {
+        QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
+        values["use_atr_for_sl"] = (slMethod->currentIndex() == 1); // Index 1 = ATR
+    }
+    
+    if (m_widgets.contains("tp_method")) {
+        QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
+        values["use_atr_for_tp"] = (tpMethod->currentIndex() == 1); // Index 1 = ATR
+    }
+    
     // Ajouter la liste des jours de trading
     QVariantList tradingDays;
     for (int i = 0; i < 7; ++i) {
@@ -264,6 +274,11 @@ void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
     for (auto it = values.begin(); it != values.end(); ++it) {
         QString key = it.key();
         QVariant value = it.value();
+        
+        // Ignorer les paramètres calculés use_atr_for_sl et use_atr_for_tp
+        if (key == "use_atr_for_sl" || key == "use_atr_for_tp") {
+            continue;
+        }
         
         if (m_widgets.contains(key)) {
             QWidget* widget = m_widgets[key];
@@ -312,6 +327,9 @@ void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
             }
         }
     }
+    
+    // Mettre à jour l'état ATR après avoir défini toutes les valeurs
+    _updateAtrPeriodStatus();
 }
 
 // Implémentation des slots
@@ -333,6 +351,9 @@ void StrategyBasePanel::_toggleSlMethod(int index)
     if (m_widgets.contains("sl_minmax_delta")) {
         m_widgets["sl_minmax_delta"]->setEnabled(isMinMax);
     }
+    
+    // Mettre à jour le statut de la période ATR
+    _updateAtrPeriodStatus();
 }
 
 void StrategyBasePanel::_toggleTpMethod(int index)
@@ -346,11 +367,8 @@ void StrategyBasePanel::_toggleTpMethod(int index)
     if (m_widgets.contains("tp_atr_multiplier")) {
         m_widgets["tp_atr_multiplier"]->setEnabled(isAtr);
     }
-}
-
-void StrategyBasePanel::_toggleAtrControls(bool checked)
-{
-    Q_UNUSED(checked);
+    
+    // Mettre à jour le statut de la période ATR
     _updateAtrPeriodStatus();
 }
 
@@ -379,11 +397,16 @@ void StrategyBasePanel::_updateAtrPeriodStatus()
 {
     bool atrNeeded = false;
     
-    if (m_widgets.contains("use_atr_for_sl")) {
-        atrNeeded |= static_cast<QCheckBox*>(m_widgets["use_atr_for_sl"])->isChecked();
+    // Vérifier si Stop Loss utilise ATR
+    if (m_widgets.contains("sl_method")) {
+        QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
+        atrNeeded |= (slMethod->currentIndex() == 1); // Index 1 = ATR
     }
-    if (m_widgets.contains("use_atr_for_tp")) {
-        atrNeeded |= static_cast<QCheckBox*>(m_widgets["use_atr_for_tp"])->isChecked();
+    
+    // Vérifier si Take Profit utilise ATR
+    if (m_widgets.contains("tp_method")) {
+        QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
+        atrNeeded |= (tpMethod->currentIndex() == 1); // Index 1 = ATR
     }
     
     if (m_widgets.contains("atr_period")) {

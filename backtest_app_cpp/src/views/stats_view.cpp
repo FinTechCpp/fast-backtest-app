@@ -365,42 +365,69 @@ void StatsView::populateMetrics(void* stats)
                 QString formattedValue;
                 
                 // Formatage spécifique selon le type de métrique
-                if (qtKey.contains("return") || qtKey.contains("drawdown") || 
-                    qtKey.contains("volatility") || qtKey.contains("cagr") || 
-                    qtKey.contains("alpha") || qtKey.contains("expectancy") ||
-                    qtKey.endsWith("_trade")) {
-                    // Pourcentages
-                    formattedValue = formatPercentage(rawValue.toDouble());
-                } else if (qtKey.contains("equity") || qtKey.contains("final") || 
-                          qtKey.contains("peak")) {
-                    // Valeurs monétaires
-                    formattedValue = formatCurrency(rawValue.toDouble());
-                } else if (qtKey.contains("duration")) {
-                    // Durées
+                if (qtKey.endsWith("_duration") || pythonKey.contains("Duration")) {
+                    // Formatage des durées
+                    formattedValue = formatDuration(rawValue);
+                }
+                else if (pythonKey.contains("[%]")) {
+                    // Formatage des pourcentages
+                    bool ok;
+                    double value = rawValue.toDouble(&ok);
+                    if (ok && !std::isnan(value) && !std::isinf(value)) {
+                        formattedValue = QString("%1%").arg(QString::number(value, 'f', 2));
+                    } else {
+                        formattedValue = "N/A";
+                    }
+                }
+                else if (pythonKey.contains("[$]")) {
+                    // Formatage des devises
+                    bool ok;
+                    double value = rawValue.toDouble(&ok);
+                    if (ok && !std::isnan(value) && !std::isinf(value)) {
+                        formattedValue = formatCurrency(value);
+                    } else {
+                        formattedValue = "N/A";
+                    }
+                }
+                else if (qtKey == "total_trades" || qtKey == "winning_trades" || 
+                         qtKey == "losing_trades" || qtKey == "neutral_trades") {
+                    // Formatage des entiers
+                    bool ok;
+                    int value = rawValue.toInt(&ok);
+                    if (ok) {
+                        formattedValue = QString::number(value);
+                    } else {
+                        formattedValue = "N/A";
+                    }
+                }
+                else if (qtKey == "start" || qtKey == "end") {
+                    // Formatage des dates
                     formattedValue = rawValue.toString();
-                } else if (qtKey == "start" || qtKey == "end") {
-                    // Dates - convertir le timestamp Python en date lisible
-                    QDateTime dateTime = QDateTime::fromString(rawValue.toString(), Qt::ISODate);
-                    if (dateTime.isValid()) {
-                        formattedValue = dateTime.toString("yyyy-MM-dd hh:mm");
+                    if (formattedValue.contains("T")) {
+                        // Format ISO - extraire juste la date
+                        formattedValue = formattedValue.split("T").first();
+                    }
+                }
+                else {
+                    // Formatage générique pour les ratios et autres valeurs numériques
+                    bool ok;
+                    double value = rawValue.toDouble(&ok);
+                    if (ok && !std::isnan(value) && !std::isinf(value)) {
+                        formattedValue = QString::number(value, 'f', 3);
                     } else {
                         formattedValue = rawValue.toString();
-                    }
-                } else {
-                    // Valeurs numériques standard
-                    double value = rawValue.toDouble();
-                    if (std::isnan(value) || std::isinf(value)) {
-                        formattedValue = "N/A";
-                    } else {
-                        formattedValue = QString::number(value, 'f', 4);
+                        if (formattedValue.isEmpty() || formattedValue == "nan") {
+                            formattedValue = "N/A";
+                        }
                     }
                 }
                 
-                updateMetricWidget(qtKey, pythonKey, formattedValue);
+                // Mettre à jour le widget
+                m_metricWidgets[qtKey]->updateValues(formattedValue);
                 
             } catch (const std::exception& e) {
                 qWarning() << "Erreur lors de l'extraction de" << pythonKey << ":" << e.what();
-                updateMetricWidget(qtKey, pythonKey, "N/A");
+                m_metricWidgets[qtKey]->updateValues("N/A");
             }
         }
     }
@@ -488,22 +515,77 @@ QString StatsView::formatDuration(const QVariant& value)
 {
     QString strValue = value.toString();
     
-    // Si c'est déjà une chaîne formatée (ex: "584 days 00:00:00"), la retourner telle quelle
-    if (strValue.contains("days") || strValue.contains("hours") || strValue.contains("minutes")) {
-        return strValue;
+    // Si c'est déjà une chaîne formatée pandas (ex: "8 days 23:30:20")
+    if (strValue.contains("days") && strValue.contains(":")) {
+        // Parser le format pandas: "8 days 23:30:20"
+        QStringList parts = strValue.split(" ");
+        if (parts.size() >= 3) {
+            int days = parts[0].toInt();
+            QStringList timeParts = parts[2].split(":");
+            if (timeParts.size() >= 3) {
+                int hours = timeParts[0].toInt();
+                int minutes = timeParts[1].toInt();
+                int seconds = timeParts[2].toInt();
+                
+                return formatDetailedDuration(days, hours, minutes, seconds);
+            }
+        }
     }
     
-    // Sinon, essayer de la convertir
+    // Si c'est "0 days 00:00:00" ou équivalent
+    if (strValue.contains("0 days 00:00:00") || strValue == "0") {
+        return "0sec";
+    }
+    
+    // Si c'est NaN ou vide
+    if (strValue.isEmpty() || strValue == "nan" || strValue == "NaT") {
+        return "N/A";
+    }
+    
+    // Essayer de convertir en nombre (peut-être en jours décimaux)
     bool ok;
     double numValue = value.toDouble(&ok);
-    if (ok) {
-        // Supposer que c'est en jours
-        int days = static_cast<int>(numValue);
-        double hours = (numValue - days) * 24;
-        return QString("%1 jours %2h").arg(days).arg(QString::number(hours, 'f', 1));
+    if (ok && !std::isnan(numValue) && !std::isinf(numValue)) {
+        if (numValue == 0) {
+            return "0sec";
+        }
+        
+        // Convertir les jours décimaux en composants
+        int totalSeconds = static_cast<int>(numValue * 24 * 3600);
+        int days = totalSeconds / (24 * 3600);
+        totalSeconds %= (24 * 3600);
+        int hours = totalSeconds / 3600;
+        totalSeconds %= 3600;
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        
+        return formatDetailedDuration(days, hours, minutes, seconds);
     }
     
     return strValue;
+}
+
+QString StatsView::formatDetailedDuration(int days, int hours, int minutes, int seconds)
+{
+    QStringList parts;
+    
+    if (days > 0) {
+        parts.append(QString("%1J").arg(days));
+    }
+    
+    if (hours > 0) {
+        parts.append(QString("%1h").arg(hours, 2, 10, QChar('0')));
+    }
+    
+    if (minutes > 0) {
+        parts.append(QString("%1min").arg(minutes, 2, 10, QChar('0')));
+    }
+    
+    if (seconds > 0 || parts.isEmpty()) {
+        parts.append(QString("%1sec").arg(seconds, 2, 10, QChar('0')));
+    }
+    
+    return parts.join(" ");
 }
 
 void StatsView::updateMetricWidget(const QString& key, const QString& label, const QString& value)

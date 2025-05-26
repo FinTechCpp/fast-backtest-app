@@ -21,7 +21,7 @@ struct OHLCBar {
     double high;
     double low;
     double close;
-    double volume = 0.0;  // Optionnel
+    double volume = 0.0;  
     
     OHLCBar() = default;
     OHLCBar(const QDateTime& dt, double o, double h, double l, double c, double v = 0.0)
@@ -55,10 +55,7 @@ public:
         const QString& symbol = "NDX",
         const QString& interval = "10secs", 
         const QString& period = "1m",
-        const QDateTime& endDate = QDateTime(),
-        const QTime& tradingFrom = QTime(),
-        const QTime& tradingTo = QTime(),
-        const std::vector<int>& tradingDays = {}
+        const QDateTime& endDate = QDateTime()
     );
     
     /**
@@ -82,16 +79,12 @@ public:
      * @param filePath Chemin vers le fichier CSV
      * @param period Période à charger
      * @param endDate Date de fin
-     * @param tradingFrom Heure de début du trading
-     * @param tradingTo Heure de fin du trading
      * @return Vecteur de barres OHLC
      */
     static std::vector<OHLCBar> loadFromCSV(
         const QString& filePath,
         const QString& period,
-        const QString& endDate,
-        const QTime& tradingFrom,
-        const QTime& tradingTo
+        const QString& endDate
     );
     
     /**
@@ -105,30 +98,6 @@ public:
         const std::vector<OHLCBar>& data,
         const QDateTime& startDate,
         const QDateTime& endDate
-    );
-    
-    /**
-     * @brief Filtre les données par jours de trading
-     * @param data Données à filtrer
-     * @param tradingDays Jours de trading autorisés
-     * @return Données filtrées
-     */
-    static std::vector<OHLCBar> filterByTradingDays(
-        const std::vector<OHLCBar>& data,
-        const std::vector<int>& tradingDays
-    );
-    
-    /**
-     * @brief Filtre les données par heures de trading
-     * @param data Données à filtrer
-     * @param tradingFrom Heure de début
-     * @param tradingTo Heure de fin
-     * @return Données filtrées
-     */
-    static std::vector<OHLCBar> filterByTradingHours(
-        const std::vector<OHLCBar>& data,
-        const QTime& tradingFrom,
-        const QTime& tradingTo
     );
     
     /**

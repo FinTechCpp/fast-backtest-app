@@ -101,54 +101,6 @@ std::vector<OHLCBar> DataLoader::filterByPeriod(
     return filtered;
 }
 
-std::vector<OHLCBar> DataLoader::filterByTradingDays(
-    const std::vector<OHLCBar>& data,
-    const std::vector<int>& tradingDays)
-{
-    if (tradingDays.empty()) {
-        return data;
-    }
-    std::vector<OHLCBar> filtered;
-    filtered.reserve(data.size());
-    for (const auto& bar : data) {
-        // Qt: 1=Lundi, 7=Dimanche, mais nous utilisons 0=Lundi, 6=Dimanche
-        int dayOfWeek = bar.timestamp.date().dayOfWeek() - 1;
-        if (dayOfWeek == -1) dayOfWeek = 6; // Dimanche
-        if (std::find(tradingDays.begin(), tradingDays.end(), dayOfWeek) != tradingDays.end()) {
-            filtered.push_back(bar);
-        }
-    }
-    return filtered;
-}
-
-std::vector<OHLCBar> DataLoader::filterByTradingHours(
-    const std::vector<OHLCBar>& data,
-    const QTime& tradingFrom,
-    const QTime& tradingTo)
-{
-    if (!tradingFrom.isValid() || !tradingTo.isValid()) {
-        return data;
-    }
-    std::vector<OHLCBar> filtered;
-    filtered.reserve(data.size());
-    qDebug() << "Filtrage par heures de trading:"
-             << tradingFrom.toString("hh:mm")
-             << "à" << tradingTo.toString("hh:mm");
-    for (const auto& bar : data) {
-        QTime barTime = bar.timestamp.time();
-        bool inRange;
-        if (tradingTo > tradingFrom) {
-            inRange = (barTime >= tradingFrom && barTime <= tradingTo);
-        } else {
-            inRange = (barTime >= tradingFrom || barTime <= tradingTo);
-        }
-        if (inRange) {
-            filtered.push_back(bar);
-        }
-    }
-    return filtered;
-}
-
 int DataLoader::intervalToSeconds(const QString& interval)
 {
     QString lowerInterval = interval.toLower();
@@ -220,10 +172,7 @@ std::vector<OHLCBar> DataLoader::loadData(
     const QString& symbol,
     const QString& interval,
     const QString& period,
-    const QDateTime& endDate,
-    const QTime& tradingFrom,
-    const QTime& tradingTo,
-    const std::vector<int>& tradingDays)
+    const QDateTime& endDate)
 {
     try {
         qDebug() << "DataLoader::loadData called with symbol:" << symbol 
@@ -241,13 +190,7 @@ std::vector<OHLCBar> DataLoader::loadData(
         QDateTime actualEndDate = endDate.isValid() ? endDate : QDateTime::currentDateTime();
         QString endDateString = actualEndDate.toString("dd/MM/yyyy");
 
-        std::vector<OHLCBar> result = loadFromCSV(dataFile, period, endDateString, tradingFrom, tradingTo);
-        
-        // Filtrage par jours de trading si spécifiés
-        if (!tradingDays.empty()) {
-            result = filterByTradingDays(result, tradingDays);
-            qDebug() << "Après filtrage par jours:" << result.size() << "barres de prix";
-        }
+        std::vector<OHLCBar> result = loadFromCSV(dataFile, period, endDateString);
         
         return result;
     } catch (const std::exception& e) {
@@ -303,12 +246,10 @@ QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString
 std::vector<OHLCBar> DataLoader::loadFromCSV(
     const QString& filePath,
     const QString& period,
-    const QString& endDate,
-    const QTime& tradingFrom,
-    const QTime& tradingTo)
+    const QString& endDate)
 {
     std::vector<OHLCBar> data;
-    
+
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         qCritical() << "Impossible d'ouvrir le fichier:" << filePath;
@@ -399,11 +340,7 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     data = filterByPeriod(data, startDateTime, endDateTime);
     qDebug() << "Après filtrage par période:" << data.size() << "barres de prix";
     
-    // Filtrer par heures de trading si spécifiées
-    if (tradingFrom.isValid() && tradingTo.isValid()) {
-        data = filterByTradingHours(data, tradingFrom, tradingTo);
-        qDebug() << "Après filtrage par heures de trading:" << data.size() << "barres de prix";
-    }
+
     
     // Vérification des données chargées
     qDebug() << "Vérification des données chargées:";
@@ -431,7 +368,6 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line, bool hasH
         QString dateStr = fields[0].trimmed();
         QDateTime timestamp;
         
-        // CORRECTION: Add support for ISO 8601 format with timezone
         timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss+00:00");
         if (!timestamp.isValid()) {
             timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss.zzz+00:00");

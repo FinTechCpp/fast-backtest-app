@@ -155,8 +155,7 @@ void BacktestRunner::runBacktest()
     
     // Charger les données avec tous les paramètres
     std::vector<OHLCBar> data = DataLoader::loadData(
-        symbol, interval, period, endDate, tradingFrom, tradingTo, tradingDays
-    );
+        symbol, interval, period, endDate);
     
     if (data.empty()) {
         showError("Aucune donnée chargée");
@@ -313,7 +312,7 @@ void BacktestWorker::run()
         }
         
         qDebug() << "Émission du signal finished avec les bonnes données";
-        emit finished(data, stats);  // ✅ Correct !
+        emit finished(data, stats);  
         
     } catch (const std::exception& e) {
         qCritical() << "Exception dans BacktestWorker::run():" << e.what();

@@ -2,7 +2,6 @@
 #include "app.h"
 #include "panels/general_params_panel.h"
 #include "panels/strategy_base_panel.h"
-#include "panels/profile_panel.h"
 #include <QCoreApplication>
 
 ConfigManager::ConfigManager(QObject *parent)

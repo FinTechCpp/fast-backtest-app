@@ -256,6 +256,50 @@ std::vector<OHLCBar> DataLoader::loadData(
     }
 }
 
+QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString& period)
+{
+    QDateTime startDate = endDate;
+    
+    qDebug() << "Calcul de la date de début pour la période:" << period << "depuis:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+    
+    if (period.endsWith("d")) {
+        // Périodes en jours
+        bool ok;
+        int days = period.leftRef(period.length() - 1).toInt(&ok);
+        if (ok && days > 0) {
+            startDate = endDate.addDays(-days);
+        }
+    } else if (period.endsWith("w")) {
+        // Périodes en semaines
+        bool ok;
+        int weeks = period.leftRef(period.length() - 1).toInt(&ok);
+        if (ok && weeks > 0) {
+            startDate = endDate.addDays(-weeks * 7);
+        }
+    } else if (period.endsWith("m")) {
+        // Périodes en mois
+        bool ok;
+        int months = period.leftRef(period.length() - 1).toInt(&ok);
+        if (ok && months > 0) {
+            startDate = endDate.addMonths(-months);
+        }
+    } else if (period.endsWith("y")) {
+        // Périodes en années
+        bool ok;
+        int years = period.leftRef(period.length() - 1).toInt(&ok);
+        if (ok && years > 0) {
+            startDate = endDate.addYears(-years);
+        }
+    } else {
+        qWarning() << "Format de période non reconnu:" << period;
+        // Par défaut, prendre 10 jours
+        startDate = endDate.addDays(-10);
+    }
+    
+    qDebug() << "Date de début calculée:" << startDate.toString("dd/MM/yyyy hh:mm:ss");
+    return startDate;
+}
+
 std::vector<OHLCBar> DataLoader::loadFromCSV(
     const QString& filePath,
     const QString& period,
@@ -264,87 +308,110 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     const QTime& tradingTo)
 {
     std::vector<OHLCBar> data;
+    
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Impossible d'ouvrir le fichier:" << filePath;
+        qCritical() << "Impossible d'ouvrir le fichier:" << filePath;
         return data;
     }
+    
     QTextStream in(&file);
     QString line;
     bool isFirstLine = true;
     int lineCount = 0;
+    
     qDebug() << "Chargement des données depuis:" << filePath;
+    
     while (in.readLineInto(&line)) {
         lineCount++;
+        
+        // Ignorer la première ligne si c'est un en-tête
         if (isFirstLine) {
-            isFirstLine = false;
-            if (line.contains("date", Qt::CaseInsensitive) ||
-                line.contains("time", Qt::CaseInsensitive) ||
-                line.contains("open", Qt::CaseInsensitive)) {
+            // Vérifier si c'est probablement un en-tête
+            if (line.toLower().contains("date") || line.toLower().contains("time") || 
+                line.toLower().contains("open") || line.toLower().contains("high")) {
+                isFirstLine = false;
                 continue;
             }
+            isFirstLine = false;
         }
+        
         auto bar = parseCSVLine(line, false);
         if (bar) {
             data.push_back(*bar);
         }
+        
+        // Affichage du progrès
         if (lineCount % 100000 == 0) {
             qDebug() << "Lignes traitées:" << lineCount;
         }
     }
+    
     file.close();
     qDebug() << "Données chargées:" << data.size() << "barres de prix depuis" << filePath;
+    
     if (data.empty()) {
-        qWarning() << "Aucune donnée valide trouvée dans le fichier";
+        qWarning() << "Aucune donnée chargée depuis le fichier";
         return data;
     }
+    
+    // Trier par timestamp
     std::sort(data.begin(), data.end(),
               [](const OHLCBar& a, const OHLCBar& b) {
                   return a.timestamp < b.timestamp;
               });
-    // Standardiser les timestamps en heure française (NY + 6h)
-    for (auto& bar : data) {
-        bar.timestamp = bar.timestamp.addSecs(6 * 3600);
-    }
+    
+    // Calculer les dates de début et fin
     QDateTime endDateTime;
     if (endDate.isEmpty()) {
+        // Utiliser la dernière date des données
         endDateTime = data.back().timestamp;
-        qDebug() << "Date de fin automatique:" << endDateTime.toString("dd/MM/yyyy hh:mm:ss");
+        qDebug() << "Date de fin non spécifiée, utilisation de la dernière date des données:" 
+                 << endDateTime.toString("dd/MM/yyyy hh:mm:ss");
     } else {
-        // Parser la date fournie (supposée au format dd/MM/yyyy)
-        endDateTime = QDateTime::fromString(endDate, "dd/MM/yyyy");
-        if (!endDateTime.isValid()) {
-            endDateTime = QDateTime::fromString(endDate, "yyyy-MM-dd");
+        // Parser la date de fin fournie
+        QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
+        
+        for (const QString& format : dateFormats) {
+            QDate parsedDate = QDate::fromString(endDate, format);
+            if (parsedDate.isValid()) {
+                endDateTime = QDateTime(parsedDate, QTime(23, 59, 59));
+                break;
+            }
         }
+        
         if (!endDateTime.isValid()) {
-            qWarning() << "Format de date invalide:" << endDate;
+            qWarning() << "Impossible de parser la date de fin:" << endDate;
             endDateTime = data.back().timestamp;
-        } else {
-            // S'assurer que l'heure est à la fin de la journée
-            endDateTime.setTime(QTime(23, 59, 59));
-            qDebug() << "Date de fin parsée:" << endDateTime.toString("dd/MM/yyyy hh:mm:ss");
         }
+        
+        qDebug() << "Date de fin parsée:" << endDateTime.toString("dd/MM/yyyy hh:mm:ss");
     }
     
+    // Calculer la date de début selon la période
     QDateTime startDateTime = calculateStartDate(endDateTime, period);
+    
     qDebug() << "Filtrage des données pour la période"
              << startDateTime.toString("dd/MM/yyyy hh:mm")
              << "à" << endDateTime.toString("dd/MM/yyyy hh:mm");
+    
+    // Filtrer par période
     data = filterByPeriod(data, startDateTime, endDateTime);
     qDebug() << "Après filtrage par période:" << data.size() << "barres de prix";
+    
+    // Filtrer par heures de trading si spécifiées
     if (tradingFrom.isValid() && tradingTo.isValid()) {
         data = filterByTradingHours(data, tradingFrom, tradingTo);
-        qDebug() << "Après trading hours filter:" << data.size() << "bars";
+        qDebug() << "Après filtrage par heures de trading:" << data.size() << "barres de prix";
     }
     
+    // Vérification des données chargées
     qDebug() << "Vérification des données chargées:";
     if (!data.empty()) {
-        const auto& first = data.front();
-        const auto& last = data.back();
-        qDebug() << "Première barre:" << first.timestamp << "OHLC:" 
-                 << first.open << first.high << first.low << first.close;
-        qDebug() << "Dernière barre:" << last.timestamp << "OHLC:" 
-                 << last.open << last.high << last.low << last.close;
+        qDebug() << "Première barre:" << data.front().timestamp.toString("dd/MM/yyyy hh:mm:ss") 
+                 << "OHLC:" << data.front().open << data.front().high << data.front().low << data.front().close;
+        qDebug() << "Dernière barre:" << data.back().timestamp.toString("dd/MM/yyyy hh:mm:ss")
+                 << "OHLC:" << data.back().open << data.back().high << data.back().low << data.back().close;
     }
     
     return data;
@@ -410,32 +477,4 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line, bool hasH
         qWarning() << "Erreur lors de l'analyse de la ligne CSV:" << e.what();
         return nullptr;
     }
-}
-
-QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString& period)
-{
-    QDateTime startDate = endDate;
-    if (period.endsWith("y")) {
-        bool ok;
-        int years = period.leftRef(period.length() - 1).toInt(&ok);
-        if (ok) {
-            startDate = endDate.addYears(-years);
-        }
-    } else if (period.endsWith("m")) {
-        bool ok;
-        int months = period.leftRef(period.length() - 1).toInt(&ok);
-        if (ok) {
-            startDate = endDate.addMonths(-months);
-        }
-    } else if (period.endsWith("d")) {
-        bool ok;
-        int days = period.leftRef(period.length() - 1).toInt(&ok);
-        if (ok) {
-            startDate = endDate.addDays(-days);
-        }
-    } else {
-        qWarning() << "Période non reconnue:" << period << ". Utilisez '1y', '6m', '30d', etc.";
-        startDate = endDate.addMonths(-1);
-    }
-    return startDate;
 }

@@ -3,6 +3,9 @@
 #include "../config_manager.h"
 #include "../data_loader.h"
 #include "../app.h"
+#include "../panels/general_params_panel.h"
+#include "../panels/strategy_base_panel.h"
+#include "../panels/base_panel.h"
 #include <QDebug>
 
 BacktestRunner::BacktestRunner(QObject* parent)
@@ -71,27 +74,88 @@ void BacktestRunner::runBacktest()
     
     emit backtestStarted();
     
-    // Récupérer les paramètres
-    QMap<QString, QVariant> allParams = m_mainWindow->getStrategyConfig();
+    // Récupérer TOUS les paramètres depuis les panels
+    QMap<QString, QVariant> allParams;
     
-    // Récupérer la date de fin depuis la configuration
+    // Paramètres généraux
+    if (m_mainWindow->getGeneralParamsPanel()) {
+        QMap<QString, QVariant> generalParams = m_mainWindow->getGeneralParamsPanel()->getValues();
+        for (auto it = generalParams.begin(); it != generalParams.end(); ++it) {
+            allParams[it.key()] = it.value();
+        }
+    }
+    
+    // Paramètres de base de stratégie
+    if (m_mainWindow->getStrategyBasePanel()) {
+        QMap<QString, QVariant> baseParams = m_mainWindow->getStrategyBasePanel()->getValues();
+        for (auto it = baseParams.begin(); it != baseParams.end(); ++it) {
+            allParams[it.key()] = it.value();
+        }
+    }
+    
+    // Paramètres spécifiques à la stratégie
+    if (m_mainWindow->getStrategySpecificPanel()) {
+        QMap<QString, QVariant> specificParams = m_mainWindow->getStrategySpecificPanel()->getValues();
+        for (auto it = specificParams.begin(); it != specificParams.end(); ++it) {
+            allParams[it.key()] = it.value();
+        }
+    }
+    
+    qDebug() << "Tous les paramètres récupérés:" << allParams;
+    
+    // Extraire les paramètres pour le chargement des données
+    QString symbol = allParams.value("symbol", "NDX").toString();
+    QString interval = allParams.value("interval", "20secs").toString();
+    QString period = allParams.value("period", "10d").toString();
+    
+    // Récupérer la date de fin et la convertir correctement
     QDateTime endDate;
     if (allParams.contains("end_date")) {
         QVariant dateVariant = allParams["end_date"];
         if (dateVariant.type() == QVariant::Date) {
-            endDate = dateVariant.toDate().startOfDay();
+            endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
         } else if (dateVariant.type() == QVariant::DateTime) {
             endDate = dateVariant.toDateTime();
-        } else {
-            // Tenter de parser une chaîne
+        } else if (dateVariant.type() == QVariant::String) {
             QString dateStr = dateVariant.toString();
-            endDate = QDateTime::fromString(dateStr, "dd/MM/yyyy");
+            QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
+            
+            for (const QString& format : dateFormats) {
+                QDate parsedDate = QDate::fromString(dateStr, format);
+                if (parsedDate.isValid()) {
+                    endDate = QDateTime(parsedDate, QTime(23, 59, 59));
+                    break;
+                }
+            }
         }
     }
     
-    // Charger les données avec la bonne date
+    if (!endDate.isValid()) {
+        endDate = QDateTime::currentDateTime();
+    }
+    
+    qDebug() << "Paramètres de chargement des données:";
+    qDebug() << "- Symbole:" << symbol;
+    qDebug() << "- Intervalle:" << interval;
+    qDebug() << "- Période:" << period;
+    qDebug() << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+    
+    // Récupérer les heures de trading
+    QTime tradingFrom = QTime::fromString(allParams.value("trading_from", "07:00:00").toString(), "hh:mm:ss");
+    QTime tradingTo = QTime::fromString(allParams.value("trading_to", "23:00:00").toString(), "hh:mm:ss");
+    
+    // Récupérer les jours de trading
+    std::vector<int> tradingDays;
+    if (allParams.contains("trading_days")) {
+        QVariantList daysList = allParams["trading_days"].toList();
+        for (const QVariant& day : daysList) {
+            tradingDays.push_back(day.toInt());
+        }
+    }
+    
+    // Charger les données avec tous les paramètres
     std::vector<OHLCBar> data = DataLoader::loadData(
-        "NDX", "20secs", "10d", endDate, QTime(), QTime(), {}
+        symbol, interval, period, endDate, tradingFrom, tradingTo, tradingDays
     );
     
     if (data.empty()) {
@@ -104,7 +168,7 @@ void BacktestRunner::runBacktest()
     double cash = allParams.value("cash", 100000.0).toDouble();
     double spread = allParams.value("spread", 0.0001).toDouble();
     
-    // Créer et lancer le worker
+    // Créer et lancer le worker avec TOUS les paramètres
     m_worker = new BacktestWorker(data, strategyClass, cash, spread, allParams, this);
     
     connect(m_worker, &BacktestWorker::finished, this, &BacktestRunner::onBacktestFinished);

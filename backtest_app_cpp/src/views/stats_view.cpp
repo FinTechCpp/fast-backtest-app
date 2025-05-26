@@ -24,10 +24,11 @@ void TradesTableModel::updateData(const QList<QVariantMap>& trades)
         return;
     }
     
-    // Configurer les en-têtes basés sur les données
+    // Configurer les en-têtes selon les colonnes du DataFrame _trades
     QStringList headers;
     headers << "#" << "Type" << "Taille" << "Prix d'entrée" << "Prix de sortie" 
-            << "PnL" << "PnL %" << "Durée" << "Date d'entrée" << "Date de sortie";
+            << "PnL" << "PnL %" << "Durée" << "Date d'entrée" << "Date de sortie"
+            << "SL" << "TP" << "Tag";
     setHorizontalHeaderLabels(headers);
     
     // Ajouter les nouvelles données
@@ -36,25 +37,109 @@ void TradesTableModel::updateData(const QList<QVariantMap>& trades)
     for (int row = 0; row < trades.size(); ++row) {
         const QVariantMap& trade = trades[row];
         
+        // # (numéro de trade)
         setItem(row, 0, new QStandardItem(QString::number(row + 1)));
-        setItem(row, 1, new QStandardItem(trade.value("Size").toDouble() > 0 ? "LONG" : "SHORT"));
-        setItem(row, 2, new QStandardItem(formatNumber(qAbs(trade.value("Size").toDouble()), 4)));
-        setItem(row, 3, new QStandardItem(formatNumber(trade.value("EntryPrice").toDouble(), 2)));
-        setItem(row, 4, new QStandardItem(formatNumber(trade.value("ExitPrice").toDouble(), 2)));
-        setItem(row, 5, new QStandardItem(formatNumber(trade.value("PnL").toDouble(), 2)));
-        setItem(row, 6, new QStandardItem(formatNumber(trade.value("ReturnPct").toDouble(), 2) + "%"));
-        setItem(row, 7, new QStandardItem(trade.value("Duration").toString()));
-        setItem(row, 8, new QStandardItem(trade.value("EntryTime").toString()));
-        setItem(row, 9, new QStandardItem(trade.value("ExitTime").toString()));
         
-        // Colorer les PnL selon le gain/perte
+        // Type (LONG/SHORT basé sur la taille)
+        double size = trade.value("Size").toDouble();
+        QString tradeType = size > 0 ? "LONG" : "SHORT";
+        QStandardItem* typeItem = new QStandardItem(tradeType);
+        typeItem->setForeground(size > 0 ? Qt::darkGreen : Qt::darkRed);
+        setItem(row, 1, typeItem);
+        
+        // Taille (valeur absolue)
+        setItem(row, 2, new QStandardItem(formatNumber(qAbs(size), 4)));
+        
+        // Prix d'entrée
+        setItem(row, 3, new QStandardItem(formatNumber(trade.value("EntryPrice").toDouble(), 2)));
+        
+        // Prix de sortie
+        setItem(row, 4, new QStandardItem(formatNumber(trade.value("ExitPrice").toDouble(), 2)));
+        
+        // PnL
         double pnl = trade.value("PnL").toDouble();
-        QColor color = pnl >= 0 ? Qt::darkGreen : Qt::darkRed;
-        item(row, 5)->setForeground(color);
-        item(row, 6)->setForeground(color);
+        QStandardItem* pnlItem = new QStandardItem(formatNumber(pnl, 2));
+        pnlItem->setForeground(pnl >= 0 ? Qt::darkGreen : Qt::darkRed);
+        setItem(row, 5, pnlItem);
+        
+        // PnL %
+        double returnPct = trade.value("ReturnPct").toDouble();
+        QStandardItem* pctItem = new QStandardItem(formatNumber(returnPct * 100, 2) + "%");
+        pctItem->setForeground(returnPct >= 0 ? Qt::darkGreen : Qt::darkRed);
+        setItem(row, 6, pctItem);
+        
+        // Durée
+        QString duration = trade.value("Duration").toString();
+        setItem(row, 7, new QStandardItem(formatDuration(duration)));
+        
+        // Date d'entrée
+        QString entryTime = trade.value("EntryTime").toString();
+        setItem(row, 8, new QStandardItem(formatDateTime(entryTime)));
+        
+        // Date de sortie
+        QString exitTime = trade.value("ExitTime").toString();
+        setItem(row, 9, new QStandardItem(formatDateTime(exitTime)));
+        
+        // Stop Loss
+        QVariant slValue = trade.value("SL");
+        QString slText = slValue.isNull() || slValue.toString() == "None" ? "-" : 
+                        formatNumber(slValue.toDouble(), 2);
+        setItem(row, 10, new QStandardItem(slText));
+        
+        // Take Profit
+        QVariant tpValue = trade.value("TP");
+        QString tpText = tpValue.isNull() || tpValue.toString() == "None" ? "-" : 
+                        formatNumber(tpValue.toDouble(), 2);
+        setItem(row, 11, new QStandardItem(tpText));
+        
+        // Tag
+        QString tag = trade.value("Tag").toString();
+        if (tag.isEmpty() || tag == "None") {
+            tag = "-";
+        }
+        setItem(row, 12, new QStandardItem(tag));
     }
     
     endResetModel();
+}
+
+// Ajouter cette méthode helper dans TradesTableModel
+QString TradesTableModel::formatDuration(const QString& duration)
+{
+    if (duration.contains("days") && duration.contains(":")) {
+        // Parse "0 days 00:00:40" format
+        QStringList parts = duration.split(" ");
+        if (parts.size() >= 3) {
+            int days = parts[0].toInt();
+            QStringList timeParts = parts[2].split(":");
+            if (timeParts.size() >= 3) {
+                int hours = timeParts[0].toInt();
+                int minutes = timeParts[1].toInt();
+                int seconds = timeParts[2].toInt();
+                
+                if (days > 0) {
+                    return QString("%1j %2h%3m").arg(days).arg(hours, 2, 10, QChar('0')).arg(minutes, 2, 10, QChar('0'));
+                } else if (hours > 0) {
+                    return QString("%1h%2m%3s").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
+                } else if (minutes > 0) {
+                    return QString("%1m%2s").arg(minutes).arg(seconds, 2, 10, QChar('0'));
+                } else {
+                    return QString("%1s").arg(seconds);
+                }
+            }
+        }
+    }
+    return duration;
+}
+
+QString TradesTableModel::formatDateTime(const QString& dateTime)
+{
+    // Format "2025-03-27 15:30:40" -> "27/03 15:30:40"
+    QDateTime dt = QDateTime::fromString(dateTime, "yyyy-MM-dd hh:mm:ss");
+    if (dt.isValid()) {
+        return dt.toString("dd/MM hh:mm:ss");
+    }
+    return dateTime;
 }
 
 QString TradesTableModel::formatNumber(double value, int precision)
@@ -84,7 +169,6 @@ StatsView::StatsView(QWidget* parent)
     , m_showAllTradesBtn(nullptr)
     , m_equityGroup(nullptr)
     , m_equityLayout(nullptr)
-    , m_equityTable(nullptr)
     , m_showEquityBtn(nullptr)
     , m_equityLimitCombo(nullptr)
     , m_equityStack(nullptr)
@@ -95,7 +179,6 @@ StatsView::StatsView(QWidget* parent)
     
     // Créer les modèles de données
     m_tradesModel = new TradesTableModel(this);
-    m_equityModel = new TradesTableModel(this);
     
     // Construire l'interface dans le constructeur
     setupUI();
@@ -287,12 +370,87 @@ MetricWidget* StatsView::createMetricWidget(const QString& key, const QString& l
 
 void StatsView::createTradesTable()
 {
-    // TODO: Implémenter la création de la table des trades
-}
+    if (m_tablesCreated) {
+        return;
+    }
+    
+    qDebug() << "Création de la table des trades...";
+    
+    // Créer le groupe pour les trades
+    m_tradesGroup = new QGroupBox("Trades Réalisés");
+    m_tradesLayout = new QVBoxLayout(m_tradesGroup);
+    
+    // Créer les contrôles de la table
+    QHBoxLayout* tradesControlsLayout = new QHBoxLayout();
+    
+    // ComboBox pour limiter le nombre de trades affichés
+    m_tradesLimitCombo = new QComboBox();
+    m_tradesLimitCombo->addItem("50 derniers", 50);
+    m_tradesLimitCombo->addItem("100 derniers", 100);
+    m_tradesLimitCombo->addItem("200 derniers", 200);
+    m_tradesLimitCombo->addItem("Tous", -1);
+    m_tradesLimitCombo->setCurrentIndex(0); // 50 par défaut
+    
+    // Bouton pour afficher tous les trades
+    m_showAllTradesBtn = new QPushButton("Afficher tous les trades");
+    
+    // Label informatif
+    QLabel* tradesInfoLabel = new QLabel("Trades:");
+    
+    tradesControlsLayout->addWidget(tradesInfoLabel);
+    tradesControlsLayout->addWidget(m_tradesLimitCombo);
+    tradesControlsLayout->addWidget(m_showAllTradesBtn);
+    tradesControlsLayout->addStretch();
+    
+    // Créer la table des trades
+    m_tradesTable = new QTableView();
+    m_tradesTable->setModel(m_tradesModel);
+    
+    // Configuration de la table
+    m_tradesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_tradesTable->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_tradesTable->setAlternatingRowColors(true);
+    m_tradesTable->setSortingEnabled(true);
+    m_tradesTable->verticalHeader()->setVisible(false);
+    
+    // Ajuster les colonnes
+    QHeaderView* header = m_tradesTable->horizontalHeader();
+    header->setStretchLastSection(false);
+    header->setSectionResizeMode(QHeaderView::Interactive);
+    
+    // Définir des largeurs minimales pour certaines colonnes
+    m_tradesTable->setColumnWidth(0, 50);  // #
+    m_tradesTable->setColumnWidth(1, 80);  // Type
+    m_tradesTable->setColumnWidth(2, 100); // Taille
+    m_tradesTable->setColumnWidth(3, 120); // Prix d'entrée
+    m_tradesTable->setColumnWidth(4, 120); // Prix de sortie
+    m_tradesTable->setColumnWidth(5, 100); // PnL
+    m_tradesTable->setColumnWidth(6, 80);  // PnL %
+    m_tradesTable->setColumnWidth(7, 100); // Durée
 
-void StatsView::createEquityTable()
-{
-    // TODO: Implémenter la création de la table d'équité
+    // Hauteur de la table
+    m_tradesTable->setMaximumHeight(1000);  // Très grande table
+    m_tradesTable->setMinimumHeight(400);
+    
+    // Ajouter les widgets au layout
+    m_tradesLayout->addLayout(tradesControlsLayout);
+    m_tradesLayout->addWidget(m_tradesTable);
+    
+    // Connecter les signaux
+    connect(m_tradesLimitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &StatsView::refreshTradesTable);
+    connect(m_showAllTradesBtn, &QPushButton::clicked, [this]() {
+        m_tradesLimitCombo->setCurrentIndex(3); // Index pour "Tous"
+        refreshTradesTable();
+    });
+    
+    // Ajouter le groupe à la layout principale
+    m_statsContentLayout->addWidget(m_tradesGroup);
+    
+    // Masquer initialement
+    m_tradesGroup->setVisible(false);
+    
+    qDebug() << "Table des trades créée avec succès";
 }
 
 void StatsView::populateMetrics(void* stats)
@@ -453,6 +611,11 @@ void StatsView::populateTrades(void* stats)
             m_tradesGroup->setVisible(!trades.isEmpty());
         }
         
+        // Mettre à jour le bouton avec le nombre total
+        if (m_showAllTradesBtn) {
+            m_showAllTradesBtn->setText(QString("Afficher tous les trades (%1)").arg(trades.size()));
+        }
+        
         qDebug() << "Table des trades mise à jour avec" << trades.size() << "trades";
         
     } catch (const std::exception& e) {
@@ -609,62 +772,33 @@ void StatsView::refreshTradesTable()
     
     // Récupérer les données de trades via PyBindingManager
     PyBindingManager& pyManager = PyBindingManager::getInstance();
-    QList<QVariantMap> trades = pyManager.getTrades(m_currentStats);
+    QList<QVariantMap> allTrades = pyManager.getTradesData(m_currentStats);
+    
+    // Appliquer la limitation si nécessaire
+    QList<QVariantMap> trades = allTrades;
+    if (m_tradesLimitCombo) {
+        int limit = m_tradesLimitCombo->currentData().toInt();
+        if (limit > 0 && allTrades.size() > limit) {
+            // Prendre les derniers trades (les plus récents)
+            trades = allTrades.mid(allTrades.size() - limit);
+        }
+    }
     
     // Mettre à jour le modèle
     m_tradesModel->updateData(trades);
     
-    qDebug() << "Table des trades mise à jour avec" << trades.size() << "trades";
+    // Mettre à jour le texte du bouton avec le nombre total
+    if (m_showAllTradesBtn) {
+        m_showAllTradesBtn->setText(QString("Afficher tous les trades (%1)").arg(allTrades.size()));
+    }
+    
+    qDebug() << "Table des trades mise à jour avec" << trades.size() << "/" << allTrades.size() << "trades";
 }
 
-void StatsView::refreshEquityTable()
-{
-    qDebug() << "StatsView::refreshEquityTable() appelé";
-    
-    if (!m_equityModel || !m_currentStats) {
-        qWarning() << "Modèle d'équité ou stats non initialisés";
-        return;
-    }
-    
-    // Récupérer les données d'équité via PyBindingManager
-    PyBindingManager& pyManager = PyBindingManager::getInstance();
-    QList<QVariantMap> equity = pyManager.getEquityCurve(m_currentStats);
-    
-    // Mettre à jour le modèle
-    m_equityModel->updateData(equity);
-    
-    qDebug() << "Table d'équité mise à jour avec" << equity.size() << "points";
-}
-
-void StatsView::toggleEquityTable()
-{
-    qDebug() << "StatsView::toggleEquityTable() appelé";
-    
-    if (!m_equityStack) {
-        qWarning() << "Stack d'équité non initialisé";
-        return;
-    }
-    
-    // Alterner entre l'affichage de la table et un placeholder
-    if (m_equityStack->currentIndex() == 0) {
-        // Montrer la table d'équité
-        refreshEquityTable();
-        m_equityStack->setCurrentIndex(1);
-        if (m_showEquityBtn) {
-            m_showEquityBtn->setText("Masquer la courbe d'équité");
-        }
-    } else {
-        // Cacher la table d'équité
-        m_equityStack->setCurrentIndex(0);
-        if (m_showEquityBtn) {
-            m_showEquityBtn->setText("Afficher la courbe d'équité");
-        }
-    }
-}
 
 void StatsView::updateData(void* data, void* stats)
 {
-    Q_UNUSED(data);  // Les données ne sont pas utilisées pour les stats
+    Q_UNUSED(data);
 
     QTime start = QTime::currentTime();
     qDebug() << "StatsView::updateData() appelé";
@@ -682,7 +816,6 @@ void StatsView::updateData(void* data, void* stats)
         // Créer les tables si ce n'est pas déjà fait
         if (!m_tablesCreated) {
             createTradesTable();
-            createEquityTable();
             m_tablesCreated = true;
         }
         

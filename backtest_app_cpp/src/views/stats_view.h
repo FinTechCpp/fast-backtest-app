@@ -42,6 +42,10 @@ public:
     TradesTableModel(QObject* parent = nullptr);
     void updateData(const QList<QVariantMap>& trades);
     static QString formatNumber(double value, int precision = 2);
+    
+private:
+    static QString formatDuration(const QString& duration);
+    static QString formatDateTime(const QString& dateTime);
 };
 
 /**
@@ -63,8 +67,6 @@ protected:
 
 private slots:
     void refreshTradesTable();
-    void refreshEquityTable();
-    void toggleEquityTable();
 
 private:
     // Modèles de données
@@ -95,7 +97,6 @@ private:
     // Section equity
     QGroupBox* m_equityGroup;
     QVBoxLayout* m_equityLayout;
-    QTableView* m_equityTable;
     QPushButton* m_showEquityBtn;
     QComboBox* m_equityLimitCombo;
     QStackedWidget* m_equityStack;
@@ -113,7 +114,6 @@ private:
     void createRiskSection(QGridLayout* layout);
     void createGeneralSection(QGridLayout* layout);
     void createTradesTable();
-    void createEquityTable();
     MetricWidget* createMetricWidget(const QString& key, const QString& label, 
                                      const QString& value, int row, int col, 
                                      QGridLayout* layout);

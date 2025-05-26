@@ -140,10 +140,6 @@ void BacktestRunner::runBacktest()
     qDebug() << "- Période:" << period;
     qDebug() << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
     
-    // Récupérer les heures de trading
-    QTime tradingFrom = QTime::fromString(allParams.value("trading_from", "07:00:00").toString(), "hh:mm:ss");
-    QTime tradingTo = QTime::fromString(allParams.value("trading_to", "23:00:00").toString(), "hh:mm:ss");
-    
     // Récupérer les jours de trading
     std::vector<int> tradingDays;
     if (allParams.contains("trading_days")) {

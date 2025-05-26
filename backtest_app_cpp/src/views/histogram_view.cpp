@@ -2,6 +2,209 @@
 #include <QDebug>
 #include <QDateTime>
 #include <QTime>
+#include <QGraphicsScene>
+#include <QPen>
+#include <QBrush>
+#include <QFont>
+
+// Implémentation de InteractiveChartView
+InteractiveChartView::InteractiveChartView(QChart* chart, QWidget* parent)
+    : QChartView(chart, parent)
+    , m_horizontalLine(nullptr)
+    , m_verticalLine(nullptr)
+    , m_tooltipItem(nullptr)
+    , m_crosshairVisible(false)
+{
+    setMouseTracking(true);
+    setRubberBand(QChartView::NoRubberBand);
+    
+    // Créer les lignes de crosshair
+    QPen crosshairPen(Qt::gray, 1, Qt::DashLine);
+    
+    m_horizontalLine = new QGraphicsLineItem();
+    m_horizontalLine->setPen(crosshairPen);
+    m_horizontalLine->setVisible(false);
+    scene()->addItem(m_horizontalLine);
+    
+    m_verticalLine = new QGraphicsLineItem();
+    m_verticalLine->setPen(crosshairPen);
+    m_verticalLine->setVisible(false);
+    scene()->addItem(m_verticalLine);
+    
+    // Créer l'élément de tooltip
+    m_tooltipItem = new QGraphicsTextItem();
+    m_tooltipItem->setFont(QFont("Arial", 10));
+    m_tooltipItem->setDefaultTextColor(Qt::black);
+    
+    // Style du tooltip
+    QBrush tooltipBrush(QColor(255, 255, 224, 200)); // Jaune clair semi-transparent
+    m_tooltipItem->setFlag(QGraphicsItem::ItemIgnoresTransformations);
+    m_tooltipItem->setVisible(false);
+    scene()->addItem(m_tooltipItem);
+}
+
+void InteractiveChartView::setTooltipData(const QStringList& categories, const QList<double>& values, 
+                                         const QMap<QString, QDateTime>& fullDates)
+{
+    m_categories = categories;
+    m_values = values;
+    m_fullDates = fullDates;
+}
+
+void InteractiveChartView::mouseMoveEvent(QMouseEvent* event)
+{
+    QChartView::mouseMoveEvent(event);
+    
+    if (chart() && !m_categories.isEmpty()) {
+        QPointF chartPos = chart()->mapToValue(event->pos());
+        
+        // Discrétiser la position X
+        int barIndex = qRound(chartPos.x());
+        barIndex = qMax(0, qMin(barIndex, m_categories.size() - 1));
+        
+        // Utiliser la position discrétisée pour le tooltip
+        QPointF discreteChartPos(barIndex, chartPos.y());
+        
+        // Pour le crosshair, utiliser la position de la souris convertie
+        QPointF discreteViewPos = chart()->mapToPosition(QPointF(barIndex, chartPos.y()));
+        
+        showCrosshair(discreteViewPos);
+        updateTooltip(discreteChartPos);
+    }
+}
+
+void InteractiveChartView::leaveEvent(QEvent* event)
+{
+    QChartView::leaveEvent(event);
+    hideCrosshair();
+}
+
+void InteractiveChartView::showCrosshair(const QPointF& position)
+{
+    if (!chart()) return;
+    
+    QRectF plotArea = chart()->plotArea();
+    
+    // Ligne horizontale
+    m_horizontalLine->setLine(plotArea.left(), position.y(), 
+                             plotArea.right(), position.y());
+    m_horizontalLine->setVisible(true);
+    
+    // Ligne verticale
+    m_verticalLine->setLine(position.x(), plotArea.top(), 
+                           position.x(), plotArea.bottom());
+    m_verticalLine->setVisible(true);
+    
+    m_crosshairVisible = true;
+}
+
+void InteractiveChartView::hideCrosshair()
+{
+    if (m_horizontalLine) m_horizontalLine->setVisible(false);
+    if (m_verticalLine) m_verticalLine->setVisible(false);
+    if (m_tooltipItem) m_tooltipItem->setVisible(false);
+    m_crosshairVisible = false;
+}
+
+void InteractiveChartView::updateTooltip(const QPointF& chartPos)
+{
+    if (m_categories.isEmpty() || m_values.isEmpty()) return;
+    
+    // Déterminer quelle barre est sous le curseur
+    int barIndex = qRound(chartPos.x());
+    
+    if (barIndex >= 0 && barIndex < m_categories.size()) {
+        QString category = m_categories[barIndex];
+        double value = m_values[barIndex];
+        
+        // Créer le texte du tooltip avec des informations adaptées à la période
+        QString tooltipText = createTooltipText(category, value);
+        
+        m_tooltipItem->setHtml(tooltipText);
+        
+        // Positionner le tooltip près du curseur
+        QPointF scenePos = mapToScene(mapFromGlobal(QCursor::pos()));
+        QRectF tooltipRect = m_tooltipItem->boundingRect();
+        
+        // Ajuster la position pour éviter que le tooltip sorte de l'écran
+        qreal x = scenePos.x() + 15;
+        qreal y = scenePos.y() - tooltipRect.height() - 15;
+        
+        QRectF chartRect = chart()->plotArea();
+        if (x + tooltipRect.width() > chartRect.right()) {
+            x = scenePos.x() - tooltipRect.width() - 15;
+        }
+        if (y < chartRect.top()) {
+            y = scenePos.y() + 15;
+        }
+        
+        m_tooltipItem->setPos(x, y);
+        m_tooltipItem->setVisible(true);
+    }
+}
+
+QString InteractiveChartView::createTooltipText(const QString& category, double value)
+{
+    // Déterminer le type de période à partir de la catégorie
+    QString periodLabel;
+    QString detailedInfo = category; // Par défaut, utiliser la catégorie
+    
+    if (m_fullDates.contains(category)) {
+        QDateTime referenceDate = m_fullDates[category];
+        
+        // Analyser le format de la catégorie pour déterminer le type de période
+        if (category.contains("/") && category.length() <= 10) {
+            // Format jour: "27/03/2025"
+            periodLabel = "Jour";
+            detailedInfo = referenceDate.toString("dddd dd MMMM yyyy");
+        }
+        else if (category.startsWith("S") && category.contains("(")) {
+            // Format semaine: "S13 (25/03 - 31/03)"
+            periodLabel = "Semaine";
+            // Extraire le numéro de semaine et l'année
+            int weekNumber = referenceDate.date().weekNumber();
+            int year = referenceDate.date().year();
+            QDate weekStart = referenceDate.date().addDays(-(referenceDate.date().dayOfWeek() - 1));
+            QDate weekEnd = weekStart.addDays(6);
+            detailedInfo = QString("S%1 de %2 (%3 au %4)")
+                          .arg(weekNumber)
+                          .arg(year)
+                          .arg(weekStart.toString("dd MMMM"))
+                          .arg(weekEnd.toString("dd MMMM"));
+        }
+        else if (category.contains("/") && category.length() == 7) {
+            // Format mois: "03/2025"
+            periodLabel = "Mois";
+            detailedInfo = referenceDate.toString("MMMM yyyy");
+        }
+        else if (category.startsWith("T")) {
+            // Format trimestre: "T1 2025"
+            periodLabel = "Trimestre";
+            int quarter = (referenceDate.date().month() - 1) / 3 + 1;
+            QString quarterNames[] = {"", "1er trimestre", "2ème trimestre", "3ème trimestre", "4ème trimestre"};
+            detailedInfo = QString("%1 %2").arg(quarterNames[quarter]).arg(referenceDate.date().year());
+        }
+        else if (category.length() == 4) {
+            // Format année: "2025"
+            periodLabel = "Année";
+            detailedInfo = QString("Année %1").arg(category);
+        }
+    }
+    
+    // Créer le texte du tooltip
+    QString tooltipText = QString(
+        "<div style='background-color: rgba(255,255,224,240); "
+        "border: 1px solid gray; padding: 8px; border-radius: 4px;'>"
+        "<b>%1:</b> %2<br/>"
+        "<b>P&L total:</b> <span style='color: %4;'>%3$</span>"
+        "</div>")
+        .arg(periodLabel.isEmpty() ? "Période" : periodLabel)
+        .arg(detailedInfo)
+        .arg(QString::number(value, 'f', 2))
+        .arg(value >= 0 ? "green" : "red");
+    
+    return tooltipText;
+}
 
 HistogramView::HistogramView(QWidget* parent)
     : BaseView(parent)
@@ -50,7 +253,7 @@ void HistogramView::setupUI()
     m_chart->setAnimationOptions(QChart::SeriesAnimations);
     m_chart->legend()->setVisible(false);
     
-    m_chartView = new QChartView(m_chart);
+    m_chartView = new InteractiveChartView(m_chart);  
     m_chartView->setRenderHint(QPainter::Antialiasing);
     
     // Message placeholder initial
@@ -98,13 +301,36 @@ void HistogramView::updateHistogram()
         return;
     }
     
-    // TODO: Implémenter la récupération des données depuis PyBindingManager
-    // Pour l'instant, créer des données de test
-    GroupedData testData;
-    testData.categories = QStringList({"Jan", "Feb", "Mar", "Apr", "May"});
-    testData.values = QList<double>({100.0, -50.0, 75.0, -25.0, 150.0});
+    qDebug() << "Mise à jour de l'histogramme avec les données réelles...";
     
-    createChart(testData);
+    // Récupérer les données de trades depuis PyBindingManager
+    PyBindingManager& pyManager = PyBindingManager::getInstance();
+    QList<QVariantMap> trades = pyManager.getTradesData(m_currentStats);
+    
+    if (trades.isEmpty()) {
+        qWarning() << "Aucun trade trouvé dans les données";
+        m_chart->setTitle("Aucun trade à afficher");
+        return;
+    }
+    
+    qDebug() << "Nombre de trades récupérés:" << trades.size();
+    
+    // Récupérer l'unité de temps sélectionnée
+    QString timeUnit = m_timeUnitCombo->currentText();
+    
+    // Regrouper les données par unité de temps
+    GroupedData groupedData = groupDataByTimeUnit(trades, timeUnit);
+    
+    if (groupedData.categories.isEmpty()) {
+        qWarning() << "Aucune donnée groupée disponible";
+        m_chart->setTitle("Impossible de regrouper les données");
+        return;
+    }
+    
+    // Créer le graphique
+    createChart(groupedData);
+    
+    qDebug() << "Histogramme mis à jour avec" << groupedData.categories.size() << "périodes";
 }
 
 void HistogramView::createChart(const GroupedData& data)
@@ -121,50 +347,237 @@ void HistogramView::createChart(const GroupedData& data)
         m_chart->removeAxis(axis);
     }
     
-    // Créer la série de barres
-    QBarSeries* series = new QBarSeries();
-    QBarSet* set = new QBarSet("P&L");
+    // Utiliser QStackedBarSeries pour éviter le chevauchement
+    QStackedBarSeries* series = new QStackedBarSeries();
+    QBarSet* gainsSet = new QBarSet("Gains");
+    QBarSet* lossesSet = new QBarSet("Pertes");
     
-    // Ajouter les données
-    for (double value : data.values) {
-        set->append(value);
-    }
+    // Configurer les couleurs
+    gainsSet->setColor(QColor(76, 175, 80));      // Vert pour les gains
+    gainsSet->setBorderColor(QColor(56, 142, 60));
     
-    // Colorer les barres selon les gains/pertes
+    lossesSet->setColor(QColor(244, 67, 54));     // Rouge pour les pertes
+    lossesSet->setBorderColor(QColor(198, 40, 40));
+    
+    // Séparer les données en gains et pertes
     for (int i = 0; i < data.values.size(); ++i) {
-        if (data.values[i] >= 0) {
-            set->setColor(QColor(0, 255, 0)); // Vert pour les gains
+        double value = data.values[i];
+        
+        if (value >= 0) {
+            gainsSet->append(value);
+            lossesSet->append(0);  // Valeur zéro pour les pertes
         } else {
-            set->setColor(QColor(255, 0, 0)); // Rouge pour les pertes
+            gainsSet->append(0);   // Valeur zéro pour les gains
+            lossesSet->append(value);
         }
     }
     
-    series->append(set);
+    // Ajouter les sets à la série
+    series->append(gainsSet);
+    series->append(lossesSet);
+    
     m_chart->addSeries(series);
     
     // Créer les axes
     QBarCategoryAxis* axisX = new QBarCategoryAxis();
     axisX->append(data.categories);
+    axisX->setTitleText("Période");
+    
+    // Rotation des labels si nécessaire
+    if (data.categories.size() > 10) {
+        axisX->setLabelsAngle(-45);
+    }
+    
     m_chart->addAxis(axisX, Qt::AlignBottom);
     series->attachAxis(axisX);
     
     QValueAxis* axisY = new QValueAxis();
-    axisY->setTitleText("P&L");
+    axisY->setTitleText("P&L ($)");
+    
+    // Configurer l'échelle Y pour inclure zéro
+    double minValue = *std::min_element(data.values.begin(), data.values.end());
+    double maxValue = *std::max_element(data.values.begin(), data.values.end());
+    
+    double range = maxValue - minValue;
+    double margin = range * 0.1; // 10% de marge
+    
+    axisY->setRange(minValue - margin, maxValue + margin);
+    
+    // Ajouter une ligne de référence à zéro
+    if (minValue < 0 && maxValue > 0) {
+        axisY->setGridLineVisible(true);
+        
+        // Optionnel : ajouter une ligne horizontale à zéro plus visible
+        QLineSeries* zeroLine = new QLineSeries();
+        for (int i = 0; i < data.categories.size(); ++i) {
+            zeroLine->append(i, 0);
+        }
+        zeroLine->setPen(QPen(Qt::black, 1, Qt::DashLine));
+        m_chart->addSeries(zeroLine);
+        zeroLine->attachAxis(axisX);
+        zeroLine->attachAxis(axisY);
+    }
+    
     m_chart->addAxis(axisY, Qt::AlignLeft);
     series->attachAxis(axisY);
     
     // Configurer le titre
     QString timeUnit = m_timeUnitCombo->currentText();
-    m_chart->setTitle(QString("Histogramme des gains/pertes par %1").arg(timeUnit.toLower()));
+    double totalPnL = std::accumulate(data.values.begin(), data.values.end(), 0.0);
+    
+    m_chart->setTitle(QString("Histogramme P&L par %1 (Total: %2$)")
+                     .arg(timeUnit.toLower())
+                     .arg(QString::number(totalPnL, 'f', 2)));
+    
+    // Configurer l'apparence générale
+    m_chart->setBackgroundRoundness(0);
+    m_chart->legend()->setVisible(true);
+    m_chart->setMargins(QMargins(10, 10, 10, 10));
+    
+    // Configurer les données du tooltip pour le chartView interactif
+    m_chartView->setTooltipData(data.categories, data.values, data.fullDates);
 }
 
 HistogramView::GroupedData HistogramView::groupDataByTimeUnit(const QList<QVariantMap>& trades, const QString& timeUnit)
 {
     GroupedData result;
     
-    // TODO: Implémenter le regroupement des trades par unité de temps
-    Q_UNUSED(trades);
-    Q_UNUSED(timeUnit);
+    if (trades.isEmpty()) {
+        return result;
+    }
+    
+    qDebug() << "Regroupement des données par" << timeUnit;
+    
+    // Map pour stocker les PnL par période
+    QMap<QString, double> periodPnL;
+    QMap<QString, QDateTime> periodDates; // Pour trier chronologiquement
+    
+    for (const QVariantMap& trade : trades) {
+        // Extraire le PnL
+        double pnl = trade.value("PnL").toDouble();
+        
+        // Extraire la date de sortie (ExitTime)
+        QString exitTimeStr = trade.value("ExitTime").toString();
+        QDateTime exitTime = parseDateTime(exitTimeStr);
+        
+        if (!exitTime.isValid()) {
+            qWarning() << "Date de sortie invalide pour un trade:" << exitTimeStr;
+            continue;
+        }
+        
+        // Générer la clé de période selon l'unité de temps
+        QString periodKey = generatePeriodKey(exitTime, timeUnit);
+        
+        if (periodKey.isEmpty()) {
+            continue;
+        }
+        
+        // Accumuler le PnL pour cette période
+        periodPnL[periodKey] += pnl;
+        
+        // Stocker une date représentative de la période
+        if (!periodDates.contains(periodKey)) {
+            // Pour les périodes plus longues, utiliser le début de la période
+            QDateTime representativeDate = getRepresentativeDate(exitTime, timeUnit);
+            periodDates[periodKey] = representativeDate;
+        }
+    }
+    
+    // Trier les périodes chronologiquement
+    QList<QPair<QDateTime, QString>> sortedPeriods;
+    for (auto it = periodDates.begin(); it != periodDates.end(); ++it) {
+        sortedPeriods.append(qMakePair(it.value(), it.key()));
+    }
+    
+    std::sort(sortedPeriods.begin(), sortedPeriods.end());
+    
+    // Construire les résultats triés
+    for (const auto& pair : sortedPeriods) {
+        QString periodKey = pair.second;
+        result.categories.append(periodKey);
+        result.values.append(periodPnL[periodKey]);
+        result.fullDates[periodKey] = pair.first;
+    }
+    
+    qDebug() << "Données regroupées en" << result.categories.size() << "périodes";
     
     return result;
+}
+
+QDateTime HistogramView::getRepresentativeDate(const QDateTime& dateTime, const QString& timeUnit)
+{
+    QDate date = dateTime.date();
+    
+    if (timeUnit == "Jour") {
+        // Pour un jour, utiliser 00:00 du jour
+        return QDateTime(date, QTime(0, 0, 0));
+    }
+    else if (timeUnit == "Semaine") {
+        // Pour une semaine, utiliser le lundi 00:00
+        QDate weekStart = date.addDays(-(date.dayOfWeek() - 1));
+        return QDateTime(weekStart, QTime(0, 0, 0));
+    }
+    else if (timeUnit == "Mois") {
+        // Pour un mois, utiliser le 1er du mois 00:00
+        return QDateTime(QDate(date.year(), date.month(), 1), QTime(0, 0, 0));
+    }
+    else if (timeUnit == "Trimestre") {
+        // Pour un trimestre, utiliser le 1er jour du trimestre
+        int quarter = (date.month() - 1) / 3 + 1;
+        int firstMonthOfQuarter = (quarter - 1) * 3 + 1;
+        return QDateTime(QDate(date.year(), firstMonthOfQuarter, 1), QTime(0, 0, 0));
+    }
+    else if (timeUnit == "Année") {
+        // Pour une année, utiliser le 1er janvier 00:00
+        return QDateTime(QDate(date.year(), 1, 1), QTime(0, 0, 0));
+    }
+    
+    return dateTime; // Fallback
+}
+
+QDateTime HistogramView::parseDateTime(const QString& dateTimeStr)
+{
+    // Format attendu: "2025-03-27 15:30:40"
+    QDateTime dateTime = QDateTime::fromString(dateTimeStr, "yyyy-MM-dd hh:mm:ss");
+    
+    if (!dateTime.isValid()) {
+        // Essayer d'autres formats si nécessaire
+        dateTime = QDateTime::fromString(dateTimeStr, Qt::ISODate);
+    }
+    
+    return dateTime;
+}
+
+QString HistogramView::generatePeriodKey(const QDateTime& dateTime, const QString& timeUnit)
+{
+    if (!dateTime.isValid()) {
+        return QString();
+    }
+    
+    QDate date = dateTime.date();
+    
+    if (timeUnit == "Jour") {
+        return date.toString("dd/MM/yyyy");
+    }
+    else if (timeUnit == "Semaine") {
+        // Calculer le début de la semaine (lundi)
+        QDate weekStart = date.addDays(-(date.dayOfWeek() - 1));
+        QDate weekEnd = weekStart.addDays(6);
+        return QString("S%1 (%2 - %3)")
+               .arg(weekStart.weekNumber())
+               .arg(weekStart.toString("dd/MM"))
+               .arg(weekEnd.toString("dd/MM"));
+    }
+    else if (timeUnit == "Mois") {
+        return date.toString("MM/yyyy");
+    }
+    else if (timeUnit == "Trimestre") {
+        int quarter = (date.month() - 1) / 3 + 1;
+        return QString("T%1 %2").arg(quarter).arg(date.year());
+    }
+    else if (timeUnit == "Année") {
+        return date.toString("yyyy");
+    }
+    
+    return QString();
 }

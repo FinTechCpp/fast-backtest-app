@@ -1,0 +1,9 @@
+<map id="BasePanel" name="BasePanel">
+<area shape="rect" id="node1" title="Classe de base abstraite pour tous les panels de l&#39;application." alt="" coords="5,132,95,159"/>
+<area shape="rect" id="node2" href="$classBuyHeikinGreenPanel.html" title="Panel spécifique à la stratégie BuyHeikinGreen." alt="" coords="143,5,305,32"/>
+<area shape="rect" id="node3" href="$classCrossEMAPanel.html" title="Panel spécifique à la stratégie CrossEMA." alt="" coords="163,56,285,83"/>
+<area shape="rect" id="node4" href="$classGeneralParamsPanel.html" title="Panel des paramètres généraux du backtest." alt="" coords="146,107,302,133"/>
+<area shape="rect" id="node5" href="$classSellHeikinRedPanel.html" title=" " alt="" coords="150,157,298,184"/>
+<area shape="rect" id="node6" href="$classStrategyBasePanel.html" title="Panel pour les paramètres communs à toutes les stratégies." alt="" coords="152,208,296,235"/>
+<area shape="rect" id="node7" href="$classStrategySpecificPanel.html" title=" " alt="" coords="143,259,305,285"/>
+</map>

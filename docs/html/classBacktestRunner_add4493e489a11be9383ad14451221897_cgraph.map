@@ -1,0 +1,26 @@
+<map id="BacktestRunner::runBacktest" name="BacktestRunner::runBacktest">
+<area shape="rect" id="node1" title=" " alt="" coords="5,316,216,343"/>
+<area shape="rect" id="node2" href="$classApp.html#a569af5ff8401e5788a7e2841625489a4" title=" " alt="" coords="282,5,457,32"/>
+<area shape="rect" id="node3" href="$classApp.html#a784182b4769a81eaedf71de372b7babf" title=" " alt="" coords="264,56,475,83"/>
+<area shape="rect" id="node4" href="$classApp.html#a59052cf80a4e02fa130d3509c9d25a2a" title=" " alt="" coords="270,107,469,133"/>
+<area shape="rect" id="node5" href="$classApp.html#ae7e5cc49b02d6feab9d19620f6455f2f" title=" " alt="" coords="279,158,460,199"/>
+<area shape="rect" id="node6" href="$classBasePanel.html#ad49908813b6dec308db7bfbb32a9d999" title="Récupère les valeurs des widgets du panel." alt="" coords="289,224,450,251"/>
+<area shape="rect" id="node7" href="$classGeneralParamsPanel.html#af5c4f87007fdce8d8ef1238f64708881" title="Récupère les valeurs des widgets du panel." alt="" coords="291,275,447,317"/>
+<area shape="rect" id="node8" href="$classStrategyBasePanel.html#ad4efc8d3a9fe28097a271c30a3bb18bf" title="Récupère les valeurs des widgets du panel." alt="" coords="293,341,445,382"/>
+<area shape="rect" id="node9" href="$classDataLoader.html#ab40a74d379a145b5d93bd9ae3f7c67e2" title="Charge les données OHLC depuis un fichier CSV." alt="" coords="287,407,451,433"/>
+<area shape="rect" id="node18" href="$classBacktestRunner.html#af1680a73afc40eb615da20dcc97cd54c" title=" " alt="" coords="266,509,473,550"/>
+<area shape="rect" id="node19" href="$classBacktestRunner.html#a184938aa033b063e6ba48532a95badc6" title=" " alt="" coords="549,516,729,543"/>
+<area shape="rect" id="node20" href="$classBacktestRunner.html#a4d591786ebf67154359c90d9409f3f43" title=" " alt="" coords="539,576,738,603"/>
+<area shape="rect" id="node21" href="$classBacktestRunner.html#aacf6a71ebfed03433151ad41322d99c7" title=" " alt="" coords="266,574,473,615"/>
+<area shape="rect" id="node10" href="$classDataLoader.html#a316d0f1288fe1ba625f605250e090cc3" title="Filtre les données par jours de trading." alt="" coords="523,356,755,383"/>
+<area shape="rect" id="node11" href="$classDataLoader.html#a3ee2405c8a07e380a3c0348182e81c07" title="Trouve le fichier CSV correspondant au symbole et intervalle." alt="" coords="547,407,730,433"/>
+<area shape="rect" id="node13" href="$classDataLoader.html#a6e0d44b1465e885c09d26f5fb44856f9" title="Charge les données depuis un fichier CSV." alt="" coords="543,461,735,488"/>
+<area shape="rect" id="node12" href="$classDataLoader.html#a535eb4871c755c7af8845ceeae3400a3" title=" " alt="" coords="813,330,1019,371"/>
+<area shape="rect" id="node14" href="$classDataLoader.html#a3ee99352364377565cb79ca2258072ad" title="Calcule la date de début à partir de la période." alt="" coords="803,512,1029,539"/>
+<area shape="rect" id="node15" href="$classDataLoader.html#a732c6c1ed8b12f0a9b04071ae675b449" title="Filtre les données par période." alt="" coords="819,563,1013,589"/>
+<area shape="rect" id="node16" href="$classDataLoader.html#ae7296bd52a69c0ce8417d751d0bd32fc" title="Filtre les données par heures de trading." alt="" coords="817,395,1015,437"/>
+<area shape="rect" id="node17" href="$classDataLoader.html#a7a7cca1b9c8f5bec313143fc99c1269d" title="Parse une ligne CSV en barre OHLC." alt="" coords="819,461,1013,488"/>
+<area shape="rect" id="node22" href="$classApp.html#a9c1fe3eac5ac87f0f5659eae0c425f1c" title=" " alt="" coords="549,627,729,653"/>
+<area shape="rect" id="node23" href="$classResultManager.html#afdd47d396e9e387875cd34c0bb4045d8" title=" " alt="" coords="821,619,1011,661"/>
+<area shape="rect" id="node24" href="$classBaseView.html#a569892cee63fbb68c0016d365f1949a7" title="Met à jour la vue avec les nouvelles données du backtest." alt="" coords="1077,627,1247,653"/>
+</map>

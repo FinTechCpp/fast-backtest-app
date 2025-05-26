@@ -1,0 +1,160 @@
+\hypertarget{main_8cpp}{}\doxysection{backtest\+\_\+app\+\_\+cpp/src/main.cpp File Reference}
+\label{main_8cpp}\index{backtest\_app\_cpp/src/main.cpp@{backtest\_app\_cpp/src/main.cpp}}
+{\ttfamily \#include $<$QApplication$>$}\newline
+{\ttfamily \#include $<$QGui\+Application$>$}\newline
+{\ttfamily \#include $<$QStyle\+Factory$>$}\newline
+{\ttfamily \#include $<$QDir$>$}\newline
+{\ttfamily \#include $<$QFile$>$}\newline
+{\ttfamily \#include $<$QText\+Stream$>$}\newline
+{\ttfamily \#include $<$QStandard\+Paths$>$}\newline
+{\ttfamily \#include $<$QLogging\+Category$>$}\newline
+{\ttfamily \#include $<$QCommand\+Line\+Parser$>$}\newline
+{\ttfamily \#include $<$QCommand\+Line\+Option$>$}\newline
+{\ttfamily \#include $<$QDate\+Time$>$}\newline
+{\ttfamily \#include $<$QDebug$>$}\newline
+{\ttfamily \#include $<$QMessage\+Box$>$}\newline
+{\ttfamily \#include $<$QMeta\+Type$>$}\newline
+{\ttfamily \#include $<$iostream$>$}\newline
+{\ttfamily \#include \char`\"{}app.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}binding/pybinding.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}data\+\_\+loader.\+h\char`\"{}}\newline
+Include dependency graph for main.\+cpp\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{main_8cpp__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{main_8cpp_a61cc8c39e13c69fb25354436677d2d1d}{message\+Handler}} (Qt\+Msg\+Type type, const QMessage\+Log\+Context \&, const QString \&msg)
+\item 
+QString \mbox{\hyperlink{main_8cpp_a33ef7ceb6264618905bad5a5d98b0511}{find\+Project\+Root}} ()
+\item 
+void \mbox{\hyperlink{main_8cpp_ae0e366a918992fd5c349c7722608a075}{setup\+Logging}} (Qt\+Msg\+Type log\+Level, bool console\+Output)
+\item 
+void \mbox{\hyperlink{main_8cpp_a136d6f5e1bf746310526941ec96dc83d}{cleanup\+Logging}} ()
+\item 
+int \mbox{\hyperlink{main_8cpp_a0ddf1224851353fc92bfbff6f499fa97}{main}} (int argc, char $\ast$argv\mbox{[}$\,$\mbox{]})
+\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+static bool \mbox{\hyperlink{main_8cpp_ae0326b88ce45b68a472d6df16a4e0657}{g\+\_\+console\+Output}} = false
+\item 
+static Qt\+Msg\+Type \mbox{\hyperlink{main_8cpp_a74f862aeacd7b25b2879d167d0f6a5b0}{g\+\_\+log\+Level}} = Qt\+Warning\+Msg
+\item 
+static QFile $\ast$ \mbox{\hyperlink{main_8cpp_a2a7f258733f63a068118aba4f7ddf073}{g\+\_\+log\+File}} = nullptr
+\item 
+static QText\+Stream $\ast$ \mbox{\hyperlink{main_8cpp_a5d572d9fe6bc63f92501cbcf7f9795df}{g\+\_\+log\+Stream}} = nullptr
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Function Documentation}
+\mbox{\Hypertarget{main_8cpp_a136d6f5e1bf746310526941ec96dc83d}\label{main_8cpp_a136d6f5e1bf746310526941ec96dc83d}} 
+\index{main.cpp@{main.cpp}!cleanupLogging@{cleanupLogging}}
+\index{cleanupLogging@{cleanupLogging}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{cleanupLogging()}{cleanupLogging()}}
+{\footnotesize\ttfamily void cleanup\+Logging (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=250pt]{main_8cpp_a136d6f5e1bf746310526941ec96dc83d_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{main_8cpp_a33ef7ceb6264618905bad5a5d98b0511}\label{main_8cpp_a33ef7ceb6264618905bad5a5d98b0511}} 
+\index{main.cpp@{main.cpp}!findProjectRoot@{findProjectRoot}}
+\index{findProjectRoot@{findProjectRoot}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{findProjectRoot()}{findProjectRoot()}}
+{\footnotesize\ttfamily QString find\+Project\+Root (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{main_8cpp_a33ef7ceb6264618905bad5a5d98b0511_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{main_8cpp_a0ddf1224851353fc92bfbff6f499fa97}\label{main_8cpp_a0ddf1224851353fc92bfbff6f499fa97}} 
+\index{main.cpp@{main.cpp}!main@{main}}
+\index{main@{main}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{main()}{main()}}
+{\footnotesize\ttfamily int main (\begin{DoxyParamCaption}\item[{int}]{argc,  }\item[{char $\ast$}]{argv\mbox{[}$\,$\mbox{]} }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{main_8cpp_a0ddf1224851353fc92bfbff6f499fa97_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{main_8cpp_a61cc8c39e13c69fb25354436677d2d1d}\label{main_8cpp_a61cc8c39e13c69fb25354436677d2d1d}} 
+\index{main.cpp@{main.cpp}!messageHandler@{messageHandler}}
+\index{messageHandler@{messageHandler}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{messageHandler()}{messageHandler()}}
+{\footnotesize\ttfamily void message\+Handler (\begin{DoxyParamCaption}\item[{Qt\+Msg\+Type}]{type,  }\item[{const QMessage\+Log\+Context \&}]{,  }\item[{const QString \&}]{msg }\end{DoxyParamCaption})}
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{main_8cpp_a61cc8c39e13c69fb25354436677d2d1d_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{main_8cpp_ae0e366a918992fd5c349c7722608a075}\label{main_8cpp_ae0e366a918992fd5c349c7722608a075}} 
+\index{main.cpp@{main.cpp}!setupLogging@{setupLogging}}
+\index{setupLogging@{setupLogging}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{setupLogging()}{setupLogging()}}
+{\footnotesize\ttfamily void setup\+Logging (\begin{DoxyParamCaption}\item[{Qt\+Msg\+Type}]{log\+Level,  }\item[{bool}]{console\+Output }\end{DoxyParamCaption})}
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=297pt]{main_8cpp_ae0e366a918992fd5c349c7722608a075_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=239pt]{main_8cpp_ae0e366a918992fd5c349c7722608a075_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{main_8cpp_ae0326b88ce45b68a472d6df16a4e0657}\label{main_8cpp_ae0326b88ce45b68a472d6df16a4e0657}} 
+\index{main.cpp@{main.cpp}!g\_consoleOutput@{g\_consoleOutput}}
+\index{g\_consoleOutput@{g\_consoleOutput}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{g\_consoleOutput}{g\_consoleOutput}}
+{\footnotesize\ttfamily bool g\+\_\+console\+Output = false\hspace{0.3cm}{\ttfamily [static]}}
+
+\mbox{\Hypertarget{main_8cpp_a2a7f258733f63a068118aba4f7ddf073}\label{main_8cpp_a2a7f258733f63a068118aba4f7ddf073}} 
+\index{main.cpp@{main.cpp}!g\_logFile@{g\_logFile}}
+\index{g\_logFile@{g\_logFile}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{g\_logFile}{g\_logFile}}
+{\footnotesize\ttfamily QFile$\ast$ g\+\_\+log\+File = nullptr\hspace{0.3cm}{\ttfamily [static]}}
+
+\mbox{\Hypertarget{main_8cpp_a74f862aeacd7b25b2879d167d0f6a5b0}\label{main_8cpp_a74f862aeacd7b25b2879d167d0f6a5b0}} 
+\index{main.cpp@{main.cpp}!g\_logLevel@{g\_logLevel}}
+\index{g\_logLevel@{g\_logLevel}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{g\_logLevel}{g\_logLevel}}
+{\footnotesize\ttfamily Qt\+Msg\+Type g\+\_\+log\+Level = Qt\+Warning\+Msg\hspace{0.3cm}{\ttfamily [static]}}
+
+\mbox{\Hypertarget{main_8cpp_a5d572d9fe6bc63f92501cbcf7f9795df}\label{main_8cpp_a5d572d9fe6bc63f92501cbcf7f9795df}} 
+\index{main.cpp@{main.cpp}!g\_logStream@{g\_logStream}}
+\index{g\_logStream@{g\_logStream}!main.cpp@{main.cpp}}
+\doxysubsubsection{\texorpdfstring{g\_logStream}{g\_logStream}}
+{\footnotesize\ttfamily QText\+Stream$\ast$ g\+\_\+log\+Stream = nullptr\hspace{0.3cm}{\ttfamily [static]}}
+

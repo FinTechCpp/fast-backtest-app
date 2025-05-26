@@ -1,0 +1,12 @@
+<map id="ProfileMenuManager::onLoadProfile" name="ProfileMenuManager::onLoadProfile">
+<area shape="rect" id="node1" title=" " alt="" coords="5,158,161,199"/>
+<area shape="rect" id="node2" href="$classConfigManager.html#a33e826c6fc5196e256d8d66ca1cc0b2e" title=" " alt="" coords="209,158,395,199"/>
+<area shape="rect" id="node3" href="$classConfigManager.html#a53fe244ed6945218f9ab727a079d8f28" title=" " alt="" coords="443,165,676,192"/>
+<area shape="rect" id="node4" href="$classApp.html#a784182b4769a81eaedf71de372b7babf" title=" " alt="" coords="724,5,935,32"/>
+<area shape="rect" id="node5" href="$classConfigManager.html#a3af4a4fb5f73524c5079fae3e29c46bd" title=" " alt="" coords="734,56,925,83"/>
+<area shape="rect" id="node6" href="$classApp.html#a59052cf80a4e02fa130d3509c9d25a2a" title=" " alt="" coords="730,107,929,133"/>
+<area shape="rect" id="node7" href="$classApp.html#ae7e5cc49b02d6feab9d19620f6455f2f" title=" " alt="" coords="739,158,920,199"/>
+<area shape="rect" id="node8" href="$classBasePanel.html#a0484faecac61c9be571c4b4780df5589" title="Définit les valeurs des widgets du panel." alt="" coords="749,224,909,251"/>
+<area shape="rect" id="node9" href="$classGeneralParamsPanel.html#a5cb686302d61a1cd48c54bf14f7ee376" title="Définit les valeurs des widgets du panel." alt="" coords="751,275,907,317"/>
+<area shape="rect" id="node10" href="$classStrategyBasePanel.html#afe6d54431eae40a6bdbab18a7bcf72f6" title="Définit les valeurs des widgets du panel." alt="" coords="753,341,905,382"/>
+</map>

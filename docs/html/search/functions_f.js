@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['saveconfig_591',['saveConfig',['../classConfigManager.html#a7251831ba02a5ca8094c2e5c546fc15c',1,'ConfigManager']]],
+  ['savecurrentprofile_592',['saveCurrentProfile',['../classConfigManager.html#a93f257d4f7635dc1a3ad40bf2eb668ff',1,'ConfigManager']]],
+  ['saveprofile_593',['saveProfile',['../classConfigManager.html#afde78480ef5bd18f928b51750a2008e6',1,'ConfigManager']]],
+  ['sellheikinredpanel_594',['SellHeikinRedPanel',['../classSellHeikinRedPanel.html#a3f21574e90876022a06e52ebec422363',1,'SellHeikinRedPanel']]],
+  ['setconfigmanager_595',['setConfigManager',['../classProfileMenuManager.html#a1b8b535732f8e5f45977be46dcd0a459',1,'ProfileMenuManager']]],
+  ['setcurrenttab_596',['setCurrentTab',['../classResultManager.html#a7aa04622e48f8ab84c1c76e81e2056a3',1,'ResultManager']]],
+  ['seterror_597',['setError',['../classPyBindingManager.html#a2f90ef60ef4f8c60b57c2a665a96ec3f',1,'PyBindingManager']]],
+  ['setupconnections_598',['setupConnections',['../classApp.html#a61ab65a5979221b61fa0fa91eee87090',1,'App::setupConnections()'],['../classResultManager.html#a8e96636c0001338504e504eb4d93ffc7',1,'ResultManager::setupConnections()']]],
+  ['setupdefaultvalues_599',['setupDefaultValues',['../classConfigManager.html#aeec9ef00f3473436259bd800c090c2ea',1,'ConfigManager']]],
+  ['setuplogging_600',['setupLogging',['../main_8cpp.html#ae0e366a918992fd5c349c7722608a075',1,'main.cpp']]],
+  ['setupriskmanagement_601',['setupRiskManagement',['../classStrategyBasePanel.html#a7d4ca2e8bcd0775cdc644654f49363ae',1,'StrategyBasePanel']]],
+  ['setupstoplossandtakeprofit_602',['setupStopLossAndTakeProfit',['../classStrategyBasePanel.html#aafbf5877c1e9764be01d92044c652586',1,'StrategyBasePanel']]],
+  ['setupsymbolandperiod_603',['setupSymbolAndPeriod',['../classGeneralParamsPanel.html#a9d4e8a23b7b479f9314bcadd82ce882b',1,'GeneralParamsPanel']]],
+  ['setuptradinghours_604',['setupTradingHours',['../classStrategyBasePanel.html#a11d88f1bbab87b900a8dd06cca7667ae',1,'StrategyBasePanel']]],
+  ['setuptradingparameters_605',['setupTradingParameters',['../classGeneralParamsPanel.html#a9f0c359bc3191aefb007713339c73623',1,'GeneralParamsPanel']]],
+  ['setupui_606',['setupUI',['../classBaseView.html#afd301a040e5cbb1801a1ce6972ccd231',1,'BaseView::setupUI()'],['../classStatsView.html#a6e9fdcacf34a570faa9bbfb21bf6e158',1,'StatsView::setupUI()'],['../classHistogramView.html#af72a9a6181c37875dd3b4ffe90047ff6',1,'HistogramView::setupUI()'],['../classChartView.html#abcf0ad5b8eb8b665acdf71f7dd97f10e',1,'ChartView::setupUI()'],['../classResultManager.html#a8b29e3b48f4e4d9429fb6782870dcdaa',1,'ResultManager::setupUI()']]],
+  ['setupviews_607',['setupViews',['../classResultManager.html#abf50a8be86e2fd12d7242fc570f0d09f',1,'ResultManager']]],
+  ['setvalues_608',['setValues',['../classStrategySpecificPanel.html#a25c2a7f9393a3951f0d30966255e4792',1,'StrategySpecificPanel::setValues()'],['../classBasePanel.html#a0484faecac61c9be571c4b4780df5589',1,'BasePanel::setValues()'],['../classGeneralParamsPanel.html#a5cb686302d61a1cd48c54bf14f7ee376',1,'GeneralParamsPanel::setValues()'],['../classStrategyBasePanel.html#afe6d54431eae40a6bdbab18a7bcf72f6',1,'StrategyBasePanel::setValues()'],['../classBuyHeikinGreenPanel.html#a69989a5858ac737fada1ddff9be2d07f',1,'BuyHeikinGreenPanel::setValues()'],['../classCrossEMAPanel.html#a335dd80386f34e37f5704c06c8bbc996',1,'CrossEMAPanel::setValues()'],['../classSellHeikinRedPanel.html#a7f622e8b8280ae75f5630a3e27635f58',1,'SellHeikinRedPanel::setValues()']]],
+  ['setwidgetvalue_609',['setWidgetValue',['../classConfigManager.html#ab1ec8413f1311d4cd1fcbcf3a26bc95e',1,'ConfigManager']]],
+  ['showerror_610',['showError',['../classBacktestRunner.html#a4d591786ebf67154359c90d9409f3f43',1,'BacktestRunner']]],
+  ['showplaceholder_611',['showPlaceholder',['../classChartView.html#aa50fc3447c0f7d7e5e2c4e1240323400',1,'ChartView']]],
+  ['showresults_612',['showResults',['../classApp.html#a92e18200240fe56199de30a7f5d522cd',1,'App']]],
+  ['statsview_613',['StatsView',['../classStatsView.html#ace257df6278c137bb46cc1e3fa727436',1,'StatsView']]],
+  ['strategybasepanel_614',['StrategyBasePanel',['../classStrategyBasePanel.html#ae7a9426d1bb3d28566501936778ba0ff',1,'StrategyBasePanel']]],
+  ['strategyspecificpanel_615',['StrategySpecificPanel',['../classStrategySpecificPanel.html#a5f599fb536348e59c812b1075b24590f',1,'StrategySpecificPanel']]]
+];

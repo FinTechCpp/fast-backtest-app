@@ -1,0 +1,4 @@
+<map id="BuyHeikinGreenPanel::setValues" name="BuyHeikinGreenPanel::setValues">
+<area shape="rect" id="node1" title="Définit les valeurs des widgets du panel." alt="" coords="5,5,168,47"/>
+<area shape="rect" id="node2" href="$classBuyHeikinGreenPanel.html#a1dd048cdf181d5130e6466b695e60dae" title="Active/désactive un groupe de widgets." alt="" coords="216,5,379,47"/>
+</map>

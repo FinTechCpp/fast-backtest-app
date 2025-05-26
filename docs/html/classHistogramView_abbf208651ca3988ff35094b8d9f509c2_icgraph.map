@@ -1,0 +1,4 @@
+<map id="HistogramView::clear" name="HistogramView::clear">
+<area shape="rect" id="node1" title="Réinitialise la vue à son état initial." alt="" coords="259,5,420,32"/>
+<area shape="rect" id="node2" href="$classHistogramView.html#a785a4ea7726e56236ffeb79c411a83eb" title="Met à jour la vue avec les nouvelles données du backtest." alt="" coords="5,5,211,32"/>
+</map>

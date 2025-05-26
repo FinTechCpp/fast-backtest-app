@@ -72,7 +72,7 @@ public:
      * @param hasHeader Indique si c'est la ligne d'en-tête
      * @return Barre OHLC parsée, nullptr si erreur
      */
-    static std::unique_ptr<OHLCBar> parseCSVLine(const QString& line, bool hasHeader = false);
+    static std::unique_ptr<OHLCBar> parseCSVLine(const QString& line);
     
     /**
      * @brief Charge les données depuis un fichier CSV

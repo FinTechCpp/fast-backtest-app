@@ -249,6 +249,7 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     const QString& endDate)
 {
     std::vector<OHLCBar> data;
+    data.reserve(1000000); // Pré-allouer mémoire pour éviter les réallocations
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -258,159 +259,98 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     
     QTextStream in(&file);
     QString line;
-    bool isFirstLine = true;
-    int lineCount = 0;
     
     qDebug() << "Chargement des données depuis:" << filePath;
     
-    while (in.readLineInto(&line)) {
-        lineCount++;
-        
-        // Ignorer la première ligne si c'est un en-tête
-        if (isFirstLine) {
-            // Vérifier si c'est probablement un en-tête
-            if (line.toLower().contains("date") || line.toLower().contains("time") || 
-                line.toLower().contains("open") || line.toLower().contains("high")) {
-                isFirstLine = false;
-                continue;
-            }
-            isFirstLine = false;
-        }
-        
-        auto bar = parseCSVLine(line, false);
-        if (bar) {
-            data.push_back(*bar);
-        }
-        
-        // Affichage du progrès
-        if (lineCount % 100000 == 0) {
-            qDebug() << "Lignes traitées:" << lineCount;
-        }
-    }
-    
-    file.close();
-    qDebug() << "Données chargées:" << data.size() << "barres de prix depuis" << filePath;
-    
-    if (data.empty()) {
-        qWarning() << "Aucune donnée chargée depuis le fichier";
-        return data;
-    }
-    
-    // Trier par timestamp
-    std::sort(data.begin(), data.end(),
-              [](const OHLCBar& a, const OHLCBar& b) {
-                  return a.timestamp < b.timestamp;
-              });
-    
-    // Calculer les dates de début et fin
     QDateTime endDateTime;
     if (endDate.isEmpty()) {
-        // Utiliser la dernière date des données
-        endDateTime = data.back().timestamp;
-        qDebug() << "Date de fin non spécifiée, utilisation de la dernière date des données:" 
-                 << endDateTime.toString("dd/MM/yyyy hh:mm:ss");
+        endDateTime = QDateTime::currentDateTime();
     } else {
-        // Parser la date de fin fournie
-        QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
-        
-        for (const QString& format : dateFormats) {
-            QDate parsedDate = QDate::fromString(endDate, format);
-            if (parsedDate.isValid()) {
-                endDateTime = QDateTime(parsedDate, QTime(23, 59, 59));
+        QDate parsedDate = QDate::fromString(endDate, "dd/MM/yyyy");
+        endDateTime = parsedDate.isValid() ? QDateTime(parsedDate, QTime(23, 59, 59)) : QDateTime::currentDateTime();
+    }
+    QDateTime startDateTime = calculateStartDate(endDateTime, period);
+    
+    if (in.readLineInto(&line)) {
+        if (line.startsWith("date,")) {
+            // C'est l'en-tête, l'ignorer
+        } else {
+            // C'est une vraie donnée, la parser
+            auto bar = parseCSVLine(line);
+            if (bar && bar->timestamp >= startDateTime && bar->timestamp <= endDateTime) {
+                data.push_back(*bar);
+            }
+        }
+    }
+    
+    int lineCount = 1;
+
+    // Chrono start
+    auto chronoStart = std::chrono::high_resolution_clock::now();
+
+    while (in.readLineInto(&line)) {
+        lineCount++;
+
+        auto bar = parseCSVLine(line);
+        if (bar) {
+            // Filtrer directement pendant le chargement
+            if (bar->timestamp >= startDateTime && bar->timestamp <= endDateTime) {
+                data.push_back(*bar);
+            }
+            else if (bar->timestamp > endDateTime) {
+                qDebug() << "Fin de période atteinte à la ligne" << lineCount << ", arrêt du chargement";
                 break;
             }
         }
-        
-        if (!endDateTime.isValid()) {
-            qWarning() << "Impossible de parser la date de fin:" << endDate;
-            endDateTime = data.back().timestamp;
-        }
-        
-        qDebug() << "Date de fin parsée:" << endDateTime.toString("dd/MM/yyyy hh:mm:ss");
     }
-    
-    // Calculer la date de début selon la période
-    QDateTime startDateTime = calculateStartDate(endDateTime, period);
-    
-    qDebug() << "Filtrage des données pour la période"
-             << startDateTime.toString("dd/MM/yyyy hh:mm")
-             << "à" << endDateTime.toString("dd/MM/yyyy hh:mm");
-    
-    // Filtrer par période
-    data = filterByPeriod(data, startDateTime, endDateTime);
-    qDebug() << "Après filtrage par période:" << data.size() << "barres de prix";
-    
 
-    
-    // Vérification des données chargées
-    qDebug() << "Vérification des données chargées:";
-    if (!data.empty()) {
-        qDebug() << "Première barre:" << data.front().timestamp.toString("dd/MM/yyyy hh:mm:ss") 
-                 << "OHLC:" << data.front().open << data.front().high << data.front().low << data.front().close;
-        qDebug() << "Dernière barre:" << data.back().timestamp.toString("dd/MM/yyyy hh:mm:ss")
-                 << "OHLC:" << data.back().open << data.back().high << data.back().low << data.back().close;
-    }
+    // Chrono end
+    auto chronoEnd = std::chrono::high_resolution_clock::now();
+    auto chronoDuration = std::chrono::duration_cast<std::chrono::milliseconds>(chronoEnd - chronoStart).count();
+
+    file.close();
+    qDebug() << "Données chargées:" << data.size() << "barres de prix depuis" << filePath
+             << "en" << chronoDuration << "ms";
     
     return data;
 }
 
-std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line, bool hasHeader)
+std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
 {
-    Q_UNUSED(hasHeader);
-    if (line.trimmed().isEmpty()) {
+    if (line.length() < 45) return nullptr;
+    
+    const QChar* d = line.constData();
+    
+    // Parser manuellement "2022-02-14 14:30:10+00:00"
+    // YYYY-MM-DD HH:MM:SS
+    int year = (d[0].digitValue() * 1000) + (d[1].digitValue() * 100) + 
+               (d[2].digitValue() * 10) + d[3].digitValue();
+    int month = (d[5].digitValue() * 10) + d[6].digitValue();
+    int day = (d[8].digitValue() * 10) + d[9].digitValue();
+    int hour = (d[11].digitValue() * 10) + d[12].digitValue();
+    int minute = (d[14].digitValue() * 10) + d[15].digitValue();
+    int second = (d[17].digitValue() * 10) + d[18].digitValue();
+    
+    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), Qt::UTC);
+    
+    if (!timestamp.isValid()) {
         return nullptr;
     }
-    QStringList fields = line.split(',');
-    if (fields.size() < 5) {
-        return nullptr;
+    
+    // Trouver les virgules et parser les valeurs
+    int comma1 = line.indexOf(',', 25);
+    int comma2 = line.indexOf(',', comma1 + 1);
+    int comma3 = line.indexOf(',', comma2 + 1);
+    int comma4 = line.indexOf(',', comma3 + 1);
+    
+    if (comma1 == -1 || comma2 == -1 || comma3 == -1 || comma4 == -1) {
+        comma4 = line.length(); // Pas de volume
     }
-    try {
-        QString dateStr = fields[0].trimmed();
-        QDateTime timestamp;
-        
-        timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss+00:00");
-        if (!timestamp.isValid()) {
-            timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss.zzz+00:00");
-        }
-        if (!timestamp.isValid()) {
-            timestamp = QDateTime::fromString(dateStr, Qt::ISODate);
-        }
-        if (!timestamp.isValid()) {
-            timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss");
-        }
-        if (!timestamp.isValid()) {
-            timestamp = QDateTime::fromString(dateStr, "yyyy-MM-ddThh:mm:ss.zzz");
-        }
-        if (!timestamp.isValid()) {
-            timestamp = QDateTime::fromString(dateStr, "MM/dd/yyyy hh:mm:ss");
-        }
-        if (!timestamp.isValid()) {
-            timestamp = QDateTime::fromString(dateStr, "dd/MM/yyyy hh:mm:ss");
-        }
-        if (!timestamp.isValid()) {
-            timestamp = QDateTime::fromString(dateStr, "yyyy-MM-dd hh:mm:ss");
-        }
-        
-        if (!timestamp.isValid()) {
-            qWarning() << "Format de date non reconnu:" << dateStr;
-            return nullptr;
-        }
-        
-        // Parse OHLC values
-        double open = fields[1].trimmed().toDouble();
-        double high = fields[2].trimmed().toDouble();
-        double low = fields[3].trimmed().toDouble();
-        double close = fields[4].trimmed().toDouble();
-        
-        double volume = 0.0;
-        if (fields.size() > 5) {
-            volume = fields[5].trimmed().toDouble();
-        }
-        
-        return std::make_unique<OHLCBar>(timestamp, open, high, low, close, volume);
-        
-    } catch (const std::exception& e) {
-        qWarning() << "Erreur lors de l'analyse de la ligne CSV:" << e.what();
-        return nullptr;
-    }
+    
+    double open = line.midRef(comma1 + 1, comma2 - comma1 - 1).toDouble();
+    double high = line.midRef(comma2 + 1, comma3 - comma2 - 1).toDouble();
+    double low = line.midRef(comma3 + 1, comma4 - comma3 - 1).toDouble();
+    double close = line.midRef(comma4 + 1).toDouble();
+    
+    return std::make_unique<OHLCBar>(timestamp, open, high, low, close, 0.0);
 }

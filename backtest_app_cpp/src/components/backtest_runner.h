@@ -55,33 +55,23 @@ private:
     void showError(const QString& error);
 };
 
-class BacktestWorker : public QThread 
+class BacktestWorker : public QThread
 {
     Q_OBJECT
 
 public:
-    BacktestWorker(const std::vector<OHLCBar>& data,
-                   const QString& strategyClass, 
-                   double cash, 
-                   double spread, 
-                   const QMap<QString, QVariant>& strategyParams,
-                   QObject* parent = nullptr);
-    
+    BacktestWorker(App* mainWindow, QObject* parent = nullptr);
     ~BacktestWorker();
 
-protected:  
-    void run() override;  
+protected:
+    void run() override;
 
 signals:
     void finished(void* data, void* stats);
-    void error(const QString& errorMessage);
+    void error(const QString& message);
 
 private:
-    std::vector<OHLCBar> m_data;
-    QString m_strategyClass;
-    double m_cash;
-    double m_spread;
-    QMap<QString, QVariant> m_strategyParams;
+    App* m_mainWindow;
 };
 
 #endif // BACKTEST_RUNNER_H

@@ -7,6 +7,7 @@
 #include "../panels/strategy_base_panel.h"
 #include "../panels/base_panel.h"
 #include <QDebug>
+#include <QApplication>  
 
 BacktestRunner::BacktestRunner(QObject* parent)
     : QObject(parent)
@@ -55,6 +56,14 @@ void BacktestRunner::runBacktest()
         return;
     }
     
+    m_runButton->setEnabled(false);
+    m_loadingIndicator->setVisible(true);
+    m_isRunning = true;
+    
+    emit backtestStarted();
+    
+    QApplication::processEvents();
+    
     // Récupérer la configuration depuis l'application
     if (!m_mainWindow) {
         showError("Référence à l'application principale non trouvée");
@@ -67,104 +76,8 @@ void BacktestRunner::runBacktest()
         return;
     }
     
-    // Interface utilisateur
-    m_runButton->setEnabled(false);
-    m_loadingIndicator->setVisible(true);
-    m_isRunning = true;
-    
-    emit backtestStarted();
-    
-    // Récupérer TOUS les paramètres depuis les panels
-    QMap<QString, QVariant> allParams;
-    
-    // Paramètres généraux
-    if (m_mainWindow->getGeneralParamsPanel()) {
-        QMap<QString, QVariant> generalParams = m_mainWindow->getGeneralParamsPanel()->getValues();
-        for (auto it = generalParams.begin(); it != generalParams.end(); ++it) {
-            allParams[it.key()] = it.value();
-        }
-    }
-    
-    // Paramètres de base de stratégie
-    if (m_mainWindow->getStrategyBasePanel()) {
-        QMap<QString, QVariant> baseParams = m_mainWindow->getStrategyBasePanel()->getValues();
-        for (auto it = baseParams.begin(); it != baseParams.end(); ++it) {
-            allParams[it.key()] = it.value();
-        }
-    }
-    
-    // Paramètres spécifiques à la stratégie
-    if (m_mainWindow->getStrategySpecificPanel()) {
-        QMap<QString, QVariant> specificParams = m_mainWindow->getStrategySpecificPanel()->getValues();
-        for (auto it = specificParams.begin(); it != specificParams.end(); ++it) {
-            allParams[it.key()] = it.value();
-        }
-    }
-    
-    qDebug() << "Tous les paramètres récupérés:" << allParams;
-    
-    // Extraire les paramètres pour le chargement des données
-    QString symbol = allParams.value("symbol", "NDX").toString();
-    QString interval = allParams.value("interval", "20secs").toString();
-    QString period = allParams.value("period", "10d").toString();
-    
-    // Récupérer la date de fin et la convertir correctement
-    QDateTime endDate;
-    if (allParams.contains("end_date")) {
-        QVariant dateVariant = allParams["end_date"];
-        if (dateVariant.type() == QVariant::Date) {
-            endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
-        } else if (dateVariant.type() == QVariant::DateTime) {
-            endDate = dateVariant.toDateTime();
-        } else if (dateVariant.type() == QVariant::String) {
-            QString dateStr = dateVariant.toString();
-            QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
-            
-            for (const QString& format : dateFormats) {
-                QDate parsedDate = QDate::fromString(dateStr, format);
-                if (parsedDate.isValid()) {
-                    endDate = QDateTime(parsedDate, QTime(23, 59, 59));
-                    break;
-                }
-            }
-        }
-    }
-    
-    if (!endDate.isValid()) {
-        endDate = QDateTime::currentDateTime();
-    }
-    
-    qDebug() << "Paramètres de chargement des données:";
-    qDebug() << "- Symbole:" << symbol;
-    qDebug() << "- Intervalle:" << interval;
-    qDebug() << "- Période:" << period;
-    qDebug() << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
-    
-    // Récupérer les jours de trading
-    std::vector<int> tradingDays;
-    if (allParams.contains("trading_days")) {
-        QVariantList daysList = allParams["trading_days"].toList();
-        for (const QVariant& day : daysList) {
-            tradingDays.push_back(day.toInt());
-        }
-    }
-    
-    // Charger les données avec tous les paramètres
-    std::vector<OHLCBar> data = DataLoader::loadData(
-        symbol, interval, period, endDate);
-    
-    if (data.empty()) {
-        showError("Aucune donnée chargée");
-        resetUI();
-        return;
-    }
-    
-    QString strategyClass = allParams.value("strategy", "BuyHeikinGreenBA").toString();
-    double cash = allParams.value("cash", 100000.0).toDouble();
-    double spread = allParams.value("spread", 0.0001).toDouble();
-    
-    // Créer et lancer le worker avec TOUS les paramètres
-    m_worker = new BacktestWorker(data, strategyClass, cash, spread, allParams, this);
+    // Créer le worker immédiatement et lui passer la responsabilité de tout (recup paramètres, données, et run du backtest)
+    m_worker = new BacktestWorker(m_mainWindow, this);
     
     connect(m_worker, &BacktestWorker::finished, this, &BacktestRunner::onBacktestFinished);
     connect(m_worker, &BacktestWorker::error, this, &BacktestRunner::onBacktestError);
@@ -220,34 +133,17 @@ QHBoxLayout* BacktestRunner::getLayout() const
     return m_buttonLayout;
 }
 
-// BacktestWorker - Version simplifiée
-BacktestWorker::BacktestWorker(const std::vector<OHLCBar>& data,
-                               const QString& strategyClass, 
-                               double cash, 
-                               double spread, 
-                               const QMap<QString, QVariant>& strategyParams,
-                               QObject* parent)
+// SUPPRESSION du constructeur non déclaré
+// BacktestWorker - Version modifiée pour gérer tous les paramètres
+BacktestWorker::BacktestWorker(App* mainWindow, QObject* parent)
     : QThread(parent)
-    , m_data(data)
-    , m_strategyClass(strategyClass)
-    , m_cash(cash)
-    , m_spread(spread)
-    , m_strategyParams(strategyParams)
+    , m_mainWindow(mainWindow)
 {
 }
 
-// AJOUT: Implémentation du destructeur manquant
 BacktestWorker::~BacktestWorker()
 {
-    // S'assurer que le thread est terminé avant destruction
-    if (isRunning()) {
-        quit();
-        wait(5000); // Attendre maximum 5 secondes
-        if (isRunning()) {
-            terminate(); // Forcer l'arrêt si nécessaire
-            wait(1000);
-        }
-    }
+    // Destructor implementation
 }
 
 void BacktestWorker::run()
@@ -263,19 +159,97 @@ void BacktestWorker::run()
             return;
         }
         
-        qDebug() << "Données disponibles:" << m_data.size() << "barres";
-        qDebug() << "Stratégie:" << m_strategyClass;
-        qDebug() << "Cash:" << m_cash;
-        qDebug() << "Paramètres:" << m_strategyParams;
+        // DÉPLACÉ: Récupération des paramètres dans le worker thread
+        QMap<QString, QVariant> allParams;
+        
+        // Paramètres généraux
+        if (m_mainWindow->getGeneralParamsPanel()) {
+            QMap<QString, QVariant> generalParams = m_mainWindow->getGeneralParamsPanel()->getValues();
+            for (auto it = generalParams.begin(); it != generalParams.end(); ++it) {
+                allParams[it.key()] = it.value();
+            }
+        }
+        
+        // Paramètres de base de stratégie
+        if (m_mainWindow->getStrategyBasePanel()) {
+            QMap<QString, QVariant> baseParams = m_mainWindow->getStrategyBasePanel()->getValues();
+            for (auto it = baseParams.begin(); it != baseParams.end(); ++it) {
+                allParams[it.key()] = it.value();
+            }
+        }
+        
+        // Paramètres spécifiques à la stratégie
+        if (m_mainWindow->getStrategySpecificPanel()) {
+            QMap<QString, QVariant> specificParams = m_mainWindow->getStrategySpecificPanel()->getValues();
+            for (auto it = specificParams.begin(); it != specificParams.end(); ++it) {
+                allParams[it.key()] = it.value();
+            }
+        }
+        
+        qDebug() << "Tous les paramètres récupérés:" << allParams;
+        
+        // DÉPLACÉ: Extraction des paramètres pour le chargement des données
+        QString symbol = allParams.value("symbol", "NDX").toString();
+        QString interval = allParams.value("interval", "20secs").toString();
+        QString period = allParams.value("period", "10d").toString();
+        
+        // DÉPLACÉ: Récupération et conversion de la date de fin
+        QDateTime endDate;
+        if (allParams.contains("end_date")) {
+            QVariant dateVariant = allParams["end_date"];
+            if (dateVariant.type() == QVariant::Date) {
+                endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
+            } else if (dateVariant.type() == QVariant::DateTime) {
+                endDate = dateVariant.toDateTime();
+            } else if (dateVariant.type() == QVariant::String) {
+                QString dateStr = dateVariant.toString();
+                QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
+                
+                for (const QString& format : dateFormats) {
+                    QDate parsedDate = QDate::fromString(dateStr, format);
+                    if (parsedDate.isValid()) {
+                        endDate = QDateTime(parsedDate, QTime(23, 59, 59));
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (!endDate.isValid()) {
+            endDate = QDateTime::currentDateTime();
+        }
+        
+        qDebug() << "Paramètres de chargement des données:";
+        qDebug() << "- Symbole:" << symbol;
+        qDebug() << "- Intervalle:" << interval;
+        qDebug() << "- Période:" << period;
+        qDebug() << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+        
+        // DÉPLACÉ: Chargement des données dans le worker thread
+        std::vector<OHLCBar> data = DataLoader::loadData(symbol, interval, period, endDate);
+        
+        if (data.empty()) {
+            emit error("Aucune donnée chargée");
+            return;
+        }
+        
+        QString strategyClass = allParams.value("strategy", "BuyHeikinGreenBA").toString();
+        double cash = allParams.value("cash", 100000.0).toDouble();
+        double spread = allParams.value("spread", 0.0001).toDouble();
+        
+        qDebug() << "Données disponibles:" << data.size() << "barres";
+        qDebug() << "Stratégie:" << strategyClass;
+        qDebug() << "Cash:" << cash;
+        qDebug() << "Paramètres:" << allParams;
         
         qDebug() << "Démarrage du backtest Python...";
         
         QVariant result = pyManager.runPythonBacktest(
-            m_data, 
-            m_strategyClass, 
-            m_cash, 
-            m_spread, 
-            m_strategyParams
+            data, 
+            strategyClass, 
+            cash, 
+            spread, 
+            allParams
         );
         
         qDebug() << "Backtest Python terminé";
@@ -287,7 +261,7 @@ void BacktestWorker::run()
             return;
         }
         
-        // CORRECTION: Extraire les bonnes données du QVariantMap
+        // Extraire les données du QVariantMap
         QVariantMap resultMap = result.toMap();
         
         if (!resultMap.contains("data") || !resultMap.contains("stats")) {
@@ -296,19 +270,19 @@ void BacktestWorker::run()
             return;
         }
         
-        void* data = resultMap["data"].value<void*>();
-        void* stats = resultMap["stats"].value<void*>();
+        void* dataPtr = resultMap["data"].value<void*>();
+        void* statsPtr = resultMap["stats"].value<void*>();
         
-        qDebug() << "Données extraites - data:" << data << "stats:" << stats;
+        qDebug() << "Données extraites - data:" << dataPtr << "stats:" << statsPtr;
         
-        if (!data || !stats) {
+        if (!dataPtr || !statsPtr) {
             qCritical() << "Pointeurs de données invalides";
             emit error("Données invalides reçues du backtest");
             return;
         }
         
         qDebug() << "Émission du signal finished avec les bonnes données";
-        emit finished(data, stats);  
+        emit finished(dataPtr, statsPtr);  
         
     } catch (const std::exception& e) {
         qCritical() << "Exception dans BacktestWorker::run():" << e.what();

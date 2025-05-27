@@ -1,0 +1,769 @@
+\hypertarget{classPyBindingManager}{}\doxysection{Py\+Binding\+Manager Class Reference}
+\label{classPyBindingManager}\index{PyBindingManager@{PyBindingManager}}
+
+
+{\ttfamily \#include $<$pybinding.\+h$>$}
+
+
+
+Collaboration diagram for Py\+Binding\+Manager\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{d8/d01/classPyBindingManager__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{classPyBindingManager_a34c152acdc49fc6f4f4a5f04e6115cb3}{initialize}} ()
+\item 
+bool \mbox{\hyperlink{classPyBindingManager_a467b4f5d26cc1f4ec153c9d0be185e90}{is\+Initialized}} () const
+\item 
+QVariant \mbox{\hyperlink{classPyBindingManager_a795bf29466a782d88431906056daecd4}{run\+Python\+Backtest}} (const std\+::vector$<$ \mbox{\hyperlink{structOHLCBar}{OHLCBar}} $>$ \&data, const QString \&strategy\+Class, double cash, double spread, const QMap$<$ QString, QVariant $>$ \&strategy\+Params)
+\item 
+QList$<$ QVariant\+Map $>$ \mbox{\hyperlink{classPyBindingManager_a349ed0dfddeb118deac13f5cfcd9ff8b}{get\+Trades}} (void $\ast$stats)
+\item 
+QList$<$ QVariant\+Map $>$ \mbox{\hyperlink{classPyBindingManager_ae4fd4e757fdd7732ba1e8b9da41d208b}{get\+Equity\+Curve}} (void $\ast$stats)
+\item 
+QVariant \mbox{\hyperlink{classPyBindingManager_a032188a5c942aeed2347b0dc23e3c7be}{get\+Stat\+Value}} (void $\ast$stats, const QString \&key)
+\item 
+QVariant\+Map \mbox{\hyperlink{classPyBindingManager_af597b0fa9c1a832156e1a787013e4c25}{get\+Backtest\+Stats}} (void $\ast$stats)
+\item 
+QList$<$ QVariant\+Map $>$ \mbox{\hyperlink{classPyBindingManager_ad05f6bc92192c082b43b8b8819a05bd3}{get\+Trades\+Data}} (void $\ast$stats)
+\item 
+QList$<$ QVariant\+Map $>$ \mbox{\hyperlink{classPyBindingManager_a9cd34ed9d196c811657926125e129e57}{get\+Equity\+Data}} (void $\ast$stats)
+\item 
+QString \mbox{\hyperlink{classPyBindingManager_ac5330ce834e460f79c00ce558deafb1f}{get\+Stat\+String}} (void $\ast$stats, const QString \&key)
+\item 
+double \mbox{\hyperlink{classPyBindingManager_ab54d482f13405f2716a23e3ea18425e3}{get\+Stat\+Double}} (void $\ast$stats, const QString \&key)
+\item 
+QString \mbox{\hyperlink{classPyBindingManager_afa5b0fb40d12ba14b24ea6ba1f6c6337}{get\+Last\+Error}} () const
+\item 
+void \mbox{\hyperlink{classPyBindingManager_acb0a02af2f2967a28200578c447ee368}{clear\+Error}} ()
+\item 
+void \mbox{\hyperlink{classPyBindingManager_a71ed1074f7d17b9b13ed0462ca17cd32}{finalize}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+static \mbox{\hyperlink{classPyBindingManager}{Py\+Binding\+Manager}} \& \mbox{\hyperlink{classPyBindingManager_a57f4a919f81aace164f54015a8a12c47}{get\+Instance}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classPyBindingManager_a483b0d2f10b7d5c38ec2746ef8bef007}{Py\+Binding\+Manager}} ()
+\item 
+\mbox{\hyperlink{classPyBindingManager_ac26175c7548c5b7240fd6b71718c0b98}{$\sim$\+Py\+Binding\+Manager}} ()
+\item 
+py\+::dict \mbox{\hyperlink{classPyBindingManager_a54db6eb813c8c44b62eb2e82d2283e5f}{convert\+Params\+To\+Python}} (const QMap$<$ QString, QVariant $>$ \&params)
+\item 
+QVariant \mbox{\hyperlink{classPyBindingManager_a4879d10ef587514d2654945c6ed3bfb5}{python\+To\+QVariant}} (const py\+::object \&obj)
+\item 
+QString \mbox{\hyperlink{classPyBindingManager_aa3c4b37bb8d34286ed3492f39db9d57a}{find\+Project\+Root}} (const QString \&start\+Path)
+\item 
+void \mbox{\hyperlink{classPyBindingManager_a2f90ef60ef4f8c60b57c2a665a96ec3f}{set\+Error}} (const QString \&error)
+\item 
+QVariant \mbox{\hyperlink{classPyBindingManager_abd614a81027750bc8ae62993a272166e}{extract\+Stat\+Value}} (void $\ast$stats, const QString \&key)
+\item 
+QList$<$ QVariant\+Map $>$ \mbox{\hyperlink{classPyBindingManager_a6d91063b525f63e150b6161355b3f11f}{extract\+Data\+Frame}} (void $\ast$stats, const QString \&key)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+bool \mbox{\hyperlink{classPyBindingManager_a6c166e8c45407e638cc87c90b2cb1b81}{m\+\_\+initialized}}
+\item 
+QString \mbox{\hyperlink{classPyBindingManager_a26c58fb3b88ef83297f760fd0098701c}{m\+\_\+last\+Error}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+static \mbox{\hyperlink{classPyBindingManager}{Py\+Binding\+Manager}} $\ast$ \mbox{\hyperlink{classPyBindingManager_ab87f260ee414f5212eaf9858a7876603}{instance}} = nullptr
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+
+
+Definition at line 28 of file pybinding.\+h.
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classPyBindingManager_a483b0d2f10b7d5c38ec2746ef8bef007}\label{classPyBindingManager_a483b0d2f10b7d5c38ec2746ef8bef007}} 
+\index{PyBindingManager@{PyBindingManager}!PyBindingManager@{PyBindingManager}}
+\index{PyBindingManager@{PyBindingManager}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{PyBindingManager()}{PyBindingManager()}}
+{\footnotesize\ttfamily Py\+Binding\+Manager\+::\+Py\+Binding\+Manager (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 27 of file pybinding.\+cpp.
+
+
+
+Referenced by get\+Instance().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a483b0d2f10b7d5c38ec2746ef8bef007_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_ac26175c7548c5b7240fd6b71718c0b98}\label{classPyBindingManager_ac26175c7548c5b7240fd6b71718c0b98}} 
+\index{PyBindingManager@{PyBindingManager}!````~PyBindingManager@{$\sim$PyBindingManager}}
+\index{````~PyBindingManager@{$\sim$PyBindingManager}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{$\sim$PyBindingManager()}{~PyBindingManager()}}
+{\footnotesize\ttfamily Py\+Binding\+Manager\+::$\sim$\+Py\+Binding\+Manager (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 32 of file pybinding.\+cpp.
+
+
+
+References finalize().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_ac26175c7548c5b7240fd6b71718c0b98_cgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classPyBindingManager_acb0a02af2f2967a28200578c447ee368}\label{classPyBindingManager_acb0a02af2f2967a28200578c447ee368}} 
+\index{PyBindingManager@{PyBindingManager}!clearError@{clearError}}
+\index{clearError@{clearError}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{clearError()}{clearError()}}
+{\footnotesize\ttfamily void Py\+Binding\+Manager\+::clear\+Error (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line 510 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+last\+Error.
+
+\mbox{\Hypertarget{classPyBindingManager_a54db6eb813c8c44b62eb2e82d2283e5f}\label{classPyBindingManager_a54db6eb813c8c44b62eb2e82d2283e5f}} 
+\index{PyBindingManager@{PyBindingManager}!convertParamsToPython@{convertParamsToPython}}
+\index{convertParamsToPython@{convertParamsToPython}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{convertParamsToPython()}{convertParamsToPython()}}
+{\footnotesize\ttfamily py\+::dict Py\+Binding\+Manager\+::convert\+Params\+To\+Python (\begin{DoxyParamCaption}\item[{const QMap$<$ QString, QVariant $>$ \&}]{params }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 328 of file pybinding.\+cpp.
+
+
+
+Referenced by run\+Python\+Backtest().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a54db6eb813c8c44b62eb2e82d2283e5f_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a6d91063b525f63e150b6161355b3f11f}\label{classPyBindingManager_a6d91063b525f63e150b6161355b3f11f}} 
+\index{PyBindingManager@{PyBindingManager}!extractDataFrame@{extractDataFrame}}
+\index{extractDataFrame@{extractDataFrame}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{extractDataFrame()}{extractDataFrame()}}
+{\footnotesize\ttfamily QList$<$ QVariant\+Map $>$ Py\+Binding\+Manager\+::extract\+Data\+Frame (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats,  }\item[{const QString \&}]{key }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 579 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+initialized, python\+To\+QVariant(), and set\+Error().
+
+
+
+Referenced by get\+Equity\+Data(), and get\+Trades\+Data().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a6d91063b525f63e150b6161355b3f11f_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a6d91063b525f63e150b6161355b3f11f_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_abd614a81027750bc8ae62993a272166e}\label{classPyBindingManager_abd614a81027750bc8ae62993a272166e}} 
+\index{PyBindingManager@{PyBindingManager}!extractStatValue@{extractStatValue}}
+\index{extractStatValue@{extractStatValue}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{extractStatValue()}{extractStatValue()}}
+{\footnotesize\ttfamily QVariant Py\+Binding\+Manager\+::extract\+Stat\+Value (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats,  }\item[{const QString \&}]{key }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 632 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+initialized, and python\+To\+QVariant().
+
+
+
+Referenced by get\+Stat\+Double(), and get\+Stat\+String().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_abd614a81027750bc8ae62993a272166e_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_abd614a81027750bc8ae62993a272166e_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a71ed1074f7d17b9b13ed0462ca17cd32}\label{classPyBindingManager_a71ed1074f7d17b9b13ed0462ca17cd32}} 
+\index{PyBindingManager@{PyBindingManager}!finalize@{finalize}}
+\index{finalize@{finalize}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{finalize()}{finalize()}}
+{\footnotesize\ttfamily void Py\+Binding\+Manager\+::finalize (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line 37 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+initialized.
+
+
+
+Referenced by main(), and $\sim$\+Py\+Binding\+Manager().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a71ed1074f7d17b9b13ed0462ca17cd32_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_aa3c4b37bb8d34286ed3492f39db9d57a}\label{classPyBindingManager_aa3c4b37bb8d34286ed3492f39db9d57a}} 
+\index{PyBindingManager@{PyBindingManager}!findProjectRoot@{findProjectRoot}}
+\index{findProjectRoot@{findProjectRoot}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{findProjectRoot()}{findProjectRoot()}}
+{\footnotesize\ttfamily QString Py\+Binding\+Manager\+::find\+Project\+Root (\begin{DoxyParamCaption}\item[{const QString \&}]{start\+Path }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 103 of file pybinding.\+cpp.
+
+
+
+Referenced by initialize(), and run\+Python\+Backtest().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_aa3c4b37bb8d34286ed3492f39db9d57a_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_af597b0fa9c1a832156e1a787013e4c25}\label{classPyBindingManager_af597b0fa9c1a832156e1a787013e4c25}} 
+\index{PyBindingManager@{PyBindingManager}!getBacktestStats@{getBacktestStats}}
+\index{getBacktestStats@{getBacktestStats}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getBacktestStats()}{getBacktestStats()}}
+{\footnotesize\ttfamily QVariant\+Map Py\+Binding\+Manager\+::get\+Backtest\+Stats (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats }\end{DoxyParamCaption})}
+
+
+
+Definition at line 520 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+initialized, python\+To\+QVariant(), and set\+Error().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_af597b0fa9c1a832156e1a787013e4c25_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_ae4fd4e757fdd7732ba1e8b9da41d208b}\label{classPyBindingManager_ae4fd4e757fdd7732ba1e8b9da41d208b}} 
+\index{PyBindingManager@{PyBindingManager}!getEquityCurve@{getEquityCurve}}
+\index{getEquityCurve@{getEquityCurve}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getEquityCurve()}{getEquityCurve()}}
+{\footnotesize\ttfamily QList$<$ QVariant\+Map $>$ Py\+Binding\+Manager\+::get\+Equity\+Curve (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats }\end{DoxyParamCaption})}
+
+
+
+Definition at line 439 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+initialized, python\+To\+QVariant(), and set\+Error().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_ae4fd4e757fdd7732ba1e8b9da41d208b_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a9cd34ed9d196c811657926125e129e57}\label{classPyBindingManager_a9cd34ed9d196c811657926125e129e57}} 
+\index{PyBindingManager@{PyBindingManager}!getEquityData@{getEquityData}}
+\index{getEquityData@{getEquityData}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getEquityData()}{getEquityData()}}
+{\footnotesize\ttfamily QList$<$ QVariant\+Map $>$ Py\+Binding\+Manager\+::get\+Equity\+Data (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats }\end{DoxyParamCaption})}
+
+
+
+Definition at line 574 of file pybinding.\+cpp.
+
+
+
+References extract\+Data\+Frame().
+
+
+
+Referenced by Stats\+View\+::populate\+Equity().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a9cd34ed9d196c811657926125e129e57_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a9cd34ed9d196c811657926125e129e57_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a57f4a919f81aace164f54015a8a12c47}\label{classPyBindingManager_a57f4a919f81aace164f54015a8a12c47}} 
+\index{PyBindingManager@{PyBindingManager}!getInstance@{getInstance}}
+\index{getInstance@{getInstance}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getInstance()}{getInstance()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classPyBindingManager}{Py\+Binding\+Manager}} \& Py\+Binding\+Manager\+::get\+Instance (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [static]}}
+
+
+
+Definition at line 49 of file pybinding.\+cpp.
+
+
+
+References instance, and Py\+Binding\+Manager().
+
+
+
+Referenced by main(), Stats\+View\+::populate\+Equity(), Stats\+View\+::populate\+Metrics(), Stats\+View\+::populate\+Trades(), Stats\+View\+::refresh\+Trades\+Table(), Backtest\+Worker\+::run(), and Histogram\+View\+::update\+Histogram().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a57f4a919f81aace164f54015a8a12c47_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a57f4a919f81aace164f54015a8a12c47_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_afa5b0fb40d12ba14b24ea6ba1f6c6337}\label{classPyBindingManager_afa5b0fb40d12ba14b24ea6ba1f6c6337}} 
+\index{PyBindingManager@{PyBindingManager}!getLastError@{getLastError}}
+\index{getLastError@{getLastError}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getLastError()}{getLastError()}}
+{\footnotesize\ttfamily QString Py\+Binding\+Manager\+::get\+Last\+Error (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Definition at line 505 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+last\+Error.
+
+
+
+Referenced by Backtest\+Worker\+::run().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_afa5b0fb40d12ba14b24ea6ba1f6c6337_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_ab54d482f13405f2716a23e3ea18425e3}\label{classPyBindingManager_ab54d482f13405f2716a23e3ea18425e3}} 
+\index{PyBindingManager@{PyBindingManager}!getStatDouble@{getStatDouble}}
+\index{getStatDouble@{getStatDouble}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getStatDouble()}{getStatDouble()}}
+{\footnotesize\ttfamily double Py\+Binding\+Manager\+::get\+Stat\+Double (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats,  }\item[{const QString \&}]{key }\end{DoxyParamCaption})}
+
+
+
+Definition at line 626 of file pybinding.\+cpp.
+
+
+
+References extract\+Stat\+Value().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_ab54d482f13405f2716a23e3ea18425e3_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_ac5330ce834e460f79c00ce558deafb1f}\label{classPyBindingManager_ac5330ce834e460f79c00ce558deafb1f}} 
+\index{PyBindingManager@{PyBindingManager}!getStatString@{getStatString}}
+\index{getStatString@{getStatString}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getStatString()}{getStatString()}}
+{\footnotesize\ttfamily QString Py\+Binding\+Manager\+::get\+Stat\+String (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats,  }\item[{const QString \&}]{key }\end{DoxyParamCaption})}
+
+
+
+Definition at line 620 of file pybinding.\+cpp.
+
+
+
+References extract\+Stat\+Value().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_ac5330ce834e460f79c00ce558deafb1f_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a032188a5c942aeed2347b0dc23e3c7be}\label{classPyBindingManager_a032188a5c942aeed2347b0dc23e3c7be}} 
+\index{PyBindingManager@{PyBindingManager}!getStatValue@{getStatValue}}
+\index{getStatValue@{getStatValue}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getStatValue()}{getStatValue()}}
+{\footnotesize\ttfamily QVariant Py\+Binding\+Manager\+::get\+Stat\+Value (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats,  }\item[{const QString \&}]{key }\end{DoxyParamCaption})}
+
+
+
+Definition at line 412 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+initialized, and python\+To\+QVariant().
+
+
+
+Referenced by Stats\+View\+::populate\+Metrics().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a032188a5c942aeed2347b0dc23e3c7be_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a032188a5c942aeed2347b0dc23e3c7be_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a349ed0dfddeb118deac13f5cfcd9ff8b}\label{classPyBindingManager_a349ed0dfddeb118deac13f5cfcd9ff8b}} 
+\index{PyBindingManager@{PyBindingManager}!getTrades@{getTrades}}
+\index{getTrades@{getTrades}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getTrades()}{getTrades()}}
+{\footnotesize\ttfamily QList$<$ QVariant\+Map $>$ Py\+Binding\+Manager\+::get\+Trades (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats }\end{DoxyParamCaption})}
+
+
+
+Definition at line 375 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+initialized, python\+To\+QVariant(), and set\+Error().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a349ed0dfddeb118deac13f5cfcd9ff8b_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_ad05f6bc92192c082b43b8b8819a05bd3}\label{classPyBindingManager_ad05f6bc92192c082b43b8b8819a05bd3}} 
+\index{PyBindingManager@{PyBindingManager}!getTradesData@{getTradesData}}
+\index{getTradesData@{getTradesData}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{getTradesData()}{getTradesData()}}
+{\footnotesize\ttfamily QList$<$ QVariant\+Map $>$ Py\+Binding\+Manager\+::get\+Trades\+Data (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats }\end{DoxyParamCaption})}
+
+
+
+Definition at line 569 of file pybinding.\+cpp.
+
+
+
+References extract\+Data\+Frame().
+
+
+
+Referenced by Stats\+View\+::populate\+Trades(), Stats\+View\+::refresh\+Trades\+Table(), and Histogram\+View\+::update\+Histogram().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_ad05f6bc92192c082b43b8b8819a05bd3_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_ad05f6bc92192c082b43b8b8819a05bd3_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a34c152acdc49fc6f4f4a5f04e6115cb3}\label{classPyBindingManager_a34c152acdc49fc6f4f4a5f04e6115cb3}} 
+\index{PyBindingManager@{PyBindingManager}!initialize@{initialize}}
+\index{initialize@{initialize}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{initialize()}{initialize()}}
+{\footnotesize\ttfamily bool Py\+Binding\+Manager\+::initialize (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line 57 of file pybinding.\+cpp.
+
+
+
+References find\+Project\+Root(), m\+\_\+initialized, m\+\_\+last\+Error, and set\+Error().
+
+
+
+Referenced by main().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a34c152acdc49fc6f4f4a5f04e6115cb3_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=313pt]{db/df1/classPyBindingManager_a34c152acdc49fc6f4f4a5f04e6115cb3_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a467b4f5d26cc1f4ec153c9d0be185e90}\label{classPyBindingManager_a467b4f5d26cc1f4ec153c9d0be185e90}} 
+\index{PyBindingManager@{PyBindingManager}!isInitialized@{isInitialized}}
+\index{isInitialized@{isInitialized}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{isInitialized()}{isInitialized()}}
+{\footnotesize\ttfamily bool Py\+Binding\+Manager\+::is\+Initialized (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Definition at line 515 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+initialized.
+
+
+
+Referenced by Backtest\+Worker\+::run().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a467b4f5d26cc1f4ec153c9d0be185e90_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a4879d10ef587514d2654945c6ed3bfb5}\label{classPyBindingManager_a4879d10ef587514d2654945c6ed3bfb5}} 
+\index{PyBindingManager@{PyBindingManager}!pythonToQVariant@{pythonToQVariant}}
+\index{pythonToQVariant@{pythonToQVariant}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{pythonToQVariant()}{pythonToQVariant()}}
+{\footnotesize\ttfamily QVariant Py\+Binding\+Manager\+::python\+To\+QVariant (\begin{DoxyParamCaption}\item[{const py\+::object \&}]{obj }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 476 of file pybinding.\+cpp.
+
+
+
+References set\+Error().
+
+
+
+Referenced by extract\+Data\+Frame(), extract\+Stat\+Value(), get\+Backtest\+Stats(), get\+Equity\+Curve(), get\+Stat\+Value(), and get\+Trades().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a4879d10ef587514d2654945c6ed3bfb5_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a4879d10ef587514d2654945c6ed3bfb5_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a795bf29466a782d88431906056daecd4}\label{classPyBindingManager_a795bf29466a782d88431906056daecd4}} 
+\index{PyBindingManager@{PyBindingManager}!runPythonBacktest@{runPythonBacktest}}
+\index{runPythonBacktest@{runPythonBacktest}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{runPythonBacktest()}{runPythonBacktest()}}
+{\footnotesize\ttfamily QVariant Py\+Binding\+Manager\+::run\+Python\+Backtest (\begin{DoxyParamCaption}\item[{const std\+::vector$<$ \mbox{\hyperlink{structOHLCBar}{OHLCBar}} $>$ \&}]{data,  }\item[{const QString \&}]{strategy\+Class,  }\item[{double}]{cash,  }\item[{double}]{spread,  }\item[{const QMap$<$ QString, QVariant $>$ \&}]{strategy\+Params }\end{DoxyParamCaption})}
+
+
+
+Definition at line 115 of file pybinding.\+cpp.
+
+
+
+References OHLCBar\+::close, convert\+Params\+To\+Python(), find\+Project\+Root(), OHLCBar\+::high, OHLCBar\+::low, m\+\_\+initialized, OHLCBar\+::open, set\+Error(), OHLCBar\+::timestamp, and OHLCBar\+::volume.
+
+
+
+Referenced by Backtest\+Worker\+::run().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a795bf29466a782d88431906056daecd4_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a795bf29466a782d88431906056daecd4_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classPyBindingManager_a2f90ef60ef4f8c60b57c2a665a96ec3f}\label{classPyBindingManager_a2f90ef60ef4f8c60b57c2a665a96ec3f}} 
+\index{PyBindingManager@{PyBindingManager}!setError@{setError}}
+\index{setError@{setError}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{setError()}{setError()}}
+{\footnotesize\ttfamily void Py\+Binding\+Manager\+::set\+Error (\begin{DoxyParamCaption}\item[{const QString \&}]{error }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 500 of file pybinding.\+cpp.
+
+
+
+References m\+\_\+last\+Error.
+
+
+
+Referenced by extract\+Data\+Frame(), get\+Backtest\+Stats(), get\+Equity\+Curve(), get\+Trades(), initialize(), python\+To\+QVariant(), and run\+Python\+Backtest().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/df1/classPyBindingManager_a2f90ef60ef4f8c60b57c2a665a96ec3f_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classPyBindingManager_ab87f260ee414f5212eaf9858a7876603}\label{classPyBindingManager_ab87f260ee414f5212eaf9858a7876603}} 
+\index{PyBindingManager@{PyBindingManager}!instance@{instance}}
+\index{instance@{instance}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{instance}{instance}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classPyBindingManager}{Py\+Binding\+Manager}} $\ast$ Py\+Binding\+Manager\+::instance = nullptr\hspace{0.3cm}{\ttfamily [static]}, {\ttfamily [private]}}
+
+
+
+Definition at line 66 of file pybinding.\+h.
+
+
+
+Referenced by get\+Instance().
+
+\mbox{\Hypertarget{classPyBindingManager_a6c166e8c45407e638cc87c90b2cb1b81}\label{classPyBindingManager_a6c166e8c45407e638cc87c90b2cb1b81}} 
+\index{PyBindingManager@{PyBindingManager}!m\_initialized@{m\_initialized}}
+\index{m\_initialized@{m\_initialized}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{m\_initialized}{m\_initialized}}
+{\footnotesize\ttfamily bool Py\+Binding\+Manager\+::m\+\_\+initialized\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 67 of file pybinding.\+h.
+
+
+
+Referenced by extract\+Data\+Frame(), extract\+Stat\+Value(), finalize(), get\+Backtest\+Stats(), get\+Equity\+Curve(), get\+Stat\+Value(), get\+Trades(), initialize(), is\+Initialized(), and run\+Python\+Backtest().
+
+\mbox{\Hypertarget{classPyBindingManager_a26c58fb3b88ef83297f760fd0098701c}\label{classPyBindingManager_a26c58fb3b88ef83297f760fd0098701c}} 
+\index{PyBindingManager@{PyBindingManager}!m\_lastError@{m\_lastError}}
+\index{m\_lastError@{m\_lastError}!PyBindingManager@{PyBindingManager}}
+\doxysubsubsection{\texorpdfstring{m\_lastError}{m\_lastError}}
+{\footnotesize\ttfamily QString Py\+Binding\+Manager\+::m\+\_\+last\+Error\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 68 of file pybinding.\+h.
+
+
+
+Referenced by clear\+Error(), get\+Last\+Error(), initialize(), and set\+Error().
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+backtest\+\_\+app\+\_\+cpp/src/binding/\mbox{\hyperlink{pybinding_8h}{pybinding.\+h}}\item 
+backtest\+\_\+app\+\_\+cpp/src/binding/\mbox{\hyperlink{pybinding_8cpp}{pybinding.\+cpp}}\end{DoxyCompactItemize}

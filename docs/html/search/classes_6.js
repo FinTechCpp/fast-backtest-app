@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['histogramview_385',['HistogramView',['../classHistogramView.html',1,'']]]
+  ['histogramview_396',['HistogramView',['../da/db4/classHistogramView.html',1,'']]]
 ];

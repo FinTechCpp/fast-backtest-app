@@ -1,0 +1,215 @@
+\hypertarget{classBaseView}{}\doxysection{Base\+View Class Reference}
+\label{classBaseView}\index{BaseView@{BaseView}}
+
+
+Classe de base abstraite pour toutes les vues de résultats du backtest.  
+
+
+
+
+{\ttfamily \#include $<$baseview.\+h$>$}
+
+
+
+Inheritance diagram for Base\+View\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{dc/d3f/classBaseView__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Base\+View\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=258pt]{dc/d53/classBaseView__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classBaseView_a9729dde922aa6747b6ad5a0967990b88}{Base\+View}} (QWidget $\ast$parent=nullptr)
+\begin{DoxyCompactList}\small\item\em Constructeur. \end{DoxyCompactList}\item 
+virtual \mbox{\hyperlink{classBaseView_a0af3913bc831a334b3c371cda2454a8c}{$\sim$\+Base\+View}} ()=default
+\begin{DoxyCompactList}\small\item\em Destructeur virtuel. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classBaseView_a569892cee63fbb68c0016d365f1949a7}{update\+Data}} (void $\ast$data, void $\ast$stats)=0
+\begin{DoxyCompactList}\small\item\em Met à jour la vue avec les nouvelles données du backtest. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classBaseView_a3b5d9811dfdea9f9855d9b89105cfbc5}{clear}} ()=0
+\begin{DoxyCompactList}\small\item\em Réinitialise la vue à son état initial. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classBaseView_a6ccfd4b2dda9313b53054bd97a024210}{clear\+Layout}} (QLayout $\ast$layout)
+\begin{DoxyCompactList}\small\item\em Utilitaire pour vider complètement un layout. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classBaseView_afd301a040e5cbb1801a1ce6972ccd231}{setup\+UI}} ()=0
+\begin{DoxyCompactList}\small\item\em Méthode virtuelle pour construire l\textquotesingle{}interface À implémenter dans les classes filles. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Attributes}
+\begin{DoxyCompactItemize}
+\item 
+QMap$<$ QString, QWidget $\ast$ $>$ \mbox{\hyperlink{classBaseView_a1138d885b193c8bd53edb4ec01328967}{m\+\_\+widgets}}
+\item 
+QVBox\+Layout $\ast$ \mbox{\hyperlink{classBaseView_afc7a5c99d2ab19a2dbfab2d9e7e8f2ba}{m\+\_\+main\+Layout}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Classe de base abstraite pour toutes les vues de résultats du backtest. 
+
+Definition at line 13 of file baseview.\+h.
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classBaseView_a9729dde922aa6747b6ad5a0967990b88}\label{classBaseView_a9729dde922aa6747b6ad5a0967990b88}} 
+\index{BaseView@{BaseView}!BaseView@{BaseView}}
+\index{BaseView@{BaseView}!BaseView@{BaseView}}
+\doxysubsubsection{\texorpdfstring{BaseView()}{BaseView()}}
+{\footnotesize\ttfamily Base\+View\+::\+Base\+View (\begin{DoxyParamCaption}\item[{QWidget $\ast$}]{parent = {\ttfamily nullptr} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}}
+
+
+
+Constructeur. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em parent} & Pointeur vers l\textquotesingle{}objet parent (maintenant un QWidget) \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 4 of file baseview.\+cpp.
+
+
+
+References m\+\_\+main\+Layout.
+
+\mbox{\Hypertarget{classBaseView_a0af3913bc831a334b3c371cda2454a8c}\label{classBaseView_a0af3913bc831a334b3c371cda2454a8c}} 
+\index{BaseView@{BaseView}!````~BaseView@{$\sim$BaseView}}
+\index{````~BaseView@{$\sim$BaseView}!BaseView@{BaseView}}
+\doxysubsubsection{\texorpdfstring{$\sim$BaseView()}{~BaseView()}}
+{\footnotesize\ttfamily virtual Base\+View\+::$\sim$\+Base\+View (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}, {\ttfamily [default]}}
+
+
+
+Destructeur virtuel. 
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classBaseView_a3b5d9811dfdea9f9855d9b89105cfbc5}\label{classBaseView_a3b5d9811dfdea9f9855d9b89105cfbc5}} 
+\index{BaseView@{BaseView}!clear@{clear}}
+\index{clear@{clear}!BaseView@{BaseView}}
+\doxysubsubsection{\texorpdfstring{clear()}{clear()}}
+{\footnotesize\ttfamily virtual void Base\+View\+::clear (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Réinitialise la vue à son état initial. 
+
+
+
+Implemented in \mbox{\hyperlink{classStatsView_a9bd648f2a520b2f44fc130ce9664461e}{Stats\+View}}, \mbox{\hyperlink{classHistogramView_abbf208651ca3988ff35094b8d9f509c2}{Histogram\+View}}, and \mbox{\hyperlink{classChartView_a54773b64f4d369157b35aa699313e35b}{Chart\+View}}.
+
+\mbox{\Hypertarget{classBaseView_a6ccfd4b2dda9313b53054bd97a024210}\label{classBaseView_a6ccfd4b2dda9313b53054bd97a024210}} 
+\index{BaseView@{BaseView}!clearLayout@{clearLayout}}
+\index{clearLayout@{clearLayout}!BaseView@{BaseView}}
+\doxysubsubsection{\texorpdfstring{clearLayout()}{clearLayout()}}
+{\footnotesize\ttfamily void Base\+View\+::clear\+Layout (\begin{DoxyParamCaption}\item[{QLayout $\ast$}]{layout }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}}
+
+
+
+Utilitaire pour vider complètement un layout. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em layout} & Layout à vider \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 11 of file baseview.\+cpp.
+
+\mbox{\Hypertarget{classBaseView_afd301a040e5cbb1801a1ce6972ccd231}\label{classBaseView_afd301a040e5cbb1801a1ce6972ccd231}} 
+\index{BaseView@{BaseView}!setupUI@{setupUI}}
+\index{setupUI@{setupUI}!BaseView@{BaseView}}
+\doxysubsubsection{\texorpdfstring{setupUI()}{setupUI()}}
+{\footnotesize\ttfamily virtual void Base\+View\+::setup\+UI (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [protected]}, {\ttfamily [pure virtual]}}
+
+
+
+Méthode virtuelle pour construire l\textquotesingle{}interface À implémenter dans les classes filles. 
+
+
+
+Implemented in \mbox{\hyperlink{classStatsView_a6e9fdcacf34a570faa9bbfb21bf6e158}{Stats\+View}}, \mbox{\hyperlink{classHistogramView_af72a9a6181c37875dd3b4ffe90047ff6}{Histogram\+View}}, and \mbox{\hyperlink{classChartView_abcf0ad5b8eb8b665acdf71f7dd97f10e}{Chart\+View}}.
+
+\mbox{\Hypertarget{classBaseView_a569892cee63fbb68c0016d365f1949a7}\label{classBaseView_a569892cee63fbb68c0016d365f1949a7}} 
+\index{BaseView@{BaseView}!updateData@{updateData}}
+\index{updateData@{updateData}!BaseView@{BaseView}}
+\doxysubsubsection{\texorpdfstring{updateData()}{updateData()}}
+{\footnotesize\ttfamily virtual void Base\+View\+::update\+Data (\begin{DoxyParamCaption}\item[{void $\ast$}]{data,  }\item[{void $\ast$}]{stats }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [pure virtual]}}
+
+
+
+Met à jour la vue avec les nouvelles données du backtest. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em data} & Pointeur vers les données utilisées pour le backtest \\
+\hline
+{\em stats} & Pointeur vers les statistiques résultantes \\
+\hline
+\end{DoxyParams}
+
+
+Implemented in \mbox{\hyperlink{classStatsView_abc04930f47c1da995f699f647bd19b3a}{Stats\+View}}, \mbox{\hyperlink{classHistogramView_a785a4ea7726e56236ffeb79c411a83eb}{Histogram\+View}}, and \mbox{\hyperlink{classChartView_a560c444b2ec080d3289bad7b9f0b6ddd}{Chart\+View}}.
+
+
+
+Referenced by Result\+Manager\+::update\+All\+Views().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d94/classBaseView_a569892cee63fbb68c0016d365f1949a7_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classBaseView_afc7a5c99d2ab19a2dbfab2d9e7e8f2ba}\label{classBaseView_afc7a5c99d2ab19a2dbfab2d9e7e8f2ba}} 
+\index{BaseView@{BaseView}!m\_mainLayout@{m\_mainLayout}}
+\index{m\_mainLayout@{m\_mainLayout}!BaseView@{BaseView}}
+\doxysubsubsection{\texorpdfstring{m\_mainLayout}{m\_mainLayout}}
+{\footnotesize\ttfamily QVBox\+Layout$\ast$ Base\+View\+::m\+\_\+main\+Layout\hspace{0.3cm}{\ttfamily [protected]}}
+
+Layout principal de la vue 
+
+Definition at line 46 of file baseview.\+h.
+
+
+
+Referenced by Base\+View(), Chart\+View\+::clear(), Chart\+View\+::create\+Chart(), Chart\+View\+::setup\+UI(), Histogram\+View\+::setup\+UI(), and Stats\+View\+::setup\+UI().
+
+\mbox{\Hypertarget{classBaseView_a1138d885b193c8bd53edb4ec01328967}\label{classBaseView_a1138d885b193c8bd53edb4ec01328967}} 
+\index{BaseView@{BaseView}!m\_widgets@{m\_widgets}}
+\index{m\_widgets@{m\_widgets}!BaseView@{BaseView}}
+\doxysubsubsection{\texorpdfstring{m\_widgets}{m\_widgets}}
+{\footnotesize\ttfamily QMap$<$QString, QWidget$\ast$$>$ Base\+View\+::m\+\_\+widgets\hspace{0.3cm}{\ttfamily [protected]}}
+
+Dictionnaire des widgets de la vue 
+
+Definition at line 43 of file baseview.\+h.
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+backtest\+\_\+app\+\_\+cpp/src/views/\mbox{\hyperlink{baseview_8h}{baseview.\+h}}\item 
+backtest\+\_\+app\+\_\+cpp/src/views/\mbox{\hyperlink{baseview_8cpp}{baseview.\+cpp}}\end{DoxyCompactItemize}

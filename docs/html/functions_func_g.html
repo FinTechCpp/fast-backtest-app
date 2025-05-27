@@ -9,6 +9,10 @@
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
@@ -46,6 +50,22 @@ $(function() {
 /* @license-end */</script>
 <div id="main-nav"></div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('functions_func_g.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -65,100 +85,112 @@ $(function() {
 
 <h3><a id="index_g"></a>- g -</h3><ul>
 <li>GeneralParamsPanel()
-: <a class="el" href="classGeneralParamsPanel.html#a5dde90ab0079a8e0b4e3345809870240">GeneralParamsPanel</a>
+: <a class="el" href="db/deb/classGeneralParamsPanel.html#a5dde90ab0079a8e0b4e3345809870240">GeneralParamsPanel</a>
+</li>
+<li>generatePeriodKey()
+: <a class="el" href="da/db4/classHistogramView.html#a7a626502475dad9849bcd32262cfc751">HistogramView</a>
 </li>
 <li>getBacktestStats()
-: <a class="el" href="classPyBindingManager.html#af597b0fa9c1a832156e1a787013e4c25">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#af597b0fa9c1a832156e1a787013e4c25">PyBindingManager</a>
 </li>
 <li>getConfigFilePath()
-: <a class="el" href="classConfigManager.html#af654e2de3d2595cf957076975cc4c6d8">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#af654e2de3d2595cf957076975cc4c6d8">ConfigManager</a>
 </li>
 <li>getConfigManager()
-: <a class="el" href="classApp.html#a569af5ff8401e5788a7e2841625489a4">App</a>
+: <a class="el" href="dd/d64/classApp.html#a569af5ff8401e5788a7e2841625489a4">App</a>
 </li>
 <li>getCurrentProfile()
-: <a class="el" href="classConfigManager.html#a2c11ec38faaca5aa5fc27bb1b8b5c564">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#a2c11ec38faaca5aa5fc27bb1b8b5c564">ConfigManager</a>
 </li>
 <li>getEquityCurve()
-: <a class="el" href="classPyBindingManager.html#ae4fd4e757fdd7732ba1e8b9da41d208b">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#ae4fd4e757fdd7732ba1e8b9da41d208b">PyBindingManager</a>
 </li>
 <li>getEquityData()
-: <a class="el" href="classPyBindingManager.html#a9cd34ed9d196c811657926125e129e57">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#a9cd34ed9d196c811657926125e129e57">PyBindingManager</a>
+</li>
+<li>getFullDateLabel()
+: <a class="el" href="da/db4/classHistogramView.html#a914d83cd5ef1eff494db80585502f91d">HistogramView</a>
 </li>
 <li>getGeneralParamsPanel()
-: <a class="el" href="classApp.html#a784182b4769a81eaedf71de372b7babf">App</a>
+: <a class="el" href="dd/d64/classApp.html#a784182b4769a81eaedf71de372b7babf">App</a>
 </li>
 <li>getIndicatorConfig()
-: <a class="el" href="classApp.html#a7785ea96c73ff1073163e29899128b19">App</a>
+: <a class="el" href="dd/d64/classApp.html#a7785ea96c73ff1073163e29899128b19">App</a>
 </li>
 <li>getInstance()
-: <a class="el" href="classPyBindingManager.html#a57f4a919f81aace164f54015a8a12c47">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#a57f4a919f81aace164f54015a8a12c47">PyBindingManager</a>
 </li>
 <li>getLastError()
-: <a class="el" href="classPyBindingManager.html#afa5b0fb40d12ba14b24ea6ba1f6c6337">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#afa5b0fb40d12ba14b24ea6ba1f6c6337">PyBindingManager</a>
 </li>
 <li>getLayout()
-: <a class="el" href="classBacktestRunner.html#ad0e674bce023dd84a34408ea2cd9f7b1">BacktestRunner</a>
+: <a class="el" href="d2/d3d/classBacktestRunner.html#ad0e674bce023dd84a34408ea2cd9f7b1">BacktestRunner</a>
 </li>
 <li>getMarketDataPaths()
-: <a class="el" href="classDataLoader.html#a4cc93062d565fcdedc300ef40ab5de40">DataLoader</a>
+: <a class="el" href="d4/d85/classDataLoader.html#a4cc93062d565fcdedc300ef40ab5de40">DataLoader</a>
 </li>
 <li>getProfile()
-: <a class="el" href="classConfigManager.html#a3af4a4fb5f73524c5079fae3e29c46bd">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#a3af4a4fb5f73524c5079fae3e29c46bd">ConfigManager</a>
 </li>
 <li>getProfileFromUI()
-: <a class="el" href="classConfigManager.html#a2d4fd3766c78d3eac3e67d4dc9735c9c">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#a2d4fd3766c78d3eac3e67d4dc9735c9c">ConfigManager</a>
+</li>
+<li>getRepresentativeDate()
+: <a class="el" href="da/db4/classHistogramView.html#a5696dc09d087d527b7e9773f0204f294">HistogramView</a>
 </li>
 <li>getStatDouble()
-: <a class="el" href="classPyBindingManager.html#ab54d482f13405f2716a23e3ea18425e3">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#ab54d482f13405f2716a23e3ea18425e3">PyBindingManager</a>
 </li>
 <li>getStatString()
-: <a class="el" href="classPyBindingManager.html#ac5330ce834e460f79c00ce558deafb1f">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#ac5330ce834e460f79c00ce558deafb1f">PyBindingManager</a>
 </li>
 <li>getStatValue()
-: <a class="el" href="classPyBindingManager.html#a032188a5c942aeed2347b0dc23e3c7be">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#a032188a5c942aeed2347b0dc23e3c7be">PyBindingManager</a>
 </li>
 <li>getStrategyBasePanel()
-: <a class="el" href="classApp.html#a59052cf80a4e02fa130d3509c9d25a2a">App</a>
+: <a class="el" href="dd/d64/classApp.html#a59052cf80a4e02fa130d3509c9d25a2a">App</a>
 </li>
 <li>getStrategyConfig()
-: <a class="el" href="classApp.html#abc976f427450f86d2fb3860c4e95dbed">App</a>
+: <a class="el" href="dd/d64/classApp.html#abc976f427450f86d2fb3860c4e95dbed">App</a>
 </li>
 <li>getStrategySpecificPanel()
-: <a class="el" href="classApp.html#ae7e5cc49b02d6feab9d19620f6455f2f">App</a>
+: <a class="el" href="dd/d64/classApp.html#ae7e5cc49b02d6feab9d19620f6455f2f">App</a>
 </li>
 <li>getTabWidget()
-: <a class="el" href="classResultManager.html#ab3158cc4cf45b610c5a801b354365776">ResultManager</a>
+: <a class="el" href="d3/d47/classResultManager.html#ab3158cc4cf45b610c5a801b354365776">ResultManager</a>
 </li>
 <li>getTrades()
-: <a class="el" href="classPyBindingManager.html#a349ed0dfddeb118deac13f5cfcd9ff8b">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#a349ed0dfddeb118deac13f5cfcd9ff8b">PyBindingManager</a>
 </li>
 <li>getTradesData()
-: <a class="el" href="classPyBindingManager.html#ad05f6bc92192c082b43b8b8819a05bd3">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#ad05f6bc92192c082b43b8b8819a05bd3">PyBindingManager</a>
 </li>
 <li>getValues()
-: <a class="el" href="classBasePanel.html#ad49908813b6dec308db7bfbb32a9d999">BasePanel</a>
-, <a class="el" href="classBuyHeikinGreenPanel.html#a3cd348516defc282fdfb32748e9f6f97">BuyHeikinGreenPanel</a>
-, <a class="el" href="classCrossEMAPanel.html#a9ed7849f425cb217c5955a588d767f1b">CrossEMAPanel</a>
-, <a class="el" href="classGeneralParamsPanel.html#af5c4f87007fdce8d8ef1238f64708881">GeneralParamsPanel</a>
-, <a class="el" href="classSellHeikinRedPanel.html#ad2e8cb862af54548ea23e56c9b38169f">SellHeikinRedPanel</a>
-, <a class="el" href="classStrategyBasePanel.html#ad4efc8d3a9fe28097a271c30a3bb18bf">StrategyBasePanel</a>
-, <a class="el" href="classStrategySpecificPanel.html#afcc4dd34a23c3469ec8b08e062e1f229">StrategySpecificPanel</a>
+: <a class="el" href="dc/d47/classBasePanel.html#ad49908813b6dec308db7bfbb32a9d999">BasePanel</a>
+, <a class="el" href="d5/d30/classBuyHeikinGreenPanel.html#a3cd348516defc282fdfb32748e9f6f97">BuyHeikinGreenPanel</a>
+, <a class="el" href="d3/d37/classCrossEMAPanel.html#a9ed7849f425cb217c5955a588d767f1b">CrossEMAPanel</a>
+, <a class="el" href="db/deb/classGeneralParamsPanel.html#af5c4f87007fdce8d8ef1238f64708881">GeneralParamsPanel</a>
+, <a class="el" href="d2/dce/classSellHeikinRedPanel.html#ad2e8cb862af54548ea23e56c9b38169f">SellHeikinRedPanel</a>
+, <a class="el" href="dd/d0f/classStrategyBasePanel.html#ad4efc8d3a9fe28097a271c30a3bb18bf">StrategyBasePanel</a>
+, <a class="el" href="df/d22/classStrategySpecificPanel.html#afcc4dd34a23c3469ec8b08e062e1f229">StrategySpecificPanel</a>
 </li>
 <li>getWidgetByName()
-: <a class="el" href="classGeneralParamsPanel.html#a465c81976c6d09ac3df61ed287466e9c">GeneralParamsPanel</a>
+: <a class="el" href="db/deb/classGeneralParamsPanel.html#a465c81976c6d09ac3df61ed287466e9c">GeneralParamsPanel</a>
 </li>
 <li>getWidgetMapping()
-: <a class="el" href="classConfigManager.html#a2e458c7a9c4c8bb52a249e372bf68452">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#a2e458c7a9c4c8bb52a249e372bf68452">ConfigManager</a>
 </li>
 <li>groupDataByTimeUnit()
-: <a class="el" href="classHistogramView.html#aecdff7fa1948c93aec61389ef7e9c3c4">HistogramView</a>
+: <a class="el" href="da/db4/classHistogramView.html#aecdff7fa1948c93aec61389ef7e9c3c4">HistogramView</a>
 </li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
 </body>
 </html>

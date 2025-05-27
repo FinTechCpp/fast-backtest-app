@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['sell_5fmarker_5fcolor_759',['SELL_MARKER_COLOR',['../chart__view_8h.html#ab76d428b923ed12eddb75665695a4d46',1,'chart_view.h']]]
+  ['pnl_781',['pnl',['../d3/dcd/structTradeData.html#afc39bb6c77bda98b19e7bb558ac69330',1,'TradeData']]]
 ];

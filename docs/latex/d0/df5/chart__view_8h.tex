@@ -1,0 +1,84 @@
+\hypertarget{chart__view_8h}{}\doxysection{backtest\+\_\+app\+\_\+cpp/src/views/chart\+\_\+view.h File Reference}
+\label{chart__view_8h}\index{backtest\_app\_cpp/src/views/chart\_view.h@{backtest\_app\_cpp/src/views/chart\_view.h}}
+{\ttfamily \#include $<$QObject$>$}\newline
+{\ttfamily \#include $<$QWidget$>$}\newline
+{\ttfamily \#include $<$QVBox\+Layout$>$}\newline
+{\ttfamily \#include $<$QHBox\+Layout$>$}\newline
+{\ttfamily \#include $<$QLabel$>$}\newline
+{\ttfamily \#include $<$QCheck\+Box$>$}\newline
+{\ttfamily \#include $<$QCombo\+Box$>$}\newline
+{\ttfamily \#include $<$QPush\+Button$>$}\newline
+{\ttfamily \#include $<$QScroll\+Area$>$}\newline
+{\ttfamily \#include $<$QMain\+Window$>$}\newline
+{\ttfamily \#include $<$QLine\+Edit$>$}\newline
+{\ttfamily \#include $<$QButton\+Group$>$}\newline
+{\ttfamily \#include $<$QMouse\+Event$>$}\newline
+{\ttfamily \#include $<$vector$>$}\newline
+{\ttfamily \#include $<$memory$>$}\newline
+{\ttfamily \#include $<$map$>$}\newline
+{\ttfamily \#include \char`\"{}baseview.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}../binding/pybinding.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}../../\+Chart\+Director/qtdemo/qtdemo/qchartviewer.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}../../\+Chart\+Director/include/chartdir.\+h\char`\"{}}\newline
+{\ttfamily \#include \char`\"{}../../\+Chart\+Director/include/\+Finance\+Chart.\+h\char`\"{}}\newline
+{\ttfamily \#include $<$pybind11/pybind11.\+h$>$}\newline
+{\ttfamily \#include $<$pybind11/embed.\+h$>$}\newline
+{\ttfamily \#include $<$pybind11/stl.\+h$>$}\newline
+{\ttfamily \#include $<$pybind11/numpy.\+h$>$}\newline
+Include dependency graph for chart\+\_\+view.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{de/d29/chart__view_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{de/d6b/chart__view_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structPriceData}{Price\+Data}}
+\begin{DoxyCompactList}\small\item\em Structure pour stocker les données de prix. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structTradeData}{Trade\+Data}}
+\begin{DoxyCompactList}\small\item\em Structure pour stocker les données des trades. \end{DoxyCompactList}\item 
+struct \mbox{\hyperlink{structEquityData}{Equity\+Data}}
+\begin{DoxyCompactList}\small\item\em Structure pour stocker les données d\textquotesingle{}équité \end{DoxyCompactList}\item 
+class \mbox{\hyperlink{classChartView}{Chart\+View}}
+\begin{DoxyCompactList}\small\item\em Vue pour afficher les graphiques de prix et d\textquotesingle{}indicateurs. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const int \mbox{\hyperlink{chart__view_8h_ad25db7d41d1d188d38f82dd1ea04bc15}{BUY\+\_\+\+MARKER\+\_\+\+COLOR}} = 0x00\+FF00
+\item 
+const int \mbox{\hyperlink{chart__view_8h_ab76d428b923ed12eddb75665695a4d46}{SELL\+\_\+\+MARKER\+\_\+\+COLOR}} = 0x\+FF0000
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Variable Documentation}
+\mbox{\Hypertarget{chart__view_8h_ad25db7d41d1d188d38f82dd1ea04bc15}\label{chart__view_8h_ad25db7d41d1d188d38f82dd1ea04bc15}} 
+\index{chart\_view.h@{chart\_view.h}!BUY\_MARKER\_COLOR@{BUY\_MARKER\_COLOR}}
+\index{BUY\_MARKER\_COLOR@{BUY\_MARKER\_COLOR}!chart\_view.h@{chart\_view.h}}
+\doxysubsubsection{\texorpdfstring{BUY\_MARKER\_COLOR}{BUY\_MARKER\_COLOR}}
+{\footnotesize\ttfamily const int BUY\+\_\+\+MARKER\+\_\+\+COLOR = 0x00\+FF00}
+
+
+
+Definition at line 34 of file chart\+\_\+view.\+h.
+
+\mbox{\Hypertarget{chart__view_8h_ab76d428b923ed12eddb75665695a4d46}\label{chart__view_8h_ab76d428b923ed12eddb75665695a4d46}} 
+\index{chart\_view.h@{chart\_view.h}!SELL\_MARKER\_COLOR@{SELL\_MARKER\_COLOR}}
+\index{SELL\_MARKER\_COLOR@{SELL\_MARKER\_COLOR}!chart\_view.h@{chart\_view.h}}
+\doxysubsubsection{\texorpdfstring{SELL\_MARKER\_COLOR}{SELL\_MARKER\_COLOR}}
+{\footnotesize\ttfamily const int SELL\+\_\+\+MARKER\+\_\+\+COLOR = 0x\+FF0000}
+
+
+
+Definition at line 35 of file chart\+\_\+view.\+h.
+

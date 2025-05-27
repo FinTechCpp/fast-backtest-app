@@ -1,0 +1,164 @@
+\hypertarget{classBacktestWorker}{}\doxysection{Backtest\+Worker Class Reference}
+\label{classBacktestWorker}\index{BacktestWorker@{BacktestWorker}}
+
+
+{\ttfamily \#include $<$backtest\+\_\+runner.\+h$>$}
+
+
+
+Inheritance diagram for Backtest\+Worker\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=214pt]{de/d4d/classBacktestWorker__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Backtest\+Worker\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{d5/d96/classBacktestWorker__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Signals}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classBacktestWorker_a062e42ffe7a8d6e11cc2d1c5fb45bda8}{finished}} (void $\ast$data, void $\ast$stats)
+\item 
+void \mbox{\hyperlink{classBacktestWorker_aadf7ed9775f7619f2f1d7569f80b1604}{error}} (const QString \&message)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classBacktestWorker_a2ff6691f37679d083ab7cd90aee8fb4b}{Backtest\+Worker}} (\mbox{\hyperlink{classApp}{App}} $\ast$main\+Window, QObject $\ast$parent=nullptr)
+\item 
+\mbox{\hyperlink{classBacktestWorker_a675eb915b14c0219ac842427c00bf9ba}{$\sim$\+Backtest\+Worker}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classBacktestWorker_a3dbd6f88f5cedaf165388f916d73e8c7}{run}} () override
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classApp}{App}} $\ast$ \mbox{\hyperlink{classBacktestWorker_ac80b16dd64bfeba0870688d7f7772228}{m\+\_\+main\+Window}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+
+
+Definition at line 58 of file backtest\+\_\+runner.\+h.
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classBacktestWorker_a2ff6691f37679d083ab7cd90aee8fb4b}\label{classBacktestWorker_a2ff6691f37679d083ab7cd90aee8fb4b}} 
+\index{BacktestWorker@{BacktestWorker}!BacktestWorker@{BacktestWorker}}
+\index{BacktestWorker@{BacktestWorker}!BacktestWorker@{BacktestWorker}}
+\doxysubsubsection{\texorpdfstring{BacktestWorker()}{BacktestWorker()}}
+{\footnotesize\ttfamily Backtest\+Worker\+::\+Backtest\+Worker (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{classApp}{App}} $\ast$}]{main\+Window,  }\item[{QObject $\ast$}]{parent = {\ttfamily nullptr} }\end{DoxyParamCaption})}
+
+
+
+Definition at line 138 of file backtest\+\_\+runner.\+cpp.
+
+\mbox{\Hypertarget{classBacktestWorker_a675eb915b14c0219ac842427c00bf9ba}\label{classBacktestWorker_a675eb915b14c0219ac842427c00bf9ba}} 
+\index{BacktestWorker@{BacktestWorker}!````~BacktestWorker@{$\sim$BacktestWorker}}
+\index{````~BacktestWorker@{$\sim$BacktestWorker}!BacktestWorker@{BacktestWorker}}
+\doxysubsubsection{\texorpdfstring{$\sim$BacktestWorker()}{~BacktestWorker()}}
+{\footnotesize\ttfamily Backtest\+Worker\+::$\sim$\+Backtest\+Worker (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line 144 of file backtest\+\_\+runner.\+cpp.
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classBacktestWorker_aadf7ed9775f7619f2f1d7569f80b1604}\label{classBacktestWorker_aadf7ed9775f7619f2f1d7569f80b1604}} 
+\index{BacktestWorker@{BacktestWorker}!error@{error}}
+\index{error@{error}!BacktestWorker@{BacktestWorker}}
+\doxysubsubsection{\texorpdfstring{error}{error}}
+{\footnotesize\ttfamily void Backtest\+Worker\+::error (\begin{DoxyParamCaption}\item[{const QString \&}]{message }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [signal]}}
+
+
+
+Referenced by run(), and Backtest\+Runner\+::run\+Backtest().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d7/daa/classBacktestWorker_aadf7ed9775f7619f2f1d7569f80b1604_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classBacktestWorker_a062e42ffe7a8d6e11cc2d1c5fb45bda8}\label{classBacktestWorker_a062e42ffe7a8d6e11cc2d1c5fb45bda8}} 
+\index{BacktestWorker@{BacktestWorker}!finished@{finished}}
+\index{finished@{finished}!BacktestWorker@{BacktestWorker}}
+\doxysubsubsection{\texorpdfstring{finished}{finished}}
+{\footnotesize\ttfamily void Backtest\+Worker\+::finished (\begin{DoxyParamCaption}\item[{void $\ast$}]{data,  }\item[{void $\ast$}]{stats }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [signal]}}
+
+
+
+Referenced by run(), and Backtest\+Runner\+::run\+Backtest().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d7/daa/classBacktestWorker_a062e42ffe7a8d6e11cc2d1c5fb45bda8_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classBacktestWorker_a3dbd6f88f5cedaf165388f916d73e8c7}\label{classBacktestWorker_a3dbd6f88f5cedaf165388f916d73e8c7}} 
+\index{BacktestWorker@{BacktestWorker}!run@{run}}
+\index{run@{run}!BacktestWorker@{BacktestWorker}}
+\doxysubsubsection{\texorpdfstring{run()}{run()}}
+{\footnotesize\ttfamily void Backtest\+Worker\+::run (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [protected]}}
+
+
+
+Definition at line 149 of file backtest\+\_\+runner.\+cpp.
+
+
+
+References error(), finished(), App\+::get\+General\+Params\+Panel(), Py\+Binding\+Manager\+::get\+Instance(), Py\+Binding\+Manager\+::get\+Last\+Error(), App\+::get\+Strategy\+Base\+Panel(), App\+::get\+Strategy\+Specific\+Panel(), Base\+Panel\+::get\+Values(), General\+Params\+Panel\+::get\+Values(), Strategy\+Base\+Panel\+::get\+Values(), Py\+Binding\+Manager\+::is\+Initialized(), Data\+Loader\+::load\+Data(), m\+\_\+main\+Window, and Py\+Binding\+Manager\+::run\+Python\+Backtest().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d7/daa/classBacktestWorker_a3dbd6f88f5cedaf165388f916d73e8c7_cgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classBacktestWorker_ac80b16dd64bfeba0870688d7f7772228}\label{classBacktestWorker_ac80b16dd64bfeba0870688d7f7772228}} 
+\index{BacktestWorker@{BacktestWorker}!m\_mainWindow@{m\_mainWindow}}
+\index{m\_mainWindow@{m\_mainWindow}!BacktestWorker@{BacktestWorker}}
+\doxysubsubsection{\texorpdfstring{m\_mainWindow}{m\_mainWindow}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classApp}{App}}$\ast$ Backtest\+Worker\+::m\+\_\+main\+Window\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 74 of file backtest\+\_\+runner.\+h.
+
+
+
+Referenced by run().
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+backtest\+\_\+app\+\_\+cpp/src/components/\mbox{\hyperlink{backtest__runner_8h}{backtest\+\_\+runner.\+h}}\item 
+backtest\+\_\+app\+\_\+cpp/src/components/\mbox{\hyperlink{backtest__runner_8cpp}{backtest\+\_\+runner.\+cpp}}\end{DoxyCompactItemize}

@@ -1,0 +1,456 @@
+\hypertarget{classResultManager}{}\doxysection{Result\+Manager Class Reference}
+\label{classResultManager}\index{ResultManager@{ResultManager}}
+
+
+Gestionnaire principal des résultats -\/ GÈ\+RE les vues, n\textquotesingle{}EST PAS une vue.  
+
+
+
+
+{\ttfamily \#include $<$result\+\_\+manager.\+h$>$}
+
+
+
+Inheritance diagram for Result\+Manager\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=278pt]{d6/d55/classResultManager__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Result\+Manager\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{db/dbb/classResultManager__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classResultManager_a5394dccb48fe9faed62064f80d421a0e}{Result\+Manager}} (QWidget $\ast$parent=nullptr)
+\item 
+void \mbox{\hyperlink{classResultManager_afdd47d396e9e387875cd34c0bb4045d8}{update\+All\+Views}} (void $\ast$data, void $\ast$stats)
+\item 
+void \mbox{\hyperlink{classResultManager_ab29727a64c18ef96f488e90f6eb58a09}{clear\+All\+Views}} ()
+\item 
+void \mbox{\hyperlink{classResultManager_a7aa04622e48f8ab84c1c76e81e2056a3}{set\+Current\+Tab}} (int index)
+\item 
+QTab\+Widget $\ast$ \mbox{\hyperlink{classResultManager_ab3158cc4cf45b610c5a801b354365776}{get\+Tab\+Widget}} () const
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classResultManager_a9bc6df52f6142d1a8a51a263400db333}{resize\+Event}} (QResize\+Event $\ast$event) override
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classResultManager_aedc787d28ec92378fb37b8ec7bb4a31f}{on\+Tab\+Resized}} ()
+\item 
+void \mbox{\hyperlink{classResultManager_a8bb5581bc8401b26fa6bd92952105a84}{on\+Tab\+Changed}} (int index)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classResultManager_a8b29e3b48f4e4d9429fb6782870dcdaa}{setup\+UI}} ()
+\item 
+void \mbox{\hyperlink{classResultManager_abf50a8be86e2fd12d7242fc570f0d09f}{setup\+Views}} ()
+\item 
+void \mbox{\hyperlink{classResultManager_a8e96636c0001338504e504eb4d93ffc7}{setup\+Connections}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+QVBox\+Layout $\ast$ \mbox{\hyperlink{classResultManager_a9f8f6a3e887e7fb42c234f48f4dfb8a5}{m\+\_\+main\+Layout}}
+\item 
+QTab\+Widget $\ast$ \mbox{\hyperlink{classResultManager_a483a8cb1916e3297e056acbfe62af057}{m\+\_\+tab\+Widget}}
+\item 
+\mbox{\hyperlink{classStatsView}{Stats\+View}} $\ast$ \mbox{\hyperlink{classResultManager_a009a61f9b28bbaa8ad05ab1c16187805}{m\+\_\+stats\+View}}
+\item 
+\mbox{\hyperlink{classChartView}{Chart\+View}} $\ast$ \mbox{\hyperlink{classResultManager_a48b73f8b460af94b568db51939831e4e}{m\+\_\+chart\+View}}
+\item 
+\mbox{\hyperlink{classHistogramView}{Histogram\+View}} $\ast$ \mbox{\hyperlink{classResultManager_a0694ca8ee9c7be77aabcc290032f998c}{m\+\_\+histogram\+View}}
+\item 
+QMap$<$ QString, \mbox{\hyperlink{classBaseView}{Base\+View}} $\ast$ $>$ \mbox{\hyperlink{classResultManager_aa3f87ce8f466ea83493318c3a0901f31}{m\+\_\+views}}
+\item 
+QTimer $\ast$ \mbox{\hyperlink{classResultManager_a165571d888126f987a67cab64e43a211}{m\+\_\+resize\+Timer}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Gestionnaire principal des résultats -\/ GÈ\+RE les vues, n\textquotesingle{}EST PAS une vue. 
+
+Definition at line 21 of file result\+\_\+manager.\+h.
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classResultManager_a5394dccb48fe9faed62064f80d421a0e}\label{classResultManager_a5394dccb48fe9faed62064f80d421a0e}} 
+\index{ResultManager@{ResultManager}!ResultManager@{ResultManager}}
+\index{ResultManager@{ResultManager}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{ResultManager()}{ResultManager()}}
+{\footnotesize\ttfamily Result\+Manager\+::\+Result\+Manager (\begin{DoxyParamCaption}\item[{QWidget $\ast$}]{parent = {\ttfamily nullptr} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [explicit]}}
+
+
+
+Definition at line 12 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+chart\+View, m\+\_\+histogram\+View, m\+\_\+stats\+View, setup\+Connections(), setup\+UI(), and setup\+Views().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_a5394dccb48fe9faed62064f80d421a0e_cgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classResultManager_ab29727a64c18ef96f488e90f6eb58a09}\label{classResultManager_ab29727a64c18ef96f488e90f6eb58a09}} 
+\index{ResultManager@{ResultManager}!clearAllViews@{clearAllViews}}
+\index{clearAllViews@{clearAllViews}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{clearAllViews()}{clearAllViews()}}
+{\footnotesize\ttfamily void Result\+Manager\+::clear\+All\+Views (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line 48 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+views.
+
+\mbox{\Hypertarget{classResultManager_ab3158cc4cf45b610c5a801b354365776}\label{classResultManager_ab3158cc4cf45b610c5a801b354365776}} 
+\index{ResultManager@{ResultManager}!getTabWidget@{getTabWidget}}
+\index{getTabWidget@{getTabWidget}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{getTabWidget()}{getTabWidget()}}
+{\footnotesize\ttfamily QTab\+Widget$\ast$ Result\+Manager\+::get\+Tab\+Widget (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Definition at line 32 of file result\+\_\+manager.\+h.
+
+
+
+References m\+\_\+tab\+Widget.
+
+\mbox{\Hypertarget{classResultManager_a8bb5581bc8401b26fa6bd92952105a84}\label{classResultManager_a8bb5581bc8401b26fa6bd92952105a84}} 
+\index{ResultManager@{ResultManager}!onTabChanged@{onTabChanged}}
+\index{onTabChanged@{onTabChanged}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{onTabChanged}{onTabChanged}}
+{\footnotesize\ttfamily void Result\+Manager\+::on\+Tab\+Changed (\begin{DoxyParamCaption}\item[{int}]{index }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 98 of file result\+\_\+manager.\+cpp.
+
+
+
+Referenced by setup\+Connections().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_a8bb5581bc8401b26fa6bd92952105a84_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classResultManager_aedc787d28ec92378fb37b8ec7bb4a31f}\label{classResultManager_aedc787d28ec92378fb37b8ec7bb4a31f}} 
+\index{ResultManager@{ResultManager}!onTabResized@{onTabResized}}
+\index{onTabResized@{onTabResized}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{onTabResized}{onTabResized}}
+{\footnotesize\ttfamily void Result\+Manager\+::on\+Tab\+Resized (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 75 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+chart\+View, m\+\_\+tab\+Widget, and Chart\+View\+::resize\+Chart().
+
+
+
+Referenced by setup\+Connections().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_aedc787d28ec92378fb37b8ec7bb4a31f_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_aedc787d28ec92378fb37b8ec7bb4a31f_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classResultManager_a9bc6df52f6142d1a8a51a263400db333}\label{classResultManager_a9bc6df52f6142d1a8a51a263400db333}} 
+\index{ResultManager@{ResultManager}!resizeEvent@{resizeEvent}}
+\index{resizeEvent@{resizeEvent}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{resizeEvent()}{resizeEvent()}}
+{\footnotesize\ttfamily void Result\+Manager\+::resize\+Event (\begin{DoxyParamCaption}\item[{QResize\+Event $\ast$}]{event }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [protected]}}
+
+
+
+Definition at line 62 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+resize\+Timer.
+
+\mbox{\Hypertarget{classResultManager_a7aa04622e48f8ab84c1c76e81e2056a3}\label{classResultManager_a7aa04622e48f8ab84c1c76e81e2056a3}} 
+\index{ResultManager@{ResultManager}!setCurrentTab@{setCurrentTab}}
+\index{setCurrentTab@{setCurrentTab}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{setCurrentTab()}{setCurrentTab()}}
+{\footnotesize\ttfamily void Result\+Manager\+::set\+Current\+Tab (\begin{DoxyParamCaption}\item[{int}]{index }\end{DoxyParamCaption})}
+
+
+
+Definition at line 55 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+tab\+Widget.
+
+\mbox{\Hypertarget{classResultManager_a8e96636c0001338504e504eb4d93ffc7}\label{classResultManager_a8e96636c0001338504e504eb4d93ffc7}} 
+\index{ResultManager@{ResultManager}!setupConnections@{setupConnections}}
+\index{setupConnections@{setupConnections}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{setupConnections()}{setupConnections()}}
+{\footnotesize\ttfamily void Result\+Manager\+::setup\+Connections (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 155 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+resize\+Timer, m\+\_\+tab\+Widget, on\+Tab\+Changed(), and on\+Tab\+Resized().
+
+
+
+Referenced by Result\+Manager().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_a8e96636c0001338504e504eb4d93ffc7_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_a8e96636c0001338504e504eb4d93ffc7_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classResultManager_a8b29e3b48f4e4d9429fb6782870dcdaa}\label{classResultManager_a8b29e3b48f4e4d9429fb6782870dcdaa}} 
+\index{ResultManager@{ResultManager}!setupUI@{setupUI}}
+\index{setupUI@{setupUI}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{setupUI()}{setupUI()}}
+{\footnotesize\ttfamily void Result\+Manager\+::setup\+UI (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 114 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+main\+Layout, and m\+\_\+tab\+Widget.
+
+
+
+Referenced by Result\+Manager().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_a8b29e3b48f4e4d9429fb6782870dcdaa_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classResultManager_abf50a8be86e2fd12d7242fc570f0d09f}\label{classResultManager_abf50a8be86e2fd12d7242fc570f0d09f}} 
+\index{ResultManager@{ResultManager}!setupViews@{setupViews}}
+\index{setupViews@{setupViews}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{setupViews()}{setupViews()}}
+{\footnotesize\ttfamily void Result\+Manager\+::setup\+Views (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 131 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+chart\+View, m\+\_\+histogram\+View, m\+\_\+stats\+View, m\+\_\+tab\+Widget, and m\+\_\+views.
+
+
+
+Referenced by Result\+Manager().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_abf50a8be86e2fd12d7242fc570f0d09f_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classResultManager_afdd47d396e9e387875cd34c0bb4045d8}\label{classResultManager_afdd47d396e9e387875cd34c0bb4045d8}} 
+\index{ResultManager@{ResultManager}!updateAllViews@{updateAllViews}}
+\index{updateAllViews@{updateAllViews}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{updateAllViews()}{updateAllViews()}}
+{\footnotesize\ttfamily void Result\+Manager\+::update\+All\+Views (\begin{DoxyParamCaption}\item[{void $\ast$}]{data,  }\item[{void $\ast$}]{stats }\end{DoxyParamCaption})}
+
+
+
+Definition at line 29 of file result\+\_\+manager.\+cpp.
+
+
+
+References m\+\_\+views, and Base\+View\+::update\+Data().
+
+
+
+Referenced by App\+::update\+Result\+Views().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_afdd47d396e9e387875cd34c0bb4045d8_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{d3/d47/classResultManager_afdd47d396e9e387875cd34c0bb4045d8_icgraph}
+\end{center}
+\end{figure}
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classResultManager_a48b73f8b460af94b568db51939831e4e}\label{classResultManager_a48b73f8b460af94b568db51939831e4e}} 
+\index{ResultManager@{ResultManager}!m\_chartView@{m\_chartView}}
+\index{m\_chartView@{m\_chartView}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{m\_chartView}{m\_chartView}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classChartView}{Chart\+View}}$\ast$ Result\+Manager\+::m\+\_\+chart\+View\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 50 of file result\+\_\+manager.\+h.
+
+
+
+Referenced by on\+Tab\+Resized(), Result\+Manager(), and setup\+Views().
+
+\mbox{\Hypertarget{classResultManager_a0694ca8ee9c7be77aabcc290032f998c}\label{classResultManager_a0694ca8ee9c7be77aabcc290032f998c}} 
+\index{ResultManager@{ResultManager}!m\_histogramView@{m\_histogramView}}
+\index{m\_histogramView@{m\_histogramView}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{m\_histogramView}{m\_histogramView}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classHistogramView}{Histogram\+View}}$\ast$ Result\+Manager\+::m\+\_\+histogram\+View\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 51 of file result\+\_\+manager.\+h.
+
+
+
+Referenced by Result\+Manager(), and setup\+Views().
+
+\mbox{\Hypertarget{classResultManager_a9f8f6a3e887e7fb42c234f48f4dfb8a5}\label{classResultManager_a9f8f6a3e887e7fb42c234f48f4dfb8a5}} 
+\index{ResultManager@{ResultManager}!m\_mainLayout@{m\_mainLayout}}
+\index{m\_mainLayout@{m\_mainLayout}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{m\_mainLayout}{m\_mainLayout}}
+{\footnotesize\ttfamily QVBox\+Layout$\ast$ Result\+Manager\+::m\+\_\+main\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 43 of file result\+\_\+manager.\+h.
+
+
+
+Referenced by setup\+UI().
+
+\mbox{\Hypertarget{classResultManager_a165571d888126f987a67cab64e43a211}\label{classResultManager_a165571d888126f987a67cab64e43a211}} 
+\index{ResultManager@{ResultManager}!m\_resizeTimer@{m\_resizeTimer}}
+\index{m\_resizeTimer@{m\_resizeTimer}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{m\_resizeTimer}{m\_resizeTimer}}
+{\footnotesize\ttfamily QTimer$\ast$ Result\+Manager\+::m\+\_\+resize\+Timer\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 57 of file result\+\_\+manager.\+h.
+
+
+
+Referenced by resize\+Event(), and setup\+Connections().
+
+\mbox{\Hypertarget{classResultManager_a009a61f9b28bbaa8ad05ab1c16187805}\label{classResultManager_a009a61f9b28bbaa8ad05ab1c16187805}} 
+\index{ResultManager@{ResultManager}!m\_statsView@{m\_statsView}}
+\index{m\_statsView@{m\_statsView}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{m\_statsView}{m\_statsView}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classStatsView}{Stats\+View}}$\ast$ Result\+Manager\+::m\+\_\+stats\+View\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 49 of file result\+\_\+manager.\+h.
+
+
+
+Referenced by Result\+Manager(), and setup\+Views().
+
+\mbox{\Hypertarget{classResultManager_a483a8cb1916e3297e056acbfe62af057}\label{classResultManager_a483a8cb1916e3297e056acbfe62af057}} 
+\index{ResultManager@{ResultManager}!m\_tabWidget@{m\_tabWidget}}
+\index{m\_tabWidget@{m\_tabWidget}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{m\_tabWidget}{m\_tabWidget}}
+{\footnotesize\ttfamily QTab\+Widget$\ast$ Result\+Manager\+::m\+\_\+tab\+Widget\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 46 of file result\+\_\+manager.\+h.
+
+
+
+Referenced by get\+Tab\+Widget(), on\+Tab\+Resized(), set\+Current\+Tab(), setup\+Connections(), setup\+UI(), and setup\+Views().
+
+\mbox{\Hypertarget{classResultManager_aa3f87ce8f466ea83493318c3a0901f31}\label{classResultManager_aa3f87ce8f466ea83493318c3a0901f31}} 
+\index{ResultManager@{ResultManager}!m\_views@{m\_views}}
+\index{m\_views@{m\_views}!ResultManager@{ResultManager}}
+\doxysubsubsection{\texorpdfstring{m\_views}{m\_views}}
+{\footnotesize\ttfamily QMap$<$QString, \mbox{\hyperlink{classBaseView}{Base\+View}}$\ast$$>$ Result\+Manager\+::m\+\_\+views\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 54 of file result\+\_\+manager.\+h.
+
+
+
+Referenced by clear\+All\+Views(), setup\+Views(), and update\+All\+Views().
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+backtest\+\_\+app\+\_\+cpp/src/views/\mbox{\hyperlink{result__manager_8h}{result\+\_\+manager.\+h}}\item 
+backtest\+\_\+app\+\_\+cpp/src/views/\mbox{\hyperlink{result__manager_8cpp}{result\+\_\+manager.\+cpp}}\end{DoxyCompactItemize}

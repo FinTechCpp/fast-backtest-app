@@ -9,6 +9,10 @@
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
+<link href="navtree.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="resize.js"></script>
+<script type="text/javascript" src="navtreedata.js"></script>
+<script type="text/javascript" src="navtree.js"></script>
 <link href="search/search.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="search/searchdata.js"></script>
 <script type="text/javascript" src="search/search.js"></script>
@@ -46,6 +50,22 @@ $(function() {
 /* @license-end */</script>
 <div id="main-nav"></div>
 </div><!-- top -->
+<div id="side-nav" class="ui-resizable side-nav-resizable">
+  <div id="nav-tree">
+    <div id="nav-tree-contents">
+      <div id="nav-sync" class="sync"></div>
+    </div>
+  </div>
+  <div id="splitbar" style="-moz-user-select:none;" 
+       class="ui-resizable-handle">
+  </div>
+</div>
+<script type="text/javascript">
+/* @license magnet:?xt=urn:btih:cf05388f2679ee054f2beb29a391d25f4e673ac3&amp;dn=gpl-2.0.txt GPL-v2 */
+$(document).ready(function(){initNavTree('functions_s.html',''); initResizable(); });
+/* @license-end */
+</script>
+<div id="doc-content">
 <!-- window showing the filter options -->
 <div id="MSearchSelectWindow"
      onmouseover="return searchBox.OnSearchSelectShow()"
@@ -65,93 +85,102 @@ $(function() {
 
 <h3><a id="index_s"></a>- s -</h3><ul>
 <li>saveConfig()
-: <a class="el" href="classConfigManager.html#a7251831ba02a5ca8094c2e5c546fc15c">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#a7251831ba02a5ca8094c2e5c546fc15c">ConfigManager</a>
 </li>
 <li>saveCurrentProfile()
-: <a class="el" href="classConfigManager.html#a93f257d4f7635dc1a3ad40bf2eb668ff">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#a93f257d4f7635dc1a3ad40bf2eb668ff">ConfigManager</a>
 </li>
 <li>saveProfile()
-: <a class="el" href="classConfigManager.html#afde78480ef5bd18f928b51750a2008e6">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#afde78480ef5bd18f928b51750a2008e6">ConfigManager</a>
 </li>
 <li>SellHeikinRedPanel()
-: <a class="el" href="classSellHeikinRedPanel.html#a3f21574e90876022a06e52ebec422363">SellHeikinRedPanel</a>
+: <a class="el" href="d2/dce/classSellHeikinRedPanel.html#a3f21574e90876022a06e52ebec422363">SellHeikinRedPanel</a>
 </li>
 <li>setConfigManager()
-: <a class="el" href="classProfileMenuManager.html#a1b8b535732f8e5f45977be46dcd0a459">ProfileMenuManager</a>
+: <a class="el" href="d0/d83/classProfileMenuManager.html#a1b8b535732f8e5f45977be46dcd0a459">ProfileMenuManager</a>
 </li>
 <li>setCurrentTab()
-: <a class="el" href="classResultManager.html#a7aa04622e48f8ab84c1c76e81e2056a3">ResultManager</a>
+: <a class="el" href="d3/d47/classResultManager.html#a7aa04622e48f8ab84c1c76e81e2056a3">ResultManager</a>
 </li>
 <li>setError()
-: <a class="el" href="classPyBindingManager.html#a2f90ef60ef4f8c60b57c2a665a96ec3f">PyBindingManager</a>
+: <a class="el" href="db/df1/classPyBindingManager.html#a2f90ef60ef4f8c60b57c2a665a96ec3f">PyBindingManager</a>
+</li>
+<li>setTooltipData()
+: <a class="el" href="df/dde/classInteractiveChartView.html#a355243c1dd8f9f0e2c7f5535a0776d06">InteractiveChartView</a>
 </li>
 <li>setupConnections()
-: <a class="el" href="classApp.html#a61ab65a5979221b61fa0fa91eee87090">App</a>
-, <a class="el" href="classResultManager.html#a8e96636c0001338504e504eb4d93ffc7">ResultManager</a>
+: <a class="el" href="dd/d64/classApp.html#a61ab65a5979221b61fa0fa91eee87090">App</a>
+, <a class="el" href="d3/d47/classResultManager.html#a8e96636c0001338504e504eb4d93ffc7">ResultManager</a>
 </li>
 <li>setupDefaultValues()
-: <a class="el" href="classConfigManager.html#aeec9ef00f3473436259bd800c090c2ea">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#aeec9ef00f3473436259bd800c090c2ea">ConfigManager</a>
 </li>
 <li>setupRiskManagement()
-: <a class="el" href="classStrategyBasePanel.html#a7d4ca2e8bcd0775cdc644654f49363ae">StrategyBasePanel</a>
+: <a class="el" href="dd/d0f/classStrategyBasePanel.html#a7d4ca2e8bcd0775cdc644654f49363ae">StrategyBasePanel</a>
 </li>
 <li>setupStopLossAndTakeProfit()
-: <a class="el" href="classStrategyBasePanel.html#aafbf5877c1e9764be01d92044c652586">StrategyBasePanel</a>
+: <a class="el" href="dd/d0f/classStrategyBasePanel.html#aafbf5877c1e9764be01d92044c652586">StrategyBasePanel</a>
 </li>
 <li>setupSymbolAndPeriod()
-: <a class="el" href="classGeneralParamsPanel.html#a9d4e8a23b7b479f9314bcadd82ce882b">GeneralParamsPanel</a>
+: <a class="el" href="db/deb/classGeneralParamsPanel.html#a9d4e8a23b7b479f9314bcadd82ce882b">GeneralParamsPanel</a>
 </li>
 <li>setupTradingHours()
-: <a class="el" href="classStrategyBasePanel.html#a11d88f1bbab87b900a8dd06cca7667ae">StrategyBasePanel</a>
+: <a class="el" href="dd/d0f/classStrategyBasePanel.html#a11d88f1bbab87b900a8dd06cca7667ae">StrategyBasePanel</a>
 </li>
 <li>setupTradingParameters()
-: <a class="el" href="classGeneralParamsPanel.html#a9f0c359bc3191aefb007713339c73623">GeneralParamsPanel</a>
+: <a class="el" href="db/deb/classGeneralParamsPanel.html#a9f0c359bc3191aefb007713339c73623">GeneralParamsPanel</a>
 </li>
 <li>setupUI()
-: <a class="el" href="classBaseView.html#afd301a040e5cbb1801a1ce6972ccd231">BaseView</a>
-, <a class="el" href="classChartView.html#abcf0ad5b8eb8b665acdf71f7dd97f10e">ChartView</a>
-, <a class="el" href="classHistogramView.html#af72a9a6181c37875dd3b4ffe90047ff6">HistogramView</a>
-, <a class="el" href="classResultManager.html#a8b29e3b48f4e4d9429fb6782870dcdaa">ResultManager</a>
-, <a class="el" href="classStatsView.html#a6e9fdcacf34a570faa9bbfb21bf6e158">StatsView</a>
+: <a class="el" href="dd/d94/classBaseView.html#afd301a040e5cbb1801a1ce6972ccd231">BaseView</a>
+, <a class="el" href="d0/d48/classChartView.html#abcf0ad5b8eb8b665acdf71f7dd97f10e">ChartView</a>
+, <a class="el" href="da/db4/classHistogramView.html#af72a9a6181c37875dd3b4ffe90047ff6">HistogramView</a>
+, <a class="el" href="d3/d47/classResultManager.html#a8b29e3b48f4e4d9429fb6782870dcdaa">ResultManager</a>
+, <a class="el" href="df/dd2/classStatsView.html#a6e9fdcacf34a570faa9bbfb21bf6e158">StatsView</a>
 </li>
 <li>setupViews()
-: <a class="el" href="classResultManager.html#abf50a8be86e2fd12d7242fc570f0d09f">ResultManager</a>
+: <a class="el" href="d3/d47/classResultManager.html#abf50a8be86e2fd12d7242fc570f0d09f">ResultManager</a>
 </li>
 <li>setValues()
-: <a class="el" href="classBasePanel.html#a0484faecac61c9be571c4b4780df5589">BasePanel</a>
-, <a class="el" href="classBuyHeikinGreenPanel.html#a69989a5858ac737fada1ddff9be2d07f">BuyHeikinGreenPanel</a>
-, <a class="el" href="classCrossEMAPanel.html#a335dd80386f34e37f5704c06c8bbc996">CrossEMAPanel</a>
-, <a class="el" href="classGeneralParamsPanel.html#a5cb686302d61a1cd48c54bf14f7ee376">GeneralParamsPanel</a>
-, <a class="el" href="classSellHeikinRedPanel.html#a7f622e8b8280ae75f5630a3e27635f58">SellHeikinRedPanel</a>
-, <a class="el" href="classStrategyBasePanel.html#afe6d54431eae40a6bdbab18a7bcf72f6">StrategyBasePanel</a>
-, <a class="el" href="classStrategySpecificPanel.html#a25c2a7f9393a3951f0d30966255e4792">StrategySpecificPanel</a>
+: <a class="el" href="dc/d47/classBasePanel.html#a0484faecac61c9be571c4b4780df5589">BasePanel</a>
+, <a class="el" href="d5/d30/classBuyHeikinGreenPanel.html#a69989a5858ac737fada1ddff9be2d07f">BuyHeikinGreenPanel</a>
+, <a class="el" href="d3/d37/classCrossEMAPanel.html#a335dd80386f34e37f5704c06c8bbc996">CrossEMAPanel</a>
+, <a class="el" href="db/deb/classGeneralParamsPanel.html#a5cb686302d61a1cd48c54bf14f7ee376">GeneralParamsPanel</a>
+, <a class="el" href="d2/dce/classSellHeikinRedPanel.html#a7f622e8b8280ae75f5630a3e27635f58">SellHeikinRedPanel</a>
+, <a class="el" href="dd/d0f/classStrategyBasePanel.html#afe6d54431eae40a6bdbab18a7bcf72f6">StrategyBasePanel</a>
+, <a class="el" href="df/d22/classStrategySpecificPanel.html#a25c2a7f9393a3951f0d30966255e4792">StrategySpecificPanel</a>
 </li>
 <li>setWidgetValue()
-: <a class="el" href="classConfigManager.html#ab1ec8413f1311d4cd1fcbcf3a26bc95e">ConfigManager</a>
+: <a class="el" href="d5/d0a/classConfigManager.html#ab1ec8413f1311d4cd1fcbcf3a26bc95e">ConfigManager</a>
+</li>
+<li>showCrosshair()
+: <a class="el" href="df/dde/classInteractiveChartView.html#a9b1e91a23f30dcc810650b57c0fab9ee">InteractiveChartView</a>
 </li>
 <li>showError()
-: <a class="el" href="classBacktestRunner.html#a4d591786ebf67154359c90d9409f3f43">BacktestRunner</a>
+: <a class="el" href="d2/d3d/classBacktestRunner.html#a4d591786ebf67154359c90d9409f3f43">BacktestRunner</a>
 </li>
 <li>showPlaceholder()
-: <a class="el" href="classChartView.html#aa50fc3447c0f7d7e5e2c4e1240323400">ChartView</a>
+: <a class="el" href="d0/d48/classChartView.html#aa50fc3447c0f7d7e5e2c4e1240323400">ChartView</a>
 </li>
 <li>showResults()
-: <a class="el" href="classApp.html#a92e18200240fe56199de30a7f5d522cd">App</a>
+: <a class="el" href="dd/d64/classApp.html#a92e18200240fe56199de30a7f5d522cd">App</a>
 </li>
 <li>StatsView()
-: <a class="el" href="classStatsView.html#ace257df6278c137bb46cc1e3fa727436">StatsView</a>
+: <a class="el" href="df/dd2/classStatsView.html#ace257df6278c137bb46cc1e3fa727436">StatsView</a>
 </li>
 <li>StrategyBasePanel()
-: <a class="el" href="classStrategyBasePanel.html#ae7a9426d1bb3d28566501936778ba0ff">StrategyBasePanel</a>
+: <a class="el" href="dd/d0f/classStrategyBasePanel.html#ae7a9426d1bb3d28566501936778ba0ff">StrategyBasePanel</a>
 </li>
 <li>StrategySpecificPanel()
-: <a class="el" href="classStrategySpecificPanel.html#a5f599fb536348e59c812b1075b24590f">StrategySpecificPanel</a>
+: <a class="el" href="df/d22/classStrategySpecificPanel.html#a5f599fb536348e59c812b1075b24590f">StrategySpecificPanel</a>
 </li>
 </ul>
 </div><!-- contents -->
+</div><!-- doc-content -->
 <!-- start footer part -->
-<hr class="footer"/><address class="footer"><small>
-Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
-</small></address>
+<div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
+  <ul>
+    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1 </li>
+  </ul>
+</div>
 </body>
 </html>

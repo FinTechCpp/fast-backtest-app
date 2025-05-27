@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['metricwidget_386',['MetricWidget',['../classMetricWidget.html',1,'']]]
+  ['interactivechartview_397',['InteractiveChartView',['../df/dde/classInteractiveChartView.html',1,'']]]
 ];

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['ohlcbar_387',['OHLCBar',['../structOHLCBar.html',1,'']]]
+  ['metricwidget_398',['MetricWidget',['../dd/d49/classMetricWidget.html',1,'']]]
 ];

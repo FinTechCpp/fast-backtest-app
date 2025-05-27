@@ -146,7 +146,15 @@ private:
     std::vector<double> extractDoubleVector(void* pyObj);
     bool hasValidData() const;
     void showPlaceholder(const QString& message);
-    void debugChart();
+
+    FinanceChart* drawChart(QChartViewer* viewer, 
+                    const DoubleArray& timestamps, 
+                    const DoubleArray& highData, 
+                    const DoubleArray& lowData, 
+                    const DoubleArray& openData, 
+                    const DoubleArray& closeData,
+                    const DoubleArray& volumeData,
+                    int chartWidth);
 };
 
 #endif // CHART_VIEW_H

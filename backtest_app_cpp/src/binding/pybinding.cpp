@@ -334,27 +334,27 @@ py::dict PyBindingManager::convertParamsToPython(const QMap<QString, QVariant>& 
         const QVariant& value = it.value();
         
         // Conversion selon le type QVariant
-        if (value.type() == QVariant::Bool) {
+        if (value.typeId() == QVariant::Bool) {
             result[py::str(key.toStdString())] = py::bool_(value.toBool());
         }
-        else if (value.type() == QVariant::Int) {
+        else if (value.typeId() == QVariant::Int) {
             result[py::str(key.toStdString())] = py::int_(value.toInt());
         }
-        else if (value.type() == QVariant::Double) {
+        else if (value.typeId() == QVariant::Double) {
             result[py::str(key.toStdString())] = py::float_(value.toDouble());
         }
-        else if (value.type() == QVariant::String) {
+        else if (value.typeId() == QVariant::String) {
             result[py::str(key.toStdString())] = py::str(value.toString().toStdString());
         }
-        else if (value.type() == QVariant::Time) {
+        else if (value.typeId() == QVariant::Time) {
             QTime time = value.toTime();
             result[py::str(key.toStdString())] = py::str(time.toString("hh:mm:ss").toStdString());
         }
-        else if (value.type() == QVariant::Date) {
+        else if (value.typeId() == QVariant::Date) {
             QDate date = value.toDate();
             result[py::str(key.toStdString())] = py::str(date.toString("dd/MM/yyyy").toStdString());
         }
-        else if (value.type() == QVariant::List) {
+        else if (value.typeId() == QVariant::List) {
             py::list py_list;
             QVariantList list = value.toList();
             for (const QVariant& item : list) {

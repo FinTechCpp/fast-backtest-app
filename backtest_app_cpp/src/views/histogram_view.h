@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <numeric>
 
-QT_CHARTS_USE_NAMESPACE
 
 // Classe personnalisée pour QChartView avec tooltip interactif
 class InteractiveChartView : public QChartView
@@ -55,6 +54,7 @@ private:
     void hideCrosshair();
     void updateTooltip(const QPointF& position);
     QString createTooltipText(const QString& category, double value);
+    void setupCrosshairElements(); // AJOUT de la méthode manquante
     
     // Données pour le tooltip
     QStringList m_categories;
@@ -93,7 +93,7 @@ private slots:
 private:
     // Widgets de l'interface
     QComboBox* m_timeUnitCombo;
-    InteractiveChartView* m_chartView;  // Changement ici
+    InteractiveChartView* m_chartView;
     QChart* m_chart;
     
     // Données stockées pour la mise à jour
@@ -103,7 +103,7 @@ private:
     struct GroupedData {
         QStringList categories;
         QList<double> values;
-        QMap<QString, QDateTime> fullDates;  // AJOUT pour les dates complètes
+        QMap<QString, QDateTime> fullDates;
     };
     
     GroupedData groupDataByTimeUnit(const QList<QVariantMap>& trades, const QString& timeUnit);
@@ -114,7 +114,7 @@ private:
     QString generatePeriodKey(const QDateTime& dateTime, const QString& timeUnit);
     QString formatPeriodLabel(const QDateTime& dateTime, const QString& timeUnit);
     QString getFullDateLabel(const QString& periodKey, const QString& timeUnit, const QDateTime& dateTime);
-    QDateTime getRepresentativeDate(const QDateTime& dateTime, const QString& timeUnit);  // AJOUT
+    QDateTime getRepresentativeDate(const QDateTime& dateTime, const QString& timeUnit);
 };
 
 #endif // HISTOGRAM_VIEW_H

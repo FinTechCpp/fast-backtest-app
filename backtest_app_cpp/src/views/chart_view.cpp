@@ -609,6 +609,31 @@ void ChartView::drawChartWithViewport()
         DoubleArray closeData = DoubleArray(&m_priceData.close[startIndex], pointsToShow);
         DoubleArray volumeData = DoubleArray(&m_priceData.volume[startIndex], pointsToShow);
         
+        // Variables pour les données Heikin Ashi (si nécessaire)
+        std::vector<double> ha_open, ha_high, ha_low, ha_close;
+        DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
+        
+        // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
+        bool isHeikinAshi = (m_currentChartType == "HeikinAshi");
+        if (isHeikinAshi) {
+            // Créer des sous-vecteurs pour les données visibles
+            std::vector<double> visible_open(m_priceData.open.begin() + startIndex, m_priceData.open.begin() + endIndex + 1);
+            std::vector<double> visible_high(m_priceData.high.begin() + startIndex, m_priceData.high.begin() + endIndex + 1);
+            std::vector<double> visible_low(m_priceData.low.begin() + startIndex, m_priceData.low.begin() + endIndex + 1);
+            std::vector<double> visible_close(m_priceData.close.begin() + startIndex, m_priceData.close.begin() + endIndex + 1);
+            
+            // Calculer les valeurs Heikin Ashi pour la plage visible
+            calculateHeikinAshi(visible_open, visible_high, 
+                                visible_low, visible_close,
+                                ha_open, ha_high, ha_low, ha_close);
+                                
+            // Convertir en DoubleArray
+            haOpenArray = vectorToDoubleArray(ha_open);
+            haHighArray = vectorToDoubleArray(ha_high);
+            haLowArray = vectorToDoubleArray(ha_low);
+            haCloseArray = vectorToDoubleArray(ha_close);
+        }
+        
         // Utiliser la taille fixe standard
         int chartWidth = 1200; // Taille fixe
         
@@ -618,10 +643,17 @@ void ChartView::drawChartWithViewport()
         }
         
         m_financeChart = new FinanceChart(chartWidth);
-        m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
         
-        // Reconfigurer le graphique
-        std::string title = "Trading - Points " + std::to_string(startIndex) + 
+        // Configurer les données - Utiliser Heikin Ashi si sélectionné
+        if (isHeikinAshi) {
+            m_financeChart->setData(timeStamps, haHighArray, haLowArray, haOpenArray, haCloseArray, volumeData, 0);
+        } else {
+            m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+        }
+        
+        // Reconfigurer le graphique avec le type actuel
+        std::string chartTypeStr = m_currentChartType.toStdString();
+        std::string title = "Trading (" + chartTypeStr + ") - Points " + std::to_string(startIndex) + 
                            " à " + std::to_string(endIndex);
         m_financeChart->addTitle(title.c_str());
         
@@ -630,7 +662,16 @@ void ChartView::drawChartWithViewport()
         int volumeHeight = 100;     // Hauteur fixe pour le graphique de volume
         
         m_financeChart->addMainChart(mainChartHeight);
-        m_financeChart->addCandleStick(0x00CC00, 0xFF3333);
+        
+        // Ajouter le type de graphique approprié selon la sélection actuelle
+        if (m_currentChartType == "CandleStick" || m_currentChartType == "HeikinAshi") {
+            m_financeChart->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge
+        } else if (m_currentChartType == "OHLC") {
+            m_financeChart->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge
+        } else if (m_currentChartType == "Close") {
+            m_financeChart->addCloseLine(0x000088); // Ligne bleue
+        }
+        
         m_financeChart->addVolBars(volumeHeight, 0x99ff99, 0xff9999, 0x808080);
         
         // Assigner le nouveau graphique

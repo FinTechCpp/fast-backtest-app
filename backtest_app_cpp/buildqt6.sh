@@ -23,7 +23,7 @@ if ! python3 -c "import pybind11" &> /dev/null; then
 fi
 
 # Vérifier ChartDirector
-if [ ! -f "$PROJECT_DIR/../ChartDirector/lib/libchartdir.so" ]; then
+if [ ! -f "$PROJECT_DIR/../ChartDirector/lib/libchartdir.so.7.0.0" ]; then
     echo "Erreur: Librairie ChartDirector non trouvée"
     exit 1
 fi

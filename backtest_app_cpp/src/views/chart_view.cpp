@@ -2,8 +2,11 @@
 #include <QDebug>
 #include <QTimer>
 #include <QResizeEvent>
-#include <QApplication>  // AJOUTER CETTE LIGNE
-#include <QButtonGroup>  // Si pas déjà inclus
+#include <QApplication>
+#include <QButtonGroup>
+#include <QFrame>
+#include <QTime>
+#include <QLabel>
 
 ChartView::ChartView(QWidget* parent)
     : BaseView(parent)
@@ -13,8 +16,13 @@ ChartView::ChartView(QWidget* parent)
     , m_currentData(nullptr)
     , m_currentStats(nullptr)
     , m_chartPlaceholder(nullptr)
+    , m_chartTypeCombo(nullptr)
+    , m_settingsTitle(nullptr)
     , m_financeChart(nullptr)
     , m_chartViewer(nullptr)
+    , m_leftPanel(nullptr)
+    , m_rightPanel(nullptr)
+    , m_currentChartType("CandleStick")
 {
     qDebug() << "ChartView créée avec parent:" << parent;
     
@@ -33,6 +41,7 @@ ChartView::~ChartView()
         delete m_financeChart;
         m_financeChart = nullptr;
     }
+    qDebug() << "ChartView détruite";
 }
 
 void ChartView::setupUI()
@@ -42,10 +51,69 @@ void ChartView::setupUI()
     qDebug() << "ChartView::setupUI() - Configuration du layout principal";
     
     // Configurer le layout principal pour occuper tout l'espace
-    m_mainLayout->setContentsMargins(0, 0, 0, 0);  // Pas de marges
-    m_mainLayout->setSpacing(0);                     // Pas d'espacement
+    m_mainLayout->setContentsMargins(0, 0, 0, 0);
+    m_mainLayout->setSpacing(0);
     
-    // Créer le placeholder initial qui occupe tout l'espace
+    // Créer un layout horizontal pour les panneaux gauche et droit
+    QHBoxLayout* horizontalLayout = new QHBoxLayout();
+    horizontalLayout->setContentsMargins(0, 0, 0, 0);
+    horizontalLayout->setSpacing(0);
+    m_mainLayout->addLayout(horizontalLayout);
+    
+    // Créer le panneau gauche avec une largeur fixe de 155 pixels
+    m_leftPanel = new QWidget();
+    m_leftPanel->setObjectName("leftPanel");
+    m_leftPanel->setStyleSheet("#leftPanel { background-color: #BADDFF; }");
+    m_leftPanel->setFixedWidth(155);
+    
+    // Ajouter un layout vertical au panneau gauche
+    QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_leftPanel);
+    leftPanelLayout->setContentsMargins(8, 8, 8, 8);
+    leftPanelLayout->setSpacing(10);
+    
+    // Ajouter un titre au panneau gauche
+    m_settingsTitle = new QLabel("Settings");
+    m_settingsTitle->setAlignment(Qt::AlignCenter);
+    m_settingsTitle->setStyleSheet("font-weight: bold; font-size: 16px;");
+    leftPanelLayout->addWidget(m_settingsTitle);
+    
+    // Ajouter le sélecteur de type de graphique
+    QLabel* chartTypeLabel = new QLabel("Chart Type");
+    chartTypeLabel->setStyleSheet("font-weight: bold;");
+    leftPanelLayout->addWidget(chartTypeLabel);
+    
+    m_chartTypeCombo = new QComboBox();
+    m_chartTypeCombo->addItem("CandleStick", "CandleStick");
+    m_chartTypeCombo->addItem("Heikin Ashi", "HeikinAshi");
+    m_chartTypeCombo->addItem("Line", "Close");
+    m_chartTypeCombo->addItem("OHLC", "OHLC");
+    leftPanelLayout->addWidget(m_chartTypeCombo);
+    
+    // Connecter le signal de changement à notre slot
+    connect(m_chartTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &ChartView::onChartTypeChanged);
+    
+    // Type de graphique par défaut
+    m_currentChartType = "CandleStick";
+    
+    // Ajouter un espace extensible en bas
+    leftPanelLayout->addStretch();
+    
+    // Créer un séparateur vertical
+    QFrame* separator = new QFrame();
+    separator->setFrameStyle(QFrame::VLine | QFrame::Plain);
+    separator->setStyleSheet("color: #CCCCCC;"); // Couleur de la ligne
+    
+    // Créer le panneau droit qui contiendra le graphique
+    m_rightPanel = new QWidget();
+    m_rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    
+    // Layout pour le panneau droit
+    QVBoxLayout* rightPanelLayout = new QVBoxLayout(m_rightPanel);
+    rightPanelLayout->setContentsMargins(0, 0, 0, 0);
+    rightPanelLayout->setSpacing(0);
+    
+    // Créer le placeholder initial qui occupe tout l'espace du panneau droit
     m_chartPlaceholder = new QLabel("Exécutez le backtest pour afficher les graphiques");
     m_chartPlaceholder->setAlignment(Qt::AlignCenter);
     m_chartPlaceholder->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -58,8 +126,13 @@ void ChartView::setupUI()
         "}"
     );
     
-    // Ajouter le placeholder au layout principal
-    m_mainLayout->addWidget(m_chartPlaceholder);
+    // Ajouter le placeholder au layout du panneau droit
+    rightPanelLayout->addWidget(m_chartPlaceholder);
+    
+    // Ajouter les composants au layout horizontal
+    horizontalLayout->addWidget(m_leftPanel);
+    horizontalLayout->addWidget(separator);
+    horizontalLayout->addWidget(m_rightPanel);
     
     // Configurer le widget pour s'étendre
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -75,11 +148,12 @@ void ChartView::resizeEvent(QResizeEvent* event)
     qDebug() << "ChartView redimensionnée vers:" << event->size();
     
     // Si on a un graphique, le redimensionner
-    if (m_financeChart && m_chartViewer) {
-        QTimer::singleShot(100, [this]() {
-            resizeChart(this->width());
-        });
-    }
+    // if (m_financeChart && m_chartViewer) {
+    //     QTimer::singleShot(100, [this]() {
+    //         // Utiliser la largeur du panneau droit
+    //         resizeChart(m_rightPanel->width());
+    //     });
+    // }
 }
 
 void ChartView::updateData(void* data, void* stats)
@@ -180,7 +254,9 @@ void ChartView::clear()
     }
     
     if (m_chartViewer) {
-        m_mainLayout->removeWidget(m_chartViewer);
+        if (m_chartViewer->parentWidget()) {
+            m_chartViewer->parentWidget()->layout()->removeWidget(m_chartViewer);
+        }
         delete m_chartViewer;
         m_chartViewer = nullptr;
     }
@@ -214,7 +290,9 @@ void ChartView::createChart()
         }
         
         if (m_chartViewer) {
-            m_mainLayout->removeWidget(m_chartViewer);
+            if (m_chartViewer->parentWidget()) {
+                m_chartViewer->parentWidget()->layout()->removeWidget(m_chartViewer);
+            }
             delete m_chartViewer;
             m_chartViewer = nullptr;
         }
@@ -227,36 +305,68 @@ void ChartView::createChart()
         DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
         DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
         
+        // Variables pour les données Heikin Ashi (si nécessaire)
+        std::vector<double> ha_open, ha_high, ha_low, ha_close;
+        DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
+        
+        // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
+        bool isHeikinAshi = (m_currentChartType == "HeikinAshi");
+        if (isHeikinAshi) {
+            // Calculer les valeurs Heikin Ashi
+            calculateHeikinAshi(m_priceData.open, m_priceData.high, 
+                                m_priceData.low, m_priceData.close,
+                                ha_open, ha_high, ha_low, ha_close);
+            
+            // Convertir les vecteurs en DoubleArray pour ChartDirector
+            haOpenArray = vectorToDoubleArray(ha_open);
+            haHighArray = vectorToDoubleArray(ha_high);
+            haLowArray = vectorToDoubleArray(ha_low);
+            haCloseArray = vectorToDoubleArray(ha_close);
+        }
+        
         qDebug() << "Données converties - timeStamps:" << timeStamps.len << "points";
         
-        // Calculer la largeur optimale pour le graphique
-        int widgetWidth = this->width();
-        int widgetHeight = this->height();
+        // Calculer la largeur optimale pour le graphique en fonction du panneau droit
+        // int rightPanelWidth = m_rightPanel->width();
+        // int rightPanelHeight = m_rightPanel->height();
+        int rightPanelWidth = 1400;
+        int rightPanelHeight = 600;
         
-        qDebug() << "Taille actuelle du widget:" << widgetWidth << "x" << widgetHeight;
+        qDebug() << "Taille actuelle du panneau droit:" << rightPanelWidth << "x" << rightPanelHeight;
         
         // Utiliser toute la largeur disponible (minimum 800 pour lisibilité)
-        int chartWidth = std::max(800, widgetWidth - 20);  // -20 pour petites marges
-        int chartHeight = std::max(400, widgetHeight - 20); // Hauteur adaptative
+        int chartWidth = std::max(800, rightPanelWidth - 20);  // -20 pour petites marges
+        int chartHeight = std::max(400, rightPanelHeight - 20); // Hauteur adaptative
         
         qDebug() << "Taille calculée du graphique:" << chartWidth << "x" << chartHeight;
         
         // Créer FinanceChart avec la largeur adaptative
         m_financeChart = new FinanceChart(chartWidth);
         
-        // Configurer les données
-        m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+        // Configurer les données - Utiliser Heikin Ashi si sélectionné
+        if (isHeikinAshi) {
+            m_financeChart->setData(timeStamps, haHighArray, haLowArray, haOpenArray, haCloseArray, volumeData, 0);
+        } else {
+            m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+        }
         
-        // Ajouter le titre du graphique
-        std::string title = "Graphique de trading - " + std::to_string(timeStamps.len) + " points";
+        // Ajouter le titre du graphique avec indication du type
+        std::string chartTypeStr = m_currentChartType.toStdString();
+        std::string title = "Graphique de trading (" + chartTypeStr + ") - " + std::to_string(timeStamps.len) + " points";
         m_financeChart->addTitle(title.c_str());
         
         // Calculer la hauteur du graphique principal proportionnellement
         int mainChartHeight = std::max(250, chartHeight - 150); // Réserver espace pour axes/titre
         m_financeChart->addMainChart(mainChartHeight);
         
-        // Ajouter les chandelles japonaises
-        m_financeChart->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge
+        // Ajouter le type de graphique approprié
+        if (m_currentChartType == "CandleStick" || m_currentChartType == "HeikinAshi") {
+            m_financeChart->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge
+        } else if (m_currentChartType == "OHLC") {
+            m_financeChart->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge
+        } else if (m_currentChartType == "Close") {
+            m_financeChart->addCloseLine(0x000088); // Ligne bleue
+        }
         
         // Ajouter le volume (plus petit)
         int volumeHeight = std::max(60, chartHeight / 8); // 1/8 de la hauteur totale
@@ -264,8 +374,13 @@ void ChartView::createChart()
         
         qDebug() << "FinanceChart configuré, création du QChartViewer...";
         
-        // Créer le QChartViewer qui occupe tout l'espace
-        m_chartViewer = new QChartViewer(this);
+        // Masquer le placeholder
+        if (m_chartPlaceholder) {
+            m_chartPlaceholder->setVisible(false);
+        }
+        
+        // Créer le QChartViewer qui occupe tout l'espace du panneau droit
+        m_chartViewer = new QChartViewer(m_rightPanel);
         
         // Configurer le viewer pour occuper tout l'espace disponible
         m_chartViewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -294,8 +409,9 @@ void ChartView::createChart()
             m_chartViewer->setViewPortLeft(0);
         }
         
-        // Ajouter au layout principal (occupe tout l'espace)
-        m_mainLayout->addWidget(m_chartViewer);
+        // Ajouter au layout du panneau droit
+        QLayout* rightLayout = m_rightPanel->layout();
+        rightLayout->addWidget(m_chartViewer);
         
         // Connecter les signaux essentiels
         connect(m_chartViewer, &QChartViewer::viewPortChanged, 
@@ -321,29 +437,31 @@ void ChartView::createChart()
         showPlaceholder(QString("Erreur graphique: %1").arg(e.what()));
     }
     
-    debugChart();
     qDebug() << "=== FIN createChart ===";
 }
 
 void ChartView::resizeChart(int newWidth)
 {
-    if (!m_financeChart || newWidth <= 0) {
+    // La méthode est appelée mais utilise des tailles fixes au lieu de newWidth
+    Q_UNUSED(newWidth);
+    
+    if (!m_financeChart) {
         return;
     }
     
-    qDebug() << "Redimensionnement du graphique vers:" << newWidth;
+    qDebug() << "Redimensionnement du graphique ignoré - utilisation de tailles fixes";
     
     // Sauvegarder l'état du viewport actuel
     double currentLeft = m_chartViewer ? m_chartViewer->getViewPortLeft() : 0;
     double currentWidth = m_chartViewer ? m_chartViewer->getViewPortWidth() : 1.0;
     
-    // Forcer la recréation du graphique avec la nouvelle largeur
+    // Forcer la recréation du graphique avec la taille fixe
     if (m_priceData.timestamps.empty()) {
         return;
     }
     
     try {
-        // Recréer le graphique avec la nouvelle largeur
+        // Convertir les données
         DoubleArray timeStamps = vectorToDoubleArray(m_priceData.timestamps);
         DoubleArray openData = vectorToDoubleArray(m_priceData.open);
         DoubleArray highData = vectorToDoubleArray(m_priceData.high);
@@ -351,23 +469,56 @@ void ChartView::resizeChart(int newWidth)
         DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
         DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
         
+        // Variables pour les données Heikin Ashi (si nécessaire)
+        std::vector<double> ha_open, ha_high, ha_low, ha_close;
+        DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
+        
+        // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
+        bool isHeikinAshi = (m_currentChartType == "HeikinAshi");
+        if (isHeikinAshi) {
+            calculateHeikinAshi(m_priceData.open, m_priceData.high, 
+                                m_priceData.low, m_priceData.close,
+                                ha_open, ha_high, ha_low, ha_close);
+            
+            haOpenArray = vectorToDoubleArray(ha_open);
+            haHighArray = vectorToDoubleArray(ha_high);
+            haLowArray = vectorToDoubleArray(ha_low);
+            haCloseArray = vectorToDoubleArray(ha_close);
+        }
+        
         delete m_financeChart;
         
-        // Utiliser la nouvelle largeur (minimum 800)
-        int chartWidth = std::max(800, newWidth - 20);
-        m_financeChart = new FinanceChart(chartWidth);
-        m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+        // UTILISER DES TAILLES FIXES
+        int chartWidth = 1200;  // Largeur fixe
         
-        std::string title = "Graphique de trading - " + std::to_string(timeStamps.len) + " points";
+        m_financeChart = new FinanceChart(chartWidth);
+        
+        if (isHeikinAshi) {
+            m_financeChart->setData(timeStamps, haHighArray, haLowArray, haOpenArray, haCloseArray, volumeData, 0);
+        } else {
+            m_financeChart->setData(timeStamps, highData, lowData, openData, closeData, volumeData, 0);
+        }
+        
+        std::string chartTypeStr = m_currentChartType.toStdString();
+        std::string title = "Graphique de trading (" + chartTypeStr + ") - " + std::to_string(timeStamps.len) + " points";
         m_financeChart->addTitle(title.c_str());
         
-        // Adapter les hauteurs
-        int widgetHeight = this->height();
-        int mainChartHeight = std::max(250, widgetHeight - 150);
-        int volumeHeight = std::max(60, widgetHeight / 8);
+        // Hauteurs fixes
+        int mainChartHeight = 500;  // Hauteur fixe pour le graphique principal
+        int volumeHeight = 100;     // Hauteur fixe pour le graphique de volume
         
         m_financeChart->addMainChart(mainChartHeight);
-        m_financeChart->addCandleStick(0x00CC00, 0xFF3333);
+        
+        // Ajouter le type de graphique approprié
+        if (m_currentChartType == "CandleStick" || m_currentChartType == "HeikinAshi") {
+            m_financeChart->addCandleStick(0x00CC00, 0xFF3333);
+        } else if (m_currentChartType == "OHLC") {
+            m_financeChart->addHLOC(0x00CC00, 0xFF3333);
+        } else if (m_currentChartType == "Close") {
+            m_financeChart->addCloseLine(0x000088);
+        }
+        
+        // Ajouter le volume avec hauteur fixe
         m_financeChart->addVolBars(volumeHeight, 0x99ff99, 0xff9999, 0x808080);
         
         // Réassigner le graphique et restaurer le viewport
@@ -378,10 +529,10 @@ void ChartView::resizeChart(int newWidth)
             m_chartViewer->updateViewPort(true, false);
         }
         
-        qDebug() << "Graphique redimensionné avec succès";
+        qDebug() << "Graphique recréé avec tailles fixes";
         
     } catch (const std::exception& e) {
-        qCritical() << "Erreur lors du redimensionnement:" << e.what();
+        qCritical() << "Erreur lors de la recréation du graphique:" << e.what();
     }
 }
 
@@ -406,6 +557,26 @@ void ChartView::onMouseMovePlotArea(QMouseEvent *event)
     // Ajouter le tracking avec ligne verticale
     trackFinance(m_financeChart, m_chartViewer->getPlotAreaMouseX());
     m_chartViewer->updateDisplay();
+}
+
+void ChartView::onChartTypeChanged(int index)
+{
+    if (m_chartTypeCombo) {
+        QVariant data = m_chartTypeCombo->itemData(index);
+        if (data.isValid()) {
+            QString chartType = data.toString();
+            qDebug() << "Type de graphique changé pour:" << chartType;
+            
+            // Ne recréez le graphique que si le type a réellement changé
+            if (m_currentChartType != chartType) {
+                m_currentChartType = chartType;
+                // Si nous avons déjà des données valides, recréer le graphique
+                if (hasValidData()) {
+                    createChart();
+                }
+            }
+        }
+    }
 }
 
 void ChartView::drawChartWithViewport()
@@ -438,8 +609,8 @@ void ChartView::drawChartWithViewport()
         DoubleArray closeData = DoubleArray(&m_priceData.close[startIndex], pointsToShow);
         DoubleArray volumeData = DoubleArray(&m_priceData.volume[startIndex], pointsToShow);
         
-        // Utiliser la largeur actuelle du FinanceChart
-        int chartWidth = m_financeChart ? m_financeChart->getWidth() : std::max(800, this->width() - 20);
+        // Utiliser la taille fixe standard
+        int chartWidth = 1200; // Taille fixe
         
         // Créer un nouveau FinanceChart
         if (m_financeChart) {
@@ -454,9 +625,9 @@ void ChartView::drawChartWithViewport()
                            " à " + std::to_string(endIndex);
         m_financeChart->addTitle(title.c_str());
         
-        int widgetHeight = this->height();
-        int mainChartHeight = std::max(250, widgetHeight - 150);
-        int volumeHeight = std::max(60, widgetHeight / 8);
+        // Hauteurs fixes
+        int mainChartHeight = 500;  // Hauteur fixe pour le graphique principal
+        int volumeHeight = 100;     // Hauteur fixe pour le graphique de volume
         
         m_financeChart->addMainChart(mainChartHeight);
         m_financeChart->addCandleStick(0x00CC00, 0xFF3333);
@@ -810,24 +981,35 @@ void ChartView::showPlaceholder(const QString& message)
     }
 }
 
-void ChartView::debugChart()
+void ChartView::calculateHeikinAshi(const std::vector<double>& open, 
+                                    const std::vector<double>& high,
+                                    const std::vector<double>& low, 
+                                    const std::vector<double>& close,
+                                    std::vector<double>& ha_open, 
+                                    std::vector<double>& ha_high,
+                                    std::vector<double>& ha_low,
+                                    std::vector<double>& ha_close)
 {
-    qDebug() << "=== DEBUG CHART ===";
-    qDebug() << "m_financeChart:" << m_financeChart;
-    qDebug() << "m_chartViewer:" << m_chartViewer;
+    int size = open.size();
+    ha_open.resize(size);
+    ha_high.resize(size);
+    ha_low.resize(size);
+    ha_close.resize(size);
     
-    if (m_financeChart) {
-        qDebug() << "FinanceChart largeur:" << m_financeChart->getWidth();
+    // Calculer les valeurs HA_Close: (Open + High + Low + Close) / 4
+    for (int i = 0; i < size; ++i) {
+        ha_close[i] = (open[i] + high[i] + low[i] + close[i]) / 4.0;
     }
     
-    if (m_chartViewer) {
-        qDebug() << "ChartViewer taille:" << m_chartViewer->size();
-        qDebug() << "ViewPort Width:" << m_chartViewer->getViewPortWidth();
-        qDebug() << "ViewPort Left:" << m_chartViewer->getViewPortLeft();
+    // Calculer les valeurs HA_Open: (HA_Open_previous + HA_Close_previous) / 2
+    ha_open[0] = open[0]; // Pour la première bougie, HA_Open = Open
+    for (int i = 1; i < size; ++i) {
+        ha_open[i] = (ha_open[i-1] + ha_close[i-1]) / 2.0;
     }
     
-    qDebug() << "Widget taille:" << this->size();
-    qDebug() << "Données - Timestamps:" << m_priceData.timestamps.size();
-    qDebug() << "Données - Close:" << m_priceData.close.size();
-    qDebug() << "=== FIN DEBUG CHART ===";
+    // Calculer les valeurs HA_High et HA_Low
+    for (int i = 0; i < size; ++i) {
+        ha_high[i] = std::max(high[i], std::max(ha_open[i], ha_close[i]));
+        ha_low[i] = std::min(low[i], std::min(ha_open[i], ha_close[i]));
+    }
 }

@@ -92,6 +92,7 @@ public slots:
 private slots:
     void onMouseMovePlotArea(QMouseEvent* event);
     void onViewPortChanged();
+    void onChartTypeChanged(int index); // Nouveau slot pour le changement de type de bougie
 
 private:
     // Cache des données
@@ -101,8 +102,14 @@ private:
     void* m_currentData;
     void* m_currentStats;
 
-    // UI Components (simplifiés)
+    // UI Components 
+    QWidget* m_leftPanel;  // Panneau de gauche (settings)
+    QWidget* m_rightPanel; // Panneau de droite (graphique)
     QLabel* m_chartPlaceholder;
+
+    // Contrôles dans le panneau de gauche
+    QComboBox* m_chartTypeCombo; // Combo box pour le type de bougie
+    QLabel* m_settingsTitle;     // Titre du panneau
 
     // Chart components
     FinanceChart* m_financeChart;
@@ -113,7 +120,10 @@ private:
     TradeData m_tradeData;
     EquityData m_equityData;
     
-    // Private methods (simplifiés)
+    // État du graphique
+    QString m_currentChartType;  // Type de bougie actuel
+    
+    // Private methods
     void extractDataFromPython(void* data, void* stats);
     void extractPriceData(void* data);
     void extractTradeData(void* stats);
@@ -121,6 +131,16 @@ private:
     void createChart();
     void drawChartWithViewport();
     void trackFinance(MultiChart* m, int mouseX);
+    
+    // Méthode pour calculer les données Heikin Ashi
+    void calculateHeikinAshi(const std::vector<double>& open, 
+                             const std::vector<double>& high,
+                             const std::vector<double>& low, 
+                             const std::vector<double>& close,
+                             std::vector<double>& ha_open, 
+                             std::vector<double>& ha_high,
+                             std::vector<double>& ha_low,
+                             std::vector<double>& ha_close);
     
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
     std::vector<double> extractDoubleVector(void* pyObj);

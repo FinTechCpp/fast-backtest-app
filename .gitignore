@@ -31,3 +31,4 @@ backtest_interface/PyQt/backtest_config.ini.bak
 build/
 dist/
 *.egg-info/
+backtest_app_cpp/build-cmake/*

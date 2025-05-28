@@ -31,3 +31,4 @@ backtest_interface/PyQt/backtest_config.ini.bak
 build/
 dist/
 *.egg-info/
+marketData/IX_D_NASDAQ_IFE_IP_10secs_2025-05-28_to_MID.csv

@@ -73,12 +73,12 @@ Backtest::Backtest(std::shared_ptr<Data> data,
 
 std::map<std::string, double> Backtest::run() {
     // Créer le broker et la stratégie
-    auto broker = std::make_shared<Broker>(_data, _cash, _spread, _commission, 
+    _broker = std::make_shared<Broker>(_data, _cash, _spread, _commission, 
                                          _margin, _tradeOnClose, _hedging, 
                                          _exclusiveOrders);
     
     // Créer la stratégie en utilisant la factory
-    auto strategy = _strategyFactory(broker, _data);
+    auto strategy = _strategyFactory(_broker, _data);
     
     if (!strategy) {
         throw std::runtime_error("Strategy factory returned null strategy");
@@ -102,12 +102,7 @@ std::map<std::string, double> Backtest::run() {
             
             // Traiter les ordres et mettre à jour l'état du broker
             try {
-                std::cout << "Processing bar " << i << ": " 
-                          << _data->getDate(i) << " - Close: " 
-                          << _data->Close(i) << "\n";
-                broker->next();
-                std::cout << "Broker updated. Equity: " 
-                          << broker->equity() << "\n";
+                _broker->next();
             } catch (const OutOfMoneyError& e) {
                 std::cerr << "Out of money at bar " << i << ". Stopping backtest.\n";
                 break;
@@ -122,13 +117,13 @@ std::map<std::string, double> Backtest::run() {
         
         // Si finalizeTrades est activé, fermer tous les trades ouverts
         if (_finalizeTrades) {
-            for (auto& trade : broker->trades()) {
+            for (auto& trade : _broker->trades()) {
                 trade->close();
             }
             
             // Exécuter le broker une dernière fois pour traiter les ordres de clôture
             try {
-                broker->next();
+                _broker->next();
             } catch (const std::exception& e) {
                 std::cerr << "Error in final broker update: " << e.what() << "\n";
             }
@@ -141,11 +136,11 @@ std::map<std::string, double> Backtest::run() {
     _data->setLength(dataSize);
     
     // Récupérer la courbe d'équité depuis le broker
-    const std::vector<double>& equityCurve = broker->getEquityCurve();
-    
+    const std::vector<double>& equityCurve = _broker->getEquityCurve();
+
     // Calculer les statistiques
-    _lastResults = computeStats(broker->closedTrades(), equityCurve, *_data);
-    
+    _lastResults = computeStats(_broker->closedTrades(), equityCurve, *_data);
+
     return _lastResults;
 }
 
@@ -174,9 +169,7 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
     for (const auto& [param, values] : params) {
         combinations *= values.size();
     }
-    
-    std::cout << "Optimizing over " << combinations << " combinations\n";
-    
+        
     // Suivre le meilleur score
     double bestScore = std::numeric_limits<double>::lowest();
     

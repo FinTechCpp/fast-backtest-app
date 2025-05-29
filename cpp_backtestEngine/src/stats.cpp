@@ -145,7 +145,8 @@ std::map<std::string, double> computeStats(
     stats["Equity Peak [$]"] = *std::max_element(equity.begin(), equity.end());
     
     // Rendement total
-    stats["Return [%]"] = (equity.back() - equity.front()) / equity.front() * 100;
+    stats["Return [%]"] = equity.size() > 1 && std::abs(equity.front()) > 1e-10 ? 
+        (equity.back() - equity.front()) / equity.front() * 100 : NaN;
     
     // Rendement Buy & Hold
     size_t first_trading_bar = 1;  // Simplifié par rapport à _indicator_warmup_nbars
@@ -332,7 +333,7 @@ std::map<std::string, double> computeStats(
     double excess_return = stats["Return (Ann.) [%]"] / 100 - risk_free_rate;
     double volatility = stats["Volatility (Ann.) [%]"] / 100;
     
-    if (volatility > 0) {
+    if (volatility > 0.001) {
         stats["Sharpe Ratio"] = excess_return / volatility;
     } else {
         stats["Sharpe Ratio"] = NaN;

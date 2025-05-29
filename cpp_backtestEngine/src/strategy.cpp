@@ -7,7 +7,6 @@
 #include <stdexcept>
 #include <vector>
 #include <memory>
-#include <iostream>
 
 Strategy::Strategy(std::shared_ptr<Broker> broker, std::shared_ptr<Data> data)
     : _broker(broker), _data(data) {
@@ -42,15 +41,6 @@ Order Strategy::buy(double size,
         throw std::invalid_argument("Cannot specify both tp and tp_points");
     }
     
-    std::cout << "Creating buy order: size=" << size 
-              << ", limit=" << limit 
-              << ", stop=" << stop 
-              << ", sl=" << sl 
-              << ", tp=" << tp 
-              << ", tag=" << tag 
-              << ", sl_points=" << sl_points 
-              << ", tp_points=" << tp_points 
-              << std::endl;
     // Créer un ordre via le broker
     return _broker->newOrder(size, limit, stop, sl, tp, tag, sl_points, tp_points);
 }
@@ -78,15 +68,6 @@ Order Strategy::sell(double size,
         throw std::invalid_argument("Cannot specify both tp and tp_points");
     }
     
-    std::cout << "Creating sell order: size=" << -size 
-              << ", limit=" << limit 
-              << ", stop=" << stop 
-              << ", sl=" << sl 
-              << ", tp=" << tp 
-              << ", tag=" << tag 
-              << ", sl_points=" << sl_points 
-              << ", tp_points=" << tp_points 
-              << std::endl;
     // Créer un ordre de vente (taille négative) via le broker
     return _broker->newOrder(-size, limit, stop, sl, tp, tag, sl_points, tp_points);
 }

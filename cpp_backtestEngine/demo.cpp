@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <chrono>
+#include <fstream>
+#include <sstream>
 #include "include/backtest.hpp"
 #include "include/strategy.hpp"
 #include "include/data.hpp"
@@ -97,47 +99,45 @@ public:
         bool crossover = _lastFastSMA <= _lastSlowSMA && _currentFastSMA > _currentSlowSMA;
         bool crossunder = _lastFastSMA >= _lastSlowSMA && _currentFastSMA < _currentSlowSMA;
         
-        // Afficher des informations de débogage
-        if (i % 1 == 0) {  // Afficher uniquement toutes les barres pour éviter trop de sorties
-            std::cout << "Bar " << i << ": Price=" << currentPrice 
-                      << ", FastSMA=" << _currentFastSMA 
-                      << ", SlowSMA=" << _currentSlowSMA << std::endl;
-        }
+        // Afficher des informations de débogage sur chaque barre comme demandé
+        std::cout << "Bar " << i << ": Price=" << std::fixed << std::setprecision(4) << currentPrice 
+              << ", FastSMA=" << std::fixed << std::setprecision(4) << _currentFastSMA 
+              << ", SlowSMA=" << std::fixed << std::setprecision(4) << _currentSlowSMA << std::endl;
         
         // Position actuelle
         Position position = getPosition();
         
-        // Logique de trading
+        // Logique de trading avec logs harmonisés
         if (crossover) {
-            std::cout << "Crossover detected at bar " << i << ", attempting to buy..." << std::endl; 
+            std::cout << "Crossover détecté à la barre " << i << ", tentative d'achat..." << std::endl; 
             // Acheter si croisement vers le haut et pas de position longue
             if (!position) {
-                std::cout << "No position, executing buy..." << std::endl;
+                std::cout << "Pas de position, exécution de l'achat..." << std::endl;
                 buy(1.0, 0, 0, 0, 0, 0.05, 0.10, "Crossover");  // SL à 5%, TP à 10% en points
-                std::cout << "BUY signal at bar " << i << ", price: " << currentPrice << std::endl;
+                std::cout << "Signal d'achat à la barre " << i << ", prix: " << std::fixed << std::setprecision(4) << currentPrice << std::endl;
             }
             else if (position.size() <= 0) {
-                std::cout << "Closing short position..." << std::endl;
+                std::cout << "Fermeture de la position courte..." << std::endl;
                 position.close();  // Fermer la position courte existante
-                std::cout << "Going long..." << std::endl;
+                std::cout << "Ouverture d'une position longue..." << std::endl;
                 buy(1.0, 0, 0, 0, 0, 0.05, 0.10, "Crossover");  // SL à 5%, TP à 10% en points
-                std::cout << "BUY signal at bar " << i << ", price: " << currentPrice << std::endl;
+                std::cout << "Signal d'achat à la barre " << i << ", prix: " << std::fixed << std::setprecision(4) << currentPrice << std::endl;
             }
         }
         else if (crossunder) {
-            std::cout << "Crossunder detected at bar " << i << ", attempting to sell..." << std::endl;
+            std::cout << "Crossunder détecté à la barre " << i << ", tentative de vente..." << std::endl;
             // Vendre si croisement vers le bas et pas de position courte
             if (!position) {
-                std::cout << "No position, executing sell..." << std::endl;
+                std::cout << "Pas de position, exécution de la vente..." << std::endl;
                 sell(1.0, 0, 0, 0, 0, 0.05, 0.10, "Crossunder");  // SL à 5%, TP à 10% en points
-                std::cout << "SELL signal at bar " << i << ", price: " << currentPrice << std::endl;
+                std::cout << "Signal de vente à la barre " << i << ", prix: " << std::fixed << std::setprecision(4) << currentPrice << std::endl;
             }
             else if (position.size() >= 0) {
-                std::cout << "Closing long position..." << std::endl;
+                std::cout << "Fermeture de la position longue..." << std::endl;
                 position.close();  // Fermer la position longue existante
-                std::cout << "Going short..." << std::endl;
+                std::cout << "Ouverture d'une position courte..." << std::endl;
                 sell(1.0, 0, 0, 0, 0, 0.05, 0.10, "Crossunder");  // SL à 5%, TP à 10% en points
-                std::cout << "SELL signal at bar " << i << ", price: " << currentPrice << std::endl;
+                std::cout << "Signal de vente à la barre " << i << ", prix: " << std::fixed << std::setprecision(4) << currentPrice << std::endl;
             }
         }
     }
@@ -177,6 +177,61 @@ public:
         }
     }
 };
+
+// Fonction pour charger des données à partir d'un fichier CSV
+std::shared_ptr<Data> loadDataFromCSV(const std::string& filename) {
+    std::vector<std::string> dates;
+    std::vector<double> open, high, low, close, volume;
+    
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Impossible d'ouvrir le fichier: " + filename);
+    }
+    
+    std::string line;
+    bool header = true;
+    
+    while (std::getline(file, line)) {
+        // Ignorer la ligne d'en-tête
+        if (header) {
+            header = false;
+            continue;
+        }
+        
+        std::stringstream ss(line);
+        std::string cell;
+        std::vector<std::string> cells;
+        
+        // Découper la ligne en cellules
+        while (std::getline(ss, cell, ',')) {
+            cells.push_back(cell);
+        }
+        
+        // Vérifier que la ligne contient assez de cellules
+        if (cells.size() < 6) {
+            std::cerr << "Avertissement: ligne ignorée (pas assez de cellules): " << line << std::endl;
+            continue;
+        }
+        
+        // Ajouter les données à nos vecteurs
+        dates.push_back(cells[0]);
+        
+        try {
+            open.push_back(std::stod(cells[1]));
+            high.push_back(std::stod(cells[2]));
+            low.push_back(std::stod(cells[3]));
+            close.push_back(std::stod(cells[4]));
+            volume.push_back(std::stod(cells[5]));
+        } catch (const std::exception& e) {
+            std::cerr << "Erreur de conversion pour la ligne: " << line << " - " << e.what() << std::endl;
+            continue;
+        }
+    }
+    
+    std::cout << "Chargé " << dates.size() << " barres depuis " << filename << std::endl;
+    
+    return std::make_shared<Data>(dates, open, high, low, close, volume);
+}
 
 // Fonction pour générer des données synthétiques
 std::shared_ptr<Data> generateSyntheticData(int bars, double initialPrice = 100.0, 
@@ -223,7 +278,7 @@ std::shared_ptr<Data> generateSyntheticData(int bars, double initialPrice = 100.
 }
 
 // Fonction pour formater et afficher les statistiques
-void displayStats(const std::map<std::string, double>& stats) {
+void displayStats(const std::map<std::string, double>& stats, const std::vector<std::shared_ptr<Trade>>& trades, const std::shared_ptr<Data>& data) {
     std::cout << "\n============== BACKTEST RESULTS ==============\n";
     
     // Format des nombres
@@ -251,6 +306,85 @@ void displayStats(const std::map<std::string, double>& stats) {
     std::cout << "Avg. Trade [%]: " << stats.at("Avg. Trade [%]") << std::endl;
     std::cout << "Profit Factor: " << stats.at("Profit Factor") << std::endl;
     std::cout << "SQN: " << stats.at("SQN") << std::endl;
+
+    // Stat sur les trades details
+    std::cout << "\n-------------- TRADE DETAILS --------------\n";
+    
+    // Afficher un en-tête de tableau similaire à celui de Python
+    std::cout << std::setw(4) << " "
+              << std::setw(8) << "Size" 
+              << std::setw(10) << "EntryBar" 
+              << std::setw(10) << "ExitBar" 
+              << std::setw(12) << "EntryPrice" 
+              << std::setw(12) << "ExitPrice" 
+              << std::setw(12) << "SL" 
+              << std::setw(12) << "TP" 
+              << std::setw(12) << "PnL" 
+              << std::setw(12) << "ReturnPct" 
+              << std::setw(12) << "EntryTime" 
+              << std::setw(12) << "ExitTime" 
+              << std::setw(10) << "Duration" 
+              << "  Tag" << std::endl;
+    
+    // Afficher les détails de chaque trade avec gestion d'erreurs
+    try {
+        for (size_t i = 0; i < trades.size(); ++i) {
+            try {
+                const auto& trade = trades[i];
+                if (!trade) {
+                    std::cerr << "Warning: Trade null à l'index " << i << std::endl;
+                    continue;
+                }
+                
+                // Récupérer les indices de barres et vérifier leur validité
+                size_t entryBar = trade->entryBar();
+                size_t exitBar = trade->exitBar();
+                
+                // Calculer la durée en jours
+                int durationDays = static_cast<int>(exitBar) - static_cast<int>(entryBar);
+                
+                // Obtenir les dates avec vérification des limites
+                std::string entryDate = "N/A";
+                std::string exitDate = "N/A";
+                
+                // CORRECTION: Utiliser la méthode correcte pour accéder aux dates
+                // Vérifier si data a une méthode Date() ou getDate()
+                try {
+                    // Essayer la méthode Date d'abord
+                    if (entryBar < data->size()) {
+                        entryDate = data->getDate(entryBar);
+                    }
+                    
+                    if (exitBar < data->size()) {
+                        exitDate = data->getDate(exitBar);
+                    }
+                } catch (const std::exception& e) {
+                    std::cerr << "Erreur d'accès aux dates pour le trade " << i << ": " << e.what() << std::endl;
+                }
+                
+                // Afficher les détails du trade
+                std::cout << std::setw(4) << i
+                          << std::setw(8) << int(trade->size())
+                          << std::setw(10) << entryBar
+                          << std::setw(10) << exitBar
+                          << std::setw(12) << std::fixed << std::setprecision(6) << trade->entryPrice()
+                          << std::setw(12) << std::fixed << std::setprecision(6) << trade->exitPrice()
+                          << std::setw(12) << std::fixed << std::setprecision(6) << trade->sl()
+                          << std::setw(12) << std::fixed << std::setprecision(6) << trade->tp()
+                          << std::setw(12) << std::fixed << std::setprecision(6) << trade->pl()
+                          << std::setw(12) << std::fixed << std::setprecision(6) << trade->plPercent()
+                          << std::setw(12) << entryDate
+                          << std::setw(12) << exitDate
+                          << std::setw(9) << durationDays << " days"
+                          << "  " << trade->tag() << std::endl;
+                
+            } catch (const std::exception& e) {
+                std::cerr << "Erreur lors du traitement du trade " << i << ": " << e.what() << std::endl;
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Erreur lors de l'affichage des trades: " << e.what() << std::endl;
+    }
     
     std::cout << "==============================================\n";
 }
@@ -258,10 +392,23 @@ void displayStats(const std::map<std::string, double>& stats) {
 // Programme principal
 int main() {
     try {
-        std::cout << "Generating synthetic data..." << std::endl;
-        // Créer des données synthétiques: 500 jours, prix initial 100, légère tendance haussière
-        auto data = generateSyntheticData(500, 100.0, 0.015, 0.0002);
-        std::cout << "Data generated with " << data->size() << " bars" << std::endl;
+        std::shared_ptr<Data> data;
+        
+        // Chemin vers le fichier CSV
+        std::string csv_file = "../../data/synthetic_data.csv";
+        
+        // Essayer de charger à partir du CSV d'abord
+        try {
+            std::cout << "Tentative de chargement des données depuis " << csv_file << "..." << std::endl;
+            data = loadDataFromCSV(csv_file);
+        } catch (const std::exception& e) {
+            std::cerr << "Erreur lors du chargement du CSV: " << e.what() << std::endl;
+            std::cout << "Génération de données synthétiques à la place..." << std::endl;
+            // Utiliser les données synthétiques comme fallback
+            data = generateSyntheticData(500, 100.0, 0.015, 0.0002);
+        }
+        
+        std::cout << "Données chargées avec " << data->size() << " barres" << std::endl;
         
         // Créer une factory pour la stratégie
         auto strategyFactory = [](std::shared_ptr<Broker> broker, std::shared_ptr<Data> data) {
@@ -275,7 +422,13 @@ int main() {
         auto results = backtest.run();
         
         // Afficher les résultats
-        displayStats(results);
+        // Récupérer les trades fermés
+        std::vector<std::shared_ptr<Trade>> closedTrades = backtest.closedTrades();
+
+        std::cout << "Nombre de trades fermés: " << closedTrades.size() << std::endl;
+
+        // Afficher les résultats en passant les trades et les données
+        displayStats(results, closedTrades, data);
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

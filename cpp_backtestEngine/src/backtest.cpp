@@ -244,7 +244,3 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
     return {bestParams, bestStats};
 }
 
-// Ajout d'une fonction pour que le broker puisse exposer sa courbe d'équité
-// Ajoutera à l'interface de Broker:
-// Dans son fichier d'en-tête - broker.hpp
-// const std::vector<double>& getEquityCurve() const { return _equityCurve; }

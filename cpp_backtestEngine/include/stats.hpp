@@ -6,6 +6,7 @@
 #include "trade.hpp"
 #include "data.hpp"
 
+// TODO: remplacer par une structure pour contenir les données et non des strings
 /**
  * @brief Calculate performance statistics
  */

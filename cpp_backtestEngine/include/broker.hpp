@@ -47,6 +47,7 @@ public:
     std::vector<Order> orders() const { return _orders; }
     std::vector<std::shared_ptr<Trade>> trades() const { return _trades; }
     std::vector<std::shared_ptr<Trade>> closedTrades() const { return _closedTrades; }
+    const std::vector<double>& getEquityCurve() const { return _equityCurve; }
     
 private:
     std::shared_ptr<Data> _data;

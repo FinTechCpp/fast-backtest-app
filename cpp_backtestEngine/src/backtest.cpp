@@ -102,7 +102,12 @@ std::map<std::string, double> Backtest::run() {
             
             // Traiter les ordres et mettre à jour l'état du broker
             try {
+                std::cout << "Processing bar " << i << ": " 
+                          << _data->getDate(i) << " - Close: " 
+                          << _data->Close(i) << "\n";
                 broker->next();
+                std::cout << "Broker updated. Equity: " 
+                          << broker->equity() << "\n";
             } catch (const OutOfMoneyError& e) {
                 std::cerr << "Out of money at bar " << i << ". Stopping backtest.\n";
                 break;

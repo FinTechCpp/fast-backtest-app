@@ -13,3 +13,7 @@ add_library(cpp_backtestEngine STATIC ${SOURCES})
 
 # Spécifier les chemins d'inclusion
 target_include_directories(cpp_backtestEngine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Ajouter l'exécutable de démo
+add_executable(backtest_demo demo.cpp)
+target_link_libraries(backtest_demo PRIVATE cpp_backtestEngine)

@@ -78,7 +78,7 @@ std::map<std::string, double> Backtest::run() {
                                          _exclusiveOrders);
     
     // Créer la stratégie en utilisant la factory
-    auto strategy = _strategyFactory(_broker, _data);
+    std::shared_ptr<Strategy> strategy = _strategyFactory(_broker, _data);
     
     if (!strategy) {
         throw std::runtime_error("Strategy factory returned null strategy");

@@ -100,7 +100,7 @@ Order Broker::newOrder(double size, double limit, double stop, double sl, double
         // If exclusive orders, cancel all non-contingent orders and close all open trades
         if (_exclusiveOrders) {
             // Cancel all non-contingent orders
-            auto orderIt = _orders.begin();
+            std::vector<Order>::iterator orderIt = _orders.begin();
             while (orderIt != _orders.end()) {
                 if (!orderIt->isContingent()) {
                     orderIt = _orders.erase(orderIt);

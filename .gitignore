@@ -32,3 +32,4 @@ build/
 dist/
 *.egg-info/
 backtest_app_cpp/build-cmake/*
+marketData/IX_D_NASDAQ_IFE_IP_10secs_2025-05-28_to_MID.csv

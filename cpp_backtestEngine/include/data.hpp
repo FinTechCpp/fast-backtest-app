@@ -30,7 +30,6 @@ public:
     const std::vector<double>& Close() const;
     const std::vector<double>& Volume() const;
 
-    size_t getActualIndex(int index) const;
     
     // Index-based access (to simulate Python's data.Close[-1])
     double Open(int index) const;
@@ -47,7 +46,7 @@ public:
     void addColumn(const std::string& name, const std::vector<double>& values);
     const std::vector<double>& getColumn(const std::string& name) const;
     
-private:
+    private:
     std::vector<std::string> _dates;
     std::vector<double> _open;
     std::vector<double> _high;
@@ -56,4 +55,6 @@ private:
     std::vector<double> _volume;
     std::map<std::string, std::vector<double>> _customColumns;
     size_t _currentLength;
+
+    size_t getActualIndex(int index) const;
 };

@@ -8,6 +8,7 @@
 #include "data.hpp"
 #include "broker.hpp"
 #include "strategy.hpp"
+#include "stats.hpp"
 
 /**
  * @brief Moteur principal de backtesting pour simuler et évaluer des stratégies de trading
@@ -63,12 +64,12 @@ public:
      * - Si finalizeTrades est activé, clôture tous les trades ouverts
      * - Calcule les statistiques de performance
      * 
-     * @return Map de statistiques de performance (métriques de rendement, risque et trading)
+     * @return Structure Stats contenant toutes les métriques de performance (rendement, risque, trading)
      * 
      * @throws std::runtime_error En cas d'erreur pendant l'exécution du backtest
      * @note Les erreurs non critiques (ex: plus d'argent) sont interceptées et le backtest continue avec les résultats partiels
      */
-    std::map<std::string, double> run();
+    Stats run();
     
     /**
      * @brief Optimise les paramètres de la stratégie par recherche exhaustive
@@ -84,7 +85,7 @@ public:
      * @throws std::invalid_argument Si params est vide ou si maximize n'est pas une métrique valide
      * @note Cette fonction peut être très coûteuse en temps d'exécution pour un grand nombre de paramètres
      */
-    std::pair<std::map<std::string, double>, std::map<std::string, double>> 
+    std::pair<std::map<std::string, double>, Stats> 
     optimize(const std::map<std::string, std::vector<double>>& params,
              const std::string& maximize = "SQN");
     
@@ -113,5 +114,5 @@ private:
     bool _hedging;                         ///< Si vrai, permet les positions longues et courtes simultanées
     bool _exclusiveOrders;                 ///< Si vrai, un seul ordre actif à la fois
     bool _finalizeTrades;                  ///< Si vrai, ferme tous les trades à la fin
-    std::map<std::string, double> _lastResults; ///< Résultats du dernier backtest
+    Stats _lastResults;                    ///< Résultats du dernier backtest
 };

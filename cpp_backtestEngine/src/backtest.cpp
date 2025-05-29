@@ -71,7 +71,7 @@ Backtest::Backtest(std::shared_ptr<Data> data,
     }
 }
 
-std::map<std::string, double> Backtest::run() {
+Stats Backtest::run() {
     // Créer le broker et la stratégie
     _broker = std::make_shared<Broker>(_data, _cash, _spread, _commission, 
                                          _margin, _tradeOnClose, _hedging, 
@@ -144,7 +144,7 @@ std::map<std::string, double> Backtest::run() {
     return _lastResults;
 }
 
-std::pair<std::map<std::string, double>, std::map<std::string, double>> 
+std::pair<std::map<std::string, double>, Stats> 
 Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
                    const std::string& maximize) {
     if (params.empty()) {
@@ -152,15 +152,15 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
     }
     
     // Vérifier si la clé maximize est valide
-    auto dummyStatsMap = dummyStats();
-    if (dummyStatsMap.find(maximize) == dummyStatsMap.end()) {
+    auto statsMap = dummyStats().toMap();
+    if (statsMap.find(maximize) == statsMap.end()) {
         throw std::invalid_argument("Invalid maximize key: " + maximize);
     }
     
     // Meilleurs paramètres et stats
     std::map<std::string, double> bestParams;
-    std::map<std::string, double> bestStats = dummyStatsMap;
-    
+    Stats bestStats = dummyStats();  // Utilisation de dummyStats() au lieu de dummyStatsMap
+
     // Map pour stocker tous les résultats (pour heatmap)
     std::map<std::string, double> heatmap;
     
@@ -205,15 +205,18 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
                                  _finalizeTrades);
             
             // Exécuter le backtest avec les paramètres actuels
-            auto stats = tempBacktest.run();
+            Stats stats = tempBacktest.run();  // Maintenant stats est de type Stats, pas une map
+            
+            // Convertir les statistiques en map pour accéder à la métrique maximize
+            auto statsMap = stats.toMap();
             
             // Vérifier si c'est le meilleur score jusqu'à présent
-            if (stats.find(maximize) != stats.end()) {
-                double score = stats[maximize];
+            if (statsMap.find(maximize) != statsMap.end()) {
+                double score = statsMap[maximize];
                 if (score > bestScore) {
                     bestScore = score;
                     bestParams = currentParams;
-                    bestStats = stats;
+                    bestStats = stats;  // Stocke directement l'objet Stats
                 }
                 
                 // Stocker pour la heatmap
@@ -239,6 +242,6 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
     std::map<std::string, double> currentParams;
     searchParams(0, currentParams);
     
-    return {bestParams, bestStats};
+    return {bestParams, bestStats};  // Retourne les meilleurs paramètres et les meilleures stats
 }
 

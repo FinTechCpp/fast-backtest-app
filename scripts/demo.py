@@ -65,14 +65,14 @@ class SmaCrossStrategy(Strategy):
             # Acheter si croisement vers le haut et pas de position longue
             if not self.position:
                 print(f"Pas de position, exécution de l'achat...")
-                # SL à 5%, TP à 10% en points
-                self.buy(size=1.0, sl_points=0.05, tp_points=0.10, tag="Crossover")
+                # SL à 1 point, TP à 3 points
+                self.buy(size=1.0, sl_points=1, tp_points=3, tag="Crossover")
                 print(f"Signal d'achat à la barre {i}, prix: {current_price:.4f}")
             elif self.position.size < 0:
                 print(f"Fermeture de la position courte...")
                 self.position.close()
                 print(f"Ouverture d'une position longue...")
-                self.buy(size=1.0, sl_points=0.05, tp_points=0.10, tag="Crossover")
+                self.buy(size=1.0, sl_points=1, tp_points=3, tag="Crossover")
                 print(f"Signal d'achat à la barre {i}, prix: {current_price:.4f}")
 
         elif crossunder:
@@ -80,13 +80,13 @@ class SmaCrossStrategy(Strategy):
             # Vendre si croisement vers le bas et pas de position courte
             if not self.position:
                 print(f"Pas de position, exécution de la vente...")
-                self.sell(size=1.0, sl_points=0.05, tp_points=0.10, tag="Crossunder")
+                self.sell(size=1.0, sl_points=1, tp_points=3, tag="Crossunder")
                 print(f"Signal de vente à la barre {i}, prix: {current_price:.4f}")
             elif self.position.size > 0:
                 print(f"Fermeture de la position longue...")
                 self.position.close()
                 print(f"Ouverture d'une position courte...")
-                self.sell(size=1.0, sl_points=0.05, tp_points=0.10, tag="Crossunder")
+                self.sell(size=1.0, sl_points=1, tp_points=3, tag="Crossunder")
                 print(f"Signal de vente à la barre {i}, prix: {current_price:.4f}")
 
 

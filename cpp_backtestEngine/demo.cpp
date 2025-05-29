@@ -113,14 +113,14 @@ public:
             // Acheter si croisement vers le haut et pas de position longue
             if (!position) {
                 std::cout << "Pas de position, exécution de l'achat..." << std::endl;
-                buy(1.0, 0, 0, 0, 0, 0.05, 0.10, "Crossover");  // SL à 5%, TP à 10% en points
+                buy(1.0, 0, 0, 0, 0, 1, 3, "Crossover");  // SL à 1 point, TP à 3 points
                 std::cout << "Signal d'achat à la barre " << i << ", prix: " << std::fixed << std::setprecision(4) << currentPrice << std::endl;
             }
             else if (position.size() <= 0) {
                 std::cout << "Fermeture de la position courte..." << std::endl;
                 position.close();  // Fermer la position courte existante
                 std::cout << "Ouverture d'une position longue..." << std::endl;
-                buy(1.0, 0, 0, 0, 0, 0.05, 0.10, "Crossover");  // SL à 5%, TP à 10% en points
+                buy(1.0, 0, 0, 0, 0, 1, 3, "Crossover");  // SL à 1 point, TP à 3 points
                 std::cout << "Signal d'achat à la barre " << i << ", prix: " << std::fixed << std::setprecision(4) << currentPrice << std::endl;
             }
         }
@@ -129,14 +129,14 @@ public:
             // Vendre si croisement vers le bas et pas de position courte
             if (!position) {
                 std::cout << "Pas de position, exécution de la vente..." << std::endl;
-                sell(1.0, 0, 0, 0, 0, 0.05, 0.10, "Crossunder");  // SL à 5%, TP à 10% en points
+                sell(1.0, 0, 0, 0, 0, 1, 3, "Crossunder");  // SL à 1 point, TP à 3 points
                 std::cout << "Signal de vente à la barre " << i << ", prix: " << std::fixed << std::setprecision(4) << currentPrice << std::endl;
             }
             else if (position.size() >= 0) {
                 std::cout << "Fermeture de la position longue..." << std::endl;
                 position.close();  // Fermer la position longue existante
                 std::cout << "Ouverture d'une position courte..." << std::endl;
-                sell(1.0, 0, 0, 0, 0, 0.05, 0.10, "Crossunder");  // SL à 5%, TP à 10% en points
+                sell(1.0, 0, 0, 0, 0, 1, 3, "Crossunder");  // SL à 1 point, TP à 3 points
                 std::cout << "Signal de vente à la barre " << i << ", prix: " << std::fixed << std::setprecision(4) << currentPrice << std::endl;
             }
         }
@@ -278,34 +278,34 @@ std::shared_ptr<Data> generateSyntheticData(int bars, double initialPrice = 100.
 }
 
 // Fonction pour formater et afficher les statistiques
-void displayStats(const std::map<std::string, double>& stats, const std::vector<std::shared_ptr<Trade>>& trades, const std::shared_ptr<Data>& data) {
+void displayStats(const Stats& stats, const std::shared_ptr<Data>& data) {
     std::cout << "\n============== BACKTEST RESULTS ==============\n";
     
     // Format des nombres
     std::cout << std::fixed << std::setprecision(2);
     
     // Statistiques de performance principales
-    std::cout << "Equity Final [$]: " << stats.at("Equity Final [$]") << std::endl;
-    std::cout << "Equity Peak [$]: " << stats.at("Equity Peak [$]") << std::endl;
-    std::cout << "Return [%]: " << stats.at("Return [%]") << std::endl;
-    std::cout << "Buy & Hold Return [%]: " << stats.at("Buy & Hold Return [%]") << std::endl;
-    
+    std::cout << "Equity Final [$]: " << stats.equityFinal << std::endl;
+    std::cout << "Equity Peak [$]: " << stats.equityPeak << std::endl;
+    std::cout << "Return [%]: " << stats.returnPct << std::endl;
+    std::cout << "Buy & Hold Return [%]: " << stats.buyHoldReturnPct << std::endl;
+
     // Statistiques de risque
     std::cout << "\n-------------- RISK METRICS --------------\n";
-    std::cout << "Max. Drawdown [%]: " << stats.at("Max. Drawdown [%]") << std::endl;
-    std::cout << "Sharpe Ratio: " << stats.at("Sharpe Ratio") << std::endl;
-    std::cout << "Sortino Ratio: " << stats.at("Sortino Ratio") << std::endl;
-    std::cout << "Calmar Ratio: " << stats.at("Calmar Ratio") << std::endl;
-    
+    std::cout << "Max. Drawdown [%]: " << stats.maxDrawdownPct << std::endl;
+    std::cout << "Sharpe Ratio: " << stats.sharpeRatio << std::endl;
+    std::cout << "Sortino Ratio: " << stats.sortinoRatio << std::endl;
+    std::cout << "Calmar Ratio: " << stats.calmarRatio << std::endl;
+
     // Statistiques des trades
     std::cout << "\n-------------- TRADE STATISTICS --------------\n";
-    std::cout << "# Trades: " << stats.at("# Trades") << std::endl;
-    std::cout << "Win Rate [%]: " << stats.at("Win Rate [%]") << std::endl;
-    std::cout << "Best Trade [%]: " << stats.at("Best Trade [%]") << std::endl;
-    std::cout << "Worst Trade [%]: " << stats.at("Worst Trade [%]") << std::endl;
-    std::cout << "Avg. Trade [%]: " << stats.at("Avg. Trade [%]") << std::endl;
-    std::cout << "Profit Factor: " << stats.at("Profit Factor") << std::endl;
-    std::cout << "SQN: " << stats.at("SQN") << std::endl;
+    std::cout << "# Trades: " << stats.numTrades << std::endl;
+    std::cout << "Win Rate [%]: " << stats.winRatePct << std::endl;
+    std::cout << "Best Trade [%]: " << stats.bestTradePct << std::endl;
+    std::cout << "Worst Trade [%]: " << stats.worstTradePct << std::endl;
+    std::cout << "Avg. Trade [%]: " << stats.avgTradePct << std::endl;
+    std::cout << "Profit Factor: " << stats.profitFactor << std::endl;
+    std::cout << "SQN: " << stats.sqn << std::endl;
 
     // Stat sur les trades details
     std::cout << "\n-------------- TRADE DETAILS --------------\n";
@@ -325,6 +325,8 @@ void displayStats(const std::map<std::string, double>& stats, const std::vector<
               << std::setw(12) << "ExitTime" 
               << std::setw(10) << "Duration" 
               << "  Tag" << std::endl;
+
+    std::vector<std::shared_ptr<Trade>> trades = stats.trades;
     
     // Afficher les détails de chaque trade avec gestion d'erreurs
     try {
@@ -419,16 +421,14 @@ int main() {
         std::cout << "Creating and running backtest..." << std::endl;
         // Créer et exécuter le backtest
         Backtest backtest(data, strategyFactory, 10000.0, 0.0, 0.001, 1.0, false, false, false, true);
-        auto results = backtest.run();
+        Stats results = backtest.run();
         
         // Afficher les résultats
         // Récupérer les trades fermés
-        std::vector<std::shared_ptr<Trade>> closedTrades = backtest.closedTrades();
-
-        std::cout << "Nombre de trades fermés: " << closedTrades.size() << std::endl;
+        // std::vector<std::shared_ptr<Trade>> closedTrades = backtest.closedTrades();
 
         // Afficher les résultats en passant les trades et les données
-        displayStats(results, closedTrades, data);
+        displayStats(results, data);
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

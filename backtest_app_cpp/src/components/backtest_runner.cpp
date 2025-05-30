@@ -197,11 +197,11 @@ void BacktestWorker::run()
         QDateTime endDate;
         if (allParams.contains("end_date")) {
             QVariant dateVariant = allParams["end_date"];
-            if (dateVariant.type() == QVariant::Date) {
+            if (dateVariant.typeId() == QVariant::Date) {
                 endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
-            } else if (dateVariant.type() == QVariant::DateTime) {
+            } else if (dateVariant.typeId() == QVariant::DateTime) {
                 endDate = dateVariant.toDateTime();
-            } else if (dateVariant.type() == QVariant::String) {
+            } else if (dateVariant.typeId() == QVariant::String) {
                 QString dateStr = dateVariant.toString();
                 QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
                 

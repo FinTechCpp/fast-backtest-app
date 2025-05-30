@@ -106,19 +106,19 @@ int DataLoader::intervalToSeconds(const QString& interval)
     QString lowerInterval = interval.toLower();
     if (lowerInterval.endsWith("secs")) {
         bool ok;
-        int seconds = lowerInterval.leftRef(lowerInterval.length() - 4).toInt(&ok);
+        int seconds = lowerInterval.first(lowerInterval.length() - 4).toInt(&ok);
         return ok ? seconds : 0;
     } else if (lowerInterval.endsWith("min")) {
         bool ok;
-        int minutes = lowerInterval.leftRef(lowerInterval.length() - 3).toInt(&ok);
+        int minutes = lowerInterval.first(lowerInterval.length() - 3).toInt(&ok);
         return ok ? minutes * 60 : 0;
     } else if (lowerInterval.endsWith("h")) {
         bool ok;
-        int hours = lowerInterval.leftRef(lowerInterval.length() - 1).toInt(&ok);
+        int hours = lowerInterval.first(lowerInterval.length() - 1).toInt(&ok);
         return ok ? hours * 3600 : 0;
     } else if (lowerInterval.endsWith("d")) {
         bool ok;
-        int days = lowerInterval.leftRef(lowerInterval.length() - 1).toInt(&ok);
+        int days = lowerInterval.first(lowerInterval.length() - 1).toInt(&ok);
         return ok ? days * 86400 : 0;
     }
     return 0;
@@ -208,28 +208,28 @@ QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString
     if (period.endsWith("d")) {
         // Périodes en jours
         bool ok;
-        int days = period.leftRef(period.length() - 1).toInt(&ok);
+        int days = period.first(period.length() - 1).toInt(&ok);
         if (ok && days > 0) {
             startDate = endDate.addDays(-days);
         }
     } else if (period.endsWith("w")) {
         // Périodes en semaines
         bool ok;
-        int weeks = period.leftRef(period.length() - 1).toInt(&ok);
+        int weeks = period.first(period.length() - 1).toInt(&ok);
         if (ok && weeks > 0) {
             startDate = endDate.addDays(-weeks * 7);
         }
     } else if (period.endsWith("m")) {
         // Périodes en mois
         bool ok;
-        int months = period.leftRef(period.length() - 1).toInt(&ok);
+        int months = period.first(period.length() - 1).toInt(&ok);
         if (ok && months > 0) {
             startDate = endDate.addMonths(-months);
         }
     } else if (period.endsWith("y")) {
         // Périodes en années
         bool ok;
-        int years = period.leftRef(period.length() - 1).toInt(&ok);
+        int years = period.first(period.length() - 1).toInt(&ok);
         if (ok && years > 0) {
             startDate = endDate.addYears(-years);
         }
@@ -331,7 +331,7 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
     int minute = (d[14].digitValue() * 10) + d[15].digitValue();
     int second = (d[17].digitValue() * 10) + d[18].digitValue();
     
-    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), Qt::UTC);
+    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), QTimeZone::utc());
     
     if (!timestamp.isValid()) {
         return nullptr;
@@ -347,10 +347,10 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
         comma4 = line.length(); // Pas de volume
     }
     
-    double open = line.midRef(comma1 + 1, comma2 - comma1 - 1).toDouble();
-    double high = line.midRef(comma2 + 1, comma3 - comma2 - 1).toDouble();
-    double low = line.midRef(comma3 + 1, comma4 - comma3 - 1).toDouble();
-    double close = line.midRef(comma4 + 1).toDouble();
+    double open = line.sliced(comma1 + 1, comma2 - comma1 - 1).toDouble();
+    double high = line.sliced(comma2 + 1, comma3 - comma2 - 1).toDouble();
+    double low = line.sliced(comma3 + 1, comma4 - comma3 - 1).toDouble();
+    double close = line.sliced(comma4 + 1).toDouble();
     
     return std::make_unique<OHLCBar>(timestamp, open, high, low, close, 0.0);
 }

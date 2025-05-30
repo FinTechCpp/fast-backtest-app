@@ -160,6 +160,86 @@ function handleResize() {
     chart.resize(chartContainer.clientWidth, chartContainer.clientHeight);
 }
 
+// Création du tooltip
+const toolTip = document.createElement('div');
+toolTip.style = `
+  width: 120px;
+  height: auto;
+  position: absolute;
+  display: none;
+  padding: 8px;
+  box-sizing: border-box;
+  font-size: 12px;
+  text-align: left;
+  z-index: 10000;
+  pointer-events: none;
+  border: 1px solid #4c525e;
+  border-radius: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #1e222d;
+  color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+`;
+chartContainer.appendChild(toolTip);
+
+// Supprimer le setTimeout et attacher directement l'événement
+chart.subscribeCrosshairMove(param => {
+  if (
+    param.point === undefined ||
+    !param.time ||
+    param.point.x < 0 ||
+    param.point.x > chartContainer.clientWidth ||
+    param.point.y < 0 ||
+    param.point.y > chartContainer.clientHeight
+  ) {
+    toolTip.style.display = 'none';
+    return;
+  }
+  
+  const data = param.seriesData.get(candlestickSeries);
+  if (!data) {
+    toolTip.style.display = 'none';
+    return;
+  }
+  
+  // Afficher le tooltip
+  toolTip.style.display = 'block';
+  
+  // Formatter la date en format lisible
+  const dateStr = new Date(param.time * 1000).toLocaleDateString();
+  
+  const open = data.open;
+  const high = data.high;
+  const low = data.low;
+  const close = data.close;
+  
+  toolTip.innerHTML = `
+    <div style="font-size: 10px; margin-bottom: 4px;">NASDAQ 100</div>
+    <div style="font-size: 16px; margin: 4px 0px; color: ${close >= open ? '#26a69a' : '#ef5350'}">
+        ${((close - open) / open * 100 > 0 ? '+' : '')}${((close - open) / open * 100).toFixed(2)}%    </div>
+    <div>O: <span style="color: #d1d4dc">${open.toFixed(2)}</span></div>
+    <div>H: <span style="color: #d1d4dc">${high.toFixed(2)}</span></div>
+    <div>L: <span style="color: #d1d4dc">${low.toFixed(2)}</span></div>
+    <div>C: <span style="color: #d1d4dc">${close.toFixed(2)}</span></div>
+  `;
+  
+  // Positionnement du tooltip (suivre le curseur)
+  let left = param.point.x + 15;
+  if (left > chartContainer.clientWidth - 120) {
+    left = param.point.x - 15 - 120;
+  }
+  
+  let top = param.point.y + 15;
+  if (top > chartContainer.clientHeight - 150) {
+    top = param.point.y - 15 - 150;
+  }
+  
+  toolTip.style.left = left + 'px';
+  toolTip.style.top = top + 'px';
+});
+
 // Initialisation
 window.addEventListener('DOMContentLoaded', () => {
     // Charger les données historiques

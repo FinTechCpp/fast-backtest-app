@@ -24,6 +24,7 @@
             padding: 20px;
         }
         #chart-container {
+            position: relative;
             height: 500px;
             width: 100%;
             margin-bottom: 20px;
@@ -81,5 +82,7 @@
     
     <!-- Notre script pour gérer le graphique -->
     <script src="/static/chart.js"></script>
+    
+    <div id="tooltip-alternative" style="position: fixed; top: 10px; right: 10px; background: black; color: white; padding: 10px; z-index: 10000; display: none;"></div>
 </body>
 </html>

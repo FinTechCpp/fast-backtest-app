@@ -8,6 +8,8 @@
 #include <cmath>
 #include <chrono>
 
+namespace be {
+
 class OutOfMoneyError : public std::runtime_error {
 public:
     OutOfMoneyError() : std::runtime_error("Out of money") {}
@@ -79,7 +81,7 @@ Stats Backtest::run() {
     
     // Créer la stratégie en utilisant la factory
     std::shared_ptr<Strategy> strategy = _strategyFactory(_broker, _data);
-    
+
     if (!strategy) {
         throw std::runtime_error("Strategy factory returned null strategy");
     }
@@ -245,3 +247,4 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
     return {bestParams, bestStats};  // Retourne les meilleurs paramètres et les meilleures stats
 }
 
+} // namespace be

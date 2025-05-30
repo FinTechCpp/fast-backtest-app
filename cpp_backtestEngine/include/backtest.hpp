@@ -10,6 +10,8 @@
 #include "strategy.hpp"
 #include "stats.hpp"
 
+namespace be {
+
 /**
  * @brief Moteur principal de backtesting pour simuler et évaluer des stratégies de trading
  * 
@@ -116,3 +118,5 @@ private:
     bool _finalizeTrades;                  ///< Si vrai, ferme tous les trades à la fin
     Stats _lastResults;                    ///< Résultats du dernier backtest
 };
+
+} // namespace be

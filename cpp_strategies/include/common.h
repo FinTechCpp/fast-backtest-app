@@ -14,6 +14,7 @@ struct Time {
     bool operator!=(const Time& other) const;
 };
 
+// TODO : on pourrait mettre en commun avec la class Date du backtestEngine
 struct DateTime {
     int year = 0;
     int month = 0;

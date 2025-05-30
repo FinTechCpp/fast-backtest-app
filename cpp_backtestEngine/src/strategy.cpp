@@ -8,6 +8,8 @@
 #include <vector>
 #include <memory>
 
+namespace be {
+
 Strategy::Strategy(std::shared_ptr<Broker> broker, std::shared_ptr<Data> data)
     : _broker(broker), _data(data) {
     if (!broker) {
@@ -107,3 +109,5 @@ std::vector<Trade> Strategy::getClosedTrades() const {
     }
     return closedTrades;
 }
+
+} // namespace be

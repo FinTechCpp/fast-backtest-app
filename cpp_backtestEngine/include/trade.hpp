@@ -5,6 +5,8 @@
 #include <chrono>
 #include "date.hpp"
 
+namespace be {
+
 // Forward declarations
 class Broker;
 class Order;
@@ -196,3 +198,5 @@ private:
     void setTpOrder(Order order);
     friend class Broker;
 };
+
+} // namespace be

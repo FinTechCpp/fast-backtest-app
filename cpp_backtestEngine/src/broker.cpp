@@ -6,6 +6,8 @@
 #include <limits>
 #include <iostream>
 
+namespace be {
+
 class OutOfMoneyError : public std::runtime_error {
 public:
     OutOfMoneyError() : std::runtime_error("Out of money") {}
@@ -513,3 +515,5 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     double openCommission = calculateCommission(trade->size(), trade->entryPrice());
     trade->setCommissions(commission + openCommission);
 }
+
+} // namespace be

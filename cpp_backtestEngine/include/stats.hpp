@@ -7,6 +7,8 @@
 #include "data.hpp"
 #include "date.hpp"
 
+namespace be {
+
 /**
  * @brief Structure contenant toutes les statistiques de performance du backtest
  * 
@@ -101,3 +103,5 @@ std::map<std::string, double> computeStatsMap(
     const std::vector<std::shared_ptr<Trade>>& trades,
     const std::vector<double>& equity,
     const Data& data);
+
+} // namespace be

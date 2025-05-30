@@ -5,6 +5,8 @@
 #include <string>
 #include "order.hpp"
 
+namespace be {
+
 // Forward declarations
 class Broker;
 class Data;
@@ -18,7 +20,7 @@ class Strategy {
 public:
     Strategy(std::shared_ptr<Broker> broker, std::shared_ptr<Data> data);
     virtual ~Strategy() = default;
-    
+
     /**
      * @brief Initialize indicators and strategy parameters
      * Must be implemented by derived classes
@@ -67,3 +69,5 @@ protected:
     std::shared_ptr<Broker> _broker;
     std::shared_ptr<Data> _data;
 };
+
+} // namespace be

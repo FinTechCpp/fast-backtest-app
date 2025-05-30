@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+namespace be {
+
 Data::Data(const std::vector<Date>& dates,
            const std::vector<double>& open,
            const std::vector<double>& high,
@@ -122,3 +124,5 @@ const std::vector<double>& Data::getColumn(const std::string& name) const {
     }
     return it->second;
 }
+
+} // namespace be

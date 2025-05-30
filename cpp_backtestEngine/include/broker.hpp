@@ -7,6 +7,8 @@
 #include "trade.hpp"
 #include "position.hpp"
 
+namespace be {
+
 // Forward declarations
 class Data;
 
@@ -78,3 +80,5 @@ private:
     friend class Trade;
     friend class Position;
 };
+
+} // namespace be

@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <stdexcept>
 
+namespace be {
+
 Order::Order(std::shared_ptr<Broker> broker,
              double size,
              double limitPrice,
@@ -133,3 +135,5 @@ std::string Order::toString() const {
     ss << ">";
     return ss.str();
 }
+
+} // namespace be

@@ -7,6 +7,7 @@
 #include <map>
 #include "date.hpp"
 
+namespace be {
 
 /**
  * @brief OHLCV data container with time series access methods
@@ -60,3 +61,5 @@ public:
 
     size_t getActualIndex(int index) const;
 };
+
+} // namespace be

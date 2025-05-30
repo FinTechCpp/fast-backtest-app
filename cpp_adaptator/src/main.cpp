@@ -1,6 +1,7 @@
 #include <iostream>
-#include <vector>
+#include <memory>
 #include <string>
+#include <vector>
 #include <cmath>
 #include <random>
 #include <algorithm>
@@ -8,14 +9,23 @@
 #include <chrono>
 #include <fstream>
 #include <sstream>
-#include "include/backtest.hpp"
-#include "include/strategy.hpp"
-#include "include/data.hpp"
+
+// Includes de cpp_backtestEngine (avec namespace be)
+#include "backtest.hpp"
+#include "broker.hpp"
+#include "data.hpp"
+#include "strategy.hpp"
+#include "stats.hpp"
+#include "trade.hpp"
+#include "order.hpp"
+
+#include "BuyHeikinGreen.hpp"
+
 
 // Stratégie de croisement de moyennes mobiles autonome
-class SmaCrossStrategy : public Strategy {
+class SmaCrossStrategy : public be::Strategy {
 public:
-    SmaCrossStrategy(std::shared_ptr<Broker> broker, std::shared_ptr<Data> data, 
+    SmaCrossStrategy(std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, 
                     int fastPeriod = 10, int slowPeriod = 30)
         : Strategy(broker, data), 
           _fastPeriod(fastPeriod), 
@@ -85,7 +95,7 @@ public:
               << ", SlowSMA=" << std::fixed << std::setprecision(4) << _currentSlowSMA << std::endl;
         
         // Position actuelle
-        Position position = getPosition();
+        be::Position position = getPosition();
         
         // Logique de trading avec logs harmonisés
         if (crossover) {
@@ -137,8 +147,8 @@ private:
 };
 
 // Fonction pour charger des données à partir d'un fichier CSV
-std::shared_ptr<Data> loadDataFromCSV(const std::string& filename) {
-    std::vector<Date> dates;
+std::shared_ptr<be::Data> loadDataFromCSV(const std::string& filename) {
+    std::vector<be::Date> dates;
     std::vector<double> open, high, low, close, volume;
     
     std::ifstream file(filename);
@@ -182,7 +192,7 @@ std::shared_ptr<Data> loadDataFromCSV(const std::string& filename) {
         }
         
         // Créer l'objet Date (heure définie à 00:00:00)
-        Date date(year, month, day, 0, 0, 0);
+        be::Date date(year, month, day, 0, 0, 0);
         dates.push_back(date);
         
         try {
@@ -201,14 +211,14 @@ std::shared_ptr<Data> loadDataFromCSV(const std::string& filename) {
     
     std::cout << "Chargé " << dates.size() << " barres depuis " << filename << std::endl;
     
-    return std::make_shared<Data>(dates, open, high, low, close, volume);
+    return std::make_shared<be::Data>(dates, open, high, low, close, volume);
 }
 
 // Fonction pour générer des données synthétiques
-std::shared_ptr<Data> generateSyntheticData(int numBars, double initialPrice = 100.0, 
+std::shared_ptr<be::Data> generateSyntheticData(int numBars, double initialPrice = 100.0, 
                                            double volatility = 0.01, 
                                            double drift = 0.0001) {
-    std::vector<Date> dates;
+    std::vector<be::Date> dates;
     std::vector<double> openPrices, highPrices, lowPrices, closePrices, volumes;
     
     // Générateur de nombres aléatoires
@@ -221,15 +231,26 @@ std::shared_ptr<Data> generateSyntheticData(int numBars, double initialPrice = 1
     int year = 2024;
     int month = 1;
     int day = 1;
+    int hour = 9;
+    int minute = 30;
+    int second = 0;
     
     for (int i = 0; i < numBars; ++i) {
         // Créer un objet Date directement (au lieu d'une chaîne)
-        Date currentDate(year, month, day, 0, 0, 0);
+        be::Date currentDate(year, month, day, hour, minute, second);
         dates.push_back(currentDate);
         
         // Avancer au jour suivant
-        day++;
+        minute++;
         // Gestion simplifiée des mois (considère tous les mois à 30 jours)
+        if (minute > 59) {
+            minute = 0;
+            hour++;
+        }
+        if (hour > 22) {
+            hour = 0;
+            day++;
+        }
         if (day > 30) {
             day = 1;
             month++;
@@ -238,7 +259,7 @@ std::shared_ptr<Data> generateSyntheticData(int numBars, double initialPrice = 1
                 year++;
             }
         }
-        
+
         // Simuler le mouvement du prix avec un mouvement brownien géométrique
         double dailyReturn = drift + volatility * distribution(generator);
         double todayOpen = price;
@@ -262,11 +283,11 @@ std::shared_ptr<Data> generateSyntheticData(int numBars, double initialPrice = 1
     }
     
     // Créer et retourner l'objet Data
-    return std::make_shared<Data>(dates, openPrices, highPrices, lowPrices, closePrices, volumes);
+    return std::make_shared<be::Data>(dates, openPrices, highPrices, lowPrices, closePrices, volumes);
 }
 
 // Fonction pour formater et afficher les statistiques
-void displayStats(const Stats& stats) {
+void displayStats(const be::Stats& stats) {
     std::cout << "\n============== BACKTEST RESULTS ==============\n";
     
     // Format des nombres
@@ -314,7 +335,7 @@ void displayStats(const Stats& stats) {
               << std::setw(10) << "Duration" 
               << "  Tag" << std::endl;
 
-    std::vector<std::shared_ptr<Trade>> trades = stats.trades;
+    std::vector<std::shared_ptr<be::Trade>> trades = stats.trades;
     
     // Afficher les détails de chaque trade avec gestion d'erreurs
     try {
@@ -329,12 +350,12 @@ void displayStats(const Stats& stats) {
                 // Récupérer les indices de barres et vérifier leur validité
                 size_t entryBar = trade->entryBar();
                 size_t exitBar = trade->exitBar();
-                
-                // Calculer la durée en jours
-                int durationDays = static_cast<int>(exitBar) - static_cast<int>(entryBar);
 
-                Date entryDate = trade->entryDate();
-                Date exitDate = trade->exitDate();
+
+                be::Date entryDate = trade->entryDate();
+                be::Date exitDate = trade->exitDate();
+                be::Duration duration = exitDate - entryDate;
+
                 // Afficher les détails du trade
                 std::cout << std::setw(4) << i
                           << std::setw(8) << int(trade->size())
@@ -348,7 +369,7 @@ void displayStats(const Stats& stats) {
                           << std::setw(12) << std::fixed << std::setprecision(6) << trade->plPercent()
                           << std::setw(22) << entryDate
                           << std::setw(22) << exitDate
-                          << std::setw(10) << durationDays << " days"
+                          << std::setw(10) << duration.getMinutes() << " minutes"
                           << "  " << trade->tag() << std::endl;
                 
             } catch (const std::exception& e) {
@@ -365,7 +386,7 @@ void displayStats(const Stats& stats) {
 // Programme principal
 int main() {
     try {
-        std::shared_ptr<Data> data;
+        std::shared_ptr<be::Data> data;
         
         // Chemin vers le fichier CSV
         std::string csv_file = "../../data/synthetic_data.csv";
@@ -378,21 +399,32 @@ int main() {
             std::cerr << "Erreur lors du chargement du CSV: " << e.what() << std::endl;
             std::cout << "Génération de données synthétiques à la place..." << std::endl;
             // Utiliser les données synthétiques comme fallback
-            data = generateSyntheticData(500, 100.0, 0.015, 0.0002);
+            data = generateSyntheticData(500, 1000.0, 0.004, 0.0002);
         }
         
         std::cout << "Données chargées avec " << data->size() << " barres" << std::endl;
+
         
         // Créer une factory pour la stratégie
-        auto strategyFactory = [](std::shared_ptr<Broker> broker, std::shared_ptr<Data> data) {
+        auto strategyFactory = [](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data) {
+            StrategyBaseConfig baseConfig;
+            BuyHeikinGreenConfig bhgConfig;
+    
+            bhgConfig.use_previous_ha_candle_red_filter = true;
+            bhgConfig.use_stoch_filter = false;
+            bhgConfig.use_ema_short_filter = false;
+            bhgConfig.use_ema_long_filter = false;
+            bhgConfig.use_rsi_filter = false;
+
             // Utiliser la stratégie SmaCrossStrategy avec une moyenne rapide de 10 jours et une lente de 30 jours
-            return std::make_shared<SmaCrossStrategy>(broker, data, 10, 30);
+            // return std::make_shared<SmaCrossStrategy>(broker, data, 10, 30);
+            return std::make_shared<BuyHeikinGreenAdapter>(broker, data, baseConfig, bhgConfig);
         };
         
         std::cout << "Creating and running backtest..." << std::endl;
         // Créer et exécuter le backtest
-        Backtest backtest(data, strategyFactory, 10000.0, 0.0, 0.001, 1.0, false, false, false, true);
-        Stats results = backtest.run();
+        be::Backtest backtest(data, strategyFactory, 10000.0, 0.0, 0.001, 1.0, false, false, false, true);
+        be::Stats results = backtest.run();
         
         // Afficher les résultats en passant les trades et les données
         displayStats(results);

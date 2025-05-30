@@ -9,6 +9,8 @@
 #include <sstream>
 #include <iomanip>
 
+namespace be {
+
 // Valeur NaN pour initialiser les statistiques non calculables
 constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
 
@@ -499,3 +501,5 @@ std::map<std::string, double> computeStatsMap(
     Stats stats = computeStats(trades, equity, data);
     return stats.toMap();
 }
+
+} // namespace be

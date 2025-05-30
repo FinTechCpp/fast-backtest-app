@@ -7,6 +7,8 @@
 #include <iostream>
 #include <sstream>
 
+namespace be {
+
 Trade::Trade(std::shared_ptr<Broker> broker,
              double size,
              double entryPrice,
@@ -178,3 +180,5 @@ std::string Trade::toString() const {
     ss << ">";
     return ss.str();
 }
+
+} // namespace be

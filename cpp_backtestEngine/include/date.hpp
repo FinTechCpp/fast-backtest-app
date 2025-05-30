@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <cmath>
 
+namespace be {
+
 class Duration;  // Forward declaration
 
 // TODO : peut etre utiliser chrono pour les durées, et séparer dans un fichier date.cpp 
@@ -308,6 +310,8 @@ inline Date Date::fromTimestamp(double timestamp) {
     
     return Date(y, m, d, h, min, s);
 }
+
+}  // namespace be
 
 /*
     // Créer des dates

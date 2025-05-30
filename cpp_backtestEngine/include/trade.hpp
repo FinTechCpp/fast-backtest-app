@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 #include <chrono>
+#include "date.hpp"  // Include the Date class definition
 
 // Forward declarations
 class Broker;
@@ -50,6 +51,7 @@ public:
           double size,
           double entryPrice,
           size_t entryBar,
+          const Date& entryDate,
           const std::string& tag = "");
     
     /**
@@ -69,6 +71,8 @@ public:
     double exitPrice() const { return _exitPrice; } ///< Prix de sortie (0 si encore actif)
     size_t entryBar() const { return _entryBar; } ///< Barre d'entrée
     size_t exitBar() const { return _exitBar; } ///< Barre de sortie (0 si encore actif)
+    Date entryDate() const { return _entryDate; } ///< Date d'entrée
+    Date exitDate() const { return _exitDate; } ///< Date de sortie (Date() si encore actif)
     std::string tag() const { return _tag; } ///< Étiquette descriptive
     
     /**
@@ -173,7 +177,9 @@ private:
     double _entryPrice;                  ///< Prix d'entrée
     double _exitPrice;                   ///< Prix de sortie (0 si position ouverte)
     size_t _entryBar;                    ///< Barre d'entrée
+    Date _entryDate;                     ///< Date d'entrée
     size_t _exitBar;                     ///< Barre de sortie
+    Date _exitDate;                      ///< Date de sortie
     std::string _tag;                    ///< Étiquette descriptive
     double _commissions;                 ///< Commissions totales payées
     
@@ -183,10 +189,10 @@ private:
     // Méthodes auxiliaires pour que le broker puisse modifier les propriétés du trade
     void setExitPrice(double price);
     void setExitBar(size_t bar);
+    void setExitDate(Date date);
     void setSize(double size);
     void setCommissions(double commissions);
     void setSlOrder(Order order);
     void setTpOrder(Order order);
-    
     friend class Broker;
 };

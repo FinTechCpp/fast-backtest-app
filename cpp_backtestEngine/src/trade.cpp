@@ -11,6 +11,7 @@ Trade::Trade(std::shared_ptr<Broker> broker,
              double size,
              double entryPrice,
              size_t entryBar,
+             const Date& entryDate,
              const std::string& tag)
     : _broker(broker),
       _size(size),
@@ -18,6 +19,8 @@ Trade::Trade(std::shared_ptr<Broker> broker,
       _exitPrice(0.0),  // Pas encore fermé
       _entryBar(entryBar),
       _exitBar(0),      // Pas encore fermé
+      _entryDate(entryDate),
+      _exitDate(Date()), // Date de sortie (initialisée à une date par défaut)
       _tag(tag),
       _commissions(0.0),
       _slOrder(nullptr),
@@ -134,6 +137,11 @@ void Trade::setExitPrice(double price) {
 
 void Trade::setExitBar(size_t bar) {
     _exitBar = bar;
+}
+
+void Trade::setExitDate(Date date)
+{
+    _exitDate = date;
 }
 
 void Trade::setSize(double size) {

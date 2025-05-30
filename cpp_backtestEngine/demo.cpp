@@ -308,7 +308,7 @@ std::shared_ptr<Data> generateSyntheticData(int numBars, double initialPrice = 1
 }
 
 // Fonction pour formater et afficher les statistiques
-void displayStats(const Stats& stats, const Data& data) {
+void displayStats(const Stats& stats) {
     std::cout << "\n============== BACKTEST RESULTS ==============\n";
     
     // Format des nombres
@@ -375,9 +375,8 @@ void displayStats(const Stats& stats, const Data& data) {
                 // Calculer la durée en jours
                 int durationDays = static_cast<int>(exitBar) - static_cast<int>(entryBar);
 
-                Date entryDate = data.getDate(entryBar);
-                Date exitDate = data.getDate(exitBar);
-                
+                Date entryDate = trade->entryDate();
+                Date exitDate = trade->exitDate();
                 // Afficher les détails du trade
                 std::cout << std::setw(4) << i
                           << std::setw(8) << int(trade->size())
@@ -438,7 +437,7 @@ int main() {
         Stats results = backtest.run();
         
         // Afficher les résultats en passant les trades et les données
-        displayStats(results, *data);
+        displayStats(results);
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

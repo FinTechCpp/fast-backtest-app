@@ -429,7 +429,7 @@ void Broker::processOrders() {
 void Broker::openTrade(double price, double size, double sl, double tp, 
                       size_t barIndex, const std::string& tag, const Order& order) {
     // Create a new trade
-    auto trade = std::make_shared<Trade>(shared_from_this(), size, price, barIndex, tag);
+    std::shared_ptr<Trade> trade = std::make_shared<Trade>(shared_from_this(), size, price, barIndex, _data->getDate(barIndex), tag);
     _trades.push_back(trade);
     
     // Apply commission at trade open
@@ -478,7 +478,7 @@ void Broker::reduceTrade(std::shared_ptr<Trade> trade, double price, double size
         // Create a copy of the trade that will be closed
         auto closedPortion = std::make_shared<Trade>(shared_from_this(), 
                                                   -size, trade->entryPrice(), 
-                                                  trade->entryBar(), trade->tag());
+                                                  trade->entryBar(), trade->entryDate(), trade->tag());
         _trades.push_back(closedPortion);
         
         // Close the reduced copy
@@ -512,6 +512,7 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     // Set exit information and add to closed trades
     trade->setExitPrice(price);
     trade->setExitBar(barIndex);
+    trade->setExitDate(_data->getDate(barIndex));
     _closedTrades.push_back(trade);
     
     // Apply commission for trade exit and update cash

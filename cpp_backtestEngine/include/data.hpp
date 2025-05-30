@@ -5,6 +5,8 @@
 #include <chrono>
 #include <memory>
 #include <map>
+#include "date.hpp"
+
 
 /**
  * @brief OHLCV data container with time series access methods
@@ -13,7 +15,7 @@ class Data {
 public:
     // TODO : Creer un class pour la date plutot que de stocker des 
     // strings qui ne donnent pas de garantie sur le format 
-    Data(const std::vector<std::string>& dates,
+    Data(const std::vector<Date>& dates,
          const std::vector<double>& open,
          const std::vector<double>& high,
          const std::vector<double>& low,
@@ -37,8 +39,8 @@ public:
     double Low(int index) const;
     double Close(int index) const;
     double Volume(int index) const;
-    std::string getDate(int index) const;
-    
+    Date getDate(int index) const;
+
     // For slicing data in backtest execution
     void setLength(size_t length);
     
@@ -47,7 +49,7 @@ public:
     const std::vector<double>& getColumn(const std::string& name) const;
     
     private:
-    std::vector<std::string> _dates;
+    std::vector<Date> _dates;
     std::vector<double> _open;
     std::vector<double> _high;
     std::vector<double> _low;

@@ -95,9 +95,9 @@ std::map<std::string, double> Stats::toMap() const {
     std::map<std::string, double> map;
     
     // Valeurs temporelles
-    map["Start"] = start;
-    map["End"] = end;
-    map["Duration"] = duration;
+    // map["Start"] = start.toString();  // Convertir la date en chaîne de caractères
+    // map["End"] = end.toString();      // Convertir la date en chaîne de caractères
+    map["Duration"] = duration.getTotalDays();  // Durée en jours
     map["Exposure Time [%]"] = exposureTimePct;
     
     // Valeurs d'équité
@@ -121,8 +121,8 @@ std::map<std::string, double> Stats::toMap() const {
     // Valeurs de drawdown
     map["Max. Drawdown [%]"] = maxDrawdownPct;
     map["Avg. Drawdown [%]"] = avgDrawdownPct;
-    map["Max. Drawdown Duration"] = maxDrawdownDuration;
-    map["Avg. Drawdown Duration"] = avgDrawdownDuration;
+    map["Max. Drawdown Duration"] = maxDrawdownDuration.getTotalDays();
+    map["Avg. Drawdown Duration"] = avgDrawdownDuration.getTotalDays();
     
     // Statistiques des trades
     map["# Trades"] = numTrades;
@@ -133,8 +133,8 @@ std::map<std::string, double> Stats::toMap() const {
     map["Best Trade [%]"] = bestTradePct;
     map["Worst Trade [%]"] = worstTradePct;
     map["Avg. Trade [%]"] = avgTradePct;
-    map["Max. Trade Duration"] = maxTradeDuration;
-    map["Avg. Trade Duration"] = avgTradeDuration;
+    map["Max. Trade Duration"] = maxTradeDuration.getTotalDays();
+    map["Avg. Trade Duration"] = avgTradeDuration.getTotalDays();
     map["Profit Factor"] = profitFactor;
     map["Expectancy [%]"] = expectancyPct;
     map["SQN"] = sqn;
@@ -157,8 +157,13 @@ Stats computeStats(
     }
 
     // Stocker les données brutes pour analyses futures
-    stats.equityCurve = equity;          // Copie la courbe d'équité complète
-    stats.trades = trades;               // Stocke les références aux trades fermés
+    stats.equityCurve = equity;          
+    stats.trades = trades;               
+    
+    // Dates de début et fin du backtest
+    stats.start = data.getDate(0);  // Première date du dataset
+    stats.end = data.getDate(data.size() - 1);  // Dernière date du dataset
+    stats.duration = stats.end - stats.start;  // Calcul de la durée totale du backtest
     
     // Calcul du drawdown: 1 - equity / max(equity)
     std::vector<double> dd(equity.size());
@@ -175,11 +180,6 @@ Stats computeStats(
     
     // Calculer durée et pics de drawdown
     DrawdownInfo dd_info = computeDrawdownDurationPeaks(dd);
-    
-    // Statistiques de base sur les périodes
-    stats.start = 0;  // Indice de début
-    stats.end = data.size() - 1;  // Indice de fin
-    stats.duration = data.size() - 1;  // Durée en nombre de barres
     
     // Calculer le temps d'exposition au marché
     std::vector<int> have_position(data.size(), 0);
@@ -212,12 +212,17 @@ Stats computeStats(
     // Extraire les données des trades
     std::vector<double> pl_values;
     std::vector<double> return_pct_values;
-    std::vector<double> durations;
+    std::vector<Duration> tradeDurations;
     
     for (const auto& trade : trades) {
         pl_values.push_back(trade->pl());
         return_pct_values.push_back(trade->plPercent());
-        durations.push_back(static_cast<double>(trade->exitBar() - trade->entryBar()));
+        
+        // Calculer la durée du trade en utilisant les dates réelles
+        Date entryDate = data.getDate(trade->entryBar());
+        Date exitDate = data.getDate(trade->exitBar());
+        Duration tradeDuration = exitDate - entryDate;
+        tradeDurations.push_back(tradeDuration);
     }
     
     // Nombre de trades
@@ -249,12 +254,17 @@ Stats computeStats(
     stats.avgTradePct = geometricMean(return_pct_values) * 100;
     
     // Durée des trades
-    if (!durations.empty()) {
-        stats.maxTradeDuration = *std::max_element(durations.begin(), durations.end());
-        stats.avgTradeDuration = std::accumulate(durations.begin(), durations.end(), 0.0) / durations.size();
-    } else {
-        stats.maxTradeDuration = NaN;
-        stats.avgTradeDuration = NaN;
+    if (!tradeDurations.empty()) {
+        // Trouver la durée maximale
+        stats.maxTradeDuration = *std::max_element(tradeDurations.begin(), tradeDurations.end(),
+            [](const Duration& a, const Duration& b) { return a.getTotalSeconds() < b.getTotalSeconds(); });
+        
+        // Calculer la durée moyenne
+        double totalSeconds = 0.0;
+        for (const auto& dur : tradeDurations) {
+            totalSeconds += dur.getTotalSeconds();
+        }
+        stats.avgTradeDuration = Duration(totalSeconds / tradeDurations.size());
     }
     
     // Profit Factor (somme des gains / somme des pertes en valeur absolue)
@@ -338,11 +348,12 @@ Stats computeStats(
     
     // Durée des drawdowns
     if (!dd_info.durations.empty()) {
-        stats.maxDrawdownDuration = *std::max_element(dd_info.durations.begin(), dd_info.durations.end());
-        stats.avgDrawdownDuration = std::accumulate(dd_info.durations.begin(), dd_info.durations.end(), 0.0) / dd_info.durations.size();
-    } else {
-        stats.maxDrawdownDuration = NaN;
-        stats.avgDrawdownDuration = NaN;
+        // Convertir les durées de drawdown en objets Duration (en jours)
+        double maxDDDurationInBars = *std::max_element(dd_info.durations.begin(), dd_info.durations.end());
+        stats.maxDrawdownDuration = Duration::fromDays(maxDDDurationInBars);
+        
+        double avgDDDurationInBars = std::accumulate(dd_info.durations.begin(), dd_info.durations.end(), 0.0) / dd_info.durations.size();
+        stats.avgDrawdownDuration = Duration::fromDays(avgDDDurationInBars);
     }
     
     // Calcul des rendements quotidiens (simplifié)
@@ -376,7 +387,7 @@ Stats computeStats(
     }
     
     // CAGR (Taux de croissance annuel composé)
-    double years = static_cast<double>(data.size()) / annual_trading_days;
+    double years = stats.duration.getTotalYears();
     if (years > 0) {
         stats.cagrPct = (std::pow(equity.back() / equity.front(), 1.0 / years) - 1) * 100;
     } else {
@@ -441,9 +452,9 @@ Stats dummyStats() {
     stats.trades.clear();
 
     // Initialiser tous les champs à NaN
-    stats.start = NaN;
-    stats.end = NaN;
-    stats.duration = NaN;
+    stats.start = Date();
+    stats.end = Date();
+    stats.duration = Duration();
     stats.exposureTimePct = NaN;
     stats.equityFinal = NaN;
     stats.equityPeak = NaN;
@@ -459,9 +470,9 @@ Stats dummyStats() {
     stats.beta = NaN;
     stats.maxDrawdownPct = NaN;
     stats.avgDrawdownPct = NaN;
-    stats.maxDrawdownDuration = NaN;
-    stats.avgDrawdownDuration = NaN;
-    stats.numTrades = NaN;
+    stats.maxDrawdownDuration = Duration();
+    stats.avgDrawdownDuration = Duration();
+    stats.numTrades = 0;
     stats.winRatePct = NaN;
     stats.numWinningTrades = NaN;
     stats.numLosingTrades = NaN;
@@ -469,8 +480,8 @@ Stats dummyStats() {
     stats.bestTradePct = NaN;
     stats.worstTradePct = NaN;
     stats.avgTradePct = NaN;
-    stats.maxTradeDuration = NaN;
-    stats.avgTradeDuration = NaN;
+    stats.maxTradeDuration = Duration();
+    stats.avgTradeDuration = Duration();
     stats.profitFactor = NaN;
     stats.expectancyPct = NaN;
     stats.sqn = NaN;

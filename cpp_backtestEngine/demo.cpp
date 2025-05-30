@@ -180,7 +180,7 @@ public:
 
 // Fonction pour charger des données à partir d'un fichier CSV
 std::shared_ptr<Data> loadDataFromCSV(const std::string& filename) {
-    std::vector<std::string> dates;
+    std::vector<Date> dates;
     std::vector<double> open, high, low, close, volume;
     
     std::ifstream file(filename);
@@ -213,8 +213,19 @@ std::shared_ptr<Data> loadDataFromCSV(const std::string& filename) {
             continue;
         }
         
-        // Ajouter les données à nos vecteurs
-        dates.push_back(cells[0]);
+        // Parser la date (format: YYYY-MM-DD)
+        std::string dateStr = cells[0];
+        int year = 0, month = 0, day = 0;
+        
+        // Utiliser sscanf pour extraire les composants de la date
+        if (sscanf(dateStr.c_str(), "%d-%d-%d", &year, &month, &day) != 3) {
+            std::cerr << "Erreur: format de date invalide: " << dateStr << std::endl;
+            continue;
+        }
+        
+        // Créer l'objet Date (heure définie à 00:00:00)
+        Date date(year, month, day, 0, 0, 0);
+        dates.push_back(date);
         
         try {
             open.push_back(std::stod(cells[1]));
@@ -224,6 +235,8 @@ std::shared_ptr<Data> loadDataFromCSV(const std::string& filename) {
             volume.push_back(std::stod(cells[5]));
         } catch (const std::exception& e) {
             std::cerr << "Erreur de conversion pour la ligne: " << line << " - " << e.what() << std::endl;
+            // Retirer la dernière date ajoutée puisque les données sont invalides
+            dates.pop_back();
             continue;
         }
     }
@@ -234,51 +247,68 @@ std::shared_ptr<Data> loadDataFromCSV(const std::string& filename) {
 }
 
 // Fonction pour générer des données synthétiques
-std::shared_ptr<Data> generateSyntheticData(int bars, double initialPrice = 100.0, 
-                                           double volatility = 0.01, double trend = 0.0001) {
-    std::vector<std::string> dates;
-    std::vector<double> open, high, low, close, volume;
+std::shared_ptr<Data> generateSyntheticData(int numBars, double initialPrice = 100.0, 
+                                           double volatility = 0.01, 
+                                           double drift = 0.0001) {
+    std::vector<Date> dates;
+    std::vector<double> openPrices, highPrices, lowPrices, closePrices, volumes;
     
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::normal_distribution<> d(0, volatility);
+    // Générateur de nombres aléatoires
+    std::mt19937 generator(42);  // Seed fixe pour reproductibilité
+    std::normal_distribution<double> distribution(0.0, 1.0);
     
     double price = initialPrice;
-    auto now = std::chrono::system_clock::now();
-    auto now_t = std::chrono::system_clock::to_time_t(now);
     
-    for (int i = 0; i < bars; ++i) {
-        // Générer une date (un jour de moins à chaque barre)
-        auto bar_time = now_t - (bars - i - 1) * 24 * 60 * 60;
-        char buffer[20];
-        std::strftime(buffer, sizeof(buffer), "%Y-%m-%d", std::localtime(&bar_time));
-        dates.push_back(std::string(buffer));
+    // Date de départ (1er janvier 2024)
+    int year = 2024;
+    int month = 1;
+    int day = 1;
+    
+    for (int i = 0; i < numBars; ++i) {
+        // Créer un objet Date directement (au lieu d'une chaîne)
+        Date currentDate(year, month, day, 0, 0, 0);
+        dates.push_back(currentDate);
         
-        // Ajouter un bruit aléatoire au prix
-        double change = d(gen) + trend;
-        price *= (1 + change);
+        // Avancer au jour suivant
+        day++;
+        // Gestion simplifiée des mois (considère tous les mois à 30 jours)
+        if (day > 30) {
+            day = 1;
+            month++;
+            if (month > 12) {
+                month = 1;
+                year++;
+            }
+        }
         
-        // Générer les valeurs OHLC
-        double day_open = price * (1 + d(gen) * 0.5);
-        double day_close = price * (1 + d(gen) * 0.5);
-        double day_high = std::max(day_open, day_close) * (1 + std::abs(d(gen)) * 0.5);
-        double day_low = std::min(day_open, day_close) * (1 - std::abs(d(gen)) * 0.5);
+        // Simuler le mouvement du prix avec un mouvement brownien géométrique
+        double dailyReturn = drift + volatility * distribution(generator);
+        double todayOpen = price;
+        price = price * (1.0 + dailyReturn);
+        double todayClose = price;
         
-        // Générer un volume aléatoire
-        double day_volume = 1000 + std::abs(d(gen)) * 500;
+        // Simuler high et low
+        double highLowRange = std::abs(todayOpen - todayClose) * 0.5 + 
+                             (volatility * price * distribution(generator) + volatility * price);
+        double todayHigh = std::max(todayOpen, todayClose) + highLowRange * 0.5;
+        double todayLow = std::min(todayOpen, todayClose) - highLowRange * 0.5;
         
-        open.push_back(day_open);
-        high.push_back(day_high);
-        low.push_back(day_low);
-        close.push_back(day_close);
-        volume.push_back(day_volume);
+        // Simuler le volume (proportionnel à la volatilité)
+        double todayVolume = 1000 + 100 * std::abs(distribution(generator));
+        
+        openPrices.push_back(todayOpen);
+        highPrices.push_back(todayHigh);
+        lowPrices.push_back(todayLow);
+        closePrices.push_back(todayClose);
+        volumes.push_back(todayVolume);
     }
     
-    return std::make_shared<Data>(dates, open, high, low, close, volume);
+    // Créer et retourner l'objet Data
+    return std::make_shared<Data>(dates, openPrices, highPrices, lowPrices, closePrices, volumes);
 }
 
 // Fonction pour formater et afficher les statistiques
-void displayStats(const Stats& stats, const std::shared_ptr<Data>& data) {
+void displayStats(const Stats& stats, const Data& data) {
     std::cout << "\n============== BACKTEST RESULTS ==============\n";
     
     // Format des nombres
@@ -321,8 +351,8 @@ void displayStats(const Stats& stats, const std::shared_ptr<Data>& data) {
               << std::setw(12) << "TP" 
               << std::setw(12) << "PnL" 
               << std::setw(12) << "ReturnPct" 
-              << std::setw(12) << "EntryTime" 
-              << std::setw(12) << "ExitTime" 
+              << std::setw(22) << "EntryTime" 
+              << std::setw(22) << "ExitTime" 
               << std::setw(10) << "Duration" 
               << "  Tag" << std::endl;
 
@@ -344,25 +374,9 @@ void displayStats(const Stats& stats, const std::shared_ptr<Data>& data) {
                 
                 // Calculer la durée en jours
                 int durationDays = static_cast<int>(exitBar) - static_cast<int>(entryBar);
-                
-                // Obtenir les dates avec vérification des limites
-                std::string entryDate = "N/A";
-                std::string exitDate = "N/A";
-                
-                // CORRECTION: Utiliser la méthode correcte pour accéder aux dates
-                // Vérifier si data a une méthode Date() ou getDate()
-                try {
-                    // Essayer la méthode Date d'abord
-                    if (entryBar < data->size()) {
-                        entryDate = data->getDate(entryBar);
-                    }
-                    
-                    if (exitBar < data->size()) {
-                        exitDate = data->getDate(exitBar);
-                    }
-                } catch (const std::exception& e) {
-                    std::cerr << "Erreur d'accès aux dates pour le trade " << i << ": " << e.what() << std::endl;
-                }
+
+                Date entryDate = data.getDate(entryBar);
+                Date exitDate = data.getDate(exitBar);
                 
                 // Afficher les détails du trade
                 std::cout << std::setw(4) << i
@@ -375,9 +389,9 @@ void displayStats(const Stats& stats, const std::shared_ptr<Data>& data) {
                           << std::setw(12) << std::fixed << std::setprecision(6) << trade->tp()
                           << std::setw(12) << std::fixed << std::setprecision(6) << trade->pl()
                           << std::setw(12) << std::fixed << std::setprecision(6) << trade->plPercent()
-                          << std::setw(12) << entryDate
-                          << std::setw(12) << exitDate
-                          << std::setw(9) << durationDays << " days"
+                          << std::setw(22) << entryDate
+                          << std::setw(22) << exitDate
+                          << std::setw(10) << durationDays << " days"
                           << "  " << trade->tag() << std::endl;
                 
             } catch (const std::exception& e) {
@@ -423,12 +437,8 @@ int main() {
         Backtest backtest(data, strategyFactory, 10000.0, 0.0, 0.001, 1.0, false, false, false, true);
         Stats results = backtest.run();
         
-        // Afficher les résultats
-        // Récupérer les trades fermés
-        // std::vector<std::shared_ptr<Trade>> closedTrades = backtest.closedTrades();
-
         // Afficher les résultats en passant les trades et les données
-        displayStats(results, data);
+        displayStats(results, *data);
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

@@ -5,6 +5,7 @@
 #include <string>
 #include "trade.hpp"
 #include "data.hpp"
+#include "date.hpp"
 
 /**
  * @brief Structure contenant toutes les statistiques de performance du backtest
@@ -20,13 +21,11 @@ struct Stats {
     std::vector<std::shared_ptr<Trade>> trades;     ///< Liste des trades fermés
     
     // Statistiques temporelles
-    // TODO : a changer pour utiliser des dates réelles (il faudra créer une structure Date)
-    double start = 0;                    ///< Indice de la première barre
-    double end = 0;                      ///< Indice de la dernière barre
-    // TODO : a changer pour utiliser une structure Time 
-    double duration = 0;                 ///< Durée du backtest en nombre de barres
+    Date start = Date();                 ///< Indice de la première barre
+    Date end = Date();                   ///< Indice de la dernière barre
+    Duration duration = Duration();      ///< Durée du backtest
     double exposureTimePct = 0;          ///< Pourcentage du temps avec positions ouvertes
-    
+
     // Statistiques d'équité
     double equityFinal = 0;              ///< Équité finale en unités monétaires
     double equityPeak = 0;               ///< Équité maximale atteinte
@@ -49,11 +48,11 @@ struct Stats {
     double maxDrawdownPct = 0;           ///< Drawdown maximal en pourcentage
     double avgDrawdownPct = 0;           ///< Drawdown moyen en pourcentage
     // TODO : a changer pour utiliser une structure Time
-    double maxDrawdownDuration = 0;      ///< Durée maximale d'un drawdown en barres
-    double avgDrawdownDuration = 0;      ///< Durée moyenne des drawdowns
-    
+    Duration maxDrawdownDuration = Duration();   ///< Durée maximale d'un drawdown en barres
+    Duration avgDrawdownDuration = Duration();   ///< Durée moyenne des drawdowns
+
     // Statistiques des trades
-    double numTrades = 0;                ///< Nombre total de trades
+    unsigned int numTrades = 0;          ///< Nombre total de trades
     double winRatePct = 0;               ///< Pourcentage de trades gagnants
     double numWinningTrades = 0;         ///< Nombre de trades gagnants
     double numLosingTrades = 0;          ///< Nombre de trades perdants
@@ -61,8 +60,8 @@ struct Stats {
     double bestTradePct = 0;             ///< Meilleur trade en pourcentage
     double worstTradePct = 0;            ///< Pire trade en pourcentage
     double avgTradePct = 0;              ///< Trade moyen en pourcentage
-    double maxTradeDuration = 0;         ///< Durée maximale d'un trade en barres
-    double avgTradeDuration = 0;         ///< Durée moyenne des trades
+    Duration maxTradeDuration = Duration();      ///< Durée maximale d'un trade en barres
+    Duration avgTradeDuration = Duration();      ///< Durée moyenne des trades
     double profitFactor = 0;             ///< Facteur de profit (gains/pertes)
     double expectancyPct = 0;            ///< Espérance mathématique par trade
     double sqn = 0;                      ///< System Quality Number

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cmath>
 
-Data::Data(const std::vector<std::string>& dates,
+Data::Data(const std::vector<Date>& dates,
            const std::vector<double>& open,
            const std::vector<double>& high,
            const std::vector<double>& low,
@@ -97,7 +97,7 @@ double Data::Volume(int index) const {
     return _volume[getActualIndex(index)];
 }
 
-std::string Data::getDate(int index) const {
+Date Data::getDate(int index) const {
     return _dates[getActualIndex(index)];
 }
 

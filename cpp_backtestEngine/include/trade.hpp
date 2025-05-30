@@ -8,6 +8,8 @@
 class Broker;
 class Order;
 
+// TODO: ajouter comme attributs les date d'entrée et de sortie, c'est bien mignon les entrybar mais ducoup on doit convertir a posteriori l'index de barre en date
+
 /**
  * @brief Représentation d'une transaction exécutée
  * 

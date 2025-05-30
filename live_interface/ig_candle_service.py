@@ -4,6 +4,9 @@ import datetime
 import time
 from collections import deque
 from dataclasses import dataclass
+import json
+import os
+from typing import List, Dict, Any
 
 from igtrader.WrapperIGAPI.trading_ig.rest import IGService
 from igtrader.WrapperIGAPI.trading_ig.config import config
@@ -269,3 +272,64 @@ class IGCandleService:
             self.candle_thread.join(timeout=1)
             
         logging.info("Service de bougies arrêté")
+
+class CandleStorage:
+    """Gère le stockage persistant des bougies OHLC"""
+    
+    def __init__(self, file_path: str = "candles_history.json", max_candles: int = 10000):
+        self.file_path = file_path
+        self.max_candles = max_candles
+        self.candles = self._load_candles()
+        
+    def _load_candles(self) -> List[Dict[str, Any]]:
+        """Charge les bougies depuis le fichier"""
+        if not os.path.exists(self.file_path):
+            return []
+            
+        try:
+            with open(self.file_path, 'r') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError) as e:
+            logging.error(f"Erreur lors du chargement des bougies: {e}")
+            return []
+            
+    def _save_candles(self):
+        """Sauvegarde les bougies dans le fichier"""
+        try:
+            with open(self.file_path, 'w') as f:
+                json.dump(self.candles, f)
+        except Exception as e:
+            logging.error(f"Erreur lors de la sauvegarde des bougies: {e}")
+            
+    def add_candle(self, candle: Dict[str, Any]):
+        """Ajoute une bougie au stockage"""
+        # Vérifier si la bougie existe déjà (même timestamp)
+        candle_time = candle.get('time')
+        if candle_time:
+            # Rechercher une bougie existante avec le même timestamp
+            for i, existing in enumerate(self.candles):
+                if existing.get('time') == candle_time:
+                    # Mise à jour d'une bougie existante
+                    self.candles[i] = candle
+                    self._save_candles()
+                    return
+                    
+        # Ajout d'une nouvelle bougie
+        self.candles.append(candle)
+        
+        # Limiter le nombre de bougies
+        if len(self.candles) > self.max_candles:
+            # Trier par date et ne garder que les plus récentes
+            self.candles.sort(key=lambda x: x.get('time', ''))
+            self.candles = self.candles[-self.max_candles:]
+            
+        self._save_candles()
+        
+    def get_candles(self, limit: int = None) -> List[Dict[str, Any]]:
+        """Récupère les bougies stockées"""
+        # Trier par date
+        sorted_candles = sorted(self.candles, key=lambda x: x.get('time', ''))
+        
+        if limit and limit > 0:
+            return sorted_candles[-limit:]
+        return sorted_candles

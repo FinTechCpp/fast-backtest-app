@@ -76,6 +76,7 @@ function initWebSocket() {
     
     websocket.onmessage = function(event) {
         const message = JSON.parse(event.data);
+        console.log('WebSocket message received:', message.type);
         
         if (message.type === 'candle') {
             // Nouvelle bougie complète reçue

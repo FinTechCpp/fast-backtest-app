@@ -175,6 +175,7 @@ double Broker::calculateCommission(double size, double price) const {
     return std::abs(size) * price * _commission;
 }
 
+// TODO : pourquoi on travaille avec une copie des ordres ?
 void Broker::processOrders() {
     try {
         // ATTENTION: Ne pas réitérer immédiatement pour vérifier les SL/TP
@@ -216,53 +217,42 @@ void Broker::processOrders() {
             double price = 0.0;
             
             // Gestion des ordres limit
-            if (order.limit() > 0.0) {
-                bool isLimitHit = (order.isLong() && low <= order.limit()) || 
-                                  (!order.isLong() && high >= order.limit());
-                
+            double limitPrice = order.limit();
+
+            if (limitPrice > 0.0) {
+                bool isLimitHit = (order.isLong() && low <= limitPrice) || 
+                                  (!order.isLong() && high >= limitPrice);
+
                 bool isLimitHitBeforeStop = isLimitHit && stopPrice > 0.0 && 
-                    ((order.isLong() && order.limit() <= stopPrice) ||
-                     (!order.isLong() && order.limit() >= stopPrice));
-                     
+                    ((order.isLong() && limitPrice <= stopPrice) ||
+                     (!order.isLong() && limitPrice >= stopPrice));
+
                 if (!isLimitHit || isLimitHitBeforeStop) {
                     continue;
                 }
                 
                 // Calculer le prix de remplissage
                 if (order.isLong()) {
-                    price = stopPrice > 0.0 ? std::min(stopPrice, order.limit()) : order.limit();
+                    price = stopPrice > 0.0 ? std::min(stopPrice, limitPrice) : limitPrice;
                 } else {
-                    price = stopPrice > 0.0 ? std::max(stopPrice, order.limit()) : order.limit();
+                    price = stopPrice > 0.0 ? std::max(stopPrice, limitPrice) : limitPrice;
                 }
             } else {
                 // Ordre market ou market-if-touched
                 bool isContingentOrder = order.isContingent();
                 double prevClose = 0.0;
                 
-                if (_currentBar > 0) {
-                    prevClose = _data->Close(_currentBar - 1);
-                } else {
-                    // Fallback au prix d'ouverture si pas de close précédent
-                    prevClose = open;
-                }
+                prevClose = _currentBar > 0 ? _data->Close(_currentBar - 1) : open;
                 
-                if (_tradeOnClose && !isContingentOrder) {
-                    price = prevClose;
-                } else {
-                    price = open;
-                }
+                price = (_tradeOnClose && !isContingentOrder) ? prevClose : open;
                 
                 if (stopPrice > 0.0) {
-                    if (order.isLong()) {
-                        price = std::max(price, stopPrice);
-                    } else {
-                        price = std::min(price, stopPrice);
-                    }
+                    price = order.isLong() ? std::max(price, stopPrice) : std::min(price, stopPrice);
                 }
             }
             
             // Indice temporel d'entrée/sortie
-            bool isMarketOrder = order.limit() <= 0.0 && stopPrice <= 0.0;
+            bool isMarketOrder = limitPrice <= 0.0 && stopPrice <= 0.0;
             size_t timeIndex = _currentBar;
             if (isMarketOrder && _tradeOnClose && !order.isContingent()) {
                 if (_currentBar > 0) {

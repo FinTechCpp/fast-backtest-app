@@ -12,26 +12,6 @@
 #include "include/strategy.hpp"
 #include "include/data.hpp"
 
-// Fonction pour calculer une moyenne mobile simple (SMA)
-std::vector<double> calculateSMA(const std::vector<double>& prices, int period) {
-    std::vector<double> sma(prices.size(), 0);
-    
-    for (size_t i = 0; i < prices.size(); ++i) {
-        if (i < static_cast<size_t>(period) - 1) {
-            // Pas assez de données pour calculer la moyenne
-            sma[i] = std::numeric_limits<double>::quiet_NaN();
-        } else {
-            double sum = 0;
-            for (int j = 0; j < period; ++j) {
-                sum += prices[i - j];
-            }
-            sma[i] = sum / period;
-        }
-    }
-    
-    return sma;
-}
-
 // Stratégie de croisement de moyennes mobiles autonome
 class SmaCrossStrategy : public Strategy {
 public:
@@ -154,28 +134,6 @@ private:
     double _lastSlowSMA;              // Dernière valeur de SMA lente calculée
     double _currentSlowSMA;           // Valeur actuelle de SMA lente
     size_t _barsProcessed;            // Nombre de barres traitées
-};
-
-class SimpleStrategy : public Strategy {
-public:
-    SimpleStrategy(std::shared_ptr<Broker> broker, std::shared_ptr<Data> data)
-        : Strategy(broker, data) {}
-        
-    void init() override {
-        std::cout << "Simple strategy initialized" << std::endl;
-    }
-    
-    void next() override {
-        size_t i = getData()->size() - 1;
-        std::cout << "Processing bar " << i << std::endl;
-        
-        // N'acheter qu'à la barre 100
-        if (i == 100) {
-            std::cout << "Buying at bar 100" << std::endl;
-            buy(1.0, 0, 0, 0, 0, 0, 0, "Test");
-            std::cout << "Buy order created" << std::endl;
-        }
-    }
 };
 
 // Fonction pour charger des données à partir d'un fichier CSV

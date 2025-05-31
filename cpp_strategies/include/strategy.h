@@ -13,7 +13,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#include "indicators/indicators.hpp"
+#include "Indicators/indicators.hpp"
 
 // Fonction utilitaire pour parser une chaîne de date ISO
 DateTime parse_iso_datetime(const std::string& iso_date);

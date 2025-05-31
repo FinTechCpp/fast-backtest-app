@@ -112,6 +112,12 @@ public:
         return ss.str();
     }
     
+    // Convertit la date en timestamp (secondes depuis une époque arbitraire)
+    double toTimestamp() const;
+    
+    // Crée une date à partir d'un timestamp
+    static Date fromTimestamp(double timestamp);
+
 private:
     double year;
     double month;
@@ -119,12 +125,6 @@ private:
     double hour;
     double minute;
     double second;
-    
-    // Convertit la date en timestamp (secondes depuis une époque arbitraire)
-    double toTimestamp() const;
-    
-    // Crée une date à partir d'un timestamp
-    static Date fromTimestamp(double timestamp);
 };
 
 /**

@@ -43,6 +43,26 @@ enum LogLevel {
     NOTSET = 0
 };
 
+// Surcharge de l'opérateur de flux pour LogLevel
+inline std::ostream& operator<<(std::ostream& os, const LogLevel& level) {
+    switch (level) {
+        case LogLevel::CRITICAL:
+            return os << "CRITICAL";
+        case LogLevel::ERROR:
+            return os << "ERROR";
+        case LogLevel::WARNING:
+            return os << "WARNING";
+        case LogLevel::INFO:
+            return os << "INFO";
+        case LogLevel::DEBUG:
+            return os << "DEBUG";
+        case LogLevel::NOTSET:
+            return os << "NOTSET";
+        default:
+            return os << "UNKNOWN(" << static_cast<int>(level) << ")";
+    }
+}
+
 struct BasicCandle {
     DateTime date;
     double open;
@@ -94,8 +114,8 @@ struct StrategyBaseConfig {
     bool use_atr_for_sl = false;     // Important: valeur par défaut false
     bool use_atr_for_tp = false;     // Important: valeur par défaut false
     int atr_period = 14;
-    double stop_loss_atr_multiplier = 2.0;
-    double take_profit_atr_multiplier = 3.0;
+    double stop_loss_atr_multiplier = 2.0; // sl_atr_multiple
+    double take_profit_atr_multiplier = 3.0; // tp_atr_multiple
     double min_stop_loss_distance = 5.0;
     double min_take_profit_distance = 5.0;
     
@@ -106,7 +126,7 @@ struct StrategyBaseConfig {
         
     // Risk management
     bool use_risk_based_sizing = false;
-    double risk_percentage = 1.0;
+    double risk_percentage = 1.0; // risk_per_trade_pct
     double cash = 100000.0;
     double max_position_percentage = 100.0;
     double leverage_limit = 20.0;

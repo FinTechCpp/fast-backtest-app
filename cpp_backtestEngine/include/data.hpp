@@ -9,6 +9,15 @@
 
 namespace be {
 
+struct Candle {
+    Date date;
+    double open;
+    double high;
+    double low;
+    double close;
+    double volume;
+};
+
 /**
  * @brief OHLCV data container with time series access methods
  */
@@ -49,7 +58,7 @@ public:
     void addColumn(const std::string& name, const std::vector<double>& values);
     const std::vector<double>& getColumn(const std::string& name) const;
     
-    private:
+private:
     std::vector<Date> _dates;
     std::vector<double> _open;
     std::vector<double> _high;

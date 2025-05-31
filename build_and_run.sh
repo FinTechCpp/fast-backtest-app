@@ -1,7 +1,6 @@
 #!/bin/bash
-# filepath: /home/hugo/Repositories/Finance/ig-trading-bot/build_and_run.sh
 
-# Définition des couleurs pour une meilleure lisibilité
+# Couleurs pour les messages
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
@@ -16,7 +15,8 @@ cd "$SCRIPT_DIR"
 # Traitement des arguments
 DEBUG=0
 CLEAN=0
-RUN=1
+FRONTEND=1
+RUN_APP=1  # Nouvelle option pour lancer l'application
 
 for arg in "$@"
 do
@@ -29,8 +29,12 @@ do
         CLEAN=1
         shift
         ;;
+        --no-frontend)
+        FRONTEND=0
+        shift
+        ;;
         --no-run)
-        RUN=0
+        RUN_APP=0
         shift
         ;;
     esac
@@ -51,17 +55,6 @@ show_error() {
     echo -e "${RED}${BOLD}[ERREUR]${NC} $1"
 }
 
-# Fonction pour afficher les avertissements
-show_warning() {
-    echo -e "${YELLOW}${BOLD}[ATTENTION]${NC} $1"
-}
-
-# Vérifier si CMake est installé
-if ! command -v cmake &> /dev/null; then
-    show_error "CMake n'est pas installé. Veuillez l'installer avant de continuer."
-    exit 1
-fi
-
 # Nettoyer le dossier de build si demandé
 if [ $CLEAN -eq 1 ] && [ -d "build" ]; then
     show_step "Nettoyage du dossier de build..."
@@ -69,47 +62,51 @@ if [ $CLEAN -eq 1 ] && [ -d "build" ]; then
     show_success "Dossier de build nettoyé."
 fi
 
-# Créer le dossier build s'il n'existe pas
-if [ ! -d "build" ]; then
-    show_step "Création du dossier build..."
-    mkdir -p build
-    show_success "Dossier build créé."
-fi
-
-# Accéder au dossier build
+# Créer le dossier build
+show_step "Création du dossier build..."
+mkdir -p build
 cd build
 
 # Configurer le projet avec CMake
 show_step "Configuration du projet avec CMake..."
+CMAKE_ARGS=""
+
 if [ $DEBUG -eq 1 ]; then
-    show_warning "Mode DEBUG activé."
-    cmake -DBUILD_WITH_DEBUG=ON .. || { show_error "La configuration CMake a échoué."; exit 1; }
-else
-    cmake .. || { show_error "La configuration CMake a échoué."; exit 1; }
+    CMAKE_ARGS="$CMAKE_ARGS -DBUILD_WITH_DEBUG=ON"
 fi
-show_success "Configuration CMake terminée."
+
+if [ $FRONTEND -eq 0 ]; then
+    CMAKE_ARGS="$CMAKE_ARGS -DBUILD_FRONTEND=OFF"
+fi
+
+cmake $CMAKE_ARGS .. || { show_error "Échec de la configuration CMake"; exit 1; }
 
 # Compiler le projet
 show_step "Compilation du projet..."
-make -j$(nproc) || { show_error "La compilation a échoué."; exit 1; }
-show_success "Compilation terminée."
+make -j$(nproc) || { show_error "Échec de la compilation"; exit 1; }
 
-# Exécuter le programme si demandé
-if [ $RUN -eq 1 ]; then
-    show_step "Exécution du programme..."
-    echo -e "${BOLD}----------------------------------------${NC}"
-    ./cpp_adaptator/main
-    EXIT_CODE=$?
-    echo -e "${BOLD}----------------------------------------${NC}"
+show_success "Compilation terminée!"
+
+# Créer le chemin vers l'exécutable
+APP_PATH="./cpp_backtestApp/backtestapp"
+
+# Afficher un message sur comment lancer l'application
+if [ $FRONTEND -eq 1 ]; then
+    echo -e "${YELLOW}${BOLD}[INFO]${NC} Chemin de l'application: ${BOLD}$APP_PATH${NC}"
     
-    if [ $EXIT_CODE -eq 0 ]; then
-        show_success "Programme exécuté avec succès (code de sortie: $EXIT_CODE)."
-    else
-        show_error "Programme terminé avec des erreurs (code de sortie: $EXIT_CODE)."
+    # Lancer l'application si demandé
+    if [ $RUN_APP -eq 1 ]; then
+        show_step "Lancement de l'application..."
+        if [ -f "$APP_PATH" ]; then
+            echo -e "${GREEN}${BOLD}[EXÉCUTION]${NC} $APP_PATH"
+            $APP_PATH
+        else
+            show_error "L'exécutable n'existe pas: $APP_PATH"
+            echo "Vérifiez que le chemin est correct et que la compilation a réussi."
+            exit 1
+        fi
     fi
-else
-    show_warning "Exécution ignorée (--no-run spécifié)."
 fi
 
 # Retour au répertoire initial
-cd "$SCRIPT_DIR"
+cd ..

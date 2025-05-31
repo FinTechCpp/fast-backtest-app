@@ -3,6 +3,7 @@
 #include "strategy.hpp"
 #include "broker.hpp"
 #include "data.hpp"
+// #include "Strategies/buy_heikin_green.hpp"
 #include "buy_heikin_green.hpp"
 #include <memory>
 #include <iostream>
@@ -47,6 +48,15 @@ public:
     ) : be::Strategy(broker, data), strategy_config(bhg_config) {
         // Créer l'instance de la stratégie
         strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
+        strategy->set_log_level(LogLevel::DEBUG);
+
+        // TODO : fonction a replacer et a refaire pour explicité le level et le timestamp
+        auto log_callback = [](const std::string& message, int level) {
+            LogLevel logLevel = static_cast<LogLevel>(level);
+            std::cout << "C++ Log [" << logLevel << "]: " << message << std::endl;
+        };
+
+        g_py_log_callback = log_callback;
     }
     
     /**
@@ -68,20 +78,22 @@ public:
      * met à jour la stratégie et traite les signaux générés.
      */
     void next() override {
+        // TODO: C'est une cata on fait plein de getData() qui return l'ensemble des données du backtest c'esttres lent
+        // surtout que on a besoin seulement de la derniere candle
         // Vérifier si une position a été fermée depuis la dernière bougie
-        // const auto trades = getBroker()->closedTrades();
-        // if (trades.size() > last_closed_trade_count) {
-        //     auto last_trade = trades.back();
+        const std::vector<be::Trade> closedTrades = getClosedTrades();
+        if (closedTrades.size() > last_closed_trade_count) {
+            be::Trade last_trade = closedTrades.back();
             
-        //     // Vérifier si le trade a été fermé à la dernière bougie
-        //     if (last_trade->exitBar() == getBroker()->getCurrentBar()) {
-        //         last_trade_closed = true;
-        //         last_trade_pnl = last_trade->pl(); 
-        //     }
+            // Vérifier si le trade a été fermé à la dernière bougie
+            if (last_trade.exitDate() == getData()->getDate(-1)) {
+                last_trade_closed = true;
+                last_trade_pnl = last_trade.pl(); 
+            }
             
-        //     // Mettre à jour le compteur
-        //     last_closed_trade_count = trades.size();
-        // }
+            // Mettre à jour le compteur
+            last_closed_trade_count = closedTrades.size();
+        }
 
         // Créer un objet Candle à partir des données actuelles
         Candle candle;
@@ -121,7 +133,6 @@ public:
 
 
         if (!signal) {
-            std::cout << "No signal generated for this candle." << std::endl;
             return; // Pas de signal à traiter
         }
         

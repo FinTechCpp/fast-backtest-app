@@ -8,4 +8,5 @@ add_library(cpp_strategies STATIC ${SOURCES})
 target_include_directories(cpp_strategies 
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/Strategies
 )

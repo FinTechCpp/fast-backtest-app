@@ -101,9 +101,9 @@ private:
     ResultManager* m_resultManager;
     
     // Panels - SUPPRESSION de ProfilePanel
-    GeneralParamsPanel* m_generalParamsPanel;
-    StrategyBasePanel* m_strategyBasePanel;
-    BasePanel* m_strategySpecificPanel;
+    GeneralParamsPanel* m_generalParamsPanel = nullptr;
+    StrategyBasePanel* m_strategyBasePanel = nullptr;
+    BasePanel* m_strategySpecificPanel = nullptr;
     
     // Components
     BacktestRunner* m_backtestRunner;

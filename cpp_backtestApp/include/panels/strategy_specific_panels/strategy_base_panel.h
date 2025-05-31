@@ -1,17 +1,16 @@
 #pragma once
 
-#include <QObject>
 #include <QGroupBox>
 #include <QVBoxLayout>
-#include <QFormLayout>  // AJOUT OBLIGATOIRE
+#include <QFormLayout>
 #include <QGridLayout>
 #include <QLabel>
 #include <QTimeEdit>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QSpinBox>
-#include <QComboBox>    // AJOUT OBLIGATOIRE
-#include <QFrame>       // AJOUT OBLIGATOIRE
+#include <QComboBox>
+#include <QFrame>
 #include <QMap>
 #include <QString>
 #include <QVariant>
@@ -23,9 +22,9 @@
  * Ce panel contient les paramètres communs comme le stop loss, le take profit,
  * les heures de trading, la gestion du risque, etc.
  */
-class StrategyBasePanel : public QObject, public BasePanel  // CORRECTION: Hériter de QObject
+class StrategyBasePanel : public BasePanel
 {
-    Q_OBJECT  // AJOUT OBLIGATOIRE pour les signaux/slots
+    Q_OBJECT
 
 public:
     /**
@@ -35,10 +34,9 @@ public:
     StrategyBasePanel(QWidget* parent = nullptr);
     
     /**
-     * @brief Crée et retourne l'interface graphique du panel
-     * @return QGroupBox contenant les widgets du panel
+     * @brief Initialise le contenu du panel
      */
-    QGroupBox* create() override;
+    void initialize() override;
     
     /**
      * @brief Récupère les valeurs des widgets du panel
@@ -52,7 +50,7 @@ public:
      */
     void setValues(const QMap<QString, QVariant>& values) override;
 
-private slots:  
+private slots:
     // Méthodes pour gérer l'interface utilisateur en fonction des checkboxes
     void _toggleRiskControls(bool checked);
     void _toggleBreakEvenControls(bool checked);
@@ -60,10 +58,5 @@ private slots:
     void _toggleSlMethod(int index);
     void _toggleTpMethod(int index);
     void _updateAtrPeriodStatus();
-
-private:
-    void setupTradingHours(QGridLayout* layout, int& row);
-    void setupStopLossAndTakeProfit(QGridLayout* layout, int& row);
-    void setupRiskManagement(QGridLayout* layout, int& row);
 };
 

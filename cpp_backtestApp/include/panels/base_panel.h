@@ -3,23 +3,21 @@
 #include <QGroupBox>
 #include <QMap>
 #include <QVariant>
-#include <QWidget>
 
 /**
- * @brief Classe de base abstraite pour tous les panels de l'application
- * 
- * Cette classe définit l'interface commune à tous les panels.
- * Chaque panel spécifique doit hériter de cette classe et implémenter 
- * la méthode create() qui retourne un widget contenant l'interface du panel.
+ * @brief Classe de base pour tous les panels de l'application
  */
-class BasePanel
+class BasePanel : public QGroupBox
 {
+    Q_OBJECT
+    
 public:
     /**
      * @brief Constructeur
+     * @param title Titre du groupe
      * @param parent Pointeur vers le widget parent
      */
-    BasePanel(QWidget* parent = nullptr);
+    BasePanel(const QString& title, QWidget* parent = nullptr);
     
     /**
      * @brief Destructeur virtuel
@@ -27,27 +25,22 @@ public:
     virtual ~BasePanel();
     
     /**
-     * @brief Crée et retourne l'interface graphique du panel
-     * @return QGroupBox contenant les widgets du panel
+     * @brief Initialise le contenu du panel
+     * Cette méthode doit être appelée après la construction pour configurer l'UI
      */
-    virtual QGroupBox* create() = 0;
+    virtual void initialize() = 0;
     
     /**
      * @brief Récupère les valeurs des widgets du panel
-     * @return Map contenant les valeurs sous forme de QVariant
      */
     virtual QMap<QString, QVariant> getValues();
     
     /**
      * @brief Définit les valeurs des widgets du panel
-     * @param values Map contenant les valeurs à affecter aux widgets
      */
     virtual void setValues(const QMap<QString, QVariant>& values);
 
 protected:
-    /** Parent widget */
-    QWidget* m_parent;
-    
     /** Map des widgets contenant les contrôles du panel */
     QMap<QString, QWidget*> m_widgets;
 };

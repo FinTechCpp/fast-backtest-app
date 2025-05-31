@@ -1,22 +1,19 @@
 #include "panels/strategy_specific_panels/strategy_base_panel.h"
 #include <QDebug>
-#include <QObject>
-#include <QFormLayout>  
-#include <QComboBox>    
-#include <QFrame>       
 
 StrategyBasePanel::StrategyBasePanel(QWidget* parent)
-    : QObject(parent), BasePanel(parent)
+    : BasePanel("Paramètres de base", parent)
 {
+    // Constructeur simplifié qui appelle le constructeur du BasePanel avec le titre
 }
 
-QGroupBox* StrategyBasePanel::create()
+void StrategyBasePanel::initialize()
 {
-    QGroupBox* baseGroup = new QGroupBox("Paramètres de base");
-    QVBoxLayout* baseLayout = new QVBoxLayout();
+    // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
+    QVBoxLayout* baseLayout = new QVBoxLayout(this);
 
     // Section SL/TP
-    QGroupBox* slTpGroup = new QGroupBox("Stop Loss et Take Profit");
+    QGroupBox* slTpGroup = new QGroupBox("Stop Loss et Take Profit", this);
     QVBoxLayout* slTpLayout = new QVBoxLayout();    
     // Période ATR commune (en haut du groupe)
     QFormLayout* atrLayout = new QFormLayout();
@@ -28,7 +25,7 @@ QGroupBox* StrategyBasePanel::create()
     slTpLayout->addLayout(atrLayout);
     
     // Groupe Stop Loss
-    QGroupBox* slGroup = new QGroupBox("Stop Loss");
+    QGroupBox* slGroup = new QGroupBox("Stop Loss", slTpGroup);
     QFormLayout* slLayout = new QFormLayout();
     
     // Méthode de calcul pour le Stop Loss
@@ -36,7 +33,7 @@ QGroupBox* StrategyBasePanel::create()
     static_cast<QComboBox*>(m_widgets["sl_method"])->addItems({"Fixe", "ATR", "Min/Max"});
     static_cast<QComboBox*>(m_widgets["sl_method"])->setCurrentIndex(0);
     
-    QObject::connect(static_cast<QComboBox*>(m_widgets["sl_method"]), 
+    connect(static_cast<QComboBox*>(m_widgets["sl_method"]), 
                      QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, &StrategyBasePanel::_toggleSlMethod);
     
@@ -84,14 +81,14 @@ QGroupBox* StrategyBasePanel::create()
     slTpLayout->addWidget(slGroup);
     
     // Groupe Take Profit
-    QGroupBox* tpGroup = new QGroupBox("Take Profit");
+    QGroupBox* tpGroup = new QGroupBox("Take Profit", slTpGroup);
     QFormLayout* tpLayout = new QFormLayout();
     
     // Méthode de calcul pour le Take Profit
     m_widgets["tp_method"] = new QComboBox();
     static_cast<QComboBox*>(m_widgets["tp_method"])->addItems({"Fixe", "ATR"});
     static_cast<QComboBox*>(m_widgets["tp_method"])->setCurrentIndex(0);
-    QObject::connect(static_cast<QComboBox*>(m_widgets["tp_method"]), 
+    connect(static_cast<QComboBox*>(m_widgets["tp_method"]), 
                      QOverload<int>::of(&QComboBox::currentIndexChanged),
                      this, &StrategyBasePanel::_toggleTpMethod);
     tpLayout->addRow(new QLabel("Méthode:"), m_widgets["tp_method"]);
@@ -190,31 +187,27 @@ QGroupBox* StrategyBasePanel::create()
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setEnabled(false);
     riskLayout->addRow(new QLabel("Perte max journalière:"), m_widgets["daily_max_loss_percentage"]);
     
-    riskGroup->setLayout(riskLayout);
-    baseLayout->addWidget(riskGroup);
-    
-    // Section Break Even
-    QGroupBox* breakEvenGroup = new QGroupBox("Break Even");
-    QFormLayout* breakEvenLayout = new QFormLayout();
     
     m_widgets["use_break_even"] = new QCheckBox("Activer Break Even");
     QObject::connect(static_cast<QCheckBox*>(m_widgets["use_break_even"]), 
-                     &QCheckBox::toggled,
-                     this, &StrategyBasePanel::_toggleBreakEvenControls);
-    breakEvenLayout->addRow(m_widgets["use_break_even"]);
+                    &QCheckBox::toggled, 
+                    this, &StrategyBasePanel::_toggleBreakEvenControls);
+    riskLayout->addRow(m_widgets["use_break_even"]);
     
     m_widgets["break_even_threshold"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setRange(0.1, 5.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setRange(0.0, 1.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setSingleStep(0.05);
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setValue(0.7);
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setEnabled(false);
-    breakEvenLayout->addRow(new QLabel("Seuil Break Even:"), m_widgets["break_even_threshold"]);
+    riskLayout->addRow(new QLabel("Seuil Break Even:"), m_widgets["break_even_threshold"]);
+
+    riskGroup->setLayout(riskLayout);
+    baseLayout->addWidget(riskGroup);
+    setLayout(baseLayout);
     
-    breakEvenGroup->setLayout(breakEvenLayout);
-    baseLayout->addWidget(breakEvenGroup);
-    
-    baseGroup->setLayout(baseLayout);
-    return baseGroup;
+    // Initialiser l'état des widgets
+    _updateAtrPeriodStatus();
 }
 
 QMap<QString, QVariant> StrategyBasePanel::getValues()

@@ -1,15 +1,8 @@
 #pragma once
 
-
-#include <QObject>  // AJOUT OBLIGATOIRE
-#include <QGroupBox>
-#include <QVBoxLayout>
-#include <QGridLayout>
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QLabel>
-#include <QFrame>
-#include <QHBoxLayout>
 #include "panels/base_panel.h"
 
 /**
@@ -18,9 +11,9 @@
  * Ce panel contient les paramètres spécifiques à la stratégie BuyHeikinGreen comme
  * les filtres EMA, les paramètres stochastiques et RSI, etc.
  */
-class BuyHeikinGreenPanel : public QObject, public BasePanel  // CORRECTION: Hériter de QObject
+class BuyHeikinGreenPanel : public BasePanel
 {
-    Q_OBJECT  // AJOUT OBLIGATOIRE
+    Q_OBJECT
 
 public:
     /**
@@ -30,10 +23,9 @@ public:
     BuyHeikinGreenPanel(QWidget* parent = nullptr);
     
     /**
-     * @brief Crée et retourne l'interface graphique du panel
-     * @return QGroupBox contenant les widgets du panel
+     * @brief Initialise le contenu du panel
      */
-    QGroupBox* create() override;
+    void initialize() override;
     
     /**
      * @brief Récupère les valeurs des widgets du panel
@@ -46,6 +38,13 @@ public:
      * @param values Map contenant les valeurs à affecter aux widgets
      */
     void setValues(const QMap<QString, QVariant>& values) override;
+
+private slots:
+    // Nouveau: gestionnaires d'événements pour les checkboxes
+    void onEmaShortFilterToggled(bool checked);
+    void onEmaLongFilterToggled(bool checked);
+    void onRsiFilterToggled(bool checked);
+    void onStochFilterToggled(bool checked);
 
 private:
     /**

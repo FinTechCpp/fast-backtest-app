@@ -1,170 +1,167 @@
 #include "panels/strategy_specific_panels/buy_heikin_green_panel.h"
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QGridLayout>
+#include <QFrame>
 #include <QDebug>
 
 BuyHeikinGreenPanel::BuyHeikinGreenPanel(QWidget* parent)
-    : QObject(parent), BasePanel(parent)
+    : BasePanel("Paramètres BuyHeikinGreen", parent)
 {
+    // Le constructeur appelle setTitle avec le titre fourni
+    // L'initialisation complète se fait dans initialize()
 }
 
-QGroupBox* BuyHeikinGreenPanel::create()
+void BuyHeikinGreenPanel::initialize()
 {
-    QGroupBox* strategyGroup = new QGroupBox("Paramètres BuyHeikinGreen");
-    QVBoxLayout* strategyLayout = new QVBoxLayout();
+    QVBoxLayout* strategyLayout = new QVBoxLayout(this);
+    strategyLayout->setSpacing(10);
+    strategyLayout->setContentsMargins(10, 15, 10, 15);
     
-    // Section EMA Court
-    QGroupBox* emaShortGroup = new QGroupBox("EMA Court");
-    QVBoxLayout* emaShortLayout = new QVBoxLayout();
+    // SECTION EMA COURT
+    QGridLayout* emaShortLayout = new QGridLayout();
+    emaShortLayout->setContentsMargins(5, 0, 5, 5);
     
-    // Checkbox pour activer/désactiver le filtre EMA court
-    m_widgets["ema_short_filter_check"] = new QCheckBox("Activer le filtre EMA court");
+    m_widgets["ema_short_filter_check"] = new QCheckBox("Activer filtre EMA Court", this);
     static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->setChecked(true);
     connect(static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"]), &QCheckBox::toggled,
-            [this](bool checked) {
-                _toggleWidgetGroup({"ema_short_spin"}, checked);
-            });
-    emaShortLayout->addWidget(m_widgets["ema_short_filter_check"]);
+            this, &BuyHeikinGreenPanel::onEmaShortFilterToggled);
+    emaShortLayout->addWidget(m_widgets["ema_short_filter_check"], 0, 0, 1, 2);
     
-    // Frame pour les paramètres de l'EMA court
-    QFrame* emaShortParams = new QFrame();
-    QHBoxLayout* emaShortParamsLayout = new QHBoxLayout();
-    emaShortParamsLayout->addWidget(new QLabel("Période:"));
-    m_widgets["ema_short_spin"] = new QSpinBox();
+    emaShortLayout->addWidget(new QLabel("Période:", this), 1, 0);
+    m_widgets["ema_short_spin"] = new QSpinBox(this);
     static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->setRange(1, 500);
     static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->setValue(20);
-    emaShortParamsLayout->addWidget(m_widgets["ema_short_spin"]);
-    emaShortParamsLayout->addStretch();
-    emaShortParams->setLayout(emaShortParamsLayout);
-    emaShortLayout->addWidget(emaShortParams);
+    emaShortLayout->addWidget(m_widgets["ema_short_spin"], 1, 1);
+    emaShortLayout->setColumnStretch(2, 1);
     
-    emaShortGroup->setLayout(emaShortLayout);
-    strategyLayout->addWidget(emaShortGroup);
+    strategyLayout->addLayout(emaShortLayout);
     
-    // Section EMA Long
-    QGroupBox* emaLongGroup = new QGroupBox("EMA Long");
-    QVBoxLayout* emaLongLayout = new QVBoxLayout();
+    // Ligne de séparation
+    QFrame* line1 = new QFrame(this);
+    line1->setFrameShape(QFrame::HLine);
+    line1->setFrameShadow(QFrame::Sunken);
+    strategyLayout->addWidget(line1);
     
-    // Checkbox pour activer/désactiver le filtre EMA long
-    m_widgets["ema_long_filter_check"] = new QCheckBox("Activer le filtre EMA long");
+    // SECTION EMA LONG
+    QGridLayout* emaLongLayout = new QGridLayout();
+    emaLongLayout->setContentsMargins(5, 5, 5, 5);
+    
+    m_widgets["ema_long_filter_check"] = new QCheckBox("Activer filtre EMA Long", this);
     static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->setChecked(true);
     connect(static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"]), &QCheckBox::toggled,
-            [this](bool checked) {
-                _toggleWidgetGroup({"ema_long_spin"}, checked);
-            });
-    emaLongLayout->addWidget(m_widgets["ema_long_filter_check"]);
+            this, &BuyHeikinGreenPanel::onEmaLongFilterToggled);
+    emaLongLayout->addWidget(m_widgets["ema_long_filter_check"], 0, 0, 1, 2);
     
-    // Frame pour les paramètres de l'EMA long
-    QFrame* emaLongParams = new QFrame();
-    QHBoxLayout* emaLongParamsLayout = new QHBoxLayout();
-    emaLongParamsLayout->addWidget(new QLabel("Période:"));
-    m_widgets["ema_long_spin"] = new QSpinBox();
+    emaLongLayout->addWidget(new QLabel("Période:", this), 1, 0);
+    m_widgets["ema_long_spin"] = new QSpinBox(this);
     static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->setRange(1, 500);
     static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->setValue(200);
-    emaLongParamsLayout->addWidget(m_widgets["ema_long_spin"]);
-    emaLongParamsLayout->addStretch();
-    emaLongParams->setLayout(emaLongParamsLayout);
-    emaLongLayout->addWidget(emaLongParams);
+    emaLongLayout->addWidget(m_widgets["ema_long_spin"], 1, 1);
+    emaLongLayout->setColumnStretch(2, 1);
     
-    emaLongGroup->setLayout(emaLongLayout);
-    strategyLayout->addWidget(emaLongGroup);
+    strategyLayout->addLayout(emaLongLayout);
     
-    // Section RSI
-    QGroupBox* rsiGroup = new QGroupBox("RSI");
-    QVBoxLayout* rsiLayout = new QVBoxLayout();
+    // Ligne de séparation
+    QFrame* line2 = new QFrame(this);
+    line2->setFrameShape(QFrame::HLine);
+    line2->setFrameShadow(QFrame::Sunken);
+    strategyLayout->addWidget(line2);
     
-    // Checkbox pour activer/désactiver le filtre RSI
-    m_widgets["rsi_filter_check"] = new QCheckBox("Activer le filtre RSI");
+    // SECTION RSI
+    QGridLayout* rsiLayout = new QGridLayout();
+    rsiLayout->setContentsMargins(5, 5, 5, 5);
+    
+    m_widgets["rsi_filter_check"] = new QCheckBox("Activer filtre RSI", this);
     static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->setChecked(true);
     connect(static_cast<QCheckBox*>(m_widgets["rsi_filter_check"]), &QCheckBox::toggled,
-            [this](bool checked) {
-                _toggleWidgetGroup({"rsi_period_spin", "rsi_threshold_spin"}, checked);
-            });
-    rsiLayout->addWidget(m_widgets["rsi_filter_check"]);
+            this, &BuyHeikinGreenPanel::onRsiFilterToggled);
+    rsiLayout->addWidget(m_widgets["rsi_filter_check"], 0, 0, 1, 2);
     
-    // Frame pour les paramètres du RSI
-    QFrame* rsiParams = new QFrame();
-    QGridLayout* rsiParamsLayout = new QGridLayout();
-    
-    rsiParamsLayout->addWidget(new QLabel("Période:"), 0, 0);
-    m_widgets["rsi_period_spin"] = new QSpinBox();
+    rsiLayout->addWidget(new QLabel("Période:", this), 1, 0);
+    m_widgets["rsi_period_spin"] = new QSpinBox(this);
     static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->setRange(2, 100);
     static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->setValue(14);
-    rsiParamsLayout->addWidget(m_widgets["rsi_period_spin"], 0, 1);
+    rsiLayout->addWidget(m_widgets["rsi_period_spin"], 1, 1);
     
-    rsiParamsLayout->addWidget(new QLabel("Seuil filtre:"), 1, 0);
-    m_widgets["rsi_threshold_spin"] = new QSpinBox();
+    rsiLayout->addWidget(new QLabel("Seuil:", this), 2, 0);
+    m_widgets["rsi_threshold_spin"] = new QSpinBox(this);
     static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setRange(1, 99);
     static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setValue(30);
-    rsiParamsLayout->addWidget(m_widgets["rsi_threshold_spin"], 1, 1);
+    rsiLayout->addWidget(m_widgets["rsi_threshold_spin"], 2, 1);
+    rsiLayout->setColumnStretch(2, 1);
     
-    rsiParams->setLayout(rsiParamsLayout);
-    rsiLayout->addWidget(rsiParams);
+    strategyLayout->addLayout(rsiLayout);
     
-    rsiGroup->setLayout(rsiLayout);
-    strategyLayout->addWidget(rsiGroup);
+    // Ligne de séparation
+    QFrame* line3 = new QFrame(this);
+    line3->setFrameShape(QFrame::HLine);
+    line3->setFrameShadow(QFrame::Sunken);
+    strategyLayout->addWidget(line3);
     
-    // Section Stochastique
-    QGroupBox* stochGroup = new QGroupBox("Stochastique");
-    QVBoxLayout* stochLayout = new QVBoxLayout();
+    // SECTION STOCHASTIQUE
+    QGridLayout* stochLayout = new QGridLayout();
+    stochLayout->setContentsMargins(5, 5, 5, 5);
     
-    // Checkbox pour activer/désactiver le filtre Stochastique
-    m_widgets["stoch_filter_check"] = new QCheckBox("Activer le filtre Stochastique");
+    m_widgets["stoch_filter_check"] = new QCheckBox("Activer filtre Stochastique", this);
     static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->setChecked(true);
     connect(static_cast<QCheckBox*>(m_widgets["stoch_filter_check"]), &QCheckBox::toggled,
-            [this](bool checked) {
-                _toggleWidgetGroup({"fastk_spin", "slowk_spin", "slowd_spin", "stoch_threshold_spin"}, checked);
-            });
-    stochLayout->addWidget(m_widgets["stoch_filter_check"]);
+            this, &BuyHeikinGreenPanel::onStochFilterToggled);
+    stochLayout->addWidget(m_widgets["stoch_filter_check"], 0, 0, 1, 2);
     
-    // Frame pour les paramètres du Stochastique
-    QFrame* stochParams = new QFrame();
-    QGridLayout* stochParamsLayout = new QGridLayout();
-    
-    stochParamsLayout->addWidget(new QLabel("Fast %K:"), 0, 0);
-    m_widgets["fastk_spin"] = new QSpinBox();
+    stochLayout->addWidget(new QLabel("Fast %K:", this), 1, 0);
+    m_widgets["fastk_spin"] = new QSpinBox(this);
     static_cast<QSpinBox*>(m_widgets["fastk_spin"])->setRange(1, 100);
     static_cast<QSpinBox*>(m_widgets["fastk_spin"])->setValue(10);
-    stochParamsLayout->addWidget(m_widgets["fastk_spin"], 0, 1);
+    stochLayout->addWidget(m_widgets["fastk_spin"], 1, 1);
     
-    stochParamsLayout->addWidget(new QLabel("Slow %K:"), 1, 0);
-    m_widgets["slowk_spin"] = new QSpinBox();
+    stochLayout->addWidget(new QLabel("Slow %K:", this), 2, 0);
+    m_widgets["slowk_spin"] = new QSpinBox(this);
     static_cast<QSpinBox*>(m_widgets["slowk_spin"])->setRange(1, 100);
     static_cast<QSpinBox*>(m_widgets["slowk_spin"])->setValue(7);
-    stochParamsLayout->addWidget(m_widgets["slowk_spin"], 1, 1);
+    stochLayout->addWidget(m_widgets["slowk_spin"], 2, 1);
     
-    stochParamsLayout->addWidget(new QLabel("Slow %D:"), 2, 0);
-    m_widgets["slowd_spin"] = new QSpinBox();
+    stochLayout->addWidget(new QLabel("Slow %D:", this), 3, 0);
+    m_widgets["slowd_spin"] = new QSpinBox(this);
     static_cast<QSpinBox*>(m_widgets["slowd_spin"])->setRange(1, 100);
     static_cast<QSpinBox*>(m_widgets["slowd_spin"])->setValue(3);
-    stochParamsLayout->addWidget(m_widgets["slowd_spin"], 2, 1);
+    stochLayout->addWidget(m_widgets["slowd_spin"], 3, 1);
     
-    stochParamsLayout->addWidget(new QLabel("Seuil:"), 3, 0);
-    m_widgets["stoch_threshold_spin"] = new QSpinBox();
+    stochLayout->addWidget(new QLabel("Seuil:", this), 4, 0);
+    m_widgets["stoch_threshold_spin"] = new QSpinBox(this);
     static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setRange(1, 99);
     static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setValue(20);
-    stochParamsLayout->addWidget(m_widgets["stoch_threshold_spin"], 3, 1);
+    stochLayout->addWidget(m_widgets["stoch_threshold_spin"], 4, 1);
+    stochLayout->setColumnStretch(2, 1);
     
-    stochParams->setLayout(stochParamsLayout);
-    stochLayout->addWidget(stochParams);
+    strategyLayout->addLayout(stochLayout);
     
-    stochGroup->setLayout(stochLayout);
-    strategyLayout->addWidget(stochGroup);
+    // Ligne de séparation
+    QFrame* line4 = new QFrame(this);
+    line4->setFrameShape(QFrame::HLine);
+    line4->setFrameShadow(QFrame::Sunken);
+    strategyLayout->addWidget(line4);
     
-    // Section Filtre Bougie Précédente
-    QGroupBox* candleFilterGroup = new QGroupBox("Filtre de bougie");
-    QVBoxLayout* candleFilterLayout = new QVBoxLayout();
+    // SECTION AUTRES FILTRES
+    QVBoxLayout* otherFiltersLayout = new QVBoxLayout();
+    otherFiltersLayout->setContentsMargins(5, 5, 5, 5);
     
-    m_widgets["previous_ha_candle_red_filter_check"] = new QCheckBox("La bougie précédente doit être rouge");
-    candleFilterLayout->addWidget(m_widgets["previous_ha_candle_red_filter_check"]);
+    m_widgets["previous_ha_candle_red_filter_check"] = new QCheckBox("Activer filtre bougie précédente rouge", this);
+    otherFiltersLayout->addWidget(m_widgets["previous_ha_candle_red_filter_check"]);
     
-    candleFilterGroup->setLayout(candleFilterLayout);
-    strategyLayout->addWidget(candleFilterGroup);
+    strategyLayout->addLayout(otherFiltersLayout);
     
-    // Ajouter un espace extensible en bas
-    strategyLayout->addStretch();
+    // Stretch pour prendre l'espace restant
+    strategyLayout->addStretch(1);
     
-    strategyGroup->setLayout(strategyLayout);
-    return strategyGroup;
+    // Initialiser l'état des widgets
+    onEmaShortFilterToggled(static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->isChecked());
+    onEmaLongFilterToggled(static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->isChecked());
+    onRsiFilterToggled(static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked());
+    onStochFilterToggled(static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked());
 }
+
+// Les méthodes getValues et setValues restent inchangées
 
 QMap<QString, QVariant> BuyHeikinGreenPanel::getValues()
 {
@@ -255,19 +252,23 @@ void BuyHeikinGreenPanel::setValues(const QMap<QString, QVariant>& values)
         static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->setChecked(
             values["use_previous_ha_candle_red_filter"].toBool());
     }
-    
-    // Mettre à jour l'état d'activation des widgets en fonction des checkboxes
-    _toggleWidgetGroup({"ema_short_spin"}, 
-                     static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->isChecked());
-    
-    _toggleWidgetGroup({"ema_long_spin"}, 
-                     static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->isChecked());
-    
-    _toggleWidgetGroup({"rsi_period_spin", "rsi_threshold_spin"}, 
-                     static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked());
-    
-    _toggleWidgetGroup({"fastk_spin", "slowk_spin", "slowd_spin", "stoch_threshold_spin"}, 
-                     static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked());
+}
+
+// Nouvelles méthodes de gestion d'événements
+void BuyHeikinGreenPanel::onEmaShortFilterToggled(bool checked) {
+    _toggleWidgetGroup({"ema_short_spin"}, checked);
+}
+
+void BuyHeikinGreenPanel::onEmaLongFilterToggled(bool checked) {
+    _toggleWidgetGroup({"ema_long_spin"}, checked);
+}
+
+void BuyHeikinGreenPanel::onRsiFilterToggled(bool checked) {
+    _toggleWidgetGroup({"rsi_period_spin", "rsi_threshold_spin"}, checked);
+}
+
+void BuyHeikinGreenPanel::onStochFilterToggled(bool checked) {
+    _toggleWidgetGroup({"fastk_spin", "slowk_spin", "slowd_spin", "stoch_threshold_spin"}, checked);
 }
 
 void BuyHeikinGreenPanel::_toggleWidgetGroup(const QStringList& widgets, bool enabled)

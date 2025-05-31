@@ -1,8 +1,8 @@
 #include "panels/base_panel.h"
 #include <QDebug>
 
-BasePanel::BasePanel(QWidget* parent)
-    : m_parent(parent)
+BasePanel::BasePanel(const QString& title, QWidget* parent)
+    : QGroupBox(title, parent)
 {
     // Initialisation simple du panel de base
 }
@@ -10,7 +10,6 @@ BasePanel::BasePanel(QWidget* parent)
 BasePanel::~BasePanel()
 {
     // Les widgets enfants seront détruits automatiquement par le parent
-    // Ne pas supprimer m_parent car il est géré ailleurs
     qDebug() << "Destruction d'un panel";
 }
 

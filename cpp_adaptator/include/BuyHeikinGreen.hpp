@@ -50,10 +50,22 @@ public:
         strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
         strategy->set_log_level(LogLevel::DEBUG);
 
-        // TODO : fonction a replacer et a refaire pour explicité le level et le timestamp
         auto log_callback = [](const std::string& message, int level) {
             LogLevel logLevel = static_cast<LogLevel>(level);
-            std::cout << "C++ Log [" << logLevel << "]: " << message << std::endl;
+            
+            // Obtenir le timestamp actuel avec précision milliseconde
+            auto now = std::chrono::system_clock::now();
+            auto time_t_now = std::chrono::system_clock::to_time_t(now);
+            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                now.time_since_epoch()) % 1000;
+            
+            // Formater le timestamp
+            std::stringstream ss;
+            ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
+            ss << "," << std::setw(3) << std::setfill('0') << ms.count();
+            
+            // Afficher le log avec le timestamp
+            std::cout << ss.str() << " [" << logLevel << "]: " << message << std::endl;
         };
 
         g_py_log_callback = log_callback;

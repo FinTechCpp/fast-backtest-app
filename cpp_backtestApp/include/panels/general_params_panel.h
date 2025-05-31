@@ -1,9 +1,9 @@
 #pragma once
 
-#include <QObject>
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <QGridLayout>
+#include <QFormLayout>
 #include <QLabel>
 #include <QComboBox>
 #include <QLineEdit>
@@ -20,7 +20,7 @@
  * Ce panel contient les paramètres généraux comme le symbole,
  * la période, l'intervalle, le spread, etc.
  */
-class GeneralParamsPanel : public QObject, public BasePanel
+class GeneralParamsPanel : public BasePanel
 {
     Q_OBJECT
 
@@ -32,10 +32,10 @@ public:
     GeneralParamsPanel(QWidget* parent = nullptr);
     
     /**
-     * @brief Crée et retourne l'interface graphique du panel
-     * @return QGroupBox contenant les widgets du panel
+     * @brief Initialise le contenu du panel
+     * Cette méthode configure l'interface graphique du panel
      */
-    QGroupBox* create() override;
+    void initialize() override;
     
     /**
      * @brief Récupère les valeurs des widgets du panel
@@ -62,19 +62,5 @@ private:
     
     // Initialisation du dictionnaire des stratégies
     void initStrategyMap();
-    
-    /**
-     * @brief Configure les paramètres de symbole et de période
-     * @param layout Le layout dans lequel les paramètres sont ajoutés
-     * @param row La ligne actuelle du layout
-     */
-    void setupSymbolAndPeriod(QGridLayout* layout, int& row);
-    
-    /**
-     * @brief Configure les paramètres de trading
-     * @param layout Le layout dans lequel les paramètres sont ajoutés
-     * @param row La ligne actuelle du layout
-     */
-    void setupTradingParameters(QGridLayout* layout, int& row);
 };
 

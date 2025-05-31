@@ -251,8 +251,6 @@ void BacktestWorker::run()
             bhgConfig.use_ema_long_filter = false;
             bhgConfig.use_rsi_filter = false;
 
-            // Utiliser la stratégie SmaCrossStrategy avec une moyenne rapide de 10 jours et une lente de 30 jours
-            // return std::make_shared<SmaCrossStrategy>(broker, data, 10, 30);
             return std::make_shared<BuyHeikinGreenAdapter>(broker, data, baseConfig, bhgConfig);
         };
         

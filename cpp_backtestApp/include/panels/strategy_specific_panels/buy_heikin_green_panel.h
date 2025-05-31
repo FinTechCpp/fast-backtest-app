@@ -4,6 +4,7 @@
 #include <QSpinBox>
 #include <QLabel>
 #include "panels/base_panel.h"
+#include "Strategies/buy_heikin_green.hpp"
 
 /**
  * @brief Panel spécifique à la stratégie BuyHeikinGreen
@@ -39,8 +40,16 @@ public:
      */
     void setValues(const QMap<QString, QVariant>& values) override;
 
+    /**
+     * @brief Récupère la configuration de la stratégie BuyHeikinGreen
+     * @return Structure BuyHeikinGreenConfig remplie avec les valeurs du panel
+     */
+    BuyHeikinGreenConfig getConfig() {
+        return convertToConfig<BuyHeikinGreenConfig>(getValues());
+    }
+
 private slots:
-    // Nouveau: gestionnaires d'événements pour les checkboxes
+    // Gestionnaires d'événements pour les checkboxes
     void onEmaShortFilterToggled(bool checked);
     void onEmaLongFilterToggled(bool checked);
     void onRsiFilterToggled(bool checked);

@@ -15,6 +15,7 @@
 #include <QString>
 #include <QVariant>
 #include "panels/base_panel.h"
+#include "common.h"
 
 /**
  * @brief Panel pour les paramètres communs à toutes les stratégies
@@ -49,6 +50,15 @@ public:
      * @param values Map contenant les valeurs à affecter aux widgets
      */
     void setValues(const QMap<QString, QVariant>& values) override;
+
+    /**
+     * @brief Convertit les valeurs du panel en configuration spécifique à la stratégie
+     * @return Map contenant la configuration de la stratégie
+     */
+    StrategyBaseConfig getConfig() {
+        return convertToConfig<StrategyBaseConfig>(getValues());
+    }
+
 
 private slots:
     // Méthodes pour gérer l'interface utilisateur en fonction des checkboxes

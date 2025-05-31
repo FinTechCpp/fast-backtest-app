@@ -4,7 +4,6 @@
 StrategyBasePanel::StrategyBasePanel(QWidget* parent)
     : BasePanel("Paramètres de base", parent)
 {
-    // Constructeur simplifié qui appelle le constructeur du BasePanel avec le titre
 }
 
 void StrategyBasePanel::initialize()

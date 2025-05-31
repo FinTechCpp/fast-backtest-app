@@ -254,7 +254,6 @@ void BuyHeikinGreenPanel::setValues(const QMap<QString, QVariant>& values)
     }
 }
 
-// Nouvelles méthodes de gestion d'événements
 void BuyHeikinGreenPanel::onEmaShortFilterToggled(bool checked) {
     _toggleWidgetGroup({"ema_short_spin"}, checked);
 }

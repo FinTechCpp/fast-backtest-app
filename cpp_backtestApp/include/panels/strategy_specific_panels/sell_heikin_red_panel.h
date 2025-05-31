@@ -1,14 +1,11 @@
 #pragma once
 
-#include <QGroupBox>
-#include <QVBoxLayout>
-#include <QGridLayout>
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QLabel>
-#include <QFrame>
 #include <QHBoxLayout>
 #include "panels/base_panel.h"
+#include "Strategies/sell_heikin_red.hpp"
 
 /**
  * @brief Panel spécifique à la stratégie SellHeikinRed
@@ -42,6 +39,14 @@ public:
      * @param values Map contenant les valeurs à affecter aux widgets
      */
     void setValues(const QMap<QString, QVariant>& values) override;
+
+    /**
+     * @brief Récupère la configuration de la stratégie SellHeikinRed
+     * @return Structure SellHeikinRedConfig remplie avec les valeurs du panel
+     */
+    SellHeikinRedConfig getConfig() {
+        return convertToConfig<SellHeikinRedConfig>(getValues());
+    }
 
 private slots:
     /**

@@ -60,10 +60,10 @@ QString ConfigManager::getConfigFilePath() const
     
     QString configDir;
     if (!projectRoot.isEmpty()) {
-        configDir = QDir(projectRoot).absoluteFilePath("backtest_app_cpp");
+        configDir = QDir(projectRoot).absoluteFilePath("cpp_backtestApp");
     } else {
         // Fallback vers le répertoire home
-        configDir = QDir::homePath() + "/ig-trading-bot-config/backtest_app_cpp";
+        configDir = QDir::homePath() + "/ig-trading-bot-config/cpp_backtestApp";
     }
     
     // Créer le répertoire de configuration s'il n'existe pas

@@ -57,21 +57,6 @@ Le script automatise le processus de compilation et d'exécution:
 
 ## Méthode 3: Configuration VS Code pour le débogage
 
-### Étape 1: Configuration d'IntelliSense
-
-Pour que VS Code reconnaisse correctement les fichiers d'en-tête:
-
-```bash
-# Générer le fichier compile_commands.json
-mkdir -p build
-cd build
-cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-cd ..
-ln -sf build/compile_commands.json .
-```
-
-### Étape 2: Créer les fichiers de configuration VS Code
-
 Créez un dossier .vscode à la racine du projet et ajoutez les fichiers suivants:
 
 **launch.json** pour la configuration du débogueur:
@@ -80,7 +65,7 @@ Créez un dossier .vscode à la racine du projet et ajoutez les fichiers suivant
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Déboguer ig-trading-bot",
+            "name": "Déboguer ig-trading-bot (Debug)",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/cpp_backtestApp/backtestapp",
@@ -98,6 +83,27 @@ Créez un dossier .vscode à la racine du projet et ajoutez les fichiers suivant
                 }
             ],
             "preLaunchTask": "build-debug",
+            "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+            "name": "Exécuter ig-trading-bot (Release)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/cpp_backtestApp/backtestapp",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Activer l'affichage amélioré pour gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-release",
             "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
@@ -121,6 +127,10 @@ Créez un dossier .vscode à la racine du projet et ajoutez les fichiers suivant
                 "kind": "build",
                 "isDefault": true
             },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
             "problemMatcher": {
                 "owner": "cpp",
                 "fileLocation": ["relative", "${workspaceFolder}"],
@@ -138,8 +148,26 @@ Créez un dossier .vscode à la racine du projet et ajoutez les fichiers suivant
             "label": "build-release",
             "type": "shell",
             "command": "${workspaceFolder}/build_and_run.sh",
-            "args": ["--no-run"],
-            "group": "build"
+            "args": [
+                "--no-run"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
         }
     ]
 }

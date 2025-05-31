@@ -20,8 +20,14 @@ target_include_directories(chartdirector
 )
 
 # Les bibliothèques ont été trouvées à ces emplacements spécifiques
-set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so")
-set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/libchartdir.so")
+# Détection adaptative selon le système d'exploitation
+if(APPLE)
+    set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.7.dylib")
+    set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/libchartdir.dylib")
+else()
+    set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so")
+    set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/libchartdir.so")
+endif()
 
 # Vérifier que la bibliothèque principale existe
 if(NOT EXISTS "${CHARTDIR_LIB}")

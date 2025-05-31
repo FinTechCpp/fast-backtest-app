@@ -15,8 +15,7 @@ cd "$SCRIPT_DIR"
 # Traitement des arguments
 DEBUG=0
 CLEAN=0
-FRONTEND=1
-RUN_APP=1  # Nouvelle option pour lancer l'application
+RUN_APP=1
 
 for arg in "$@"
 do
@@ -27,10 +26,6 @@ do
         ;;
         --clean)
         CLEAN=1
-        shift
-        ;;
-        --no-frontend)
-        FRONTEND=0
         shift
         ;;
         --no-run)
@@ -69,20 +64,16 @@ cd build
 
 # Configurer le projet avec CMake
 show_step "Configuration du projet avec CMake..."
-CMAKE_ARGS=""
+CMAKE_ARGS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 
 if [ $DEBUG -eq 1 ]; then
     CMAKE_ARGS="$CMAKE_ARGS -DBUILD_WITH_DEBUG=ON"
 fi
 
-if [ $FRONTEND -eq 0 ]; then
-    CMAKE_ARGS="$CMAKE_ARGS -DBUILD_FRONTEND=OFF"
-fi
-
 cmake $CMAKE_ARGS .. || { show_error "Échec de la configuration CMake"; exit 1; }
 
 # Compiler le projet
-show_step "Compilation du projet..."
+show_step "Compilation du projet avec tous les cœurs disponibles..."
 make -j$(nproc) || { show_error "Échec de la compilation"; exit 1; }
 
 show_success "Compilation terminée!"
@@ -91,20 +82,18 @@ show_success "Compilation terminée!"
 APP_PATH="./cpp_backtestApp/backtestapp"
 
 # Afficher un message sur comment lancer l'application
-if [ $FRONTEND -eq 1 ]; then
-    echo -e "${YELLOW}${BOLD}[INFO]${NC} Chemin de l'application: ${BOLD}$APP_PATH${NC}"
-    
-    # Lancer l'application si demandé
-    if [ $RUN_APP -eq 1 ]; then
-        show_step "Lancement de l'application..."
-        if [ -f "$APP_PATH" ]; then
-            echo -e "${GREEN}${BOLD}[EXÉCUTION]${NC} $APP_PATH"
-            $APP_PATH
-        else
-            show_error "L'exécutable n'existe pas: $APP_PATH"
-            echo "Vérifiez que le chemin est correct et que la compilation a réussi."
-            exit 1
-        fi
+echo -e "${YELLOW}${BOLD}[INFO]${NC} Chemin de l'application: ${BOLD}./build${APP_PATH:1}${NC}"
+
+# Lancer l'application si demandé
+if [ $RUN_APP -eq 1 ]; then
+    show_step "Lancement de l'application..."
+    if [ -f "$APP_PATH" ]; then
+        echo -e "${GREEN}${BOLD}[EXÉCUTION]${NC} $APP_PATH"
+        $APP_PATH
+    else
+        show_error "L'exécutable n'existe pas: $APP_PATH"
+        echo "Vérifiez que le chemin est correct et que la compilation a réussi."
+        exit 1
     fi
 fi
 

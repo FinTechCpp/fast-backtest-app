@@ -28,7 +28,6 @@ BacktestRunner::~BacktestRunner()
         m_worker->quit();
         m_worker->wait();
     }
-    delete m_worker;
 }
 
 // Méthodes d'UI inchangées

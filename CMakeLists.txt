@@ -8,7 +8,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Options de build
 option(BUILD_WITH_DEBUG "Compiler avec les symboles de débogage" OFF)
-option(BUILD_FRONTEND "Compiler l'interface graphique" ON)
 
 if(BUILD_WITH_DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
@@ -18,22 +17,15 @@ else()
     add_compile_options(-O3)
 endif()
 
+# Vérifier que Qt est disponible (obligatoire)
+find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
+
 # Ajouter les sous-projets (bibliothèques)
 add_subdirectory(cpp_backtestEngine)
 add_subdirectory(cpp_strategies)
 add_subdirectory(cpp_adaptator)
 add_subdirectory(ChartDirector)
-
-# Ajouter l'interface graphique si activée
-if(BUILD_FRONTEND)
-    # Vérifier que Qt est disponible
-    find_package(Qt6 COMPONENTS Core Widgets QUIET)
-    if(Qt6_FOUND)
-        add_subdirectory(cpp_backtestApp)
-    else()
-        message(WARNING "Qt6 non trouvé - L'interface graphique ne sera pas compilée")
-    endif()
-endif()
+add_subdirectory(cpp_backtestApp)
 
 # Afficher un résumé de la configuration
 message(STATUS "=========================================")
@@ -41,6 +33,4 @@ message(STATUS "Configuration pour ${PROJECT_NAME} v${PROJECT_VERSION}")
 message(STATUS "Mode de build: ${CMAKE_BUILD_TYPE}")
 message(STATUS "Standard C++: ${CMAKE_CXX_STANDARD}")
 message(STATUS "Symboles de débogage: ${BUILD_WITH_DEBUG}")
-message(STATUS "Interface graphique: ${BUILD_FRONTEND}")
-message(STATUS "Qt trouvé: ${Qt6_FOUND}")
 message(STATUS "=========================================")

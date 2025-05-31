@@ -19,7 +19,7 @@
 #include <QMap>
 #include <QString>
 #include <QDebug>
-#include "backtest_results.h" // Inclure la classe BacktestResults pour les résultats du backtest
+#include "components/backtest_results.h" // Inclure la classe BacktestResults pour les résultats du backtest
 
 
 // Forward declarations

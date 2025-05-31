@@ -24,7 +24,7 @@ add_executable(backtestapp
     ${HEADERS}
 )
 
-# Configurer les chemins d'inclusion
+# Configurer les chemins d'inclusion principaux
 target_include_directories(backtestapp
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -32,7 +32,7 @@ target_include_directories(backtestapp
         ${CMAKE_SOURCE_DIR}/cpp_strategies/include
         ${CMAKE_SOURCE_DIR}/cpp_adaptator/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
-        ${CMAKE_SOURCE_DIR}/ChartDirector/qtdemo/helloworld  # Ajouté pour qchartviewer.h
+        ${CMAKE_SOURCE_DIR}/ChartDirector/qtdemo/helloworld
 )
 
 # Lier avec Qt et les bibliothèques de backtest

@@ -14,8 +14,8 @@
 #include <QMetaType>
 #include <iostream>
 #include "app.h"
-#include "backtest_runner.h"
-#include "data_loader.h"
+#include "components/backtest_runner.h"
+#include "components/data_loader.h"
 #include "backtest.hpp"   // Pour be::* types
 #include "stats.hpp"      // Pour be::Stats
 

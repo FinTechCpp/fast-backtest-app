@@ -1,5 +1,7 @@
 ## Installation
 
+<!-- À refaire complètement quand le projet sera stabilisé -->
+
 ### 1. Cloner le dépôt
 
 Clonez le dépôt et placez-vous à la racine du projet :

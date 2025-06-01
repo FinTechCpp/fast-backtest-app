@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <ostream>
 #include "trade.hpp"
 #include "data.hpp"
 #include "date.hpp"
@@ -75,6 +76,17 @@ struct Stats {
      */
     std::map<std::string, double> toMap() const;
 };
+
+/**
+ * @brief Opérateur de flux pour afficher les statistiques de performance
+ * 
+ * Affiche les statistiques de manière structurée et lisible.
+ * 
+ * @param os Flux de sortie
+ * @param stats Statistiques à afficher
+ * @return Référence au flux de sortie
+ */
+std::ostream& operator<<(std::ostream& os, const Stats& stats);
 
 /**
  * @brief Calcule les statistiques de performance

@@ -224,9 +224,6 @@ StatsView::~StatsView()
 
 void StatsView::updateData(BacktestResults* results)
 {
-    QTime start = QTime::currentTime();
-    qDebug() << "StatsView::updateData() appelé";
-    
     // Stocker les résultats pour les mises à jour ultérieures
     m_currentResults = results;
     
@@ -235,7 +232,9 @@ void StatsView::updateData(BacktestResults* results)
         clear();
         return;
     }
-    
+
+    std::cout << m_currentResults->stats << std::endl;
+
     try {
         // Créer les tables si ce n'est pas déjà fait
         if (!m_tablesCreated) {
@@ -267,15 +266,10 @@ void StatsView::updateData(BacktestResults* results)
     } catch (const std::exception& e) {
         qCritical() << "Erreur lors de la mise à jour StatsView:" << e.what();
     }
-    
-    int elapsed = start.msecsTo(QTime::currentTime());
-    qInfo() << "StatsView::updateData() took" << elapsed << "ms";
 }
 
 void StatsView::setupUI()
 {
-    QTime start = QTime::currentTime();
-    
     // Créer le scroll area principal
     m_scrollStats = new QScrollArea();
     m_scrollStats->setWidgetResizable(true);
@@ -315,9 +309,6 @@ void StatsView::setupUI()
     
     // Ajouter le scroll area au layout principal (hérité de BaseView)
     m_mainLayout->addWidget(m_scrollStats);
-    
-    int elapsed = start.msecsTo(QTime::currentTime());
-    qInfo() << "StatsView::setupUI() took" << elapsed << "ms";
 }
 
 void StatsView::createStatsWidgets()

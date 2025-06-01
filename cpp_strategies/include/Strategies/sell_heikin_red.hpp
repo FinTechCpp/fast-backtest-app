@@ -159,7 +159,7 @@ private:
                 current_stoch_d > 0.0);
     }
     
-    bool update_indicators() {
+    bool update_indicators() override {
         if (candle_manager.size() == 0) {
             logger->log_general("Aucune bougie disponible, impossible de mettre à jour les indicateurs", LogLevel::WARNING);
             return false;
@@ -168,7 +168,7 @@ private:
         if (!ema_short_calculator->initialized() ||
             !ema_long_calculator->initialized() ||
             !stochastic_calculator->initialized() ||
-            atr_calculator->initialized()) {
+            !atr_calculator->initialized()) {
 
             logger->log_general("Initialisation des indicateurs requise", LogLevel::INFO);
             

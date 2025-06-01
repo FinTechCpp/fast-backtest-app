@@ -217,7 +217,18 @@ public:
     bool operator<=(const Duration& other) const { return seconds_ <= other.seconds_; }
     bool operator>(const Duration& other) const { return seconds_ > other.seconds_; }
     bool operator>=(const Duration& other) const { return seconds_ >= other.seconds_; }
-    
+
+    /**
+     * @brief Opérateur de flux pour afficher une durée
+     * @param os Flux de sortie
+     * @param duration Durée à afficher
+     * @return Référence au flux de sortie
+     */
+    friend std::ostream& operator<<(std::ostream& os, const Duration& duration) {
+        os << duration.toString();
+        return os;
+    }
+
     /**
      * @brief Convertit la durée en chaîne de caractères
      * @return Représentation textuelle de la durée (ex: "1y 3d 5h 10m 30s")

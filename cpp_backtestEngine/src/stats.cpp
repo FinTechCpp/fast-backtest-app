@@ -145,6 +145,55 @@ std::map<std::string, double> Stats::toMap() const {
     return map;
 }
 
+std::ostream& operator<<(std::ostream& os, const Stats& stats) {
+    os << "=== Statistiques de Performance ===\n";
+    
+    os << "\n-- Période --\n";
+    os << "  Début: " << stats.start << "\n";
+    os << "  Fin: " << stats.end << "\n";
+    os << "  Durée: " << stats.duration << "\n";
+    os << "  Exposition: " << stats.exposureTimePct << "%\n";
+    
+    os << "\n-- Résultats --\n";
+    os << "  Équité finale: " << stats.equityFinal << "\n";
+    os << "  Équité maximale: " << stats.equityPeak << "\n";
+    os << "  Rendement: " << stats.returnPct << "%\n";
+    os << "  Buy & Hold: " << stats.buyHoldReturnPct << "%\n";
+    os << "  Rendement annualisé: " << stats.returnAnnPct << "%\n";
+    os << "  CAGR: " << stats.cagrPct << "%\n";
+    
+    os << "\n-- Risque --\n";
+    os << "  Volatilité annualisée: " << stats.volatilityAnnPct << "%\n";
+    os << "  Ratio de Sharpe: " << stats.sharpeRatio << "\n";
+    os << "  Ratio de Sortino: " << stats.sortinoRatio << "\n";
+    os << "  Ratio de Calmar: " << stats.calmarRatio << "\n";
+    os << "  Alpha: " << stats.alphaPct << "%\n";
+    os << "  Beta: " << stats.beta << "\n";
+    
+    os << "\n-- Drawdowns --\n";
+    os << "  Maximum: " << stats.maxDrawdownPct << "%\n";
+    os << "  Moyen: " << stats.avgDrawdownPct << "%\n";
+    os << "  Durée maximale: " << stats.maxDrawdownDuration << "\n";
+    os << "  Durée moyenne: " << stats.avgDrawdownDuration << "\n";
+    
+    os << "\n-- Trades --\n";
+    os << "  Nombre total: " << stats.numTrades << "\n";
+    os << "  Gagnants: " << stats.numWinningTrades << " (" << stats.winRatePct << "%)\n";
+    os << "  Perdants: " << stats.numLosingTrades << "\n";
+    os << "  Neutres: " << stats.numNeutralTrades << "\n";
+    os << "  Meilleur: " << stats.bestTradePct << "%\n";
+    os << "  Pire: " << stats.worstTradePct << "%\n";
+    os << "  Moyen: " << stats.avgTradePct << "%\n";
+    os << "  Durée maximale: " << stats.maxTradeDuration << "\n";
+    os << "  Durée moyenne: " << stats.avgTradeDuration << "\n";
+    os << "  Facteur de profit: " << stats.profitFactor << "\n";
+    os << "  Espérance: " << stats.expectancyPct << "%\n";
+    os << "  SQN: " << stats.sqn << "\n";
+    os << "  Critère de Kelly: " << stats.kellyCriterion << "\n";
+    
+    return os;
+}
+
 // Calcul des statistiques de trading avec la nouvelle structure
 Stats computeStats(
     const std::vector<std::shared_ptr<Trade>>& trades,

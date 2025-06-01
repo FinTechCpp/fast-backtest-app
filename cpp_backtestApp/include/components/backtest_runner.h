@@ -51,6 +51,7 @@ public slots:
 private slots:
     void onBacktestFinished(BacktestResults* results);
     void onBacktestError(const QString& errorMessage);
+    void onProgressUpdated(int current, int total, const QString& chrono);
 
 private:
     // Membres dans l'ordre d'initialisation du constructeur
@@ -80,6 +81,7 @@ protected:
 signals:
     void finished(BacktestResults* results);
     void error(const QString& message);
+    void progressUpdated(int current, int total, const QString& chrono);
 
 public:
     // Méthode pour transférer la propriété des résultats

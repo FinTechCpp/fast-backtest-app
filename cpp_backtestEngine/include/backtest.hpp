@@ -104,6 +104,10 @@ public:
         return _broker->closedTrades();
     }
 
+    void setProgressCallback(std::function<void(size_t, size_t)> callback) {
+        _progressCallback = callback;
+    }
+
 private:
     std::shared_ptr<Data> _data;           ///< Données de marché historiques
     std::shared_ptr<Broker> _broker;       ///< Broker qui exécute les ordres
@@ -117,6 +121,7 @@ private:
     bool _exclusiveOrders;                 ///< Si vrai, un seul ordre actif à la fois
     bool _finalizeTrades;                  ///< Si vrai, ferme tous les trades à la fin
     Stats _lastResults;                    ///< Résultats du dernier backtest
+    std::function<void(size_t, size_t)> _progressCallback;
 };
 
 } // namespace be

@@ -115,6 +115,10 @@ Stats Backtest::run() {
             
             // Exécuter la logique de la stratégie pour la barre actuelle
             strategy->next();
+            
+            if (_progressCallback && (i % 100 == 0 || i == dataSize - 1)) { 
+                _progressCallback(i + 1, dataSize);
+            }
         }
         
         // Si finalizeTrades est activé, fermer tous les trades ouverts

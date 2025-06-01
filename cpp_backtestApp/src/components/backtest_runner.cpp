@@ -37,15 +37,31 @@ void BacktestRunner::createUIComponents()
     
     m_runButton = new QPushButton("Lancer le backtest");
     m_runButton->setMinimumHeight(40);
-    m_runButton->setStyleSheet("background-color: #4CAF50; color: white; font-weight: bold;");
-    
+    m_runButton->setStyleSheet("background-color: #4CAF50;"
+                                "color: white;"
+                                "font-weight: bold;");
+
     connect(m_runButton, &QPushButton::clicked, this, &BacktestRunner::runBacktest);
     
     m_loadingIndicator = new QProgressBar();
-    m_loadingIndicator->setMaximum(0);
+    m_loadingIndicator->setMaximum(100);
     m_loadingIndicator->setMinimum(0);
-    m_loadingIndicator->setTextVisible(false);
+    m_loadingIndicator->setTextVisible(true);
     m_loadingIndicator->setVisible(false);
+    m_loadingIndicator->setMinimumHeight(40); // Augmenter encore plus
+    m_loadingIndicator->setStyleSheet(
+        "QProgressBar {"
+        "   text-align: center;"
+        "   font-size: 12px;"
+        "   border: 1px solid grey;"
+        "   border-radius: 2px;"
+        "   padding: 2px;"
+        "}"
+        "QProgressBar::chunk {"
+        "   background-color: #4CAF50;"
+        "   border-radius: 2px;"
+        "}"
+    );
     
     m_buttonLayout->addWidget(m_runButton);
     m_buttonLayout->addWidget(m_loadingIndicator);
@@ -82,9 +98,24 @@ void BacktestRunner::runBacktest()
     
     connect(m_worker, &BacktestWorker::finished, this, &BacktestRunner::onBacktestFinished);
     connect(m_worker, &BacktestWorker::error, this, &BacktestRunner::onBacktestError);
+    connect(m_worker, &BacktestWorker::progressUpdated, this, &BacktestRunner::onProgressUpdated); // Ajouter cette ligne
     connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
-    
     m_worker->start();
+}
+
+void BacktestRunner::onProgressUpdated(int current, int total, const QString& chrono) {
+    int percentage = (current * 100) / total;
+    m_loadingIndicator->setValue(percentage);
+    
+    // Calculer la vitesse en candles/seconde
+    qint64 elapsedMs = QTime::fromString(chrono, "mm:ss").msecsTo(QTime(0, 0, 0)) * -1;
+    double candlesPerSecond = (current * 1000.0) / elapsedMs;
+    // Utiliser des espaces pour séparer visuellement
+    m_loadingIndicator->setFormat(QString("%1/%2 (%p%)  %3 c/s - %4")
+                                .arg(current)
+                                .arg(total)
+                                .arg(QString::number(candlesPerSecond, 'f', 1))
+                                .arg(chrono));
 }
 
 void BacktestRunner::onBacktestFinished(BacktestResults* results) {
@@ -248,6 +279,15 @@ void BacktestWorker::run()
             exclusiveOrders,    // Ordres exclusifs
             finalizeTrades      // Finalisation des trades
         );
+        
+        QElapsedTimer timer;
+        timer.start();
+
+        backtest.setProgressCallback([this, &timer](size_t current, size_t total) {
+            qint64 elapsed = timer.elapsed();
+            QString chrono = QTime::fromMSecsSinceStartOfDay(elapsed).toString("mm:ss");
+            emit progressUpdated(current, total, chrono);
+        });
         
         qDebug() << "Exécution du backtest...";
         m_results->stats = backtest.run();

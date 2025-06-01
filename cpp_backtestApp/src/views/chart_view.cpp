@@ -1,4 +1,5 @@
 #include "views/chart_view.h"
+#include "app.h" // Ajouter l'include ici
 #include <QDebug>
 #include <QTimer>
 #include <QResizeEvent>
@@ -21,8 +22,17 @@ ChartView::ChartView(QWidget* parent)
     , m_leftPanel(nullptr)
     , m_rightPanel(nullptr)
     , m_currentChartType("CandleStick")
+    , m_app(nullptr)  // Ajouter cette ligne
 {
-    qDebug() << "ChartView créée avec parent:" << parent;
+    // Ajouter ce bloc après les initialisations
+    // Trouver l'application parente
+    QWidget* widget = parent;
+    while (widget && !m_app) {
+        m_app = qobject_cast<App*>(widget);
+        widget = widget->parentWidget();
+    }
+    
+    qDebug() << "ChartView créée avec parent:" << parent << "et app:" << m_app;
     
     // Initialiser les structures de données
     m_priceData = PriceData();
@@ -158,13 +168,22 @@ void ChartView::updateData(BacktestResults* results)
 {
     QTime start = QTime::currentTime();
     
-    m_currentResults = results;
+    // Ignorer le pointeur passé et utiliser celui de l'App
+    Q_UNUSED(results);
+    
+    qDebug() << "ChartView::updateData() appelé";
+    
+    // Récupérer les résultats depuis l'App
+    BacktestResults* appResults = m_app ? m_app->getBacktestResults() : nullptr;
+    
+    // Mettre à jour les références locales
+    m_currentResults = appResults;
     
     qDebug() << "=== DÉBUT ChartView::updateData() ===";
-    qDebug() << "BacktestResults pointer:" << results;
+    qDebug() << "BacktestResults pointer:" << appResults;
 
     // Vérifier si les données ont déjà été extraites pour ces pointeurs
-    if (m_dataExtracted && m_cachedResults == results) {
+    if (m_dataExtracted && m_cachedResults == appResults) {
         qDebug() << "Données déjà en cache, pas de ré-extraction nécessaire";
         if (hasValidData()) {
             createChart();
@@ -174,9 +193,9 @@ void ChartView::updateData(BacktestResults* results)
     }
     
     // Mettre en cache les nouveaux pointeurs
-    m_cachedResults = results;
+    m_cachedResults = appResults;
     
-    if (!results || !results->data) {
+    if (!appResults || !appResults->data) {
         qDebug() << "Données nulles détectées";
         clear();
         showPlaceholder("Aucune donnée disponible");
@@ -185,7 +204,7 @@ void ChartView::updateData(BacktestResults* results)
     
     try {
         qDebug() << "Début extraction des données C++...";
-        extractDataFromCpp(results);
+        extractDataFromCpp(appResults);
         qDebug() << "Extraction terminée";
         
         qDebug() << "Vérification des données...";

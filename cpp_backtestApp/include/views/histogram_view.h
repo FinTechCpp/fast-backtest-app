@@ -32,6 +32,7 @@
 #include <numeric>
 #include <vector>
 
+class App;  // Forward declaration pour éviter les dépendances circulaires
 
 // Classe personnalisée pour QChartView avec tooltip interactif
 class InteractiveChartView : public QChartView
@@ -95,8 +96,8 @@ private:
     InteractiveChartView* m_chartView;
     QChart* m_chart;
     
-    // Données stockées pour la mise à jour (mise à jour du type)
-    BacktestResults* m_currentResults;
+    // Référence à l'application (au lieu de stocker les résultats)
+    App* m_app;
     
     // Structure pour représenter un trade (pour le groupement)
     struct TradeInfo {

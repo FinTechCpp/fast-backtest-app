@@ -20,6 +20,8 @@
 #include "metric_widget.h"
 #include <cmath>
 
+class App;  
+
 /**
  * @brief Modèle de données pour la table des trades
  */
@@ -98,6 +100,8 @@ private:
 
     // Map des widgets de métriques
     QMap<QString, MetricWidget*> m_metricWidgets;
+
+    App* m_app;  // Référence à l'application principale
     
     // État
     bool m_tablesCreated;

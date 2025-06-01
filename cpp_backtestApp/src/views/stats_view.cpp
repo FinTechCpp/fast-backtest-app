@@ -1,4 +1,5 @@
 #include "views/stats_view.h"
+#include "app.h"
 #include <QDebug>
 #include <QTime>
 
@@ -207,8 +208,17 @@ StatsView::StatsView(QWidget* parent)
     , m_equityStack(nullptr)
     , m_tablesCreated(false)
     , m_currentResults(nullptr)
+    , m_app(nullptr)  // Ajouter cette ligne
 {
-    qDebug() << "StatsView créée avec parent:" << parent;
+    // Ajouter ce bloc après les initialisations
+    // Trouver l'application parente
+    QWidget* widget = parent;
+    while (widget && !m_app) {
+        m_app = qobject_cast<App*>(widget);
+        widget = widget->parentWidget();
+    }
+    
+    qDebug() << "StatsView créée avec parent:" << parent << "et app:" << m_app;
     
     // Créer les modèles de données
     m_tradesModel = new TradesTableModel(this);
@@ -224,10 +234,20 @@ StatsView::~StatsView()
 
 void StatsView::updateData(BacktestResults* results)
 {
-    // Stocker les résultats pour les mises à jour ultérieures
-    m_currentResults = results;
+    QTime start = QTime::currentTime();
     
-    if (!results) {
+    // Ignorer le pointeur passé et utiliser celui de l'App
+    Q_UNUSED(results);
+    
+    qDebug() << "StatsView::updateData() appelé";
+    
+    // Récupérer les résultats depuis l'App
+    BacktestResults* appResults = m_app ? m_app->getBacktestResults() : nullptr;
+    
+    // Stocker les résultats pour les mises à jour ultérieures
+    m_currentResults = appResults;
+    
+    if (!appResults) {
         qWarning() << "Résultats nuls reçus";
         clear();
         return;
@@ -253,13 +273,13 @@ void StatsView::updateData(BacktestResults* results)
         if (m_generalGroup) m_generalGroup->setVisible(true);
         
         // Mettre à jour les métriques avec l'objet Stats
-        populateMetrics(results->stats);
+        populateMetrics(appResults->stats);
         
         // Mettre à jour la table des trades
-        populateTrades(results->stats.trades);
+        populateTrades(appResults->stats.trades);
         
         // Mettre à jour l'équité
-        populateEquity(results->stats);
+        populateEquity(appResults->stats);
         
         qInfo() << "StatsView mise à jour avec succès";
         
@@ -834,8 +854,12 @@ void StatsView::refreshTradesTable()
 {
     qDebug() << "StatsView::refreshTradesTable() appelé";
     
+    // S'assurer d'avoir les derniers résultats
+    if (m_app) {
+        m_currentResults = m_app->getBacktestResults();
+    }
+    
     if (!m_tradesModel || !m_currentResults) {
-        qWarning() << "Modèle de trades ou stats non initialisés";
         return;
     }
     

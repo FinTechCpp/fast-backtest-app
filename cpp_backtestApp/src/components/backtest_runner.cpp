@@ -87,8 +87,7 @@ void BacktestRunner::runBacktest()
     m_worker->start();
 }
 
-void BacktestRunner::onBacktestFinished(BacktestResults* results)
-{
+void BacktestRunner::onBacktestFinished(BacktestResults* results) {
     m_isRunning = false;
     resetUI();
     
@@ -101,10 +100,11 @@ void BacktestRunner::onBacktestFinished(BacktestResults* results)
     qInfo() << "Backtest terminé avec succès, transmission des résultats";
     qDebug() << "Taille des données reçues:" << results->data->size() << "barres";
     
-    // Transmettre les résultats au gestionnaire principal
+    // Transférer la propriété des résultats à l'application
     if (m_mainWindow) {
-        m_mainWindow->updateResultViews(results);
-        emit backtestCompleted(results);
+        // Transférer la propriété à l'App
+        m_mainWindow->setBacktestResults(m_worker->takeResults());
+        emit backtestCompleted(m_mainWindow->getBacktestResults());
     } else {
         qCritical() << "Impossible de transmettre les résultats : fenêtre principale non disponible";
     }

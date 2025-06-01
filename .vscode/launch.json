@@ -1,0 +1,63 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Déboguer ig-trading-bot (Debug)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/cpp_backtestApp/backtestapp",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "${command:cmake.launchTargetPlatform === 'windows' ? 'gdb' : (command:cmake.launchTargetPlatform === 'darwin' ? 'lldb' : 'gdb')}",
+            "setupCommands": [
+                {
+                    "description": "Activer l'affichage amélioré",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-debug",
+            "windows": {
+                "miDebuggerPath": "gdb.exe"
+            },
+            "linux": {
+                "miDebuggerPath": "/usr/bin/gdb"
+            },
+            "osx": {
+                "MIMode": "lldb"
+            }
+        },
+        {
+            "name": "Exécuter ig-trading-bot (Release)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/cpp_backtestApp/backtestapp",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "${command:cmake.launchTargetPlatform === 'windows' ? 'gdb' : (command:cmake.launchTargetPlatform === 'darwin' ? 'lldb' : 'gdb')}",
+            "setupCommands": [
+                {
+                    "description": "Activer l'affichage amélioré",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "build-release",
+            "windows": {
+                "miDebuggerPath": "gdb.exe"
+            },
+            "linux": {
+                "miDebuggerPath": "/usr/bin/gdb"
+            },
+            "osx": {
+                "MIMode": "lldb"
+            }
+        }
+    ]
+}

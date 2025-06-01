@@ -17,6 +17,30 @@ else()
     add_compile_options(-O3)
 endif()
 
+# Configurer le chemin Qt6 pour macOS
+if(APPLE)
+    # Essayer de trouver Qt automatiquement dans les emplacements standards
+    set(QT_SEARCH_PATHS
+        "$ENV{HOME}/Qt/*/macos"           # Installation utilisateur standard
+        "/opt/Qt/*/macos"                 # Installation système alternative
+        "/usr/local/opt/qt@6"             # Homebrew Qt6
+        "/opt/homebrew/opt/qt@6"          # Homebrew sur Apple Silicon
+    )
+    
+    # Chercher la version la plus récente de Qt6
+    file(GLOB QT_CANDIDATES ${QT_SEARCH_PATHS})
+    if(QT_CANDIDATES)
+        # Trier pour avoir la version la plus récente en premier
+        list(SORT QT_CANDIDATES)
+        list(REVERSE QT_CANDIDATES)
+        list(GET QT_CANDIDATES 0 QT_PATH)
+        list(APPEND CMAKE_PREFIX_PATH "${QT_PATH}")
+        message(STATUS "Qt6 détecté automatiquement: ${QT_PATH}")
+    else()
+        message(WARNING "Qt6 non trouvé automatiquement. Utilisez -DCMAKE_PREFIX_PATH=<chemin_vers_qt> ou installez Qt via Homebrew: brew install qt@6")
+    endif()
+endif()
+
 # Vérifier que Qt est disponible (obligatoire)
 find_package(Qt6 COMPONENTS Core Widgets REQUIRED)
 

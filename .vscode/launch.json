@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Déboguer ig-trading-bot (Debug)",
+            "name": "Linux: Debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/cpp_backtestApp/backtestapp",
@@ -23,7 +23,7 @@
             "miDebuggerPath": "/usr/bin/gdb"
         },
         {
-            "name": "Exécuter ig-trading-bot (Release)",
+            "name": "Linux: Release",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/cpp_backtestApp/backtestapp",
@@ -44,7 +44,7 @@
             "miDebuggerPath": "/usr/bin/gdb"
         },
         {
-            "name": "Déboguer ig-trading-bot (Debug)",
+            "name": "macOS: Debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/cpp_backtestApp/backtestapp",
@@ -53,27 +53,18 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "${command:cmake.launchTargetPlatform === 'windows' ? 'gdb' : (command:cmake.launchTargetPlatform === 'darwin' ? 'lldb' : 'gdb')}",
+            "MIMode": "lldb",
             "setupCommands": [
                 {
-                    "description": "Activer l'affichage amélioré",
+                    "description": "Activer l'affichage amélioré pour lldb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "build-debug",
-            "windows": {
-                "miDebuggerPath": "gdb.exe"
-            },
-            "linux": {
-                "miDebuggerPath": "/usr/bin/gdb"
-            },
-            "osx": {
-                "MIMode": "lldb"
-            }
+            "preLaunchTask": "build-debug"
         },
         {
-            "name": "Exécuter ig-trading-bot (Release)",
+            "name": "macOS: Release",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/cpp_backtestApp/backtestapp",
@@ -82,24 +73,15 @@
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "${command:cmake.launchTargetPlatform === 'windows' ? 'gdb' : (command:cmake.launchTargetPlatform === 'darwin' ? 'lldb' : 'gdb')}",
+            "MIMode": "lldb",
             "setupCommands": [
                 {
-                    "description": "Activer l'affichage amélioré",
+                    "description": "Activer l'affichage amélioré pour lldb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "build-release",
-            "windows": {
-                "miDebuggerPath": "gdb.exe"
-            },
-            "linux": {
-                "miDebuggerPath": "/usr/bin/gdb"
-            },
-            "osx": {
-                "MIMode": "lldb"
-            }
+            "preLaunchTask": "build-release"
         }
     ]
 }

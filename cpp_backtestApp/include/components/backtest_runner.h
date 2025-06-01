@@ -16,6 +16,7 @@
 
 #include "components/data_loader.h"
 #include "components/backtest_results.h"
+#include "strategies/strategy_registry.h"
 
 // Inclusions des fichiers d'en-tête du moteur de backtest C++
 #include "backtest.hpp"
@@ -24,7 +25,7 @@
 #include "strategy.hpp"
 #include "stats.hpp"
 #include "trade.hpp"
-#include "BuyHeikinGreen.hpp"  // Adaptateur pour la stratégie
+#include "BuyHeikinGreen.hpp"
 
 // Forward declarations
 class App;

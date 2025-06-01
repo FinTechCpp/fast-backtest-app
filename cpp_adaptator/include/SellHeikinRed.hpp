@@ -4,24 +4,24 @@
 #include "broker.hpp"
 #include "data.hpp"
 // #include "Strategies/buy_heikin_green.hpp"
-#include "buy_heikin_green.hpp"
+#include "sell_heikin_red.hpp"
 #include <memory>
 #include <iostream>
 
 /**
- * @brief Adaptateur permettant d'utiliser la stratégie BuyHeikinGreen avec le moteur de backtest C++
+ * @brief Adaptateur permettant d'utiliser la stratégie SellHeikinRed avec le moteur de backtest C++
  * 
- * Cette classe sert d'interface entre la stratégie BuyHeikinGreen (qui utilise sa propre structure)
+ * Cette classe sert d'interface entre la stratégie SellHeikinRed (qui utilise sa propre structure)
  * et le moteur de backtest C++ qui attend une classe dérivée de Strategy.
  */
-class BuyHeikinGreenAdapter : public be::Strategy {
+class SellHeikinRedAdapter : public be::Strategy {
 private:
     // Configuration spécifique à la stratégie
-    BuyHeikinGreenConfig strategy_config;
-    
-    // Instance de la stratégie BuyHeikinGreen
-    std::unique_ptr<BuyHeikinGreen> strategy;
-    
+    SellHeikinRedConfig strategy_config;
+
+    // Instance de la stratégie SellHeikinRed
+    std::unique_ptr<SellHeikinRed> strategy;
+
     // Cache pour les signaux de trading
     bool should_enter_long = false;
     bool should_enter_short = false;
@@ -38,17 +38,17 @@ public:
      * @param broker Broker utilisé par le backtest
      * @param data Données historiques utilisées par le backtest
      * @param base_config Configuration de base commune à toutes les stratégies
-     * @param bhg_config Configuration spécifique à BuyHeikinGreen
+     * @param shr_config Configuration spécifique à SellHeikinRed
      */
-    BuyHeikinGreenAdapter(
+    SellHeikinRedAdapter(
         std::shared_ptr<be::Broker> broker, 
         std::shared_ptr<be::Data> data,
         const StrategyBaseConfig& base_config,
-        const BuyHeikinGreenConfig& bhg_config
-    ) : be::Strategy(broker, data), strategy_config(bhg_config) {
+        const SellHeikinRedConfig& shr_config
+    ) : be::Strategy(broker, data), strategy_config(shr_config) {
         // Créer l'instance de la stratégie
-        strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
-        strategy->set_log_level(LogLevel::WARN);
+        strategy = std::make_unique<SellHeikinRed>(base_config, shr_config);
+        strategy->set_log_level(LogLevel::DEBUG);
 
         auto log_callback = [](const std::string& message, int level) {
             LogLevel logLevel = static_cast<LogLevel>(level);

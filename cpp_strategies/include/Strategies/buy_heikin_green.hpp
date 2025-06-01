@@ -20,7 +20,27 @@ struct BuyHeikinGreenConfig {
     bool use_stoch_filter = false;
     bool use_rsi_filter = false;
     bool use_previous_ha_candle_red_filter = false;
+
+    // Overload the << operator for easy printing
+    friend std::ostream& operator<<(std::ostream& os, const BuyHeikinGreenConfig& config) {
+        os << "BuyHeikinGreenConfig {\n"
+           << "  EMA Short Period: " << config.ema_short_period << " (Used: " << (config.use_ema_short_filter ? "Yes" : "No") << ")\n"
+           << "  EMA Long Period: " << config.ema_long_period << " (Used: " << (config.use_ema_long_filter ? "Yes" : "No") << ")\n"
+           << "  Stochastic (Used: " << (config.use_stoch_filter ? "Yes" : "No") << "):\n"
+           << "    Fast K: " << config.stoch_fastk << "\n"
+           << "    Slow K: " << config.stoch_slowk << "\n"
+           << "    Slow D: " << config.stoch_slowd << "\n"
+           << "    Threshold: " << config.stoch_threshold << "\n"
+           << "  RSI (Used: " << (config.use_rsi_filter ? "Yes" : "No") << "):\n"
+           << "    Period: " << config.rsi_period << "\n"
+           << "    Threshold: " << config.rsi_threshold << "\n"
+           << "  Use Previous HA Candle Red Filter: " << (config.use_previous_ha_candle_red_filter ? "Yes" : "No") << "\n"
+           << "}";
+        return os;
+    }
 };
+
+
 
 class BuyHeikinGreen : public Strategy {
 private:

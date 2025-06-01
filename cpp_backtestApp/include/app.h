@@ -1,5 +1,4 @@
-#ifndef APP_H
-#define APP_H
+#pragma once
 
 #include <QMainWindow>
 #include <QWidget>
@@ -19,7 +18,7 @@
 #include <QMap>
 #include <QString>
 #include <QDebug>
-#include "components/backtest_results.h" // Inclure la classe BacktestResults pour les résultats du backtest
+#include "components/backtest_results.h"
 
 
 // Forward declarations
@@ -132,4 +131,3 @@ protected:
     void resizeEvent(QResizeEvent* event) override;
 };
 
-#endif // APP_H

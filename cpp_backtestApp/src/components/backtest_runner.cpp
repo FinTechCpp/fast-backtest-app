@@ -149,50 +149,24 @@ BacktestWorker::~BacktestWorker()
 
 void BacktestWorker::run()
 {
-    qDebug() << "BacktestWorker::run() - Début de l'exécution";
-    
-    try {
-        // Récupération des paramètres
-        QMap<QString, QVariant> allParams;
-        
-        // Paramètres généraux
-        if (m_mainWindow->getGeneralParamsPanel()) {
-            QMap<QString, QVariant> generalParams = m_mainWindow->getGeneralParamsPanel()->getValues();
-            for (auto it = generalParams.begin(); it != generalParams.end(); ++it) {
-                allParams[it.key()] = it.value();
-            }
-        }
-        
-        // Paramètres de base de stratégie
-        if (m_mainWindow->getStrategyBasePanel()) {
-            QMap<QString, QVariant> baseParams = m_mainWindow->getStrategyBasePanel()->getValues();
-            for (auto it = baseParams.begin(); it != baseParams.end(); ++it) {
-                allParams[it.key()] = it.value();
-            }
-        }
-        
-        // Paramètres spécifiques à la stratégie
-        if (m_mainWindow->getStrategySpecificPanel()) {
-            QMap<QString, QVariant> specificParams = m_mainWindow->getStrategySpecificPanel()->getValues();
-            for (auto it = specificParams.begin(); it != specificParams.end(); ++it) {
-                allParams[it.key()] = it.value();
-            }
-        }
-        
-        qDebug() << "Tous les paramètres récupérés:" << allParams;
-        
-        // Extraction des paramètres pour le chargement des données
-        QString symbol = allParams.value("symbol", "NDX").toString();
-        QString interval = allParams.value("interval", "20secs").toString();
-        QString period = allParams.value("period", "10d").toString();
-        double cash = allParams.value("cash", 100000.0).toDouble();
-        double spread = allParams.value("spread", 0.0001).toDouble();
-        double commission = allParams.value("commission", 0.001).toDouble();
-        
+    try {        
+        // Récupération des paramètres généraux
+        QString strategyName = m_mainWindow->getGeneralParamsPanel()->getValues()["strategy"].toString();
+        QString symbol = m_mainWindow->getGeneralParamsPanel()->getValues().value("symbol", "NDX").toString();
+        QString interval = m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString();
+        QString period = m_mainWindow->getGeneralParamsPanel()->getValues().value("period", "10d").toString();
+        double cash = m_mainWindow->getGeneralParamsPanel()->getValues().value("cash", 100000.0).toDouble();
+        double spread = m_mainWindow->getGeneralParamsPanel()->getValues().value("spread", 0.0001).toDouble();
+        double commission = m_mainWindow->getGeneralParamsPanel()->getValues().value("commission", 0.0).toDouble();
+        bool tradeOnClose = m_mainWindow->getGeneralParamsPanel()->getValues().value("trade_on_close", false).toBool();
+        bool hedging = m_mainWindow->getGeneralParamsPanel()->getValues().value("hedging", false).toBool();
+        bool exclusiveOrders = m_mainWindow->getGeneralParamsPanel()->getValues().value("exclusive_orders", true).toBool();
+        bool finalizeTrades = m_mainWindow->getGeneralParamsPanel()->getValues().value("finalize_trades", true).toBool();
+
         // Récupération et conversion de la date de fin
         QDateTime endDate;
-        if (allParams.contains("end_date")) {
-            QVariant dateVariant = allParams["end_date"];
+        if (m_mainWindow->getGeneralParamsPanel()->getValues().contains("end_date")) {
+            QVariant dateVariant = m_mainWindow->getGeneralParamsPanel()->getValues()["end_date"];
             if (dateVariant.typeId() == QVariant::Date) {
                 endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
             } else if (dateVariant.typeId() == QVariant::DateTime) {
@@ -214,12 +188,28 @@ void BacktestWorker::run()
         if (!endDate.isValid()) {
             endDate = QDateTime::currentDateTime();
         }
+
+        // TODO : mettre des debug ici pour vérifier les valeurs
+        // std::cout << "Paramètres de chargement des données:" << std::endl;
+        // std::cout << "- Stratégie:" << strategyName.toStdString() << std::endl;
+        // std::cout << "- Symbole:" << symbol.toStdString() << std::endl;
+        // std::cout << "- Intervalle:" << interval.toStdString() << std::endl;
+        // std::cout << "- Période:" << period.toStdString() << std::endl;
+        // std::cout << "- Capital initial:" << cash << std::endl;
+        // std::cout << "- Spread:" << spread << std::endl;
+        // std::cout << "- Commission:" << commission << std::endl;
+        // std::cout << "- Trade à la clôture:" << (tradeOnClose ? "Oui" : "Non") << std::endl;
+        // std::cout << "- Hedging:" << (hedging ? "Oui" : "Non") << std::endl;
+        // std::cout << "- Ordres exclusifs:" << (exclusiveOrders ? "Oui" : "Non") << std::endl;
+        // std::cout << "- Finalisation des trades:" << (finalizeTrades ? "Oui" : "Non") << std::endl;
+        // std::cout << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss").toStdString() << std::endl;
+
         
-        qDebug() << "Paramètres de chargement des données:";
-        qDebug() << "- Symbole:" << symbol;
-        qDebug() << "- Intervalle:" << interval;
-        qDebug() << "- Période:" << period;
-        qDebug() << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+        auto strategyCreator = StrategyRegistry::getInstance().getCreator(strategyName);
+        if (!strategyCreator) {
+            emit error(QString("Stratégie non supportée: %1").arg(strategyName));
+            return;
+        }
         
         // Chargement des données avec DataLoader puis conversion en be::Data
         std::vector<OHLCBar> rawData = DataLoader::loadData(symbol, interval, period, endDate);
@@ -228,7 +218,6 @@ void BacktestWorker::run()
             emit error("Aucune donnée chargée");
             return;
         }
-        
         // Convertir en format be::Data
         std::shared_ptr<be::Data> data = convertToBeData(rawData);
         
@@ -239,26 +228,12 @@ void BacktestWorker::run()
         qDebug() << "Données disponibles:" << data->size() << "barres";
         qDebug() << "Démarrage du backtest C++...";
         
-        // Créer une factory de stratégie
-        auto strategyFactory = [this, &allParams](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data) {
-            // return createStrategy(broker, data, allParams);
-            StrategyBaseConfig baseConfig;
-            BuyHeikinGreenConfig bhgConfig;
-    
-            bhgConfig.use_previous_ha_candle_red_filter = true;
-            bhgConfig.use_stoch_filter = false;
-            bhgConfig.use_ema_short_filter = false;
-            bhgConfig.use_ema_long_filter = false;
-            bhgConfig.use_rsi_filter = false;
 
-            return std::make_shared<BuyHeikinGreenAdapter>(broker, data, baseConfig, bhgConfig);
+        // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
+        auto strategyFactory = [strategyCreator, this](std::shared_ptr<be::Broker> b, std::shared_ptr<be::Data> d) {
+            return strategyCreator(b, d, m_mainWindow);
         };
-        
-        // Paramètres optionnels
-        bool tradeOnClose = allParams.value("trade_on_close", false).toBool();
-        bool hedging = allParams.value("hedging", false).toBool();
-        bool exclusiveOrders = allParams.value("exclusive_orders", true).toBool();
-        bool finalizeTrades = allParams.value("finalize_trades", true).toBool();
+
         
         // Créer et exécuter le backtest
         be::Backtest backtest(
@@ -279,7 +254,6 @@ void BacktestWorker::run()
         qDebug() << "Backtest terminé avec succès";
         
         // Émettre le signal avec les résultats
-        qDebug() << "Émission du signal finished avec les résultats C++";
         emit finished(m_results.get());
         
     } catch (const std::exception& e) {
@@ -289,8 +263,6 @@ void BacktestWorker::run()
         qCritical() << "Exception inconnue dans BacktestWorker::run()";
         emit error("Erreur d'exécution inconnue");
     }
-    
-    qDebug() << "BacktestWorker::run() - Fin de l'exécution";
 }
 
 std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLCBar>& bars)

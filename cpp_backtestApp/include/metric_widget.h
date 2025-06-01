@@ -5,6 +5,7 @@
 #include <QHBoxLayout>
 #include <QString>
 
+// Enum pour les statuts des métriques (pour la coloration)
 enum class MetricStatus {
     Good,   // Valeur positive/bonne (vert)
     Neutral, // Valeur neutre (noir)
@@ -21,8 +22,8 @@ public:
         : QWidget(parent)
     {
         QHBoxLayout* layout = new QHBoxLayout(this);
-        layout->setContentsMargins(1, 1, 1, 1);
-        layout->setSpacing(5);
+        layout->setContentsMargins(2, 2, 2, 2);
+        layout->setSpacing(10);
         
         m_labelWidget = new QLabel(label);
         m_valueWidget = new QLabel(value);
@@ -30,13 +31,20 @@ public:
         m_labelWidget->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         m_valueWidget->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         
-        // Police en gras pour la valeur
+        // Augmenter la taille de police pour les deux labels
+        QFont labelFont = m_labelWidget->font();
+        labelFont.setPointSize(labelFont.pointSize() + 1); // Augmente de 1 point
+        m_labelWidget->setFont(labelFont);
+        
+        // Police en gras et plus grande pour la valeur
         QFont valueFont = m_valueWidget->font();
         valueFont.setBold(true);
+        valueFont.setPointSize(valueFont.pointSize() + 2); // Augmente de 2 points
         m_valueWidget->setFont(valueFont);
         
-        layout->addWidget(m_labelWidget, 1);
-        layout->addWidget(m_valueWidget, 1);
+        layout->addWidget(m_labelWidget);
+        layout->addStretch(1); // Ajoute un espace extensible entre le label et la valeur
+        layout->addWidget(m_valueWidget);
         
         setLayout(layout);
     }

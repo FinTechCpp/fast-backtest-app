@@ -20,7 +20,20 @@
 #include "metric_widget.h"
 #include <cmath>
 
-class App;  
+class App;
+
+struct MetricDefinition {
+    QString key;              // Identifiant unique
+    QString label;            // Texte affiché
+    QString tooltip;          // Info-bulle
+    QString section;          // Section ("time", "performance", "risk", "general")
+    
+    // Fonction pour déterminer le statut (Good/Bad/Neutral) selon la valeur
+    std::function<MetricStatus(const be::Stats&)> getStatus;
+    
+    // Fonction pour formatter la valeur
+    std::function<QString(const be::Stats&)> formatValue;
+};
 
 /**
  * @brief Modèle de données pour la table des trades
@@ -78,14 +91,14 @@ private:
     
     // Groupes de métriques
     QGroupBox* m_performanceGroup;
-    QGridLayout* m_performanceLayout;
+    QVBoxLayout* m_performanceLayout;
     QGroupBox* m_riskGroup;
-    QGridLayout* m_riskLayout;
+    QVBoxLayout* m_riskLayout;
     QGroupBox* m_generalGroup;
-    QGridLayout* m_generalLayout;
+    QVBoxLayout* m_generalLayout;
 
     QGroupBox* m_timeGroup;
-    QGridLayout* m_timeLayout;
+    QVBoxLayout* m_timeLayout;
     
     // Section trades
     QGroupBox* m_tradesGroup;
@@ -109,20 +122,34 @@ private:
     // État
     bool m_tablesCreated;
     BacktestResults* m_currentResults; // Modification: changement de type
-    
-    // Méthodes privées
-    void createTimeSection(QGridLayout* layout);
+    QGridLayout* m_statsGridLayout;
+
+    std::vector<MetricDefinition> m_metricDefinitions;
+
+    void createScrollAreaAndContent();
+    void createGroupBoxes();
     void createStatsWidgets();
-    void createPerformanceSection(QGridLayout* layout);
-    void createRiskSection(QGridLayout* layout);
-    void createGeneralSection(QGridLayout* layout);
-    void createTradesTable();
+    void createLegend();
+    void arrangePanels();
+
     
-    // Mise à jour de la signature de createMetricWidget pour retourner le pointeur
+    void createTradesTableControls();
+    void createTradesTableView();
+    void setupTradesConnections();
+
+    // Méthodes privées
+    void createTimeSection(QVBoxLayout* layout);
+    void createPerformanceSection(QVBoxLayout* layout);
+    void createRiskSection(QVBoxLayout* layout);
+    void createGeneralSection(QVBoxLayout* layout);
+    void createTradesTable();
     MetricWidget* createMetricWidget(const QString& key, const QString& label, 
-                                     const QString& value, int row, int col, 
-                                     QGridLayout* layout);
-                                     
+                                    const QString& value, QHBoxLayout* layout);
+
+    void initializeMetricDefinitions();
+
+    std::vector<std::shared_ptr<be::Trade>> getFilteredTrades(const std::vector<std::shared_ptr<be::Trade>>& allTrades);
+
     // Nouvelles signatures pour les méthodes d'extraction des données C++
     void populateMetrics(const be::Stats& stats);
     void populateTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);

@@ -125,8 +125,8 @@ std::map<std::string, double> Stats::toMap() const {
     // Valeurs de drawdown
     map["Max. Drawdown [%]"] = maxDrawdownPct;
     map["Avg. Drawdown [%]"] = avgDrawdownPct;
-    map["Max. Drawdown Duration"] = maxDrawdownDuration.getTotalDays();
-    map["Avg. Drawdown Duration"] = avgDrawdownDuration.getTotalDays();
+    // map["Max. Drawdown Duration"] = maxDrawdownDuration.toString();
+    // map["Avg. Drawdown Duration"] = avgDrawdownDuration.toString();
     
     // Statistiques des trades
     map["# Trades"] = numTrades;
@@ -137,8 +137,8 @@ std::map<std::string, double> Stats::toMap() const {
     map["Best Trade [%]"] = bestTradePct;
     map["Worst Trade [%]"] = worstTradePct;
     map["Avg. Trade [%]"] = avgTradePct;
-    map["Max. Trade Duration"] = maxTradeDuration.getTotalDays();
-    map["Avg. Trade Duration"] = avgTradeDuration.getTotalDays();
+    // map["Max. Trade Duration"] = maxTradeDuration.toString();
+    // map["Avg. Trade Duration"] = avgTradeDuration.toString();
     map["Profit Factor"] = profitFactor;
     map["Expectancy [%]"] = expectancyPct;
     map["SQN"] = sqn;

@@ -573,60 +573,6 @@ QString StatsView::formatPercentage(double value)
     return QString("%1%").arg(QString::number(value * 100, 'f', 2));
 }
 
-// QString StatsView::formatDuration(const QVariant& value)
-// {
-//     QString strValue = value.toString();
-    
-//     // Si c'est déjà une chaîne formatée pandas (ex: "8 days 23:30:20")
-//     if (strValue.contains("days") && strValue.contains(":")) {
-//         // Parser le format pandas: "8 days 23:30:20"
-//         QStringList parts = strValue.split(" ");
-//         if (parts.size() >= 3) {
-//             int days = parts[0].toInt();
-//             QStringList timeParts = parts[2].split(":");
-//             if (timeParts.size() >= 3) {
-//                 int hours = timeParts[0].toInt();
-//                 int minutes = timeParts[1].toInt();
-//                 int seconds = timeParts[2].toInt();
-                
-//                 return formatDetailedDuration(days, hours, minutes, seconds);
-//             }
-//         }
-//     }
-    
-//     // Si c'est "0 days 00:00:00" ou équivalent
-//     if (strValue.contains("0 days 00:00:00") || strValue == "0") {
-//         return "0sec";
-//     }
-    
-//     // Si c'est NaN ou vide
-//     if (strValue.isEmpty() || strValue == "nan" || strValue == "NaT") {
-//         return "N/A";
-//     }
-    
-//     // Essayer de convertir en nombre (peut-être en jours décimaux)
-//     bool ok;
-//     double numValue = value.toDouble(&ok);
-//     if (ok && !std::isnan(numValue) && !std::isinf(numValue)) {
-//         if (numValue == 0) {
-//             return "0sec";
-//         }
-        
-//         // Convertir les jours décimaux en composants
-//         int totalSeconds = static_cast<int>(numValue * 24 * 3600);
-//         int days = totalSeconds / (24 * 3600);
-//         totalSeconds %= (24 * 3600);
-//         int hours = totalSeconds / 3600;
-//         totalSeconds %= 3600;
-//         int minutes = totalSeconds / 60;
-//         int seconds = totalSeconds % 60;
-        
-//         return formatDetailedDuration(days, hours, minutes, seconds);
-//     }
-    
-//     return strValue;
-// }
-
 QString StatsView::formatDetailedDuration(int days, int hours, int minutes, int seconds)
 {
     QStringList parts;
@@ -697,7 +643,9 @@ void StatsView::populateMetrics(const be::Stats& stats)
         {"win_rate", "%1%", stats.winRatePct, 2},
         {"winning_trades", "%1", static_cast<double>(stats.numWinningTrades), 0},
         {"losing_trades", "%1", static_cast<double>(stats.numLosingTrades), 0},
-        {"neutral_trades", "%1", static_cast<double>(0), 0}, // Non disponible directement
+        {"neutral_trades", "%1", static_cast<double>(stats.numNeutralTrades), 0},
+        // {"max_trade_duration", "%1", stats.maxTradeDuration.toString(), 0},
+        // {"avg_trade_duration", "%1", stats.avgTradeDuration.toString(), 0},
         
         // Equity
         {"equity_final", "$%1", stats.equityFinal, 2},

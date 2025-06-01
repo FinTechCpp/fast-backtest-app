@@ -81,6 +81,12 @@ signals:
     void finished(BacktestResults* results);
     void error(const QString& message);
 
+public:
+    // Méthode pour transférer la propriété des résultats
+    std::unique_ptr<BacktestResults> takeResults() {
+        return std::move(m_results);
+    }
+
 private:
     App* m_mainWindow;
     

@@ -55,6 +55,10 @@ public:
     // Mise à jour des vues de résultats
     void updateResultViews(BacktestResults* results);
 
+    // Ajout d'accesseurs pour les résultats de backtest
+    BacktestResults* getBacktestResults() const { return m_backtestResults.get(); }
+    void setBacktestResults(std::unique_ptr<BacktestResults> results);
+
 private slots:
     void onStrategyChanged(const QString& strategy);
     void onRunBacktest();
@@ -106,6 +110,9 @@ private:
     
     // Components
     BacktestRunner* m_backtestRunner;
+
+    // Backtest results
+    std::unique_ptr<BacktestResults> m_backtestResults;
     
     // Views
     StatsView* m_statsView;

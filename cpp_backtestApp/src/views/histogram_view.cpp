@@ -1,4 +1,5 @@
 #include "views/histogram_view.h"
+#include "app.h"
 #include <QDebug>
 #include <QDateTime>
 #include <QTime>
@@ -229,9 +230,16 @@ HistogramView::HistogramView(QWidget* parent)
     , m_timeUnitCombo(nullptr)
     , m_chartView(nullptr)
     , m_chart(nullptr)
-    , m_currentResults(nullptr) // Mise à jour du type
+    , m_app(nullptr)
 {
-    qDebug() << "HistogramView créée avec parent:" << parent;
+    // Trouver l'application parente
+    QWidget* widget = parent;
+    while (widget && !m_app) {
+        m_app = qobject_cast<App*>(widget);
+        widget = widget->parentWidget();
+    }
+    
+    qDebug() << "HistogramView créée avec parent:" << parent << "et app:" << m_app;
     setupUI();
 }
 
@@ -308,17 +316,13 @@ void HistogramView::updateData(BacktestResults* results)
 {
     QTime start = QTime::currentTime();
     
-    // Stocker les données pour les mises à jour ultérieures
-    m_currentResults = results;
+    // On ignore le pointeur passé, on utilisera celui de l'App
+    Q_UNUSED(results);
     
-    qDebug() << "HistogramView::updateData() appelé avec results:" << results;
+    qDebug() << "HistogramView::updateData() appelé";
     
     // Mettre à jour l'histogramme
-    if (results) {
-        updateHistogram();
-    } else {
-        clear();
-    }
+    updateHistogram();
     
     int elapsed = start.msecsTo(QTime::currentTime());
     qInfo() << "HistogramView::updateData() took" << elapsed << "ms";
@@ -334,19 +338,23 @@ void HistogramView::clear()
         }
         m_chart->setTitle("Exécutez le backtest pour afficher l'histogramme des gains/pertes");
     }
-    m_currentResults = nullptr;
 }
 
 void HistogramView::updateHistogram()
 {
-    if (!m_currentResults || !m_timeUnitCombo) {
+    // Récupérer les résultats depuis l'App
+    BacktestResults* results = m_app ? m_app->getBacktestResults() : nullptr;
+    
+    if (!results || !m_timeUnitCombo) {
+        qWarning() << "Aucun résultat de backtest ou combo disponible";
+        m_chart->setTitle("Aucun trade à afficher");
         return;
     }
     
     qDebug() << "Mise à jour de l'histogramme avec les données C++...";
     
     // Extraire les trades directement depuis les résultats C++
-    std::vector<TradeInfo> trades = extractTradesFromResults(m_currentResults);
+    std::vector<TradeInfo> trades = extractTradesFromResults(results);
     
     if (trades.empty()) {
         qWarning() << "Aucun trade trouvé dans les données";

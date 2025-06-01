@@ -23,6 +23,8 @@
 #include "chartdir.h"
 #include "FinanceChart.h"
 
+class App;  
+
 
 // Constantes pour les couleurs des marqueurs
 const int BUY_MARKER_COLOR = 0x00FF00;
@@ -98,6 +100,8 @@ private:
     QWidget* m_leftPanel;  // Panneau de gauche (settings)
     QWidget* m_rightPanel; // Panneau de droite (graphique)
     QLabel* m_chartPlaceholder;
+
+    App* m_app;  // Référence à l'application principale
 
     // Contrôles dans le panneau de gauche
     QComboBox* m_chartTypeCombo; // Combo box pour le type de bougie

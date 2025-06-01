@@ -294,32 +294,47 @@ void StatsView::setupUI()
     m_scrollStats = new QScrollArea();
     m_scrollStats->setWidgetResizable(true);
     
-    // Créer le widget de contenu
+    // Créer le widget de contenu avec un style pour les groupes
     m_statsContent = new QWidget();
     m_statsContentLayout = new QVBoxLayout(m_statsContent);
+    m_statsContentLayout->setSpacing(15); // Plus d'espace entre les groupes
     
     // Placeholder initial
     m_statsPlaceholder = new QLabel("Exécutez le backtest pour afficher les statistiques");
     m_statsPlaceholder->setAlignment(Qt::AlignCenter);
     m_statsContentLayout->addWidget(m_statsPlaceholder);
     
-    // Créer les sections de métriques
-    m_performanceGroup = new QGroupBox("Performance");
+    // Créer les sections de métriques avec des titres plus descriptifs
+    m_performanceGroup = new QGroupBox("Résultats et Performance");
     m_performanceLayout = new QGridLayout();
+    m_performanceLayout->setVerticalSpacing(10);
+    m_performanceLayout->setHorizontalSpacing(20);
     m_performanceGroup->setLayout(m_performanceLayout);
     
-    m_riskGroup = new QGroupBox("Risque");
+    m_riskGroup = new QGroupBox("Mesures de Risque et Volatilité");
     m_riskLayout = new QGridLayout();
+    m_riskLayout->setVerticalSpacing(10);
+    m_riskLayout->setHorizontalSpacing(20);
     m_riskGroup->setLayout(m_riskLayout);
     
-    m_generalGroup = new QGroupBox("Général");
+    m_generalGroup = new QGroupBox("Statistiques de Trading");
     m_generalLayout = new QGridLayout();
+    m_generalLayout->setVerticalSpacing(10);
+    m_generalLayout->setHorizontalSpacing(20);
     m_generalGroup->setLayout(m_generalLayout);
+    
+    // Créer un nouveau groupe pour les métriques temporelles
+    m_timeGroup = new QGroupBox("Période et Exposition");
+    m_timeLayout = new QGridLayout();
+    m_timeLayout->setVerticalSpacing(10);
+    m_timeLayout->setHorizontalSpacing(20);
+    m_timeGroup->setLayout(m_timeLayout);
     
     // Créer les widgets de métriques
     createStatsWidgets();
     
-    // Ajouter les groupes au layout du contenu
+    // Ajouter les groupes dans un ordre logique
+    m_statsContentLayout->addWidget(m_timeGroup);
     m_statsContentLayout->addWidget(m_performanceGroup);
     m_statsContentLayout->addWidget(m_riskGroup);
     m_statsContentLayout->addWidget(m_generalGroup);
@@ -327,8 +342,418 @@ void StatsView::setupUI()
     // Configurer le scroll area
     m_scrollStats->setWidget(m_statsContent);
     
-    // Ajouter le scroll area au layout principal (hérité de BaseView)
+    // Ajouter le scroll area au layout principal
     m_mainLayout->addWidget(m_scrollStats);
+
+
+    // Ajouter une légende pour les couleurs
+    QWidget* legendWidget = new QWidget();
+    QHBoxLayout* legendLayout = new QHBoxLayout(legendWidget);
+    
+    QLabel* goodLabel = new QLabel("●");
+    goodLabel->setStyleSheet("QLabel { color: #2ecc71; font-size: 16px; }");
+    QLabel* goodText = new QLabel("Bon");
+    
+    QLabel* neutralLabel = new QLabel("●");
+    neutralLabel->setStyleSheet("QLabel { color: black; font-size: 16px; }");
+    QLabel* neutralText = new QLabel("Neutre");
+    
+    QLabel* badLabel = new QLabel("●");
+    badLabel->setStyleSheet("QLabel { color: #e74c3c; font-size: 16px; }");
+    QLabel* badText = new QLabel("Mauvais");
+    
+    QLabel* naLabel = new QLabel("●");
+    naLabel->setStyleSheet("QLabel { color: #7f8c8d; font-size: 16px; }");
+    QLabel* naText = new QLabel("N/A");
+    
+    legendLayout->addWidget(goodLabel);
+    legendLayout->addWidget(goodText);
+    legendLayout->addSpacing(15);
+    legendLayout->addWidget(neutralLabel);
+    legendLayout->addWidget(neutralText);
+    legendLayout->addSpacing(15);
+    legendLayout->addWidget(badLabel);
+    legendLayout->addWidget(badText);
+    legendLayout->addSpacing(15);
+    legendLayout->addWidget(naLabel);
+    legendLayout->addWidget(naText);
+    legendLayout->addStretch();
+    
+    // Ajouter la légende au layout principal
+    m_statsContentLayout->addWidget(legendWidget);
+}
+
+// Nouvelle organisation des sections
+void StatsView::createTimeSection(QGridLayout* layout)
+{
+    int row = 0;
+    
+    // Période
+    createMetricWidget("start", "Début", "N/A", row, 0, layout)
+        ->setTooltip("Date de début du backtest");
+    createMetricWidget("end", "Fin", "N/A", row++, 1, layout)
+        ->setTooltip("Date de fin du backtest");
+    createMetricWidget("duration", "Durée", "N/A", row, 0, layout)
+        ->setTooltip("Durée totale du backtest");
+    createMetricWidget("exposure_time", "Temps en position", "N/A", row++, 1, layout)
+        ->setTooltip("Pourcentage du temps avec des positions ouvertes");
+}
+
+void StatsView::createPerformanceSection(QGridLayout* layout)
+{
+    int row = 0;
+    
+    // Résultats principaux
+    createMetricWidget("equity_final", "Capital final", "N/A", row, 0, layout)
+        ->setTooltip("Montant final du capital");
+    createMetricWidget("equity_peak", "Capital maximal", "N/A", row++, 1, layout)
+        ->setTooltip("Montant maximal atteint par le capital");
+    
+    // Rendements
+    createMetricWidget("total_return", "Rendement total", "N/A", row, 0, layout)
+        ->setTooltip("Pourcentage de gain/perte sur l'ensemble du backtest");
+    createMetricWidget("buy_hold_return", "Buy & Hold", "N/A", row++, 1, layout)
+        ->setTooltip("Rendement d'une stratégie passive d'achat et maintien");
+    
+    createMetricWidget("return_ann", "Rendement annualisé", "N/A", row, 0, layout)
+        ->setTooltip("Rendement annuel équivalent");
+    createMetricWidget("cagr", "CAGR", "N/A", row++, 1, layout)
+        ->setTooltip("Taux de croissance annuel composé");
+        
+    // Alpha/Beta
+    createMetricWidget("alpha", "Alpha", "N/A", row, 0, layout)
+        ->setTooltip("Surperformance par rapport au marché (ajustée au risque)");
+    createMetricWidget("beta", "Beta", "N/A", row++, 1, layout)
+        ->setTooltip("Corrélation avec les mouvements du marché");
+}
+
+void StatsView::createRiskSection(QGridLayout* layout)
+{
+    int row = 0;
+    
+    // Drawdowns
+    createMetricWidget("max_drawdown", "Drawdown maximal", "N/A", row, 0, layout)
+        ->setTooltip("Perte maximale depuis un sommet précédent");
+    createMetricWidget("avg_drawdown", "Drawdown moyen", "N/A", row++, 1, layout)
+        ->setTooltip("Perte moyenne depuis un sommet précédent");
+    
+    createMetricWidget("max_drawdown_duration", "Durée DD max", "N/A", row, 0, layout)
+        ->setTooltip("Durée de la plus longue période de drawdown");
+    createMetricWidget("avg_drawdown_duration", "Durée DD moyenne", "N/A", row++, 1, layout)
+        ->setTooltip("Durée moyenne des périodes de drawdown");
+    
+    // Ratios de risque
+    createMetricWidget("sharpe_ratio", "Ratio de Sharpe", "N/A", row, 0, layout)
+        ->setTooltip("Rendement excédentaire par unité de risque total");
+    createMetricWidget("sortino_ratio", "Ratio de Sortino", "N/A", row++, 1, layout)
+        ->setTooltip("Rendement excédentaire par unité de risque négatif");
+    
+    createMetricWidget("calmar_ratio", "Ratio de Calmar", "N/A", row, 0, layout)
+        ->setTooltip("Rendement annualisé divisé par le drawdown maximal");
+    createMetricWidget("volatility", "Volatilité annualisée", "N/A", row++, 1, layout)
+        ->setTooltip("Mesure de la variabilité des rendements");
+}
+
+void StatsView::createGeneralSection(QGridLayout* layout)
+{
+    int row = 0;
+    
+    // Stats des trades
+    createMetricWidget("total_trades", "Nombre de trades", "N/A", row, 0, layout)
+        ->setTooltip("Nombre total de transactions effectuées");
+    createMetricWidget("win_rate", "Taux de réussite", "N/A", row++, 1, layout)
+        ->setTooltip("Pourcentage de trades rentables");
+    
+    createMetricWidget("winning_trades", "Trades gagnants", "N/A", row, 0, layout);
+    createMetricWidget("losing_trades", "Trades perdants", "N/A", row++, 1, layout);
+    
+    // Performance des trades
+    createMetricWidget("best_trade", "Meilleur trade", "N/A", row, 0, layout)
+        ->setTooltip("Pourcentage de gain du meilleur trade");
+    createMetricWidget("worst_trade", "Pire trade", "N/A", row++, 1, layout)
+        ->setTooltip("Pourcentage de perte du pire trade");
+    
+    createMetricWidget("avg_trade", "Trade moyen", "N/A", row, 0, layout)
+        ->setTooltip("Rendement moyen par trade");
+    createMetricWidget("profit_factor", "Facteur de profit", "N/A", row++, 1, layout)
+        ->setTooltip("Ratio des gains sur les pertes (>1 est profitable)");
+    
+    // Durée des trades
+    createMetricWidget("max_trade_duration", "Durée max trade", "N/A", row, 0, layout);
+    createMetricWidget("avg_trade_duration", "Durée moy trade", "N/A", row++, 1, layout);
+    
+    // Métriques avancées
+    createMetricWidget("expectancy", "Espérance", "N/A", row, 0, layout)
+        ->setTooltip("Gain moyen attendu par unité de risque");
+    createMetricWidget("sqn", "SQN", "N/A", row++, 1, layout)
+        ->setTooltip("System Quality Number - qualité du système de trading");
+    
+    createMetricWidget("kelly_criterion", "Critère de Kelly", "N/A", row++, 0, layout)
+        ->setTooltip("Taille de position optimale selon le critère de Kelly");
+}
+
+// Mise à jour de la méthode populateMetrics pour utiliser les méthodes toString() 
+// et ajouter la coloration conditionnelle
+void StatsView::populateMetrics(const be::Stats& stats)
+{
+    qDebug() << "Population des métriques avec coloration conditionnelle";
+    
+    // Utiliser les méthodes toString() pour les durées
+    if (m_metricWidgets.contains("duration")) {
+        m_metricWidgets["duration"]->updateValues(
+            QString::fromStdString(stats.duration.toString()),
+            MetricStatus::Neutral
+        );
+    }
+    
+    if (m_metricWidgets.contains("max_drawdown_duration")) {
+        m_metricWidgets["max_drawdown_duration"]->updateValues(
+            QString::fromStdString(stats.maxDrawdownDuration.toString()),
+            MetricStatus::Neutral
+        );
+    }
+    
+    if (m_metricWidgets.contains("avg_drawdown_duration")) {
+        m_metricWidgets["avg_drawdown_duration"]->updateValues(
+            QString::fromStdString(stats.avgDrawdownDuration.toString()),
+            MetricStatus::Neutral
+        );
+    }
+    
+    if (m_metricWidgets.contains("max_trade_duration")) {
+        m_metricWidgets["max_trade_duration"]->updateValues(
+            QString::fromStdString(stats.maxTradeDuration.toString()),
+            MetricStatus::Neutral
+        );
+    }
+    
+    if (m_metricWidgets.contains("avg_trade_duration")) {
+        m_metricWidgets["avg_trade_duration"]->updateValues(
+            QString::fromStdString(stats.avgTradeDuration.toString()),
+            MetricStatus::Neutral
+        );
+    }
+    
+    // Dates de début et fin avec coloration neutre
+    if (m_metricWidgets.contains("start")) {
+        m_metricWidgets["start"]->updateValues(
+            QString::fromStdString(stats.start.toString()),
+            MetricStatus::Neutral
+        );
+    }
+    
+    if (m_metricWidgets.contains("end")) {
+        m_metricWidgets["end"]->updateValues(
+            QString::fromStdString(stats.end.toString()),
+            MetricStatus::Neutral
+        );
+    }
+    
+    // Rendements avec coloration conditionnelle
+    if (m_metricWidgets.contains("total_return")) {
+        QString value = QString("%1%").arg(QString::number(stats.returnPct, 'f', 2));
+        MetricStatus status = stats.returnPct > 0 ? MetricStatus::Good : 
+                             (stats.returnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["total_return"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("return_ann")) {
+        QString value = QString("%1%").arg(QString::number(stats.returnAnnPct, 'f', 2));
+        MetricStatus status = stats.returnAnnPct > 0 ? MetricStatus::Good : 
+                             (stats.returnAnnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["return_ann"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("buy_hold_return")) {
+        QString value = QString("%1%").arg(QString::number(stats.buyHoldReturnPct, 'f', 2));
+        MetricStatus status = stats.buyHoldReturnPct > 0 ? MetricStatus::Good : 
+                             (stats.buyHoldReturnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["buy_hold_return"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("cagr")) {
+        QString value = QString("%1%").arg(QString::number(stats.cagrPct, 'f', 2));
+        MetricStatus status = stats.cagrPct > 0 ? MetricStatus::Good : 
+                             (stats.cagrPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["cagr"]->updateValues(value, status);
+    }
+    
+    // Métriques de risque avec coloration conditionnelle
+    if (m_metricWidgets.contains("sharpe_ratio")) {
+        QString value = isValidNumber(stats.sharpeRatio) ? 
+                      QString::number(stats.sharpeRatio, 'f', 2) : "N/A";
+        MetricStatus status = isValidNumber(stats.sharpeRatio) ? 
+                            (stats.sharpeRatio > 1 ? MetricStatus::Good : 
+                             (stats.sharpeRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral)) :
+                            MetricStatus::NA;
+        m_metricWidgets["sharpe_ratio"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("sortino_ratio")) {
+        QString value = isValidNumber(stats.sortinoRatio) ? 
+                      QString::number(stats.sortinoRatio, 'f', 2) : "N/A";
+        MetricStatus status = isValidNumber(stats.sortinoRatio) ? 
+                            (stats.sortinoRatio > 1 ? MetricStatus::Good : 
+                             (stats.sortinoRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral)) :
+                            MetricStatus::NA;
+        m_metricWidgets["sortino_ratio"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("calmar_ratio")) {
+        QString value = isValidNumber(stats.calmarRatio) ? 
+                      QString::number(stats.calmarRatio, 'f', 2) : "N/A";
+        MetricStatus status = isValidNumber(stats.calmarRatio) ? 
+                            (stats.calmarRatio > 1 ? MetricStatus::Good : 
+                             (stats.calmarRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral)) :
+                            MetricStatus::NA;
+        m_metricWidgets["calmar_ratio"]->updateValues(value, status);
+    }
+    
+    // Drawdowns toujours en rouge (plus c'est bas, mieux c'est)
+    if (m_metricWidgets.contains("max_drawdown")) {
+        QString value = QString("%1%").arg(QString::number(stats.maxDrawdownPct, 'f', 2));
+        MetricStatus status = stats.maxDrawdownPct > 10 ? MetricStatus::Bad : 
+                             (stats.maxDrawdownPct > 5 ? MetricStatus::Neutral : MetricStatus::Good);
+        m_metricWidgets["max_drawdown"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("avg_drawdown")) {
+        QString value = QString("%1%").arg(QString::number(stats.avgDrawdownPct, 'f', 2));
+        MetricStatus status = stats.avgDrawdownPct > 5 ? MetricStatus::Bad : 
+                             (stats.avgDrawdownPct > 2 ? MetricStatus::Neutral : MetricStatus::Good);
+        m_metricWidgets["avg_drawdown"]->updateValues(value, status);
+    }
+    
+    // Alpha/Beta
+    if (m_metricWidgets.contains("alpha")) {
+        QString value = QString("%1%").arg(QString::number(stats.alphaPct, 'f', 2));
+        MetricStatus status = stats.alphaPct > 0 ? MetricStatus::Good : 
+                             (stats.alphaPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["alpha"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("beta")) {
+        QString value = isValidNumber(stats.beta) ? 
+                      QString::number(stats.beta, 'f', 2) : "N/A";
+        MetricStatus status = isValidNumber(stats.beta) ? 
+                            (stats.beta < 0.8 ? MetricStatus::Good : 
+                             (stats.beta > 1.2 ? MetricStatus::Bad : MetricStatus::Neutral)) :
+                            MetricStatus::NA;
+        m_metricWidgets["beta"]->updateValues(value, status);
+    }
+    
+    // Volatilité
+    if (m_metricWidgets.contains("volatility")) {
+        QString value = QString("%1%").arg(QString::number(stats.volatilityAnnPct, 'f', 2));
+        MetricStatus status = stats.volatilityAnnPct < 10 ? MetricStatus::Good : 
+                             (stats.volatilityAnnPct > 25 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["volatility"]->updateValues(value, status);
+    }
+    
+    // Statistiques de trading
+    if (m_metricWidgets.contains("win_rate")) {
+        QString value = QString("%1%").arg(QString::number(stats.winRatePct, 'f', 1));
+        MetricStatus status = stats.winRatePct > 50 ? MetricStatus::Good : 
+                             (stats.winRatePct < 40 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["win_rate"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("exposure_time")) {
+        QString value = QString("%1%").arg(QString::number(stats.exposureTimePct, 'f', 1));
+        m_metricWidgets["exposure_time"]->updateValues(value, MetricStatus::Neutral);
+    }
+    
+    // Capital
+    if (m_metricWidgets.contains("equity_final")) {
+        QString value = QString("$%1").arg(QString::number(stats.equityFinal, 'f', 2));
+        MetricStatus status = stats.equityFinal > stats.equityPeak * 0.9 ? MetricStatus::Good : 
+                             (stats.equityFinal < stats.equityPeak * 0.7 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["equity_final"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("equity_peak")) {
+        QString value = QString("$%1").arg(QString::number(stats.equityPeak, 'f', 2));
+        m_metricWidgets["equity_peak"]->updateValues(value, MetricStatus::Good);
+    }
+    
+    // Autres métriques...
+    // Continuer à ajouter les métriques restantes avec leur coloration conditionnelle appropriée
+    
+    // Nombre de trades
+    if (m_metricWidgets.contains("total_trades")) {
+        QString value = QString::number(stats.numTrades);
+        m_metricWidgets["total_trades"]->updateValues(value, MetricStatus::Neutral);
+    }
+    
+    if (m_metricWidgets.contains("winning_trades")) {
+        QString value = QString::number(stats.numWinningTrades);
+        m_metricWidgets["winning_trades"]->updateValues(value, MetricStatus::Good);
+    }
+    
+    if (m_metricWidgets.contains("losing_trades")) {
+        QString value = QString::number(stats.numLosingTrades);
+        m_metricWidgets["losing_trades"]->updateValues(value, stats.numLosingTrades > stats.numWinningTrades ? MetricStatus::Bad : MetricStatus::Neutral);
+    }
+    
+    // Best/Worst trades
+    if (m_metricWidgets.contains("best_trade")) {
+        QString value = QString("%1%").arg(QString::number(stats.bestTradePct, 'f', 2));
+        m_metricWidgets["best_trade"]->updateValues(value, MetricStatus::Good);
+    }
+    
+    if (m_metricWidgets.contains("worst_trade")) {
+        QString value = QString("%1%").arg(QString::number(stats.worstTradePct, 'f', 2));
+        m_metricWidgets["worst_trade"]->updateValues(value, MetricStatus::Bad);
+    }
+    
+    if (m_metricWidgets.contains("avg_trade")) {
+        QString value = QString("%1%").arg(QString::number(stats.avgTradePct, 'f', 2));
+        MetricStatus status = stats.avgTradePct > 0 ? MetricStatus::Good : 
+                             (stats.avgTradePct < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["avg_trade"]->updateValues(value, status);
+    }
+    
+    // Profit factor
+    if (m_metricWidgets.contains("profit_factor")) {
+        QString value = isValidNumber(stats.profitFactor) ? 
+                      QString::number(stats.profitFactor, 'f', 2) : "N/A";
+        MetricStatus status = isValidNumber(stats.profitFactor) ? 
+                            (stats.profitFactor > 1.5 ? MetricStatus::Good : 
+                             (stats.profitFactor < 1 ? MetricStatus::Bad : MetricStatus::Neutral)) :
+                            MetricStatus::NA;
+        m_metricWidgets["profit_factor"]->updateValues(value, status);
+    }
+    
+    // Expectancy et SQN
+    if (m_metricWidgets.contains("expectancy")) {
+        QString value = QString("%1%").arg(QString::number(stats.expectancyPct, 'f', 2));
+        MetricStatus status = stats.expectancyPct > 0 ? MetricStatus::Good : 
+                             (stats.expectancyPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        m_metricWidgets["expectancy"]->updateValues(value, status);
+    }
+    
+    if (m_metricWidgets.contains("sqn")) {
+        QString value = isValidNumber(stats.sqn) ? 
+                      QString::number(stats.sqn, 'f', 2) : "N/A";
+        MetricStatus status = isValidNumber(stats.sqn) ? 
+                            (stats.sqn > 2 ? MetricStatus::Good : 
+                             (stats.sqn < 1 ? MetricStatus::Bad : MetricStatus::Neutral)) :
+                            MetricStatus::NA;
+        m_metricWidgets["sqn"]->updateValues(value, status);
+    }
+    
+    // Kelly Criterion
+    if (m_metricWidgets.contains("kelly_criterion")) {
+        QString value = isValidNumber(stats.kellyCriterion) ? 
+                      QString::number(stats.kellyCriterion, 'f', 2) : "N/A";
+        MetricStatus status = isValidNumber(stats.kellyCriterion) ? 
+                            (stats.kellyCriterion > 0 ? MetricStatus::Good : 
+                             (stats.kellyCriterion < -0.5 ? MetricStatus::Bad : MetricStatus::Neutral)) :
+                            MetricStatus::NA;
+        m_metricWidgets["kelly_criterion"]->updateValues(value, status);
+    }
+    
+    qDebug() << "Population des métriques terminée avec coloration";
 }
 
 void StatsView::createStatsWidgets()
@@ -339,6 +764,9 @@ void StatsView::createStatsWidgets()
     }
     
     qDebug() << "Création des widgets de métriques...";
+
+    // Créer les métriques temporelles
+    createTimeSection(m_timeLayout);
     
     // Créer les métriques de performance
     createPerformanceSection(m_performanceLayout);
@@ -352,93 +780,6 @@ void StatsView::createStatsWidgets()
     qDebug() << "Widgets de métriques créés. Total:" << m_metricWidgets.size();
 }
 
-void StatsView::createPerformanceSection(QGridLayout* layout)
-{
-    if (!layout) {
-        qWarning() << "Layout de performance null";
-        return;
-    }
-    
-    int row = 0;
-    
-    // Période
-    createMetricWidget("start", "Début", "N/A", row, 0, layout);
-    createMetricWidget("end", "Fin", "N/A", row++, 1, layout);
-    createMetricWidget("duration", "Durée", "N/A", row++, 0, layout);
-    
-    // Performance principale
-    createMetricWidget("total_return", "Rendement Total", "N/A", row, 0, layout);
-    createMetricWidget("return_ann", "Rendement Annualisé", "N/A", row++, 1, layout);
-    createMetricWidget("buy_hold_return", "Buy & Hold", "N/A", row, 0, layout);
-    createMetricWidget("cagr", "CAGR", "N/A", row++, 1, layout);
-    
-    // Alpha/Beta
-    createMetricWidget("alpha", "Alpha", "N/A", row, 0, layout);
-    createMetricWidget("beta", "Beta", "N/A", row++, 1, layout);
-    
-    // Equity
-    createMetricWidget("equity_final", "Equity Final", "N/A", row, 0, layout);
-    createMetricWidget("equity_peak", "Equity Peak", "N/A", row++, 1, layout);
-}
-
-void StatsView::createRiskSection(QGridLayout* layout)
-{
-    if (!layout) {
-        qWarning() << "Layout de risque null";
-        return;
-    }
-    
-    int row = 0;
-    
-    // Ratios de risque
-    createMetricWidget("sharpe_ratio", "Ratio de Sharpe", "N/A", row, 0, layout);
-    createMetricWidget("sortino_ratio", "Ratio de Sortino", "N/A", row++, 1, layout);
-    createMetricWidget("calmar_ratio", "Ratio de Calmar", "N/A", row++, 0, layout);
-    
-    // Drawdown
-    createMetricWidget("max_drawdown", "Drawdown Max", "N/A", row, 0, layout);
-    createMetricWidget("avg_drawdown", "Drawdown Moyen", "N/A", row++, 1, layout);
-    createMetricWidget("max_drawdown_duration", "Durée DD Max", "N/A", row, 0, layout);
-    createMetricWidget("avg_drawdown_duration", "Durée DD Moy", "N/A", row++, 1, layout);
-    
-    // Volatilité
-    createMetricWidget("volatility", "Volatilité Ann.", "N/A", row++, 0, layout);
-}
-
-void StatsView::createGeneralSection(QGridLayout* layout)
-{
-    if (!layout) {
-        qWarning() << "Layout général null";
-        return;
-    }
-    
-    int row = 0;
-    
-    // Exposition et trades
-    createMetricWidget("exposure_time", "Temps d'Exposition", "N/A", row, 0, layout);
-    createMetricWidget("total_trades", "Nombre de Trades", "N/A", row++, 1, layout);
-    
-    // Statistiques de trades
-    createMetricWidget("win_rate", "Taux de Réussite", "N/A", row, 0, layout);
-    createMetricWidget("winning_trades", "Trades Gagnants", "N/A", row++, 1, layout);
-    createMetricWidget("losing_trades", "Trades Perdants", "N/A", row, 0, layout);
-    createMetricWidget("neutral_trades", "Trades Neutres", "N/A", row++, 1, layout);
-    
-    // Performance des trades
-    createMetricWidget("best_trade", "Meilleur Trade", "N/A", row, 0, layout);
-    createMetricWidget("worst_trade", "Pire Trade", "N/A", row++, 1, layout);
-    createMetricWidget("avg_trade", "Trade Moyen", "N/A", row, 0, layout);
-    createMetricWidget("profit_factor", "Facteur de Profit", "N/A", row++, 1, layout);
-    
-    // Durées des trades
-    createMetricWidget("max_trade_duration", "Durée Max Trade", "N/A", row, 0, layout);
-    createMetricWidget("avg_trade_duration", "Durée Moy Trade", "N/A", row++, 1, layout);
-    
-    // Métriques avancées
-    createMetricWidget("expectancy", "Espérance", "N/A", row, 0, layout);
-    createMetricWidget("sqn", "SQN", "N/A", row++, 1, layout);
-    createMetricWidget("kelly_criterion", "Critère de Kelly", "N/A", row++, 0, layout);
-}
 
 MetricWidget* StatsView::createMetricWidget(const QString& key, const QString& label, 
                                            const QString& value, int row, int col, 
@@ -525,6 +866,26 @@ void StatsView::createTradesTable()
     // Hauteur de la table
     m_tradesTable->setMaximumHeight(1000);  // Très grande table
     m_tradesTable->setMinimumHeight(400);
+
+        // Améliorer le style des tableaux
+    QString tableStyle = 
+        "QTableView {"
+        "    border: 1px solid #d3d3d3;"
+        "    border-radius: 5px;"
+        "    background-color: #fcfcfc;"
+        "    gridline-color: #e0e0e0;"
+        "}"
+        "QTableView::item {"
+        "    padding: 5px;"
+        "}"
+        "QHeaderView::section {"
+        "    background-color: #f0f0f0;"
+        "    padding: 5px;"
+        "    border: 1px solid #d3d3d3;"
+        "    font-weight: bold;"
+        "}";
+    
+    m_tradesTable->setStyleSheet(tableStyle);
     
     // Ajouter les widgets au layout
     m_tradesLayout->addLayout(tradesControlsLayout);
@@ -604,145 +965,6 @@ void StatsView::updateMetricWidget(const QString& key, const QString& label, con
     } else {
         qWarning() << "Widget métrique non trouvé pour la clé:" << key;
     }
-}
-
-// Nouvelle méthode populateMetrics adaptée pour be::Stats
-void StatsView::populateMetrics(const be::Stats& stats)
-{
-    qDebug() << "Population des métriques avec" << m_metricWidgets.size() << "widgets disponibles";
-    
-    // Mapping des clés et extraction directe depuis be::Stats
-    struct MetricMapping {
-        QString key;         // Clé dans m_metricWidgets
-        QString valueFormat; // Format de la valeur ("%1%", "$%1", etc)
-        double value;        // Valeur numérique extraite de stats
-        int precision;       // Précision pour le formatage
-    };
-    
-    // Créer le mapping des métriques disponibles
-    std::vector<MetricMapping> metrics = {
-        // Performance
-        {"total_return", "%1%", stats.returnPct, 2},
-        {"return_ann", "%1%", stats.returnAnnPct, 2},
-        {"buy_hold_return", "%1%", stats.buyHoldReturnPct, 2},
-        {"cagr", "%1%", stats.cagrPct, 2},
-        {"alpha", "%1%", stats.alphaPct, 2},
-        {"beta", "%1", stats.beta, 3},
-        
-        // Risque
-        {"sharpe_ratio", "%1", stats.sharpeRatio, 3},
-        {"sortino_ratio", "%1", stats.sortinoRatio, 3},
-        {"calmar_ratio", "%1", stats.calmarRatio, 3},
-        {"max_drawdown", "%1%", stats.maxDrawdownPct, 2},
-        {"avg_drawdown", "%1%", stats.avgDrawdownPct, 2},
-        {"volatility", "%1%", stats.volatilityAnnPct, 2},
-        
-        // Trading
-        {"exposure_time", "%1%", stats.exposureTimePct, 2},
-        {"total_trades", "%1", static_cast<double>(stats.numTrades), 0},
-        {"win_rate", "%1%", stats.winRatePct, 2},
-        {"winning_trades", "%1", static_cast<double>(stats.numWinningTrades), 0},
-        {"losing_trades", "%1", static_cast<double>(stats.numLosingTrades), 0},
-        {"neutral_trades", "%1", static_cast<double>(stats.numNeutralTrades), 0},
-        // {"max_trade_duration", "%1", stats.maxTradeDuration.toString(), 0},
-        // {"avg_trade_duration", "%1", stats.avgTradeDuration.toString(), 0},
-        
-        // Equity
-        {"equity_final", "$%1", stats.equityFinal, 2},
-        {"equity_peak", "$%1", stats.equityPeak, 2},
-        
-        // Trade performance
-        {"best_trade", "%1%", stats.bestTradePct, 2},
-        {"worst_trade", "%1%", stats.worstTradePct, 2},
-        {"avg_trade", "%1%", stats.avgTradePct, 2},
-        {"profit_factor", "%1", stats.profitFactor, 2},
-        {"expectancy", "%1%", stats.expectancyPct, 2},
-        {"sqn", "%1", stats.sqn, 2}
-    };
-    
-    // Mettre à jour les widgets avec les valeurs extraites
-    for (const auto& metric : metrics) {
-        if (m_metricWidgets.contains(metric.key)) {
-            QString formattedValue;
-            
-            if (isValidNumber(metric.value)) {
-                // Formater selon le format spécifié et la précision
-                QString numStr = QString::number(metric.value, 'f', metric.precision);
-                formattedValue = metric.valueFormat.arg(numStr);
-            } else {
-                formattedValue = "N/A";
-            }
-            
-            m_metricWidgets[metric.key]->updateValues(formattedValue);
-        }
-    }
-    
-    // Traitement spécial pour les dates/durées
-    if (stats.trades.size() > 0) {
-        // Date de début (premier trade)
-        const auto& firstTrade = stats.trades.front();
-        QDateTime startDate = TradesTableModel::dateToQDateTime(firstTrade->entryDate());
-        if (m_metricWidgets.contains("start")) {
-            m_metricWidgets["start"]->updateValues(startDate.toString("yyyy-MM-dd"));
-        }
-        
-        // Date de fin (dernier trade)
-        const auto& lastTrade = stats.trades.back();
-        QDateTime endDate = TradesTableModel::dateToQDateTime(lastTrade->exitDate());
-        if (m_metricWidgets.contains("end")) {
-            m_metricWidgets["end"]->updateValues(endDate.toString("yyyy-MM-dd"));
-        }
-        
-        // Durée totale
-        if (m_metricWidgets.contains("duration")) {
-            qint64 totalSecs = startDate.secsTo(endDate);
-            int days = totalSecs / 86400;
-            int hours = (totalSecs % 86400) / 3600;
-            int minutes = (totalSecs % 3600) / 60;
-            
-            QString durationStr;
-            if (days > 0) {
-                durationStr = QString("%1j %2h").arg(days).arg(hours);
-            } else if (hours > 0) {
-                durationStr = QString("%1h %2m").arg(hours).arg(minutes);
-            } else {
-                durationStr = QString("%1m").arg(minutes);
-            }
-            
-            m_metricWidgets["duration"]->updateValues(durationStr);
-        }
-    }
-    
-    // Drawdown durées - SONT disponibles dans be::Stats
-    if (m_metricWidgets.contains("max_drawdown_duration")) {
-        // Convertir la Duration en format lisible
-        QString durationStr = formatDetailedDuration(
-            stats.maxDrawdownDuration.getDays(),
-            stats.maxDrawdownDuration.getHours(),
-            stats.maxDrawdownDuration.getMinutes(),
-            stats.maxDrawdownDuration.getSeconds());
-        m_metricWidgets["max_drawdown_duration"]->updateValues(durationStr);
-    }
-    if (m_metricWidgets.contains("avg_drawdown_duration")) {
-        // Convertir la Duration en format lisible
-        QString durationStr = formatDetailedDuration(
-            stats.avgDrawdownDuration.getDays(),
-            stats.avgDrawdownDuration.getHours(),
-            stats.avgDrawdownDuration.getMinutes(),
-            stats.avgDrawdownDuration.getSeconds());
-        m_metricWidgets["avg_drawdown_duration"]->updateValues(durationStr);
-    }
-
-    // Kelly Criterion - EST disponible dans be::Stats
-    if (m_metricWidgets.contains("kelly_criterion")) {
-        if (isValidNumber(stats.kellyCriterion)) {
-            m_metricWidgets["kelly_criterion"]->updateValues(QString::number(stats.kellyCriterion, 'f', 2));
-        } else {
-            m_metricWidgets["kelly_criterion"]->updateValues("N/A");
-        }
-    }
-    
-    qDebug() << "Population des métriques terminée";
 }
 
 // Nouvelle méthode populateTrades adaptée pour be::Trade

@@ -83,6 +83,9 @@ private:
     QGridLayout* m_riskLayout;
     QGroupBox* m_generalGroup;
     QGridLayout* m_generalLayout;
+
+    QGroupBox* m_timeGroup;
+    QGridLayout* m_timeLayout;
     
     // Section trades
     QGroupBox* m_tradesGroup;
@@ -108,11 +111,14 @@ private:
     BacktestResults* m_currentResults; // Modification: changement de type
     
     // Méthodes privées
+    void createTimeSection(QGridLayout* layout);
     void createStatsWidgets();
     void createPerformanceSection(QGridLayout* layout);
     void createRiskSection(QGridLayout* layout);
     void createGeneralSection(QGridLayout* layout);
     void createTradesTable();
+    
+    // Mise à jour de la signature de createMetricWidget pour retourner le pointeur
     MetricWidget* createMetricWidget(const QString& key, const QString& label, 
                                      const QString& value, int row, int col, 
                                      QGridLayout* layout);

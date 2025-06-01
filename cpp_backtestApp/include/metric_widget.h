@@ -1,45 +1,76 @@
 #pragma once
 
-#include <QFrame>
-#include <QVBoxLayout>
+#include <QWidget>
 #include <QLabel>
-#include <QSizePolicy>
+#include <QHBoxLayout>
 #include <QString>
 
-/**
- * @brief Widget pour afficher une métrique avec un titre, une valeur et une variation optionnelle
- * 
- * Ce widget est utilisé dans les vues de résultats pour afficher les statistiques du backtest
- * de manière visuellement cohérente et attrayante.
- */
-class MetricWidget : public QFrame
+enum class MetricStatus {
+    Good,   // Valeur positive/bonne (vert)
+    Neutral, // Valeur neutre (noir)
+    Bad,    // Valeur négative/mauvaise (rouge)
+    NA      // Valeur non disponible/non applicable (gris)
+};
+
+class MetricWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    /**
-     * @brief Constructeur
-     * @param title Titre de la métrique
-     * @param value Valeur initiale (optionnelle)
-     * @param delta Variation (optionnelle)
-     * @param delta_color Couleur de la variation ("normal" = vert, "inverse" = rouge)
-     * @param parent Widget parent
-     */
-    MetricWidget(const QString& title, const QString& value = "",
-                 const QString& delta = "", const QString& delta_color = "normal",
-                 QWidget* parent = nullptr);
+    MetricWidget(const QString& label, const QString& value = "N/A", QWidget* parent = nullptr)
+        : QWidget(parent)
+    {
+        QHBoxLayout* layout = new QHBoxLayout(this);
+        layout->setContentsMargins(1, 1, 1, 1);
+        layout->setSpacing(5);
+        
+        m_labelWidget = new QLabel(label);
+        m_valueWidget = new QLabel(value);
+        
+        m_labelWidget->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        m_valueWidget->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        
+        // Police en gras pour la valeur
+        QFont valueFont = m_valueWidget->font();
+        valueFont.setBold(true);
+        m_valueWidget->setFont(valueFont);
+        
+        layout->addWidget(m_labelWidget, 1);
+        layout->addWidget(m_valueWidget, 1);
+        
+        setLayout(layout);
+    }
     
-    /**
-     * @brief Met à jour les valeurs affichées dans le widget
-     * @param value Nouvelle valeur à afficher
-     * @param delta Nouvelle variation (optionnelle)
-     * @param delta_color Couleur de la variation ("normal" = vert, "inverse" = rouge)
-     */
-    void updateValues(const QString& value, const QString& delta = "",
-                      const QString& delta_color = "normal");
+    void updateValues(const QString& value, MetricStatus status = MetricStatus::Neutral) {
+        m_valueWidget->setText(value);
+        
+        // Appliquer le style CSS en fonction du statut
+        QString styleSheet;
+        
+        switch (status) {
+            case MetricStatus::Good:
+                styleSheet = "QLabel { color: #2ecc71; }"; // Vert
+                break;
+            case MetricStatus::Bad:
+                styleSheet = "QLabel { color: #e74c3c; }"; // Rouge
+                break;
+            case MetricStatus::NA:
+                styleSheet = "QLabel { color: #7f8c8d; font-style: italic; }"; // Gris
+                break;
+            case MetricStatus::Neutral:
+            default:
+                styleSheet = "QLabel { color: black; }"; // Noir par défaut
+                break;
+        }
+        
+        m_valueWidget->setStyleSheet(styleSheet);
+    }
+    
+    void setTooltip(const QString& tooltip) {
+        setToolTip(tooltip);
+    }
 
 private:
-    QLabel* m_titleLabel;    // Étiquette pour le titre
-    QLabel* m_valueLabel;    // Étiquette pour la valeur
-    QLabel* m_deltaLabel;    // Étiquette pour la variation
+    QLabel* m_labelWidget;
+    QLabel* m_valueWidget;
 };

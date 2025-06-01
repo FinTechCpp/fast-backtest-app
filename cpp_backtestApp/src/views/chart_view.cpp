@@ -533,13 +533,24 @@ void ChartView::drawChartWithViewport()
         
         int pointsToShow = endIndex - startIndex + 1;
         
-        // Extraire les données visibles
+        // Extraire les données visibles pour les prix
         DoubleArray timeStamps = DoubleArray(&m_priceData.timestamps[startIndex], pointsToShow);
         DoubleArray openData = DoubleArray(&m_priceData.open[startIndex], pointsToShow);
         DoubleArray highData = DoubleArray(&m_priceData.high[startIndex], pointsToShow);
         DoubleArray lowData = DoubleArray(&m_priceData.low[startIndex], pointsToShow);
         DoubleArray closeData = DoubleArray(&m_priceData.close[startIndex], pointsToShow);
         DoubleArray volumeData = DoubleArray(&m_priceData.volume[startIndex], pointsToShow);
+        
+        // Aussi, extraire les données visibles pour l'equity curve si disponible
+        DoubleArray equityTimestamps;
+        DoubleArray equityValues;
+        
+        if (!m_equityData.equity_values.empty() && 
+            m_equityData.timestamps.size() == m_priceData.timestamps.size()) {
+            
+            equityTimestamps = DoubleArray(&m_equityData.timestamps[startIndex], pointsToShow);
+            equityValues = DoubleArray(&m_equityData.equity_values[startIndex], pointsToShow);
+        }
         
         // Variables pour les données Heikin Ashi (si nécessaire)
         std::vector<double> ha_open, ha_high, ha_low, ha_close;
@@ -888,48 +899,83 @@ void ChartView::extractEquityData(BacktestResults* results)
             return;
         }
         
+        // Vérifier que nous avons des données de prix pour synchroniser le graphique
+        if (m_priceData.timestamps.empty()) {
+            qDebug() << "Pas de timestamps pour aligner l'equity curve";
+            return;
+        }
+        
         // Réserver la capacité
         size_t numPoints = equityCurve.size();
-        m_equityData.equity_values.reserve(numPoints);
-        m_equityData.timestamps.reserve(numPoints);
+        size_t numBars = m_priceData.timestamps.size();
         
-        // Dans cette implémentation, nous utilisons les mêmes timestamps que pour les prix
-        // car la courbe d'équité est typiquement alignée avec les barres de prix
-        if (!m_priceData.timestamps.empty() && m_priceData.timestamps.size() >= numPoints) {
-            // Copier les timestamps des prix
+        // Adapter la taille de la courbe d'équité à celle des barres de prix
+        // Plusieurs scénarios possibles:
+        
+        if (numPoints == numBars) {
+            // Cas idéal: même nombre de points, correspondance directe
             m_equityData.timestamps = m_priceData.timestamps;
-            // Limiter à la taille de la courbe d'équité si nécessaire
-            if (m_equityData.timestamps.size() > numPoints) {
-                m_equityData.timestamps.resize(numPoints);
+            m_equityData.equity_values = equityCurve;
+        }
+        else if (numPoints < numBars) {
+            // Moins de points d'equity que de barres: interpoler l'equity
+            m_equityData.timestamps = m_priceData.timestamps;
+            m_equityData.equity_values.resize(numBars);
+            
+            // Interpolation simple
+            for (size_t i = 0; i < numBars; i++) {
+                // Mappage linéaire de i dans [0,numBars-1] à j dans [0,numPoints-1]
+                double j_exact = i * (numPoints - 1) / (double)(numBars - 1);
+                size_t j_low = (size_t)floor(j_exact);
+                size_t j_high = (size_t)ceil(j_exact);
+                j_low = std::min(j_low, numPoints - 1);
+                j_high = std::min(j_high, numPoints - 1);
+                
+                if (j_low == j_high) {
+                    m_equityData.equity_values[i] = equityCurve[j_low];
+                } else {
+                    // Interpolation linéaire
+                    double weight_high = j_exact - j_low;
+                    double weight_low = 1.0 - weight_high;
+                    m_equityData.equity_values[i] = weight_low * equityCurve[j_low] + 
+                                                   weight_high * equityCurve[j_high];
+                }
             }
-        } else {
-            // Fallback: générer des timestamps séquentiels si les prix ne sont pas disponibles
-            for (size_t i = 0; i < numPoints; ++i) {
-                m_equityData.timestamps.push_back(static_cast<double>(i));
+        }
+        else {
+            // Plus de points d'equity que de barres: sous-échantillonner l'equity
+            m_equityData.timestamps = m_priceData.timestamps;
+            m_equityData.equity_values.resize(numBars);
+            
+            for (size_t i = 0; i < numBars; i++) {
+                // Mappage linéaire
+                size_t j = (size_t)(i * (numPoints - 1) / (numBars - 1));
+                j = std::min(j, numPoints - 1);
+                m_equityData.equity_values[i] = equityCurve[j];
             }
         }
         
-        // Copier les valeurs d'équité
-        m_equityData.equity_values = equityCurve;
-        
-        // Calculer le drawdown (optionnel)
-        double peak = equityCurve[0];
-        for (size_t i = 0; i < numPoints; ++i) {
-            if (equityCurve[i] > peak) {
-                peak = equityCurve[i];
+        // Calculer le drawdown
+        if (!m_equityData.equity_values.empty()) {
+            m_equityData.drawdown.resize(m_equityData.equity_values.size());
+            double peak = m_equityData.equity_values[0];
+            
+            for (size_t i = 0; i < m_equityData.equity_values.size(); ++i) {
+                if (m_equityData.equity_values[i] > peak) {
+                    peak = m_equityData.equity_values[i];
+                }
+                double dd = (peak - m_equityData.equity_values[i]) / peak * 100.0; // En pourcentage
+                m_equityData.drawdown[i] = dd;
             }
-            double dd = (peak - equityCurve[i]) / peak * 100.0; // En pourcentage
-            m_equityData.drawdown.push_back(dd);
         }
         
-        qDebug() << "Données d'équité extraites:" << m_equityData.equity_values.size() << "points";
+        qDebug() << "Données d'équité extraites et synchronisées:" << m_equityData.equity_values.size() << "points";
         
     } catch (const std::exception& e) {
         qCritical() << "Erreur dans extractEquityData:" << e.what();
         // Ne pas faire échouer toute l'extraction si l'équité échoue
     }
 }
-
 // Conversion de vector<double> à DoubleArray pour ChartDirector
 DoubleArray ChartView::vectorToDoubleArray(const std::vector<double>& vec) {
     if (vec.empty()) {
@@ -1031,11 +1077,98 @@ FinanceChart* ChartView::drawChart(QChartViewer* viewer,
                        std::to_string(timestamps.len) + " points";
     c->addTitle(title.c_str());
     
-    // Hauteurs pour les différentes parties du graphique (proportionnelles ou fixes)
-    int mainChartHeight = 500;  // Hauteur du graphique principal
+    // Hauteurs pour les différentes parties du graphique
+    int equityHeight = 150;     // Hauteur du graphique d'équité
+    int mainChartHeight = 400;  // Hauteur du graphique principal
     int volumeHeight = 100;     // Hauteur du graphique de volume
     
-    // Ajouter le graphique principal
+    // 1. Ajouter la courbe d'équité en haut si disponible
+    if (!m_equityData.equity_values.empty() && timestamps.len > 0) {
+        // Vérifier que nous avons des données alignées
+        if (m_equityData.timestamps.size() >= (size_t)timestamps.len) {
+            // Extraire les valeurs d'equity qui correspondent aux timestamps actuels
+            std::vector<double> visibleEquity;
+            visibleEquity.resize(timestamps.len);
+            
+            // On doit trouver les indices correspondants dans m_equityData.timestamps
+            // pour chaque timestamp dans le viewport actuel
+            for (int i = 0; i < timestamps.len; ++i) {
+                double currentTimestamp = timestamps[i];
+                // Trouver l'indice le plus proche dans m_equityData.timestamps
+                auto it = std::lower_bound(m_equityData.timestamps.begin(), 
+                                          m_equityData.timestamps.end(), 
+                                          currentTimestamp);
+                
+                size_t idx;
+                if (it == m_equityData.timestamps.end()) {
+                    idx = m_equityData.timestamps.size() - 1;
+                } else {
+                    idx = std::distance(m_equityData.timestamps.begin(), it);
+                    // Ajuster si nous avons dépassé
+                    if (idx > 0 && idx < m_equityData.timestamps.size() &&
+                        fabs(m_equityData.timestamps[idx] - currentTimestamp) >
+                        fabs(m_equityData.timestamps[idx-1] - currentTimestamp)) {
+                        idx--;
+                    }
+                }
+                
+                // Assurer que l'index est dans les limites
+                idx = std::min(idx, m_equityData.equity_values.size() - 1);
+                visibleEquity[i] = m_equityData.equity_values[idx];
+            }
+            
+            // Convertir en DoubleArray
+            DoubleArray equityValues = vectorToDoubleArray(visibleEquity);
+            
+            // Ajouter l'indicateur pour l'equity curve
+            XYChart* equityChart = c->addIndicator(equityHeight);
+            
+            // Configuration du titre et des libellés
+            equityChart->yAxis()->setTitle("Capital");
+            equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
+            
+            // Ajouter la ligne principale d'équité
+            LineLayer* equityLayer = equityChart->addLineLayer();
+            equityLayer->addDataSet(equityValues, 0x008800, "Equity");
+            equityLayer->setLineWidth(2);
+            
+            // Ajouter la courbe de drawdown si disponible
+            if (!m_equityData.drawdown.empty() && m_equityData.drawdown.size() >= (size_t)timestamps.len) {
+                // Extraire les valeurs de drawdown correspondantes
+                std::vector<double> visibleDrawdown;
+                visibleDrawdown.resize(timestamps.len);
+                
+                for (int i = 0; i < timestamps.len; ++i) {
+                    double currentTimestamp = timestamps[i];
+                    auto it = std::lower_bound(m_equityData.timestamps.begin(), 
+                                              m_equityData.timestamps.end(), 
+                                              currentTimestamp);
+                    
+                    size_t idx;
+                    if (it == m_equityData.timestamps.end()) {
+                        idx = m_equityData.timestamps.size() - 1;
+                    } else {
+                        idx = std::distance(m_equityData.timestamps.begin(), it);
+                        if (idx > 0 && idx < m_equityData.timestamps.size() &&
+                            fabs(m_equityData.timestamps[idx] - currentTimestamp) >
+                            fabs(m_equityData.timestamps[idx-1] - currentTimestamp)) {
+                            idx--;
+                        }
+                    }
+                    
+                    idx = std::min(idx, m_equityData.drawdown.size() - 1);
+                    visibleDrawdown[i] = m_equityData.drawdown[idx];
+                }
+                
+                DoubleArray drawdownValues = vectorToDoubleArray(visibleDrawdown);
+                XYChart* drawdownChart = c->addIndicator(50); // 0x800080
+                drawdownChart->yAxis()->setTitle("Drawdown %");
+                drawdownChart->addLineLayer()->addDataSet(drawdownValues, 0xcc0000, "Drawdown");
+            }
+        }
+    }
+    
+    // 2. Ajouter le graphique principal
     c->addMainChart(mainChartHeight);
     
     // Ajouter le type de graphique approprié selon le type actuel
@@ -1047,8 +1180,37 @@ FinanceChart* ChartView::drawChart(QChartViewer* viewer,
         c->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
     
-    // Ajouter le graphique de volume
+    // 3. Ajouter le graphique de volume
     c->addVolBars(volumeHeight, 0x99ff99, 0xff9999, 0x808080);
+    
+    // 4. Ajouter les trades sur le graphique principal (marqueurs pour entrées/sorties)
+    // if (!m_tradeData.entry_times.empty()) {
+    //     DoubleArray entryTimes = vectorToDoubleArray(m_tradeData.entry_times);
+    //     DoubleArray entryPrices = vectorToDoubleArray(m_tradeData.entry_prices);
+    //     DoubleArray exitTimes = vectorToDoubleArray(m_tradeData.exit_times);
+    //     DoubleArray exitPrices = vectorToDoubleArray(m_tradeData.exit_prices);
+
+    //     std::cout << "Premier trade : " << m_tradeData.entry_times[0] 
+    //               << " à " << m_tradeData.entry_prices[0] << std::endl;
+
+
+    //     // le probleme est que l'on convertie les date entrytime en timstemps ce qui donne : Premier trade : 6.39137e+10 à 17755.2
+    //     // ducoup on voit rien sur le graph, il faut tester d'afficher des point synthetique pour voir si notre methode d'affichage est correcte. 
+    //     // genre faire un point au milieu du graphique et voir si on le voit.
+
+    //     XYChart* mainChart = (XYChart*)c->getChart(2);
+
+    //     // Marqueurs pour les entrées (triangles verts)
+    //     ScatterLayer* entryLayer = mainChart->addScatterLayer(entryTimes, entryPrices, "Entries", Chart::TriangleSymbol, 11, 0x00aa00);
+    //     // Correction: utiliser getDataSet(0) pour accéder à l'objet DataSet
+    //     entryLayer->getDataSet(0)->setDataSymbol(Chart::TriangleSymbol, 11, 0x00aa00, Chart::SameAsMainColor, 1);
+        
+    //     // Marqueurs pour les sorties (triangles inversés rouges)
+    //     ScatterLayer* exitLayer = mainChart->addScatterLayer(exitTimes, exitPrices, "Exits", Chart::TriangleSymbol, 11, 0xaa0000);
+    //     // Correction: utiliser getDataSet(0) pour accéder à l'objet DataSet
+    //     exitLayer->getDataSet(0)->setDataSymbol(Chart::TriangleSymbol, 11, 0xaa0000, Chart::SameAsMainColor, 1);
+    //     exitLayer->getDataSet(0)->setSymbolOffset(0, 180); // Inverser le triangle pour les sorties
+    // }
     
     // Assigner le graphique au viewer
     if (viewer) {

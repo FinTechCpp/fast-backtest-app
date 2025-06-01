@@ -153,77 +153,22 @@ QString TradesTableModel::formatDateTime(const QDateTime& dateTime)
     return dateTime.toString("dd/MM hh:mm:ss");
 }
 
-QString TradesTableModel::formatDuration(const QString& duration)
-{
-    if (duration.contains("days") && duration.contains(":")) {
-        // Parse "0 days 00:00:40" format
-        QStringList parts = duration.split(" ");
-        if (parts.size() >= 3) {
-            int days = parts[0].toInt();
-            QStringList timeParts = parts[2].split(":");
-            if (timeParts.size() >= 3) {
-                int hours = timeParts[0].toInt();
-                int minutes = timeParts[1].toInt();
-                int seconds = timeParts[2].toInt();
-                
-                if (days > 0) {
-                    return QString("%1j %2h%3m").arg(days).arg(hours, 2, 10, QChar('0')).arg(minutes, 2, 10, QChar('0'));
-                } else if (hours > 0) {
-                    return QString("%1h%2m%3s").arg(hours).arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
-                } else if (minutes > 0) {
-                    return QString("%1m%2s").arg(minutes).arg(seconds, 2, 10, QChar('0'));
-                } else {
-                    return QString("%1s").arg(seconds);
-                }
-            }
-        }
-    }
-    return duration;
-}
-
 // Implémentation de StatsView
 StatsView::StatsView(QWidget* parent)
-    : BaseView(parent)
-    , m_tradesModel(nullptr)
-    , m_equityModel(nullptr)
-    , m_scrollStats(nullptr)
-    , m_statsContent(nullptr)
-    , m_statsContentLayout(nullptr)
-    , m_statsPlaceholder(nullptr)
-    , m_performanceGroup(nullptr)
-    , m_performanceLayout(nullptr)
-    , m_riskGroup(nullptr)
-    , m_riskLayout(nullptr)
-    , m_generalGroup(nullptr)
-    , m_generalLayout(nullptr)
-    , m_tradesGroup(nullptr)
-    , m_tradesLayout(nullptr)
-    , m_tradesTable(nullptr)
-    , m_tradesLimitCombo(nullptr)
-    , m_showAllTradesBtn(nullptr)
-    , m_equityGroup(nullptr)
-    , m_equityLayout(nullptr)
-    , m_showEquityBtn(nullptr)
-    , m_equityLimitCombo(nullptr)
-    , m_equityStack(nullptr)
-    , m_tablesCreated(false)
-    , m_currentResults(nullptr)
-    , m_app(nullptr)  // Ajouter cette ligne
+    : BaseView(parent),
+      m_tradesModel(new TradesTableModel(this)),
+      m_tablesCreated(false),
+      m_currentResults(nullptr),
+      m_app(nullptr)
 {
-    // Ajouter ce bloc après les initialisations
     // Trouver l'application parente
     QWidget* widget = parent;
     while (widget && !m_app) {
         m_app = qobject_cast<App*>(widget);
         widget = widget->parentWidget();
     }
-        
-    // Créer les modèles de données
-    m_tradesModel = new TradesTableModel(this);
     
     initializeMetricDefinitions();
-    
-    // Construire l'interface dans le constructeur
     setupUI();
 }
 
@@ -284,19 +229,21 @@ void StatsView::createGroupBoxes() {
 }
 
 void StatsView::createStatsWidgets() {
-    // Regrouper les métriques par section
-    QMap<QString, QVBoxLayout*> sectionLayouts = {
+    // Map des sections aux layouts correspondants
+    static const QMap<QString, QVBoxLayout*> sectionLayouts = {
         {"time", m_timeLayout},
         {"performance", m_performanceLayout},
         {"risk", m_riskLayout},
         {"general", m_generalLayout}
     };
     
-    // Créer tous les widgets de métriques à partir de la définition centralisée
+    // Créer tous les widgets de métriques à partir des définitions
     for (const auto& metric : m_metricDefinitions) {
-        QVBoxLayout* targetLayout = sectionLayouts[metric.section];
+        // Récupérer le layout correspondant à la section
+        QVBoxLayout* targetLayout = sectionLayouts.value(metric.section);
         if (!targetLayout) continue;
         
+        // Créer le widget et l'ajouter au layout
         QWidget* row = new QWidget();
         QHBoxLayout* rowLayout = new QHBoxLayout(row);
         rowLayout->setContentsMargins(5, 5, 5, 5);
@@ -398,9 +345,6 @@ void StatsView::updateData(BacktestResults* results)
         
         // Mettre à jour la table des trades
         populateTrades(appResults->stats.trades);
-        
-        // Mettre à jour l'équité
-        populateEquity(appResults->stats);
         
         qInfo() << "StatsView mise à jour avec succès";
         
@@ -633,105 +577,6 @@ void StatsView::initializeMetricDefinitions() {
     };
 }
 
-// Nouvelle organisation des sections
-void StatsView::createTimeSection(QVBoxLayout* layout)
-{    
-    // Helper function to reduce repetition
-    auto addMetricRow = [this, layout](const QString& key, const QString& label, const QString& tooltip) {
-        QWidget* row = new QWidget();
-        QHBoxLayout* rowLayout = new QHBoxLayout(row);
-        rowLayout->setContentsMargins(5, 5, 5, 5);
-        createMetricWidget(key, label, "N/A", rowLayout)->setTooltip(tooltip);
-        layout->addWidget(row);
-    };
-
-    // Période
-    addMetricRow("start", "Début:", "Date de début du backtest");
-    addMetricRow("end", "Fin:", "Date de fin du backtest");
-    addMetricRow("duration", "Durée:", "Durée totale du backtest");
-    addMetricRow("exposure_time", "Temps en position:", "Pourcentage du temps avec des positions ouvertes");
-}
-
-void StatsView::createPerformanceSection(QVBoxLayout* layout)
-{
-    // Helper function to reduce repetition
-    auto addMetricRow = [this, layout](const QString& key, const QString& label, const QString& tooltip) {
-        QWidget* row = new QWidget();
-        QHBoxLayout* rowLayout = new QHBoxLayout(row);
-        rowLayout->setContentsMargins(5, 5, 5, 5);
-        createMetricWidget(key, label, "N/A", rowLayout)->setTooltip(tooltip);
-        layout->addWidget(row);
-    };
-    
-    // Capital metrics
-    addMetricRow("equity_final", "Capital final:", "Montant final du capital");
-    addMetricRow("equity_peak", "Capital maximal:", "Montant maximal atteint par le capital");
-    
-    // Return metrics
-    addMetricRow("total_return", "Rendement total:", "Pourcentage de gain/perte sur l'ensemble du backtest");
-    addMetricRow("buy_hold_return", "Buy & Hold:", "Rendement d'une stratégie passive d'achat et maintien");
-    addMetricRow("return_ann", "Rendement annualisé:", "Rendement annualisé du backtest");
-    addMetricRow("cagr", "CAGR:", "Taux de croissance annuel composé");
-    
-    // Alpha/Beta metrics
-    addMetricRow("alpha", "Alpha:", "Surperformance par rapport au marché (ajustée au risque)");
-    addMetricRow("beta", "Beta:", "Corrélation avec les mouvements du marché");
-}
-
-void StatsView::createRiskSection(QVBoxLayout* layout)
-{
-    // Helper function to reduce repetition
-    auto addMetricRow = [this, layout](const QString& key, const QString& label, const QString& tooltip) {
-        QWidget* row = new QWidget();
-        QHBoxLayout* rowLayout = new QHBoxLayout(row);
-        rowLayout->setContentsMargins(5, 5, 5, 5);
-        createMetricWidget(key, label, "N/A", rowLayout)->setTooltip(tooltip);
-        layout->addWidget(row);
-    };
-
-    addMetricRow("max_drawdown", "Drawdown maximal:", "Perte maximale depuis un sommet précédent");
-    addMetricRow("avg_drawdown", "Drawdown moyen:", "Perte moyenne depuis un sommet précédent");
-
-    addMetricRow("max_drawdown_duration", "Durée DD max:", "Durée de la plus longue période de drawdown");
-    addMetricRow("avg_drawdown_duration", "Durée DD moyenne:", "Durée moyenne des périodes de drawdown");
-
-    // Ratios de risque
-    addMetricRow("sharpe_ratio", "Ratio de Sharpe:", "Rendement excédentaire par unité de risque total");
-    addMetricRow("sortino_ratio", "Ratio de Sortino:", "Rendement excédentaire par unité de risque négatif");
-
-    addMetricRow("calmar_ratio", "Ratio de Calmar:", "Rendement annualisé divisé par le drawdown maximal");
-    addMetricRow("volatility", "Volatilité annualisée:", "Mesure de la variabilité des rendements");
-}
-
-void StatsView::createGeneralSection(QVBoxLayout* layout)
-{
-    // Helper function to reduce repetition
-    auto addMetricRow = [this, layout](const QString& key, const QString& label, const QString& tooltip) {
-        QWidget* row = new QWidget();
-        QHBoxLayout* rowLayout = new QHBoxLayout(row);
-        rowLayout->setContentsMargins(5, 5, 5, 5);
-        createMetricWidget(key, label, "N/A", rowLayout)->setTooltip(tooltip);
-        layout->addWidget(row);
-    };
-
-    // Créer les widgets de métriques pour la section générale
-    addMetricRow("total_trades", "Nombre de trades:", "Nombre total de transactions effectuées");
-    addMetricRow("win_rate", "Taux de réussite:", "Pourcentage de trades rentables");
-    addMetricRow("winning_trades", "Trades gagnants:", "Nombre de trades gagnants");
-    addMetricRow("losing_trades", "Trades perdants:", "Nombre de trades perdants");
-    addMetricRow("best_trade", "Meilleur trade:", "Pourcentage de gain du meilleur trade");
-    addMetricRow("worst_trade", "Pire trade:", "Pourcentage de perte du pire trade");
-    addMetricRow("avg_trade", "Trade moyen:", "Rendement moyen par trade");
-
-    addMetricRow("profit_factor", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)");
-    addMetricRow("max_trade_duration", "Durée max trade:", "Durée maximale d'un trade");
-
-    addMetricRow("avg_trade_duration", "Durée moy trade:", "Durée moyenne d'un trade");
-    addMetricRow("expectancy", "Espérance:", "Gain moyen attendu par trade");
-    addMetricRow("sqn", "SQN:", "System Quality Number - mesure de la qualité du système de trading");
-    addMetricRow("kelly_criterion", "Critère de Kelly:", "Taille de position optimale selon le critère de Kelly");
-}
-
 void StatsView::populateMetrics(const be::Stats& stats) {
     qDebug() << "Population des métriques avec coloration conditionnelle";
     
@@ -875,66 +720,6 @@ void StatsView::setupTradesConnections() {
     });
 }
 
-
-QString StatsView::formatCurrency(double value)
-{
-    if (std::isnan(value) || std::isinf(value)) {
-        return "N/A";
-    }
-    
-    QString formatted = QString::number(value, 'f', 2);
-    
-    // Ajouter le symbole de devise
-    if (value >= 0) {
-        return QString("$%1").arg(formatted);
-    } else {
-        return QString("-$%1").arg(QString::number(std::abs(value), 'f', 2));
-    }
-}
-
-QString StatsView::formatPercentage(double value)
-{
-    if (std::isnan(value) || std::isinf(value)) {
-        return "N/A";
-    }
-    
-    // Convertir en pourcentage (multiplier par 100) et formater
-    return QString("%1%").arg(QString::number(value * 100, 'f', 2));
-}
-
-QString StatsView::formatDetailedDuration(int days, int hours, int minutes, int seconds)
-{
-    QStringList parts;
-    
-    if (days > 0) {
-        parts.append(QString("%1J").arg(days));
-    }
-    
-    if (hours > 0) {
-        parts.append(QString("%1h").arg(hours, 2, 10, QChar('0')));
-    }
-    
-    if (minutes > 0) {
-        parts.append(QString("%1min").arg(minutes, 2, 10, QChar('0')));
-    }
-    
-    if (seconds > 0 || parts.isEmpty()) {
-        parts.append(QString("%1sec").arg(seconds, 2, 10, QChar('0')));
-    }
-    
-    return parts.join(" ");
-}
-
-void StatsView::updateMetricWidget(const QString& key, const QString& label, const QString& value)
-{
-    Q_UNUSED(label);
-    if (m_metricWidgets.contains(key)) {
-        m_metricWidgets[key]->updateValues(value);
-    } else {
-        qWarning() << "Widget métrique non trouvé pour la clé:" << key;
-    }
-}
-
 std::vector<std::shared_ptr<be::Trade>> StatsView::getFilteredTrades(const std::vector<std::shared_ptr<be::Trade>>& allTrades) {
     std::vector<std::shared_ptr<be::Trade>> filteredTrades = allTrades;
     
@@ -966,27 +751,9 @@ void StatsView::populateTrades(const std::vector<std::shared_ptr<be::Trade>>& tr
     }
 }
 
-// Nouvelle méthode populateEquity adaptée pour be::Stats
-void StatsView::populateEquity(const be::Stats& stats)
-{
-    qDebug() << "Population de la table d'équité";
-    
-    // Pour l'instant, on ne fait rien car le modèle d'équité n'est pas implémenté
-    // Mais ce serait ici qu'on traiterait stats.equityCurve pour l'afficher
-    
-    if (m_equityGroup) {
-        m_equityGroup->setVisible(!stats.equityCurve.empty());
-    }
-    
-    qDebug() << "Équité disponible:" << stats.equityCurve.size() << "points";
-}
-
-// Nouvelle méthode refreshTradesTable adaptée pour les nouvelles structures
-void StatsView::refreshTradesTable()
-{
+void StatsView::refreshTradesTable() {
     qDebug() << "StatsView::refreshTradesTable() appelé";
     
-    // S'assurer d'avoir les derniers résultats
     if (m_app) {
         m_currentResults = m_app->getBacktestResults();
     }
@@ -995,74 +762,46 @@ void StatsView::refreshTradesTable()
         return;
     }
     
-    // Récupérer les trades depuis les résultats C++
+    // Récupérer les trades depuis les résultats
     const auto& allTrades = m_currentResults->stats.trades;
     
-    // Appliquer la limitation si nécessaire
-    std::vector<std::shared_ptr<be::Trade>> trades = allTrades;
-    if (m_tradesLimitCombo) {
-        int limit = m_tradesLimitCombo->currentData().toInt();
-        if (limit > 0 && trades.size() > static_cast<size_t>(limit)) {
-            // Prendre les derniers trades (les plus récents)
-            trades = std::vector<std::shared_ptr<be::Trade>>(
-                trades.end() - limit, trades.end()
-            );
-        }
-    }
+    // Utiliser la fonction existante pour filtrer
+    auto filteredTrades = getFilteredTrades(allTrades);
     
     // Mettre à jour le modèle
-    m_tradesModel->updateData(trades);
+    m_tradesModel->updateData(filteredTrades);
     
-    // Mettre à jour le texte du bouton avec le nombre total
+    // Mettre à jour le texte du bouton
     if (m_showAllTradesBtn) {
         m_showAllTradesBtn->setText(QString("Afficher tous les trades (%1)").arg(allTrades.size()));
     }
     
-    qDebug() << "Table des trades mise à jour avec" << trades.size() << "/" << allTrades.size() << "trades";
+    qDebug() << "Table des trades mise à jour avec" << filteredTrades.size() << "/" << allTrades.size() << "trades";
 }
 
-void StatsView::clear()
-{
+void StatsView::clear() {
     qDebug() << "StatsView::clear() appelé";
     
-    // Réinitialiser tous les widgets de métriques
-    for (auto it = m_metricWidgets.begin(); it != m_metricWidgets.end(); ++it) {
-        it.value()->updateValues("N/A");
+    // Réinitialiser widgets de métriques
+    for (auto widget : m_metricWidgets) {
+        widget->updateValues("N/A");
     }
     
-    // Vider les modèles de tables
+    // Vider le modèle de trades
     if (m_tradesModel) {
         m_tradesModel->clear();
-        m_tradesModel->setHorizontalHeaderLabels({
-            "Date d'entrée", "Date de sortie", "Type", "Taille", 
-            "Prix d'entrée", "Prix de sortie", "P&L", "P&L %", "Durée"
-        });
     }
     
-    if (m_equityModel) {
-        m_equityModel->clear();
-        m_equityModel->setHorizontalHeaderLabels({
-            "Date", "Equity", "Drawdown", "Drawdown %"
-        });
-    }
-    
-    // Réafficher le placeholder
+    // Gérer la visibilité des composants
     if (m_statsPlaceholder) {
         m_statsPlaceholder->setText("Exécutez un backtest pour voir les statistiques");
         m_statsPlaceholder->setVisible(true);
     }
     
-    // Masquer les sections
-    if (m_performanceGroup) m_performanceGroup->setVisible(false);
-    if (m_riskGroup) m_riskGroup->setVisible(false);
-    if (m_generalGroup) m_generalGroup->setVisible(false);
-    if (m_tradesGroup) m_tradesGroup->setVisible(false);
-    if (m_equityGroup) m_equityGroup->setVisible(false);
+    // Masquer les groupes
+    for (QGroupBox* group : {m_performanceGroup, m_riskGroup, m_generalGroup, m_tradesGroup}) {
+        if (group) group->setVisible(false);
+    }
     
-    // Réinitialiser l'état
     m_currentResults = nullptr;
-    
-    qDebug() << "StatsView nettoyée";
 }
-
-// Méthodes restantes comme formatCurrency, formatPercentage, etc. restent inchangées

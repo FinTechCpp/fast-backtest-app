@@ -148,14 +148,12 @@ public:
         if (signal->action == "LIQUIDATE") {
             if (position) {
                 position.close();
-                std::cout << "Closing position due to LIQUIDATE signal" << std::endl;
             }
         }
         else if (signal->action == "MOVE_SL") {
             // Déplacer le stop loss
             if (position) {
                 // position.updateSl(signal->new_sl);
-                std::cout << "Moving stop loss to " << signal->new_sl << std::endl;
             }
         }
         else if (!position && signal->action == "BUY") {
@@ -170,11 +168,6 @@ public:
                 signal->take_profit
                 // signal->tag
             );
-
-            std::cout << "Opening BUY position: Price=" << signal->price 
-                     << ", Size=" << signal->quantity
-                     << ", SL=" << signal->stop_loss
-                     << ", TP=" << signal->take_profit << std::endl;
         }
         else if (!position && signal->action == "SELL") {
             // Exécuter un signal de vente
@@ -188,11 +181,6 @@ public:
                 signal->take_profit
                 // signal->tag
             );
-
-            std::cout << "Opening SELL position: Price=" << signal->price 
-                     << ", Size=" << signal->quantity
-                     << ", SL=" << signal->stop_loss
-                     << ", TP=" << signal->take_profit << std::endl;
         }
     }
 };

@@ -1067,6 +1067,9 @@ FinanceChart* ChartView::drawChart(QChartViewer* viewer,
     
     // Créer un nouveau FinanceChart avec la largeur spécifiée
     FinanceChart* c = new FinanceChart(chartWidth);
+
+    std::cout << "premier timestamp: " << timestamps[0] << std::endl;
+    std::cout << "dernier timestamp: " << timestamps[timestamps.len - 1] << std::endl;
     
     // Configurer les données
     c->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
@@ -1131,40 +1134,6 @@ FinanceChart* ChartView::drawChart(QChartViewer* viewer,
             LineLayer* equityLayer = equityChart->addLineLayer();
             equityLayer->addDataSet(equityValues, 0x008800, "Equity");
             equityLayer->setLineWidth(2);
-            
-            // Ajouter la courbe de drawdown si disponible
-            if (!m_equityData.drawdown.empty() && m_equityData.drawdown.size() >= (size_t)timestamps.len) {
-                // Extraire les valeurs de drawdown correspondantes
-                std::vector<double> visibleDrawdown;
-                visibleDrawdown.resize(timestamps.len);
-                
-                for (int i = 0; i < timestamps.len; ++i) {
-                    double currentTimestamp = timestamps[i];
-                    auto it = std::lower_bound(m_equityData.timestamps.begin(), 
-                                              m_equityData.timestamps.end(), 
-                                              currentTimestamp);
-                    
-                    size_t idx;
-                    if (it == m_equityData.timestamps.end()) {
-                        idx = m_equityData.timestamps.size() - 1;
-                    } else {
-                        idx = std::distance(m_equityData.timestamps.begin(), it);
-                        if (idx > 0 && idx < m_equityData.timestamps.size() &&
-                            fabs(m_equityData.timestamps[idx] - currentTimestamp) >
-                            fabs(m_equityData.timestamps[idx-1] - currentTimestamp)) {
-                            idx--;
-                        }
-                    }
-                    
-                    idx = std::min(idx, m_equityData.drawdown.size() - 1);
-                    visibleDrawdown[i] = m_equityData.drawdown[idx];
-                }
-                
-                DoubleArray drawdownValues = vectorToDoubleArray(visibleDrawdown);
-                XYChart* drawdownChart = c->addIndicator(50); // 0x800080
-                drawdownChart->yAxis()->setTitle("Drawdown %");
-                drawdownChart->addLineLayer()->addDataSet(drawdownValues, 0xcc0000, "Drawdown");
-            }
         }
     }
     
@@ -1190,8 +1159,7 @@ FinanceChart* ChartView::drawChart(QChartViewer* viewer,
     //     DoubleArray exitTimes = vectorToDoubleArray(m_tradeData.exit_times);
     //     DoubleArray exitPrices = vectorToDoubleArray(m_tradeData.exit_prices);
 
-    //     std::cout << "Premier trade : " << m_tradeData.entry_times[0] 
-    //               << " à " << m_tradeData.entry_prices[0] << std::endl;
+    //     std::cout << "Premier trade entry_time: " << m_tradeData.entry_times[0] << std::endl;
 
 
     //     // le probleme est que l'on convertie les date entrytime en timstemps ce qui donne : Premier trade : 6.39137e+10 à 17755.2
@@ -1211,7 +1179,81 @@ FinanceChart* ChartView::drawChart(QChartViewer* viewer,
     //     exitLayer->getDataSet(0)->setDataSymbol(Chart::TriangleSymbol, 11, 0xaa0000, Chart::SameAsMainColor, 1);
     //     exitLayer->getDataSet(0)->setSymbolOffset(0, 180); // Inverser le triangle pour les sorties
     // }
+
+
     
+
+
+    // Dans votre méthode drawChart(), remplacez le code de test par celui-ci:
+
+    // test d'un point synthétique
+    // 1. Vérifier combien de graphiques sont présents
+    int chartCount = c->getChartCount();
+    std::cout << "Nombre total de graphiques: " << chartCount << std::endl;
+
+    // 2. Utiliser le graphique principal (index 1)
+    XYChart* mainChart = (XYChart*)c->getChart(1);
+
+    // 3. Créer des points de test avec des timestamps convertis
+    double middleIndex = timestamps.len / 2;
+    double middleTimestamp = timestamps[(int)middleIndex];
+    double middlePrice = closeData[(int)middleIndex];
+
+    // Créer une version convertie du timestamp (nanosecondes -> secondes)
+    double convertedTimestamp = middleTimestamp / 1000000000.0;
+
+    // Vecteur pour stocker la version convertie
+    std::vector<double> testTimeVec = {convertedTimestamp};
+    std::vector<double> testPriceVec = {middlePrice};
+
+    std::cout << "Original timestamp: " << middleTimestamp << std::endl;
+    std::cout << "Converted timestamp: " << convertedTimestamp << std::endl;
+    std::cout << "Test price: " << middlePrice << std::endl;
+
+    // 4. Convertir en DoubleArray
+    DoubleArray testTimestamps = vectorToDoubleArray(testTimeVec);
+    DoubleArray testClosePrices = vectorToDoubleArray(testPriceVec);
+
+    // 5. Créer un nouveau XYChart dédié pour notre point de test
+    XYChart* testChart = new XYChart(800, 400);
+    testChart->setPlotArea(50, 50, 700, 300);
+    testChart->xAxis()->setDateScale();
+    testChart->yAxis()->setLinearScale(middlePrice*0.95, middlePrice*1.05);
+
+    // 6. Ajouter notre point au chart de test (méthode directe)
+    ScatterLayer* testPointLayer = testChart->addScatterLayer(
+        testTimestamps, testClosePrices, "Test Point", Chart::CircleSymbol, 20, 0xFF0000);
+        
+    // 7. Ajouter le point au chart principal aussi (méthode directe)
+    ScatterLayer* mainPointLayer = mainChart->addScatterLayer(
+        testTimestamps, testClosePrices, "Test Point", Chart::CircleSymbol, 30, 0xFF0000);
+    // Configurer le symbole avec une bordure noire
+    if (mainPointLayer->getDataSetCount() > 0) {
+        mainPointLayer->getDataSet(0)->setDataSymbol(Chart::CircleSymbol, 30, 0xFF0000, 0x000000, 3);
+    }
+
+    // 9. Ajouter un texte à côté du point
+    mainChart->addText(mainChart->getXCoor(convertedTimestamp), 
+                    mainChart->getYCoor(middlePrice) - 30,
+                    "POINT DE TEST", "Arial Bold", 12, 0xFF0000)
+            ->setBackground(0xFFFFFF, 0x000000, 5);
+
+    // 10. Mettre au premier plan
+    mainPointLayer->moveFront();
+
+    // Debugging - vérifier les coordonnées du point
+    int xPos = mainChart->getXCoor(convertedTimestamp);
+    int yPos = mainChart->getYCoor(middlePrice);
+    std::cout << "Position du point sur le graphique: x=" << xPos << ", y=" << yPos << std::endl;
+
+    // Vérifier les limites de la zone de tracé
+    PlotArea* pa = mainChart->getPlotArea();
+    std::cout << "Zone de tracé: left=" << pa->getLeftX() << ", top=" << pa->getTopY() 
+            << ", right=" << pa->getRightX() << ", bottom=" << pa->getBottomY() << std::endl;
+
+    // Libérer la ressource temporaire
+    delete testChart;
+
     // Assigner le graphique au viewer
     if (viewer) {
         viewer->setChart(c);

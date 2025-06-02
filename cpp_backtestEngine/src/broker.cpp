@@ -545,6 +545,8 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     trade->setCommissions(commission + openCommission);
 }
 
+// cette methode est tres bien mais il faudrait mettre en commun avec processOrders() et mettre 
+// ce qui est en commun dans des fonction pour simplifier la lecture
 void Broker::finalizeOrders() {
     try {
         // Accéder à la dernière bougie disponible plutôt qu'à la bougie courante

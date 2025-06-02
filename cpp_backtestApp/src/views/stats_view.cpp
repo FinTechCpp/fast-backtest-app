@@ -295,16 +295,18 @@ void StatsView::createLegend() {
 }
 
 void StatsView::arrangePanels() {
-    // Ajouter les groupes dans une grille 2x2
-    m_statsGridLayout->addWidget(m_timeGroup, 0, 0);      // Première ligne, première colonne
-    m_statsGridLayout->addWidget(m_performanceGroup, 0, 1); // Première ligne, deuxième colonne
-    m_statsGridLayout->addWidget(m_riskGroup, 1, 0);      // Deuxième ligne, première colonne
-    m_statsGridLayout->addWidget(m_generalGroup, 1, 1);   // Deuxième ligne, deuxième colonne
+    // Ajouter m_timeGroup seul sur la première ligne (span sur 3 colonnes)
+    m_statsGridLayout->addWidget(m_timeGroup, 0, 0, 1, 3);          // Première ligne, span sur 3 colonnes
     
-    // Ajouter le placeholder en dessous de la grille
+    // Ajouter les 3 autres groupes sur la deuxième ligne
+    m_statsGridLayout->addWidget(m_performanceGroup, 1, 0);         // Deuxième ligne, première colonne
+    m_statsGridLayout->addWidget(m_riskGroup, 1, 1);               // Deuxième ligne, deuxième colonne
+    m_statsGridLayout->addWidget(m_generalGroup, 1, 2);            // Deuxième ligne, troisième colonne
+    
+    // Ajouter le placeholder en dessous de la grille (span sur 3 colonnes)
     QWidget* placeholderWidget = new QWidget();
     placeholderWidget->setLayout(m_statsContentLayout);
-    m_statsGridLayout->addWidget(placeholderWidget, 2, 0, 1, 2); // Span sur 2 colonnes
+    m_statsGridLayout->addWidget(placeholderWidget, 2, 0, 1, 3); // Span sur 3 colonnes
 }
 
 void StatsView::updateData(BacktestResults* results)

@@ -25,7 +25,6 @@ backtest_interface/PyQt/backtest_config.ini.bak
 # C++ extension files
 *.so
 *.pyd
-*.dll
 # Build directories
 build/
 dist/

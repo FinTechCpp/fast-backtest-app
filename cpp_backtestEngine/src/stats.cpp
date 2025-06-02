@@ -214,8 +214,8 @@ Stats computeStats(
     stats.trades = trades;               
     
     // Dates de début et fin du backtest
-    stats.start = data.getDate(0);  // Première date du dataset
-    stats.end = data.getDate(data.size() - 1);  // Dernière date du dataset
+    stats.start = data.at(0).date;  // Première date du dataset
+    stats.end = data.at(data.size() - 1).date;  // Dernière date du dataset
     stats.duration = stats.end - stats.start;  // Calcul de la durée totale du backtest
     
     // Calcul du drawdown: 1 - equity / max(equity)
@@ -256,10 +256,10 @@ Stats computeStats(
     stats.returnPct = equity.size() > 1 && std::abs(equity.front()) > 1e-10 ? 
         (equity.back() - equity.front()) / equity.front() * 100 : NaN;
     
-    // Rendement Buy & Hold
+    // Rendement Buy & Hold - Utiliser at() pour accéder aux données
     size_t first_trading_bar = 1;  // Simplifié par rapport à _indicator_warmup_nbars
-    double initial_price = data.Close(first_trading_bar);
-    double final_price = data.Close(-1);  // Dernier prix
+    double initial_price = data.at(first_trading_bar).close;  // Modifié
+    double final_price = data.at(data.size() - 1).close;      // Modifié
     stats.buyHoldReturnPct = (final_price - initial_price) / initial_price * 100;
     
     // Extraire les données des trades
@@ -272,8 +272,8 @@ Stats computeStats(
         return_pct_values.push_back(trade->plPercent());
         
         // Calculer la durée du trade en utilisant les dates réelles
-        Date entryDate = data.getDate(trade->entryBar());
-        Date exitDate = data.getDate(trade->exitBar());
+        Date entryDate = data.at(trade->entryBar()).date;  // Modifié
+        Date exitDate = data.at(trade->exitBar()).date;    // Modifié
         Duration tradeDuration = exitDate - entryDate;
         tradeDurations.push_back(tradeDuration);
     }
@@ -411,8 +411,8 @@ Stats computeStats(
             if (end - start <= 1) continue;
             
             // Convertir de l'indice de barre aux dates réelles
-            Date startDate = data.getDate(start);
-            Date endDate = data.getDate(end);
+            Date startDate = data.at(start).date;
+            Date endDate = data.at(end).date;
             Duration realDuration = endDate - startDate;
             
             realDurations.push_back(realDuration);
@@ -525,7 +525,7 @@ Stats computeStats(
     }
 
     for (size_t i = 1; i < data.size(); ++i) {
-        market_log_returns.push_back(std::log(data.Close(i) / data.Close(i-1)));
+        market_log_returns.push_back(std::log(data.at(i).close / data.at(i-1).close));  // Modifié
     }
 
     // Calculer le beta seulement si nous avons assez de données

@@ -51,9 +51,11 @@ Backtest::Backtest(std::shared_ptr<Data> data,
     }
     
     // Vérifier que les données OHLC ne contiennent pas de valeurs manquantes
+    // Utilise maintenant la méthode at() de notre nouvelle interface
     for (size_t i = 0; i < data->size(); ++i) {
-        if (std::isnan(data->Open(i)) || std::isnan(data->High(i)) || 
-            std::isnan(data->Low(i)) || std::isnan(data->Close(i))) {
+        const Candle& candle = data->at(i);
+        if (std::isnan(candle.open) || std::isnan(candle.high) || 
+            std::isnan(candle.low) || std::isnan(candle.close)) {
             throw std::invalid_argument("OHLC data contains NaN values. Please clean the data first.");
         }
     }
@@ -61,7 +63,7 @@ Backtest::Backtest(std::shared_ptr<Data> data,
     // Vérifier si certains prix sont supérieurs au capital initial
     bool largePrices = false;
     for (size_t i = 0; i < data->size(); ++i) {
-        if (data->Close(i) > cash) {
+        if (data->at(i).close > cash) {
             largePrices = true;
             break;
         }
@@ -74,10 +76,13 @@ Backtest::Backtest(std::shared_ptr<Data> data,
 }
 
 Stats Backtest::run() {
-    // Créer le broker et la stratégie
+    // Réinitialiser l'itérateur de données
+    _data->reset();
+    
+    // Créer le broker avec la nouvelle interface
     _broker = std::make_shared<Broker>(_data, _cash, _spread, _commission, 
-                                         _margin, _tradeOnClose, _hedging, 
-                                         _exclusiveOrders);
+                                       _margin, _tradeOnClose, _hedging, 
+                                       _exclusiveOrders);
     
     // Créer la stratégie en utilisant la factory
     std::shared_ptr<Strategy> strategy = _strategyFactory(_broker, _data);
@@ -92,59 +97,57 @@ Stats Backtest::run() {
     // Taille des données
     size_t dataSize = _data->size();
     
-    // Sauter les premières barres pour l'échauffement des indicateurs
-    // Dans une implémentation réelle, nous calculerions cela en fonction des indicateurs
-    size_t start = 1;  // Minimum pour avoir au moins deux points de données
-    
-    // Exécuter le backtest barre par barre
+    // Exécuter le backtest barre par barre - nouvelle approche avec itérateur
     try {
-        for (size_t i = start; i < dataSize; ++i) {
-            // Définir la longueur des données à la barre actuelle
-            _data->setLength(i + 1);
-            
+        // Dans l'ancien code on sautait la première barre (start=1)
+        // Avec notre nouvelle interface, nous allons avancer d'une position
+        _data->moveNext(); // Avancer à la position 1
+        
+        while (_data->hasNext()) {
             // Traiter les ordres et mettre à jour l'état du broker
             try {
-                _broker->next();
+                _broker->next(); // Cette méthode utilise maintenant l'itérateur directement
             } catch (const OutOfMoneyError& e) {
-                std::cerr << "Out of money at bar " << i << ". Stopping backtest.\n";
+                std::cerr << "Out of money at position " << _data->position() << ". Stopping backtest.\n";
                 break;
             } catch (const std::exception& e) {
-                std::cerr << "Broker error at bar " << i << ": " << e.what() << "\n";
+                std::cerr << "Broker error at position " << _data->position() << ": " << e.what() << "\n";
                 break;
             }
             
             // Exécuter la logique de la stratégie pour la barre actuelle
             strategy->next();
             
-            if (_progressCallback && (i % 100 == 0 || i == dataSize - 1)) { 
-                _progressCallback(i + 1, dataSize);
+            // Rapport de progression (tous les 100 barres ou à la fin)
+            if (_progressCallback && (_data->position() % 100 == 0 || _data->position() == dataSize - 1)) { 
+                _progressCallback(_data->position() + 1, dataSize);
             }
+            
+            // Avancer à la prochaine barre
+            _data->moveNext();
         }
         
         // Si finalizeTrades est activé, fermer tous les trades ouverts
-        if (_finalizeTrades) {
-            for (auto& trade : _broker->trades()) {
-                trade->close();
-            }
+        // if (_finalizeTrades) {
+        //     for (auto& trade : _broker->trades()) {
+        //         trade->close();
+        //     }
             
-            // Exécuter le broker une dernière fois pour traiter les ordres de clôture
-            try {
-                _broker->next();
-            } catch (const std::exception& e) {
-                std::cerr << "Error in final broker update: " << e.what() << "\n";
-            }
-        }
+        //     // Exécuter le broker une dernière fois pour traiter les ordres de clôture
+        //     try {
+        //         _broker->next();
+        //     } catch (const std::exception& e) {
+        //         std::cerr << "Error in final broker update: " << e.what() << "\n";
+        //     }
+        // }
     } catch (const std::exception& e) {
         std::cerr << "Error during backtest: " << e.what() << "\n";
     }
     
-    // Restaurer la longueur complète des données
-    _data->setLength(dataSize);
-    
     // Récupérer la courbe d'équité depuis le broker
     const std::vector<double>& equityCurve = _broker->getEquityCurve();
 
-    // Calculer les statistiques
+    // Calculer les statistiques avec nos interfaces mises à jour
     _lastResults = computeStats(_broker->closedTrades(), equityCurve, *_data);
 
     return _lastResults;
@@ -165,7 +168,7 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
     
     // Meilleurs paramètres et stats
     std::map<std::string, double> bestParams;
-    Stats bestStats = dummyStats();  // Utilisation de dummyStats() au lieu de dummyStatsMap
+    Stats bestStats = dummyStats();
 
     // Map pour stocker tous les résultats (pour heatmap)
     std::map<std::string, double> heatmap;
@@ -211,7 +214,7 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
                                  _finalizeTrades);
             
             // Exécuter le backtest avec les paramètres actuels
-            Stats stats = tempBacktest.run();  // Maintenant stats est de type Stats, pas une map
+            Stats stats = tempBacktest.run();
             
             // Convertir les statistiques en map pour accéder à la métrique maximize
             auto statsMap = stats.toMap();
@@ -222,7 +225,7 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
                 if (score > bestScore) {
                     bestScore = score;
                     bestParams = currentParams;
-                    bestStats = stats;  // Stocke directement l'objet Stats
+                    bestStats = stats;
                 }
                 
                 // Stocker pour la heatmap
@@ -248,7 +251,7 @@ Backtest::optimize(const std::map<std::string, std::vector<double>>& params,
     std::map<std::string, double> currentParams;
     searchParams(0, currentParams);
     
-    return {bestParams, bestStats};  // Retourne les meilleurs paramètres et les meilleures stats
+    return {bestParams, bestStats};
 }
 
 } // namespace be

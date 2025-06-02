@@ -40,10 +40,13 @@ Broker::Broker(std::shared_ptr<Data> data,
     
     // Initialize equity curve with the size of data
     _equityCurve.resize(data->size(), cash);
+
+    // Réinitialiser l'itérateur des données
+    _data->reset();
 }
 
 void Broker::next() {
-    _currentBar = _data->size() - 1;
+    _currentBar = _data->position();  // Utiliser la position actuelle de l'itérateur
     processOrders();
     
     // Log account equity for the equity curve
@@ -59,7 +62,7 @@ void Broker::next() {
         
         // Close all trades
         for (auto& trade : _trades) {
-            closeTrade(trade, _data->Close(-1), _currentBar);
+            closeTrade(trade, _data->currentClose(), _currentBar);
         }
         
         _cash = 0;
@@ -142,7 +145,7 @@ void Broker::cancelOrder(const Order& order) {
 }
 
 double Broker::lastPrice() const {
-    return _data->Close(-1);
+    return _data->currentClose();
 }
 
 double Broker::equity() const {
@@ -188,9 +191,27 @@ void Broker::processOrders() {
         }
         
         // Accès aux données OHLC
-        double open = _data->Open(-1);
-        double high = _data->High(-1);
-        double low = _data->Low(-1);
+        Candle currentCandle = _data->current();
+        double open = currentCandle.open;
+        double high = currentCandle.high;
+        double low = currentCandle.low;
+
+        // Trouver le prix de clôture de la barre précédente
+        double prevClose = 0.0;
+        if (_currentBar > 0) {
+            // Sauvegarde de la position actuelle
+            size_t currentPos = _data->position();
+            
+            try {
+                const Candle& prevCandle = _data->at(_currentBar - 1);
+                prevClose = prevCandle.close;
+            } catch (const std::exception& e) {
+                // En cas d'erreur, utiliser le prix d'ouverture actuel
+                prevClose = open;
+            }
+        } else {
+            prevClose = open;
+        }
         
         // Traiter chaque ordre de la copie
         for (const Order& order : ordersCopy) {
@@ -242,10 +263,7 @@ void Broker::processOrders() {
             } else {
                 // Ordre market ou market-if-touched
                 bool isContingentOrder = order.isContingent();
-                double prevClose = 0.0;
-                
-                prevClose = _currentBar > 0 ? _data->Close(_currentBar - 1) : open;
-                
+
                 price = (_tradeOnClose && !isContingentOrder) ? prevClose : open;
                 
                 if (stopPrice > 0.0) {
@@ -420,8 +438,18 @@ void Broker::processOrders() {
 
 void Broker::openTrade(double price, double size, double sl, double tp, 
                       size_t barIndex, const std::string& tag, const Order& order) {
-    // Create a new trade
-    std::shared_ptr<Trade> trade = std::make_shared<Trade>(shared_from_this(), size, price, barIndex, _data->getDate(barIndex), tag);
+    // Create a new trade - utilise la bougie courante pour la date
+    const Candle& currentCandle = _data->current();
+    
+    std::shared_ptr<Trade> trade = std::make_shared<Trade>(
+        shared_from_this(), 
+        size, 
+        price, 
+        barIndex, 
+        currentCandle.date,  // Utilisation de la date de la bougie courante
+        tag
+    );
+
     _trades.push_back(trade);
     
     // Apply commission at trade open
@@ -486,7 +514,7 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     }
     _trades.erase(tradeIt);
     
-    // Remove associated SL/TP orders if they exist
+    // Remove associated SL/TP orders
     if (trade->slOrder()) {
         auto orderIt = std::find(_orders.begin(), _orders.end(), *(trade->slOrder()));
         if (orderIt != _orders.end()) {
@@ -504,7 +532,8 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     // Set exit information and add to closed trades
     trade->setExitPrice(price);
     trade->setExitBar(barIndex);
-    trade->setExitDate(_data->getDate(barIndex));
+    trade->setExitDate(_data->currentDate());
+
     _closedTrades.push_back(trade);
     
     // Apply commission for trade exit and update cash

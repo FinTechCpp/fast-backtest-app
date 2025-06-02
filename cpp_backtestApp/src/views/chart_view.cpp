@@ -303,17 +303,19 @@ void ChartView::extractPriceData(BacktestResults* results)
         
         // Extraire les données OHLCV pour chaque barre
         for (size_t i = 0; i < dataSize; ++i) {
+            // Utiliser la nouvelle interface Data avec la structure Candle
+            const be::Candle& candle = beData->at(i);
+            
             // Convertir la date en timestamp pour le graphique
-            const be::Date& date = beData->getDate(i);
-            double timestamp = date.toTimestamp();
+            double timestamp = candle.date.toTimestamp();
             
             // Ajouter les données aux vecteurs
             m_priceData.timestamps.push_back(timestamp);
-            m_priceData.open.push_back(beData->Open(i));
-            m_priceData.high.push_back(beData->High(i));
-            m_priceData.low.push_back(beData->Low(i));
-            m_priceData.close.push_back(beData->Close(i));
-            m_priceData.volume.push_back(beData->Volume(i));
+            m_priceData.open.push_back(candle.open);
+            m_priceData.high.push_back(candle.high);
+            m_priceData.low.push_back(candle.low);
+            m_priceData.close.push_back(candle.close);
+            m_priceData.volume.push_back(candle.volume);
         }
         
     } catch (const std::exception& e) {

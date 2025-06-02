@@ -79,8 +79,6 @@ public:
      */
     void init() override {
         // Initialiser la stratégie
-
-        
     }
     
     /**
@@ -106,8 +104,11 @@ public:
         // Créer un objet Candle à partir des données actuelles
         Candle candle;
         
-        // Remplir la structure DateTime
-        be::Date current_date = getData()->getDate(-1);
+        // Remplir la structure DateTime à partir de la bougie courante
+        // Utilisation de la nouvelle interface
+        const be::Candle& currentCandle = getData()->current();
+        be::Date current_date = currentCandle.date;
+        
         candle.date.year = current_date.getYear();
         candle.date.month = current_date.getMonth();
         candle.date.day = current_date.getDay();
@@ -115,11 +116,11 @@ public:
         candle.date.time.minute = current_date.getMinute();
         candle.date.time.second = current_date.getSecond();
         
-        // Remplir les valeurs OHLC
-        candle.open = getData()->Open(-1);
-        candle.high = getData()->High(-1);
-        candle.low = getData()->Low(-1);
-        candle.close = getData()->Close(-1);
+        // Remplir les valeurs OHLC avec la nouvelle interface
+        candle.open = currentCandle.open;
+        candle.high = currentCandle.high;
+        candle.low = currentCandle.low;
+        candle.close = currentCandle.close;
         
         // Remplir les informations de position
         be::Position position = getPosition();

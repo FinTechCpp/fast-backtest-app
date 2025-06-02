@@ -93,25 +93,28 @@ public:
         // TODO: C'est une cata on fait plein de getData() qui return l'ensemble des données du backtest c'esttres lent
         // surtout que on a besoin seulement de la derniere candle
         // Vérifier si une position a été fermée depuis la dernière bougie
-        const std::vector<be::Trade> closedTrades = getClosedTrades();
-        if (closedTrades.size() > last_closed_trade_count) {
-            be::Trade last_trade = closedTrades.back();
+        // const std::vector<be::Trade> closedTrades = getClosedTrades();
+        // if (closedTrades.size() > last_closed_trade_count) {
+        //     be::Trade last_trade = closedTrades.back();
             
-            // Vérifier si le trade a été fermé à la dernière bougie
-            if (last_trade.exitDate() == getData()->getDate(-1)) {
-                last_trade_closed = true;
-                last_trade_pnl = last_trade.pl(); 
-            }
+        //     // Vérifier si le trade a été fermé à la dernière bougie
+        //     if (last_trade.exitDate() == getData()->getDate(-1)) {
+        //         last_trade_closed = true;
+        //         last_trade_pnl = last_trade.pl(); 
+        //     }
             
-            // Mettre à jour le compteur
-            last_closed_trade_count = closedTrades.size();
-        }
+        //     // Mettre à jour le compteur
+        //     last_closed_trade_count = closedTrades.size();
+        // }
 
         // Créer un objet Candle à partir des données actuelles
         Candle candle;
         
-        // Remplir la structure DateTime
-        be::Date current_date = getData()->getDate(-1);
+        // Remplir la structure DateTime à partir de la bougie courante
+        // Utilisation de la nouvelle interface
+        const be::Candle& currentCandle = getData()->current();
+        be::Date current_date = currentCandle.date;
+        
         candle.date.year = current_date.getYear();
         candle.date.month = current_date.getMonth();
         candle.date.day = current_date.getDay();
@@ -119,11 +122,11 @@ public:
         candle.date.time.minute = current_date.getMinute();
         candle.date.time.second = current_date.getSecond();
         
-        // Remplir les valeurs OHLC
-        candle.open = getData()->Open(-1);
-        candle.high = getData()->High(-1);
-        candle.low = getData()->Low(-1);
-        candle.close = getData()->Close(-1);
+        // Remplir les valeurs OHLC avec la nouvelle interface
+        candle.open = currentCandle.open;
+        candle.high = currentCandle.high;
+        candle.low = currentCandle.low;
+        candle.close = currentCandle.close;
         
         // Remplir les informations de position
         be::Position position = getPosition();

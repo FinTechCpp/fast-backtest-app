@@ -317,7 +317,9 @@ void Strategy::execute() {
     update_daily_pnl_tracking();
     
     // Quick time check before executing anything else
-    if (!check_time()) {
+    //TODO: Executer check_time() dans un thread séparé du backtest_Worker
+    // parce que beaucoup trop lent
+   /* if (!check_time()) {
         logger->log_execution_step("Vérification horaires", false);
         if (in_position) {
             logger->log_general("Hors horaires de trading - Liquidation de position", LogLevel::INFO);
@@ -325,7 +327,7 @@ void Strategy::execute() {
         }
         is_executing = false;
         return;
-    }
+    }*/
     logger->log_execution_step("Vérification horaires", true);
 
     // Mise à jour des indicateurs

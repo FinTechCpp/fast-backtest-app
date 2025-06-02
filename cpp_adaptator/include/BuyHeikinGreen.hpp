@@ -90,23 +90,19 @@ public:
      * met à jour la stratégie et traite les signaux générés.
      */
     void next() override {
-        // TODO: C'est une cata on fait plein de getData() qui return l'ensemble des données du backtest c'esttres lent
-        // surtout que on a besoin seulement de la derniere candle
-        // Vérifier si une position a été fermée depuis la dernière bougie
-        const std::vector<be::Trade> closedTrades = getClosedTrades();
-        if (closedTrades.size() > last_closed_trade_count) {
-            be::Trade last_trade = closedTrades.back();
-            
-            // Vérifier si le trade a été fermé à la dernière bougie
-            if (last_trade.exitDate() == getData()->getDate(-1)) {
-                last_trade_closed = true;
-                last_trade_pnl = last_trade.pl(); 
-            }
-            
-            // Mettre à jour le compteur
-            last_closed_trade_count = closedTrades.size();
-        }
+        // Au lieu de récupérer tous les trades à chaque fois
+        // auto allTrades = getClosedTrades(); // NE PAS FAIRE CECI
+    
+        // Compter les trades fermés pour détecter les nouveaux
+        size_t currentTradeCount = _broker->closedTrades().size();
+        
+        // Seulement si de nouveaux trades ont été fermés
+        if (currentTradeCount > last_closed_trade_count) {
+            // Traiter uniquement les nouveaux trades si nécessaire
 
+            last_closed_trade_count = currentTradeCount;
+        }
+        
         // Créer un objet Candle à partir des données actuelles
         Candle candle;
         

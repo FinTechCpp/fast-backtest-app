@@ -95,7 +95,7 @@ void ResultManager::onTabResized()
         qDebug() << "Redimensionnement du graphique à:" << newChartWidth;
         
         // Redimensionner le graphique via la vue
-        m_chartView->resizeChart(newChartWidth);
+        // m_chartView->resizeChart(newChartWidth);
     }
 }
 

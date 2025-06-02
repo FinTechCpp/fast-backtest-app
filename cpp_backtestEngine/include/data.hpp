@@ -2,13 +2,16 @@
 
 #include <vector>
 #include <string>
-#include <chrono>
 #include <memory>
 #include <map>
+#include <stdexcept>
 #include "date.hpp"
 
 namespace be {
 
+/**
+ * @brief Structure qui représente une bougie (OHLCV)
+ */
 struct Candle {
     Date date;
     double open;
@@ -16,6 +19,9 @@ struct Candle {
     double low;
     double close;
     double volume;
+    
+    // Valeurs personnalisées ajoutées dynamiquement
+    std::map<std::string, double> customValues;
 };
 
 /**

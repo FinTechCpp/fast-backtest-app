@@ -1,4 +1,4 @@
-#include "widgets/chart_widget.h"
+#include "chart_widget.h"
 #include <QVBoxLayout>
 #include <QDebug>
 #include <algorithm>
@@ -489,16 +489,16 @@ FinanceChart* ChartWidget::drawChart(
         // Ajouter les marqueurs au graphique principal
         XYChart* mainChart = (XYChart*)c->getChart(1);
         
-        // Marqueurs pour les entrées (triangles verts)
-        ScatterLayer* entryLayer = mainChart->addScatterLayer();
-        DataSet* entrySet = entryLayer->addDataSet(entryTimes, entryPrices, "Entries");
-        entrySet->setDataSymbol(Chart::TriangleSymbol, 11, 0x00aa00, 0x00aa00, 1);
+        // // Marqueurs pour les entrées (triangles verts)
+        // ScatterLayer* entryLayer = mainChart->addScatterLayer();
+        // DataSet* entrySet = entryLayer->addDataSet(entryTimes, entryPrices, "Entries");
+        // entrySet->setDataSymbol(Chart::TriangleSymbol, 11, 0x00aa00, 0x00aa00, 1);
         
-        // Marqueurs pour les sorties (triangles inversés rouges)
-        ScatterLayer* exitLayer = mainChart->addScatterLayer();
-        DataSet* exitSet = exitLayer->addDataSet(exitTimes, exitPrices, "Exits");
-        exitSet->setDataSymbol(Chart::TriangleSymbol, 11, 0xaa0000, 0xaa0000, 1);
-        exitSet->setSymbolOffset(0, 180); // Inverser le triangle pour les sorties
+        // // Marqueurs pour les sorties (triangles inversés rouges)
+        // ScatterLayer* exitLayer = mainChart->addScatterLayer();
+        // DataSet* exitSet = exitLayer->addDataSet(exitTimes, exitPrices, "Exits");
+        // exitSet->setDataSymbol(Chart::TriangleSymbol, 11, 0xaa0000, 0xaa0000, 1);
+        // exitSet->setSymbolOffset(0, 180); // Inverser le triangle pour les sorties
     }
     
     // Mettre à jour le graphique dans le viewer
@@ -525,7 +525,7 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         XYChart* c = (XYChart*)m->getChart(i);
         
         // Variables pour les entrées de légende
-        std::ostringstream ohlcLegend;
+        // std::ostringstream ohlcLegend;
         std::vector<std::string> legendEntries;
         
         // Itérer sur toutes les couches pour trouver le point de données le plus élevé
@@ -543,11 +543,11 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
                 
                 if (closeValue != Chart::NoValue) {
                     // Construire la légende OHLC
-                    ohlcLegend << "      <*block*>";
-                    ohlcLegend << "Open: " << c->formatValue(openValue, "{value|P4}");
-                    ohlcLegend << ", High: " << c->formatValue(highValue, "{value|P4}");
-                    ohlcLegend << ", Low: " << c->formatValue(lowValue, "{value|P4}");
-                    ohlcLegend << ", Close: " << c->formatValue(closeValue, "{value|P4}");
+                    // ohlcLegend << "      <*block*>";
+                    // ohlcLegend << "Open: " << c->formatValue(openValue, "{value|P4}");
+                    // ohlcLegend << ", High: " << c->formatValue(highValue, "{value|P4}");
+                    // ohlcLegend << ", Low: " << c->formatValue(lowValue, "{value|P4}");
+                    // ohlcLegend << ", Close: " << c->formatValue(closeValue, "{value|P4}");
                     
                     // Aussi dessiner un triangle vers le haut ou vers le bas pour les jours de hausse et de baisse et le % de variation
                     double lastCloseValue = layer->getDataSet(3)->getValue(xIndex - 1);
@@ -558,11 +558,11 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
                             "<*font,color=008800*><*img=@triangle,width=8,color=008800*>" :
                             "<*font,color=CC0000*><*img=@invertedtriangle,width=8,color=CC0000*>";
                         
-                        ohlcLegend << "  " << symbol << " " << c->formatValue(change, "{value|P4}");
-                        ohlcLegend << " (" << c->formatValue(percent, "{value|2}") << "%)<*/font*>";
+                        // ohlcLegend << "  " << symbol << " " << c->formatValue(change, "{value|P4}");
+                        // ohlcLegend << " (" << c->formatValue(percent, "{value|2}") << "%)<*/font*>";
                     }
                     
-                    ohlcLegend << "<*/*>";
+                    // ohlcLegend << "<*/*>";
                 }
             } else {
                 // Itérer sur tous les ensembles de données de la couche
@@ -611,10 +611,10 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
                         }
                         
                         // Construire l'entrée de légende, composée d'une boîte carrée colorée et du nom (avec la valeur des données dedans)
-                        std::ostringstream legendEntry;
-                        legendEntry << "<*block*><*img=@square,width=8,edgeColor=000000,color="
-                            << std::hex << dataSet->getDataColor() << "*> " << name << "<*/*>";
-                        legendEntries.push_back(legendEntry.str());
+                        // std::ostringstream legendEntry;
+                        // legendEntry << "<*block*><*img=@square,width=8,edgeColor=000000,color="
+                        //     << std::hex << dataSet->getDataColor() << "*> " << name << "<*/*>";
+                        // legendEntries.push_back(legendEntry.str());
                     }
                 }
             }
@@ -626,22 +626,22 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
         
         // La légende commence par l'étiquette de date, puis la légende ohlc (le cas échéant), et ensuite les entrées pour les indicateurs
-        std::ostringstream legendText;
-        legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
-            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "mmm dd, yyyy")
-            << "]<*/font*>" << ohlcLegend.str();
-        for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
-            legendText << "      " << legendEntries[i];
-        }
-        legendText << "<*/*>";
+        // std::ostringstream legendText;
+        // legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
+        //     << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "mmm dd, yyyy")
+        //     << "]<*/font*>" << ohlcLegend.str();
+        // for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
+        //     legendText << "      " << legendEntries[i];
+        // }
+        // legendText << "<*/*>";
         
         // Dessiner une ligne de suivi verticale à la position x
         d->vline(plotAreaTopY, plotAreaTopY + plotArea->getHeight(), c->getXCoor(xValue) +
             c->getAbsOffsetX(), d->dashLineColor(0x000000, 0x0101));
         
         // Afficher la légende en haut de la zone de tracé
-        TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
-        t->draw(plotAreaLeftX + 5, plotAreaTopY + 3, 0x000000, Chart::TopLeft);
-        t->destroy();
+        // TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
+        // t->draw(plotAreaLeftX + 5, plotAreaTopY + 3, 0x000000, Chart::TopLeft);
+        // t->destroy();
     }
 }

@@ -545,4 +545,70 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     trade->setCommissions(commission + openCommission);
 }
 
+void Broker::finalizeOrders() {
+    try {
+        // Accéder à la dernière bougie disponible plutôt qu'à la bougie courante
+        const Candle& lastCandle = _data->at(_data->size() - 1);
+        
+        // Créer une copie des ordres à traiter
+        std::vector<Order> ordersCopy = _orders;
+        
+        // Variables pour le traitement des ordres
+        double open = lastCandle.open;
+        double high = lastCandle.high;
+        double low = lastCandle.low;
+        double close = lastCandle.close;
+        
+        // Traiter les ordres de la même façon que processOrders() mais en utilisant
+        // la dernière bougie et sans tenter d'accéder à current()
+        
+        // Code simplifié pour traiter les ordres de clôture
+        for (const Order& order : ordersCopy) {
+            auto orderIt = std::find(_orders.begin(), _orders.end(), order);
+            if (orderIt == _orders.end()) continue;
+            
+            // Si c'est un ordre lié à un trade, fermer ce trade
+            if (order.parentTrade()) {
+                auto trade = order.parentTrade();
+                auto tradeIt = std::find(_trades.begin(), _trades.end(), trade);
+                if (tradeIt != _trades.end()) {
+                    try {
+                        // Fermer le trade avec le dernier prix
+                        closeTrade(trade, close, _data->size() - 1);
+                    } catch (const std::exception& e) {
+                        std::cerr << "ERROR in finalizeOrders/closeTrade: " << e.what() << std::endl;
+                    }
+                }
+                
+                // Supprimer l'ordre
+                auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
+                if (orderToRemove != _orders.end()) {
+                    _orders.erase(orderToRemove);
+                }
+            }
+            // Autres types d'ordres...
+        }
+        
+        // Fermer tous les trades restants avec le dernier prix
+        std::vector<std::shared_ptr<Trade>> tradesCopy = _trades;
+        for (auto& trade : tradesCopy) {
+            try {
+                closeTrade(trade, close, _data->size() - 1);
+            } catch (const std::exception& e) {
+                std::cerr << "ERROR in finalizeOrders/closeTrade: " << e.what() << std::endl;
+            }
+        }
+        
+        // Mettre à jour l'equity curve pour la dernière barre
+        double currentEquity = equity();
+        size_t lastIndex = _data->size() - 1;
+        if (lastIndex < _equityCurve.size()) {
+            _equityCurve[lastIndex] = currentEquity;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Erreur lors de la finalisation des ordres: " << e.what() << std::endl;
+    }
+}
+
+
 } // namespace be

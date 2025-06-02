@@ -128,18 +128,15 @@ Stats Backtest::run() {
         }
         
         // Si finalizeTrades est activé, fermer tous les trades ouverts
-        // if (_finalizeTrades) {
-        //     for (auto& trade : _broker->trades()) {
-        //         trade->close();
-        //     }
+        if (_finalizeTrades) {
+            for (auto& trade : _broker->trades()) {
+                trade->close();
+            }
             
-        //     // Exécuter le broker une dernière fois pour traiter les ordres de clôture
-        //     try {
-        //         _broker->next();
-        //     } catch (const std::exception& e) {
-        //         std::cerr << "Error in final broker update: " << e.what() << "\n";
-        //     }
-        // }
+            // Utiliser la méthode spéciale pour finaliser les ordres
+            _broker->finalizeOrders();
+
+        }
     } catch (const std::exception& e) {
         std::cerr << "Error during backtest: " << e.what() << "\n";
     }

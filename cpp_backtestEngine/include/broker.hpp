@@ -39,6 +39,14 @@ public:
                   std::shared_ptr<Trade> trade = nullptr);
     
     void cancelOrder(const Order& order);
+
+    /**
+     * @brief Finalise les trades sans avancer l'itérateur de données
+     * 
+     * Cette méthode est utilisée à la fin du backtest pour traiter les ordres
+     * de clôture sans essayer d'avancer l'itérateur de données qui est déjà à la fin.
+     */
+    void finalizeOrders();
     
     // Broker state accessors
     double lastPrice() const;
@@ -50,6 +58,7 @@ public:
     std::vector<std::shared_ptr<Trade>> trades() const { return _trades; }
     std::vector<std::shared_ptr<Trade>> closedTrades() const { return _closedTrades; }
     const std::vector<double>& getEquityCurve() const { return _equityCurve; }
+
     
 private:
     std::shared_ptr<Data> _data;

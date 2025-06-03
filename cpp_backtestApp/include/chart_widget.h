@@ -26,18 +26,6 @@ struct PriceData {
 };
 
 /**
- * @brief Structure pour stocker les données des trades
- */
-// struct TradeData {
-//     std::vector<double> entry_times;
-//     std::vector<double> exit_times;
-//     std::vector<double> entry_prices;
-//     std::vector<double> exit_prices;
-//     std::vector<QString> types;
-//     std::vector<double> pnl;
-// };
-
-/**
  * @brief Structure pour stocker les données d'équité
  */
 struct EquityData {
@@ -135,7 +123,6 @@ private:
     
     // Données
     PriceData m_priceData;
-    // TradeData m_tradeData;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
     

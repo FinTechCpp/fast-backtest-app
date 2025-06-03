@@ -77,10 +77,7 @@ void ChartWidget::setBacktestTrades(const std::vector<std::shared_ptr<be::Trade>
         return;
     }
     
-    // Convertir les trades en format interne
-    // convertBacktestTrades(trades);
-
-    m_trades = trades; // Stocker les trades pour une utilisation future
+    m_trades = trades;
     
     // Mettre à jour le graphique uniquement si nous avons déjà des données de prix valides
     if (hasValidData()) {
@@ -292,8 +289,8 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     trackFinance(m_financeChart, mouseX);
     
     // Récupérer les informations sur le point
-    if (m_financeChart->getChartCount() > 0) {
-        XYChart* mainChart = (XYChart*)m_financeChart->getChart(0);
+    if (m_financeChart->getChartCount() > 1) {
+        XYChart* mainChart = (XYChart*)m_financeChart->getChart(1);
         double xValue = mainChart->getNearestXValue(mouseX);
         
         // Trouver l'indice correspondant
@@ -351,56 +348,6 @@ void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
     qDebug() << "Données de prix converties:" << dataSize << "bougies";
 }
 
-// void ChartWidget::convertBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
-//     if (trades.empty()) {
-//         qWarning() << "Liste de trades vide";
-//         return;
-//     }
-
-//     // Réinitialiser les données de trades
-//     m_tradeData = TradeData();
-    
-//     // Réserver la capacité
-//     size_t tradeCount = trades.size();
-//     m_tradeData.entry_times.reserve(tradeCount);
-//     m_tradeData.exit_times.reserve(tradeCount);
-//     m_tradeData.entry_prices.reserve(tradeCount);
-//     m_tradeData.exit_prices.reserve(tradeCount);
-//     m_tradeData.types.reserve(tradeCount);
-//     m_tradeData.pnl.reserve(tradeCount);
-
-//     // Convertir chaque trade
-//     for (const auto& trade : trades) {
-//         if (!trade) continue;
-        
-//         // Convertir les dates d'entrée et de sortie en timestamps
-//         double entryTimestamp = dateToChartTimestamp(trade->entryDate());
-        
-//         m_tradeData.entry_times.push_back(entryTimestamp);
-//         m_tradeData.entry_prices.push_back(trade->entryPrice());
-        
-//         // Ajouter les informations de sortie si le trade est fermé
-//         if (trade->isClosed()) {
-//             double exitTimestamp = dateToChartTimestamp(trade->exitDate());
-//             m_tradeData.exit_times.push_back(exitTimestamp);
-//             m_tradeData.exit_prices.push_back(trade->exitPrice());
-//         } else {
-//             // Pour les trades ouverts, utiliser des valeurs par défaut
-//             m_tradeData.exit_times.push_back(0);  // 0 indique que le trade est toujours ouvert
-//             m_tradeData.exit_prices.push_back(0);
-//         }
-        
-//         // Type de trade (Long ou Short)
-//         QString type = trade->isLong() ? "Long" : "Short";
-//         m_tradeData.types.push_back(type);
-        
-//         // P&L du trade
-//         m_tradeData.pnl.push_back(trade->pl());
-//     }
-    
-//     qDebug() << "Données de trades converties:" << tradeCount << "trades";
-// }
-
 void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve, 
                                     const std::shared_ptr<be::Data>& data) {
     if (equityCurve.empty() || !data) {
@@ -425,8 +372,9 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
             m_equityData.timestamps.push_back(timestamp);
             m_equityData.equity_values.push_back(equityCurve[i]);
         }
+
+        std::cout << "Équité alignée avec les bougies" << std::endl;
     }
-    // Cas où il y a moins de points d'équité que de barres (interpolation)
     else if (numPoints < numBars) {
         m_equityData.timestamps.reserve(numBars);
         m_equityData.equity_values.resize(numBars);
@@ -437,35 +385,39 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
             m_equityData.timestamps.push_back(timestamp);
         }
         
-        // Interpolation linéaire
+        // La courbe d'équité commence généralement au premier indice, donc aligner le début
+        // On suppose que equityCurve[0] correspond à la première bougie
+        double initialEquity = equityCurve[0];
+        
+        // Replier l'équité depuis le début
         for (size_t i = 0; i < numBars; ++i) {
-            double mappedIndex = static_cast<double>(i) * (numPoints - 1) / (numBars - 1);
-            size_t lowerIndex = static_cast<size_t>(mappedIndex);
-            size_t upperIndex = std::min(lowerIndex + 1, numPoints - 1);
-            
-            if (lowerIndex == upperIndex) {
-                m_equityData.equity_values[i] = equityCurve[lowerIndex];
+            if (i < numPoints) {
+                // Utiliser directement les valeurs disponibles
+                m_equityData.equity_values[i] = equityCurve[i];
             } else {
-                double fraction = mappedIndex - lowerIndex;
-                m_equityData.equity_values[i] = equityCurve[lowerIndex] * (1 - fraction) + 
-                                               equityCurve[upperIndex] * fraction;
+                // Utiliser la dernière valeur disponible pour les bougies supplémentaires
+                m_equityData.equity_values[i] = equityCurve[numPoints - 1];
             }
         }
+
+        std::cout << "Équité étendue pour couvrir toutes les bougies" << std::endl;
     }
-    // Cas où il y a plus de points d'équité que de barres (sous-échantillonnage)
+    // Cas où il y a plus de points d'équité que de barres
     else {
         m_equityData.timestamps.reserve(numBars);
         m_equityData.equity_values.resize(numBars);
         
+        // On va supposer que l'equity curve est générée à chaque bougie,
+        // donc on prend simplement les points correspondants
         for (size_t i = 0; i < numBars; ++i) {
             double timestamp = dateToChartTimestamp(data->at(i).date);
             m_equityData.timestamps.push_back(timestamp);
             
-            // Mappage linéaire pour le sous-échantillonnage
-            size_t j = static_cast<size_t>(i * (numPoints - 1) / (numBars - 1));
-            j = std::min(j, numPoints - 1);
-            m_equityData.equity_values[i] = equityCurve[j];
+            // Prendre directement les équivalents (au lieu de sous-échantillonner)
+            m_equityData.equity_values[i] = equityCurve[i];
         }
+
+        std::cout << "Équité tronquée pour correspondre aux bougies" << std::endl;
     }
     
     // Calculer le drawdown
@@ -481,8 +433,8 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
             m_equityData.drawdown[i] = dd;
         }
     }
-    
-    qDebug() << "Courbe d'équité convertie:" << m_equityData.timestamps.size() << "points";
+
+    std::cout << "Courbe d'équité convertie:" << m_equityData.timestamps.size() << "points" << std::endl;
 }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {
@@ -585,6 +537,7 @@ DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec)
     // Note: ChartDirector libère la mémoire des DoubleArray qu'il consomme
 }
 
+// possiblement faisable en simd ??? 
 void ChartWidget::calculateHeikinAshi(
     const std::vector<double>& open,
     const std::vector<double>& high,
@@ -649,38 +602,38 @@ FinanceChart* ChartWidget::drawChart(
     int equityHeight = 150;     // Hauteur du graphique d'équité
     int mainChartHeight = 400;  // Hauteur du graphique principal
     int volumeHeight = 100;     // Hauteur du graphique de volume
+
+    // Déterminer l'index de début et de fin des données actuellement affichées
+    // timestamps contient uniquement les bougies visibles
+    int startIndex = 0;  // L'index de début des données visibles par rapport au dataset complet
+    
+    // Si nous sommes en mode viewport (zoom/déplacement), déterminer l'index de début
+    if (timestamps.len < (int)m_priceData.timestamps.size()) {
+        double firstVisibleTimestamp = timestamps[0];
+        
+        // Trouver l'index correspondant dans le dataset complet
+        for (size_t i = 0; i < m_priceData.timestamps.size(); ++i) {
+            if (std::abs(m_priceData.timestamps[i] - firstVisibleTimestamp) < 0.001) {
+                startIndex = i;
+                break;
+            }
+        }
+    }
     
     // 1. Ajouter la courbe d'équité en haut si disponible
     if (!m_equityData.equity_values.empty() && timestamps.len > 0) {
-        // Vérifier que nous avons des données alignées
-        if (m_equityData.timestamps.size() >= (size_t)timestamps.len) {
-            // Extraire les valeurs d'equity qui correspondent aux timestamps actuels
-            std::vector<double> visibleEquity;
-            visibleEquity.resize(timestamps.len);
-            
-            // Trouver les indices correspondants dans m_equityData.timestamps
-            for (int i = 0; i < timestamps.len; ++i) {
-                double currentTimestamp = timestamps[i];
-                auto it = std::lower_bound(m_equityData.timestamps.begin(), 
-                                          m_equityData.timestamps.end(), 
-                                          currentTimestamp);
-                
-                size_t idx;
-                if (it == m_equityData.timestamps.end()) {
-                    idx = m_equityData.timestamps.size() - 1;
-                } else {
-                    idx = std::distance(m_equityData.timestamps.begin(), it);
-                    // Ajuster si nécessaire
-                    if (idx > 0 && idx < m_equityData.timestamps.size() &&
-                        fabs(m_equityData.timestamps[idx] - currentTimestamp) >
-                        fabs(m_equityData.timestamps[idx-1] - currentTimestamp)) {
-                        idx--;
-                    }
-                }
-                
-                // S'assurer que l'indice est dans les limites
-                idx = std::min(idx, m_equityData.equity_values.size() - 1);
-                visibleEquity[i] = m_equityData.equity_values[idx];
+        // Trouver les indices correspondant à la fenêtre visible
+        int equityStartIndex = startIndex;  // Utiliser le même index de début que pour les bougies
+        int equityEndIndex = std::min(equityStartIndex + timestamps.len, (int)m_equityData.equity_values.size());
+        
+        if (equityStartIndex < (int)m_equityData.equity_values.size()) {
+            // Créer un sous-tableau pour les valeurs d'equity visibles
+            std::vector<double> visibleEquity(m_equityData.equity_values.begin() + equityStartIndex,
+                                            m_equityData.equity_values.begin() + equityEndIndex);
+                                            
+            // Si nécessaire, compléter pour avoir la même taille que le nombre de bougies visibles
+            while (visibleEquity.size() < (size_t)timestamps.len) {
+                visibleEquity.push_back(visibleEquity.back());
             }
             
             // Convertir en DoubleArray
@@ -697,6 +650,20 @@ FinanceChart* ChartWidget::drawChart(
             LineLayer* equityLayer = equityChart->addLineLayer();
             equityLayer->addDataSet(equityValues, 0x008800, "Equity");
             equityLayer->setLineWidth(2);
+            
+            // Optionnel: ajouter un point à la fin de la courbe pour marquer la valeur actuelle
+            if (!visibleEquity.empty()) {
+                std::vector<double> lastPointX = {(double)(visibleEquity.size() - 1)};
+                std::vector<double> lastPointY = {visibleEquity.back()};
+                
+                DoubleArray xPoint = vectorToDoubleArray(lastPointX);
+                DoubleArray yPoint = vectorToDoubleArray(lastPointY);
+                
+                ScatterLayer* endPoint = equityChart->addScatterLayer(xPoint, yPoint, 
+                                                                    "Current", Chart::CircleShape, 7, 
+                                                                    0x008800, 0x008800);
+                endPoint->moveFront();
+            }
         }
     }
     
@@ -712,9 +679,6 @@ FinanceChart* ChartWidget::drawChart(
         c->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
     
-    // 3. Ajouter le graphique de volume
-    // c->addVolBars(volumeHeight, 0x99ff99, 0xff9999, 0x808080);
-    
     // 4. Ajouter les trades si disponibles
     if (!m_trades.empty()) {
         // Ajouter les marqueurs au graphique principal
@@ -722,23 +686,6 @@ FinanceChart* ChartWidget::drawChart(
 
         if (!mainChart) {
             return c;
-        }
-
-        // Déterminer l'index de début et de fin des données actuellement affichées
-        // timestamps contient uniquement les bougies visibles
-        int startIndex = 0;  // L'index de début des données visibles par rapport au dataset complet
-        
-        // Si nous sommes en mode viewport (zoom/déplacement), déterminer l'index de début
-        if (timestamps.len < (int)m_priceData.timestamps.size()) {
-            double firstVisibleTimestamp = timestamps[0];
-            
-            // Trouver l'index correspondant dans le dataset complet
-            for (size_t i = 0; i < m_priceData.timestamps.size(); ++i) {
-                if (std::abs(m_priceData.timestamps[i] - firstVisibleTimestamp) < 0.001) {
-                    startIndex = i;
-                    break;
-                }
-            }
         }
         
         // Filtrer les trades qui sont visibles dans la fenêtre actuelle
@@ -763,18 +710,6 @@ FinanceChart* ChartWidget::drawChart(
             // Convertir en DoubleArray
             DoubleArray xIndices = vectorToDoubleArray(visibleIndices);
             DoubleArray yPrices = vectorToDoubleArray(visiblePrices);
-
-            // Afficher les valeurs pour debug
-            std::cout << "Trades visibles (" << visibleIndices.size() << " sur " << m_trades.size() << "):" << std::endl;
-            for (size_t i = 0; i < std::min(visibleIndices.size(), size_t(5)); i++) {
-                std::cout << "Trade visible " << i << ": indice relatif=" << visibleIndices[i] 
-                        << ", prix=" << visiblePrices[i] << std::endl;
-            }
-            
-            // Debug des indices visibles
-            std::cout << "Fenêtre visible: début=" << startIndex
-                    << ", taille=" << timestamps.len
-                    << ", fin=" << (startIndex + timestamps.len - 1) << std::endl;
 
             // Marqueurs pour les entrées (triangles verts)
             ScatterLayer* entryLayer = mainChart->addScatterLayer(
@@ -813,13 +748,6 @@ FinanceChart* ChartWidget::drawChart(
                 // Convertir en DoubleArray
                 DoubleArray xExitIndices = vectorToDoubleArray(visibleExitIndices);
                 DoubleArray yExitPrices = vectorToDoubleArray(visibleExitPrices);
-
-                // Afficher les valeurs pour debug
-                std::cout << "Sorties visibles (" << visibleExitIndices.size() << "):" << std::endl;
-                for (size_t i = 0; i < std::min(visibleExitIndices.size(), size_t(5)); i++) {
-                    std::cout << "Sortie visible " << i << ": indice relatif=" << visibleExitIndices[i] 
-                            << ", prix=" << visibleExitPrices[i] << std::endl;
-                }
                 
                 // Marqueurs pour les sorties (triangles inversés rouges)
                 ScatterLayer* exitLayer = mainChart->addScatterLayer(
@@ -833,40 +761,9 @@ FinanceChart* ChartWidget::drawChart(
                 
                 // S'assurer que les marqueurs sont au premier plan
                 exitLayer->moveFront();
-            } else {
-                std::cout << "Aucune sortie visible dans la fenêtre actuelle" << std::endl;
             }
-        } else {
-            std::cout << "Aucun trade visible dans la fenêtre actuelle" << std::endl;
         }
     }
-
-        // c->layout();
-        // entryLayer->moveFront();
-        
-        // // Filtrer les trades fermés (exit_time != 0)
-        // std::vector<double> validExitTimes;
-        // std::vector<double> validExitPrices;
-        
-        // for (size_t i = 0; i < m_tradeData.exit_times.size(); ++i) {
-        //     if (m_tradeData.exit_times[i] > 0) {  // Trade fermé
-        //         validExitTimes.push_back(m_tradeData.exit_times[i]);
-        //         validExitPrices.push_back(m_tradeData.exit_prices[i]);
-        //     }
-        // }
-        
-        // Ajouter les marqueurs des sorties si nous avons des trades fermés
-        // if (!validExitTimes.empty()) {
-        //     // Marqueurs pour les sorties (triangles inversés rouges)
-        //     ScatterLayer* exitLayer = mainChart->addScatterLayer(
-        //         vectorToDoubleArray(std::vector<double>(
-        //             validExitTimes[0]
-        //         )),
-        //         vectorToDoubleArray(std::vector<double>(
-        //             validExitPrices[0]
-        //         )),
-        //         "Sorties", Chart::InvertedTriangleSymbol, 11, 0xaa0000, 0xaa0000);
-        // }
     
     // Mettre à jour le graphique dans le viewer
     m_chartViewer->setChart(c);
@@ -880,19 +777,21 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
     DrawArea* d = m->initDynamicLayer();
     
     // Vérifier que le graphique n'est pas vide
-    if (m->getChartCount() == 0) {
+    if (m->getChartCount() == 0)
         return;
-    }
     
     // Obtenir la valeur x la plus proche de la souris
     int xValue = (int)(((XYChart*)m->getChart(0))->getNearestXValue(mouseX));
+
+    std::cout << "Tracking mouse at xValue: " << xValue << std::endl;
     
     // Itérer sur tous les graphiques XY dans le FinanceChart
+    XYChart *c = 0;
     for (int i = 0; i < m->getChartCount(); ++i) {
-        XYChart* c = (XYChart*)m->getChart(i);
+        c = (XYChart*)m->getChart(i);
         
         // Variables pour les entrées de légende
-        // std::ostringstream ohlcLegend;
+        std::ostringstream ohlcLegend;
         std::vector<std::string> legendEntries;
         
         // Itérer sur toutes les couches pour trouver le point de données le plus élevé
@@ -909,12 +808,12 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
                 double closeValue = layer->getDataSet(3)->getValue(xIndex);
                 
                 if (closeValue != Chart::NoValue) {
-                    // Construire la légende OHLC
-                    // ohlcLegend << "      <*block*>";
-                    // ohlcLegend << "Open: " << c->formatValue(openValue, "{value|P4}");
-                    // ohlcLegend << ", High: " << c->formatValue(highValue, "{value|P4}");
-                    // ohlcLegend << ", Low: " << c->formatValue(lowValue, "{value|P4}");
-                    // ohlcLegend << ", Close: " << c->formatValue(closeValue, "{value|P4}");
+                    // Build the OHLC legend
+					ohlcLegend << "      <*block*>";
+					ohlcLegend << "Open: " << c->formatValue(openValue, "{value|P4}");
+					ohlcLegend << ", High: " << c->formatValue(highValue, "{value|P4}"); 
+					ohlcLegend << ", Low: " << c->formatValue(lowValue, "{value|P4}"); 
+					ohlcLegend << ", Close: " << c->formatValue(closeValue, "{value|P4}");
                     
                     // Aussi dessiner un triangle vers le haut ou vers le bas pour les jours de hausse et de baisse et le % de variation
                     double lastCloseValue = layer->getDataSet(3)->getValue(xIndex - 1);
@@ -924,12 +823,12 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
                         std::string symbol = (change >= 0) ?
                             "<*font,color=008800*><*img=@triangle,width=8,color=008800*>" :
                             "<*font,color=CC0000*><*img=@invertedtriangle,width=8,color=CC0000*>";
-                        
-                        // ohlcLegend << "  " << symbol << " " << c->formatValue(change, "{value|P4}");
-                        // ohlcLegend << " (" << c->formatValue(percent, "{value|2}") << "%)<*/font*>";
+
+                        ohlcLegend << "  " << symbol << " " << c->formatValue(change, "{value|P4}");
+						ohlcLegend << " (" << c->formatValue(percent, "{value|2}") << "%)<*/font*>";
                     }
-                    
-                    // ohlcLegend << "<*/*>";
+
+					ohlcLegend << "<*/*>";
                 }
             } else {
                 // Itérer sur tous les ensembles de données de la couche
@@ -978,10 +877,10 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
                         }
                         
                         // Construire l'entrée de légende, composée d'une boîte carrée colorée et du nom (avec la valeur des données dedans)
-                        // std::ostringstream legendEntry;
-                        // legendEntry << "<*block*><*img=@square,width=8,edgeColor=000000,color="
-                        //     << std::hex << dataSet->getDataColor() << "*> " << name << "<*/*>";
-                        // legendEntries.push_back(legendEntry.str());
+                        std::ostringstream legendEntry;
+                        legendEntry << "<*block*><*img=@square,width=8,edgeColor=000000,color="
+                            << std::hex << dataSet->getDataColor() << "*> " << name << "<*/*>";
+                        legendEntries.push_back(legendEntry.str());
                     }
                 }
             }
@@ -993,23 +892,23 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
         
         // La légende commence par l'étiquette de date, puis la légende ohlc (le cas échéant), et ensuite les entrées pour les indicateurs
-        // std::ostringstream legendText;
-        // legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
-        //     << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "mmm dd, yyyy")
-        //     << "]<*/font*>" << ohlcLegend.str();
-        // for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
-        //     legendText << "      " << legendEntries[i];
-        // }
-        // legendText << "<*/*>";
+        std::ostringstream legendText;
+        legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
+            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "mmm dd, yyyy")
+            << "]<*/font*>" << ohlcLegend.str();
+        for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
+            legendText << "      " << legendEntries[i];
+        }
+        legendText << "<*/*>";
         
         // Dessiner une ligne de suivi verticale à la position x
         d->vline(plotAreaTopY, plotAreaTopY + plotArea->getHeight(), c->getXCoor(xValue) +
             c->getAbsOffsetX(), d->dashLineColor(0x000000, 0x0101));
         
         // Afficher la légende en haut de la zone de tracé
-        // TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
-        // t->draw(plotAreaLeftX + 5, plotAreaTopY + 3, 0x000000, Chart::TopLeft);
-        // t->destroy();
+        TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
+        t->draw(plotAreaLeftX + 5, plotAreaTopY + 15, 0x000000, Chart::TopLeft);
+        t->destroy();
     }
 }
 

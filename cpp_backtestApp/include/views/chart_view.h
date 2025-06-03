@@ -62,17 +62,6 @@ private:
     // Chart widget
     ChartWidget* m_chartWidget;
     
-    // Data storage
-    PriceData m_priceData;
-    TradeData m_tradeData;
-    EquityData m_equityData;
-    
-    // Private methods
-    void extractDataFromCpp(BacktestResults* results);
-    void extractPriceData(BacktestResults* results);
-    void extractTradeData(BacktestResults* results);
-    void extractEquityData(BacktestResults* results);
-    
     bool hasValidData() const;
     void showPlaceholder(const QString& message);
     void showChartWidget();

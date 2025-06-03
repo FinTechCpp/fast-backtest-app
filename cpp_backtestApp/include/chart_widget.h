@@ -4,6 +4,9 @@
 #include <vector>
 #include <memory>
 
+#include "data.hpp"
+#include "trade.hpp"
+
 // Include ChartDirector headers
 #include "qchartviewer.h"
 #include "chartdir.h"
@@ -43,6 +46,16 @@ struct EquityData {
 };
 
 /**
+ * @brief Enum pour les différents types de graphiques financiers
+ */
+enum class ChartType {
+    CandleStick,
+    HeikinAshi,
+    OHLC,
+    Close
+};
+
+/**
  * @brief Widget qui encapsule un graphique financier ChartDirector
  */
 class ChartWidget : public QWidget
@@ -53,13 +66,15 @@ public:
     explicit ChartWidget(QWidget* parent = nullptr);
     ~ChartWidget();
 
-    // Définir les données du graphique
-    void setPriceData(const PriceData& data);
-    void setTradeData(const TradeData& data);
-    void setEquityData(const EquityData& data);
+    // Nouvelles méthodes pour accepter directement les classes du backtest
+    void setBacktestData(const std::shared_ptr<be::Data>& data);
+    void setBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);
+    void setEquityCurve(const std::vector<double>& equityCurve);
+    
     
     // Configuration du graphique
-    void setChartType(const QString& chartType);
+    void setChartType(ChartType chartType);
+    ChartType getChartType() const { return m_chartType; }
     
     // Création et mise à jour du graphique
     void createChart();
@@ -68,6 +83,11 @@ public:
     
     // Vérification des données
     bool hasValidData() const;
+
+    // Conversion de ChartType en QString pour l'interface
+    static QString chartTypeToString(ChartType type);
+    static ChartType stringToChartType(const QString& typeStr);
+
 
 signals:
     void chartCreated();
@@ -79,6 +99,13 @@ private slots:
     void onMouseMovePlotArea(QMouseEvent* event);
 
 private:
+
+    // Méthodes de conversion internes
+    void convertBacktestData(const std::shared_ptr<be::Data>& data);
+    void convertBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);
+    void convertEquityCurve(const std::vector<double>& equityCurve, const std::shared_ptr<be::Data>& data);
+    double dateToChartTimestamp(const be::Date& date);
+
     // Méthodes internes
     void setupChart();
     void drawChartWithViewport();
@@ -115,6 +142,6 @@ private:
     FinanceChart* m_financeChart;
     
     // Configuration
-    QString m_chartType;
+    ChartType m_chartType;
     int m_chartWidth;
 };

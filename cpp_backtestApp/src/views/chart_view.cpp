@@ -24,11 +24,6 @@ ChartView::ChartView(QWidget* parent)
         m_app = qobject_cast<App*>(widget);
         widget = widget->parentWidget();
     }
-        
-    // Initialiser les structures de données
-    m_priceData = PriceData();
-    m_tradeData = TradeData();
-    m_equityData = EquityData();
     
     // Construire l'interface
     setupUI();
@@ -142,13 +137,14 @@ void ChartView::updateData(BacktestResults* results)
     // Mettre à jour les références locales
     m_currentResults = appResults;
 
+    // TODO faire une vérification pour éviter les appels inutiles
     // Vérifier si les données ont déjà été extraites pour ces pointeurs
-    if (m_dataExtracted && m_cachedResults == appResults) {
-        if (hasValidData()) {
-            showChartWidget();
-        }
-        return;
-    }
+    // if (m_dataExtracted && m_cachedResults == appResults) {
+    //     if (hasValidData()) {
+    //         showChartWidget();
+    //     }
+    //     return;
+    // }
     
     // Mettre en cache les nouveaux pointeurs
     m_cachedResults = appResults;
@@ -160,21 +156,18 @@ void ChartView::updateData(BacktestResults* results)
     }
     
     try {
-        extractDataFromCpp(appResults);
-        
-        if (!hasValidData()) {
-            showPlaceholder("Données invalides");
-            return;
-        }
-        
-        // Transférer les données au widget de graphique
-        m_chartWidget->setPriceData(m_priceData);
-        m_chartWidget->setTradeData(m_tradeData);
-        m_chartWidget->setEquityData(m_equityData);
+        // extractDataFromCpp(appResults);
+
+        // Passer directement les objets du backtest au ChartWidget
+        m_chartWidget->setBacktestData(results->data);
+        m_chartWidget->setBacktestTrades(results->stats.trades);
+        m_chartWidget->setEquityCurve(results->stats.equityCurve);
+
+        m_dataExtracted = true;
         
         // Définir le type de graphique
         QString chartType = m_chartTypeCombo->currentData().toString();
-        m_chartWidget->setChartType(chartType);
+        m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
         
         // Afficher le widget de graphique et masquer le placeholder
         showChartWidget();
@@ -201,11 +194,6 @@ void ChartView::clear()
     m_cachedResults = nullptr;
     m_dataExtracted = false;
     
-    // Nettoyer les données
-    m_priceData = PriceData();
-    m_tradeData = TradeData();
-    m_equityData = EquityData();
-    
     // Nettoyer le widget de graphique
     if (m_chartWidget) {
         m_chartWidget->clearChart();
@@ -217,20 +205,20 @@ void ChartView::clear()
 
 void ChartView::onChartTypeChanged(int index)
 {
-    if (m_chartTypeCombo) {
-        QVariant data = m_chartTypeCombo->itemData(index);
-        if (data.isValid()) {
-            QString chartType = data.toString();
+    if (!m_chartTypeCombo || !m_chartWidget) {
+        return;
+    }
+
+    QVariant data = m_chartTypeCombo->itemData(index);
+    if (data.isValid()) {
+        QString chartType = data.toString();
+        
+        // Mettre à jour le type de graphique dans le widget
+        m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
             
-            // Mettre à jour le type de graphique dans le widget
-            if (m_chartWidget) {
-                m_chartWidget->setChartType(chartType);
-                
-                // Si nous avons déjà des données valides, mettre à jour le graphique
-                if (hasValidData() && m_chartWidget->isVisible()) {
-                    m_chartWidget->updateChart();
-                }
-            }
+        // Si nous avons déjà des données valides, mettre à jour le graphique
+        if (m_chartWidget->isVisible()) {
+            m_chartWidget->updateChart();
         }
     }
 }
@@ -256,213 +244,4 @@ void ChartView::showPlaceholder(const QString& message)
         m_chartPlaceholder->setText(message);
         m_chartPlaceholder->setVisible(true);
     }
-}
-
-void ChartView::extractDataFromCpp(BacktestResults* results)
-{
-    
-    if (!results || !results->data) {
-        return;
-    }
-    
-    try {
-        extractPriceData(results);
-        extractTradeData(results);
-        extractEquityData(results);
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur C++ dans extractDataFromCpp:" << e.what();
-        throw;
-    }
-}
-
-void ChartView::extractPriceData(BacktestResults* results)
-{   
-    try {
-        std::shared_ptr<be::Data>& beData = results->data;
-        if (!beData) {
-            throw std::runtime_error("Objet be::Data est null");
-        }
-        
-        // Nettoyer les anciennes données
-        m_priceData = PriceData();
-        
-        // Obtenir la taille des données
-        size_t dataSize = beData->size();
-        
-        if (dataSize == 0) {
-            throw std::runtime_error("Données OHLC vides");
-        }
-        
-        // Réserver la capacité pour les vecteurs
-        m_priceData.timestamps.reserve(dataSize);
-        m_priceData.open.reserve(dataSize);
-        m_priceData.high.reserve(dataSize);
-        m_priceData.low.reserve(dataSize);
-        m_priceData.close.reserve(dataSize);
-        m_priceData.volume.reserve(dataSize);
-        
-        // Extraire les données OHLCV pour chaque barre
-        for (size_t i = 0; i < dataSize; ++i) {
-            // Utiliser la nouvelle interface Data avec la structure Candle
-            const be::Candle& candle = beData->at(i);
-            
-            // Convertir la date en timestamp pour le graphique
-            double timestamp = candle.date.toTimestamp();
-            
-            // Ajouter les données aux vecteurs
-            m_priceData.timestamps.push_back(timestamp);
-            m_priceData.open.push_back(candle.open);
-            m_priceData.high.push_back(candle.high);
-            m_priceData.low.push_back(candle.low);
-            m_priceData.close.push_back(candle.close);
-            m_priceData.volume.push_back(candle.volume);
-        }
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur dans extractPriceData:" << e.what();
-        throw std::runtime_error(QString("Erreur prix: %1").arg(e.what()).toStdString());
-    }
-}
-
-void ChartView::extractTradeData(BacktestResults* results)
-{    
-    try {
-        const auto& trades = results->stats.trades;
-        
-        // Nettoyer les anciennes données
-        m_tradeData = TradeData();
-        
-        // Si aucun trade, retourner
-        if (trades.empty()) {
-            return;
-        }
-        
-        // Réserver la capacité
-        size_t numTrades = trades.size();
-        m_tradeData.entry_times.reserve(numTrades);
-        m_tradeData.exit_times.reserve(numTrades);
-        m_tradeData.entry_prices.reserve(numTrades);
-        m_tradeData.exit_prices.reserve(numTrades);
-        m_tradeData.types.reserve(numTrades);
-        m_tradeData.pnl.reserve(numTrades);
-        
-        // Extraire chaque trade
-        for (const auto& trade : trades) {
-            // Convertir dates en timestamps
-            double entryTime = trade->entryDate().toTimestamp();
-            double exitTime = trade->exitDate().toTimestamp();
-
-            // Déterminer le type (LONG/SHORT)
-            QString type = trade->size() > 0 ? "LONG" : "SHORT";
-
-            // Ajouter les données aux vecteurs
-            m_tradeData.entry_times.push_back(entryTime);
-            m_tradeData.exit_times.push_back(exitTime);
-            m_tradeData.entry_prices.push_back(trade->entryPrice());
-            m_tradeData.exit_prices.push_back(trade->exitPrice());
-            m_tradeData.types.push_back(type);
-            m_tradeData.pnl.push_back(trade->pl());
-        }
-                
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur dans extractTradeData:" << e.what();
-        // Ne pas faire échouer toute l'extraction si les trades échouent
-    }
-}
-
-void ChartView::extractEquityData(BacktestResults* results)
-{   
-    try {
-        const auto& equityCurve = results->stats.equityCurve;
-        
-        // Nettoyer les anciennes données
-        m_equityData = EquityData();
-        
-        // Si pas de courbe d'équité, retourner
-        if (equityCurve.empty()) {
-            return;
-        }
-        
-        // Vérifier que nous avons des données de prix pour synchroniser le graphique
-        if (m_priceData.timestamps.empty()) {
-            return;
-        }
-
-        // Réserver la capacité
-        size_t numPoints = equityCurve.size();
-        size_t numBars = m_priceData.timestamps.size();
-        
-        // Adapter la taille de la courbe d'équité à celle des barres de prix
-        // Plusieurs scénarios possibles:
-        
-        if (numPoints == numBars) {
-            // Cas idéal: même nombre de points, correspondance directe
-            m_equityData.timestamps = m_priceData.timestamps;
-            m_equityData.equity_values = equityCurve;
-        }
-        else if (numPoints < numBars) {
-            // Moins de points d'equity que de barres: interpoler l'equity
-            m_equityData.timestamps = m_priceData.timestamps;
-            m_equityData.equity_values.resize(numBars);
-            
-            // Interpolation simple
-            for (size_t i = 0; i < numBars; i++) {
-                // Mappage linéaire de i dans [0,numBars-1] à j dans [0,numPoints-1]
-                double j_exact = i * (numPoints - 1) / (double)(numBars - 1);
-                size_t j_low = (size_t)floor(j_exact);
-                size_t j_high = (size_t)ceil(j_exact);
-                j_low = std::min(j_low, numPoints - 1);
-                j_high = std::min(j_high, numPoints - 1);
-                
-                if (j_low == j_high) {
-                    m_equityData.equity_values[i] = equityCurve[j_low];
-                } else {
-                    // Interpolation linéaire
-                    double weight_high = j_exact - j_low;
-                    double weight_low = 1.0 - weight_high;
-                    m_equityData.equity_values[i] = weight_low * equityCurve[j_low] + 
-                                                   weight_high * equityCurve[j_high];
-                }
-            }
-        }
-        else {
-            // Plus de points d'equity que de barres: sous-échantillonner l'equity
-            m_equityData.timestamps = m_priceData.timestamps;
-            m_equityData.equity_values.resize(numBars);
-            
-            for (size_t i = 0; i < numBars; i++) {
-                // Mappage linéaire
-                size_t j = (size_t)(i * (numPoints - 1) / (numBars - 1));
-                j = std::min(j, numPoints - 1);
-                m_equityData.equity_values[i] = equityCurve[j];
-            }
-        }
-        
-        // Calculer le drawdown
-        if (!m_equityData.equity_values.empty()) {
-            m_equityData.drawdown.resize(m_equityData.equity_values.size());
-            double peak = m_equityData.equity_values[0];
-            
-            for (size_t i = 0; i < m_equityData.equity_values.size(); ++i) {
-                if (m_equityData.equity_values[i] > peak) {
-                    peak = m_equityData.equity_values[i];
-                }
-                double dd = (peak - m_equityData.equity_values[i]) / peak * 100.0; // En pourcentage
-                m_equityData.drawdown[i] = dd;
-            }
-        }
-        
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur dans extractEquityData:" << e.what();
-        // Ne pas faire échouer toute l'extraction si l'équité échoue
-    }
-}
-
-bool ChartView::hasValidData() const {
-    return !m_priceData.timestamps.empty() && 
-           !m_priceData.open.empty() && 
-           !m_priceData.high.empty() && 
-           !m_priceData.low.empty() && 
-           !m_priceData.close.empty();
 }

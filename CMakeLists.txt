@@ -60,6 +60,32 @@ elseif(WIN32)
     else()
         message(WARNING "Qt6 non trouvé automatiquement. Assurez-vous que Qt6 est installé dans C:/Qt/ ou définissez CMAKE_PREFIX_PATH")
     endif()
+elseif(UNIX AND NOT APPLE)
+    # Configuration pour Linux
+    set(QT_SEARCH_PATHS
+        "$ENV{HOME}/Qt/*/gcc_64"          # Installation utilisateur
+        "/usr/lib/qt6"                    # Installation système
+        # "/usr/lib/x86_64-linux-gnu/qt6"   # Autre emplacement système
+    )
+    
+    # Chercher la version la plus récente de Qt6
+    file(GLOB QT_CANDIDATES ${QT_SEARCH_PATHS})
+    if(QT_CANDIDATES)
+        # Trier pour avoir la version la plus récente en premier
+        list(SORT QT_CANDIDATES)
+        list(REVERSE QT_CANDIDATES)
+        list(GET QT_CANDIDATES 0 QT_PATH)
+        list(APPEND CMAKE_PREFIX_PATH "${QT_PATH}")
+        message(STATUS "Qt6 détecté automatiquement: ${QT_PATH}")
+    else()
+        # Essayer de récupérer depuis la variable d'environnement
+        if(DEFINED ENV{CMAKE_PREFIX_PATH})
+            list(APPEND CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
+            message(STATUS "Utilisation de CMAKE_PREFIX_PATH depuis l'environnement: $ENV{CMAKE_PREFIX_PATH}")
+        else()
+            message(WARNING "Qt6 non trouvé automatiquement. Utilisez -DCMAKE_PREFIX_PATH=~/Qt/6.8.3/gcc_64")
+        endif()
+    endif()
 endif()
 
 # Vérifier que Qt est disponible (obligatoire)

@@ -9,7 +9,7 @@ ChartWidget::ChartWidget(QWidget* parent)
     : QWidget(parent)
     , m_chartViewer(nullptr)
     , m_financeChart(nullptr)
-    , m_chartType("CandleStick")
+    , m_chartType(ChartType::CandleStick)
     , m_chartWidth(1200)
 {
     // Configurer le widget
@@ -56,22 +56,83 @@ ChartWidget::~ChartWidget()
     qDebug() << "ChartWidget détruit";
 }
 
-void ChartWidget::setPriceData(const PriceData& data)
-{
-    m_priceData = data;
+void ChartWidget::setBacktestData(const std::shared_ptr<be::Data>& data) {
+    if (!data) {
+        qWarning() << "Tentative de définir des données de backtest nulles";
+        return;
+    }
+    
+    // Convertir les données en format interne
+    convertBacktestData(data);
+    
+    // Mettre à jour le graphique si nous avons des données valides
+    if (hasValidData()) {
+        updateChart();
+    }
 }
 
-void ChartWidget::setTradeData(const TradeData& data)
-{
-    m_tradeData = data;
+void ChartWidget::setBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
+    if (trades.empty()) {
+        qWarning() << "Tentative de définir une liste de trades vide";
+        return;
+    }
+    
+    // Convertir les trades en format interne
+    convertBacktestTrades(trades);
+    
+    // Mettre à jour le graphique uniquement si nous avons déjà des données de prix valides
+    if (hasValidData()) {
+        updateChart();
+    }
 }
 
-void ChartWidget::setEquityData(const EquityData& data)
-{
-    m_equityData = data;
+void ChartWidget::setEquityCurve(const std::vector<double>& equityCurve) {
+    if (equityCurve.empty()) {
+        qWarning() << "Tentative de définir une courbe d'équité vide";
+        return;
+    }
+    
+    // On a besoin des données de prix pour aligner correctement la courbe d'équité
+    if (m_priceData.timestamps.empty()) {
+        qWarning() << "Impossible de définir la courbe d'équité sans données de prix";
+        return;
+    }
+    
+    // Pour la conversion, nous avons besoin des données be::Data originales
+    // L'idéal serait de stocker une référence aux données originales lors de setBacktestData
+    // mais pour cet exemple, nous allons reconstruire un objet Data à partir de m_priceData
+    
+    // Dans un cas réel, il serait préférable d'avoir une référence aux données originales
+    std::vector<be::Date> dateVector;
+    for (double timestamp : m_priceData.timestamps) {
+        // Cette conversion inverse est approximative et devrait être améliorée
+        time_t time = static_cast<time_t>(timestamp);
+        std::tm* tm = std::localtime(&time);
+        be::Date date(tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, 
+                     tm->tm_hour, tm->tm_min, tm->tm_sec);
+        dateVector.push_back(date);
+    }
+    
+    // Créer un objet Data temporaire
+    std::shared_ptr<be::Data> tempData = std::make_shared<be::Data>(
+        dateVector, 
+        m_priceData.open, 
+        m_priceData.high, 
+        m_priceData.low, 
+        m_priceData.close, 
+        m_priceData.volume
+    );
+    
+    // Convertir la courbe d'équité
+    convertEquityCurve(equityCurve, tempData);
+    
+    // Mettre à jour le graphique
+    if (hasValidData()) {
+        updateChart();
+    }
 }
 
-void ChartWidget::setChartType(const QString& chartType)
+void ChartWidget::setChartType(ChartType chartType)
 {
     if (m_chartType != chartType) {
         m_chartType = chartType;
@@ -105,8 +166,7 @@ void ChartWidget::createChart()
         DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
         
         // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
-        bool isHeikinAshi = (m_chartType == "HeikinAshi");
-        if (isHeikinAshi) {
+        if (m_chartType == ChartType::HeikinAshi) {
             calculateHeikinAshi(m_priceData.open, m_priceData.high, 
                                m_priceData.low, m_priceData.close,
                                ha_open, ha_high, ha_low, ha_close);
@@ -122,7 +182,7 @@ void ChartWidget::createChart()
         m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
         
         // Créer le graphique
-        if (isHeikinAshi) {
+        if (m_chartType == ChartType::HeikinAshi) {
             m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
                                      haOpenArray, haCloseArray, volumeData, m_chartWidth);
         } else {
@@ -253,6 +313,190 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     m_chartViewer->updateDisplay();
 }
 
+void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
+    if (!data || data->size() == 0) {
+        qWarning() << "Données de backtest vides ou invalides";
+        return;
+    }
+
+    // Réinitialiser les données de prix
+    m_priceData = PriceData();
+    
+    // Réserver la capacité pour éviter les réallocations
+    size_t dataSize = data->size();
+    m_priceData.timestamps.reserve(dataSize);
+    m_priceData.open.reserve(dataSize);
+    m_priceData.high.reserve(dataSize);
+    m_priceData.low.reserve(dataSize);
+    m_priceData.close.reserve(dataSize);
+    m_priceData.volume.reserve(dataSize);
+
+    // Convertir chaque bougie
+    for (size_t i = 0; i < dataSize; ++i) {
+        const be::Candle& candle = data->at(i);
+        
+        // Convertir la date en timestamp ChartDirector
+        double timestamp = dateToChartTimestamp(candle.date);
+        
+        m_priceData.timestamps.push_back(timestamp);
+        m_priceData.open.push_back(candle.open);
+        m_priceData.high.push_back(candle.high);
+        m_priceData.low.push_back(candle.low);
+        m_priceData.close.push_back(candle.close);
+        m_priceData.volume.push_back(candle.volume);
+    }
+    
+    qDebug() << "Données de prix converties:" << dataSize << "bougies";
+}
+
+void ChartWidget::convertBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
+    if (trades.empty()) {
+        qWarning() << "Liste de trades vide";
+        return;
+    }
+
+    // Réinitialiser les données de trades
+    m_tradeData = TradeData();
+    
+    // Réserver la capacité
+    size_t tradeCount = trades.size();
+    m_tradeData.entry_times.reserve(tradeCount);
+    m_tradeData.exit_times.reserve(tradeCount);
+    m_tradeData.entry_prices.reserve(tradeCount);
+    m_tradeData.exit_prices.reserve(tradeCount);
+    m_tradeData.types.reserve(tradeCount);
+    m_tradeData.pnl.reserve(tradeCount);
+
+    // Convertir chaque trade
+    for (const auto& trade : trades) {
+        if (!trade) continue;
+        
+        // Convertir les dates d'entrée et de sortie en timestamps
+        double entryTimestamp = dateToChartTimestamp(trade->entryDate());
+        
+        m_tradeData.entry_times.push_back(entryTimestamp);
+        m_tradeData.entry_prices.push_back(trade->entryPrice());
+        
+        // Ajouter les informations de sortie si le trade est fermé
+        if (trade->isClosed()) {
+            double exitTimestamp = dateToChartTimestamp(trade->exitDate());
+            m_tradeData.exit_times.push_back(exitTimestamp);
+            m_tradeData.exit_prices.push_back(trade->exitPrice());
+        } else {
+            // Pour les trades ouverts, utiliser des valeurs par défaut
+            m_tradeData.exit_times.push_back(0);  // 0 indique que le trade est toujours ouvert
+            m_tradeData.exit_prices.push_back(0);
+        }
+        
+        // Type de trade (Long ou Short)
+        QString type = trade->isLong() ? "Long" : "Short";
+        m_tradeData.types.push_back(type);
+        
+        // P&L du trade
+        m_tradeData.pnl.push_back(trade->pl());
+    }
+    
+    qDebug() << "Données de trades converties:" << tradeCount << "trades";
+}
+
+void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve, 
+                                    const std::shared_ptr<be::Data>& data) {
+    if (equityCurve.empty() || !data) {
+        qWarning() << "Courbe d'équité vide ou données de prix invalides";
+        return;
+    }
+    
+    size_t numPoints = equityCurve.size();
+    size_t numBars = data->size();
+    
+    // Réinitialiser les données d'équité
+    m_equityData = EquityData();
+    
+    // Cas où les données sont alignées (même nombre de points)
+    if (numPoints == numBars) {
+        m_equityData.timestamps.reserve(numBars);
+        m_equityData.equity_values.reserve(numBars);
+        
+        // Convertir les dates en timestamps et copier les valeurs d'équité
+        for (size_t i = 0; i < numBars; ++i) {
+            double timestamp = dateToChartTimestamp(data->at(i).date);
+            m_equityData.timestamps.push_back(timestamp);
+            m_equityData.equity_values.push_back(equityCurve[i]);
+        }
+    }
+    // Cas où il y a moins de points d'équité que de barres (interpolation)
+    else if (numPoints < numBars) {
+        m_equityData.timestamps.reserve(numBars);
+        m_equityData.equity_values.resize(numBars);
+        
+        // Convertir les timestamps
+        for (size_t i = 0; i < numBars; ++i) {
+            double timestamp = dateToChartTimestamp(data->at(i).date);
+            m_equityData.timestamps.push_back(timestamp);
+        }
+        
+        // Interpolation linéaire
+        for (size_t i = 0; i < numBars; ++i) {
+            double mappedIndex = static_cast<double>(i) * (numPoints - 1) / (numBars - 1);
+            size_t lowerIndex = static_cast<size_t>(mappedIndex);
+            size_t upperIndex = std::min(lowerIndex + 1, numPoints - 1);
+            
+            if (lowerIndex == upperIndex) {
+                m_equityData.equity_values[i] = equityCurve[lowerIndex];
+            } else {
+                double fraction = mappedIndex - lowerIndex;
+                m_equityData.equity_values[i] = equityCurve[lowerIndex] * (1 - fraction) + 
+                                               equityCurve[upperIndex] * fraction;
+            }
+        }
+    }
+    // Cas où il y a plus de points d'équité que de barres (sous-échantillonnage)
+    else {
+        m_equityData.timestamps.reserve(numBars);
+        m_equityData.equity_values.resize(numBars);
+        
+        for (size_t i = 0; i < numBars; ++i) {
+            double timestamp = dateToChartTimestamp(data->at(i).date);
+            m_equityData.timestamps.push_back(timestamp);
+            
+            // Mappage linéaire pour le sous-échantillonnage
+            size_t j = static_cast<size_t>(i * (numPoints - 1) / (numBars - 1));
+            j = std::min(j, numPoints - 1);
+            m_equityData.equity_values[i] = equityCurve[j];
+        }
+    }
+    
+    // Calculer le drawdown
+    if (!m_equityData.equity_values.empty()) {
+        m_equityData.drawdown.resize(m_equityData.equity_values.size());
+        double peak = m_equityData.equity_values[0];
+        
+        for (size_t i = 0; i < m_equityData.equity_values.size(); ++i) {
+            if (m_equityData.equity_values[i] > peak) {
+                peak = m_equityData.equity_values[i];
+            }
+            double dd = (peak - m_equityData.equity_values[i]) / peak * 100.0;
+            m_equityData.drawdown[i] = dd;
+        }
+    }
+    
+    qDebug() << "Courbe d'équité convertie:" << m_equityData.timestamps.size() << "points";
+}
+
+double ChartWidget::dateToChartTimestamp(const be::Date& date) {
+    // ChartDirector attend des timestamps en secondes depuis l'époque Unix (1/1/1970)
+    std::tm time_struct = {};
+    time_struct.tm_year = date.getYear() - 1900; // Les années dans tm commencent à 1900
+    time_struct.tm_mon = date.getMonth() - 1;    // Les mois dans tm vont de 0 à 11
+    time_struct.tm_mday = date.getDay();
+    time_struct.tm_hour = date.getHour();
+    time_struct.tm_min = date.getMinute();
+    time_struct.tm_sec = date.getSecond();
+
+    // Convertir en timestamp Unix
+    std::time_t timestamp = std::mktime(&time_struct);
+    return static_cast<double>(timestamp);
+}
 void ChartWidget::drawChartWithViewport()
 {
     if (!hasValidData() || !m_chartViewer) {
@@ -288,8 +532,7 @@ void ChartWidget::drawChartWithViewport()
         DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
         
         // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
-        bool isHeikinAshi = (m_chartType == "HeikinAshi");
-        if (isHeikinAshi) {
+        if (m_chartType == ChartType::HeikinAshi) {
             // Créer des sous-vecteurs pour les données visibles
             std::vector<double> visible_open(m_priceData.open.begin() + startIndex, 
                                            m_priceData.open.begin() + endIndex + 1);
@@ -391,7 +634,7 @@ FinanceChart* ChartWidget::drawChart(
     c->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
     
     // Ajouter le titre du graphique
-    std::string chartTypeStr = m_chartType.toStdString();
+    std::string chartTypeStr = chartTypeToString(m_chartType).toStdString();
     std::string title = "Graphique de trading (" + chartTypeStr + ") - " + 
                        std::to_string(timestamps.len) + " points";
     c->addTitle(title.c_str());
@@ -455,16 +698,16 @@ FinanceChart* ChartWidget::drawChart(
     c->addMainChart(mainChartHeight);
     
     // Ajouter le type de graphique approprié selon le type actuel
-    if (m_chartType == "CandleStick" || m_chartType == "HeikinAshi") {
+    if (m_chartType == ChartType::CandleStick || m_chartType == ChartType::HeikinAshi) {
         c->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
-    } else if (m_chartType == "OHLC") {
+    } else if (m_chartType == ChartType::OHLC) {
         c->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
-    } else if (m_chartType == "Close") {
+    } else if (m_chartType == ChartType::Close) {
         c->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
     
     // 3. Ajouter le graphique de volume
-    c->addVolBars(volumeHeight, 0x99ff99, 0xff9999, 0x808080);
+    // c->addVolBars(volumeHeight, 0x99ff99, 0xff9999, 0x808080);
     
     // 4. Ajouter les trades si disponibles
     if (!m_tradeData.entry_times.empty()) {
@@ -645,4 +888,23 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         // t->draw(plotAreaLeftX + 5, plotAreaTopY + 3, 0x000000, Chart::TopLeft);
         // t->destroy();
     }
+}
+
+QString ChartWidget::chartTypeToString(ChartType type)
+{
+    switch (type) {
+        case ChartType::CandleStick: return "CandleStick";
+        case ChartType::HeikinAshi: return "HeikinAshi";
+        case ChartType::OHLC: return "OHLC";
+        case ChartType::Close: return "Close";
+        default: return "CandleStick";
+    }
+}
+
+ChartType ChartWidget::stringToChartType(const QString& typeStr)
+{
+    if (typeStr == "HeikinAshi") return ChartType::HeikinAshi;
+    if (typeStr == "OHLC") return ChartType::OHLC;
+    if (typeStr == "Close") return ChartType::Close;
+    return ChartType::CandleStick; // Valeur par défaut
 }

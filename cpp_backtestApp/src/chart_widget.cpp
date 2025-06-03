@@ -5,12 +5,17 @@
 #include <algorithm>
 #include <cmath>
 
+const std::array<ChartWidget::ChartTypeInfo, static_cast<size_t>(ChartWidget::ChartType::Count)> ChartWidget::s_chartTypeData = {{
+    { ChartWidget::ChartType::CandleStick, "CandleStick" },
+    { ChartWidget::ChartType::HeikinAshi, "HeikinAshi" },
+    { ChartWidget::ChartType::OHLC, "OHLC" },
+    { ChartWidget::ChartType::Close, "Close" }
+}};
+
 ChartWidget::ChartWidget(QWidget* parent)
     : QWidget(parent)
     , m_chartViewer(nullptr)
     , m_financeChart(nullptr)
-    , m_chartType(ChartType::CandleStick)
-    , m_chartWidth(1200)
 {
     // Configurer le widget
     setObjectName("chartWidget");
@@ -104,13 +109,13 @@ void ChartWidget::setEquityCurve(const std::vector<double>& equityCurve) {
 
 void ChartWidget::setChartType(ChartType chartType)
 {
-    if (m_chartType != chartType) {
-        m_chartType = chartType;
-        // Si nous avons déjà des données, mettre à jour le graphique
-        if (hasValidData()) {
-            updateChart();
-        }
-    }
+    if (m_config.chartType == chartType)
+        return; // Pas de changement, rien à faire
+
+    m_config.chartType = chartType;
+    // Si nous avons déjà des données, mettre à jour le graphique
+    if (hasValidData())
+        updateChart();
 }
 
 void ChartWidget::createChart()
@@ -136,7 +141,7 @@ void ChartWidget::createChart()
         DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
         
         // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
-        if (m_chartType == ChartType::HeikinAshi) {
+        if (m_config.chartType == ChartType::HeikinAshi) {
             calculateHeikinAshi(m_priceData.open, m_priceData.high, 
                                m_priceData.low, m_priceData.close,
                                ha_open, ha_high, ha_low, ha_close);
@@ -152,12 +157,12 @@ void ChartWidget::createChart()
         m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
         
         // Créer le graphique
-        if (m_chartType == ChartType::HeikinAshi) {
+        if (m_config.chartType == ChartType::HeikinAshi) {
             m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
-                                     haOpenArray, haCloseArray, volumeData, m_chartWidth);
+                                     haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
         } else {
             m_financeChart = drawChart(timeStamps, highData, lowData, 
-                                     openData, closeData, volumeData, m_chartWidth);
+                                     openData, closeData, volumeData, m_config.chartWidth);
         }
         
         // Configurer le viewport initial
@@ -449,7 +454,7 @@ void ChartWidget::drawChartWithViewport()
         DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
         
         // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
-        if (m_chartType == ChartType::HeikinAshi) {
+        if (m_config.chartType == ChartType::HeikinAshi) {
             // Créer des sous-vecteurs pour les données visibles
             std::vector<double> visible_open(m_priceData.open.begin() + startIndex, 
                                            m_priceData.open.begin() + endIndex + 1);
@@ -473,11 +478,11 @@ void ChartWidget::drawChartWithViewport()
             
             // Créer le graphique
             m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
-                                     haOpenArray, haCloseArray, volumeData, m_chartWidth);
+                                     haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
         } else {
             // Créer le graphique
             m_financeChart = drawChart(timeStamps, highData, lowData, 
-                                     openData, closeData, volumeData, m_chartWidth);
+                                     openData, closeData, volumeData, m_config.chartWidth);
         }
         
         // Mettre à jour l'affichage
@@ -557,7 +562,7 @@ FinanceChart* ChartWidget::drawChart(
 
     
     // Ajouter le titre du graphique
-    std::string chartTypeStr = chartTypeToString(m_chartType).toStdString();
+    std::string chartTypeStr = chartTypeToString(m_config.chartType).toStdString();
     std::string title = "Graphique de trading (" + chartTypeStr + ") - " + 
                        std::to_string(timestamps.len) + " points";
     c->addTitle(title.c_str());
@@ -591,11 +596,11 @@ FinanceChart* ChartWidget::drawChart(
     c->addMainChart(mainChartHeight);
     
     // Ajouter le type de graphique approprié selon le type actuel
-    if (m_chartType == ChartType::CandleStick || m_chartType == ChartType::HeikinAshi) {
+    if (m_config.chartType == ChartType::CandleStick || m_config.chartType == ChartType::HeikinAshi) {
         c->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
-    } else if (m_chartType == ChartType::OHLC) {
+    } else if (m_config.chartType == ChartType::OHLC) {
         c->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
-    } else if (m_chartType == ChartType::Close) {
+    } else if (m_config.chartType == ChartType::Close) {
         c->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
     
@@ -682,52 +687,95 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
     if (!mainChart)
         return;
     
-    // Filtrer les trades qui sont visibles dans la fenêtre actuelle
-    std::vector<double> visibleIndices;
-    std::vector<double> visiblePrices;
+    std::vector<std::pair<double, double>> entryMarkers;        // Carrés pour positions d'entrée <index, price>
+    std::vector<std::pair<double, double>> exitMarkers;         // Carrés pour positions de sortie <index, price>
+    std::vector<std::pair<double, double>> entryArrows;         // Flèches pour entrées <index, highPrice+offset>
+    std::vector<std::pair<double, double>> exitArrows;          // Flèches pour sorties <index, lowPrice-offset>
+    std::vector<int> entryArrowColors;                          // Couleurs des flèches d'entrée
+    std::vector<int> exitArrowColors;                           // Couleurs des flèches de sortie
+    // les courleurs d'entrée et de sortie sont les meme normalement
 
     // Pour chaque trade, vérifier s'il est visible dans la fenêtre actuelle
     for (const auto& trade : m_trades) {
-        int tradeIndex = trade->entryBar();
+        int entryBarIndex = trade->entryBar();
         
-        // Vérifier si le trade est dans la plage visible
-        if (tradeIndex >= startIndex && tradeIndex < startIndex + timestamps.len) {
+        // Vérifier si l'entrée est dans la plage visible
+        if (entryBarIndex >= startIndex && entryBarIndex < startIndex + timestamps.len) {
             // Calculer l'index relatif dans la fenêtre visible
-            double relativeIndex = tradeIndex - startIndex;
-            visibleIndices.push_back(relativeIndex);
-            visiblePrices.push_back(trade->entryPrice());
-        }
-    }
+            double relativeIndex = entryBarIndex - startIndex;
+            
+            // Ajouter un marqueur carré pour la position d'entrée
+            entryMarkers.push_back({relativeIndex, trade->entryPrice()});
+            
+            // Obtenir le prix high de la bougie d'entrée pour placer la flèche
+            if (entryBarIndex < static_cast<int>(m_backtestData->size())) {
+                const be::Candle& entryCandle = m_backtestData->at(entryBarIndex);
+                double arrowY = entryCandle.high * 1.0001; // Légèrement au-dessus du high
 
-    // Vérifier si nous avons des trades visibles
-    if (!visibleIndices.empty()) {
-        // Convertir en DoubleArray
-        addMarkers(mainChart, visibleIndices, visiblePrices, 
-                    "Entries", Chart::TriangleSymbol, 0x00AA00);
-
-
-        std::vector<double> visibleExitIndices;
-        std::vector<double> visibleExitPrices;
-
-        // Pour chaque trade, vérifier s'il est fermé et visible dans la fenêtre actuelle
-        for (const auto& trade : m_trades) {
-            // Ne traiter que les trades fermés
-            if (trade->isClosed()) {
-                int exitIndex = trade->exitBar();
+                // Ajouter une flèche inversée (pointe vers le bas) au-dessus de la bougie d'entrée
+                entryArrows.push_back({relativeIndex, arrowY});
                 
-                // Vérifier si la sortie est dans la plage visible
-                if (exitIndex >= startIndex && exitIndex < startIndex + timestamps.len) {
-                    // Calculer l'index relatif dans la fenêtre visible
-                    double relativeIndex = exitIndex - startIndex;
-                    visibleExitIndices.push_back(relativeIndex);
-                    visibleExitPrices.push_back(trade->exitPrice());
+                // Couleur de la flèche d'entrée (noir par défaut)
+                entryArrowColors.push_back(0x000000);
+            }
+        }
+        
+        // Si le trade est fermé, ajouter aussi la sortie
+        if (trade->isClosed()) {
+            int exitBarIndex = trade->exitBar();
+            
+            // Vérifier si la sortie est dans la plage visible
+            if (exitBarIndex >= startIndex && exitBarIndex < startIndex + timestamps.len) {
+                // Calculer l'index relatif pour la sortie
+                double relativeExitIndex = exitBarIndex - startIndex;
+                
+                // Ajouter un marqueur carré pour la position de sortie
+                exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
+                
+                // Obtenir le prix low de la bougie de sortie pour placer la flèche
+                if (exitBarIndex < static_cast<int>(m_backtestData->size())) {
+                    const be::Candle& exitCandle = m_backtestData->at(exitBarIndex);
+                    double arrowY = exitCandle.low * 0.9999;
+
+                    // Ajouter une flèche (pointe vers le haut) en-dessous de la bougie de sortie
+                    exitArrows.push_back({relativeExitIndex, arrowY});
+                    
+                    // Déterminer la couleur de la flèche en fonction du résultat du trade
+                    double pnl = trade->pl();
+                    
+                    int color;
+                    if (pnl > 0) color = 0x00AA00;      // Vert pour gagnant
+                    else if (pnl < 0) color = 0xCC0000; // Rouge pour perdant
+                    else color = 0x000000;              // Noir pour neutre
+                    
+                    exitArrowColors.push_back(color);
                 }
             }
         }
+    }
+    // il faudra faire une taille proportionnelle a la taille d'une bougie
+    // parfois ca crash sur les boucles for des arrows possible fuite de memoire ?
 
-        // Vérifier si nous avons des sorties visibles
-        addMarkers(mainChart, visibleExitIndices, visibleExitPrices, 
-                    "Exits", Chart::InvertedTriangleSymbol, 0xFF0000);
+    // Ajouter les marqueurs carrés pour les entrées
+    if (!entryMarkers.empty()) {
+        addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 5, 0x000000);
+    }
+    
+    // Ajouter les marqueurs carrés pour les sorties
+    if (!exitMarkers.empty()) {
+        addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 5, 0x000000);
+    }
+    
+    // Ajouter les flèches pour les entrées (triangles inversés)
+    for (size_t i = 0; i < entryArrows.size(); ++i) {
+        std::vector<std::pair<double, double>> arrow = {entryArrows[i]};
+        addMarkers(mainChart, arrow, "", Chart::InvertedTriangleSymbol, 12, exitArrowColors[i]);
+    }
+    
+    // Ajouter les flèches pour les sorties (triangles)
+    for (size_t i = 0; i < exitArrows.size(); ++i) {
+        std::vector<std::pair<double, double>> arrow = {exitArrows[i]};
+        addMarkers(mainChart, arrow, "", Chart::TriangleSymbol, 12, exitArrowColors[i]);
     }
 }
 
@@ -736,17 +784,66 @@ FinanceChart *ChartWidget::finalizeChart(FinanceChart *chart)
     return nullptr;
 }
 
-void ChartWidget::addMarkers(XYChart* chart, const std::vector<double>& indices, 
-                            const std::vector<double>& prices, const char* name,
-                            int symbolType, int color) {
-    if (indices.empty()) return;
+void ChartWidget::addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, 
+                            const char* name, int symbolType, int symbolSize, int color) {
+    if (arrows.empty()) return;
+
+    std::vector<double> xValues;
+    std::vector<double> yValues;
+    xValues.reserve(arrows.size());
+    yValues.reserve(arrows.size());
     
-    DoubleArray xArray = vectorToDoubleArray(indices);
-    DoubleArray yArray = vectorToDoubleArray(prices);
-    
+    for (const auto& pair : arrows) {
+        xValues.push_back(pair.first);
+        yValues.push_back(pair.second);
+    }
+
+    // Convertir en DoubleArray
+    DoubleArray xArray = vectorToDoubleArray(xValues);
+    DoubleArray yArray = vectorToDoubleArray(yValues);
+
     ScatterLayer* layer = chart->addScatterLayer(xArray, yArray, name, 
-                                              symbolType, 9, color, 0x000000);
+                                              symbolType, symbolSize, color);
     layer->moveFront();
+}
+
+void ChartWidget::addDirectionalArrow(XYChart* chart, double x, double y, 
+                                    double height, int color) {
+    // Calculer les points pour dessiner une flèche
+    int arrowWidth = 8;  // Largeur de la tête de flèche
+    
+    // Obtenir les coordonnées en pixels
+    int xPixel = chart->getXCoor(x);
+    int yBasePixel = chart->getYCoor(y);
+    int yTipPixel = chart->getYCoor(y + height);
+    
+    // Dessiner la ligne de la flèche
+    DrawArea* d = chart->initDynamicLayer();
+    d->line(xPixel, yBasePixel, xPixel, yTipPixel, color, 2);
+    
+    // Créer les tableaux pour les coordonnées des polygones
+    int xCoords[3] = {xPixel, xPixel - arrowWidth/2, xPixel + arrowWidth/2};
+    int yCoords[3];
+    
+    // Dessiner la tête de la flèche
+    if (height > 0) {
+        // Flèche vers le haut
+        yCoords[0] = yTipPixel;
+        yCoords[1] = yTipPixel + arrowWidth;
+        yCoords[2] = yTipPixel + arrowWidth;
+    } else {
+        // Flèche vers le bas
+        yCoords[0] = yTipPixel;
+        yCoords[1] = yTipPixel - arrowWidth;
+        yCoords[2] = yTipPixel - arrowWidth;
+    }
+    
+    // Créer les objets IntArray avec les tableaux
+    IntArray xArray(xCoords, 3);
+    IntArray yArray(yCoords, 3);
+    
+    // Dessiner le polygone
+    d->polygon(xArray, yArray, color, color);
 }
 
 void ChartWidget::trackFinance(MultiChart* m, int mouseX)
@@ -892,19 +989,15 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
 }
 
 QString ChartWidget::chartTypeToString(ChartType type) {
-    for (const auto& info : ChartTypeData) {
-        if (info.type == type) {
+    for (const auto& info : s_chartTypeData)
+        if (info.type == type)
             return QString(info.name);
-        }
-    }
     return QString("Unknown");
 }
 
-ChartType ChartWidget::stringToChartType(const QString& str) {
-    for (const auto& info : ChartTypeData) {
-        if (str == info.name) {
+ChartWidget::ChartType ChartWidget::stringToChartType(const QString& typeStr) {
+    for (const auto& info : s_chartTypeData)
+        if (typeStr == info.name)
             return info.type;
-        }
-    }
     return ChartType::CandleStick; // Valeur par défaut
 }

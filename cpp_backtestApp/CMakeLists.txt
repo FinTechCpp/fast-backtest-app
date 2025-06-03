@@ -10,14 +10,6 @@ set(CMAKE_AUTOUIC ON)
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "include/*.h")
 
-# Si pour une raison quelconque qchartviewer.cpp n'est pas correctement pris en compte 
-# dans la bibliothèque chartdirector, nous pouvons l'ajouter directement ici
-set(QCHARTVIEWER_CPP "${CMAKE_SOURCE_DIR}/ChartDirector/qtdemo/helloworld/qchartviewer.cpp")
-if(EXISTS "${QCHARTVIEWER_CPP}" AND NOT TARGET chartdirector)
-    list(APPEND SOURCES "${QCHARTVIEWER_CPP}")
-    message(STATUS "Ajout direct de qchartviewer.cpp aux sources")
-endif()
-
 # Créer l'exécutable
 add_executable(backtestapp 
     ${SOURCES}
@@ -45,6 +37,55 @@ target_link_libraries(backtestapp
         cpp_strategies
         chartdirector
 )
+
+# Sur Windows, déployer automatiquement les DLL Qt et ChartDirector
+if(WIN32)
+    # Trouver l'outil windeployqt
+    get_target_property(QT6_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(QT6_WINDEPLOYQT_EXECUTABLE ${QT6_QMAKE_EXECUTABLE} PATH)
+    set(QT6_WINDEPLOYQT_EXECUTABLE "${QT6_WINDEPLOYQT_EXECUTABLE}/windeployqt.exe")
+
+    # Vérifier que windeployqt existe
+    if(EXISTS ${QT6_WINDEPLOYQT_EXECUTABLE})
+        # Commande pour déployer Qt après la compilation
+        add_custom_command(TARGET backtestapp POST_BUILD
+            COMMAND ${QT6_WINDEPLOYQT_EXECUTABLE} --qmldir ${CMAKE_SOURCE_DIR} $<TARGET_FILE:backtestapp>
+            COMMENT "Déploiement des DLL Qt avec windeployqt")
+    else()
+        message(WARNING "windeployqt non trouvé. Les DLL Qt devront être copiées manuellement.")
+        
+        # Alternative: copier manuellement les DLL Qt principales
+        set(QT_RUNTIME_PATH "${Qt6_DIR}/../../../bin")
+        set(QT_DLLS
+            Qt6Core.dll
+            Qt6Gui.dll
+            Qt6Widgets.dll
+            Qt6Charts.dll
+        )
+        
+        foreach(DLL ${QT_DLLS})
+            if(EXISTS "${QT_RUNTIME_PATH}/${DLL}")
+                add_custom_command(TARGET backtestapp POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${QT_RUNTIME_PATH}/${DLL}"
+                    "$<TARGET_FILE_DIR:backtestapp>"
+                    COMMENT "Copie de ${DLL}"
+                )
+            endif()
+        endforeach()
+    endif()
+    
+    # Copier la DLL ChartDirector
+    set(CHARTDIR_DLL "${CMAKE_SOURCE_DIR}/ChartDirector/lib/chartdir70.dll")
+    if(EXISTS "${CHARTDIR_DLL}")
+        add_custom_command(TARGET backtestapp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CHARTDIR_DLL}"
+            "$<TARGET_FILE_DIR:backtestapp>"
+            COMMENT "Copie de chartdir70.dll vers le dossier de l'exécutable"
+        )
+    endif()
+endif()
 
 # Installer l'exécutable et ses dépendances
 install(TARGETS backtestapp

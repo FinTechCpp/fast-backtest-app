@@ -6,7 +6,7 @@ Ce guide explique comment compiler, exécuter et déboguer le projet ig-trading-
 
 - CMake 3.14 ou supérieur
 - GCC/G++ avec support C++17
-- Qt6 (Core, Widgets, Charts)
+- Qt6.8.3 (Core, Widgets, Charts)
 - VS Code (pour le débogage)
 - Extensions VS Code: C/C++, CMake Tools
 
@@ -190,7 +190,8 @@ Voici un résumé des différentes façons de compiler et exécuter le projet:
 1. **Compilation et exécution manuelles**:
    ```bash
    cmake ..
-   make
+   make (Linux / macOS)
+   cmake --build . --config Release --parallel (Windows)
    ./cpp_backtestApp/backtestapp
    ```
 

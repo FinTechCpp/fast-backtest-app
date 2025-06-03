@@ -6,6 +6,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QStringList>
+#include <QTimeZone>
 #include <algorithm>
 #include <cmath>
 

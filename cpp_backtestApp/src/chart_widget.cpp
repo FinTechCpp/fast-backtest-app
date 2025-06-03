@@ -1,6 +1,7 @@
 #include "chart_widget.h"
 #include <QVBoxLayout>
 #include <QDebug>
+#include <QMouseEvent>
 #include <algorithm>
 #include <cmath>
 

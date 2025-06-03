@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <vector>
 #include <memory>
+#include <iostream>
 
 #include "data.hpp"
 #include "trade.hpp"
@@ -27,14 +28,14 @@ struct PriceData {
 /**
  * @brief Structure pour stocker les données des trades
  */
-struct TradeData {
-    std::vector<double> entry_times;
-    std::vector<double> exit_times;
-    std::vector<double> entry_prices;
-    std::vector<double> exit_prices;
-    std::vector<QString> types;
-    std::vector<double> pnl;
-};
+// struct TradeData {
+//     std::vector<double> entry_times;
+//     std::vector<double> exit_times;
+//     std::vector<double> entry_prices;
+//     std::vector<double> exit_prices;
+//     std::vector<QString> types;
+//     std::vector<double> pnl;
+// };
 
 /**
  * @brief Structure pour stocker les données d'équité
@@ -102,7 +103,7 @@ private:
 
     // Méthodes de conversion internes
     void convertBacktestData(const std::shared_ptr<be::Data>& data);
-    void convertBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);
+    // void convertBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);
     void convertEquityCurve(const std::vector<double>& equityCurve, const std::shared_ptr<be::Data>& data);
     double dateToChartTimestamp(const be::Date& date);
 
@@ -134,7 +135,8 @@ private:
     
     // Données
     PriceData m_priceData;
-    TradeData m_tradeData;
+    // TradeData m_tradeData;
+    std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
     
     // Éléments du graphique

@@ -78,7 +78,9 @@ void ChartWidget::setBacktestTrades(const std::vector<std::shared_ptr<be::Trade>
     }
     
     // Convertir les trades en format interne
-    convertBacktestTrades(trades);
+    // convertBacktestTrades(trades);
+
+    m_trades = trades; // Stocker les trades pour une utilisation future
     
     // Mettre à jour le graphique uniquement si nous avons déjà des données de prix valides
     if (hasValidData()) {
@@ -257,7 +259,7 @@ void ChartWidget::clearChart()
     
     // Effacer les données
     m_priceData = PriceData();
-    m_tradeData = TradeData();
+    // m_tradeData = TradeData();
     m_equityData = EquityData();
 }
 
@@ -349,55 +351,55 @@ void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
     qDebug() << "Données de prix converties:" << dataSize << "bougies";
 }
 
-void ChartWidget::convertBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
-    if (trades.empty()) {
-        qWarning() << "Liste de trades vide";
-        return;
-    }
+// void ChartWidget::convertBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
+//     if (trades.empty()) {
+//         qWarning() << "Liste de trades vide";
+//         return;
+//     }
 
-    // Réinitialiser les données de trades
-    m_tradeData = TradeData();
+//     // Réinitialiser les données de trades
+//     m_tradeData = TradeData();
     
-    // Réserver la capacité
-    size_t tradeCount = trades.size();
-    m_tradeData.entry_times.reserve(tradeCount);
-    m_tradeData.exit_times.reserve(tradeCount);
-    m_tradeData.entry_prices.reserve(tradeCount);
-    m_tradeData.exit_prices.reserve(tradeCount);
-    m_tradeData.types.reserve(tradeCount);
-    m_tradeData.pnl.reserve(tradeCount);
+//     // Réserver la capacité
+//     size_t tradeCount = trades.size();
+//     m_tradeData.entry_times.reserve(tradeCount);
+//     m_tradeData.exit_times.reserve(tradeCount);
+//     m_tradeData.entry_prices.reserve(tradeCount);
+//     m_tradeData.exit_prices.reserve(tradeCount);
+//     m_tradeData.types.reserve(tradeCount);
+//     m_tradeData.pnl.reserve(tradeCount);
 
-    // Convertir chaque trade
-    for (const auto& trade : trades) {
-        if (!trade) continue;
+//     // Convertir chaque trade
+//     for (const auto& trade : trades) {
+//         if (!trade) continue;
         
-        // Convertir les dates d'entrée et de sortie en timestamps
-        double entryTimestamp = dateToChartTimestamp(trade->entryDate());
+//         // Convertir les dates d'entrée et de sortie en timestamps
+//         double entryTimestamp = dateToChartTimestamp(trade->entryDate());
         
-        m_tradeData.entry_times.push_back(entryTimestamp);
-        m_tradeData.entry_prices.push_back(trade->entryPrice());
+//         m_tradeData.entry_times.push_back(entryTimestamp);
+//         m_tradeData.entry_prices.push_back(trade->entryPrice());
         
-        // Ajouter les informations de sortie si le trade est fermé
-        if (trade->isClosed()) {
-            double exitTimestamp = dateToChartTimestamp(trade->exitDate());
-            m_tradeData.exit_times.push_back(exitTimestamp);
-            m_tradeData.exit_prices.push_back(trade->exitPrice());
-        } else {
-            // Pour les trades ouverts, utiliser des valeurs par défaut
-            m_tradeData.exit_times.push_back(0);  // 0 indique que le trade est toujours ouvert
-            m_tradeData.exit_prices.push_back(0);
-        }
+//         // Ajouter les informations de sortie si le trade est fermé
+//         if (trade->isClosed()) {
+//             double exitTimestamp = dateToChartTimestamp(trade->exitDate());
+//             m_tradeData.exit_times.push_back(exitTimestamp);
+//             m_tradeData.exit_prices.push_back(trade->exitPrice());
+//         } else {
+//             // Pour les trades ouverts, utiliser des valeurs par défaut
+//             m_tradeData.exit_times.push_back(0);  // 0 indique que le trade est toujours ouvert
+//             m_tradeData.exit_prices.push_back(0);
+//         }
         
-        // Type de trade (Long ou Short)
-        QString type = trade->isLong() ? "Long" : "Short";
-        m_tradeData.types.push_back(type);
+//         // Type de trade (Long ou Short)
+//         QString type = trade->isLong() ? "Long" : "Short";
+//         m_tradeData.types.push_back(type);
         
-        // P&L du trade
-        m_tradeData.pnl.push_back(trade->pl());
-    }
+//         // P&L du trade
+//         m_tradeData.pnl.push_back(trade->pl());
+//     }
     
-    qDebug() << "Données de trades converties:" << tradeCount << "trades";
-}
+//     qDebug() << "Données de trades converties:" << tradeCount << "trades";
+// }
 
 void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve, 
                                     const std::shared_ptr<be::Data>& data) {
@@ -576,7 +578,11 @@ DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec)
     if (vec.empty()) {
         return DoubleArray(nullptr, 0);
     }
-    return DoubleArray(vec.data(), static_cast<int>(vec.size()));
+    // Créer une copie des données pour éviter les problèmes de durée de vie
+    double* data = new double[vec.size()];
+    std::copy(vec.begin(), vec.end(), data);
+    return DoubleArray(data, static_cast<int>(vec.size()));
+    // Note: ChartDirector libère la mémoire des DoubleArray qu'il consomme
 }
 
 void ChartWidget::calculateHeikinAshi(
@@ -710,20 +716,132 @@ FinanceChart* ChartWidget::drawChart(
     // c->addVolBars(volumeHeight, 0x99ff99, 0xff9999, 0x808080);
     
     // 4. Ajouter les trades si disponibles
-    if (!m_tradeData.entry_times.empty()) {
+    if (!m_trades.empty()) {
         // Ajouter les marqueurs au graphique principal
-        // XYChart* mainChart = (XYChart*)c->getChart(1);
-        
-        // // Marqueurs pour les entrées (triangles verts)
-        // ScatterLayer* entryLayer = mainChart->addScatterLayer(
-        //     vectorToDoubleArray(std::vector<double>(
-        //         m_tradeData.entry_times[0]
-        //     )),
-        //     vectorToDoubleArray(std::vector<double>(
-        //         m_tradeData.entry_prices[0]
-        //     )),
-        //     "Entrées", Chart::TriangleSymbol, 11, 0x00aa00, 0x00aa00);
+        XYChart* mainChart = (XYChart*)c->getChart(1);
 
+        if (!mainChart) {
+            return c;
+        }
+
+        // Déterminer l'index de début et de fin des données actuellement affichées
+        // timestamps contient uniquement les bougies visibles
+        int startIndex = 0;  // L'index de début des données visibles par rapport au dataset complet
+        
+        // Si nous sommes en mode viewport (zoom/déplacement), déterminer l'index de début
+        if (timestamps.len < (int)m_priceData.timestamps.size()) {
+            double firstVisibleTimestamp = timestamps[0];
+            
+            // Trouver l'index correspondant dans le dataset complet
+            for (size_t i = 0; i < m_priceData.timestamps.size(); ++i) {
+                if (std::abs(m_priceData.timestamps[i] - firstVisibleTimestamp) < 0.001) {
+                    startIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        // Filtrer les trades qui sont visibles dans la fenêtre actuelle
+        std::vector<double> visibleIndices;
+        std::vector<double> visiblePrices;
+
+        // Pour chaque trade, vérifier s'il est visible dans la fenêtre actuelle
+        for (const auto& trade : m_trades) {
+            int tradeIndex = trade->entryBar();
+            
+            // Vérifier si le trade est dans la plage visible
+            if (tradeIndex >= startIndex && tradeIndex < startIndex + timestamps.len) {
+                // Calculer l'index relatif dans la fenêtre visible
+                double relativeIndex = tradeIndex - startIndex;
+                visibleIndices.push_back(relativeIndex);
+                visiblePrices.push_back(trade->entryPrice());
+            }
+        }
+
+        // Vérifier si nous avons des trades visibles
+        if (!visibleIndices.empty()) {
+            // Convertir en DoubleArray
+            DoubleArray xIndices = vectorToDoubleArray(visibleIndices);
+            DoubleArray yPrices = vectorToDoubleArray(visiblePrices);
+
+            // Afficher les valeurs pour debug
+            std::cout << "Trades visibles (" << visibleIndices.size() << " sur " << m_trades.size() << "):" << std::endl;
+            for (size_t i = 0; i < std::min(visibleIndices.size(), size_t(5)); i++) {
+                std::cout << "Trade visible " << i << ": indice relatif=" << visibleIndices[i] 
+                        << ", prix=" << visiblePrices[i] << std::endl;
+            }
+            
+            // Debug des indices visibles
+            std::cout << "Fenêtre visible: début=" << startIndex
+                    << ", taille=" << timestamps.len
+                    << ", fin=" << (startIndex + timestamps.len - 1) << std::endl;
+
+            // Marqueurs pour les entrées (triangles verts)
+            ScatterLayer* entryLayer = mainChart->addScatterLayer(
+                xIndices, yPrices,
+                "Entries",                   // Nom
+                Chart::TriangleSymbol,       // Symbole 
+                9,                           // Taille
+                0x00AA00,                    // Couleur de remplissage (vert)
+                0x000000                     // Couleur de contour
+            );
+            
+            // S'assurer que les marqueurs sont au premier plan
+            entryLayer->moveFront();
+
+            std::vector<double> visibleExitIndices;
+            std::vector<double> visibleExitPrices;
+
+            // Pour chaque trade, vérifier s'il est fermé et visible dans la fenêtre actuelle
+            for (const auto& trade : m_trades) {
+                // Ne traiter que les trades fermés
+                if (trade->isClosed()) {
+                    int exitIndex = trade->exitBar();
+                    
+                    // Vérifier si la sortie est dans la plage visible
+                    if (exitIndex >= startIndex && exitIndex < startIndex + timestamps.len) {
+                        // Calculer l'index relatif dans la fenêtre visible
+                        double relativeIndex = exitIndex - startIndex;
+                        visibleExitIndices.push_back(relativeIndex);
+                        visibleExitPrices.push_back(trade->exitPrice());
+                    }
+                }
+            }
+
+            // Vérifier si nous avons des sorties visibles
+            if (!visibleExitIndices.empty()) {
+                // Convertir en DoubleArray
+                DoubleArray xExitIndices = vectorToDoubleArray(visibleExitIndices);
+                DoubleArray yExitPrices = vectorToDoubleArray(visibleExitPrices);
+
+                // Afficher les valeurs pour debug
+                std::cout << "Sorties visibles (" << visibleExitIndices.size() << "):" << std::endl;
+                for (size_t i = 0; i < std::min(visibleExitIndices.size(), size_t(5)); i++) {
+                    std::cout << "Sortie visible " << i << ": indice relatif=" << visibleExitIndices[i] 
+                            << ", prix=" << visibleExitPrices[i] << std::endl;
+                }
+                
+                // Marqueurs pour les sorties (triangles inversés rouges)
+                ScatterLayer* exitLayer = mainChart->addScatterLayer(
+                    xExitIndices, yExitPrices,
+                    "Exits",                          // Nom
+                    Chart::InvertedTriangleSymbol,    // Symbole triangulaire inversé
+                    9,                                // Taille
+                    0xFF0000,                         // Couleur de remplissage (rouge)
+                    0x000000                          // Couleur de contour
+                );
+                
+                // S'assurer que les marqueurs sont au premier plan
+                exitLayer->moveFront();
+            } else {
+                std::cout << "Aucune sortie visible dans la fenêtre actuelle" << std::endl;
+            }
+        } else {
+            std::cout << "Aucun trade visible dans la fenêtre actuelle" << std::endl;
+        }
+    }
+
+        // c->layout();
         // entryLayer->moveFront();
         
         // // Filtrer les trades fermés (exit_time != 0)
@@ -749,7 +867,6 @@ FinanceChart* ChartWidget::drawChart(
         //         )),
         //         "Sorties", Chart::InvertedTriangleSymbol, 11, 0xaa0000, 0xaa0000);
         // }
-    }
     
     // Mettre à jour le graphique dans le viewer
     m_chartViewer->setChart(c);

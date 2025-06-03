@@ -4,22 +4,26 @@ project(chartdirector)
 # Afficher des informations de diagnostic
 message(STATUS "Configuration de ChartDirector...")
 
-# Utiliser une bibliothèque normale au lieu d'une interface pour pouvoir y ajouter qchartviewer.cpp
-# Modification : changé INTERFACE à SHARED
-add_library(chartdirector SHARED 
-    "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/helloworld/qchartviewer.cpp"
-)
+# Sur Windows, il est plus simple d'utiliser une bibliothèque STATIC
+# Sur les autres plateformes, on peut utiliser SHARED
+if(WIN32)
+    add_library(chartdirector STATIC 
+        "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/helloworld/qchartviewer.cpp"
+    )
+else()
+    add_library(chartdirector SHARED 
+        "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/helloworld/qchartviewer.cpp"
+    )
+endif()
 
 # Configurer les chemins d'inclusion
 target_include_directories(chartdirector 
-    # Modification : PUBLIC au lieu de INTERFACE pour que backtestapp puisse les voir
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/qtdemo
-    ${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/helloworld  # Ajout du dossier contenant qchartviewer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/helloworld
 )
 
-# Les bibliothèques ont été trouvées à ces emplacements spécifiques
 # Détection adaptative selon le système d'exploitation
 if(APPLE)
     set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.7.dylib")
@@ -27,6 +31,8 @@ if(APPLE)
 elseif(WIN32)
     set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/chartdir70.lib")
     set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/chartdir70.lib")
+    # Sur Windows, on a aussi besoin de la DLL à l'exécution
+    set(CHARTDIR_DLL "${CMAKE_CURRENT_SOURCE_DIR}/lib/chartdir70.dll")
 else()
     set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so")
     set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/libchartdir.so")
@@ -58,11 +64,26 @@ set_target_properties(chartdirector PROPERTIES
 
 # Lier la bibliothèque trouvée
 target_link_libraries(chartdirector 
-    PUBLIC  # Modifié de INTERFACE à PUBLIC
+    PUBLIC
     ${CHARTDIR_LIB} 
     Qt6::Core 
     Qt6::Widgets
 )
+
+# Sur Windows, copier la DLL ChartDirector dans le dossier de sortie
+if(WIN32 AND EXISTS "${CHARTDIR_DLL}")
+    # Copier la DLL dans tous les dossiers de sortie possibles
+    add_custom_command(TARGET chartdirector POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CHARTDIR_DLL}"
+        "$<TARGET_FILE_DIR:chartdirector>"
+        COMMENT "Copie de chartdir70.dll"
+    )
+    
+    # Installer la DLL avec l'application
+    install(FILES "${CHARTDIR_DLL}" 
+            DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
 
 # Définir une variable pour indiquer que ChartDirector est configuré
 set(CHARTDIRECTOR_FOUND TRUE CACHE BOOL "ChartDirector trouvé et configuré" FORCE)

@@ -61,6 +61,8 @@ void ChartWidget::setBacktestData(const std::shared_ptr<be::Data>& data) {
         qWarning() << "Tentative de définir des données de backtest nulles";
         return;
     }
+
+    m_backtestData = data;
     
     // Convertir les données en format interne
     convertBacktestData(data);
@@ -91,39 +93,8 @@ void ChartWidget::setEquityCurve(const std::vector<double>& equityCurve) {
         return;
     }
     
-    // On a besoin des données de prix pour aligner correctement la courbe d'équité
-    if (m_priceData.timestamps.empty()) {
-        qWarning() << "Impossible de définir la courbe d'équité sans données de prix";
-        return;
-    }
-    
-    // Pour la conversion, nous avons besoin des données be::Data originales
-    // L'idéal serait de stocker une référence aux données originales lors de setBacktestData
-    // mais pour cet exemple, nous allons reconstruire un objet Data à partir de m_priceData
-    
-    // Dans un cas réel, il serait préférable d'avoir une référence aux données originales
-    std::vector<be::Date> dateVector;
-    for (double timestamp : m_priceData.timestamps) {
-        // Cette conversion inverse est approximative et devrait être améliorée
-        time_t time = static_cast<time_t>(timestamp);
-        std::tm* tm = std::localtime(&time);
-        be::Date date(tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday, 
-                     tm->tm_hour, tm->tm_min, tm->tm_sec);
-        dateVector.push_back(date);
-    }
-    
-    // Créer un objet Data temporaire
-    std::shared_ptr<be::Data> tempData = std::make_shared<be::Data>(
-        dateVector, 
-        m_priceData.open, 
-        m_priceData.high, 
-        m_priceData.low, 
-        m_priceData.close, 
-        m_priceData.volume
-    );
-    
     // Convertir la courbe d'équité
-    convertEquityCurve(equityCurve, tempData);
+    convertEquityCurve(equityCurve, m_backtestData);
     
     // Mettre à jour le graphique
     if (hasValidData()) {
@@ -517,15 +488,15 @@ void ChartWidget::drawChartWithViewport()
     }
 }
 
-DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec)
-{
+DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec) {
     if (vec.empty()) {
         return DoubleArray(nullptr, 0);
     }
+    return DoubleArray(vec.data(), static_cast<int>(vec.size()));
     // Créer une copie des données pour éviter les problèmes de durée de vie
-    double* data = new double[vec.size()];
-    std::copy(vec.begin(), vec.end(), data);
-    return DoubleArray(data, static_cast<int>(vec.size()));
+    // double* data = new double[vec.size()];
+    // std::copy(vec.begin(), vec.end(), data);
+    // return DoubleArray(data, static_cast<int>(vec.size()));
     // Note: ChartDirector libère la mémoire des DoubleArray qu'il consomme
 }
 
@@ -583,6 +554,7 @@ FinanceChart* ChartWidget::drawChart(
     
     // Configurer les données
     c->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
+
     
     // Ajouter le titre du graphique
     std::string chartTypeStr = chartTypeToString(m_chartType).toStdString();
@@ -591,7 +563,6 @@ FinanceChart* ChartWidget::drawChart(
     c->addTitle(title.c_str());
     
     // Hauteurs pour les différentes parties du graphique
-    int equityHeight = 150;     // Hauteur du graphique d'équité
     int mainChartHeight = 400;  // Hauteur du graphique principal
     int volumeHeight = 100;     // Hauteur du graphique de volume
 
@@ -604,60 +575,17 @@ FinanceChart* ChartWidget::drawChart(
         double firstVisibleTimestamp = timestamps[0];
         
         // Trouver l'index correspondant dans le dataset complet
-        for (size_t i = 0; i < m_priceData.timestamps.size(); ++i) {
-            if (std::abs(m_priceData.timestamps[i] - firstVisibleTimestamp) < 0.001) {
-                startIndex = i;
-                break;
-            }
-        }
+        auto it = std::lower_bound(
+            m_priceData.timestamps.begin(), 
+            m_priceData.timestamps.end(), 
+            firstVisibleTimestamp,
+            [](double a, double b) { return a < b - 0.001; }
+        );
+        startIndex = std::distance(m_priceData.timestamps.begin(), it);
     }
     
     // 1. Ajouter la courbe d'équité en haut si disponible
-    if (!m_equityData.equity_values.empty() && timestamps.len > 0) {
-        // Trouver les indices correspondant à la fenêtre visible
-        int equityStartIndex = startIndex;  // Utiliser le même index de début que pour les bougies
-        int equityEndIndex = std::min(equityStartIndex + timestamps.len, (int)m_equityData.equity_values.size());
-        
-        if (equityStartIndex < (int)m_equityData.equity_values.size()) {
-            // Créer un sous-tableau pour les valeurs d'equity visibles
-            std::vector<double> visibleEquity(m_equityData.equity_values.begin() + equityStartIndex,
-                                            m_equityData.equity_values.begin() + equityEndIndex);
-                                            
-            // Si nécessaire, compléter pour avoir la même taille que le nombre de bougies visibles
-            while (visibleEquity.size() < (size_t)timestamps.len) {
-                visibleEquity.push_back(visibleEquity.back());
-            }
-            
-            // Convertir en DoubleArray
-            DoubleArray equityValues = vectorToDoubleArray(visibleEquity);
-            
-            // Ajouter l'indicateur pour l'equity curve
-            XYChart* equityChart = c->addIndicator(equityHeight);
-            
-            // Configuration du titre et des libellés
-            equityChart->yAxis()->setTitle("Capital");
-            equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
-            
-            // Ajouter la ligne principale d'équité
-            LineLayer* equityLayer = equityChart->addLineLayer();
-            equityLayer->addDataSet(equityValues, 0x008800, "Equity");
-            equityLayer->setLineWidth(2);
-            
-            // Optionnel: ajouter un point à la fin de la courbe pour marquer la valeur actuelle
-            if (!visibleEquity.empty()) {
-                std::vector<double> lastPointX = {(double)(visibleEquity.size() - 1)};
-                std::vector<double> lastPointY = {visibleEquity.back()};
-                
-                DoubleArray xPoint = vectorToDoubleArray(lastPointX);
-                DoubleArray yPoint = vectorToDoubleArray(lastPointY);
-                
-                ScatterLayer* endPoint = equityChart->addScatterLayer(xPoint, yPoint, 
-                                                                    "Current", Chart::CircleShape, 7, 
-                                                                    0x008800, 0x008800);
-                endPoint->moveFront();
-            }
-        }
-    }
+    addEquityCurveSection(c, timestamps, startIndex);
     
     // 2. Ajouter le graphique principal
     c->addMainChart(mainChartHeight);
@@ -672,95 +600,153 @@ FinanceChart* ChartWidget::drawChart(
     }
     
     // 4. Ajouter les trades si disponibles
-    if (!m_trades.empty()) {
-        // Ajouter les marqueurs au graphique principal
-        XYChart* mainChart = (XYChart*)c->getChart(1);
-
-        if (!mainChart) {
-            return c;
-        }
-        
-        // Filtrer les trades qui sont visibles dans la fenêtre actuelle
-        std::vector<double> visibleIndices;
-        std::vector<double> visiblePrices;
-
-        // Pour chaque trade, vérifier s'il est visible dans la fenêtre actuelle
-        for (const auto& trade : m_trades) {
-            int tradeIndex = trade->entryBar();
-            
-            // Vérifier si le trade est dans la plage visible
-            if (tradeIndex >= startIndex && tradeIndex < startIndex + timestamps.len) {
-                // Calculer l'index relatif dans la fenêtre visible
-                double relativeIndex = tradeIndex - startIndex;
-                visibleIndices.push_back(relativeIndex);
-                visiblePrices.push_back(trade->entryPrice());
-            }
-        }
-
-        // Vérifier si nous avons des trades visibles
-        if (!visibleIndices.empty()) {
-            // Convertir en DoubleArray
-            DoubleArray xIndices = vectorToDoubleArray(visibleIndices);
-            DoubleArray yPrices = vectorToDoubleArray(visiblePrices);
-
-            // Marqueurs pour les entrées (triangles verts)
-            ScatterLayer* entryLayer = mainChart->addScatterLayer(
-                xIndices, yPrices,
-                "Entries",                   // Nom
-                Chart::TriangleSymbol,       // Symbole 
-                9,                           // Taille
-                0x00AA00,                    // Couleur de remplissage (vert)
-                0x000000                     // Couleur de contour
-            );
-            
-            // S'assurer que les marqueurs sont au premier plan
-            entryLayer->moveFront();
-
-            std::vector<double> visibleExitIndices;
-            std::vector<double> visibleExitPrices;
-
-            // Pour chaque trade, vérifier s'il est fermé et visible dans la fenêtre actuelle
-            for (const auto& trade : m_trades) {
-                // Ne traiter que les trades fermés
-                if (trade->isClosed()) {
-                    int exitIndex = trade->exitBar();
-                    
-                    // Vérifier si la sortie est dans la plage visible
-                    if (exitIndex >= startIndex && exitIndex < startIndex + timestamps.len) {
-                        // Calculer l'index relatif dans la fenêtre visible
-                        double relativeIndex = exitIndex - startIndex;
-                        visibleExitIndices.push_back(relativeIndex);
-                        visibleExitPrices.push_back(trade->exitPrice());
-                    }
-                }
-            }
-
-            // Vérifier si nous avons des sorties visibles
-            if (!visibleExitIndices.empty()) {
-                // Convertir en DoubleArray
-                DoubleArray xExitIndices = vectorToDoubleArray(visibleExitIndices);
-                DoubleArray yExitPrices = vectorToDoubleArray(visibleExitPrices);
-                
-                // Marqueurs pour les sorties (triangles inversés rouges)
-                ScatterLayer* exitLayer = mainChart->addScatterLayer(
-                    xExitIndices, yExitPrices,
-                    "Exits",                          // Nom
-                    Chart::InvertedTriangleSymbol,    // Symbole triangulaire inversé
-                    9,                                // Taille
-                    0xFF0000,                         // Couleur de remplissage (rouge)
-                    0x000000                          // Couleur de contour
-                );
-                
-                // S'assurer que les marqueurs sont au premier plan
-                exitLayer->moveFront();
-            }
-        }
-    }
+    addTradeMarkers(c, timestamps, startIndex);
     
     // Mettre à jour le graphique dans le viewer
     m_chartViewer->setChart(c);
+    // m_chartViewer->setFullRange("x", 0, timestamps.len - 1);
+
     
     return c;
+}
+
+FinanceChart *ChartWidget::initializeChart(int chartWidth)
+{
+    return nullptr;
+}
+
+void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
+{
+    if (m_equityData.equity_values.empty() || timestamps.len == 0)
+        return ; // Pas de données d'équité ou pas de bougies visibles
+
+    int equityHeight = 150;     // Hauteur du graphique d'équité
+
+    // Trouver les indices correspondant à la fenêtre visible
+    int equityStartIndex = startIndex;  // Utiliser le même index de début que pour les bougies
+    int equityEndIndex = std::min(equityStartIndex + timestamps.len, (int)m_equityData.equity_values.size());
+    
+    if (equityStartIndex < (int)m_equityData.equity_values.size()) {
+        // Créer un sous-tableau pour les valeurs d'equity visibles
+        std::vector<double> visibleEquity(m_equityData.equity_values.begin() + equityStartIndex,
+                                        m_equityData.equity_values.begin() + equityEndIndex);
+                                        
+        // Si nécessaire, compléter pour avoir la même taille que le nombre de bougies visibles
+        while (visibleEquity.size() < (size_t)timestamps.len) {
+            visibleEquity.push_back(visibleEquity.back());
+        }
+        
+        // Convertir en DoubleArray
+        DoubleArray equityValues = vectorToDoubleArray(visibleEquity);
+        
+        // Ajouter l'indicateur pour l'equity curve
+        XYChart* equityChart = chart->addIndicator(equityHeight);
+        
+        // Configuration du titre et des libellés
+        equityChart->yAxis()->setTitle("Capital");
+        equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
+        
+        // Ajouter la ligne principale d'équité
+        LineLayer* equityLayer = equityChart->addLineLayer();
+        equityLayer->addDataSet(equityValues, 0x008800, "Equity");
+        equityLayer->setLineWidth(2);
+        
+        // Optionnel: ajouter un point à la fin de la courbe pour marquer la valeur actuelle
+        if (!visibleEquity.empty()) {
+            std::vector<double> lastPointX = {(double)(visibleEquity.size() - 1)};
+            std::vector<double> lastPointY = {visibleEquity.back()};
+            
+            DoubleArray xPoint = vectorToDoubleArray(lastPointX);
+            DoubleArray yPoint = vectorToDoubleArray(lastPointY);
+            
+            ScatterLayer* endPoint = equityChart->addScatterLayer(xPoint, yPoint, 
+                                                                "Current", Chart::CircleShape, 7, 
+                                                                0x008800, 0x008800);
+            endPoint->moveFront();
+        }
+    }
+}
+
+void ChartWidget::addMainChartSection(FinanceChart *chart, int chartHeight)
+{
+}
+
+void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
+{
+    if (m_trades.empty())
+        return; // Pas de trades à afficher
+
+    // Ajouter les marqueurs au graphique principal
+    XYChart* mainChart = (XYChart*)chart->getChart(1);
+
+    if (!mainChart)
+        return;
+    
+    // Filtrer les trades qui sont visibles dans la fenêtre actuelle
+    std::vector<double> visibleIndices;
+    std::vector<double> visiblePrices;
+
+    // Pour chaque trade, vérifier s'il est visible dans la fenêtre actuelle
+    for (const auto& trade : m_trades) {
+        int tradeIndex = trade->entryBar();
+        
+        // Vérifier si le trade est dans la plage visible
+        if (tradeIndex >= startIndex && tradeIndex < startIndex + timestamps.len) {
+            // Calculer l'index relatif dans la fenêtre visible
+            double relativeIndex = tradeIndex - startIndex;
+            visibleIndices.push_back(relativeIndex);
+            visiblePrices.push_back(trade->entryPrice());
+        }
+    }
+
+    // Vérifier si nous avons des trades visibles
+    if (!visibleIndices.empty()) {
+        // Convertir en DoubleArray
+        addMarkers(mainChart, visibleIndices, visiblePrices, 
+                    "Entries", Chart::TriangleSymbol, 0x00AA00);
+
+
+        std::vector<double> visibleExitIndices;
+        std::vector<double> visibleExitPrices;
+
+        // Pour chaque trade, vérifier s'il est fermé et visible dans la fenêtre actuelle
+        for (const auto& trade : m_trades) {
+            // Ne traiter que les trades fermés
+            if (trade->isClosed()) {
+                int exitIndex = trade->exitBar();
+                
+                // Vérifier si la sortie est dans la plage visible
+                if (exitIndex >= startIndex && exitIndex < startIndex + timestamps.len) {
+                    // Calculer l'index relatif dans la fenêtre visible
+                    double relativeIndex = exitIndex - startIndex;
+                    visibleExitIndices.push_back(relativeIndex);
+                    visibleExitPrices.push_back(trade->exitPrice());
+                }
+            }
+        }
+
+        // Vérifier si nous avons des sorties visibles
+        addMarkers(mainChart, visibleExitIndices, visibleExitPrices, 
+                    "Exits", Chart::InvertedTriangleSymbol, 0xFF0000);
+    }
+}
+
+FinanceChart *ChartWidget::finalizeChart(FinanceChart *chart)
+{
+    return nullptr;
+}
+
+void ChartWidget::addMarkers(XYChart* chart, const std::vector<double>& indices, 
+                            const std::vector<double>& prices, const char* name,
+                            int symbolType, int color) {
+    if (indices.empty()) return;
+    
+    DoubleArray xArray = vectorToDoubleArray(indices);
+    DoubleArray yArray = vectorToDoubleArray(prices);
+    
+    ScatterLayer* layer = chart->addScatterLayer(xArray, yArray, name, 
+                                              symbolType, 9, color, 0x000000);
+    layer->moveFront();
 }
 
 void ChartWidget::trackFinance(MultiChart* m, int mouseX)
@@ -806,7 +792,10 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
 					ohlcLegend << ", Close: " << c->formatValue(closeValue, "{value|P4}");
                     
                     // Aussi dessiner un triangle vers le haut ou vers le bas pour les jours de hausse et de baisse et le % de variation
-                    double lastCloseValue = layer->getDataSet(3)->getValue(xIndex - 1);
+                    double lastCloseValue = (xIndex > 0) ? 
+                        layer->getDataSet(3)->getValue(xIndex - 1) : 
+                        Chart::NoValue;
+
                     if (lastCloseValue != Chart::NoValue) {
                         double change = closeValue - lastCloseValue;
                         double percent = change * 100 / closeValue;

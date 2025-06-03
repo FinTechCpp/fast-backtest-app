@@ -134,11 +134,21 @@ private:
                           const DoubleArray& closeData,
                           const DoubleArray& volumeData,
                           int chartWidth);
-    
+    FinanceChart* initializeChart(int chartWidth);
+    void addEquityCurveSection(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
+    void addMainChartSection(FinanceChart* chart, int chartHeight);
+    void addTradeMarkers(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
+    FinanceChart* finalizeChart(FinanceChart* chart);
+
+    void addMarkers(XYChart* chart, const std::vector<double>& indices, 
+                            const std::vector<double>& prices, const char* name,
+                            int symbolType, int color);
+
     void trackFinance(MultiChart* m, int mouseX);
     
     // Données
     PriceData m_priceData;
+    std::shared_ptr<be::Data> m_backtestData; // je prefere utiliser directement la classe Data du backtest il faut migrer vers le nouveau format
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
     

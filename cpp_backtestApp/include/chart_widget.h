@@ -41,8 +41,24 @@ enum class ChartType {
     CandleStick,
     HeikinAshi,
     OHLC,
-    Close
+    Close,
+
+    Count
 };
+
+// Structure de métadonnées pour chaque type de graphique
+struct ChartTypeInfo {
+    ChartType type;
+    const char* name;
+};
+
+// Tableau de métadonnées pour tous les types de graphiques
+inline constexpr std::array<ChartTypeInfo, static_cast<size_t>(ChartType::Count)> ChartTypeData = {{
+    { ChartType::CandleStick, "CandleStick" },
+    { ChartType::HeikinAshi, "HeikinAshi" },
+    { ChartType::OHLC, "OHLC" },
+    { ChartType::Close, "Close" }
+}};
 
 /**
  * @brief Widget qui encapsule un graphique financier ChartDirector

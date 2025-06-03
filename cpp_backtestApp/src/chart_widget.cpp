@@ -372,8 +372,6 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
             m_equityData.timestamps.push_back(timestamp);
             m_equityData.equity_values.push_back(equityCurve[i]);
         }
-
-        std::cout << "Équité alignée avec les bougies" << std::endl;
     }
     else if (numPoints < numBars) {
         m_equityData.timestamps.reserve(numBars);
@@ -399,8 +397,6 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
                 m_equityData.equity_values[i] = equityCurve[numPoints - 1];
             }
         }
-
-        std::cout << "Équité étendue pour couvrir toutes les bougies" << std::endl;
     }
     // Cas où il y a plus de points d'équité que de barres
     else {
@@ -416,8 +412,6 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
             // Prendre directement les équivalents (au lieu de sous-échantillonner)
             m_equityData.equity_values[i] = equityCurve[i];
         }
-
-        std::cout << "Équité tronquée pour correspondre aux bougies" << std::endl;
     }
     
     // Calculer le drawdown
@@ -433,8 +427,6 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
             m_equityData.drawdown[i] = dd;
         }
     }
-
-    std::cout << "Courbe d'équité convertie:" << m_equityData.timestamps.size() << "points" << std::endl;
 }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {
@@ -782,8 +774,6 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
     
     // Obtenir la valeur x la plus proche de la souris
     int xValue = (int)(((XYChart*)m->getChart(0))->getNearestXValue(mouseX));
-
-    std::cout << "Tracking mouse at xValue: " << xValue << std::endl;
     
     // Itérer sur tous les graphiques XY dans le FinanceChart
     XYChart *c = 0;
@@ -912,21 +902,20 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
     }
 }
 
-QString ChartWidget::chartTypeToString(ChartType type)
-{
-    switch (type) {
-        case ChartType::CandleStick: return "CandleStick";
-        case ChartType::HeikinAshi: return "HeikinAshi";
-        case ChartType::OHLC: return "OHLC";
-        case ChartType::Close: return "Close";
-        default: return "CandleStick";
+QString ChartWidget::chartTypeToString(ChartType type) {
+    for (const auto& info : ChartTypeData) {
+        if (info.type == type) {
+            return QString(info.name);
+        }
     }
+    return QString("Unknown");
 }
 
-ChartType ChartWidget::stringToChartType(const QString& typeStr)
-{
-    if (typeStr == "HeikinAshi") return ChartType::HeikinAshi;
-    if (typeStr == "OHLC") return ChartType::OHLC;
-    if (typeStr == "Close") return ChartType::Close;
+ChartType ChartWidget::stringToChartType(const QString& str) {
+    for (const auto& info : ChartTypeData) {
+        if (str == info.name) {
+            return info.type;
+        }
+    }
     return ChartType::CandleStick; // Valeur par défaut
 }

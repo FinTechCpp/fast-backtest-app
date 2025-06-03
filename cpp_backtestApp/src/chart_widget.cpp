@@ -711,38 +711,44 @@ FinanceChart* ChartWidget::drawChart(
     
     // 4. Ajouter les trades si disponibles
     if (!m_tradeData.entry_times.empty()) {
-        // Convertir les timestamps de nanosecondes à secondes
-        std::vector<double> convertedEntryTimes;
-        std::vector<double> convertedExitTimes;
-        
-        // Convertir les timestamps des trades
-        for (double time : m_tradeData.entry_times) {
-            convertedEntryTimes.push_back(time / 1000000000.0);
-        }
-        
-        for (double time : m_tradeData.exit_times) {
-            convertedExitTimes.push_back(time / 1000000000.0);
-        }
-        
-        // Créer les DoubleArray
-        DoubleArray entryTimes = vectorToDoubleArray(convertedEntryTimes);
-        DoubleArray entryPrices = vectorToDoubleArray(m_tradeData.entry_prices);
-        DoubleArray exitTimes = vectorToDoubleArray(convertedExitTimes);
-        DoubleArray exitPrices = vectorToDoubleArray(m_tradeData.exit_prices);
-        
         // Ajouter les marqueurs au graphique principal
-        XYChart* mainChart = (XYChart*)c->getChart(1);
+        // XYChart* mainChart = (XYChart*)c->getChart(1);
         
         // // Marqueurs pour les entrées (triangles verts)
-        // ScatterLayer* entryLayer = mainChart->addScatterLayer();
-        // DataSet* entrySet = entryLayer->addDataSet(entryTimes, entryPrices, "Entries");
-        // entrySet->setDataSymbol(Chart::TriangleSymbol, 11, 0x00aa00, 0x00aa00, 1);
+        // ScatterLayer* entryLayer = mainChart->addScatterLayer(
+        //     vectorToDoubleArray(std::vector<double>(
+        //         m_tradeData.entry_times[0]
+        //     )),
+        //     vectorToDoubleArray(std::vector<double>(
+        //         m_tradeData.entry_prices[0]
+        //     )),
+        //     "Entrées", Chart::TriangleSymbol, 11, 0x00aa00, 0x00aa00);
+
+        // entryLayer->moveFront();
         
-        // // Marqueurs pour les sorties (triangles inversés rouges)
-        // ScatterLayer* exitLayer = mainChart->addScatterLayer();
-        // DataSet* exitSet = exitLayer->addDataSet(exitTimes, exitPrices, "Exits");
-        // exitSet->setDataSymbol(Chart::TriangleSymbol, 11, 0xaa0000, 0xaa0000, 1);
-        // exitSet->setSymbolOffset(0, 180); // Inverser le triangle pour les sorties
+        // // Filtrer les trades fermés (exit_time != 0)
+        // std::vector<double> validExitTimes;
+        // std::vector<double> validExitPrices;
+        
+        // for (size_t i = 0; i < m_tradeData.exit_times.size(); ++i) {
+        //     if (m_tradeData.exit_times[i] > 0) {  // Trade fermé
+        //         validExitTimes.push_back(m_tradeData.exit_times[i]);
+        //         validExitPrices.push_back(m_tradeData.exit_prices[i]);
+        //     }
+        // }
+        
+        // Ajouter les marqueurs des sorties si nous avons des trades fermés
+        // if (!validExitTimes.empty()) {
+        //     // Marqueurs pour les sorties (triangles inversés rouges)
+        //     ScatterLayer* exitLayer = mainChart->addScatterLayer(
+        //         vectorToDoubleArray(std::vector<double>(
+        //             validExitTimes[0]
+        //         )),
+        //         vectorToDoubleArray(std::vector<double>(
+        //             validExitPrices[0]
+        //         )),
+        //         "Sorties", Chart::InvertedTriangleSymbol, 11, 0xaa0000, 0xaa0000);
+        // }
     }
     
     // Mettre à jour le graphique dans le viewer

@@ -6,6 +6,7 @@
 #include <memory>
 #include <array>
 #include <unordered_map>
+#include <iostream>
 
 #include "data.hpp"
 #include "trade.hpp"
@@ -115,6 +116,17 @@ private:
         bool showVolume = true;
         bool showEquity = true;
     };
+
+    /**
+     * @brief Structure pour stocker les données Heikin-Ashi en cache
+     */
+    struct HeikinAshiCache {
+        std::vector<double> open;
+        std::vector<double> high;
+        std::vector<double> low;
+        std::vector<double> close;
+        bool isValid = false;
+    };
     
     /**
      * @brief Structure de métadonnées pour chaque type de graphique
@@ -131,6 +143,7 @@ private:
                           const std::shared_ptr<be::Data>& data);
     double dateToChartTimestamp(const be::Date& date);
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
+    void updateHeikinAshiCache();
     void calculateHeikinAshi(const std::vector<double>& open, 
                            const std::vector<double>& high,
                            const std::vector<double>& low, 
@@ -189,6 +202,7 @@ private:
     // 2. Données
     PriceData m_priceData;
     std::shared_ptr<be::Data> m_backtestData; 
+    HeikinAshiCache m_heikinAshiCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
     std::map<be::Date, double> m_timestampCache; // Cache pour dateToChartTimestamp

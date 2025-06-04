@@ -37,7 +37,8 @@ ChartWidget::ChartWidget(QWidget* parent)
     m_chartViewer->setMouseWheelZoomRatio(1.1);
     m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
     m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
-    m_chartViewer->setZoomInWidthLimit(0.0001); // Limite de zoom pour éviter les zooms trop fins
+    m_chartViewer->setZoomInWidthLimit(0.00001); // Limite de zoom pour éviter les zooms trop fins
+    // m_chartViewer->set
     
     // Connecter les signaux
     connect(m_chartViewer, &QChartViewer::viewPortChanged, 
@@ -114,6 +115,12 @@ void ChartWidget::setChartType(ChartType chartType)
         return; // Pas de changement, rien à faire
 
     m_config.chartType = chartType;
+
+    // Si nous passons en mode HeikinAshi et que le cache n'est pas valide, le recalculer
+    if (chartType == ChartType::HeikinAshi && !m_heikinAshiCache.isValid && hasValidData()) {
+        updateHeikinAshiCache();
+    }
+
     // Si nous avons déjà des données, mettre à jour le graphique
     if (hasValidData())
         updateChart();
@@ -131,39 +138,40 @@ void ChartWidget::createChart()
     try {
         // Convertir les données en DoubleArray
         DoubleArray timeStamps = vectorToDoubleArray(m_priceData.timestamps);
-        DoubleArray openData = vectorToDoubleArray(m_priceData.open);
-        DoubleArray highData = vectorToDoubleArray(m_priceData.high);
-        DoubleArray lowData = vectorToDoubleArray(m_priceData.low);
-        DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
         DoubleArray volumeData = vectorToDoubleArray(m_priceData.volume);
         
-        // Variables pour les données Heikin Ashi (si nécessaire)
-        std::vector<double> ha_open, ha_high, ha_low, ha_close;
-        DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
-        
-        // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
+        // Si le type est HeikinAshi, utiliser les données du cache
         if (m_config.chartType == ChartType::HeikinAshi) {
-            calculateHeikinAshi(m_priceData.open, m_priceData.high, 
-                               m_priceData.low, m_priceData.close,
-                               ha_open, ha_high, ha_low, ha_close);
+            // Vérifier si le cache est valide, sinon le recalculer
+            if (!m_heikinAshiCache.isValid) {
+                updateHeikinAshiCache();
+            }
             
-            // Convertir en DoubleArray
-            haOpenArray = vectorToDoubleArray(ha_open);
-            haHighArray = vectorToDoubleArray(ha_high);
-            haLowArray = vectorToDoubleArray(ha_low);
-            haCloseArray = vectorToDoubleArray(ha_close);
-        }
-        
-        // Configurer le range complet pour le viewport
-        m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
-        
-        // Créer le graphique
-        if (m_config.chartType == ChartType::HeikinAshi) {
+            // Convertir les données du cache en DoubleArray
+            DoubleArray haOpenArray = vectorToDoubleArray(m_heikinAshiCache.open);
+            DoubleArray haHighArray = vectorToDoubleArray(m_heikinAshiCache.high);
+            DoubleArray haLowArray = vectorToDoubleArray(m_heikinAshiCache.low);
+            DoubleArray haCloseArray = vectorToDoubleArray(m_heikinAshiCache.close);
+            
+            // Configurer le range complet pour le viewport
+            m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
+            
+            // Créer le graphique avec les données Heikin-Ashi
             m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
-                                     haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
+                                      haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
         } else {
+            // Pour les autres types, utiliser les données OHLC standards
+            DoubleArray openData = vectorToDoubleArray(m_priceData.open);
+            DoubleArray highData = vectorToDoubleArray(m_priceData.high);
+            DoubleArray lowData = vectorToDoubleArray(m_priceData.low);
+            DoubleArray closeData = vectorToDoubleArray(m_priceData.close);
+            
+            // Configurer le range complet pour le viewport
+            m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
+            
+            // Créer le graphique avec les données standard
             m_financeChart = drawChart(timeStamps, highData, lowData, 
-                                     openData, closeData, volumeData, m_config.chartWidth);
+                                      openData, closeData, volumeData, m_config.chartWidth);
         }
         
         // Configurer le viewport initial
@@ -297,6 +305,7 @@ void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
 
     // Réinitialiser les données de prix
     m_priceData = PriceData();
+    m_heikinAshiCache.isValid = false;
     
     // Réserver la capacité pour éviter les réallocations
     size_t dataSize = data->size();
@@ -321,8 +330,53 @@ void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
         m_priceData.close.push_back(candle.close);
         m_priceData.volume.push_back(candle.volume);
     }
+
+    // Pré-calculer les données Heikin-Ashi pour tout l'historique
+    updateHeikinAshiCache();
     
     qDebug() << "Données de prix converties:" << dataSize << "bougies";
+}
+
+void ChartWidget::updateHeikinAshiCache()
+{
+    if (m_priceData.timestamps.empty() || 
+        m_priceData.open.empty() || 
+        m_priceData.high.empty() || 
+        m_priceData.low.empty() || 
+        m_priceData.close.empty()) {
+        qWarning() << "Tentative de mise à jour du cache Heikin-Ashi avec des données vides";
+        m_heikinAshiCache.isValid = false;
+        return;
+    }
+
+    // Réserver l'espace nécessaire
+    size_t dataSize = m_priceData.timestamps.size();
+    m_heikinAshiCache.open.resize(dataSize);
+    m_heikinAshiCache.high.resize(dataSize);
+    m_heikinAshiCache.low.resize(dataSize);
+    m_heikinAshiCache.close.resize(dataSize);
+
+    // Calculer les valeurs Heikin-Ashi pour toutes les données
+    // Première bougie
+    m_heikinAshiCache.open[0] = m_priceData.open[0];
+    m_heikinAshiCache.close[0] = (m_priceData.open[0] + m_priceData.high[0] + 
+                                  m_priceData.low[0] + m_priceData.close[0]) / 4.0;
+    m_heikinAshiCache.high[0] = m_priceData.high[0];
+    m_heikinAshiCache.low[0] = m_priceData.low[0];
+    
+    // Autres bougies
+    for (size_t i = 1; i < dataSize; ++i) {
+        m_heikinAshiCache.close[i] = (m_priceData.open[i] + m_priceData.high[i] + 
+                                      m_priceData.low[i] + m_priceData.close[i]) / 4.0;
+        m_heikinAshiCache.open[i] = (m_heikinAshiCache.open[i-1] + m_heikinAshiCache.close[i-1]) / 2.0;
+        m_heikinAshiCache.high[i] = std::max(std::max(m_priceData.high[i], m_heikinAshiCache.open[i]), 
+                                             m_heikinAshiCache.close[i]);
+        m_heikinAshiCache.low[i] = std::min(std::min(m_priceData.low[i], m_heikinAshiCache.open[i]), 
+                                            m_heikinAshiCache.close[i]);
+    }
+    
+    m_heikinAshiCache.isValid = true;
+    qDebug() << "Cache Heikin-Ashi mis à jour avec" << dataSize << "bougies";
 }
 
 void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve, 
@@ -443,46 +497,35 @@ void ChartWidget::drawChartWithViewport()
         
         // Extraire les données visibles pour les prix
         DoubleArray timeStamps = DoubleArray(&m_priceData.timestamps[startIndex], pointsToShow);
-        DoubleArray openData = DoubleArray(&m_priceData.open[startIndex], pointsToShow);
-        DoubleArray highData = DoubleArray(&m_priceData.high[startIndex], pointsToShow);
-        DoubleArray lowData = DoubleArray(&m_priceData.low[startIndex], pointsToShow);
-        DoubleArray closeData = DoubleArray(&m_priceData.close[startIndex], pointsToShow);
         DoubleArray volumeData = DoubleArray(&m_priceData.volume[startIndex], pointsToShow);
         
-        // Variables pour les données Heikin Ashi (si nécessaire)
-        std::vector<double> ha_open, ha_high, ha_low, ha_close;
-        DoubleArray haOpenArray, haHighArray, haLowArray, haCloseArray;
         
-        // Si le type est HeikinAshi, calculer les valeurs Heikin Ashi
+        // Si le type est HeikinAshi, utiliser le cache préalablement calculé
         if (m_config.chartType == ChartType::HeikinAshi) {
-            // Créer des sous-vecteurs pour les données visibles
-            std::vector<double> visible_open(m_priceData.open.begin() + startIndex, 
-                                           m_priceData.open.begin() + endIndex + 1);
-            std::vector<double> visible_high(m_priceData.high.begin() + startIndex, 
-                                           m_priceData.high.begin() + endIndex + 1);
-            std::vector<double> visible_low(m_priceData.low.begin() + startIndex, 
-                                          m_priceData.low.begin() + endIndex + 1);
-            std::vector<double> visible_close(m_priceData.close.begin() + startIndex, 
-                                            m_priceData.close.begin() + endIndex + 1);
+            // Vérifier si le cache est valide, sinon le recalculer
+            if (!m_heikinAshiCache.isValid) {
+                updateHeikinAshiCache();
+            }
             
-            // Calculer les valeurs Heikin Ashi pour la plage visible
-            calculateHeikinAshi(visible_open, visible_high, 
-                               visible_low, visible_close,
-                               ha_open, ha_high, ha_low, ha_close);
-                                
-            // Convertir en DoubleArray
-            haOpenArray = vectorToDoubleArray(ha_open);
-            haHighArray = vectorToDoubleArray(ha_high);
-            haLowArray = vectorToDoubleArray(ha_low);
-            haCloseArray = vectorToDoubleArray(ha_close);
+            // Utiliser les données du cache pour la plage visible
+            DoubleArray haOpenArray = DoubleArray(&m_heikinAshiCache.open[startIndex], pointsToShow);
+            DoubleArray haHighArray = DoubleArray(&m_heikinAshiCache.high[startIndex], pointsToShow);
+            DoubleArray haLowArray = DoubleArray(&m_heikinAshiCache.low[startIndex], pointsToShow);
+            DoubleArray haCloseArray = DoubleArray(&m_heikinAshiCache.close[startIndex], pointsToShow);
             
-            // Créer le graphique
+            // Créer le graphique avec les données Heikin-Ashi
             m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
-                                     haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
+                                      haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
         } else {
+            // Pour les autres types, utiliser les données OHLC standards
+            DoubleArray openData = DoubleArray(&m_priceData.open[startIndex], pointsToShow);
+            DoubleArray highData = DoubleArray(&m_priceData.high[startIndex], pointsToShow);
+            DoubleArray lowData = DoubleArray(&m_priceData.low[startIndex], pointsToShow);
+            DoubleArray closeData = DoubleArray(&m_priceData.close[startIndex], pointsToShow);
+            
             // Créer le graphique
             m_financeChart = drawChart(timeStamps, highData, lowData, 
-                                     openData, closeData, volumeData, m_config.chartWidth);
+                                      openData, closeData, volumeData, m_config.chartWidth);
         }
         
         // Mettre à jour l'affichage
@@ -506,38 +549,38 @@ DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec) {
 }
 
 // possiblement faisable en simd ??? 
-void ChartWidget::calculateHeikinAshi(
-    const std::vector<double>& open,
-    const std::vector<double>& high,
-    const std::vector<double>& low, 
-    const std::vector<double>& close,
-    std::vector<double>& ha_open, 
-    std::vector<double>& ha_high,
-    std::vector<double>& ha_low, 
-    std::vector<double>& ha_close) 
-{
-    size_t size = open.size();
-    if (size == 0) return;
+// void ChartWidget::calculateHeikinAshi(
+//     const std::vector<double>& open,
+//     const std::vector<double>& high,
+//     const std::vector<double>& low, 
+//     const std::vector<double>& close,
+//     std::vector<double>& ha_open, 
+//     std::vector<double>& ha_high,
+//     std::vector<double>& ha_low, 
+//     std::vector<double>& ha_close) 
+// {
+//     size_t size = open.size();
+//     if (size == 0) return;
     
-    ha_open.resize(size);
-    ha_high.resize(size);
-    ha_low.resize(size);
-    ha_close.resize(size);
+//     ha_open.resize(size);
+//     ha_high.resize(size);
+//     ha_low.resize(size);
+//     ha_close.resize(size);
     
-    // Première bougie
-    ha_open[0] = open[0];
-    ha_close[0] = (open[0] + high[0] + low[0] + close[0]) / 4.0;
-    ha_high[0] = high[0];
-    ha_low[0] = low[0];
+//     // Première bougie
+//     ha_open[0] = open[0];
+//     ha_close[0] = (open[0] + high[0] + low[0] + close[0]) / 4.0;
+//     ha_high[0] = high[0];
+//     ha_low[0] = low[0];
     
-    // Calcul des autres bougies
-    for (size_t i = 1; i < size; ++i) {
-        ha_close[i] = (open[i] + high[i] + low[i] + close[i]) / 4.0;
-        ha_open[i] = (ha_open[i-1] + ha_close[i-1]) / 2.0;
-        ha_high[i] = std::max(std::max(high[i], ha_open[i]), ha_close[i]);
-        ha_low[i] = std::min(std::min(low[i], ha_open[i]), ha_close[i]);
-    }
-}
+//     // Calcul des autres bougies
+//     for (size_t i = 1; i < size; ++i) {
+//         ha_close[i] = (open[i] + high[i] + low[i] + close[i]) / 4.0;
+//         ha_open[i] = (ha_open[i-1] + ha_close[i-1]) / 2.0;
+//         ha_high[i] = std::max(std::max(high[i], ha_open[i]), ha_close[i]);
+//         ha_low[i] = std::min(std::min(low[i], ha_open[i]), ha_close[i]);
+//     }
+// }
 
 FinanceChart* ChartWidget::drawChart(
     const DoubleArray& timestamps, 

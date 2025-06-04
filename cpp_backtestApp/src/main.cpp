@@ -139,17 +139,6 @@ void cleanupLogging()
 
 int main(int argc, char *argv[])
 {
-    qInfo() << "=== Démarrage de l'application ===";
-    qInfo() << "Arguments:" << QStringList(argv, argv + argc);
-    
-    // Enregistrer les types personnalisés pour Qt
-    qRegisterMetaType<OHLCBar>("OHLCBar");
-    qRegisterMetaType<std::vector<OHLCBar>>("std::vector<OHLCBar>");
-    qRegisterMetaType<std::shared_ptr<be::Data>>("std::shared_ptr<be::Data>");
-    qRegisterMetaType<be::Stats>("be::Stats");
-    qRegisterMetaType<BacktestResults*>("BacktestResults*");
-    qInfo() << "Types personnalisés enregistrés dans Qt";
-    
     // Configuration Qt
 #if QT_VERSION >= 0x050600 && QT_VERSION < 0x060000
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -168,7 +157,7 @@ int main(int argc, char *argv[])
     parser.addVersionOption();
     
     QCommandLineOption logLevelOption(QStringList() << "l" << "log-level",
-        "Définit le niveau de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)", "level", "WARNING");
+        "Définit le niveau de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)", "level", "DEBUG");  // Changé en DEBUG par défaut
     parser.addOption(logLevelOption);
     
     QCommandLineOption consoleOption(QStringList() << "c" << "console",
@@ -177,8 +166,7 @@ int main(int argc, char *argv[])
     
     parser.process(app);
     
-    // Configuration du logging
-    qInfo() << "Configuration du système de logging...";
+    // Configuration du logging AVANT les premiers appels de log
     QString logLevelStr = parser.value(logLevelOption).toUpper();
     bool consoleOutput = parser.isSet(consoleOption);
     
@@ -188,7 +176,20 @@ int main(int argc, char *argv[])
     else if (logLevelStr == "WARNING") logLevel = QtWarningMsg;
     else if (logLevelStr == "ERROR" || logLevelStr == "CRITICAL") logLevel = QtCriticalMsg;
     
+    // INSTALLER LE HANDLER AVANT LES PREMIERS LOGS
     setupLogging(logLevel, consoleOutput);
+    
+    // MAINTENANT on peut utiliser les logs
+    qInfo() << "=== Démarrage de l'application ===";
+    qInfo() << "Arguments:" << QStringList(argv, argv + argc);
+    
+    // Enregistrer les types personnalisés pour Qt
+    qRegisterMetaType<OHLCBar>("OHLCBar");
+    qRegisterMetaType<std::vector<OHLCBar>>("std::vector<OHLCBar>");
+    qRegisterMetaType<std::shared_ptr<be::Data>>("std::shared_ptr<be::Data>");
+    qRegisterMetaType<be::Stats>("be::Stats");
+    qRegisterMetaType<BacktestResults*>("BacktestResults*");
+    qInfo() << "Types personnalisés enregistrés dans Qt";
     
     try {
         // Créer et afficher la fenêtre principale

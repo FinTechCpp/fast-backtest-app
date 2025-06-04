@@ -407,18 +407,17 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
 }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {
-    // ChartDirector attend des timestamps en secondes depuis l'époque Unix (1/1/1970)
-    std::tm time_struct = {};
-    time_struct.tm_year = date.getYear() - 1900; // Les années dans tm commencent à 1900
-    time_struct.tm_mon = date.getMonth() - 1;    // Les mois dans tm vont de 0 à 11
-    time_struct.tm_mday = date.getDay();
-    time_struct.tm_hour = date.getHour();
-    time_struct.tm_min = date.getMinute();
-    time_struct.tm_sec = date.getSecond();
-
-    // Convertir en timestamp Unix
-    std::time_t timestamp = std::mktime(&time_struct);
-    return static_cast<double>(timestamp);
+    int year = date.getYear();
+    int month = date.getMonth();
+    int day = date.getDay();
+    int hour = date.getHour();
+    int minute = date.getMinute();
+    int second = date.getSecond();
+    
+    // Utiliser Chart::chartTime() qui gère mieux les dates modernes
+    double chartTimestamp = Chart::chartTime(year, month, day, hour, minute, second);
+        
+    return chartTimestamp;
 }
 void ChartWidget::drawChartWithViewport()
 {
@@ -1015,7 +1014,7 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         // La légende commence par l'étiquette de date, puis la légende ohlc (le cas échéant), et ensuite les entrées pour les indicateurs
         std::ostringstream legendText;
         legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
-            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "mmm dd, yyyy")
+            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "dd mmm yy hh:mm:ss")
             << "]<*/font*>" << ohlcLegend.str();
         for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
             legendText << "      " << legendEntries[i];

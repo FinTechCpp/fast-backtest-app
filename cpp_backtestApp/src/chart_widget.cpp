@@ -678,148 +678,98 @@ void ChartWidget::addMainChartSection(FinanceChart *chart, int chartHeight)
 
 void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
 {
-    if (m_trades.empty())
-        return; // Pas de trades à afficher
+    if (m_trades.empty() || !m_backtestData)
+        return;
 
     // Ajouter les marqueurs au graphique principal
     XYChart* mainChart = (XYChart*)chart->getChart(1);
-
     if (!mainChart)
         return;
-    
-    // Préallouer de la mémoire pour éviter les réallocations
-    size_t estimatedMarkers = std::min(size_t(100), m_trades.size() * 2);
-    
+
+    // Structure pour organiser les marqueurs par type
+    enum TradeResult { WINNING = 0, LOSING = 1, NEUTRAL = 2, RESULT_COUNT = 3 };
+    const int COLORS[RESULT_COUNT] = { 0x00AA00, 0xCC0000, 0x000000 }; // Vert, Rouge, Noir
+
+    // Tous nos containers de marqueurs
     std::vector<std::pair<double, double>> entryMarkers;
     std::vector<std::pair<double, double>> exitMarkers;
-    std::vector<std::pair<double, double>> entryArrows;
-    std::vector<std::pair<double, double>> exitArrows;
-    std::vector<int> entryArrowColors;
-    std::vector<int> exitArrowColors;
+    std::vector<std::pair<double, double>> entryArrows[RESULT_COUNT]; // Winning, Losing, Neutral
+    std::vector<std::pair<double, double>> exitArrows[RESULT_COUNT];  // Winning, Losing, Neutral
     
+    // Préallocation
+    size_t estimatedMarkers = std::min(size_t(100), m_trades.size() * 2);
     entryMarkers.reserve(estimatedMarkers);
     exitMarkers.reserve(estimatedMarkers);
-    entryArrows.reserve(estimatedMarkers);
-    exitArrows.reserve(estimatedMarkers);
-    entryArrowColors.reserve(estimatedMarkers);
-    exitArrowColors.reserve(estimatedMarkers);
+    for (int i = 0; i < RESULT_COUNT; i++) {
+        entryArrows[i].reserve(estimatedMarkers);
+        exitArrows[i].reserve(estimatedMarkers);
+    }
 
     // Pour chaque trade, vérifier s'il est visible dans la fenêtre actuelle
     for (const auto& trade : m_trades) {
-        int entryBarIndex = trade->entryBar();
+        // Déterminer la catégorie du résultat
+        int resultIndex = NEUTRAL; // Par défaut
         
-        // Vérifier si l'entrée est dans la plage visible
+        if (trade->isClosed()) {
+            double pnl = trade->pl();
+            if (pnl > 0) 
+                resultIndex = WINNING;
+            else if (pnl < 0) 
+                resultIndex = LOSING;
+        }
+
+        // Traiter le point d'entrée
+        int entryBarIndex = trade->entryBar();
         if (entryBarIndex >= startIndex && entryBarIndex < startIndex + timestamps.len) {
-            // Calculer l'index relatif dans la fenêtre visible
             double relativeIndex = entryBarIndex - startIndex;
             
-            // Ajouter un marqueur carré pour la position d'entrée
+            // Marqueur carré pour la position d'entrée
             entryMarkers.push_back({relativeIndex, trade->entryPrice()});
             
-            // Obtenir le prix high de la bougie d'entrée pour placer la flèche
+            // Flèche d'entrée
             if (entryBarIndex < static_cast<int>(m_backtestData->size())) {
                 const be::Candle& entryCandle = m_backtestData->at(entryBarIndex);
                 double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
-
-                // Ajouter une flèche inversée au-dessus de la bougie d'entrée
-                entryArrows.push_back({relativeIndex, arrowY});
-                
-                // Couleur de la flèche d'entrée (noir par défaut)
-                entryArrowColors.push_back(0x000000);
+                entryArrows[resultIndex].push_back({relativeIndex, arrowY});
             }
         }
         
-        // Si le trade est fermé, ajouter aussi la sortie
+        // Traiter le point de sortie (seulement pour les trades fermés)
         if (trade->isClosed()) {
             int exitBarIndex = trade->exitBar();
-            
-            // Vérifier si la sortie est dans la plage visible
             if (exitBarIndex >= startIndex && exitBarIndex < startIndex + timestamps.len) {
-                // Calculer l'index relatif pour la sortie
                 double relativeExitIndex = exitBarIndex - startIndex;
                 
-                // Ajouter un marqueur carré pour la position de sortie
+                // Marqueur carré pour la position de sortie
                 exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
                 
-                // Obtenir le prix low de la bougie de sortie pour placer la flèche
+                // Flèche de sortie
                 if (exitBarIndex < static_cast<int>(m_backtestData->size())) {
                     const be::Candle& exitCandle = m_backtestData->at(exitBarIndex);
-                    double arrowY = exitCandle.low * 0.9995;
-
-                    // Ajouter une flèche en-dessous de la bougie de sortie
-                    exitArrows.push_back({relativeExitIndex, arrowY});
-                    
-                    // Déterminer la couleur de la flèche en fonction du résultat du trade
-                    double pnl = trade->pl();
-                    
-                    int color;
-                    if (pnl > 0) color = 0x00AA00;      // Vert pour gagnant
-                    else if (pnl < 0) color = 0xCC0000; // Rouge pour perdant
-                    else color = 0x000000;              // Noir pour neutre
-                    
-                    exitArrowColors.push_back(color);
+                    double arrowY = exitCandle.low * 0.9995; // Légèrement en-dessous du low
+                    exitArrows[resultIndex].push_back({relativeExitIndex, arrowY});
                 }
             }
         }
     }
 
     // Ajouter les marqueurs carrés pour les entrées et sorties
-    if (!entryMarkers.empty()) {
-        addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 5, 0x000000);
-    }
+    addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 5, 0x000000);
+    addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 5, 0x000000);
     
-    if (!exitMarkers.empty()) {
-        addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 5, 0x000000);
-    }
+    // Ajouter les flèches
+    const char* resultNames[RESULT_COUNT] = { "Win", "Loss", "Flat" };
     
-    // Optimisation: Ajouter tous les marqueurs en une seule fois pour éviter des appels répétés
-    
-    // Flèches d'entrée (s'assurer que les tableaux ont la même taille)
-    if (!entryArrows.empty()) {
-        std::vector<double> xValues;
-        std::vector<double> yValues;
-        std::vector<int> colors;
-        
-        xValues.reserve(entryArrows.size());
-        yValues.reserve(entryArrows.size());
-        
-        for (size_t i = 0; i < entryArrows.size(); ++i) {
-            xValues.push_back(entryArrows[i].first);
-            yValues.push_back(entryArrows[i].second);
+    for (int i = 0; i < RESULT_COUNT; i++) {
+        if (!entryArrows[i].empty()) {
+            std::string name = std::string(resultNames[i]) + " Entry";
+            addMarkers(mainChart, entryArrows[i], name.c_str(), Chart::InvertedTriangleSymbol, 12, COLORS[i]);
         }
         
-        DoubleArray xArray = vectorToDoubleArray(xValues);
-        DoubleArray yArray = vectorToDoubleArray(yValues);
-        
-        // Utiliser une couleur constante pour simplifier
-        ScatterLayer* layer = mainChart->addScatterLayer(xArray, yArray, 
-                                                  "Entry", Chart::InvertedTriangleSymbol, 12, 0x000000);
-        layer->moveFront();
-    }
-    
-    // Flèches de sortie
-    if (!exitArrows.empty()) {
-        std::vector<double> xValues;
-        std::vector<double> yValues;
-        
-        xValues.reserve(exitArrows.size());
-        yValues.reserve(exitArrows.size());
-        
-        for (size_t i = 0; i < exitArrows.size(); ++i) {
-            xValues.push_back(exitArrows[i].first);
-            yValues.push_back(exitArrows[i].second);
+        if (!exitArrows[i].empty()) {
+            std::string name = std::string(resultNames[i]) + " Exit";
+            addMarkers(mainChart, exitArrows[i], name.c_str(), Chart::TriangleSymbol, 12, COLORS[i]);
         }
-        
-        DoubleArray xArray = vectorToDoubleArray(xValues);
-        DoubleArray yArray = vectorToDoubleArray(yValues);
-        
-        // Pour les couleurs différentes, on peut soit:
-        // 1. Utiliser une couleur moyenne/constante pour simplifier
-        // 2. Créer plusieurs couches, une pour chaque couleur
-        // Option 1 pour commencer (plus simple):
-        ScatterLayer* layer = mainChart->addScatterLayer(xArray, yArray, 
-                                                  "Exit", Chart::TriangleSymbol, 12, 0xCC0000);
-        layer->moveFront();
     }
 }
 
@@ -849,45 +799,6 @@ void ChartWidget::addMarkers(XYChart* chart, const std::vector<std::pair<double,
     ScatterLayer* layer = chart->addScatterLayer(xArray, yArray, name, 
                                               symbolType, symbolSize, color);
     layer->moveFront();
-}
-
-void ChartWidget::addDirectionalArrow(XYChart* chart, double x, double y, 
-                                    double height, int color) {
-    // Calculer les points pour dessiner une flèche
-    int arrowWidth = 8;  // Largeur de la tête de flèche
-    
-    // Obtenir les coordonnées en pixels
-    int xPixel = chart->getXCoor(x);
-    int yBasePixel = chart->getYCoor(y);
-    int yTipPixel = chart->getYCoor(y + height);
-    
-    // Dessiner la ligne de la flèche
-    DrawArea* d = chart->initDynamicLayer();
-    d->line(xPixel, yBasePixel, xPixel, yTipPixel, color, 2);
-    
-    // Créer les tableaux pour les coordonnées des polygones
-    int xCoords[3] = {xPixel, xPixel - arrowWidth/2, xPixel + arrowWidth/2};
-    int yCoords[3];
-    
-    // Dessiner la tête de la flèche
-    if (height > 0) {
-        // Flèche vers le haut
-        yCoords[0] = yTipPixel;
-        yCoords[1] = yTipPixel + arrowWidth;
-        yCoords[2] = yTipPixel + arrowWidth;
-    } else {
-        // Flèche vers le bas
-        yCoords[0] = yTipPixel;
-        yCoords[1] = yTipPixel - arrowWidth;
-        yCoords[2] = yTipPixel - arrowWidth;
-    }
-    
-    // Créer les objets IntArray avec les tableaux
-    IntArray xArray(xCoords, 3);
-    IntArray yArray(yCoords, 3);
-    
-    // Dessiner le polygone
-    d->polygon(xArray, yArray, color, color);
 }
 
 void ChartWidget::trackFinance(MultiChart* m, int mouseX)

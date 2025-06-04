@@ -1,0 +1,112 @@
+\hypertarget{classStrategySpecificPanel}{}\doxysection{Strategy\+Specific\+Panel Class Reference}
+\label{classStrategySpecificPanel}\index{StrategySpecificPanel@{StrategySpecificPanel}}
+
+
+Inheritance diagram for Strategy\+Specific\+Panel\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=202pt]{classStrategySpecificPanel__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Strategy\+Specific\+Panel\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=202pt]{classStrategySpecificPanel__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classStrategySpecificPanel_a5f599fb536348e59c812b1075b24590f}{Strategy\+Specific\+Panel}} (QWidget $\ast$parent=nullptr)
+\item 
+virtual \mbox{\hyperlink{classStrategySpecificPanel_aa6883dcd8e2c15b076f0238b87f88518}{$\sim$\+Strategy\+Specific\+Panel}} ()=default
+\item 
+virtual QGroup\+Box $\ast$ \mbox{\hyperlink{classStrategySpecificPanel_ad6d0841a3ef10647513e7bfd33ef10d2}{create}} () override=0
+\begin{DoxyCompactList}\small\item\em Crée et retourne l\textquotesingle{}interface graphique du panel. \end{DoxyCompactList}\item 
+virtual QMap$<$ QString, QVariant $>$ \mbox{\hyperlink{classStrategySpecificPanel_afcc4dd34a23c3469ec8b08e062e1f229}{get\+Values}} () override=0
+\begin{DoxyCompactList}\small\item\em Récupère les valeurs des widgets du panel. \end{DoxyCompactList}\item 
+virtual void \mbox{\hyperlink{classStrategySpecificPanel_a25c2a7f9393a3951f0d30966255e4792}{set\+Values}} (const QMap$<$ QString, QVariant $>$ \&values) override=0
+\begin{DoxyCompactList}\small\item\em Définit les valeurs des widgets du panel. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Additional Inherited Members}
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classStrategySpecificPanel_a5f599fb536348e59c812b1075b24590f}\label{classStrategySpecificPanel_a5f599fb536348e59c812b1075b24590f}} 
+\index{StrategySpecificPanel@{StrategySpecificPanel}!StrategySpecificPanel@{StrategySpecificPanel}}
+\index{StrategySpecificPanel@{StrategySpecificPanel}!StrategySpecificPanel@{StrategySpecificPanel}}
+\doxysubsubsection{\texorpdfstring{StrategySpecificPanel()}{StrategySpecificPanel()}}
+{\footnotesize\ttfamily Strategy\+Specific\+Panel\+::\+Strategy\+Specific\+Panel (\begin{DoxyParamCaption}\item[{QWidget $\ast$}]{parent = {\ttfamily nullptr} }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [inline]}}
+
+\mbox{\Hypertarget{classStrategySpecificPanel_aa6883dcd8e2c15b076f0238b87f88518}\label{classStrategySpecificPanel_aa6883dcd8e2c15b076f0238b87f88518}} 
+\index{StrategySpecificPanel@{StrategySpecificPanel}!````~StrategySpecificPanel@{$\sim$StrategySpecificPanel}}
+\index{````~StrategySpecificPanel@{$\sim$StrategySpecificPanel}!StrategySpecificPanel@{StrategySpecificPanel}}
+\doxysubsubsection{\texorpdfstring{$\sim$StrategySpecificPanel()}{~StrategySpecificPanel()}}
+{\footnotesize\ttfamily virtual Strategy\+Specific\+Panel\+::$\sim$\+Strategy\+Specific\+Panel (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [virtual]}, {\ttfamily [default]}}
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classStrategySpecificPanel_ad6d0841a3ef10647513e7bfd33ef10d2}\label{classStrategySpecificPanel_ad6d0841a3ef10647513e7bfd33ef10d2}} 
+\index{StrategySpecificPanel@{StrategySpecificPanel}!create@{create}}
+\index{create@{create}!StrategySpecificPanel@{StrategySpecificPanel}}
+\doxysubsubsection{\texorpdfstring{create()}{create()}}
+{\footnotesize\ttfamily virtual QGroup\+Box$\ast$ Strategy\+Specific\+Panel\+::create (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [pure virtual]}}
+
+
+
+Crée et retourne l\textquotesingle{}interface graphique du panel. 
+
+\begin{DoxyReturn}{Returns}
+QGroup\+Box contenant les widgets du panel 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classBasePanel_a9f2dcd881091f932f822f46a49385b24}{Base\+Panel}}.
+
+\mbox{\Hypertarget{classStrategySpecificPanel_afcc4dd34a23c3469ec8b08e062e1f229}\label{classStrategySpecificPanel_afcc4dd34a23c3469ec8b08e062e1f229}} 
+\index{StrategySpecificPanel@{StrategySpecificPanel}!getValues@{getValues}}
+\index{getValues@{getValues}!StrategySpecificPanel@{StrategySpecificPanel}}
+\doxysubsubsection{\texorpdfstring{getValues()}{getValues()}}
+{\footnotesize\ttfamily virtual QMap$<$QString, QVariant$>$ Strategy\+Specific\+Panel\+::get\+Values (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [pure virtual]}}
+
+
+
+Récupère les valeurs des widgets du panel. 
+
+\begin{DoxyReturn}{Returns}
+Map contenant les valeurs sous forme de QVariant 
+\end{DoxyReturn}
+
+
+Reimplemented from \mbox{\hyperlink{classBasePanel_ad49908813b6dec308db7bfbb32a9d999}{Base\+Panel}}.
+
+\mbox{\Hypertarget{classStrategySpecificPanel_a25c2a7f9393a3951f0d30966255e4792}\label{classStrategySpecificPanel_a25c2a7f9393a3951f0d30966255e4792}} 
+\index{StrategySpecificPanel@{StrategySpecificPanel}!setValues@{setValues}}
+\index{setValues@{setValues}!StrategySpecificPanel@{StrategySpecificPanel}}
+\doxysubsubsection{\texorpdfstring{setValues()}{setValues()}}
+{\footnotesize\ttfamily virtual void Strategy\+Specific\+Panel\+::set\+Values (\begin{DoxyParamCaption}\item[{const QMap$<$ QString, QVariant $>$ \&}]{values }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [pure virtual]}}
+
+
+
+Définit les valeurs des widgets du panel. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em values} & Map contenant les valeurs à affecter aux widgets \\
+\hline
+\end{DoxyParams}
+
+
+Reimplemented from \mbox{\hyperlink{classBasePanel_a0484faecac61c9be571c4b4780df5589}{Base\+Panel}}.
+
+
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+backtest\+\_\+app\+\_\+cpp/src/\mbox{\hyperlink{app_8cpp}{app.\+cpp}}\end{DoxyCompactItemize}

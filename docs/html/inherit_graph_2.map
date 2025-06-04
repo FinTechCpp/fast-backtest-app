@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$dc/d47/classBasePanel.html" title="Classe de base abstraite pour tous les panels de l&#39;application." alt="" coords="5,145,95,172"/>
+<area shape="rect" id="node2" href="$d5/d30/classBuyHeikinGreenPanel.html" title="Panel spécifique à la stratégie BuyHeikinGreen." alt="" coords="143,208,305,235"/>
+<area shape="rect" id="node3" href="$d3/d37/classCrossEMAPanel.html" title="Panel spécifique à la stratégie CrossEMA." alt="" coords="163,259,285,285"/>
+<area shape="rect" id="node4" href="$db/deb/classGeneralParamsPanel.html" title="Panel des paramètres généraux du backtest." alt="" coords="146,56,302,83"/>
+<area shape="rect" id="node5" href="$d2/dce/classSellHeikinRedPanel.html" title=" " alt="" coords="150,107,298,133"/>
+<area shape="rect" id="node6" href="$dd/d0f/classStrategyBasePanel.html" title="Panel pour les paramètres communs à toutes les stratégies." alt="" coords="152,157,296,184"/>
+<area shape="rect" id="node7" href="$df/d22/classStrategySpecificPanel.html" title=" " alt="" coords="143,5,305,32"/>
+<area shape="rect" id="node8" title=" " alt="" coords="13,221,87,248"/>
+<area shape="rect" id="node9" href="$d2/d3d/classBacktestRunner.html" title=" " alt="" coords="161,309,287,336"/>
+<area shape="rect" id="node10" href="$d5/d0a/classConfigManager.html" title="Gestionnaire de configuration avec support des profils." alt="" coords="164,360,284,387"/>
+<area shape="rect" id="node11" href="$d0/d83/classProfileMenuManager.html" title="Gestionnaire de menu des profils dans la barre de menu." alt="" coords="146,411,302,437"/>
+</map>

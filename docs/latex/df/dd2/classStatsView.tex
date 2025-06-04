@@ -1,0 +1,1072 @@
+\hypertarget{classStatsView}{}\doxysection{Stats\+View Class Reference}
+\label{classStatsView}\index{StatsView@{StatsView}}
+
+
+Vue pour afficher les statistiques du backtest.  
+
+
+
+
+{\ttfamily \#include $<$stats\+\_\+view.\+h$>$}
+
+
+
+Inheritance diagram for Stats\+View\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{da/dbe/classStatsView__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Stats\+View\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{df/da7/classStatsView__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classStatsView_ace257df6278c137bb46cc1e3fa727436}{Stats\+View}} (QWidget $\ast$parent=nullptr)
+\item 
+\mbox{\hyperlink{classStatsView_ae456734534188125bf922504f4abe182}{$\sim$\+Stats\+View}} ()
+\item 
+void \mbox{\hyperlink{classStatsView_abc04930f47c1da995f699f647bd19b3a}{update\+Data}} (void $\ast$data, void $\ast$stats) override
+\begin{DoxyCompactList}\small\item\em Met à jour la vue avec les nouvelles données du backtest. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classStatsView_a9bd648f2a520b2f44fc130ce9664461e}{clear}} () override
+\begin{DoxyCompactList}\small\item\em Réinitialise la vue à son état initial. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classStatsView_a6e9fdcacf34a570faa9bbfb21bf6e158}{setup\+UI}} () override
+\begin{DoxyCompactList}\small\item\em Méthode virtuelle pour construire l\textquotesingle{}interface À implémenter dans les classes filles. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Private Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classStatsView_a283b19d3eebc59e70420753b2db15188}{refresh\+Trades\+Table}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classStatsView_ad56baccd32a2e7cefc74efbdda4adddb}{create\+Stats\+Widgets}} ()
+\item 
+void \mbox{\hyperlink{classStatsView_a8d8abf85093f1f81912d854eda7e8809}{create\+Performance\+Section}} (QGrid\+Layout $\ast$layout)
+\item 
+void \mbox{\hyperlink{classStatsView_a6f7c8f612449d6a15fb0343b26f70b65}{create\+Risk\+Section}} (QGrid\+Layout $\ast$layout)
+\item 
+void \mbox{\hyperlink{classStatsView_aeb73c3e7d9bbe5f2699fef15bdcdaa11}{create\+General\+Section}} (QGrid\+Layout $\ast$layout)
+\item 
+void \mbox{\hyperlink{classStatsView_ae687a7a2c6240e010e3c56f373addf34}{create\+Trades\+Table}} ()
+\item 
+\mbox{\hyperlink{classMetricWidget}{Metric\+Widget}} $\ast$ \mbox{\hyperlink{classStatsView_a6790a3e8fb69deff1dc979df81745166}{create\+Metric\+Widget}} (const QString \&key, const QString \&label, const QString \&value, int row, int col, QGrid\+Layout $\ast$layout)
+\item 
+void \mbox{\hyperlink{classStatsView_a488fda087d548a0ceee37191dca357a5}{populate\+Metrics}} (void $\ast$stats)
+\item 
+void \mbox{\hyperlink{classStatsView_a4cd6efe0042eb419a4aa03d98c9a6a69}{populate\+Trades}} (void $\ast$stats)
+\item 
+void \mbox{\hyperlink{classStatsView_a270db80fe0c2467df8aeb5828ad9af5d}{populate\+Equity}} (void $\ast$stats)
+\item 
+QString \mbox{\hyperlink{classStatsView_a12041170c99471caf0f4d3adb6335aee}{format\+Currency}} (double value)
+\item 
+QString \mbox{\hyperlink{classStatsView_a241a07ea831ab6a16c4d979db555ba3c}{format\+Percentage}} (double value)
+\item 
+QString \mbox{\hyperlink{classStatsView_a08143c683f48e9b07a88469e22e95180}{format\+Duration}} (const QVariant \&value)
+\item 
+QString \mbox{\hyperlink{classStatsView_a9631a0540e8ae99996fc5bb18ebfe3e8}{format\+Detailed\+Duration}} (int days, int hours, int minutes, int seconds)
+\item 
+void \mbox{\hyperlink{classStatsView_a24af98b81406fcaa9e936e7ea2683e40}{update\+Metric\+Widget}} (const QString \&key, const QString \&label, const QString \&value)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classTradesTableModel}{Trades\+Table\+Model}} $\ast$ \mbox{\hyperlink{classStatsView_aeacb7719b453ce85c6ca087735076946}{m\+\_\+trades\+Model}}
+\item 
+\mbox{\hyperlink{classTradesTableModel}{Trades\+Table\+Model}} $\ast$ \mbox{\hyperlink{classStatsView_a01166a6ca9c1e4f96c0878994773274c}{m\+\_\+equity\+Model}}
+\item 
+QScroll\+Area $\ast$ \mbox{\hyperlink{classStatsView_a693e0eb948985d2650b4fbdc02f69e9a}{m\+\_\+scroll\+Stats}}
+\item 
+QWidget $\ast$ \mbox{\hyperlink{classStatsView_a5c9455c84e07ff2144d6aa1c83069d78}{m\+\_\+stats\+Content}}
+\item 
+QVBox\+Layout $\ast$ \mbox{\hyperlink{classStatsView_aa7056f15604b7b782c24ff05bcd4a03b}{m\+\_\+stats\+Content\+Layout}}
+\item 
+QLabel $\ast$ \mbox{\hyperlink{classStatsView_a56ece00d31a6ff78e6d9f459d212eeaa}{m\+\_\+stats\+Placeholder}}
+\item 
+QGroup\+Box $\ast$ \mbox{\hyperlink{classStatsView_a175c855ea86ee70139e777df7ed7b5fc}{m\+\_\+performance\+Group}}
+\item 
+QGrid\+Layout $\ast$ \mbox{\hyperlink{classStatsView_a35ca77d2fad926ba71909a0f57afa769}{m\+\_\+performance\+Layout}}
+\item 
+QGroup\+Box $\ast$ \mbox{\hyperlink{classStatsView_a305ff155b10c155d2067d1145dcb826c}{m\+\_\+risk\+Group}}
+\item 
+QGrid\+Layout $\ast$ \mbox{\hyperlink{classStatsView_a2fd4735b7cde2136e474cda2e6fe6c3c}{m\+\_\+risk\+Layout}}
+\item 
+QGroup\+Box $\ast$ \mbox{\hyperlink{classStatsView_acf1132a92ecb321291cf720035607fd2}{m\+\_\+general\+Group}}
+\item 
+QGrid\+Layout $\ast$ \mbox{\hyperlink{classStatsView_abc379464d22a554e18b5d3aa0aa8f5f4}{m\+\_\+general\+Layout}}
+\item 
+QGroup\+Box $\ast$ \mbox{\hyperlink{classStatsView_af0d4220a1f73eb7565569d921830c43c}{m\+\_\+trades\+Group}}
+\item 
+QVBox\+Layout $\ast$ \mbox{\hyperlink{classStatsView_a45df4cd2ee6fde4fcbf7ffcbcaf0a4f9}{m\+\_\+trades\+Layout}}
+\item 
+QTable\+View $\ast$ \mbox{\hyperlink{classStatsView_a578960a13ba062f55b7dfb128e285bd4}{m\+\_\+trades\+Table}}
+\item 
+QCombo\+Box $\ast$ \mbox{\hyperlink{classStatsView_a33926ba3d6e3b785074dbf464536844c}{m\+\_\+trades\+Limit\+Combo}}
+\item 
+QPush\+Button $\ast$ \mbox{\hyperlink{classStatsView_ab90e5566eee9069ebea9ead62239ab5b}{m\+\_\+show\+All\+Trades\+Btn}}
+\item 
+QGroup\+Box $\ast$ \mbox{\hyperlink{classStatsView_acdd53123fb682dbafb86a710f664a56f}{m\+\_\+equity\+Group}}
+\item 
+QVBox\+Layout $\ast$ \mbox{\hyperlink{classStatsView_a60d4eca48ef9a65f1ac6b4a2c3264608}{m\+\_\+equity\+Layout}}
+\item 
+QPush\+Button $\ast$ \mbox{\hyperlink{classStatsView_a7eeece340434c7ead33af96f4a0e3672}{m\+\_\+show\+Equity\+Btn}}
+\item 
+QCombo\+Box $\ast$ \mbox{\hyperlink{classStatsView_af7af1d470e43841d95f3cbea8051adb5}{m\+\_\+equity\+Limit\+Combo}}
+\item 
+QStacked\+Widget $\ast$ \mbox{\hyperlink{classStatsView_afac2370533475dd54a66ab98e0e96d29}{m\+\_\+equity\+Stack}}
+\item 
+QMap$<$ QString, \mbox{\hyperlink{classMetricWidget}{Metric\+Widget}} $\ast$ $>$ \mbox{\hyperlink{classStatsView_a46f95f292928de83f5ee67aaef32491a}{m\+\_\+metric\+Widgets}}
+\item 
+bool \mbox{\hyperlink{classStatsView_a9013dec7144be6011d959805f16cdd38}{m\+\_\+tables\+Created}}
+\item 
+void $\ast$ \mbox{\hyperlink{classStatsView_af436c030ec3672982b104ea569a4e104}{m\+\_\+current\+Stats}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Additional Inherited Members}
+
+
+\doxysubsection{Detailed Description}
+Vue pour afficher les statistiques du backtest. 
+
+Definition at line 54 of file stats\+\_\+view.\+h.
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classStatsView_ace257df6278c137bb46cc1e3fa727436}\label{classStatsView_ace257df6278c137bb46cc1e3fa727436}} 
+\index{StatsView@{StatsView}!StatsView@{StatsView}}
+\index{StatsView@{StatsView}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{StatsView()}{StatsView()}}
+{\footnotesize\ttfamily Stats\+View\+::\+Stats\+View (\begin{DoxyParamCaption}\item[{QWidget $\ast$}]{parent = {\ttfamily nullptr} }\end{DoxyParamCaption})}
+
+
+
+Definition at line 151 of file stats\+\_\+view.\+cpp.
+
+
+
+References m\+\_\+trades\+Model, and setup\+UI().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_ace257df6278c137bb46cc1e3fa727436_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_ae456734534188125bf922504f4abe182}\label{classStatsView_ae456734534188125bf922504f4abe182}} 
+\index{StatsView@{StatsView}!````~StatsView@{$\sim$StatsView}}
+\index{````~StatsView@{$\sim$StatsView}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{$\sim$StatsView()}{~StatsView()}}
+{\footnotesize\ttfamily Stats\+View\+::$\sim$\+Stats\+View (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line 187 of file stats\+\_\+view.\+cpp.
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classStatsView_a9bd648f2a520b2f44fc130ce9664461e}\label{classStatsView_a9bd648f2a520b2f44fc130ce9664461e}} 
+\index{StatsView@{StatsView}!clear@{clear}}
+\index{clear@{clear}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{clear()}{clear()}}
+{\footnotesize\ttfamily void Stats\+View\+::clear (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Réinitialise la vue à son état initial. 
+
+
+
+Implements \mbox{\hyperlink{classBaseView_a3b5d9811dfdea9f9855d9b89105cfbc5}{Base\+View}}.
+
+
+
+Definition at line 849 of file stats\+\_\+view.\+cpp.
+
+
+
+References m\+\_\+current\+Stats, m\+\_\+equity\+Group, m\+\_\+equity\+Model, m\+\_\+general\+Group, m\+\_\+metric\+Widgets, m\+\_\+performance\+Group, m\+\_\+risk\+Group, m\+\_\+stats\+Placeholder, m\+\_\+trades\+Group, and m\+\_\+trades\+Model.
+
+
+
+Referenced by update\+Data().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=339pt]{df/dd2/classStatsView_a9bd648f2a520b2f44fc130ce9664461e_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_aeb73c3e7d9bbe5f2699fef15bdcdaa11}\label{classStatsView_aeb73c3e7d9bbe5f2699fef15bdcdaa11}} 
+\index{StatsView@{StatsView}!createGeneralSection@{createGeneralSection}}
+\index{createGeneralSection@{createGeneralSection}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{createGeneralSection()}{createGeneralSection()}}
+{\footnotesize\ttfamily void Stats\+View\+::create\+General\+Section (\begin{DoxyParamCaption}\item[{QGrid\+Layout $\ast$}]{layout }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 314 of file stats\+\_\+view.\+cpp.
+
+
+
+References create\+Metric\+Widget().
+
+
+
+Referenced by create\+Stats\+Widgets().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_aeb73c3e7d9bbe5f2699fef15bdcdaa11_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_aeb73c3e7d9bbe5f2699fef15bdcdaa11_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a6790a3e8fb69deff1dc979df81745166}\label{classStatsView_a6790a3e8fb69deff1dc979df81745166}} 
+\index{StatsView@{StatsView}!createMetricWidget@{createMetricWidget}}
+\index{createMetricWidget@{createMetricWidget}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{createMetricWidget()}{createMetricWidget()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classMetricWidget}{Metric\+Widget}} $\ast$ Stats\+View\+::create\+Metric\+Widget (\begin{DoxyParamCaption}\item[{const QString \&}]{key,  }\item[{const QString \&}]{label,  }\item[{const QString \&}]{value,  }\item[{int}]{row,  }\item[{int}]{col,  }\item[{QGrid\+Layout $\ast$}]{layout }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 349 of file stats\+\_\+view.\+cpp.
+
+
+
+References m\+\_\+metric\+Widgets.
+
+
+
+Referenced by create\+General\+Section(), create\+Performance\+Section(), and create\+Risk\+Section().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a6790a3e8fb69deff1dc979df81745166_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a8d8abf85093f1f81912d854eda7e8809}\label{classStatsView_a8d8abf85093f1f81912d854eda7e8809}} 
+\index{StatsView@{StatsView}!createPerformanceSection@{createPerformanceSection}}
+\index{createPerformanceSection@{createPerformanceSection}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{createPerformanceSection()}{createPerformanceSection()}}
+{\footnotesize\ttfamily void Stats\+View\+::create\+Performance\+Section (\begin{DoxyParamCaption}\item[{QGrid\+Layout $\ast$}]{layout }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 261 of file stats\+\_\+view.\+cpp.
+
+
+
+References create\+Metric\+Widget().
+
+
+
+Referenced by create\+Stats\+Widgets().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a8d8abf85093f1f81912d854eda7e8809_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a8d8abf85093f1f81912d854eda7e8809_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a6f7c8f612449d6a15fb0343b26f70b65}\label{classStatsView_a6f7c8f612449d6a15fb0343b26f70b65}} 
+\index{StatsView@{StatsView}!createRiskSection@{createRiskSection}}
+\index{createRiskSection@{createRiskSection}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{createRiskSection()}{createRiskSection()}}
+{\footnotesize\ttfamily void Stats\+View\+::create\+Risk\+Section (\begin{DoxyParamCaption}\item[{QGrid\+Layout $\ast$}]{layout }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 290 of file stats\+\_\+view.\+cpp.
+
+
+
+References create\+Metric\+Widget().
+
+
+
+Referenced by create\+Stats\+Widgets().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a6f7c8f612449d6a15fb0343b26f70b65_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a6f7c8f612449d6a15fb0343b26f70b65_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_ad56baccd32a2e7cefc74efbdda4adddb}\label{classStatsView_ad56baccd32a2e7cefc74efbdda4adddb}} 
+\index{StatsView@{StatsView}!createStatsWidgets@{createStatsWidgets}}
+\index{createStatsWidgets@{createStatsWidgets}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{createStatsWidgets()}{createStatsWidgets()}}
+{\footnotesize\ttfamily void Stats\+View\+::create\+Stats\+Widgets (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 240 of file stats\+\_\+view.\+cpp.
+
+
+
+References create\+General\+Section(), create\+Performance\+Section(), create\+Risk\+Section(), m\+\_\+general\+Layout, m\+\_\+metric\+Widgets, m\+\_\+performance\+Layout, and m\+\_\+risk\+Layout.
+
+
+
+Referenced by setup\+UI().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_ad56baccd32a2e7cefc74efbdda4adddb_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_ad56baccd32a2e7cefc74efbdda4adddb_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_ae687a7a2c6240e010e3c56f373addf34}\label{classStatsView_ae687a7a2c6240e010e3c56f373addf34}} 
+\index{StatsView@{StatsView}!createTradesTable@{createTradesTable}}
+\index{createTradesTable@{createTradesTable}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{createTradesTable()}{createTradesTable()}}
+{\footnotesize\ttfamily void Stats\+View\+::create\+Trades\+Table (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 371 of file stats\+\_\+view.\+cpp.
+
+
+
+References m\+\_\+show\+All\+Trades\+Btn, m\+\_\+stats\+Content\+Layout, m\+\_\+tables\+Created, m\+\_\+trades\+Group, m\+\_\+trades\+Layout, m\+\_\+trades\+Limit\+Combo, m\+\_\+trades\+Model, m\+\_\+trades\+Table, and refresh\+Trades\+Table().
+
+
+
+Referenced by update\+Data().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_ae687a7a2c6240e010e3c56f373addf34_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_ae687a7a2c6240e010e3c56f373addf34_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a12041170c99471caf0f4d3adb6335aee}\label{classStatsView_a12041170c99471caf0f4d3adb6335aee}} 
+\index{StatsView@{StatsView}!formatCurrency@{formatCurrency}}
+\index{formatCurrency@{formatCurrency}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{formatCurrency()}{formatCurrency()}}
+{\footnotesize\ttfamily QString Stats\+View\+::format\+Currency (\begin{DoxyParamCaption}\item[{double}]{value }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 651 of file stats\+\_\+view.\+cpp.
+
+
+
+Referenced by populate\+Metrics().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a12041170c99471caf0f4d3adb6335aee_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a9631a0540e8ae99996fc5bb18ebfe3e8}\label{classStatsView_a9631a0540e8ae99996fc5bb18ebfe3e8}} 
+\index{StatsView@{StatsView}!formatDetailedDuration@{formatDetailedDuration}}
+\index{formatDetailedDuration@{formatDetailedDuration}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{formatDetailedDuration()}{formatDetailedDuration()}}
+{\footnotesize\ttfamily QString Stats\+View\+::format\+Detailed\+Duration (\begin{DoxyParamCaption}\item[{int}]{days,  }\item[{int}]{hours,  }\item[{int}]{minutes,  }\item[{int}]{seconds }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 731 of file stats\+\_\+view.\+cpp.
+
+
+
+Referenced by format\+Duration().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a9631a0540e8ae99996fc5bb18ebfe3e8_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a08143c683f48e9b07a88469e22e95180}\label{classStatsView_a08143c683f48e9b07a88469e22e95180}} 
+\index{StatsView@{StatsView}!formatDuration@{formatDuration}}
+\index{formatDuration@{formatDuration}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{formatDuration()}{formatDuration()}}
+{\footnotesize\ttfamily QString Stats\+View\+::format\+Duration (\begin{DoxyParamCaption}\item[{const QVariant \&}]{value }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 677 of file stats\+\_\+view.\+cpp.
+
+
+
+References format\+Detailed\+Duration().
+
+
+
+Referenced by populate\+Metrics().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a08143c683f48e9b07a88469e22e95180_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a08143c683f48e9b07a88469e22e95180_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a241a07ea831ab6a16c4d979db555ba3c}\label{classStatsView_a241a07ea831ab6a16c4d979db555ba3c}} 
+\index{StatsView@{StatsView}!formatPercentage@{formatPercentage}}
+\index{formatPercentage@{formatPercentage}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{formatPercentage()}{formatPercentage()}}
+{\footnotesize\ttfamily QString Stats\+View\+::format\+Percentage (\begin{DoxyParamCaption}\item[{double}]{value }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 667 of file stats\+\_\+view.\+cpp.
+
+\mbox{\Hypertarget{classStatsView_a270db80fe0c2467df8aeb5828ad9af5d}\label{classStatsView_a270db80fe0c2467df8aeb5828ad9af5d}} 
+\index{StatsView@{StatsView}!populateEquity@{populateEquity}}
+\index{populateEquity@{populateEquity}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{populateEquity()}{populateEquity()}}
+{\footnotesize\ttfamily void Stats\+View\+::populate\+Equity (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 626 of file stats\+\_\+view.\+cpp.
+
+
+
+References Py\+Binding\+Manager\+::get\+Equity\+Data(), Py\+Binding\+Manager\+::get\+Instance(), m\+\_\+equity\+Group, m\+\_\+equity\+Model, and Trades\+Table\+Model\+::update\+Data().
+
+
+
+Referenced by update\+Data().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a270db80fe0c2467df8aeb5828ad9af5d_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a270db80fe0c2467df8aeb5828ad9af5d_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a488fda087d548a0ceee37191dca357a5}\label{classStatsView_a488fda087d548a0ceee37191dca357a5}} 
+\index{StatsView@{StatsView}!populateMetrics@{populateMetrics}}
+\index{populateMetrics@{populateMetrics}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{populateMetrics()}{populateMetrics()}}
+{\footnotesize\ttfamily void Stats\+View\+::populate\+Metrics (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 456 of file stats\+\_\+view.\+cpp.
+
+
+
+References format\+Currency(), format\+Duration(), Py\+Binding\+Manager\+::get\+Instance(), Py\+Binding\+Manager\+::get\+Stat\+Value(), and m\+\_\+metric\+Widgets.
+
+
+
+Referenced by update\+Data().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a488fda087d548a0ceee37191dca357a5_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a488fda087d548a0ceee37191dca357a5_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a4cd6efe0042eb419a4aa03d98c9a6a69}\label{classStatsView_a4cd6efe0042eb419a4aa03d98c9a6a69}} 
+\index{StatsView@{StatsView}!populateTrades@{populateTrades}}
+\index{populateTrades@{populateTrades}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{populateTrades()}{populateTrades()}}
+{\footnotesize\ttfamily void Stats\+View\+::populate\+Trades (\begin{DoxyParamCaption}\item[{void $\ast$}]{stats }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 596 of file stats\+\_\+view.\+cpp.
+
+
+
+References Py\+Binding\+Manager\+::get\+Instance(), Py\+Binding\+Manager\+::get\+Trades\+Data(), m\+\_\+show\+All\+Trades\+Btn, m\+\_\+trades\+Group, m\+\_\+trades\+Model, and Trades\+Table\+Model\+::update\+Data().
+
+
+
+Referenced by update\+Data().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a4cd6efe0042eb419a4aa03d98c9a6a69_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a4cd6efe0042eb419a4aa03d98c9a6a69_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a283b19d3eebc59e70420753b2db15188}\label{classStatsView_a283b19d3eebc59e70420753b2db15188}} 
+\index{StatsView@{StatsView}!refreshTradesTable@{refreshTradesTable}}
+\index{refreshTradesTable@{refreshTradesTable}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{refreshTradesTable}{refreshTradesTable}}
+{\footnotesize\ttfamily void Stats\+View\+::refresh\+Trades\+Table (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 764 of file stats\+\_\+view.\+cpp.
+
+
+
+References Py\+Binding\+Manager\+::get\+Instance(), Py\+Binding\+Manager\+::get\+Trades\+Data(), m\+\_\+current\+Stats, m\+\_\+show\+All\+Trades\+Btn, m\+\_\+trades\+Limit\+Combo, m\+\_\+trades\+Model, and Trades\+Table\+Model\+::update\+Data().
+
+
+
+Referenced by create\+Trades\+Table().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a283b19d3eebc59e70420753b2db15188_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a283b19d3eebc59e70420753b2db15188_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a6e9fdcacf34a570faa9bbfb21bf6e158}\label{classStatsView_a6e9fdcacf34a570faa9bbfb21bf6e158}} 
+\index{StatsView@{StatsView}!setupUI@{setupUI}}
+\index{setupUI@{setupUI}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{setupUI()}{setupUI()}}
+{\footnotesize\ttfamily void Stats\+View\+::setup\+UI (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [protected]}, {\ttfamily [virtual]}}
+
+
+
+Méthode virtuelle pour construire l\textquotesingle{}interface À implémenter dans les classes filles. 
+
+
+
+Implements \mbox{\hyperlink{classBaseView_afd301a040e5cbb1801a1ce6972ccd231}{Base\+View}}.
+
+
+
+Definition at line 192 of file stats\+\_\+view.\+cpp.
+
+
+
+References create\+Stats\+Widgets(), m\+\_\+general\+Group, m\+\_\+general\+Layout, Base\+View\+::m\+\_\+main\+Layout, m\+\_\+performance\+Group, m\+\_\+performance\+Layout, m\+\_\+risk\+Group, m\+\_\+risk\+Layout, m\+\_\+scroll\+Stats, m\+\_\+stats\+Content, m\+\_\+stats\+Content\+Layout, and m\+\_\+stats\+Placeholder.
+
+
+
+Referenced by Stats\+View().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_a6e9fdcacf34a570faa9bbfb21bf6e158_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=343pt]{df/dd2/classStatsView_a6e9fdcacf34a570faa9bbfb21bf6e158_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_abc04930f47c1da995f699f647bd19b3a}\label{classStatsView_abc04930f47c1da995f699f647bd19b3a}} 
+\index{StatsView@{StatsView}!updateData@{updateData}}
+\index{updateData@{updateData}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{updateData()}{updateData()}}
+{\footnotesize\ttfamily void Stats\+View\+::update\+Data (\begin{DoxyParamCaption}\item[{void $\ast$}]{data,  }\item[{void $\ast$}]{stats }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Met à jour la vue avec les nouvelles données du backtest. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em data} & Pointeur vers les données utilisées pour le backtest \\
+\hline
+{\em stats} & Pointeur vers les statistiques résultantes \\
+\hline
+\end{DoxyParams}
+
+
+Implements \mbox{\hyperlink{classBaseView_a569892cee63fbb68c0016d365f1949a7}{Base\+View}}.
+
+
+
+Definition at line 799 of file stats\+\_\+view.\+cpp.
+
+
+
+References clear(), create\+Trades\+Table(), m\+\_\+current\+Stats, m\+\_\+general\+Group, m\+\_\+performance\+Group, m\+\_\+risk\+Group, m\+\_\+stats\+Placeholder, m\+\_\+tables\+Created, populate\+Equity(), populate\+Metrics(), and populate\+Trades().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{df/dd2/classStatsView_abc04930f47c1da995f699f647bd19b3a_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStatsView_a24af98b81406fcaa9e936e7ea2683e40}\label{classStatsView_a24af98b81406fcaa9e936e7ea2683e40}} 
+\index{StatsView@{StatsView}!updateMetricWidget@{updateMetricWidget}}
+\index{updateMetricWidget@{updateMetricWidget}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{updateMetricWidget()}{updateMetricWidget()}}
+{\footnotesize\ttfamily void Stats\+View\+::update\+Metric\+Widget (\begin{DoxyParamCaption}\item[{const QString \&}]{key,  }\item[{const QString \&}]{label,  }\item[{const QString \&}]{value }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 754 of file stats\+\_\+view.\+cpp.
+
+
+
+References m\+\_\+metric\+Widgets.
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classStatsView_af436c030ec3672982b104ea569a4e104}\label{classStatsView_af436c030ec3672982b104ea569a4e104}} 
+\index{StatsView@{StatsView}!m\_currentStats@{m\_currentStats}}
+\index{m\_currentStats@{m\_currentStats}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_currentStats}{m\_currentStats}}
+{\footnotesize\ttfamily void$\ast$ Stats\+View\+::m\+\_\+current\+Stats\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 109 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), refresh\+Trades\+Table(), and update\+Data().
+
+\mbox{\Hypertarget{classStatsView_acdd53123fb682dbafb86a710f664a56f}\label{classStatsView_acdd53123fb682dbafb86a710f664a56f}} 
+\index{StatsView@{StatsView}!m\_equityGroup@{m\_equityGroup}}
+\index{m\_equityGroup@{m\_equityGroup}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_equityGroup}{m\_equityGroup}}
+{\footnotesize\ttfamily QGroup\+Box$\ast$ Stats\+View\+::m\+\_\+equity\+Group\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 98 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), and populate\+Equity().
+
+\mbox{\Hypertarget{classStatsView_a60d4eca48ef9a65f1ac6b4a2c3264608}\label{classStatsView_a60d4eca48ef9a65f1ac6b4a2c3264608}} 
+\index{StatsView@{StatsView}!m\_equityLayout@{m\_equityLayout}}
+\index{m\_equityLayout@{m\_equityLayout}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_equityLayout}{m\_equityLayout}}
+{\footnotesize\ttfamily QVBox\+Layout$\ast$ Stats\+View\+::m\+\_\+equity\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 99 of file stats\+\_\+view.\+h.
+
+\mbox{\Hypertarget{classStatsView_af7af1d470e43841d95f3cbea8051adb5}\label{classStatsView_af7af1d470e43841d95f3cbea8051adb5}} 
+\index{StatsView@{StatsView}!m\_equityLimitCombo@{m\_equityLimitCombo}}
+\index{m\_equityLimitCombo@{m\_equityLimitCombo}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_equityLimitCombo}{m\_equityLimitCombo}}
+{\footnotesize\ttfamily QCombo\+Box$\ast$ Stats\+View\+::m\+\_\+equity\+Limit\+Combo\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 101 of file stats\+\_\+view.\+h.
+
+\mbox{\Hypertarget{classStatsView_a01166a6ca9c1e4f96c0878994773274c}\label{classStatsView_a01166a6ca9c1e4f96c0878994773274c}} 
+\index{StatsView@{StatsView}!m\_equityModel@{m\_equityModel}}
+\index{m\_equityModel@{m\_equityModel}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_equityModel}{m\_equityModel}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classTradesTableModel}{Trades\+Table\+Model}}$\ast$ Stats\+View\+::m\+\_\+equity\+Model\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 74 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), and populate\+Equity().
+
+\mbox{\Hypertarget{classStatsView_afac2370533475dd54a66ab98e0e96d29}\label{classStatsView_afac2370533475dd54a66ab98e0e96d29}} 
+\index{StatsView@{StatsView}!m\_equityStack@{m\_equityStack}}
+\index{m\_equityStack@{m\_equityStack}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_equityStack}{m\_equityStack}}
+{\footnotesize\ttfamily QStacked\+Widget$\ast$ Stats\+View\+::m\+\_\+equity\+Stack\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 102 of file stats\+\_\+view.\+h.
+
+\mbox{\Hypertarget{classStatsView_acf1132a92ecb321291cf720035607fd2}\label{classStatsView_acf1132a92ecb321291cf720035607fd2}} 
+\index{StatsView@{StatsView}!m\_generalGroup@{m\_generalGroup}}
+\index{m\_generalGroup@{m\_generalGroup}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_generalGroup}{m\_generalGroup}}
+{\footnotesize\ttfamily QGroup\+Box$\ast$ Stats\+View\+::m\+\_\+general\+Group\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 87 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), setup\+UI(), and update\+Data().
+
+\mbox{\Hypertarget{classStatsView_abc379464d22a554e18b5d3aa0aa8f5f4}\label{classStatsView_abc379464d22a554e18b5d3aa0aa8f5f4}} 
+\index{StatsView@{StatsView}!m\_generalLayout@{m\_generalLayout}}
+\index{m\_generalLayout@{m\_generalLayout}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_generalLayout}{m\_generalLayout}}
+{\footnotesize\ttfamily QGrid\+Layout$\ast$ Stats\+View\+::m\+\_\+general\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 88 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Stats\+Widgets(), and setup\+UI().
+
+\mbox{\Hypertarget{classStatsView_a46f95f292928de83f5ee67aaef32491a}\label{classStatsView_a46f95f292928de83f5ee67aaef32491a}} 
+\index{StatsView@{StatsView}!m\_metricWidgets@{m\_metricWidgets}}
+\index{m\_metricWidgets@{m\_metricWidgets}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_metricWidgets}{m\_metricWidgets}}
+{\footnotesize\ttfamily QMap$<$QString, \mbox{\hyperlink{classMetricWidget}{Metric\+Widget}}$\ast$$>$ Stats\+View\+::m\+\_\+metric\+Widgets\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 105 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), create\+Metric\+Widget(), create\+Stats\+Widgets(), populate\+Metrics(), and update\+Metric\+Widget().
+
+\mbox{\Hypertarget{classStatsView_a175c855ea86ee70139e777df7ed7b5fc}\label{classStatsView_a175c855ea86ee70139e777df7ed7b5fc}} 
+\index{StatsView@{StatsView}!m\_performanceGroup@{m\_performanceGroup}}
+\index{m\_performanceGroup@{m\_performanceGroup}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_performanceGroup}{m\_performanceGroup}}
+{\footnotesize\ttfamily QGroup\+Box$\ast$ Stats\+View\+::m\+\_\+performance\+Group\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 83 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), setup\+UI(), and update\+Data().
+
+\mbox{\Hypertarget{classStatsView_a35ca77d2fad926ba71909a0f57afa769}\label{classStatsView_a35ca77d2fad926ba71909a0f57afa769}} 
+\index{StatsView@{StatsView}!m\_performanceLayout@{m\_performanceLayout}}
+\index{m\_performanceLayout@{m\_performanceLayout}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_performanceLayout}{m\_performanceLayout}}
+{\footnotesize\ttfamily QGrid\+Layout$\ast$ Stats\+View\+::m\+\_\+performance\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 84 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Stats\+Widgets(), and setup\+UI().
+
+\mbox{\Hypertarget{classStatsView_a305ff155b10c155d2067d1145dcb826c}\label{classStatsView_a305ff155b10c155d2067d1145dcb826c}} 
+\index{StatsView@{StatsView}!m\_riskGroup@{m\_riskGroup}}
+\index{m\_riskGroup@{m\_riskGroup}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_riskGroup}{m\_riskGroup}}
+{\footnotesize\ttfamily QGroup\+Box$\ast$ Stats\+View\+::m\+\_\+risk\+Group\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 85 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), setup\+UI(), and update\+Data().
+
+\mbox{\Hypertarget{classStatsView_a2fd4735b7cde2136e474cda2e6fe6c3c}\label{classStatsView_a2fd4735b7cde2136e474cda2e6fe6c3c}} 
+\index{StatsView@{StatsView}!m\_riskLayout@{m\_riskLayout}}
+\index{m\_riskLayout@{m\_riskLayout}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_riskLayout}{m\_riskLayout}}
+{\footnotesize\ttfamily QGrid\+Layout$\ast$ Stats\+View\+::m\+\_\+risk\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 86 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Stats\+Widgets(), and setup\+UI().
+
+\mbox{\Hypertarget{classStatsView_a693e0eb948985d2650b4fbdc02f69e9a}\label{classStatsView_a693e0eb948985d2650b4fbdc02f69e9a}} 
+\index{StatsView@{StatsView}!m\_scrollStats@{m\_scrollStats}}
+\index{m\_scrollStats@{m\_scrollStats}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_scrollStats}{m\_scrollStats}}
+{\footnotesize\ttfamily QScroll\+Area$\ast$ Stats\+View\+::m\+\_\+scroll\+Stats\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 77 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by setup\+UI().
+
+\mbox{\Hypertarget{classStatsView_ab90e5566eee9069ebea9ead62239ab5b}\label{classStatsView_ab90e5566eee9069ebea9ead62239ab5b}} 
+\index{StatsView@{StatsView}!m\_showAllTradesBtn@{m\_showAllTradesBtn}}
+\index{m\_showAllTradesBtn@{m\_showAllTradesBtn}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_showAllTradesBtn}{m\_showAllTradesBtn}}
+{\footnotesize\ttfamily QPush\+Button$\ast$ Stats\+View\+::m\+\_\+show\+All\+Trades\+Btn\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 95 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Trades\+Table(), populate\+Trades(), and refresh\+Trades\+Table().
+
+\mbox{\Hypertarget{classStatsView_a7eeece340434c7ead33af96f4a0e3672}\label{classStatsView_a7eeece340434c7ead33af96f4a0e3672}} 
+\index{StatsView@{StatsView}!m\_showEquityBtn@{m\_showEquityBtn}}
+\index{m\_showEquityBtn@{m\_showEquityBtn}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_showEquityBtn}{m\_showEquityBtn}}
+{\footnotesize\ttfamily QPush\+Button$\ast$ Stats\+View\+::m\+\_\+show\+Equity\+Btn\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 100 of file stats\+\_\+view.\+h.
+
+\mbox{\Hypertarget{classStatsView_a5c9455c84e07ff2144d6aa1c83069d78}\label{classStatsView_a5c9455c84e07ff2144d6aa1c83069d78}} 
+\index{StatsView@{StatsView}!m\_statsContent@{m\_statsContent}}
+\index{m\_statsContent@{m\_statsContent}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_statsContent}{m\_statsContent}}
+{\footnotesize\ttfamily QWidget$\ast$ Stats\+View\+::m\+\_\+stats\+Content\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 78 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by setup\+UI().
+
+\mbox{\Hypertarget{classStatsView_aa7056f15604b7b782c24ff05bcd4a03b}\label{classStatsView_aa7056f15604b7b782c24ff05bcd4a03b}} 
+\index{StatsView@{StatsView}!m\_statsContentLayout@{m\_statsContentLayout}}
+\index{m\_statsContentLayout@{m\_statsContentLayout}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_statsContentLayout}{m\_statsContentLayout}}
+{\footnotesize\ttfamily QVBox\+Layout$\ast$ Stats\+View\+::m\+\_\+stats\+Content\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 79 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Trades\+Table(), and setup\+UI().
+
+\mbox{\Hypertarget{classStatsView_a56ece00d31a6ff78e6d9f459d212eeaa}\label{classStatsView_a56ece00d31a6ff78e6d9f459d212eeaa}} 
+\index{StatsView@{StatsView}!m\_statsPlaceholder@{m\_statsPlaceholder}}
+\index{m\_statsPlaceholder@{m\_statsPlaceholder}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_statsPlaceholder}{m\_statsPlaceholder}}
+{\footnotesize\ttfamily QLabel$\ast$ Stats\+View\+::m\+\_\+stats\+Placeholder\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 80 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), setup\+UI(), and update\+Data().
+
+\mbox{\Hypertarget{classStatsView_a9013dec7144be6011d959805f16cdd38}\label{classStatsView_a9013dec7144be6011d959805f16cdd38}} 
+\index{StatsView@{StatsView}!m\_tablesCreated@{m\_tablesCreated}}
+\index{m\_tablesCreated@{m\_tablesCreated}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_tablesCreated}{m\_tablesCreated}}
+{\footnotesize\ttfamily bool Stats\+View\+::m\+\_\+tables\+Created\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 108 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Trades\+Table(), and update\+Data().
+
+\mbox{\Hypertarget{classStatsView_af0d4220a1f73eb7565569d921830c43c}\label{classStatsView_af0d4220a1f73eb7565569d921830c43c}} 
+\index{StatsView@{StatsView}!m\_tradesGroup@{m\_tradesGroup}}
+\index{m\_tradesGroup@{m\_tradesGroup}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_tradesGroup}{m\_tradesGroup}}
+{\footnotesize\ttfamily QGroup\+Box$\ast$ Stats\+View\+::m\+\_\+trades\+Group\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 91 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), create\+Trades\+Table(), and populate\+Trades().
+
+\mbox{\Hypertarget{classStatsView_a45df4cd2ee6fde4fcbf7ffcbcaf0a4f9}\label{classStatsView_a45df4cd2ee6fde4fcbf7ffcbcaf0a4f9}} 
+\index{StatsView@{StatsView}!m\_tradesLayout@{m\_tradesLayout}}
+\index{m\_tradesLayout@{m\_tradesLayout}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_tradesLayout}{m\_tradesLayout}}
+{\footnotesize\ttfamily QVBox\+Layout$\ast$ Stats\+View\+::m\+\_\+trades\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 92 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Trades\+Table().
+
+\mbox{\Hypertarget{classStatsView_a33926ba3d6e3b785074dbf464536844c}\label{classStatsView_a33926ba3d6e3b785074dbf464536844c}} 
+\index{StatsView@{StatsView}!m\_tradesLimitCombo@{m\_tradesLimitCombo}}
+\index{m\_tradesLimitCombo@{m\_tradesLimitCombo}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_tradesLimitCombo}{m\_tradesLimitCombo}}
+{\footnotesize\ttfamily QCombo\+Box$\ast$ Stats\+View\+::m\+\_\+trades\+Limit\+Combo\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 94 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Trades\+Table(), and refresh\+Trades\+Table().
+
+\mbox{\Hypertarget{classStatsView_aeacb7719b453ce85c6ca087735076946}\label{classStatsView_aeacb7719b453ce85c6ca087735076946}} 
+\index{StatsView@{StatsView}!m\_tradesModel@{m\_tradesModel}}
+\index{m\_tradesModel@{m\_tradesModel}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_tradesModel}{m\_tradesModel}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classTradesTableModel}{Trades\+Table\+Model}}$\ast$ Stats\+View\+::m\+\_\+trades\+Model\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 73 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by clear(), create\+Trades\+Table(), populate\+Trades(), refresh\+Trades\+Table(), and Stats\+View().
+
+\mbox{\Hypertarget{classStatsView_a578960a13ba062f55b7dfb128e285bd4}\label{classStatsView_a578960a13ba062f55b7dfb128e285bd4}} 
+\index{StatsView@{StatsView}!m\_tradesTable@{m\_tradesTable}}
+\index{m\_tradesTable@{m\_tradesTable}!StatsView@{StatsView}}
+\doxysubsubsection{\texorpdfstring{m\_tradesTable}{m\_tradesTable}}
+{\footnotesize\ttfamily QTable\+View$\ast$ Stats\+View\+::m\+\_\+trades\+Table\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 93 of file stats\+\_\+view.\+h.
+
+
+
+Referenced by create\+Trades\+Table().
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+backtest\+\_\+app\+\_\+cpp/src/views/\mbox{\hyperlink{stats__view_8h}{stats\+\_\+view.\+h}}\item 
+backtest\+\_\+app\+\_\+cpp/src/views/\mbox{\hyperlink{stats__view_8cpp}{stats\+\_\+view.\+cpp}}\end{DoxyCompactItemize}

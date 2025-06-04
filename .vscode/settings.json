@@ -1,5 +1,24 @@
 {
-    "cmake.sourceDirectory": "/home/hugo/Repositories/Finance/ig-trading-bot/cpp_strategies",
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    
+    // Configuration de CMake
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.exportCompileCommandsFile": true,
+    "cmake.ignoreCMakeListsMissing": true,
+    
+    // Configuration C/C++ pour IntelliSense
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.autoAddFileAssociations": false,
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.includePath": [
+        "${workspaceFolder}/**",
+        "/usr/include/qt6/**",
+        "/usr/include/x86_64-linux-gnu/qt6/**"
+    ],
+    "C_Cpp.default.cppStandard": "c++17",
+    
     "files.associations": {
         "array": "cpp",
         "atomic": "cpp",
@@ -78,5 +97,4 @@
         "cinttypes": "cpp",
         "valarray": "cpp"
     },
-    "cmake.ignoreCMakeListsMissing": true
 }

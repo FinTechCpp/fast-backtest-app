@@ -1,0 +1,8 @@
+<map id="ChartView" name="ChartView">
+<area shape="rect" id="node1" title="Vue pour afficher les graphiques de prix et d&#39;indicateurs." alt="" coords="183,171,272,197"/>
+<area shape="rect" id="node2" href="$classBaseView.html" title="Classe de base abstraite pour toutes les vues de résultats du backtest." alt="" coords="5,81,92,108"/>
+<area shape="rect" id="node3" title=" " alt="" coords="9,5,88,32"/>
+<area shape="rect" id="node4" href="$structEquityData.html" title="Structure pour stocker les données d&#39;équité" alt="" coords="116,81,211,108"/>
+<area shape="rect" id="node5" href="$structTradeData.html" title="Structure pour stocker les données des trades." alt="" coords="247,81,335,108"/>
+<area shape="rect" id="node6" href="$structPriceData.html" title="Structure pour stocker les données de prix." alt="" coords="369,81,454,108"/>
+</map>

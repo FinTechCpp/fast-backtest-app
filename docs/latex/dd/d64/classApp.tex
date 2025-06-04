@@ -1,0 +1,1107 @@
+\hypertarget{classApp}{}\doxysection{App Class Reference}
+\label{classApp}\index{App@{App}}
+
+
+{\ttfamily \#include $<$app.\+h$>$}
+
+
+
+Inheritance diagram for App\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{dd/dcc/classApp__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for App\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{d6/d76/classApp__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classApp_acb8cbf3e285b91d0170ffe87df5989c5}{App}} ()
+\item 
+\mbox{\hyperlink{classApp_a34f1f253b1cef5f4ecbac66eaf6964ec}{$\sim$\+App}} ()
+\item 
+\mbox{\hyperlink{classConfigManager}{Config\+Manager}} $\ast$ \mbox{\hyperlink{classApp_a569af5ff8401e5788a7e2841625489a4}{get\+Config\+Manager}} () const
+\item 
+\mbox{\hyperlink{classGeneralParamsPanel}{General\+Params\+Panel}} $\ast$ \mbox{\hyperlink{classApp_a784182b4769a81eaedf71de372b7babf}{get\+General\+Params\+Panel}} () const
+\item 
+\mbox{\hyperlink{classStrategyBasePanel}{Strategy\+Base\+Panel}} $\ast$ \mbox{\hyperlink{classApp_a59052cf80a4e02fa130d3509c9d25a2a}{get\+Strategy\+Base\+Panel}} () const
+\item 
+\mbox{\hyperlink{classBasePanel}{Base\+Panel}} $\ast$ \mbox{\hyperlink{classApp_ae7e5cc49b02d6feab9d19620f6455f2f}{get\+Strategy\+Specific\+Panel}} () const
+\item 
+QMap$<$ QString, QVariant $>$ \mbox{\hyperlink{classApp_abc976f427450f86d2fb3860c4e95dbed}{get\+Strategy\+Config}} () const
+\item 
+QMap$<$ QString, QVariant $>$ \mbox{\hyperlink{classApp_a7785ea96c73ff1073163e29899128b19}{get\+Indicator\+Config}} () const
+\item 
+void \mbox{\hyperlink{classApp_a9c1fe3eac5ac87f0f5659eae0c425f1c}{update\+Result\+Views}} (void $\ast$data, void $\ast$stats)
+\end{DoxyCompactItemize}
+\doxysubsection*{Protected Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classApp_a511cf55a1203205f39eed3f863c3ad9a}{resize\+Event}} (QResize\+Event $\ast$event) override
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classApp_ade4d2d945a3a55af582a1b3e9cc66c36}{on\+Strategy\+Changed}} (const QString \&strategy)
+\item 
+void \mbox{\hyperlink{classApp_a25385aac355a86f48b07c3cf408df9e6}{on\+Run\+Backtest}} ()
+\item 
+void \mbox{\hyperlink{classApp_a1cd6fec33bde2e87ac6795c4812268ed}{on\+Backtest\+Completed}} ()
+\item 
+void \mbox{\hyperlink{classApp_a1ea75930d58ac0b86ccb2605a2ed3101}{on\+Backtest\+Error}} (const QString \&error)
+\item 
+void \mbox{\hyperlink{classApp_abaf6f94de78804418da7aefd2793f56c}{update\+Strategy\+Specific\+Panel}} ()
+\item 
+void \mbox{\hyperlink{classApp_a55528a98a859812e9efe6af106ec3ec0}{on\+About}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classApp_a6f6d34ff3e934d32e42ee7660794f535}{create\+Menus}} ()
+\item 
+void \mbox{\hyperlink{classApp_a09e52172224603236f1ca01de352f500}{create\+Actions}} ()
+\item 
+void \mbox{\hyperlink{classApp_ada307bba846e650067ba99531dad9470}{init\+Strategy\+Map}} ()
+\item 
+void \mbox{\hyperlink{classApp_a2e4ac0da4604e72282c6c59c764d2d32}{create\+Control\+Panel}} ()
+\item 
+void \mbox{\hyperlink{classApp_af093e350b5f026e02182ea717ec9ce93}{create\+Results\+Area}} ()
+\item 
+void \mbox{\hyperlink{classApp_a61ab65a5979221b61fa0fa91eee87090}{setup\+Connections}} ()
+\item 
+void \mbox{\hyperlink{classApp_a5359579f458fac0f6cf1b760298ac741}{update\+UI}} ()
+\item 
+void \mbox{\hyperlink{classApp_a92e18200240fe56199de30a7f5d522cd}{show\+Results}} ()
+\item 
+void \mbox{\hyperlink{classApp_aa084145322547c5d99495f8a623e618d}{clear\+Results}} ()
+\item 
+QWidget $\ast$ \mbox{\hyperlink{classApp_ae5b2ec7e80e111b6c7dbbac8c484fa95}{create\+Strategy\+Specific\+Panel}} (const QString \&strategy)
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Attributes}
+\begin{DoxyCompactItemize}
+\item 
+QMenu\+Bar $\ast$ \mbox{\hyperlink{classApp_ad2939156e1f0b058e6fc7e89139d7646}{m\+\_\+menu\+Bar}}
+\item 
+QMenu $\ast$ \mbox{\hyperlink{classApp_a6afcb281c08b1012d87a2681b0999cfd}{m\+\_\+help\+Menu}}
+\item 
+QAction $\ast$ \mbox{\hyperlink{classApp_a9a449cc60a8297955416ac58648b3c41}{m\+\_\+about\+Action}}
+\item 
+\mbox{\hyperlink{classProfileMenuManager}{Profile\+Menu\+Manager}} $\ast$ \mbox{\hyperlink{classApp_ad8c38683795173f5e7f0ad00c0948295}{m\+\_\+profile\+Menu\+Manager}}
+\item 
+QWidget $\ast$ \mbox{\hyperlink{classApp_a2a5cd41e4c5081f929d4ebdb5785ee46}{m\+\_\+central\+Widget}}
+\item 
+QHBox\+Layout $\ast$ \mbox{\hyperlink{classApp_ad50137a54e1a53bbac501d10952aa1d4}{m\+\_\+main\+Layout}}
+\item 
+QSplitter $\ast$ \mbox{\hyperlink{classApp_a4097bcba92a4524c040a5ea5499c81d8}{m\+\_\+splitter}}
+\item 
+QScroll\+Area $\ast$ \mbox{\hyperlink{classApp_a15fb8684261a7da8d9f166f17dd2be12}{m\+\_\+control\+Panel\+Scroll\+Area}}
+\item 
+QWidget $\ast$ \mbox{\hyperlink{classApp_aa646497c17694f73aaa8d296195fd21e}{m\+\_\+control\+Panel}}
+\item 
+QVBox\+Layout $\ast$ \mbox{\hyperlink{classApp_acc9c91957b56fd2c65181ade499ed5fd}{m\+\_\+control\+Panel\+Layout}}
+\item 
+QMap$<$ QString, QString $>$ \mbox{\hyperlink{classApp_af1072942feef53f8597b754c135d9dd0}{m\+\_\+strategy\+Map}}
+\item 
+QStacked\+Widget $\ast$ \mbox{\hyperlink{classApp_a1086f785a2cfcf1193bde55fe24c46e3}{m\+\_\+strategy\+Panel\+Stack}}
+\item 
+QMap$<$ QString, QWidget $\ast$ $>$ \mbox{\hyperlink{classApp_a23231de0c68f09c87c3465b48df75f10}{m\+\_\+strategy\+Panels}}
+\item 
+QTab\+Widget $\ast$ \mbox{\hyperlink{classApp_a4aae7df0bfdb08c52944588da0ce343d}{m\+\_\+results\+Tab\+Widget}}
+\item 
+\mbox{\hyperlink{classConfigManager}{Config\+Manager}} $\ast$ \mbox{\hyperlink{classApp_a47d96df711955f464cfa4ee21ded0092}{m\+\_\+config\+Manager}}
+\item 
+\mbox{\hyperlink{classResultManager}{Result\+Manager}} $\ast$ \mbox{\hyperlink{classApp_a7d0f7aa8497af9081e9535be0eabee73}{m\+\_\+result\+Manager}}
+\item 
+\mbox{\hyperlink{classGeneralParamsPanel}{General\+Params\+Panel}} $\ast$ \mbox{\hyperlink{classApp_aec122099f7e368d46a2ab7b8b442bb92}{m\+\_\+general\+Params\+Panel}}
+\item 
+\mbox{\hyperlink{classStrategyBasePanel}{Strategy\+Base\+Panel}} $\ast$ \mbox{\hyperlink{classApp_a4bafd3af46d5cd3d56a2a80bd2e02f93}{m\+\_\+strategy\+Base\+Panel}}
+\item 
+\mbox{\hyperlink{classBasePanel}{Base\+Panel}} $\ast$ \mbox{\hyperlink{classApp_ae47c66731c9fe6ab2c860e69c7a3f3e8}{m\+\_\+strategy\+Specific\+Panel}}
+\item 
+\mbox{\hyperlink{classBacktestRunner}{Backtest\+Runner}} $\ast$ \mbox{\hyperlink{classApp_a9d81bc5b22f1913f534459dedc617203}{m\+\_\+backtest\+Runner}}
+\item 
+\mbox{\hyperlink{classStatsView}{Stats\+View}} $\ast$ \mbox{\hyperlink{classApp_a19890e64d4aea98afe27bcc554c6aea2}{m\+\_\+stats\+View}}
+\item 
+\mbox{\hyperlink{classChartView}{Chart\+View}} $\ast$ \mbox{\hyperlink{classApp_a85dc5f4b2e528a78a3ecda71ab0c56d5}{m\+\_\+chart\+View}}
+\item 
+\mbox{\hyperlink{classHistogramView}{Histogram\+View}} $\ast$ \mbox{\hyperlink{classApp_a75ec0ec1ece1665e0a7b56b8e70a8aa2}{m\+\_\+histogram\+View}}
+\item 
+QPush\+Button $\ast$ \mbox{\hyperlink{classApp_a5038ea2f648e4e4f1d26768d26ccc7e7}{m\+\_\+run\+Button}}
+\item 
+QProgress\+Bar $\ast$ \mbox{\hyperlink{classApp_ab0b0672fad0aab89ef4c9b06a4a7e4b9}{m\+\_\+progress\+Bar}}
+\item 
+QLabel $\ast$ \mbox{\hyperlink{classApp_a9ead7060f7e5613dcf23d4eccec3ea5b}{m\+\_\+status\+Label}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+
+
+Definition at line 35 of file app.\+h.
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classApp_acb8cbf3e285b91d0170ffe87df5989c5}\label{classApp_acb8cbf3e285b91d0170ffe87df5989c5}} 
+\index{App@{App}!App@{App}}
+\index{App@{App}!App@{App}}
+\doxysubsubsection{\texorpdfstring{App()}{App()}}
+{\footnotesize\ttfamily App\+::\+App (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line 32 of file app.\+cpp.
+
+
+
+References create\+Actions(), create\+Control\+Panel(), create\+Menus(), create\+Results\+Area(), init\+Strategy\+Map(), m\+\_\+central\+Widget, m\+\_\+config\+Manager, m\+\_\+main\+Layout, m\+\_\+splitter, m\+\_\+strategy\+Map, setup\+Connections(), and update\+Strategy\+Specific\+Panel().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_acb8cbf3e285b91d0170ffe87df5989c5_cgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a34f1f253b1cef5f4ecbac66eaf6964ec}\label{classApp_a34f1f253b1cef5f4ecbac66eaf6964ec}} 
+\index{App@{App}!````~App@{$\sim$App}}
+\index{````~App@{$\sim$App}!App@{App}}
+\doxysubsubsection{\texorpdfstring{$\sim$App()}{~App()}}
+{\footnotesize\ttfamily App\+::$\sim$\+App (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})}
+
+
+
+Definition at line 121 of file app.\+cpp.
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classApp_aa084145322547c5d99495f8a623e618d}\label{classApp_aa084145322547c5d99495f8a623e618d}} 
+\index{App@{App}!clearResults@{clearResults}}
+\index{clearResults@{clearResults}!App@{App}}
+\doxysubsubsection{\texorpdfstring{clearResults()}{clearResults()}}
+{\footnotesize\ttfamily void App\+::clear\+Results (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classApp_a09e52172224603236f1ca01de352f500}\label{classApp_a09e52172224603236f1ca01de352f500}} 
+\index{App@{App}!createActions@{createActions}}
+\index{createActions@{createActions}!App@{App}}
+\doxysubsubsection{\texorpdfstring{createActions()}{createActions()}}
+{\footnotesize\ttfamily void App\+::create\+Actions (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 90 of file app.\+cpp.
+
+
+
+References m\+\_\+about\+Action, and on\+About().
+
+
+
+Referenced by App().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=306pt]{dd/d64/classApp_a09e52172224603236f1ca01de352f500_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=284pt]{dd/d64/classApp_a09e52172224603236f1ca01de352f500_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a2e4ac0da4604e72282c6c59c764d2d32}\label{classApp_a2e4ac0da4604e72282c6c59c764d2d32}} 
+\index{App@{App}!createControlPanel@{createControlPanel}}
+\index{createControlPanel@{createControlPanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{createControlPanel()}{createControlPanel()}}
+{\footnotesize\ttfamily void App\+::create\+Control\+Panel (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 136 of file app.\+cpp.
+
+
+
+References General\+Params\+Panel\+::create(), Strategy\+Base\+Panel\+::create(), Backtest\+Runner\+::get\+Layout(), m\+\_\+backtest\+Runner, m\+\_\+control\+Panel, m\+\_\+control\+Panel\+Layout, m\+\_\+control\+Panel\+Scroll\+Area, m\+\_\+general\+Params\+Panel, m\+\_\+splitter, m\+\_\+strategy\+Base\+Panel, m\+\_\+strategy\+Panel\+Stack, and update\+Strategy\+Specific\+Panel().
+
+
+
+Referenced by App().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a2e4ac0da4604e72282c6c59c764d2d32_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=310pt]{dd/d64/classApp_a2e4ac0da4604e72282c6c59c764d2d32_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a6f6d34ff3e934d32e42ee7660794f535}\label{classApp_a6f6d34ff3e934d32e42ee7660794f535}} 
+\index{App@{App}!createMenus@{createMenus}}
+\index{createMenus@{createMenus}!App@{App}}
+\doxysubsubsection{\texorpdfstring{createMenus()}{createMenus()}}
+{\footnotesize\ttfamily void App\+::create\+Menus (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 98 of file app.\+cpp.
+
+
+
+References Profile\+Menu\+Manager\+::create\+Profile\+Menu(), m\+\_\+about\+Action, m\+\_\+config\+Manager, m\+\_\+help\+Menu, m\+\_\+menu\+Bar, m\+\_\+profile\+Menu\+Manager, and Profile\+Menu\+Manager\+::set\+Config\+Manager().
+
+
+
+Referenced by App().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a6f6d34ff3e934d32e42ee7660794f535_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=280pt]{dd/d64/classApp_a6f6d34ff3e934d32e42ee7660794f535_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_af093e350b5f026e02182ea717ec9ce93}\label{classApp_af093e350b5f026e02182ea717ec9ce93}} 
+\index{App@{App}!createResultsArea@{createResultsArea}}
+\index{createResultsArea@{createResultsArea}!App@{App}}
+\doxysubsubsection{\texorpdfstring{createResultsArea()}{createResultsArea()}}
+{\footnotesize\ttfamily void App\+::create\+Results\+Area (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 184 of file app.\+cpp.
+
+
+
+References m\+\_\+result\+Manager, and m\+\_\+splitter.
+
+
+
+Referenced by App().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=307pt]{dd/d64/classApp_af093e350b5f026e02182ea717ec9ce93_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_ae5b2ec7e80e111b6c7dbbac8c484fa95}\label{classApp_ae5b2ec7e80e111b6c7dbbac8c484fa95}} 
+\index{App@{App}!createStrategySpecificPanel@{createStrategySpecificPanel}}
+\index{createStrategySpecificPanel@{createStrategySpecificPanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{createStrategySpecificPanel()}{createStrategySpecificPanel()}}
+{\footnotesize\ttfamily QWidget $\ast$ App\+::create\+Strategy\+Specific\+Panel (\begin{DoxyParamCaption}\item[{const QString \&}]{strategy }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 251 of file app.\+cpp.
+
+
+
+References Base\+Panel\+::create(), m\+\_\+control\+Panel, and m\+\_\+strategy\+Specific\+Panel.
+
+
+
+Referenced by update\+Strategy\+Specific\+Panel().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_ae5b2ec7e80e111b6c7dbbac8c484fa95_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_ae5b2ec7e80e111b6c7dbbac8c484fa95_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a569af5ff8401e5788a7e2841625489a4}\label{classApp_a569af5ff8401e5788a7e2841625489a4}} 
+\index{App@{App}!getConfigManager@{getConfigManager}}
+\index{getConfigManager@{getConfigManager}!App@{App}}
+\doxysubsubsection{\texorpdfstring{getConfigManager()}{getConfigManager()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classConfigManager}{Config\+Manager}}$\ast$ App\+::get\+Config\+Manager (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Definition at line 44 of file app.\+h.
+
+
+
+References m\+\_\+config\+Manager.
+
+
+
+Referenced by Backtest\+Runner\+::run\+Backtest().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a569af5ff8401e5788a7e2841625489a4_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a784182b4769a81eaedf71de372b7babf}\label{classApp_a784182b4769a81eaedf71de372b7babf}} 
+\index{App@{App}!getGeneralParamsPanel@{getGeneralParamsPanel}}
+\index{getGeneralParamsPanel@{getGeneralParamsPanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{getGeneralParamsPanel()}{getGeneralParamsPanel()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classGeneralParamsPanel}{General\+Params\+Panel}}$\ast$ App\+::get\+General\+Params\+Panel (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Definition at line 46 of file app.\+h.
+
+
+
+References m\+\_\+general\+Params\+Panel.
+
+
+
+Referenced by Config\+Manager\+::apply\+Profile\+To\+UI(), and Backtest\+Worker\+::run().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a784182b4769a81eaedf71de372b7babf_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a7785ea96c73ff1073163e29899128b19}\label{classApp_a7785ea96c73ff1073163e29899128b19}} 
+\index{App@{App}!getIndicatorConfig@{getIndicatorConfig}}
+\index{getIndicatorConfig@{getIndicatorConfig}!App@{App}}
+\doxysubsubsection{\texorpdfstring{getIndicatorConfig()}{getIndicatorConfig()}}
+{\footnotesize\ttfamily QMap$<$ QString, QVariant $>$ App\+::get\+Indicator\+Config (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Definition at line 307 of file app.\+cpp.
+
+\mbox{\Hypertarget{classApp_a59052cf80a4e02fa130d3509c9d25a2a}\label{classApp_a59052cf80a4e02fa130d3509c9d25a2a}} 
+\index{App@{App}!getStrategyBasePanel@{getStrategyBasePanel}}
+\index{getStrategyBasePanel@{getStrategyBasePanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{getStrategyBasePanel()}{getStrategyBasePanel()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classStrategyBasePanel}{Strategy\+Base\+Panel}}$\ast$ App\+::get\+Strategy\+Base\+Panel (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Definition at line 47 of file app.\+h.
+
+
+
+References m\+\_\+strategy\+Base\+Panel.
+
+
+
+Referenced by Config\+Manager\+::apply\+Profile\+To\+UI(), and Backtest\+Worker\+::run().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a59052cf80a4e02fa130d3509c9d25a2a_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_abc976f427450f86d2fb3860c4e95dbed}\label{classApp_abc976f427450f86d2fb3860c4e95dbed}} 
+\index{App@{App}!getStrategyConfig@{getStrategyConfig}}
+\index{getStrategyConfig@{getStrategyConfig}!App@{App}}
+\doxysubsubsection{\texorpdfstring{getStrategyConfig()}{getStrategyConfig()}}
+{\footnotesize\ttfamily QMap$<$ QString, QVariant $>$ App\+::get\+Strategy\+Config (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const}
+
+
+
+Definition at line 279 of file app.\+cpp.
+
+
+
+References Base\+Panel\+::get\+Values(), General\+Params\+Panel\+::get\+Values(), Strategy\+Base\+Panel\+::get\+Values(), m\+\_\+general\+Params\+Panel, m\+\_\+strategy\+Base\+Panel, and m\+\_\+strategy\+Specific\+Panel.
+
+
+
+Referenced by Config\+Manager\+::get\+Profile\+From\+UI().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_abc976f427450f86d2fb3860c4e95dbed_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_abc976f427450f86d2fb3860c4e95dbed_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_ae7e5cc49b02d6feab9d19620f6455f2f}\label{classApp_ae7e5cc49b02d6feab9d19620f6455f2f}} 
+\index{App@{App}!getStrategySpecificPanel@{getStrategySpecificPanel}}
+\index{getStrategySpecificPanel@{getStrategySpecificPanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{getStrategySpecificPanel()}{getStrategySpecificPanel()}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classBasePanel}{Base\+Panel}}$\ast$ App\+::get\+Strategy\+Specific\+Panel (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption}) const\hspace{0.3cm}{\ttfamily [inline]}}
+
+
+
+Definition at line 48 of file app.\+h.
+
+
+
+References m\+\_\+strategy\+Specific\+Panel.
+
+
+
+Referenced by Config\+Manager\+::apply\+Profile\+To\+UI(), and Backtest\+Worker\+::run().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_ae7e5cc49b02d6feab9d19620f6455f2f_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_ada307bba846e650067ba99531dad9470}\label{classApp_ada307bba846e650067ba99531dad9470}} 
+\index{App@{App}!initStrategyMap@{initStrategyMap}}
+\index{initStrategyMap@{initStrategyMap}!App@{App}}
+\doxysubsubsection{\texorpdfstring{initStrategyMap()}{initStrategyMap()}}
+{\footnotesize\ttfamily void App\+::init\+Strategy\+Map (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 127 of file app.\+cpp.
+
+
+
+References m\+\_\+strategy\+Map.
+
+
+
+Referenced by App().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=295pt]{dd/d64/classApp_ada307bba846e650067ba99531dad9470_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a55528a98a859812e9efe6af106ec3ec0}\label{classApp_a55528a98a859812e9efe6af106ec3ec0}} 
+\index{App@{App}!onAbout@{onAbout}}
+\index{onAbout@{onAbout}!App@{App}}
+\doxysubsubsection{\texorpdfstring{onAbout}{onAbout}}
+{\footnotesize\ttfamily void App\+::on\+About (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 113 of file app.\+cpp.
+
+
+
+Referenced by create\+Actions().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a55528a98a859812e9efe6af106ec3ec0_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a1cd6fec33bde2e87ac6795c4812268ed}\label{classApp_a1cd6fec33bde2e87ac6795c4812268ed}} 
+\index{App@{App}!onBacktestCompleted@{onBacktestCompleted}}
+\index{onBacktestCompleted@{onBacktestCompleted}!App@{App}}
+\doxysubsubsection{\texorpdfstring{onBacktestCompleted}{onBacktestCompleted}}
+{\footnotesize\ttfamily void App\+::on\+Backtest\+Completed (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 334 of file app.\+cpp.
+
+
+
+Referenced by setup\+Connections().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a1cd6fec33bde2e87ac6795c4812268ed_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a1ea75930d58ac0b86ccb2605a2ed3101}\label{classApp_a1ea75930d58ac0b86ccb2605a2ed3101}} 
+\index{App@{App}!onBacktestError@{onBacktestError}}
+\index{onBacktestError@{onBacktestError}!App@{App}}
+\doxysubsubsection{\texorpdfstring{onBacktestError}{onBacktestError}}
+{\footnotesize\ttfamily void App\+::on\+Backtest\+Error (\begin{DoxyParamCaption}\item[{const QString \&}]{error }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 339 of file app.\+cpp.
+
+
+
+Referenced by setup\+Connections().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a1ea75930d58ac0b86ccb2605a2ed3101_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a25385aac355a86f48b07c3cf408df9e6}\label{classApp_a25385aac355a86f48b07c3cf408df9e6}} 
+\index{App@{App}!onRunBacktest@{onRunBacktest}}
+\index{onRunBacktest@{onRunBacktest}!App@{App}}
+\doxysubsubsection{\texorpdfstring{onRunBacktest}{onRunBacktest}}
+{\footnotesize\ttfamily void App\+::on\+Run\+Backtest (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 328 of file app.\+cpp.
+
+\mbox{\Hypertarget{classApp_ade4d2d945a3a55af582a1b3e9cc66c36}\label{classApp_ade4d2d945a3a55af582a1b3e9cc66c36}} 
+\index{App@{App}!onStrategyChanged@{onStrategyChanged}}
+\index{onStrategyChanged@{onStrategyChanged}!App@{App}}
+\doxysubsubsection{\texorpdfstring{onStrategyChanged}{onStrategyChanged}}
+{\footnotesize\ttfamily void App\+::on\+Strategy\+Changed (\begin{DoxyParamCaption}\item[{const QString \&}]{strategy }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 322 of file app.\+cpp.
+
+
+
+References update\+Strategy\+Specific\+Panel().
+
+
+
+Referenced by setup\+Connections().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_ade4d2d945a3a55af582a1b3e9cc66c36_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_ade4d2d945a3a55af582a1b3e9cc66c36_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a511cf55a1203205f39eed3f863c3ad9a}\label{classApp_a511cf55a1203205f39eed3f863c3ad9a}} 
+\index{App@{App}!resizeEvent@{resizeEvent}}
+\index{resizeEvent@{resizeEvent}!App@{App}}
+\doxysubsubsection{\texorpdfstring{resizeEvent()}{resizeEvent()}}
+{\footnotesize\ttfamily void App\+::resize\+Event (\begin{DoxyParamCaption}\item[{QResize\+Event $\ast$}]{event }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [protected]}}
+
+
+
+Definition at line 345 of file app.\+cpp.
+
+\mbox{\Hypertarget{classApp_a61ab65a5979221b61fa0fa91eee87090}\label{classApp_a61ab65a5979221b61fa0fa91eee87090}} 
+\index{App@{App}!setupConnections@{setupConnections}}
+\index{setupConnections@{setupConnections}!App@{App}}
+\doxysubsubsection{\texorpdfstring{setupConnections()}{setupConnections()}}
+{\footnotesize\ttfamily void App\+::setup\+Connections (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 194 of file app.\+cpp.
+
+
+
+References Backtest\+Runner\+::backtest\+Completed(), Backtest\+Runner\+::backtest\+Error(), General\+Params\+Panel\+::get\+Widget\+By\+Name(), m\+\_\+backtest\+Runner, m\+\_\+general\+Params\+Panel, on\+Backtest\+Completed(), on\+Backtest\+Error(), and on\+Strategy\+Changed().
+
+
+
+Referenced by App().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a61ab65a5979221b61fa0fa91eee87090_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=304pt]{dd/d64/classApp_a61ab65a5979221b61fa0fa91eee87090_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a92e18200240fe56199de30a7f5d522cd}\label{classApp_a92e18200240fe56199de30a7f5d522cd}} 
+\index{App@{App}!showResults@{showResults}}
+\index{showResults@{showResults}!App@{App}}
+\doxysubsubsection{\texorpdfstring{showResults()}{showResults()}}
+{\footnotesize\ttfamily void App\+::show\+Results (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classApp_a9c1fe3eac5ac87f0f5659eae0c425f1c}\label{classApp_a9c1fe3eac5ac87f0f5659eae0c425f1c}} 
+\index{App@{App}!updateResultViews@{updateResultViews}}
+\index{updateResultViews@{updateResultViews}!App@{App}}
+\doxysubsubsection{\texorpdfstring{updateResultViews()}{updateResultViews()}}
+{\footnotesize\ttfamily void App\+::update\+Result\+Views (\begin{DoxyParamCaption}\item[{void $\ast$}]{data,  }\item[{void $\ast$}]{stats }\end{DoxyParamCaption})}
+
+
+
+Definition at line 314 of file app.\+cpp.
+
+
+
+References m\+\_\+result\+Manager, and Result\+Manager\+::update\+All\+Views().
+
+
+
+Referenced by Backtest\+Runner\+::on\+Backtest\+Finished().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a9c1fe3eac5ac87f0f5659eae0c425f1c_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_a9c1fe3eac5ac87f0f5659eae0c425f1c_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_abaf6f94de78804418da7aefd2793f56c}\label{classApp_abaf6f94de78804418da7aefd2793f56c}} 
+\index{App@{App}!updateStrategySpecificPanel@{updateStrategySpecificPanel}}
+\index{updateStrategySpecificPanel@{updateStrategySpecificPanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{updateStrategySpecificPanel}{updateStrategySpecificPanel}}
+{\footnotesize\ttfamily void App\+::update\+Strategy\+Specific\+Panel (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 214 of file app.\+cpp.
+
+
+
+References create\+Strategy\+Specific\+Panel(), Config\+Manager\+::get\+Current\+Profile(), Config\+Manager\+::get\+Profile(), General\+Params\+Panel\+::get\+Widget\+By\+Name(), m\+\_\+config\+Manager, m\+\_\+general\+Params\+Panel, m\+\_\+strategy\+Panel\+Stack, m\+\_\+strategy\+Specific\+Panel, and Base\+Panel\+::set\+Values().
+
+
+
+Referenced by App(), create\+Control\+Panel(), and on\+Strategy\+Changed().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_abaf6f94de78804418da7aefd2793f56c_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d64/classApp_abaf6f94de78804418da7aefd2793f56c_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classApp_a5359579f458fac0f6cf1b760298ac741}\label{classApp_a5359579f458fac0f6cf1b760298ac741}} 
+\index{App@{App}!updateUI@{updateUI}}
+\index{updateUI@{updateUI}!App@{App}}
+\doxysubsubsection{\texorpdfstring{updateUI()}{updateUI()}}
+{\footnotesize\ttfamily void App\+::update\+UI (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+\doxysubsection{Member Data Documentation}
+\mbox{\Hypertarget{classApp_a9a449cc60a8297955416ac58648b3c41}\label{classApp_a9a449cc60a8297955416ac58648b3c41}} 
+\index{App@{App}!m\_aboutAction@{m\_aboutAction}}
+\index{m\_aboutAction@{m\_aboutAction}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_aboutAction}{m\_aboutAction}}
+{\footnotesize\ttfamily QAction$\ast$ App\+::m\+\_\+about\+Action\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 69 of file app.\+h.
+
+
+
+Referenced by create\+Actions(), and create\+Menus().
+
+\mbox{\Hypertarget{classApp_a9d81bc5b22f1913f534459dedc617203}\label{classApp_a9d81bc5b22f1913f534459dedc617203}} 
+\index{App@{App}!m\_backtestRunner@{m\_backtestRunner}}
+\index{m\_backtestRunner@{m\_backtestRunner}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_backtestRunner}{m\_backtestRunner}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classBacktestRunner}{Backtest\+Runner}}$\ast$ App\+::m\+\_\+backtest\+Runner\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 107 of file app.\+h.
+
+
+
+Referenced by create\+Control\+Panel(), and setup\+Connections().
+
+\mbox{\Hypertarget{classApp_a2a5cd41e4c5081f929d4ebdb5785ee46}\label{classApp_a2a5cd41e4c5081f929d4ebdb5785ee46}} 
+\index{App@{App}!m\_centralWidget@{m\_centralWidget}}
+\index{m\_centralWidget@{m\_centralWidget}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_centralWidget}{m\_centralWidget}}
+{\footnotesize\ttfamily QWidget$\ast$ App\+::m\+\_\+central\+Widget\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 78 of file app.\+h.
+
+
+
+Referenced by App().
+
+\mbox{\Hypertarget{classApp_a85dc5f4b2e528a78a3ecda71ab0c56d5}\label{classApp_a85dc5f4b2e528a78a3ecda71ab0c56d5}} 
+\index{App@{App}!m\_chartView@{m\_chartView}}
+\index{m\_chartView@{m\_chartView}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_chartView}{m\_chartView}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classChartView}{Chart\+View}}$\ast$ App\+::m\+\_\+chart\+View\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 111 of file app.\+h.
+
+\mbox{\Hypertarget{classApp_a47d96df711955f464cfa4ee21ded0092}\label{classApp_a47d96df711955f464cfa4ee21ded0092}} 
+\index{App@{App}!m\_configManager@{m\_configManager}}
+\index{m\_configManager@{m\_configManager}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_configManager}{m\_configManager}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classConfigManager}{Config\+Manager}}$\ast$ App\+::m\+\_\+config\+Manager\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 98 of file app.\+h.
+
+
+
+Referenced by App(), create\+Menus(), get\+Config\+Manager(), and update\+Strategy\+Specific\+Panel().
+
+\mbox{\Hypertarget{classApp_aa646497c17694f73aaa8d296195fd21e}\label{classApp_aa646497c17694f73aaa8d296195fd21e}} 
+\index{App@{App}!m\_controlPanel@{m\_controlPanel}}
+\index{m\_controlPanel@{m\_controlPanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_controlPanel}{m\_controlPanel}}
+{\footnotesize\ttfamily QWidget$\ast$ App\+::m\+\_\+control\+Panel\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 84 of file app.\+h.
+
+
+
+Referenced by create\+Control\+Panel(), and create\+Strategy\+Specific\+Panel().
+
+\mbox{\Hypertarget{classApp_acc9c91957b56fd2c65181ade499ed5fd}\label{classApp_acc9c91957b56fd2c65181ade499ed5fd}} 
+\index{App@{App}!m\_controlPanelLayout@{m\_controlPanelLayout}}
+\index{m\_controlPanelLayout@{m\_controlPanelLayout}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_controlPanelLayout}{m\_controlPanelLayout}}
+{\footnotesize\ttfamily QVBox\+Layout$\ast$ App\+::m\+\_\+control\+Panel\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 85 of file app.\+h.
+
+
+
+Referenced by create\+Control\+Panel().
+
+\mbox{\Hypertarget{classApp_a15fb8684261a7da8d9f166f17dd2be12}\label{classApp_a15fb8684261a7da8d9f166f17dd2be12}} 
+\index{App@{App}!m\_controlPanelScrollArea@{m\_controlPanelScrollArea}}
+\index{m\_controlPanelScrollArea@{m\_controlPanelScrollArea}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_controlPanelScrollArea}{m\_controlPanelScrollArea}}
+{\footnotesize\ttfamily QScroll\+Area$\ast$ App\+::m\+\_\+control\+Panel\+Scroll\+Area\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 83 of file app.\+h.
+
+
+
+Referenced by create\+Control\+Panel().
+
+\mbox{\Hypertarget{classApp_aec122099f7e368d46a2ab7b8b442bb92}\label{classApp_aec122099f7e368d46a2ab7b8b442bb92}} 
+\index{App@{App}!m\_generalParamsPanel@{m\_generalParamsPanel}}
+\index{m\_generalParamsPanel@{m\_generalParamsPanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_generalParamsPanel}{m\_generalParamsPanel}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classGeneralParamsPanel}{General\+Params\+Panel}}$\ast$ App\+::m\+\_\+general\+Params\+Panel\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 102 of file app.\+h.
+
+
+
+Referenced by create\+Control\+Panel(), get\+General\+Params\+Panel(), get\+Strategy\+Config(), setup\+Connections(), and update\+Strategy\+Specific\+Panel().
+
+\mbox{\Hypertarget{classApp_a6afcb281c08b1012d87a2681b0999cfd}\label{classApp_a6afcb281c08b1012d87a2681b0999cfd}} 
+\index{App@{App}!m\_helpMenu@{m\_helpMenu}}
+\index{m\_helpMenu@{m\_helpMenu}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_helpMenu}{m\_helpMenu}}
+{\footnotesize\ttfamily QMenu$\ast$ App\+::m\+\_\+help\+Menu\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 68 of file app.\+h.
+
+
+
+Referenced by create\+Menus().
+
+\mbox{\Hypertarget{classApp_a75ec0ec1ece1665e0a7b56b8e70a8aa2}\label{classApp_a75ec0ec1ece1665e0a7b56b8e70a8aa2}} 
+\index{App@{App}!m\_histogramView@{m\_histogramView}}
+\index{m\_histogramView@{m\_histogramView}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_histogramView}{m\_histogramView}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classHistogramView}{Histogram\+View}}$\ast$ App\+::m\+\_\+histogram\+View\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 112 of file app.\+h.
+
+\mbox{\Hypertarget{classApp_ad50137a54e1a53bbac501d10952aa1d4}\label{classApp_ad50137a54e1a53bbac501d10952aa1d4}} 
+\index{App@{App}!m\_mainLayout@{m\_mainLayout}}
+\index{m\_mainLayout@{m\_mainLayout}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_mainLayout}{m\_mainLayout}}
+{\footnotesize\ttfamily QHBox\+Layout$\ast$ App\+::m\+\_\+main\+Layout\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 79 of file app.\+h.
+
+
+
+Referenced by App().
+
+\mbox{\Hypertarget{classApp_ad2939156e1f0b058e6fc7e89139d7646}\label{classApp_ad2939156e1f0b058e6fc7e89139d7646}} 
+\index{App@{App}!m\_menuBar@{m\_menuBar}}
+\index{m\_menuBar@{m\_menuBar}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_menuBar}{m\_menuBar}}
+{\footnotesize\ttfamily QMenu\+Bar$\ast$ App\+::m\+\_\+menu\+Bar\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 67 of file app.\+h.
+
+
+
+Referenced by create\+Menus().
+
+\mbox{\Hypertarget{classApp_ad8c38683795173f5e7f0ad00c0948295}\label{classApp_ad8c38683795173f5e7f0ad00c0948295}} 
+\index{App@{App}!m\_profileMenuManager@{m\_profileMenuManager}}
+\index{m\_profileMenuManager@{m\_profileMenuManager}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_profileMenuManager}{m\_profileMenuManager}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classProfileMenuManager}{Profile\+Menu\+Manager}}$\ast$ App\+::m\+\_\+profile\+Menu\+Manager\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 72 of file app.\+h.
+
+
+
+Referenced by create\+Menus().
+
+\mbox{\Hypertarget{classApp_ab0b0672fad0aab89ef4c9b06a4a7e4b9}\label{classApp_ab0b0672fad0aab89ef4c9b06a4a7e4b9}} 
+\index{App@{App}!m\_progressBar@{m\_progressBar}}
+\index{m\_progressBar@{m\_progressBar}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_progressBar}{m\_progressBar}}
+{\footnotesize\ttfamily QProgress\+Bar$\ast$ App\+::m\+\_\+progress\+Bar\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 116 of file app.\+h.
+
+\mbox{\Hypertarget{classApp_a7d0f7aa8497af9081e9535be0eabee73}\label{classApp_a7d0f7aa8497af9081e9535be0eabee73}} 
+\index{App@{App}!m\_resultManager@{m\_resultManager}}
+\index{m\_resultManager@{m\_resultManager}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_resultManager}{m\_resultManager}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classResultManager}{Result\+Manager}}$\ast$ App\+::m\+\_\+result\+Manager\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 99 of file app.\+h.
+
+
+
+Referenced by create\+Results\+Area(), and update\+Result\+Views().
+
+\mbox{\Hypertarget{classApp_a4aae7df0bfdb08c52944588da0ce343d}\label{classApp_a4aae7df0bfdb08c52944588da0ce343d}} 
+\index{App@{App}!m\_resultsTabWidget@{m\_resultsTabWidget}}
+\index{m\_resultsTabWidget@{m\_resultsTabWidget}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_resultsTabWidget}{m\_resultsTabWidget}}
+{\footnotesize\ttfamily QTab\+Widget$\ast$ App\+::m\+\_\+results\+Tab\+Widget\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 95 of file app.\+h.
+
+\mbox{\Hypertarget{classApp_a5038ea2f648e4e4f1d26768d26ccc7e7}\label{classApp_a5038ea2f648e4e4f1d26768d26ccc7e7}} 
+\index{App@{App}!m\_runButton@{m\_runButton}}
+\index{m\_runButton@{m\_runButton}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_runButton}{m\_runButton}}
+{\footnotesize\ttfamily QPush\+Button$\ast$ App\+::m\+\_\+run\+Button\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 115 of file app.\+h.
+
+\mbox{\Hypertarget{classApp_a4097bcba92a4524c040a5ea5499c81d8}\label{classApp_a4097bcba92a4524c040a5ea5499c81d8}} 
+\index{App@{App}!m\_splitter@{m\_splitter}}
+\index{m\_splitter@{m\_splitter}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_splitter}{m\_splitter}}
+{\footnotesize\ttfamily QSplitter$\ast$ App\+::m\+\_\+splitter\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 80 of file app.\+h.
+
+
+
+Referenced by App(), create\+Control\+Panel(), and create\+Results\+Area().
+
+\mbox{\Hypertarget{classApp_a19890e64d4aea98afe27bcc554c6aea2}\label{classApp_a19890e64d4aea98afe27bcc554c6aea2}} 
+\index{App@{App}!m\_statsView@{m\_statsView}}
+\index{m\_statsView@{m\_statsView}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_statsView}{m\_statsView}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classStatsView}{Stats\+View}}$\ast$ App\+::m\+\_\+stats\+View\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 110 of file app.\+h.
+
+\mbox{\Hypertarget{classApp_a9ead7060f7e5613dcf23d4eccec3ea5b}\label{classApp_a9ead7060f7e5613dcf23d4eccec3ea5b}} 
+\index{App@{App}!m\_statusLabel@{m\_statusLabel}}
+\index{m\_statusLabel@{m\_statusLabel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_statusLabel}{m\_statusLabel}}
+{\footnotesize\ttfamily QLabel$\ast$ App\+::m\+\_\+status\+Label\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 117 of file app.\+h.
+
+\mbox{\Hypertarget{classApp_a4bafd3af46d5cd3d56a2a80bd2e02f93}\label{classApp_a4bafd3af46d5cd3d56a2a80bd2e02f93}} 
+\index{App@{App}!m\_strategyBasePanel@{m\_strategyBasePanel}}
+\index{m\_strategyBasePanel@{m\_strategyBasePanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_strategyBasePanel}{m\_strategyBasePanel}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classStrategyBasePanel}{Strategy\+Base\+Panel}}$\ast$ App\+::m\+\_\+strategy\+Base\+Panel\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 103 of file app.\+h.
+
+
+
+Referenced by create\+Control\+Panel(), get\+Strategy\+Base\+Panel(), and get\+Strategy\+Config().
+
+\mbox{\Hypertarget{classApp_af1072942feef53f8597b754c135d9dd0}\label{classApp_af1072942feef53f8597b754c135d9dd0}} 
+\index{App@{App}!m\_strategyMap@{m\_strategyMap}}
+\index{m\_strategyMap@{m\_strategyMap}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_strategyMap}{m\_strategyMap}}
+{\footnotesize\ttfamily QMap$<$QString, QString$>$ App\+::m\+\_\+strategy\+Map\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 88 of file app.\+h.
+
+
+
+Referenced by App(), and init\+Strategy\+Map().
+
+\mbox{\Hypertarget{classApp_a23231de0c68f09c87c3465b48df75f10}\label{classApp_a23231de0c68f09c87c3465b48df75f10}} 
+\index{App@{App}!m\_strategyPanels@{m\_strategyPanels}}
+\index{m\_strategyPanels@{m\_strategyPanels}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_strategyPanels}{m\_strategyPanels}}
+{\footnotesize\ttfamily QMap$<$QString, QWidget$\ast$$>$ App\+::m\+\_\+strategy\+Panels\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 92 of file app.\+h.
+
+\mbox{\Hypertarget{classApp_a1086f785a2cfcf1193bde55fe24c46e3}\label{classApp_a1086f785a2cfcf1193bde55fe24c46e3}} 
+\index{App@{App}!m\_strategyPanelStack@{m\_strategyPanelStack}}
+\index{m\_strategyPanelStack@{m\_strategyPanelStack}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_strategyPanelStack}{m\_strategyPanelStack}}
+{\footnotesize\ttfamily QStacked\+Widget$\ast$ App\+::m\+\_\+strategy\+Panel\+Stack\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 91 of file app.\+h.
+
+
+
+Referenced by create\+Control\+Panel(), and update\+Strategy\+Specific\+Panel().
+
+\mbox{\Hypertarget{classApp_ae47c66731c9fe6ab2c860e69c7a3f3e8}\label{classApp_ae47c66731c9fe6ab2c860e69c7a3f3e8}} 
+\index{App@{App}!m\_strategySpecificPanel@{m\_strategySpecificPanel}}
+\index{m\_strategySpecificPanel@{m\_strategySpecificPanel}!App@{App}}
+\doxysubsubsection{\texorpdfstring{m\_strategySpecificPanel}{m\_strategySpecificPanel}}
+{\footnotesize\ttfamily \mbox{\hyperlink{classBasePanel}{Base\+Panel}}$\ast$ App\+::m\+\_\+strategy\+Specific\+Panel\hspace{0.3cm}{\ttfamily [private]}}
+
+
+
+Definition at line 104 of file app.\+h.
+
+
+
+Referenced by create\+Strategy\+Specific\+Panel(), get\+Strategy\+Config(), get\+Strategy\+Specific\+Panel(), and update\+Strategy\+Specific\+Panel().
+
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+backtest\+\_\+app\+\_\+cpp/src/\mbox{\hyperlink{app_8h}{app.\+h}}\item 
+backtest\+\_\+app\+\_\+cpp/src/\mbox{\hyperlink{app_8cpp}{app.\+cpp}}\end{DoxyCompactItemize}

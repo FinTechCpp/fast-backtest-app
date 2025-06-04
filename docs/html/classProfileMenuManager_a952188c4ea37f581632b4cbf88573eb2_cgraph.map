@@ -1,0 +1,17 @@
+<map id="ProfileMenuManager::onImportProfile" name="ProfileMenuManager::onImportProfile">
+<area shape="rect" id="node1" title=" " alt="" coords="5,67,161,109"/>
+<area shape="rect" id="node2" href="$classConfigManager.html#a8f36b72bb6df30e9f4dc407fa55cd08a" title=" " alt="" coords="209,34,421,75"/>
+<area shape="rect" id="node3" href="$classProfileMenuManager.html#ad82b0dac787fe0831529c930a89b352c" title="Met à jour la liste des profils dans le menu." alt="" coords="237,99,393,141"/>
+<area shape="rect" id="node4" href="$classConfigManager.html#a2c11ec38faaca5aa5fc27bb1b8b5c564" title=" " alt="" coords="469,41,667,82"/>
+<area shape="rect" id="node5" href="$classConfigManager.html#ab65513bb0b1896995de967a596593f59" title=" " alt="" coords="470,107,666,133"/>
+<area shape="rect" id="node6" href="$classProfileMenuManager.html#a8f9380bb6c501cfdb6b51e1b068c1638" title=" " alt="" coords="490,158,646,199"/>
+<area shape="rect" id="node7" href="$classConfigManager.html#a33e826c6fc5196e256d8d66ca1cc0b2e" title=" " alt="" coords="715,158,900,199"/>
+<area shape="rect" id="node8" href="$classConfigManager.html#a53fe244ed6945218f9ab727a079d8f28" title=" " alt="" coords="948,165,1181,192"/>
+<area shape="rect" id="node9" href="$classApp.html#a784182b4769a81eaedf71de372b7babf" title=" " alt="" coords="1229,5,1440,32"/>
+<area shape="rect" id="node10" href="$classConfigManager.html#a3af4a4fb5f73524c5079fae3e29c46bd" title=" " alt="" coords="1239,56,1430,83"/>
+<area shape="rect" id="node11" href="$classApp.html#a59052cf80a4e02fa130d3509c9d25a2a" title=" " alt="" coords="1235,107,1434,133"/>
+<area shape="rect" id="node12" href="$classApp.html#ae7e5cc49b02d6feab9d19620f6455f2f" title=" " alt="" coords="1244,158,1425,199"/>
+<area shape="rect" id="node13" href="$classBasePanel.html#a0484faecac61c9be571c4b4780df5589" title="Définit les valeurs des widgets du panel." alt="" coords="1255,224,1415,251"/>
+<area shape="rect" id="node14" href="$classGeneralParamsPanel.html#a5cb686302d61a1cd48c54bf14f7ee376" title="Définit les valeurs des widgets du panel." alt="" coords="1257,275,1413,317"/>
+<area shape="rect" id="node15" href="$classStrategyBasePanel.html#afe6d54431eae40a6bdbab18a7bcf72f6" title="Définit les valeurs des widgets du panel." alt="" coords="1259,341,1411,382"/>
+</map>

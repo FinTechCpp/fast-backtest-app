@@ -1,0 +1,426 @@
+\hypertarget{classStrategyBasePanel}{}\doxysection{Strategy\+Base\+Panel Class Reference}
+\label{classStrategyBasePanel}\index{StrategyBasePanel@{StrategyBasePanel}}
+
+
+Panel pour les paramètres communs à toutes les stratégies.  
+
+
+
+
+{\ttfamily \#include $<$strategy\+\_\+base\+\_\+panel.\+h$>$}
+
+
+
+Inheritance diagram for Strategy\+Base\+Panel\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{da/dbd/classStrategyBasePanel__inherit__graph}
+\end{center}
+\end{figure}
+
+
+Collaboration diagram for Strategy\+Base\+Panel\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=550pt]{d9/d5c/classStrategyBasePanel__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classStrategyBasePanel_ae7a9426d1bb3d28566501936778ba0ff}{Strategy\+Base\+Panel}} (QWidget $\ast$parent=nullptr)
+\begin{DoxyCompactList}\small\item\em Constructeur. \end{DoxyCompactList}\item 
+QGroup\+Box $\ast$ \mbox{\hyperlink{classStrategyBasePanel_a8ada8ea770daacd356fd8bd6e044c095}{create}} () override
+\begin{DoxyCompactList}\small\item\em Crée et retourne l\textquotesingle{}interface graphique du panel. \end{DoxyCompactList}\item 
+QMap$<$ QString, QVariant $>$ \mbox{\hyperlink{classStrategyBasePanel_ad4efc8d3a9fe28097a271c30a3bb18bf}{get\+Values}} () override
+\begin{DoxyCompactList}\small\item\em Récupère les valeurs des widgets du panel. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{classStrategyBasePanel_afe6d54431eae40a6bdbab18a7bcf72f6}{set\+Values}} (const QMap$<$ QString, QVariant $>$ \&values) override
+\begin{DoxyCompactList}\small\item\em Définit les valeurs des widgets du panel. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsection*{Private Slots}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_a71cb3097077482004cfd6e249b21b944}{\+\_\+toggle\+Risk\+Controls}} (bool checked)
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_acc435abddc4b29e7059115a948461e37}{\+\_\+toggle\+Break\+Even\+Controls}} (bool checked)
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_a75ea4e1a5769f3cd2c7d34ef03c3082b}{\+\_\+toggle\+Daily\+Max\+Loss\+Controls}} (bool checked)
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_aa4a6a5ee65245f1391d5e8fa62da97e5}{\+\_\+toggle\+Sl\+Method}} (int index)
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_a76dd6d7f0bc490c349945c9d20696b7d}{\+\_\+toggle\+Tp\+Method}} (int index)
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_a53c2bcd38bece4abebc307c2e5bcb61e}{\+\_\+update\+Atr\+Period\+Status}} ()
+\end{DoxyCompactItemize}
+\doxysubsection*{Private Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_a11d88f1bbab87b900a8dd06cca7667ae}{setup\+Trading\+Hours}} (QGrid\+Layout $\ast$layout, int \&row)
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_aafbf5877c1e9764be01d92044c652586}{setup\+Stop\+Loss\+And\+Take\+Profit}} (QGrid\+Layout $\ast$layout, int \&row)
+\item 
+void \mbox{\hyperlink{classStrategyBasePanel_a7d4ca2e8bcd0775cdc644654f49363ae}{setup\+Risk\+Management}} (QGrid\+Layout $\ast$layout, int \&row)
+\end{DoxyCompactItemize}
+\doxysubsection*{Additional Inherited Members}
+
+
+\doxysubsection{Detailed Description}
+Panel pour les paramètres communs à toutes les stratégies. 
+
+Ce panel contient les paramètres communs comme le stop loss, le take profit, les heures de trading, la gestion du risque, etc. 
+
+Definition at line 27 of file strategy\+\_\+base\+\_\+panel.\+h.
+
+
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\mbox{\Hypertarget{classStrategyBasePanel_ae7a9426d1bb3d28566501936778ba0ff}\label{classStrategyBasePanel_ae7a9426d1bb3d28566501936778ba0ff}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!StrategyBasePanel@{StrategyBasePanel}}
+\index{StrategyBasePanel@{StrategyBasePanel}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{StrategyBasePanel()}{StrategyBasePanel()}}
+{\footnotesize\ttfamily Strategy\+Base\+Panel\+::\+Strategy\+Base\+Panel (\begin{DoxyParamCaption}\item[{QWidget $\ast$}]{parent = {\ttfamily nullptr} }\end{DoxyParamCaption})}
+
+
+
+Constructeur. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em parent} & Pointeur vers le widget parent \\
+\hline
+\end{DoxyParams}
+
+
+Definition at line 8 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classStrategyBasePanel_acc435abddc4b29e7059115a948461e37}\label{classStrategyBasePanel_acc435abddc4b29e7059115a948461e37}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!\_toggleBreakEvenControls@{\_toggleBreakEvenControls}}
+\index{\_toggleBreakEvenControls@{\_toggleBreakEvenControls}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{\_toggleBreakEvenControls}{\_toggleBreakEvenControls}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::\+\_\+toggle\+Break\+Even\+Controls (\begin{DoxyParamCaption}\item[{bool}]{checked }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 382 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by create().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_acc435abddc4b29e7059115a948461e37_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStrategyBasePanel_a75ea4e1a5769f3cd2c7d34ef03c3082b}\label{classStrategyBasePanel_a75ea4e1a5769f3cd2c7d34ef03c3082b}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!\_toggleDailyMaxLossControls@{\_toggleDailyMaxLossControls}}
+\index{\_toggleDailyMaxLossControls@{\_toggleDailyMaxLossControls}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{\_toggleDailyMaxLossControls}{\_toggleDailyMaxLossControls}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::\+\_\+toggle\+Daily\+Max\+Loss\+Controls (\begin{DoxyParamCaption}\item[{bool}]{checked }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 389 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by create().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_a75ea4e1a5769f3cd2c7d34ef03c3082b_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStrategyBasePanel_a71cb3097077482004cfd6e249b21b944}\label{classStrategyBasePanel_a71cb3097077482004cfd6e249b21b944}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!\_toggleRiskControls@{\_toggleRiskControls}}
+\index{\_toggleRiskControls@{\_toggleRiskControls}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{\_toggleRiskControls}{\_toggleRiskControls}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::\+\_\+toggle\+Risk\+Controls (\begin{DoxyParamCaption}\item[{bool}]{checked }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 375 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by create().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_a71cb3097077482004cfd6e249b21b944_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStrategyBasePanel_aa4a6a5ee65245f1391d5e8fa62da97e5}\label{classStrategyBasePanel_aa4a6a5ee65245f1391d5e8fa62da97e5}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!\_toggleSlMethod@{\_toggleSlMethod}}
+\index{\_toggleSlMethod@{\_toggleSlMethod}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{\_toggleSlMethod}{\_toggleSlMethod}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::\+\_\+toggle\+Sl\+Method (\begin{DoxyParamCaption}\item[{int}]{index }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 336 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References \+\_\+update\+Atr\+Period\+Status(), and Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by create().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_aa4a6a5ee65245f1391d5e8fa62da97e5_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_aa4a6a5ee65245f1391d5e8fa62da97e5_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStrategyBasePanel_a76dd6d7f0bc490c349945c9d20696b7d}\label{classStrategyBasePanel_a76dd6d7f0bc490c349945c9d20696b7d}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!\_toggleTpMethod@{\_toggleTpMethod}}
+\index{\_toggleTpMethod@{\_toggleTpMethod}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{\_toggleTpMethod}{\_toggleTpMethod}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::\+\_\+toggle\+Tp\+Method (\begin{DoxyParamCaption}\item[{int}]{index }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 359 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References \+\_\+update\+Atr\+Period\+Status(), and Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by create().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_a76dd6d7f0bc490c349945c9d20696b7d_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_a76dd6d7f0bc490c349945c9d20696b7d_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStrategyBasePanel_a53c2bcd38bece4abebc307c2e5bcb61e}\label{classStrategyBasePanel_a53c2bcd38bece4abebc307c2e5bcb61e}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!\_updateAtrPeriodStatus@{\_updateAtrPeriodStatus}}
+\index{\_updateAtrPeriodStatus@{\_updateAtrPeriodStatus}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{\_updateAtrPeriodStatus}{\_updateAtrPeriodStatus}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::\+\_\+update\+Atr\+Period\+Status (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}, {\ttfamily [slot]}}
+
+
+
+Definition at line 396 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by \+\_\+toggle\+Sl\+Method(), \+\_\+toggle\+Tp\+Method(), and set\+Values().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_a53c2bcd38bece4abebc307c2e5bcb61e_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStrategyBasePanel_a8ada8ea770daacd356fd8bd6e044c095}\label{classStrategyBasePanel_a8ada8ea770daacd356fd8bd6e044c095}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!create@{create}}
+\index{create@{create}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{create()}{create()}}
+{\footnotesize\ttfamily QGroup\+Box $\ast$ Strategy\+Base\+Panel\+::create (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Crée et retourne l\textquotesingle{}interface graphique du panel. 
+
+\begin{DoxyReturn}{Returns}
+QGroup\+Box contenant les widgets du panel 
+\end{DoxyReturn}
+
+
+Implements \mbox{\hyperlink{classBasePanel_a9f2dcd881091f932f822f46a49385b24}{Base\+Panel}}.
+
+
+
+Definition at line 13 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References \+\_\+toggle\+Break\+Even\+Controls(), \+\_\+toggle\+Daily\+Max\+Loss\+Controls(), \+\_\+toggle\+Risk\+Controls(), \+\_\+toggle\+Sl\+Method(), \+\_\+toggle\+Tp\+Method(), and Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by App\+::create\+Control\+Panel().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_a8ada8ea770daacd356fd8bd6e044c095_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_a8ada8ea770daacd356fd8bd6e044c095_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStrategyBasePanel_ad4efc8d3a9fe28097a271c30a3bb18bf}\label{classStrategyBasePanel_ad4efc8d3a9fe28097a271c30a3bb18bf}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!getValues@{getValues}}
+\index{getValues@{getValues}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{getValues()}{getValues()}}
+{\footnotesize\ttfamily QMap$<$ QString, QVariant $>$ Strategy\+Base\+Panel\+::get\+Values (\begin{DoxyParamCaption}{ }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Récupère les valeurs des widgets du panel. 
+
+\begin{DoxyReturn}{Returns}
+Map contenant les valeurs sous forme de QVariant 
+\end{DoxyReturn}
+
+
+Reimplemented from \mbox{\hyperlink{classBasePanel_ad49908813b6dec308db7bfbb32a9d999}{Base\+Panel}}.
+
+
+
+Definition at line 220 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by App\+::get\+Strategy\+Config(), and Backtest\+Worker\+::run().
+
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_ad4efc8d3a9fe28097a271c30a3bb18bf_icgraph}
+\end{center}
+\end{figure}
+\mbox{\Hypertarget{classStrategyBasePanel_a7d4ca2e8bcd0775cdc644654f49363ae}\label{classStrategyBasePanel_a7d4ca2e8bcd0775cdc644654f49363ae}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!setupRiskManagement@{setupRiskManagement}}
+\index{setupRiskManagement@{setupRiskManagement}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{setupRiskManagement()}{setupRiskManagement()}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::setup\+Risk\+Management (\begin{DoxyParamCaption}\item[{QGrid\+Layout $\ast$}]{layout,  }\item[{int \&}]{row }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classStrategyBasePanel_aafbf5877c1e9764be01d92044c652586}\label{classStrategyBasePanel_aafbf5877c1e9764be01d92044c652586}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!setupStopLossAndTakeProfit@{setupStopLossAndTakeProfit}}
+\index{setupStopLossAndTakeProfit@{setupStopLossAndTakeProfit}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{setupStopLossAndTakeProfit()}{setupStopLossAndTakeProfit()}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::setup\+Stop\+Loss\+And\+Take\+Profit (\begin{DoxyParamCaption}\item[{QGrid\+Layout $\ast$}]{layout,  }\item[{int \&}]{row }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classStrategyBasePanel_a11d88f1bbab87b900a8dd06cca7667ae}\label{classStrategyBasePanel_a11d88f1bbab87b900a8dd06cca7667ae}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!setupTradingHours@{setupTradingHours}}
+\index{setupTradingHours@{setupTradingHours}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{setupTradingHours()}{setupTradingHours()}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::setup\+Trading\+Hours (\begin{DoxyParamCaption}\item[{QGrid\+Layout $\ast$}]{layout,  }\item[{int \&}]{row }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [private]}}
+
+\mbox{\Hypertarget{classStrategyBasePanel_afe6d54431eae40a6bdbab18a7bcf72f6}\label{classStrategyBasePanel_afe6d54431eae40a6bdbab18a7bcf72f6}} 
+\index{StrategyBasePanel@{StrategyBasePanel}!setValues@{setValues}}
+\index{setValues@{setValues}!StrategyBasePanel@{StrategyBasePanel}}
+\doxysubsubsection{\texorpdfstring{setValues()}{setValues()}}
+{\footnotesize\ttfamily void Strategy\+Base\+Panel\+::set\+Values (\begin{DoxyParamCaption}\item[{const QMap$<$ QString, QVariant $>$ \&}]{values }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [override]}, {\ttfamily [virtual]}}
+
+
+
+Définit les valeurs des widgets du panel. 
+
+
+\begin{DoxyParams}{Parameters}
+{\em values} & Map contenant les valeurs à affecter aux widgets \\
+\hline
+\end{DoxyParams}
+
+
+Reimplemented from \mbox{\hyperlink{classBasePanel_a0484faecac61c9be571c4b4780df5589}{Base\+Panel}}.
+
+
+
+Definition at line 272 of file strategy\+\_\+base\+\_\+panel.\+cpp.
+
+
+
+References \+\_\+update\+Atr\+Period\+Status(), and Base\+Panel\+::m\+\_\+widgets.
+
+
+
+Referenced by Config\+Manager\+::apply\+Profile\+To\+UI().
+
+Here is the call graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_afe6d54431eae40a6bdbab18a7bcf72f6_cgraph}
+\end{center}
+\end{figure}
+Here is the caller graph for this function\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{dd/d0f/classStrategyBasePanel_afe6d54431eae40a6bdbab18a7bcf72f6_icgraph}
+\end{center}
+\end{figure}
+
+
+The documentation for this class was generated from the following files\+:\begin{DoxyCompactItemize}
+\item 
+backtest\+\_\+app\+\_\+cpp/src/panels/\mbox{\hyperlink{strategy__base__panel_8h}{strategy\+\_\+base\+\_\+panel.\+h}}\item 
+backtest\+\_\+app\+\_\+cpp/src/panels/\mbox{\hyperlink{strategy__base__panel_8cpp}{strategy\+\_\+base\+\_\+panel.\+cpp}}\end{DoxyCompactItemize}

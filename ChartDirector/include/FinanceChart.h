@@ -610,7 +610,7 @@ class FinanceChart : public MultiChart
     private: std::string getHLOCToolTipFormat()
     {
         char buffer[1024];
-        sprintf(buffer, "title='%s Op:{open|%s}, Hi:{high|%s}, Lo:{low|%s}, Cl:{close|%s}'",
+        snprintf(buffer, sizeof(buffer), "title='%s Op:{open|%s}, Hi:{high|%s}, Lo:{low|%s}, Cl:{close|%s}'",
             getToolTipDateFormat(), m_generalFormat.c_str(), m_generalFormat.c_str(), m_generalFormat.c_str(),
             m_generalFormat.c_str());
         return buffer;
@@ -704,22 +704,22 @@ class FinanceChart : public MultiChart
             char buffer[1024];
 
             if (openValue != Chart::NoValue) {
-                sprintf(buffer, "Op:%s", formatValue(openValue, m_generalFormat.c_str()));
+                snprintf(buffer, sizeof(buffer), "Op:%s", formatValue(openValue, m_generalFormat.c_str()));
                 openLabel = buffer;
                 delim = ", ";
             }
             if (highValue != Chart::NoValue) {
-                sprintf(buffer, "%sHi:%s", delim, formatValue(highValue, m_generalFormat.c_str()));
+                snprintf(buffer, sizeof(buffer), "%sHi:%s", delim, formatValue(highValue, m_generalFormat.c_str()));
                 highLabel = buffer;
                 delim = ", ";
             }
             if (lowValue != Chart::NoValue) {
-                sprintf(buffer, "%sLo:%s", delim, formatValue(lowValue, m_generalFormat.c_str()));
+                snprintf(buffer, sizeof(buffer), "%sLo:%s", delim, formatValue(lowValue, m_generalFormat.c_str()));
                 lowLabel = buffer;
                 delim = ", ";
             }
             if (closeValue != Chart::NoValue) {
-                sprintf(buffer, "%sCl:%s", delim, formatValue(closeValue, m_generalFormat.c_str()));
+                snprintf(buffer, sizeof(buffer), "%sCl:%s", delim, formatValue(closeValue, m_generalFormat.c_str()));
                 closeLabel = buffer;
                 delim = ", ";
             }
@@ -795,7 +795,7 @@ class FinanceChart : public MultiChart
     public: LineLayer* addSimpleMovingAvg(int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "SMA (%d)", period);
+        snprintf(buffer, sizeof(buffer), "SMA (%d)", period);   
         return addLineIndicator2(m_mainChart, ArrayMath(m_closeData).movAvg(period), color, buffer);
     }
 
@@ -808,7 +808,7 @@ class FinanceChart : public MultiChart
     public: LineLayer* addExpMovingAvg(int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "EMA (%d)", period);
+        snprintf(buffer, sizeof(buffer), "EMA (%d)", period);   
         return addLineIndicator2(m_mainChart, ArrayMath(m_closeData).expAvg(2.0 / (period + 1)),
             color, buffer);
     }
@@ -822,7 +822,7 @@ class FinanceChart : public MultiChart
     public: LineLayer* addTriMovingAvg(int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "TMA (%d)", period);
+        snprintf(buffer, sizeof(buffer), "TMA (%d)", period);
         return addLineIndicator2(m_mainChart, computeTriMovingAvg(m_closeData, period),
             color, buffer);
     }
@@ -836,7 +836,7 @@ class FinanceChart : public MultiChart
     public: LineLayer* addWeightedMovingAvg(int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "WMA (%d)", period);
+        snprintf(buffer, sizeof(buffer), "WMA (%d)", period);
         return addLineIndicator2(m_mainChart, computeWeightedMovingAvg(m_closeData, period
             ), color, buffer);
     }
@@ -1031,7 +1031,7 @@ class FinanceChart : public MultiChart
         char buffer[1024];
         while (i >= 0) {
             if ((upperLine[i] != Chart::NoValue) && (lowerLine[i] != Chart::NoValue)) {
-                sprintf(buffer, "%s: %s - ", name, formatValue(lowerLine[i], m_generalFormat.c_str()));
+                snprintf(buffer, sizeof(buffer), "%s: %s - ", name, formatValue(lowerLine[i], m_generalFormat.c_str()));
                 name = strcat(buffer, formatValue(upperLine[i], m_generalFormat.c_str()));
                 break;
             }
@@ -1059,7 +1059,7 @@ class FinanceChart : public MultiChart
         ArrayMath stdDev = ArrayMath(m_closeData).movStdDev(period).mul(bandWidth);
         ArrayMath movAvg = ArrayMath(m_closeData).movAvg(period);
         char buffer[1024];
-        sprintf(buffer, "Bollinger (%d, %g)", period, bandWidth);
+        snprintf(buffer, sizeof(buffer), "Bollinger (%d, %g)", period, bandWidth);
         return addBand(ArrayMath(movAvg).add(stdDev), ArrayMath(movAvg).sub(stdDev).selectGTZ(), lineColor,
             fillColor, buffer);
     }
@@ -1075,7 +1075,7 @@ class FinanceChart : public MultiChart
     {
         //Donchian Channel is the zone between the moving max and moving min
         char buffer[1024];
-        sprintf(buffer, "Donchian (%d)", period);
+        snprintf(buffer, sizeof(buffer), "Donchian (%d)", period);
         return addBand(ArrayMath(m_highData).movMax(period), ArrayMath(m_lowData).movMin(period),
             lineColor, fillColor, buffer);
     }
@@ -1094,7 +1094,7 @@ class FinanceChart : public MultiChart
         //Envelop is moving avg +/- percentage
         ArrayMath movAvg = ArrayMath(m_closeData).movAvg(period);
         char buffer[1024];
-        sprintf(buffer, "Envelop (SMA %d +/- %g%%)", period, range * 100);
+        snprintf(buffer, sizeof(buffer), "Envelop (SMA %d +/- %g%%)", period, range * 100);
         return addBand(ArrayMath(movAvg).mul(1 + range), ArrayMath(movAvg).mul(1 - range),
             lineColor, fillColor, buffer);
     }
@@ -1138,9 +1138,9 @@ class FinanceChart : public MultiChart
  
         char buffer[1024];
         if (ArrayMath(m_volData).maxValue() < 10)
-            sprintf(buffer, "{value|1}%s", m_volUnit.c_str());
+            snprintf(buffer, sizeof(buffer), "{value|1}%s", m_volUnit.c_str());
         else
-            sprintf(buffer, "{value}%s", m_volUnit.c_str());
+            snprintf(buffer, sizeof(buffer), "{value}%s", m_volUnit.c_str());
         a->setLabelFormat(buffer);
 
         ArrayMath closeChange = ArrayMath(m_closeData).delta().replace(Chart::NoValue, 0);
@@ -1149,7 +1149,7 @@ class FinanceChart : public MultiChart
         int i = lastIndex(m_volData);
         std::string label = "Vol";
         if (i >= 0) {
-            sprintf(buffer, "%s: %s%s", label.c_str(), formatValue(m_volData[i], m_generalFormat.c_str()), 
+            snprintf(buffer, sizeof(buffer), "%s: %s%s", label.c_str(), formatValue(m_volData[i], m_generalFormat.c_str()),
                 m_volUnit.c_str());
             label = buffer;
         }
@@ -1341,9 +1341,9 @@ class FinanceChart : public MultiChart
         char buffer[1024];
         if ((*name == 0) || (i < 0))
             //still need sprintf to escape the "%" character
-            sprintf(buffer, "%s", name);
+            snprintf(buffer, sizeof(buffer), "%s", name);
         else
-            sprintf(buffer, "%s: %s", name, formatValue(data[i], m_generalFormat.c_str()));
+            snprintf(buffer, sizeof(buffer), "%s: %s", name, formatValue(data[i], m_generalFormat.c_str()));
         return buffer;
     }
 
@@ -1465,7 +1465,7 @@ class FinanceChart : public MultiChart
     public: XYChart* addAroonOsc(int height, int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "Aroon Oscillator (%d)", period);
+        snprintf(buffer, sizeof(buffer), "Aroon Oscillator (%d)", period);
         XYChart *c = addLineIndicator(height, computeAroonUp(period).sub(computeAroonDn(
             period)), color, buffer);
         c->yAxis()->setLinearScale(-100, 100);
@@ -1542,11 +1542,11 @@ class FinanceChart : public MultiChart
 
         XYChart *c = addIndicator(height);
         char buffer1[1024];
-        sprintf(buffer1, "+DI (%d)", period);
+        snprintf(buffer1, sizeof(buffer1), "+DI (%d)", period);
         char buffer2[1024];
-        sprintf(buffer2, "-DI (%d)", period);
+        snprintf(buffer2, sizeof(buffer2), "-DI (%d)", period);
         char buffer3[1024];
-        sprintf(buffer3, "ADX (%d)", period);
+        snprintf(buffer3, sizeof(buffer3), "ADX (%d)", period);
         addLineIndicator2(c, pos, posColor, buffer1);
         addLineIndicator2(c, neg, negColor, buffer2);
         addLineIndicator2(c, dx, color, buffer3);
@@ -1566,7 +1566,7 @@ class FinanceChart : public MultiChart
         ArrayMath trueRange = computeTrueRange();
         XYChart *c = addLineIndicator(height, trueRange, color1, "True Range");
         char buffer[1024];
-        sprintf(buffer, "Average True Range (%d)", period);
+        snprintf(buffer, sizeof(buffer), "Average True Range (%d)", period);    
         addLineIndicator2(c, ArrayMath(trueRange).expAvg(2.0 / (period + 1)), color2, buffer);
         return c;
     }
@@ -1582,7 +1582,7 @@ class FinanceChart : public MultiChart
     public: XYChart* addBollingerWidth(int height, int period, double width, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "Bollinger Width (%d, %g)", period, width);
+        snprintf(buffer, sizeof(buffer), "Bollinger Width (%d, %g)", period, width);
         return addLineIndicator(height, ArrayMath(m_closeData).movStdDev(period).mul(width * 2), color,
             buffer);
     }
@@ -1639,7 +1639,7 @@ class FinanceChart : public MultiChart
 
         XYChart *c = addIndicator(height);
         char buffer[1024];
-        sprintf(buffer, "CCI (%d)", period);
+        snprintf(buffer, sizeof(buffer), "CCI (%d)", period);   
         LineLayer *layer = addLineIndicator2(c, ArrayMath(tp).sub(smvtpData).financeDiv(
             DoubleArray(movMeanDev, smvtpData.len), 0).div(0.015), color, buffer);
         addThreshold(c, layer, deviation, upColor, -deviation, downColor);
@@ -1660,7 +1660,7 @@ class FinanceChart : public MultiChart
         ArrayMath range = ArrayMath(m_highData).sub(m_lowData);
         ArrayMath volAvg = ArrayMath(m_volData).movAvg(period);
         char buffer[1024];
-        sprintf(buffer, "Chaikin Money Flow (%d)", period);
+        snprintf(buffer, sizeof(buffer), "Chaikin Money Flow (%d)", period);
         return addBarIndicator(height, ArrayMath(m_closeData).mul(2).sub(m_lowData).sub(m_highData
             ).mul(m_volData).financeDiv(range, 0).movAvg(period).financeDiv(volAvg, 0), color, buffer
             );
@@ -1696,7 +1696,7 @@ class FinanceChart : public MultiChart
     public: XYChart* addChaikinVolatility(int height, int period1, int period2, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "Chaikin Volatility (%d, %d)", period1, period2);
+        snprintf(buffer, sizeof(buffer), "Chaikin Volatility (%d, %d)", period1, period2);
         return addLineIndicator(height, ArrayMath(m_highData).sub(m_lowData).expAvg(2.0 / (period1 +
             1)).rate(period2).sub(1).mul(100), color, buffer);
     }
@@ -1725,7 +1725,7 @@ class FinanceChart : public MultiChart
     public: XYChart* addDPO(int height, int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "DPO (%d)", period);
+        snprintf(buffer, sizeof(buffer), "DPO (%d)", period);
         return addLineIndicator(height, ArrayMath(m_closeData).movAvg(period).shift(period / 2 + 1
             ).sub(m_closeData).mul(-1), color, buffer);
     }
@@ -1740,7 +1740,7 @@ class FinanceChart : public MultiChart
     public: XYChart* addDonchianWidth(int height, int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "Donchian Width (%d)", period);
+        snprintf(buffer, sizeof(buffer), "Donchian Width (%d)", period);
         return addLineIndicator(height, ArrayMath(m_highData).movMax(period).sub(ArrayMath(m_lowData
             ).movMin(period)), color, buffer);
     }
@@ -1761,7 +1761,7 @@ class FinanceChart : public MultiChart
 
         XYChart *c = addLineIndicator(height, result, color1, "EMV");
         char buffer[1024];
-        sprintf(buffer, "EMV EMA (%d)", period);
+        snprintf(buffer, sizeof(buffer), "EMV EMA (%d)", period);
         addLineIndicator2(c, ArrayMath(result).movAvg(period), color2, buffer);
         return c;
     }
@@ -1783,9 +1783,9 @@ class FinanceChart : public MultiChart
             ;
 
         char buffer[1024];
-        sprintf(buffer, "Fast Stochastic %%K (%d)", period1);
+        snprintf(buffer, sizeof(buffer), "Fast Stochastic %%K (%d)", period1);
         XYChart *c = addLineIndicator(height, stochastic, color1, buffer);
-        sprintf(buffer, "%%D (%d)", period2);
+        snprintf(buffer, sizeof(buffer), "%%D (%d)", period2);
         addLineIndicator2(c, ArrayMath(stochastic).movAvg(period2), color2, buffer);
 
         c->yAxis()->setLinearScale(0, 100);
@@ -1814,12 +1814,12 @@ class FinanceChart : public MultiChart
         ArrayMath macd = ArrayMath(m_closeData).expAvg(2.0 / (period2 + 1)).sub(expAvg1);
 
         //Add the MACD line
-        sprintf(buffer, "MACD (%d, %d)", period1, period2);
+        snprintf(buffer, sizeof(buffer), "MACD (%d, %d)", period1, period2);
         addLineIndicator2(c, macd, color, buffer);
 
         //MACD signal line
         ArrayMath macdSignal = ArrayMath(macd).expAvg(2.0 / (period3 + 1));
-        sprintf(buffer, "EXP (%d)", period3);
+        snprintf(buffer, sizeof(buffer), "EXP (%d)", period3);
         addLineIndicator2(c, macdSignal, signalColor, buffer);
 
         //Divergence
@@ -1874,7 +1874,7 @@ class FinanceChart : public MultiChart
 
         XYChart *c = addIndicator(height);
         char buffer[1024];
-        sprintf(buffer, "Money Flow Index (%d)", period);
+        snprintf(buffer, sizeof(buffer), "Money Flow Index (%d)", period);
         LineLayer *layer = addLineIndicator2(c, ArrayMath(posMoneyFlow).financeDiv(posNegMoneyFlow,
             0.5).mul(100), color, buffer);
         addThreshold(c, layer, 50 + range, upColor, 50 - range, downColor);
@@ -1893,7 +1893,7 @@ class FinanceChart : public MultiChart
     public: XYChart* addMomentum(int height, int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "Momentum (%d)", period);
+        snprintf(buffer, sizeof(buffer), "Momentum (%d)", period);
         return addLineIndicator(height, ArrayMath(m_closeData).delta(period), color, buffer);
     }
 
@@ -1934,8 +1934,8 @@ class FinanceChart : public MultiChart
         XYChart *c = addLineIndicator(height, DoubleArray(nvi, m_volData.len), color, "NVI");
         if (m_volData.len > period) {
             char buffer[1024];
-            sprintf(buffer, "NVI SMA (%d)", period);
-            addLineIndicator2(c, ArrayMath(DoubleArray(nvi, m_volData.len)).movAvg(period), 
+            snprintf(buffer, sizeof(buffer), "NVI SMA (%d)", period);
+            addLineIndicator2(c, ArrayMath(DoubleArray(nvi, m_volData.len)).movAvg(period),
                 signalColor, buffer);
         }
 
@@ -1996,9 +1996,9 @@ class FinanceChart : public MultiChart
         ArrayMath ppoSignal = ArrayMath(ppo).expAvg(2.0 / (period3 + 1));
 
         char buffer[1024];
-        sprintf(buffer, "PPO (%d, %d)", period1, period2);
+        snprintf(buffer, sizeof(buffer), "PPO (%d, %d)", period1, period2);
         XYChart *c = addLineIndicator(height, ppo, color, buffer);
-        sprintf(buffer, "EMA (%d)", period3);
+        snprintf(buffer, sizeof(buffer), "EMA (%d)", period3);
         addLineIndicator2(c, ppoSignal, signalColor, buffer);
         addBarIndicator2(c, ppo.sub(ppoSignal), divColor, "Divergence");
         return c;
@@ -2042,8 +2042,8 @@ class FinanceChart : public MultiChart
         XYChart *c = addLineIndicator(height, DoubleArray(pvi, m_volData.len), color, "PVI");
         if (m_volData.len > period) {
             char buffer[1024];
-            sprintf(buffer, "PVI SMA (%d)", period);
-            addLineIndicator2(c, ArrayMath(DoubleArray(pvi, m_volData.len)).movAvg(period), 
+            snprintf(buffer, sizeof(buffer), "PVI SMA (%d)", period);
+            addLineIndicator2(c, ArrayMath(DoubleArray(pvi, m_volData.len)).movAvg(period),
                 signalColor, buffer);
         }
 
@@ -2071,16 +2071,16 @@ class FinanceChart : public MultiChart
         ArrayMath pvoSignal = ArrayMath(pvo).expAvg(2.0 / (period3 + 1));
 
         char buffer[1024];
-        sprintf(buffer, "PVO (%d, %d)", period1, period2);
+        snprintf(buffer, sizeof(buffer), "PVO (%d, %d)", period1, period2);
         XYChart *c = addLineIndicator(height, pvo, color, buffer);
-        sprintf(buffer, "EMA (%d)", period3);
+        snprintf(buffer, sizeof(buffer), "EMA (%d)", period3);
         addLineIndicator2(c, pvoSignal, signalColor, buffer);
         addBarIndicator2(c, pvo.sub(pvoSignal), divColor, "Divergence");
         return c;
     }
 
     /// <summary>
-    /// Add a Price Volumne Trend indicator chart.
+    /// Add a Price Volume Trend indicator chart.
     /// </summary>
     /// <param name="height">The height of the indicator chart in pixels.</param>
     /// <param name="color">The color of the indicator line.</param>
@@ -2101,7 +2101,7 @@ class FinanceChart : public MultiChart
     public: XYChart* addROC(int height, int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "ROC (%d)", period);
+        snprintf(buffer, sizeof(buffer), "ROC (%d)", period);
         return addLineIndicator(height, ArrayMath(m_closeData).rate(period).sub(1).mul(100), color,
             buffer);
     }
@@ -2158,7 +2158,7 @@ class FinanceChart : public MultiChart
     {
         XYChart *c = addIndicator(height);
         char buffer[1024];
-        sprintf(buffer, "RSI (%d)", period);
+        snprintf(buffer, sizeof(buffer), "RSI (%d)", period);
         LineLayer *layer = addLineIndicator2(c, computeRSI(period), color, buffer);
 
         //Add range if given
@@ -2186,9 +2186,9 @@ class FinanceChart : public MultiChart
             ).mul(100).movAvg(3);
 
         char buffer[1024];
-        sprintf(buffer, "Slow Stochastic %%K (%d)", period1);
+        snprintf(buffer, sizeof(buffer), "Slow Stochastic %%K (%d)", period1);  
         XYChart *c = addLineIndicator(height, stochastic, color1, buffer);
-        sprintf(buffer, "%%D (%d)", period2);
+        snprintf(buffer, sizeof(buffer), "%%D (%d)", period2);
         addLineIndicator2(c, stochastic.movAvg(period2), color2, buffer);
 
         c->yAxis()->setLinearScale(0, 100);
@@ -2205,7 +2205,7 @@ class FinanceChart : public MultiChart
     public: XYChart* addStdDev(int height, int period, int color)
     {
         char buffer[1024];
-        sprintf(buffer, "Moving StdDev (%d)", period);
+        snprintf(buffer, sizeof(buffer), "Moving StdDev (%d)", period);
         return addLineIndicator(height, ArrayMath(m_closeData).movStdDev(period), color, buffer);
     }
 
@@ -2228,7 +2228,7 @@ class FinanceChart : public MultiChart
 
         XYChart *c = addIndicator(height);
         char buffer[1024];
-        sprintf(buffer, "StochRSI (%d)", period);
+        snprintf(buffer, sizeof(buffer), "StochRSI (%d)", period);
         LineLayer *layer = addLineIndicator2(c, ArrayMath(rsi).sub(movLow).financeDiv(movRange, 0.5
             ).mul(100), color, buffer);
 
@@ -2251,7 +2251,7 @@ class FinanceChart : public MultiChart
     {
         double f = 2.0 / (period + 1);
         char buffer[1024];
-        sprintf(buffer, "TRIX (%d)", period);
+        snprintf(buffer, sizeof(buffer), "TRIX (%d)", period);
         return addLineIndicator(height, ArrayMath(m_closeData).expAvg(f).expAvg(f).expAvg(f)
             .rate().sub(1).mul(100), color, buffer);
     }
@@ -2308,7 +2308,7 @@ class FinanceChart : public MultiChart
 
         XYChart *c = addIndicator(height);
         char buffer[1024];
-        sprintf(buffer, "Ultimate Oscillator (%d, %d, %d)", period1, period2, period3);
+        snprintf(buffer, sizeof(buffer), "Ultimate Oscillator (%d, %d, %d)", period1, period2, period3);
         LineLayer *layer = addLineIndicator2(c, ArrayMath(rawUO1).add(rawUO2).add(rawUO3).mul(100.0
              / 7), color, buffer);
         addThreshold(c, layer, 50 + range, upColor, 50 - range, downColor);

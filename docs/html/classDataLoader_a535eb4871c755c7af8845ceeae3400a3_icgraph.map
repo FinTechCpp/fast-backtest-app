@@ -1,0 +1,9 @@
+<map id="DataLoader::findMarketDataDirectory" name="DataLoader::findMarketDataDirectory">
+<area shape="rect" id="node1" title=" " alt="" coords="1284,35,1489,76"/>
+<area shape="rect" id="node2" href="$classDataLoader.html#a3ee2405c8a07e380a3c0348182e81c07" title="Trouve le fichier CSV correspondant au symbole et intervalle." alt="" coords="1043,13,1226,39"/>
+<area shape="rect" id="node7" href="$classDataLoader.html#a4cc93062d565fcdedc300ef40ab5de40" title=" " alt="" coords="1033,64,1236,105"/>
+<area shape="rect" id="node3" href="$classDataLoader.html#ab40a74d379a145b5d93bd9ae3f7c67e2" title="Charge les données OHLC depuis un fichier CSV." alt="" coords="821,13,985,39"/>
+<area shape="rect" id="node4" href="$classBacktestRunner.html#add4493e489a11be9383ad14451221897" title=" " alt="" coords="563,13,773,39"/>
+<area shape="rect" id="node5" href="$classBacktestRunner.html#a4ded5e8156a6ac70b195aa87c0f7fe91" title=" " alt="" coords="244,13,515,39"/>
+<area shape="rect" id="node6" href="$classBacktestRunner.html#a129c1bba65d590dd0e1f24aeee0cfa6e" title=" " alt="" coords="5,5,196,47"/>
+</map>

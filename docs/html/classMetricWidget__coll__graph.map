@@ -1,0 +1,4 @@
+<map id="MetricWidget" name="MetricWidget">
+<area shape="rect" id="node1" title="Widget pour afficher une métrique avec un titre, une valeur et une variation optionnelle." alt="" coords="5,80,115,107"/>
+<area shape="rect" id="node2" title=" " alt="" coords="23,5,97,32"/>
+</map>

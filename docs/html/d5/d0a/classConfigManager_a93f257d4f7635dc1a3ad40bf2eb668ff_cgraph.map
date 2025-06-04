@@ -1,0 +1,9 @@
+<map id="ConfigManager::saveCurrentProfile" name="ConfigManager::saveCurrentProfile">
+<area shape="rect" id="node1" title=" " alt="" coords="5,86,212,127"/>
+<area shape="rect" id="node2" href="$d5/d0a/classConfigManager.html#a2d4fd3766c78d3eac3e67d4dc9735c9c" title=" " alt="" coords="265,57,455,98"/>
+<area shape="rect" id="node7" href="$d5/d0a/classConfigManager.html#afde78480ef5bd18f928b51750a2008e6" title=" " alt="" coords="260,123,460,149"/>
+<area shape="rect" id="node3" href="$dd/d64/classApp.html#abc976f427450f86d2fb3860c4e95dbed" title=" " alt="" coords="508,64,680,91"/>
+<area shape="rect" id="node4" href="$dc/d47/classBasePanel.html#ad49908813b6dec308db7bfbb32a9d999" title="Récupère les valeurs des widgets du panel." alt="" coords="728,5,889,32"/>
+<area shape="rect" id="node5" href="$db/deb/classGeneralParamsPanel.html#af5c4f87007fdce8d8ef1238f64708881" title="Récupère les valeurs des widgets du panel." alt="" coords="731,57,887,98"/>
+<area shape="rect" id="node6" href="$dd/d0f/classStrategyBasePanel.html#ad4efc8d3a9fe28097a271c30a3bb18bf" title="Récupère les valeurs des widgets du panel." alt="" coords="733,122,885,163"/>
+</map>

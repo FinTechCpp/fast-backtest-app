@@ -1,0 +1,35 @@
+<map id="ProfileMenuManager::createProfileMenu" name="ProfileMenuManager::createProfileMenu">
+<area shape="rect" id="node1" title="Crée et ajoute le menu des profils à la barre de menu." alt="" coords="5,201,161,242"/>
+<area shape="rect" id="node2" href="$d0/d83/classProfileMenuManager.html#a06d08b816329fcd413b2afdcb156d37c" title=" " alt="" coords="209,201,365,242"/>
+<area shape="rect" id="node3" href="$d0/d83/classProfileMenuManager.html#a8f178ed203adfcf790f17449f12cc1db" title=" " alt="" coords="423,135,582,177"/>
+<area shape="rect" id="node25" href="$d0/d83/classProfileMenuManager.html#ae8d4d4d061f248603ca8b07e1f03a495" title=" " alt="" coords="413,201,592,242"/>
+<area shape="rect" id="node28" href="$d0/d83/classProfileMenuManager.html#a51e45d497a20619bc0719c12dfb42b66" title=" " alt="" coords="425,331,581,373"/>
+<area shape="rect" id="node30" href="$d0/d83/classProfileMenuManager.html#a952188c4ea37f581632b4cbf88573eb2" title=" " alt="" coords="425,266,581,307"/>
+<area shape="rect" id="node32" href="$d0/d83/classProfileMenuManager.html#a612f1c1b22476abe4f8136ab111e254a" title=" " alt="" coords="419,38,586,79"/>
+<area shape="rect" id="node4" href="$d5/d0a/classConfigManager.html#a4e7efc716305eb1e8de912c64df21601" title=" " alt="" coords="640,79,859,121"/>
+<area shape="rect" id="node11" href="$d0/d83/classProfileMenuManager.html#ad82b0dac787fe0831529c930a89b352c" title="Met à jour la liste des profils dans le menu." alt="" coords="671,225,827,266"/>
+<area shape="rect" id="node5" href="$d5/d0a/classConfigManager.html#a2d4fd3766c78d3eac3e67d4dc9735c9c" title=" " alt="" coords="917,57,1107,98"/>
+<area shape="rect" id="node10" href="$d5/d0a/classConfigManager.html#afde78480ef5bd18f928b51750a2008e6" title=" " alt="" coords="912,5,1112,32"/>
+<area shape="rect" id="node6" href="$dd/d64/classApp.html#abc976f427450f86d2fb3860c4e95dbed" title=" " alt="" coords="1172,64,1344,91"/>
+<area shape="rect" id="node7" href="$dc/d47/classBasePanel.html#ad49908813b6dec308db7bfbb32a9d999" title="Récupère les valeurs des widgets du panel." alt="" coords="1435,5,1596,32"/>
+<area shape="rect" id="node8" href="$db/deb/classGeneralParamsPanel.html#af5c4f87007fdce8d8ef1238f64708881" title="Récupère les valeurs des widgets du panel." alt="" coords="1437,57,1593,98"/>
+<area shape="rect" id="node9" href="$dd/d0f/classStrategyBasePanel.html#ad4efc8d3a9fe28097a271c30a3bb18bf" title="Récupère les valeurs des widgets du panel." alt="" coords="1439,122,1591,163"/>
+<area shape="rect" id="node12" href="$d5/d0a/classConfigManager.html#a2c11ec38faaca5aa5fc27bb1b8b5c564" title=" " alt="" coords="913,342,1111,383"/>
+<area shape="rect" id="node13" href="$d5/d0a/classConfigManager.html#ab65513bb0b1896995de967a596593f59" title=" " alt="" coords="914,291,1110,317"/>
+<area shape="rect" id="node14" href="$d0/d83/classProfileMenuManager.html#a8f9380bb6c501cfdb6b51e1b068c1638" title=" " alt="" coords="934,225,1090,266"/>
+<area shape="rect" id="node15" href="$d5/d0a/classConfigManager.html#a33e826c6fc5196e256d8d66ca1cc0b2e" title=" " alt="" coords="1165,225,1351,266"/>
+<area shape="rect" id="node16" href="$d5/d0a/classConfigManager.html#a53fe244ed6945218f9ab727a079d8f28" title=" " alt="" coords="1399,209,1632,236"/>
+<area shape="rect" id="node17" href="$dd/d64/classApp.html#a784182b4769a81eaedf71de372b7babf" title=" " alt="" coords="1680,49,1891,76"/>
+<area shape="rect" id="node18" href="$d5/d0a/classConfigManager.html#a3af4a4fb5f73524c5079fae3e29c46bd" title=" " alt="" coords="1690,100,1881,127"/>
+<area shape="rect" id="node19" href="$dd/d64/classApp.html#a59052cf80a4e02fa130d3509c9d25a2a" title=" " alt="" coords="1686,151,1885,177"/>
+<area shape="rect" id="node20" href="$dd/d64/classApp.html#ae7e5cc49b02d6feab9d19620f6455f2f" title=" " alt="" coords="1695,202,1876,243"/>
+<area shape="rect" id="node21" href="$dc/d47/classBasePanel.html#a0484faecac61c9be571c4b4780df5589" title="Définit les valeurs des widgets du panel." alt="" coords="1705,268,1865,295"/>
+<area shape="rect" id="node22" href="$db/deb/classGeneralParamsPanel.html#a5cb686302d61a1cd48c54bf14f7ee376" title="Définit les valeurs des widgets du panel." alt="" coords="1707,319,1863,361"/>
+<area shape="rect" id="node23" href="$dd/d0f/classStrategyBasePanel.html#afe6d54431eae40a6bdbab18a7bcf72f6" title="Définit les valeurs des widgets du panel." alt="" coords="1709,385,1861,426"/>
+<area shape="rect" id="node24" href="$dd/d0f/classStrategyBasePanel.html#a53c2bcd38bece4abebc307c2e5bcb61e" title=" " alt="" coords="1939,385,2113,426"/>
+<area shape="rect" id="node26" href="$d5/d0a/classConfigManager.html#aadb206d0d1947e6390bc02ba7e568569" title=" " alt="" coords="641,159,858,201"/>
+<area shape="rect" id="node27" href="$d5/d0a/classConfigManager.html#a037fc218805037e0867e4333ee967b50" title=" " alt="" coords="907,123,1117,149"/>
+<area shape="rect" id="node29" href="$d5/d0a/classConfigManager.html#ad406b480260a75825eaf6a2812f7f4e0" title=" " alt="" coords="644,355,855,397"/>
+<area shape="rect" id="node31" href="$d5/d0a/classConfigManager.html#a8f36b72bb6df30e9f4dc407fa55cd08a" title=" " alt="" coords="643,290,855,331"/>
+<area shape="rect" id="node33" href="$d5/d0a/classConfigManager.html#a93f257d4f7635dc1a3ad40bf2eb668ff" title=" " alt="" coords="646,14,853,55"/>
+</map>

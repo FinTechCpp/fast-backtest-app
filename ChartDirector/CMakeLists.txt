@@ -34,7 +34,21 @@ elseif(WIN32)
     # Sur Windows, on a aussi besoin de la DLL à l'exécution
     set(CHARTDIR_DLL "${CMAKE_CURRENT_SOURCE_DIR}/lib/chartdir70.dll")
 else()
-    set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so")
+    # Essayer différents noms de bibliothèques Linux
+    set(CHARTDIR_LIB_CANDIDATES
+        "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so"
+        "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so.7.0"
+        "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so.7.0.0"
+    )
+    
+    # Trouver la première bibliothèque qui existe
+    foreach(LIB_PATH ${CHARTDIR_LIB_CANDIDATES})
+        if(EXISTS "${LIB_PATH}")
+            set(CHARTDIR_LIB "${LIB_PATH}")
+            break()
+        endif()
+    endforeach()
+    
     set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/libchartdir.so")
 endif()
 

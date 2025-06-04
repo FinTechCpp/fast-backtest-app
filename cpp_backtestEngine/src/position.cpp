@@ -5,6 +5,8 @@
 #include <cmath>
 #include <stdexcept>
 
+namespace be {
+
 Position::Position(std::shared_ptr<Broker> broker) 
     : _broker(broker) {
 }
@@ -61,3 +63,5 @@ void Position::close(double portion) {
         trade->close(portion);
     }
 }
+
+} // namespace be

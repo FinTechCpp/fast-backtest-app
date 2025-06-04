@@ -4,6 +4,7 @@
 #include <QLabel>
 #include <QElapsedTimer>
 #include "chartdir.h"
+#include "qchartviewer.h"
 
 #ifdef CD_NAMESPACE
 namespace CD_NAMESPACE

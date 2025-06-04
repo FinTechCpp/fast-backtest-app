@@ -4,6 +4,8 @@
 #include <memory>
 #include <map>
 
+namespace be {
+
 // Forward declarations
 class Broker;
 class Trade;
@@ -135,3 +137,5 @@ private:
     friend class Broker;
     friend class Trade;
 };
+
+} // namespace be

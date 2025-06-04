@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <cmath>
 
+namespace be {
+
 class Duration;  // Forward declaration
 
 // TODO : peut etre utiliser chrono pour les durées, et séparer dans un fichier date.cpp 
@@ -110,6 +112,12 @@ public:
         return ss.str();
     }
     
+    // Convertit la date en timestamp (secondes depuis une époque arbitraire)
+    double toTimestamp() const;
+    
+    // Crée une date à partir d'un timestamp
+    static Date fromTimestamp(double timestamp);
+
 private:
     double year;
     double month;
@@ -117,12 +125,6 @@ private:
     double hour;
     double minute;
     double second;
-    
-    // Convertit la date en timestamp (secondes depuis une époque arbitraire)
-    double toTimestamp() const;
-    
-    // Crée une date à partir d'un timestamp
-    static Date fromTimestamp(double timestamp);
 };
 
 /**
@@ -215,7 +217,18 @@ public:
     bool operator<=(const Duration& other) const { return seconds_ <= other.seconds_; }
     bool operator>(const Duration& other) const { return seconds_ > other.seconds_; }
     bool operator>=(const Duration& other) const { return seconds_ >= other.seconds_; }
-    
+
+    /**
+     * @brief Opérateur de flux pour afficher une durée
+     * @param os Flux de sortie
+     * @param duration Durée à afficher
+     * @return Référence au flux de sortie
+     */
+    friend std::ostream& operator<<(std::ostream& os, const Duration& duration) {
+        os << duration.toString();
+        return os;
+    }
+
     /**
      * @brief Convertit la durée en chaîne de caractères
      * @return Représentation textuelle de la durée (ex: "1y 3d 5h 10m 30s")
@@ -308,6 +321,8 @@ inline Date Date::fromTimestamp(double timestamp) {
     
     return Date(y, m, d, h, min, s);
 }
+
+}  // namespace be
 
 /*
     // Créer des dates

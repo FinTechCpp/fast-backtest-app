@@ -14,6 +14,7 @@ struct Time {
     bool operator!=(const Time& other) const;
 };
 
+// TODO : on pourrait mettre en commun avec la class Date du backtestEngine
 struct DateTime {
     int year = 0;
     int month = 0;
@@ -41,6 +42,26 @@ enum LogLevel {
     DEBUG = 10,
     NOTSET = 0
 };
+
+// Surcharge de l'opérateur de flux pour LogLevel
+inline std::ostream& operator<<(std::ostream& os, const LogLevel& level) {
+    switch (level) {
+        case LogLevel::CRITICAL:
+            return os << "CRITICAL";
+        case LogLevel::ERROR:
+            return os << "ERROR";
+        case LogLevel::WARNING:
+            return os << "WARNING";
+        case LogLevel::INFO:
+            return os << "INFO";
+        case LogLevel::DEBUG:
+            return os << "DEBUG";
+        case LogLevel::NOTSET:
+            return os << "NOTSET";
+        default:
+            return os << "UNKNOWN(" << static_cast<int>(level) << ")";
+    }
+}
 
 struct BasicCandle {
     DateTime date;
@@ -93,8 +114,8 @@ struct StrategyBaseConfig {
     bool use_atr_for_sl = false;     // Important: valeur par défaut false
     bool use_atr_for_tp = false;     // Important: valeur par défaut false
     int atr_period = 14;
-    double stop_loss_atr_multiplier = 2.0;
-    double take_profit_atr_multiplier = 3.0;
+    double stop_loss_atr_multiplier = 2.0; // sl_atr_multiple
+    double take_profit_atr_multiplier = 3.0; // tp_atr_multiple
     double min_stop_loss_distance = 5.0;
     double min_take_profit_distance = 5.0;
     
@@ -105,7 +126,7 @@ struct StrategyBaseConfig {
         
     // Risk management
     bool use_risk_based_sizing = false;
-    double risk_percentage = 1.0;
+    double risk_percentage = 1.0; // risk_per_trade_pct
     double cash = 100000.0;
     double max_position_percentage = 100.0;
     double leverage_limit = 20.0;
@@ -119,3 +140,65 @@ struct StrategyBaseConfig {
     double daily_max_loss_percentage = 2.0;
     double daily_max_loss_amount = 0.0; // Calculé à partir de cash et daily_max_loss_percentage
 };
+
+// Surcharge de l'opérateur de flux pour StrategyBaseConfig
+inline std::ostream& operator<<(std::ostream& os, const StrategyBaseConfig& config) {
+    os << "StrategyBaseConfig {\n";
+    
+    // Time settings
+    os << "  Trading hours: " << config.trading_from.hour << ":" << config.trading_from.minute 
+       << " - " << config.trading_to.hour << ":" << config.trading_to.minute << "\n";
+    
+    os << "  Trading days: ";
+    for (size_t i = 0; i < config.trading_days.size(); ++i) {
+        if (i > 0) os << ", ";
+        switch(config.trading_days[i]) {
+            case 0: os << "Monday"; break;
+            case 1: os << "Tuesday"; break;
+            case 2: os << "Wednesday"; break;
+            case 3: os << "Thursday"; break;
+            case 4: os << "Friday"; break;
+            case 5: os << "Saturday"; break;
+            case 6: os << "Sunday"; break;
+            default: os << "Unknown"; break;
+        }
+    }
+    os << "\n";
+    
+    // SL/TP values
+    os << "  Take profit distance: " << config.take_profit_distance << "\n";
+    os << "  Stop loss distance: " << config.stop_loss_distance << "\n";
+    
+    // ATR parameters
+    os << "  Use ATR for SL: " << (config.use_atr_for_sl ? "Yes" : "No") << "\n";
+    os << "  Use ATR for TP: " << (config.use_atr_for_tp ? "Yes" : "No") << "\n";
+    os << "  ATR period: " << config.atr_period << "\n";
+    os << "  SL ATR multiplier: " << config.stop_loss_atr_multiplier << "\n";
+    os << "  TP ATR multiplier: " << config.take_profit_atr_multiplier << "\n";
+    os << "  Min SL distance: " << config.min_stop_loss_distance << "\n";
+    os << "  Min TP distance: " << config.min_take_profit_distance << "\n";
+    
+    // Min/Max parameters
+    os << "  Use Min/Max for SL: " << (config.use_minmax_for_sl ? "Yes" : "No") << "\n";
+    os << "  SL Min/Max periods: " << config.sl_minmax_periods << "\n";
+    os << "  SL Min/Max delta: " << config.sl_minmax_delta << "\n";
+    
+    // Risk management
+    os << "  Use risk-based sizing: " << (config.use_risk_based_sizing ? "Yes" : "No") << "\n";
+    os << "  Risk percentage: " << config.risk_percentage << "%\n";
+    os << "  Cash: " << config.cash << "\n";
+    os << "  Max position %: " << config.max_position_percentage << "%\n";
+    os << "  Leverage limit: " << config.leverage_limit << "x\n";
+    
+    // Break-even parameters
+    os << "  Use break-even: " << (config.use_break_even ? "Yes" : "No") << "\n";
+    os << "  Break-even threshold: " << config.break_even_threshold << "\n";
+    
+    // Daily maximum loss
+    os << "  Use daily max loss: " << (config.use_daily_max_loss ? "Yes" : "No") << "\n";
+    os << "  Daily max loss %: " << config.daily_max_loss_percentage << "%\n";
+    os << "  Daily max loss amount: " << config.daily_max_loss_amount << "\n";
+    
+    os << "}";
+    return os;
+}

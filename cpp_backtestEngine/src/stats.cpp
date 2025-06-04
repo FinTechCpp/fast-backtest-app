@@ -9,6 +9,8 @@
 #include <sstream>
 #include <iomanip>
 
+namespace be {
+
 // Valeur NaN pour initialiser les statistiques non calculables
 constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
 
@@ -16,6 +18,7 @@ constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
 struct DrawdownInfo {
     std::vector<double> durations;
     std::vector<double> peaks;
+    std::vector<size_t> zeroIndices;  // Ajout des indices zéro
 };
 
 // Fonction auxiliaire pour calculer la durée et les pics de drawdown
@@ -35,6 +38,7 @@ DrawdownInfo computeDrawdownDurationPeaks(const std::vector<double>& dd) {
     }
     
     DrawdownInfo info;
+    info.zeroIndices = zero_indices;  // Stocker les indices dans la structure
     
     // Calculer la durée et le pic de drawdown pour chaque période
     for (size_t i = 1; i < zero_indices.size(); ++i) {
@@ -121,8 +125,8 @@ std::map<std::string, double> Stats::toMap() const {
     // Valeurs de drawdown
     map["Max. Drawdown [%]"] = maxDrawdownPct;
     map["Avg. Drawdown [%]"] = avgDrawdownPct;
-    map["Max. Drawdown Duration"] = maxDrawdownDuration.getTotalDays();
-    map["Avg. Drawdown Duration"] = avgDrawdownDuration.getTotalDays();
+    // map["Max. Drawdown Duration"] = maxDrawdownDuration.toString();
+    // map["Avg. Drawdown Duration"] = avgDrawdownDuration.toString();
     
     // Statistiques des trades
     map["# Trades"] = numTrades;
@@ -133,14 +137,63 @@ std::map<std::string, double> Stats::toMap() const {
     map["Best Trade [%]"] = bestTradePct;
     map["Worst Trade [%]"] = worstTradePct;
     map["Avg. Trade [%]"] = avgTradePct;
-    map["Max. Trade Duration"] = maxTradeDuration.getTotalDays();
-    map["Avg. Trade Duration"] = avgTradeDuration.getTotalDays();
+    // map["Max. Trade Duration"] = maxTradeDuration.toString();
+    // map["Avg. Trade Duration"] = avgTradeDuration.toString();
     map["Profit Factor"] = profitFactor;
     map["Expectancy [%]"] = expectancyPct;
     map["SQN"] = sqn;
     map["Kelly Criterion"] = kellyCriterion;
     
     return map;
+}
+
+std::ostream& operator<<(std::ostream& os, const Stats& stats) {
+    os << "=== Statistiques de Performance ===\n";
+    
+    os << "\n-- Période --\n";
+    os << "  Début: " << stats.start << "\n";
+    os << "  Fin: " << stats.end << "\n";
+    os << "  Durée: " << stats.duration << "\n";
+    os << "  Exposition: " << stats.exposureTimePct << "%\n";
+    
+    os << "\n-- Résultats --\n";
+    os << "  Équité finale: " << stats.equityFinal << "\n";
+    os << "  Équité maximale: " << stats.equityPeak << "\n";
+    os << "  Rendement: " << stats.returnPct << "%\n";
+    os << "  Buy & Hold: " << stats.buyHoldReturnPct << "%\n";
+    os << "  Rendement annualisé: " << stats.returnAnnPct << "%\n";
+    os << "  CAGR: " << stats.cagrPct << "%\n";
+    
+    os << "\n-- Risque --\n";
+    os << "  Volatilité annualisée: " << stats.volatilityAnnPct << "%\n";
+    os << "  Ratio de Sharpe: " << stats.sharpeRatio << "\n";
+    os << "  Ratio de Sortino: " << stats.sortinoRatio << "\n";
+    os << "  Ratio de Calmar: " << stats.calmarRatio << "\n";
+    os << "  Alpha: " << stats.alphaPct << "%\n";
+    os << "  Beta: " << stats.beta << "\n";
+    
+    os << "\n-- Drawdowns --\n";
+    os << "  Maximum: " << stats.maxDrawdownPct << "%\n";
+    os << "  Moyen: " << stats.avgDrawdownPct << "%\n";
+    os << "  Durée maximale: " << stats.maxDrawdownDuration << "\n";
+    os << "  Durée moyenne: " << stats.avgDrawdownDuration << "\n";
+    
+    os << "\n-- Trades --\n";
+    os << "  Nombre total: " << stats.numTrades << "\n";
+    os << "  Gagnants: " << stats.numWinningTrades << " (" << stats.winRatePct << "%)\n";
+    os << "  Perdants: " << stats.numLosingTrades << "\n";
+    os << "  Neutres: " << stats.numNeutralTrades << "\n";
+    os << "  Meilleur: " << stats.bestTradePct << "%\n";
+    os << "  Pire: " << stats.worstTradePct << "%\n";
+    os << "  Moyen: " << stats.avgTradePct << "%\n";
+    os << "  Durée maximale: " << stats.maxTradeDuration << "\n";
+    os << "  Durée moyenne: " << stats.avgTradeDuration << "\n";
+    os << "  Facteur de profit: " << stats.profitFactor << "\n";
+    os << "  Espérance: " << stats.expectancyPct << "%\n";
+    os << "  SQN: " << stats.sqn << "\n";
+    os << "  Critère de Kelly: " << stats.kellyCriterion << "\n";
+    
+    return os;
 }
 
 // Calcul des statistiques de trading avec la nouvelle structure
@@ -161,8 +214,8 @@ Stats computeStats(
     stats.trades = trades;               
     
     // Dates de début et fin du backtest
-    stats.start = data.getDate(0);  // Première date du dataset
-    stats.end = data.getDate(data.size() - 1);  // Dernière date du dataset
+    stats.start = data.at(0).date;  // Première date du dataset
+    stats.end = data.at(data.size() - 1).date;  // Dernière date du dataset
     stats.duration = stats.end - stats.start;  // Calcul de la durée totale du backtest
     
     // Calcul du drawdown: 1 - equity / max(equity)
@@ -203,10 +256,10 @@ Stats computeStats(
     stats.returnPct = equity.size() > 1 && std::abs(equity.front()) > 1e-10 ? 
         (equity.back() - equity.front()) / equity.front() * 100 : NaN;
     
-    // Rendement Buy & Hold
+    // Rendement Buy & Hold - Utiliser at() pour accéder aux données
     size_t first_trading_bar = 1;  // Simplifié par rapport à _indicator_warmup_nbars
-    double initial_price = data.Close(first_trading_bar);
-    double final_price = data.Close(-1);  // Dernier prix
+    double initial_price = data.at(first_trading_bar).close;  // Modifié
+    double final_price = data.at(data.size() - 1).close;      // Modifié
     stats.buyHoldReturnPct = (final_price - initial_price) / initial_price * 100;
     
     // Extraire les données des trades
@@ -219,8 +272,8 @@ Stats computeStats(
         return_pct_values.push_back(trade->plPercent());
         
         // Calculer la durée du trade en utilisant les dates réelles
-        Date entryDate = data.getDate(trade->entryBar());
-        Date exitDate = data.getDate(trade->exitBar());
+        Date entryDate = data.at(trade->entryBar()).date;  // Modifié
+        Date exitDate = data.at(trade->exitBar()).date;    // Modifié
         Duration tradeDuration = exitDate - entryDate;
         tradeDurations.push_back(tradeDuration);
     }
@@ -348,12 +401,38 @@ Stats computeStats(
     
     // Durée des drawdowns
     if (!dd_info.durations.empty()) {
-        // Convertir les durées de drawdown en objets Duration (en jours)
-        double maxDDDurationInBars = *std::max_element(dd_info.durations.begin(), dd_info.durations.end());
-        stats.maxDrawdownDuration = Duration::fromDays(maxDDDurationInBars);
+        // Pour chaque période de drawdown, utiliser les dates réelles
+        std::vector<Duration> realDurations;
         
-        double avgDDDurationInBars = std::accumulate(dd_info.durations.begin(), dd_info.durations.end(), 0.0) / dd_info.durations.size();
-        stats.avgDrawdownDuration = Duration::fromDays(avgDDDurationInBars);
+        for (size_t i = 1; i < dd_info.zeroIndices.size(); ++i) {
+            size_t start = dd_info.zeroIndices[i-1];
+            size_t end = dd_info.zeroIndices[i];
+            
+            if (end - start <= 1) continue;
+            
+            // Convertir de l'indice de barre aux dates réelles
+            Date startDate = data.at(start).date;
+            Date endDate = data.at(end).date;
+            Duration realDuration = endDate - startDate;
+            
+            realDurations.push_back(realDuration);
+        }
+        
+        // Trouver la durée maximale
+        if (!realDurations.empty()) {
+            stats.maxDrawdownDuration = *std::max_element(realDurations.begin(), realDurations.end(),
+                [](const Duration& a, const Duration& b) { return a.getTotalSeconds() < b.getTotalSeconds(); });
+            
+            // Calculer la durée moyenne
+            double totalSeconds = 0.0;
+            for (const auto& dur : realDurations) {
+                totalSeconds += dur.getTotalSeconds();
+            }
+            stats.avgDrawdownDuration = Duration(totalSeconds / realDurations.size());
+        } else {
+            stats.maxDrawdownDuration = Duration();
+            stats.avgDrawdownDuration = Duration();
+        }
     }
     
     // Calcul des rendements quotidiens (simplifié)
@@ -399,7 +478,7 @@ Stats computeStats(
     double excess_return = stats.returnAnnPct / 100 - risk_free_rate;
     double volatility = stats.volatilityAnnPct / 100;
     
-    if (volatility > 0.001) {
+    if (volatility > 1e-6) {
         stats.sharpeRatio = excess_return / volatility;
     } else {
         stats.sharpeRatio = NaN;
@@ -436,9 +515,54 @@ Stats computeStats(
         stats.calmarRatio = NaN;
     }
     
-    // Alpha et Beta (version simplifiée)
-    stats.alphaPct = NaN;
-    stats.beta = NaN;
+    // Calculer le beta et l'alpha (modèle CAPM)
+    std::vector<double> equity_log_returns;
+    std::vector<double> market_log_returns;
+
+    // Calculer les log returns pour l'equity et le marché
+    for (size_t i = 1; i < equity.size(); ++i) {
+        equity_log_returns.push_back(std::log(equity[i] / equity[i-1]));
+    }
+
+    for (size_t i = 1; i < data.size(); ++i) {
+        market_log_returns.push_back(std::log(data.at(i).close / data.at(i-1).close));  // Modifié
+    }
+
+    // Calculer le beta seulement si nous avons assez de données
+    if (equity_log_returns.size() > 1 && market_log_returns.size() > 1) {
+        // Calculer les moyennes
+        double equity_mean = std::accumulate(equity_log_returns.begin(), equity_log_returns.end(), 0.0) / equity_log_returns.size();
+        double market_mean = std::accumulate(market_log_returns.begin(), market_log_returns.end(), 0.0) / market_log_returns.size();
+        
+        // Calculer les éléments de la matrice de covariance
+        double cov_em = 0.0;  // Covariance equity-market
+        double var_m = 0.0;   // Variance du marché
+        
+        size_t n = std::min(equity_log_returns.size(), market_log_returns.size());
+        for (size_t i = 0; i < n; ++i) {
+            cov_em += (equity_log_returns[i] - equity_mean) * (market_log_returns[i] - market_mean);
+            var_m += (market_log_returns[i] - market_mean) * (market_log_returns[i] - market_mean);
+        }
+        
+        // Éviter la division par zéro
+        if (n > 1 && var_m > 0) {
+            cov_em /= (n - 1);
+            var_m /= (n - 1);
+            
+            // Calculer le beta
+            stats.beta = cov_em / var_m;
+            
+            // Calculer l'alpha (CAPM)
+            const double risk_free_rate = 0.0;  // Taux sans risque (paramètre omis)
+            stats.alphaPct = stats.returnPct - risk_free_rate * 100 - stats.beta * (stats.buyHoldReturnPct - risk_free_rate * 100);
+        } else {
+            stats.beta = NaN;
+            stats.alphaPct = NaN;
+        }
+    } else {
+        stats.beta = NaN;
+        stats.alphaPct = NaN;
+    }
     
     return stats;
 }
@@ -499,3 +623,5 @@ std::map<std::string, double> computeStatsMap(
     Stats stats = computeStats(trades, equity, data);
     return stats.toMap();
 }
+
+} // namespace be

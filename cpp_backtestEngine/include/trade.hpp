@@ -3,13 +3,14 @@
 #include <string>
 #include <memory>
 #include <chrono>
-#include "date.hpp"  // Include the Date class definition
+#include "date.hpp"
+
+namespace be {
 
 // Forward declarations
 class Broker;
 class Order;
 
-// TODO: ajouter comme attributs les date d'entrée et de sortie, c'est bien mignon les entrybar mais ducoup on doit convertir a posteriori l'index de barre en date
 
 /**
  * @brief Représentation d'une transaction exécutée
@@ -45,6 +46,7 @@ public:
      * @param size Taille de la position (positive pour achat, négative pour vente)
      * @param entryPrice Prix d'entrée de la position
      * @param entryBar Indice de la barre où le trade a été ouvert
+     * @param entryDate Date d'entrée du trade
      * @param tag Étiquette descriptive pour faciliter l'identification
      */
     Trade(std::shared_ptr<Broker> broker,
@@ -196,3 +198,5 @@ private:
     void setTpOrder(Order order);
     friend class Broker;
 };
+
+} // namespace be

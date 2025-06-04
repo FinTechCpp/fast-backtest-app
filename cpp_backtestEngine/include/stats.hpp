@@ -3,9 +3,12 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <ostream>
 #include "trade.hpp"
 #include "data.hpp"
 #include "date.hpp"
+
+namespace be {
 
 /**
  * @brief Structure contenant toutes les statistiques de performance du backtest
@@ -75,6 +78,17 @@ struct Stats {
 };
 
 /**
+ * @brief Opérateur de flux pour afficher les statistiques de performance
+ * 
+ * Affiche les statistiques de manière structurée et lisible.
+ * 
+ * @param os Flux de sortie
+ * @param stats Statistiques à afficher
+ * @return Référence au flux de sortie
+ */
+std::ostream& operator<<(std::ostream& os, const Stats& stats);
+
+/**
  * @brief Calcule les statistiques de performance
  * 
  * @param trades Liste des trades fermés
@@ -101,3 +115,5 @@ std::map<std::string, double> computeStatsMap(
     const std::vector<std::shared_ptr<Trade>>& trades,
     const std::vector<double>& equity,
     const Data& data);
+
+} // namespace be

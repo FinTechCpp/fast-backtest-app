@@ -1,0 +1,124 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build-debug",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_and_run.sh",
+            "args": [
+                "--debug",
+                "--no-run"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "build-release",
+            "type": "shell",
+            "command": "${workspaceFolder}/build_and_run.sh",
+            "args": [
+                "--no-run"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "build-debug-windows",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build",
+                "--config",
+                "Debug",
+                "--parallel"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$msCompile",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "configure-cmake-windows"
+        },
+        {
+            "label": "build-release-windows",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "${workspaceFolder}/build",
+                "--config",
+                "Release",
+                "--parallel"
+            ],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": "$msCompile",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "dependsOn": "configure-cmake-windows"
+        },
+        {
+            "label": "configure-cmake-windows",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "..",
+                "-DBUILD_WITH_DEBUG=ON"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

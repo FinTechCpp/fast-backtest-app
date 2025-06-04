@@ -2,6 +2,8 @@
 
 #include <memory>
 
+namespace be {
+
 // Forward declarations
 class Broker;
 
@@ -28,3 +30,5 @@ public:
 private:
     std::shared_ptr<Broker> _broker;
 };
+
+} // namespace be

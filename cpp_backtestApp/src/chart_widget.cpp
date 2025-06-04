@@ -719,7 +719,7 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
             // Obtenir le prix high de la bougie d'entrée pour placer la flèche
             if (entryBarIndex < static_cast<int>(m_backtestData->size())) {
                 const be::Candle& entryCandle = m_backtestData->at(entryBarIndex);
-                double arrowY = entryCandle.high * 1.0001; // Légèrement au-dessus du high
+                double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
 
                 // Ajouter une flèche inversée au-dessus de la bougie d'entrée
                 entryArrows.push_back({relativeIndex, arrowY});
@@ -744,7 +744,7 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
                 // Obtenir le prix low de la bougie de sortie pour placer la flèche
                 if (exitBarIndex < static_cast<int>(m_backtestData->size())) {
                     const be::Candle& exitCandle = m_backtestData->at(exitBarIndex);
-                    double arrowY = exitCandle.low * 0.9999;
+                    double arrowY = exitCandle.low * 0.9995;
 
                     // Ajouter une flèche en-dessous de la bougie de sortie
                     exitArrows.push_back({relativeExitIndex, arrowY});

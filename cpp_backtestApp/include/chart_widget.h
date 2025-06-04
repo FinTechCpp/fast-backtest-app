@@ -10,6 +10,7 @@
 
 #include "data.hpp"
 #include "trade.hpp"
+#include "components/technical_indicators.h"
 
 // Include ChartDirector headers
 #include "qchartviewer.h"
@@ -53,6 +54,8 @@ public:
     void setShowVolume(bool show);
     void setShowTrades(bool show);
     void setShowEquity(bool show);
+
+    void setRSIPeriod(int period);
     
     // Actions sur le graphique
     void createChart();    ///< Crée le graphique complet avec les données actuelles
@@ -115,6 +118,7 @@ private:
         bool showTrades = true;
         bool showVolume = true;
         bool showEquity = true;
+        int rsiPeriod = 14;
     };
 
     /**
@@ -132,7 +136,8 @@ private:
      * @brief Structure pour stocker les indicateurs en cache
      */
     struct IndicatorCache {
-        std::vector<double> rsi14;       // RSI avec période 14
+        std::map<int, std::vector<double>> rsi;  // Clé: période, Valeur: données RSI
+        std::map<int, std::vector<double>> ema;  // Clé: période, Valeur: données EMA
         bool isValid = false;
     };
     
@@ -152,16 +157,7 @@ private:
     double dateToChartTimestamp(const be::Date& date);
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
     void updateHeikinAshiCache();
-    void calculateHeikinAshi(const std::vector<double>& open, 
-                           const std::vector<double>& high,
-                           const std::vector<double>& low, 
-                           const std::vector<double>& close,
-                           std::vector<double>& ha_open, 
-                           std::vector<double>& ha_high,
-                           std::vector<double>& ha_low,
-                           std::vector<double>& ha_close);
     void updateIndicatorCache();
-    void calculateRSI(int period, const std::vector<double>& closeData, std::vector<double>& rsiValues);
 
     
     // 2. Fonctions utilitaires pour les données
@@ -195,7 +191,7 @@ private:
     FinanceChart* finalizeChart(FinanceChart* chart);
     void addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, const char* name,
                   int symbolType, int symbolSize = 5, int color = -1);
-    void addRSIFromCache(FinanceChart* chart, int height, int startIndex, int pointsToShow);
+    void addRSIFromCache(FinanceChart* chart, int height, int startIndex, int pointsToShow, int period);
 
     // 6. Gestion des interactions utilisateur
     void trackFinance(MultiChart* m, int mouseX);

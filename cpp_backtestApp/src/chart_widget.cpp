@@ -126,6 +126,29 @@ void ChartWidget::setChartType(ChartType chartType)
         updateChart();
 }
 
+void ChartWidget::setRSIPeriod(int period)
+{
+    if (period < 2) period = 2;  // Minimum 2 périodes
+    
+    if (m_config.rsiPeriod == period)
+        return; // Pas de changement
+    
+    m_config.rsiPeriod = period;
+    
+    // Vérifier si la période est déjà dans le cache
+    if (m_indicatorCache.isValid && m_indicatorCache.rsi.find(period) == m_indicatorCache.rsi.end()) {
+        // Si non, calculer le RSI pour cette période et l'ajouter au cache
+        if (!m_priceData.close.empty()) {
+            std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
+            TechnicalIndicators::calculateRSI(m_priceData.close, period, rsiCache);
+        }
+    }
+    
+    // Mettre à jour le graphique si nécessaire
+    if (hasValidData())
+        updateChart();
+}
+
 void ChartWidget::createChart()
 {
     if (!hasValidData()) {
@@ -352,34 +375,19 @@ void ChartWidget::updateHeikinAshiCache()
         return;
     }
 
-    // Réserver l'espace nécessaire
-    size_t dataSize = m_priceData.timestamps.size();
-    m_heikinAshiCache.open.resize(dataSize);
-    m_heikinAshiCache.high.resize(dataSize);
-    m_heikinAshiCache.low.resize(dataSize);
-    m_heikinAshiCache.close.resize(dataSize);
-
-    // Calculer les valeurs Heikin-Ashi pour toutes les données
-    // Première bougie
-    m_heikinAshiCache.open[0] = m_priceData.open[0];
-    m_heikinAshiCache.close[0] = (m_priceData.open[0] + m_priceData.high[0] + 
-                                  m_priceData.low[0] + m_priceData.close[0]) / 4.0;
-    m_heikinAshiCache.high[0] = m_priceData.high[0];
-    m_heikinAshiCache.low[0] = m_priceData.low[0];
-    
-    // Autres bougies
-    for (size_t i = 1; i < dataSize; ++i) {
-        m_heikinAshiCache.close[i] = (m_priceData.open[i] + m_priceData.high[i] + 
-                                      m_priceData.low[i] + m_priceData.close[i]) / 4.0;
-        m_heikinAshiCache.open[i] = (m_heikinAshiCache.open[i-1] + m_heikinAshiCache.close[i-1]) / 2.0;
-        m_heikinAshiCache.high[i] = std::max(std::max(m_priceData.high[i], m_heikinAshiCache.open[i]), 
-                                             m_heikinAshiCache.close[i]);
-        m_heikinAshiCache.low[i] = std::min(std::min(m_priceData.low[i], m_heikinAshiCache.open[i]), 
-                                            m_heikinAshiCache.close[i]);
-    }
+    TechnicalIndicators::calculateHeikinAshi(
+        m_priceData.open, 
+        m_priceData.high, 
+        m_priceData.low,
+        m_priceData.close,
+        m_heikinAshiCache.open,
+        m_heikinAshiCache.high,
+        m_heikinAshiCache.low,
+        m_heikinAshiCache.close
+    );
     
     m_heikinAshiCache.isValid = true;
-    qDebug() << "Cache Heikin-Ashi mis à jour avec" << dataSize << "bougies";
+    qDebug() << "Cache Heikin-Ashi mis à jour avec" << m_priceData.timestamps.size() << "bougies";
 }
 
 void ChartWidget::updateIndicatorCache()
@@ -392,72 +400,18 @@ void ChartWidget::updateIndicatorCache()
 
     // Réserver l'espace nécessaire
     size_t dataSize = m_priceData.timestamps.size();
-    m_indicatorCache.rsi14.resize(dataSize);
+    // m_indicatorCache.rsi14.resize(dataSize);
 
-    // Calculer le RSI sur toutes les données (période = 14)
-    calculateRSI(14, m_priceData.close, m_indicatorCache.rsi14);
-    
+    // Précalculer le RSI pour toutes les périodes configurées
+    std::vector<double>& rsiCache = m_indicatorCache.rsi[14];
+    TechnicalIndicators::calculateRSI(m_priceData.close, 14, rsiCache);
+
+    // Précalculer l'EMA pour toutes les périodes configurées
+    std::vector<double>& emaCache = m_indicatorCache.ema[30];
+    TechnicalIndicators::calculateEMA(m_priceData.close, 30, emaCache);
+
     m_indicatorCache.isValid = true;
     qDebug() << "Cache d'indicateurs mis à jour avec" << dataSize << "points";
-}
-
-void ChartWidget::calculateRSI(int period, const std::vector<double>& closeData, std::vector<double>& rsiValues)
-{
-    size_t dataSize = closeData.size();
-    rsiValues.resize(dataSize);
-    
-    if (dataSize <= period) {
-        std::fill(rsiValues.begin(), rsiValues.end(), 50.0);  // Valeur neutre par défaut
-        return;
-    }
-
-    // Calculer les variations de prix (delta)
-    std::vector<double> deltas(dataSize - 1);
-    for (size_t i = 1; i < dataSize; ++i) {
-        deltas[i - 1] = closeData[i] - closeData[i - 1];
-    }
-
-    // Séparer les variations positives et négatives
-    std::vector<double> gains(dataSize - 1);
-    std::vector<double> losses(dataSize - 1);
-    for (size_t i = 0; i < deltas.size(); ++i) {
-        gains[i] = (deltas[i] > 0) ? deltas[i] : 0;
-        losses[i] = (deltas[i] < 0) ? -deltas[i] : 0;
-    }
-
-    // Valeurs par défaut pour les premières périodes où le RSI n'est pas défini
-    for (int i = 0; i < period; ++i) {
-        rsiValues[i] = 50.0;  // Valeur neutre
-    }
-
-    // Calculer la première moyenne
-    double avgGain = 0;
-    double avgLoss = 0;
-    for (int i = 0; i < period; ++i) {
-        avgGain += gains[i];
-        avgLoss += losses[i];
-    }
-    avgGain /= period;
-    avgLoss /= period;
-
-    // Calculer le premier RSI
-    double rs = (avgLoss > 0) ? (avgGain / avgLoss) : 100.0;
-    rsiValues[period] = 100.0 - (100.0 / (1.0 + rs));
-
-    // Calculer le RSI pour les points restants (méthode Wilder)
-    for (size_t i = period + 1; i < dataSize; ++i) {
-        // Calculer les moyennes lissées
-        avgGain = ((period - 1) * avgGain + gains[i - 1]) / period;
-        avgLoss = ((period - 1) * avgLoss + losses[i - 1]) / period;
-        
-        // Éviter division par zéro
-        if (avgLoss > 0) {
-            rs = avgGain / avgLoss;
-            rsiValues[i] = 100.0 - (100.0 / (1.0 + rs));
-        } else {
-            rsiValues[i] = 100.0;
-        }
-    }
 }
 
 void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve, 
@@ -728,8 +682,9 @@ FinanceChart* ChartWidget::drawChart(
         c->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
 
-    // Ajouter le RSI à partir du cache
-    addRSIFromCache(c, 120, startIndex, timestamps.len);
+    // Ajouter le RSI à partir du cache avec une période de 14 (par défaut)
+    int rsiPeriod = m_config.rsiPeriod; // Nouvelle configuration
+    addRSIFromCache(c, 120, startIndex, timestamps.len, rsiPeriod);
 
     // 4. Ajouter les trades si disponibles
     addTradeMarkers(c, timestamps, startIndex);
@@ -928,20 +883,28 @@ void ChartWidget::addMarkers(XYChart* chart, const std::vector<std::pair<double,
     layer->moveFront();
 }
 
-void ChartWidget::addRSIFromCache(FinanceChart* chart, int height, int startIndex, int pointsToShow)
+void ChartWidget::addRSIFromCache(FinanceChart* chart, int height, int startIndex, int pointsToShow, int period)
 {
     if (!m_indicatorCache.isValid) {
         qWarning() << "Cache d'indicateurs non valide lors de l'ajout du RSI";
         return;
     }
 
+    auto it = m_indicatorCache.rsi.find(period);
+    if (it == m_indicatorCache.rsi.end()) {
+        qWarning() << "Période RSI" << period << "non disponible dans le cache";
+        return;
+    }
+
+    const std::vector<double>& rsiData = it->second;
+    
     // S'assurer que les indices sont valides
-    if (startIndex >= (int)m_indicatorCache.rsi14.size()) {
+    if (startIndex >= (int)rsiData.size()) {
         return;
     }
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)m_indicatorCache.rsi14.size());
+    int endIndex = std::min(startIndex + pointsToShow, (int)rsiData.size());
     int actualPoints = endIndex - startIndex;
 
     if (actualPoints <= 0) {
@@ -949,21 +912,21 @@ void ChartWidget::addRSIFromCache(FinanceChart* chart, int height, int startInde
     }
 
     // Extraire les données RSI visibles du cache
-    DoubleArray rsiData(&m_indicatorCache.rsi14[startIndex], actualPoints);
+    DoubleArray rsiArray(&rsiData[startIndex], actualPoints);
 
     // Configurer les paramètres pour le RSI
     int color = 0x800080;          // Violet
-    double range = 20;             // Plage des seuils
+    double range = 20;             // Plage des seuils (70/30)
     int upColor = 0xff6666;        // Rouge clair
     int downColor = 0x6666ff;      // Bleu clair
 
     // Ajouter le graphique d'indicateur
     XYChart* c = chart->addIndicator(height);
-    
+
     // Configurer et ajouter le RSI
     char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "RSI (14)");
-    LineLayer* layer = chart->addLineIndicator2(c, rsiData, color, buffer);
+    snprintf(buffer, sizeof(buffer), "RSI (%d)", period);
+    LineLayer* layer = chart->addLineIndicator2(c, rsiArray, color, buffer);
 
     // Ajouter les seuils
     chart->addThreshold(c, layer, 50 + range, upColor, 50 - range, downColor);

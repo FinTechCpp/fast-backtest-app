@@ -603,6 +603,9 @@ FinanceChart* ChartWidget::drawChart(
     } else if (m_config.chartType == ChartType::Close) {
         c->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
+
+    c->addRSI(120, 14, 0x800080, 20, 0xff6666, 0x6666ff);
+    c->addExpMovingAvg(28, 0x0000ff);
     
     // 4. Ajouter les trades si disponibles
     addTradeMarkers(c, timestamps, startIndex);
@@ -754,8 +757,8 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
     }
 
     // Ajouter les marqueurs carrés pour les entrées et sorties
-    addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 5, 0x000000);
-    addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 5, 0x000000);
+    addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 7, 0x000000);
+    addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 7, 0x000000);
     
     // Ajouter les flèches
     const char* resultNames[RESULT_COUNT] = { "Win", "Loss", "Flat" };
@@ -763,12 +766,12 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
     for (int i = 0; i < RESULT_COUNT; i++) {
         if (!entryArrows[i].empty()) {
             std::string name = std::string(resultNames[i]) + " Entry";
-            addMarkers(mainChart, entryArrows[i], name.c_str(), Chart::InvertedTriangleSymbol, 12, COLORS[i]);
+            addMarkers(mainChart, entryArrows[i], name.c_str(), Chart::InvertedTriangleSymbol, 15, COLORS[i]);
         }
         
         if (!exitArrows[i].empty()) {
             std::string name = std::string(resultNames[i]) + " Exit";
-            addMarkers(mainChart, exitArrows[i], name.c_str(), Chart::TriangleSymbol, 12, COLORS[i]);
+            addMarkers(mainChart, exitArrows[i], name.c_str(), Chart::TriangleSymbol, 15, COLORS[i]);
         }
     }
 }

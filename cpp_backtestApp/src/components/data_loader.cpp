@@ -318,10 +318,17 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
 {
     if (line.length() < 45) return nullptr;
     
-    const QChar* d = line.constData();
+    // Trouver la première virgule pour sauter l'index
+    int firstComma = line.indexOf(',');
+    if (firstComma == -1) return nullptr;
+    
+    // S'assurer qu'il y a assez de caractères après la virgule
+    if (line.length() < firstComma + 25) return nullptr;
+    
+    // Pointer vers le début de la date (après l'index et la virgule)
+    const QChar* d = line.constData() + firstComma + 1;
     
     // Parser manuellement "2022-02-14 14:30:10+00:00"
-    // YYYY-MM-DD HH:MM:SS
     int year = (d[0].digitValue() * 1000) + (d[1].digitValue() * 100) + 
                (d[2].digitValue() * 10) + d[3].digitValue();
     int month = (d[5].digitValue() * 10) + d[6].digitValue();
@@ -336,8 +343,8 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
         return nullptr;
     }
     
-    // Trouver les virgules et parser les valeurs
-    int comma1 = line.indexOf(',', 25);
+    // Ajuster la position des virgules pour tenir compte de l'index
+    int comma1 = line.indexOf(',', firstComma + 25);
     int comma2 = line.indexOf(',', comma1 + 1);
     int comma3 = line.indexOf(',', comma2 + 1);
     int comma4 = line.indexOf(',', comma3 + 1);

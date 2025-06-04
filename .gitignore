@@ -16,3 +16,4 @@ marketData/IX_D_NASDAQ_IFE_IP_10secs_2025-05-28_to_MID.csv
 backtest_app_cpp/build-cmake/*
 live_interface/candles_history.json
 .vscode/c_cpp_properties.json
+.env

@@ -127,6 +127,14 @@ private:
         std::vector<double> close;
         bool isValid = false;
     };
+
+    /**
+     * @brief Structure pour stocker les indicateurs en cache
+     */
+    struct IndicatorCache {
+        std::vector<double> rsi14;       // RSI avec période 14
+        bool isValid = false;
+    };
     
     /**
      * @brief Structure de métadonnées pour chaque type de graphique
@@ -152,6 +160,9 @@ private:
                            std::vector<double>& ha_high,
                            std::vector<double>& ha_low,
                            std::vector<double>& ha_close);
+    void updateIndicatorCache();
+    void calculateRSI(int period, const std::vector<double>& closeData, std::vector<double>& rsiValues);
+
     
     // 2. Fonctions utilitaires pour les données
     template<typename T>
@@ -184,7 +195,7 @@ private:
     FinanceChart* finalizeChart(FinanceChart* chart);
     void addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, const char* name,
                   int symbolType, int symbolSize = 5, int color = -1);
-    void addDirectionalArrow(XYChart* chart, double x, double y, double height, int color = -1);
+    void addRSIFromCache(FinanceChart* chart, int height, int startIndex, int pointsToShow);
 
     // 6. Gestion des interactions utilisateur
     void trackFinance(MultiChart* m, int mouseX);
@@ -203,6 +214,7 @@ private:
     PriceData m_priceData;
     std::shared_ptr<be::Data> m_backtestData; 
     HeikinAshiCache m_heikinAshiCache;
+    IndicatorCache m_indicatorCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
     std::map<be::Date, double> m_timestampCache; // Cache pour dateToChartTimestamp

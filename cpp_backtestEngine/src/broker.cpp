@@ -50,11 +50,10 @@ void Broker::next() {
     processOrders();
     
     // Log account equity for the equity curve
-    double currentEquity = equity();
-    _equityCurve[_currentBar] = currentEquity;
+    _equityCurve[_currentBar] = _cash;
     
     // If equity is negative or zero, set all to 0 and stop the simulation
-    if (currentEquity <= 0) {
+    if (_cash <= 0) {
         // Ensure margin available is also <= 0
         if (marginAvailable() > 0) {
             throw std::logic_error("Margin available is positive but equity is not");
@@ -543,6 +542,11 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     // Save commissions on the Trade instance for stats
     double openCommission = calculateCommission(trade->size(), trade->entryPrice());
     trade->setCommissions(commission + openCommission);
+
+    // Mettre à jour l'equity curve avec le cash actuel après la clôture du trade
+    if (barIndex < _equityCurve.size()) {
+        _equityCurve[barIndex] = _cash;
+    }
 }
 
 // cette methode est tres bien mais il faudrait mettre en commun avec processOrders() et mettre 
@@ -602,10 +606,9 @@ void Broker::finalizeOrders() {
         }
         
         // Mettre à jour l'equity curve pour la dernière barre
-        double currentEquity = equity();
         size_t lastIndex = _data->size() - 1;
         if (lastIndex < _equityCurve.size()) {
-            _equityCurve[lastIndex] = currentEquity;
+            _equityCurve[lastIndex] = _cash;
         }
     } catch (const std::exception& e) {
         std::cerr << "Erreur lors de la finalisation des ordres: " << e.what() << std::endl;

@@ -1,36 +1,18 @@
-venv
-.env
 __pycache__/
 *.pyc
-.bash_history
-.cache/conda/notices/notices.cache
-.cache/pip/*
-.conda/*
 .ipynb_checkpoints/*
-.local*
-.ipython*
-.jupyter*
 *.egg-info/
-docs/build/** 
 *backtest_config.ini
-backtest_interface/PyQt/build/*
-backtest_interface/PyQt/dist/*
-backtest_interface/PyQt/*.spec
 *.log
-*.DS_Store
-*.bak
-backtest_interface/PyQt/backtest_config.ini.bak
-*.ini.bakbot_v3/docker/postgres-data/
 *.o
 # C++ extension files
 *.so
 *.pyd
 # Build directories
-build/
+*build/
 dist/
 *.egg-info/
 marketData/IX_D_NASDAQ_IFE_IP_10secs_2025-05-28_to_MID.csv
 backtest_app_cpp/build-cmake/*
-marketData/IX_D_NASDAQ_IFE_IP_10secs_2025-05-28_to_MID.csv
 live_interface/candles_history.json
 .vscode/c_cpp_properties.json

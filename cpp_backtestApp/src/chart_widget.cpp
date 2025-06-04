@@ -37,6 +37,7 @@ ChartWidget::ChartWidget(QWidget* parent)
     m_chartViewer->setMouseWheelZoomRatio(1.1);
     m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
     m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
+    m_chartViewer->setZoomInWidthLimit(0.0001); // Limite de zoom pour éviter les zooms trop fins
     
     // Connecter les signaux
     connect(m_chartViewer, &QChartViewer::viewPortChanged, 
@@ -687,13 +688,22 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
     if (!mainChart)
         return;
     
-    std::vector<std::pair<double, double>> entryMarkers;        // Carrés pour positions d'entrée <index, price>
-    std::vector<std::pair<double, double>> exitMarkers;         // Carrés pour positions de sortie <index, price>
-    std::vector<std::pair<double, double>> entryArrows;         // Flèches pour entrées <index, highPrice+offset>
-    std::vector<std::pair<double, double>> exitArrows;          // Flèches pour sorties <index, lowPrice-offset>
-    std::vector<int> entryArrowColors;                          // Couleurs des flèches d'entrée
-    std::vector<int> exitArrowColors;                           // Couleurs des flèches de sortie
-    // les courleurs d'entrée et de sortie sont les meme normalement
+    // Préallouer de la mémoire pour éviter les réallocations
+    size_t estimatedMarkers = std::min(size_t(100), m_trades.size() * 2);
+    
+    std::vector<std::pair<double, double>> entryMarkers;
+    std::vector<std::pair<double, double>> exitMarkers;
+    std::vector<std::pair<double, double>> entryArrows;
+    std::vector<std::pair<double, double>> exitArrows;
+    std::vector<int> entryArrowColors;
+    std::vector<int> exitArrowColors;
+    
+    entryMarkers.reserve(estimatedMarkers);
+    exitMarkers.reserve(estimatedMarkers);
+    entryArrows.reserve(estimatedMarkers);
+    exitArrows.reserve(estimatedMarkers);
+    entryArrowColors.reserve(estimatedMarkers);
+    exitArrowColors.reserve(estimatedMarkers);
 
     // Pour chaque trade, vérifier s'il est visible dans la fenêtre actuelle
     for (const auto& trade : m_trades) {
@@ -712,7 +722,7 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
                 const be::Candle& entryCandle = m_backtestData->at(entryBarIndex);
                 double arrowY = entryCandle.high * 1.0001; // Légèrement au-dessus du high
 
-                // Ajouter une flèche inversée (pointe vers le bas) au-dessus de la bougie d'entrée
+                // Ajouter une flèche inversée au-dessus de la bougie d'entrée
                 entryArrows.push_back({relativeIndex, arrowY});
                 
                 // Couleur de la flèche d'entrée (noir par défaut)
@@ -737,7 +747,7 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
                     const be::Candle& exitCandle = m_backtestData->at(exitBarIndex);
                     double arrowY = exitCandle.low * 0.9999;
 
-                    // Ajouter une flèche (pointe vers le haut) en-dessous de la bougie de sortie
+                    // Ajouter une flèche en-dessous de la bougie de sortie
                     exitArrows.push_back({relativeExitIndex, arrowY});
                     
                     // Déterminer la couleur de la flèche en fonction du résultat du trade
@@ -753,29 +763,64 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
             }
         }
     }
-    // il faudra faire une taille proportionnelle a la taille d'une bougie
-    // parfois ca crash sur les boucles for des arrows possible fuite de memoire ?
 
-    // Ajouter les marqueurs carrés pour les entrées
+    // Ajouter les marqueurs carrés pour les entrées et sorties
     if (!entryMarkers.empty()) {
         addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 5, 0x000000);
     }
     
-    // Ajouter les marqueurs carrés pour les sorties
     if (!exitMarkers.empty()) {
         addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 5, 0x000000);
     }
     
-    // Ajouter les flèches pour les entrées (triangles inversés)
-    for (size_t i = 0; i < entryArrows.size(); ++i) {
-        std::vector<std::pair<double, double>> arrow = {entryArrows[i]};
-        addMarkers(mainChart, arrow, "", Chart::InvertedTriangleSymbol, 12, exitArrowColors[i]);
+    // Optimisation: Ajouter tous les marqueurs en une seule fois pour éviter des appels répétés
+    
+    // Flèches d'entrée (s'assurer que les tableaux ont la même taille)
+    if (!entryArrows.empty()) {
+        std::vector<double> xValues;
+        std::vector<double> yValues;
+        std::vector<int> colors;
+        
+        xValues.reserve(entryArrows.size());
+        yValues.reserve(entryArrows.size());
+        
+        for (size_t i = 0; i < entryArrows.size(); ++i) {
+            xValues.push_back(entryArrows[i].first);
+            yValues.push_back(entryArrows[i].second);
+        }
+        
+        DoubleArray xArray = vectorToDoubleArray(xValues);
+        DoubleArray yArray = vectorToDoubleArray(yValues);
+        
+        // Utiliser une couleur constante pour simplifier
+        ScatterLayer* layer = mainChart->addScatterLayer(xArray, yArray, 
+                                                  "Entry", Chart::InvertedTriangleSymbol, 12, 0x000000);
+        layer->moveFront();
     }
     
-    // Ajouter les flèches pour les sorties (triangles)
-    for (size_t i = 0; i < exitArrows.size(); ++i) {
-        std::vector<std::pair<double, double>> arrow = {exitArrows[i]};
-        addMarkers(mainChart, arrow, "", Chart::TriangleSymbol, 12, exitArrowColors[i]);
+    // Flèches de sortie
+    if (!exitArrows.empty()) {
+        std::vector<double> xValues;
+        std::vector<double> yValues;
+        
+        xValues.reserve(exitArrows.size());
+        yValues.reserve(exitArrows.size());
+        
+        for (size_t i = 0; i < exitArrows.size(); ++i) {
+            xValues.push_back(exitArrows[i].first);
+            yValues.push_back(exitArrows[i].second);
+        }
+        
+        DoubleArray xArray = vectorToDoubleArray(xValues);
+        DoubleArray yArray = vectorToDoubleArray(yValues);
+        
+        // Pour les couleurs différentes, on peut soit:
+        // 1. Utiliser une couleur moyenne/constante pour simplifier
+        // 2. Créer plusieurs couches, une pour chaque couleur
+        // Option 1 pour commencer (plus simple):
+        ScatterLayer* layer = mainChart->addScatterLayer(xArray, yArray, 
+                                                  "Exit", Chart::TriangleSymbol, 12, 0xCC0000);
+        layer->moveFront();
     }
 }
 

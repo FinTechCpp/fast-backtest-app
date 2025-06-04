@@ -921,6 +921,36 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         PlotArea* plotArea = c->getPlotArea();
         int plotAreaLeftX = plotArea->getLeftX() + c->getAbsOffsetX();
         int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
+
+        // NOUVEAU : Calculer la position Y de la souris et la valeur correspondante sur l'axe Y
+        int mouseY = m_chartViewer->getPlotAreaMouseY() - c->getAbsOffsetY();
+        double yValue = c->getYValue(mouseY);
+
+        // NOUVEAU : Afficher le tooltip de l'axe Y sur le côté droit
+        if (mouseY >= plotArea->getTopY() && mouseY <= plotArea->getTopY() + plotArea->getHeight()) {
+            // Position du tooltip sur l'axe Y (côté droit de la zone de tracé)
+            int yAxisTooltipX = plotAreaLeftX + plotArea->getWidth() + 5;
+            int yAxisTooltipY = mouseY + c->getAbsOffsetY();
+            
+            // Créer le texte du tooltip avec la valeur Y formatée
+            std::string yTooltipText = c->formatValue(yValue, "{value|P4}");
+            
+            // Dessiner un rectangle de fond pour le tooltip Y
+            int tooltipWidth = 60;
+            int tooltipHeight = 20;
+            d->rect(yAxisTooltipX - 2, yAxisTooltipY - tooltipHeight/2 - 2, 
+                   yAxisTooltipX + tooltipWidth + 2, yAxisTooltipY + tooltipHeight/2 + 2, 
+                   0x000000, 0xffffcc);
+            
+            // Afficher le texte du tooltip Y
+            TTFText* yTooltip = d->text(yTooltipText.c_str(), "Arial", 8);
+            yTooltip->draw(yAxisTooltipX, yAxisTooltipY, 0x000000, Chart::Left);
+            yTooltip->destroy();
+            
+            // NOUVEAU : Dessiner une ligne horizontale pour le crosshair Y
+            d->hline(plotAreaLeftX, plotAreaLeftX + plotArea->getWidth(), 
+                    yAxisTooltipY, d->dashLineColor(0x000000, 0x0101));
+        }
         
         // La légende commence par l'étiquette de date, puis la légende ohlc (le cas échéant), et ensuite les entrées pour les indicateurs
         std::ostringstream legendText;

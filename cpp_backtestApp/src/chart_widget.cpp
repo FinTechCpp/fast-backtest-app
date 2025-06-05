@@ -324,113 +324,24 @@ int ChartWidget::addRSI(int period)
     return rsi.id;
 }
 
-bool ChartWidget::setRSIPeriod(int id, int period)
+bool ChartWidget::setRSIConfig(int id, const RSIInstance &config)
 {
-    if (period < 2) period = 2;  // Validation de base
-    
     RSIInstance* rsi = findRSI(id);
-    if (!rsi) {
-        return false;
-    }
-    
-    // Mettre à jour la période
-    rsi->period = period;
-    
+    if (!rsi) return false;
+
+    // Mettre à jour la configuration
+    *rsi = config;
+
     // S'assurer que les nouvelles données RSI sont en cache
-    ensureRSICached(period);
-    
-    // Émettre le signal
-    emit rsiChanged(id, period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData()) {
-        updateChart();
-    }
-    
-    return true;
-}
+    ensureRSICached(config.period);
 
-bool ChartWidget::setRSIVisible(int id, bool visible)
-{
-    RSIInstance* rsi = findRSI(id);
-    if (!rsi) {
-        return false;
-    }
-    
-    // Mettre à jour la visibilité
-    rsi->visible = visible;
-    
     // Émettre le signal
-    emit rsiChanged(id, rsi->period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
-        updateChart();
-    }
-    
-    return true;
-}
+    emit rsiChanged(id, config.period);
 
-bool ChartWidget::setRSIColor(int id, int color)
-{
-    RSIInstance* rsi = findRSI(id);
-    if (!rsi) {
-        return false;
-    }
-    
-    // Mettre à jour la couleur
-    rsi->color = color;
-    
-    // Émettre le signal
-    emit rsiChanged(id, rsi->period);
-    
     // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
+    if (hasValidData())
         updateChart();
-    }
-    
-    return true;
-}
 
-bool ChartWidget::setRSIHeight(int id, int height)
-{
-    RSIInstance* rsi = findRSI(id);
-    if (!rsi) {
-        return false;
-    }
-    
-    // Mettre à jour la hauteur
-    rsi->height = height;
-    
-    // Émettre le signal
-    emit rsiChanged(id, rsi->period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
-        updateChart();
-    }
-    
-    return true;
-}
-
-bool ChartWidget::setRSIRange(int id, double range)
-{
-    RSIInstance* rsi = findRSI(id);
-    if (!rsi) {
-        return false;
-    }
-    
-    // Mettre à jour la plage
-    rsi->range = range;
-    
-    // Émettre le signal
-    emit rsiChanged(id, rsi->period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
-        updateChart();
-    }
-    
     return true;
 }
 
@@ -483,71 +394,24 @@ int ChartWidget::addEMA(int period)
     return ema.id;
 }
 
-bool ChartWidget::setEMAPeriod(int id, int period)
+bool ChartWidget::setEMAConfig(int id, const EMAInstance &config)
 {
-    if (period < 2) period = 2;  // Validation de base
-    
     EMAInstance* ema = findEMA(id);
-    if (!ema) {
-        return false;
-    }
-    
-    // Mettre à jour la période
-    ema->period = period;
-    
+    if (!ema) return false;
+
+    // Mettre à jour la configuration
+    *ema = config;
+
     // S'assurer que les nouvelles données EMA sont en cache
-    ensureEMACached(period);
-    
-    // Émettre le signal
-    emit emaChanged(id, period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData()) {
-        updateChart();
-    }
-    
-    return true;
-}
+    ensureEMACached(config.period);
 
-bool ChartWidget::setEMAVisible(int id, bool visible)
-{
-    EMAInstance* ema = findEMA(id);
-    if (!ema) {
-        return false;
-    }
-    
-    // Mettre à jour la visibilité
-    ema->visible = visible;
-    
     // Émettre le signal
-    emit emaChanged(id, ema->period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
-        updateChart();
-    }
-    
-    return true;
-}
+    emit emaChanged(id, config.period);
 
-bool ChartWidget::setEMAColor(int id, int color)
-{
-    EMAInstance* ema = findEMA(id);
-    if (!ema) {
-        return false;
-    }
-    
-    // Mettre à jour la couleur
-    ema->color = color;
-    
-    // Émettre le signal
-    emit emaChanged(id, ema->period);
-    
     // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
+    if (hasValidData())
         updateChart();
-    }
-    
+
     return true;
 }
 

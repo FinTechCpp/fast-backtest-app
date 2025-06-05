@@ -68,6 +68,41 @@ public:
             return id == other.id;
         }
     };
+
+    /**
+     * @brief Structure qui représente une instance d'indicateur Stochastique
+     */
+    struct StochasticInstance {
+        int id;                 ///< Identifiant unique 
+        int kPeriod;            ///< Période pour calculer la ligne %K
+        int dPeriod;            ///< Période pour calculer la ligne %D
+        bool visible = true;    ///< Si l'indicateur est visible
+        int height = 120;       ///< Hauteur du panneau
+        int kColor = 0x0000FF;  ///< Couleur de la ligne %K (bleu par défaut)
+        int dColor = 0xFF0000;  ///< Couleur de la ligne %D (rouge par défaut)
+        
+        bool operator==(const StochasticInstance& other) const {
+            return id == other.id;
+        }
+    };
+
+    /**
+     * @brief Structure qui représente une instance d'indicateur Stochastique
+     */
+    struct StochasticInstance {
+        int id;                 ///< Identifiant unique 
+        int fastKPeriod;        ///< Période pour calculer le %K brut
+        int slowKPeriod;        ///< Période de lissage pour %K
+        int slowDPeriod;        ///< Période pour calculer %D
+        bool visible = true;    ///< Si l'indicateur est visible
+        int height = 120;       ///< Hauteur du panneau
+        int kColor = 0x0000FF;  ///< Couleur de la ligne %K (bleu par défaut)
+        int dColor = 0xFF0000;  ///< Couleur de la ligne %D (rouge par défaut)
+        
+        bool operator==(const StochasticInstance& other) const {
+            return id == other.id;
+        }
+    };
     
     // ======== Constructeurs et destructeur ========
     explicit ChartWidget(QWidget* parent = nullptr);
@@ -132,20 +167,15 @@ private slots:
     void onMouseMovePlotArea(QMouseEvent* event);
 
 public slots:
+    // Pour les setter des indicateur il faudrait evité de faire cela j'aurait plutoto penser a un seul setter genre setConfig(int id, const IndicatorConfig& config)
     // Pour le RSI
     int addRSI(int period = 14);
-    bool setRSIPeriod(int id, int period);
-    bool setRSIVisible(int id, bool visible);
-    bool setRSIColor(int id, int color);
-    bool setRSIHeight(int id, int height);
-    bool setRSIRange(int id, double range);
+    bool setRSIConfig(int id, const RSIInstance& config);
     bool removeRSI(int id);
 
     // Pour l'EMA
     int addEMA(int period = 20);
-    bool setEMAPeriod(int id, int period);
-    bool setEMAVisible(int id, bool visible);
-    bool setEMAColor(int id, int color);
+    bool setEMAConfig(int id, const EMAInstance& config);
     bool removeEMA(int id);
 
 private:
@@ -291,6 +321,8 @@ private:
     // Méthodes privées pour l'EMA
     void addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow);
     void ensureEMACached(int period);
+
+    // Méthodes privées pour le Stochastic
     
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;

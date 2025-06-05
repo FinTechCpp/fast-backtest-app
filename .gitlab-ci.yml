@@ -40,7 +40,7 @@ build-windows:
     
     # Appliquer vos modifications pour Qt 6.8.3
     - echo "Application des patches pour Qt 6.8.3..."
-    - cp $CI_PROJECT_DIR/patches/mxe/qt6-qtbase.mk src/qt/qt6/
+    - cp ~/home/maxime/patches/mxe/qt6-qtbase.mk src/qt/qt6/
     
     # Vérifier la version après patch
     - echo "Version Qt configurée :"

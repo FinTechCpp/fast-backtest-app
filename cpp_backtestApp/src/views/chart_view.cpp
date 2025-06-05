@@ -131,6 +131,11 @@ void ChartView::setupUI()
     connect(m_chartWidget, &ChartWidget::emaAdded, this, &ChartView::onEMAAdded);
     connect(m_chartWidget, &ChartWidget::emaChanged, this, &ChartView::onEMAChanged);
     connect(m_chartWidget, &ChartWidget::emaRemoved, this, &ChartView::onEMARemoved);
+
+    // Connecter les signaux Stochastic
+    connect(m_chartWidget, &ChartWidget::stochasticAdded, this, &ChartView::onStochasticAdded);
+    connect(m_chartWidget, &ChartWidget::stochasticChanged, this, &ChartView::onStochasticChanged);
+    connect(m_chartWidget, &ChartWidget::stochasticRemoved, this, &ChartView::onStochasticRemoved);
     
     // Ajouter les widgets au layout du panneau droit
     rightPanelLayout->addWidget(m_chartPlaceholder);
@@ -164,6 +169,7 @@ void ChartView::setupIndicatorControls()
     m_indicatorTypeCombo = new QComboBox();
     m_indicatorTypeCombo->addItem("RSI", "RSI");
     m_indicatorTypeCombo->addItem("EMA", "EMA");
+    m_indicatorTypeCombo->addItem("Stochastic", "STOCH");  // Ajouter le Stochastique
     // Ajouter d'autres types d'indicateurs ici au besoin
     
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
@@ -200,6 +206,10 @@ void ChartView::onAddIndicatorClicked()
     else if (indicatorType == "EMA") {
         // Pour EMA, ouvrir le dialogue de configuration directement
         onEditEMA();
+    }
+    else if (indicatorType == "STOCH") {
+        // Ajouter un Stochastique avec les paramètres par défaut
+        m_chartWidget->addStochastic(14, 3, 3);
     }
     // Ajouter d'autres types d'indicateurs ici
 }
@@ -300,6 +310,49 @@ void ChartView::onEditEMA()
     refreshIndicatorsList();
 }
 
+void ChartView::onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
+{
+    qDebug() << "Stochastic ajouté:" << "id=" << id << "fastK=" << fastKPeriod
+             << "slowK=" << slowKPeriod << "slowD=" << slowDPeriod;
+    
+    // Créer les widgets pour ce Stochastique
+    QString name = QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
+    createIndicatorWidgets(id, name);
+    
+    // Mettre à jour le graphique
+    if (m_chartWidget->hasValidData()) {
+        m_chartWidget->updateChart();
+    }
+}
+
+void ChartView::onStochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
+{
+    qDebug() << "Stochastic modifié:" << "id=" << id << "fastK=" << fastKPeriod
+             << "slowK=" << slowKPeriod << "slowD=" << slowDPeriod;
+    
+    // Mettre à jour le libellé
+    if (m_indicatorLabels.contains(id)) {
+        QString name = QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
+        m_indicatorLabels[id]->setText(name);
+    }
+    
+    // Mettre à jour le graphique
+    if (m_chartWidget->hasValidData()) {
+        m_chartWidget->updateChart();
+    }
+}
+
+void ChartView::onStochasticRemoved(int id)
+{
+    qDebug() << "Stochastic supprimé:" << "id=" << id;
+    refreshIndicatorsList();
+    
+    // Mettre à jour le graphique
+    if (m_chartWidget->hasValidData()) {
+        m_chartWidget->updateChart();
+    }
+}
+
 void ChartView::createIndicatorWidgets(int id, const QString &name)
 {
     // Créer un widget horizontal pour cet indicateur
@@ -357,10 +410,21 @@ void ChartView::onEditIndicator(int id)
         onEditEMA();
         return;
     }
+
+    // Rechercher si c'est un Stochastique
+    ChartWidget::StochasticInstance* stochastic = m_chartWidget->findStochastic(id);
+    if (stochastic) {
+        // Créer et afficher le dialogue d'édition pour Stochastique
+        StochasticDialog* dialog = new StochasticDialog(this, m_chartWidget, id, *stochastic);
+        dialog->exec();
+        delete dialog;
+        return;
+    }
     
     qDebug() << "Indicateur introuvable:" << id;
 }
 
+// Mettre à jour onRemoveIndicator pour gérer aussi le Stochastique
 void ChartView::onRemoveIndicator(int id)
 {
     // Essayer de supprimer comme RSI
@@ -368,9 +432,15 @@ void ChartView::onRemoveIndicator(int id)
         return;
     }
     
-    // Sinon, essayer de supprimer comme EMA
-    m_chartWidget->removeEMA(id);
+    // Essayer de supprimer comme EMA
+    if (m_chartWidget->removeEMA(id)) {
+        return;
+    }
+    
+    // Essayer de supprimer comme Stochastique
+    m_chartWidget->removeStochastic(id);
 }
+
 
 void ChartView::refreshIndicatorsList()
 {
@@ -401,6 +471,15 @@ void ChartView::refreshIndicatorsList()
         if (ema.visible) {
             QString name = QString("EMA (%1)").arg(ema.period);
             createIndicatorWidgets(ema.id, name);
+        }
+    }
+
+    // Pour chaque Stochastic actif, recréer les widgets
+    const std::vector<ChartWidget::StochasticInstance>& stochInstances = m_chartWidget->getStochasticInstances();
+    for (const auto& stoch : stochInstances) {
+        if (stoch.visible) {
+            QString name = QString("Stochastic (%1,%2,%3)").arg(stoch.fastKPeriod).arg(stoch.slowKPeriod).arg(stoch.slowDPeriod);
+            createIndicatorWidgets(stoch.id, name);
         }
     }
     

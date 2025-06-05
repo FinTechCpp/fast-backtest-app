@@ -118,3 +118,87 @@ void TechnicalIndicators::calculateEMA(const std::vector<double>& closeData, int
         emaValues[i] = (closeData[i] - emaValues[i-1]) * multiplier + emaValues[i-1];
     }
 }
+
+void TechnicalIndicators::calculateStochastic(
+    const std::vector<double>& highData,
+    const std::vector<double>& lowData,
+    const std::vector<double>& closeData,
+    int fastKPeriod,
+    int slowKPeriod,
+    int slowDPeriod,
+    std::vector<double>& kValues,
+    std::vector<double>& dValues)
+{
+    // Vérification des données d'entrée
+    size_t dataSize = closeData.size();
+    if (dataSize == 0 || highData.size() != dataSize || lowData.size() != dataSize) {
+        kValues.clear();
+        dValues.clear();
+        return;
+    }
+    
+    // Redimensionner les vecteurs de sortie
+    kValues.resize(dataSize);
+    dValues.resize(dataSize);
+
+    // Valeurs par défaut (50 est une valeur neutre pour l'oscillateur)
+    std::fill(kValues.begin(), kValues.end(), 50.0);
+    std::fill(dValues.begin(), dValues.end(), 50.0);
+    
+    if (dataSize < static_cast<size_t>(fastKPeriod)) {
+        return;  // Pas assez de données pour calculer
+    }
+    
+    // Étape 1: Calculer le %K brut (Fast %K) - La formule est:
+    // %K = 100 * (C - L14) / (H14 - L14)
+    // où C est le prix de clôture actuel, L14 est le plus bas sur 14 périodes
+    // et H14 est le plus haut sur 14 périodes
+    std::vector<double> rawK(dataSize);
+    
+    for (size_t i = fastKPeriod - 1; i < dataSize; ++i) {
+        // Trouver le plus bas et le plus haut sur la période fastKPeriod
+        double lowestLow = std::numeric_limits<double>::max();
+        double highestHigh = std::numeric_limits<double>::lowest();
+        
+        for (size_t j = i - fastKPeriod + 1; j <= i; ++j) {
+            lowestLow = std::min(lowestLow, lowData[j]);
+            highestHigh = std::max(highestHigh, highData[j]);
+        }
+        
+        // Calculer le %K brut
+        double range = highestHigh - lowestLow;
+        if (range > 0.0) {
+            rawK[i] = ((closeData[i] - lowestLow) / range) * 100.0;
+        } else {
+            rawK[i] = 50.0; // Valeur neutre si la plage est nulle
+        }
+    }
+    
+    // Étape 2: Lisser le %K brut avec une moyenne mobile sur slowKPeriod pour obtenir le %K lent
+    for (size_t i = 0; i < dataSize; ++i) {
+        if (i < fastKPeriod - 1 + slowKPeriod - 1) {
+            kValues[i] = 50.0;  // Pas assez de données, valeur neutre
+            continue;
+        }
+        
+        double sum = 0.0;
+        for (size_t j = 0; j < slowKPeriod; ++j) {
+            sum += rawK[i - j];
+        }
+        kValues[i] = sum / slowKPeriod;
+    }
+    
+    // Étape 3: Calculer le %D comme une moyenne mobile des valeurs %K sur slowDPeriod
+    for (size_t i = 0; i < dataSize; ++i) {
+        if (i < fastKPeriod - 1 + slowKPeriod - 1 + slowDPeriod - 1) {
+            dValues[i] = 50.0;  // Pas assez de données, valeur neutre
+            continue;
+        }
+        
+        double sum = 0.0;
+        for (size_t j = 0; j < slowDPeriod; ++j) {
+            sum += kValues[i - j];
+        }
+        dValues[i] = sum / slowDPeriod;
+    }
+}

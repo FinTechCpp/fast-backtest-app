@@ -53,5 +53,26 @@ public:
      */
     static void calculateEMA(const std::vector<double>& closeData, int period, std::vector<double>& emaValues);
     
+    /**
+     * @brief Calcule l'indicateur Stochastique
+     * 
+     * @param highData Les prix les plus hauts
+     * @param lowData Les prix les plus bas
+     * @param closeData Les prix de clôture
+     * @param fastKPeriod La période pour calculer %K brut
+     * @param slowKPeriod La période de lissage pour %K
+     * @param slowDPeriod La période pour calculer %D
+     * @param kValues Vecteur de sortie qui contiendra les valeurs %K lissées
+     * @param dValues Vecteur de sortie qui contiendra les valeurs %D
+     */
+    static void calculateStochastic(
+        const std::vector<double>& highData,
+        const std::vector<double>& lowData,
+        const std::vector<double>& closeData,
+        int fastKPeriod,
+        int slowKPeriod,
+        int slowDPeriod,
+        std::vector<double>& kValues,
+        std::vector<double>& dValues);
     // D'autres méthodes pour d'autres indicateurs peuvent être ajoutées...
 };

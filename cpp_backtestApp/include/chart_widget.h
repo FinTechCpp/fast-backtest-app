@@ -102,8 +102,10 @@ public:
     ChartType getChartType() const { return m_config.chartType; }
     const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
     const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
+    const std::vector<StochasticInstance>& getStochasticInstances() const { return m_stochasticInstances; }
     RSIInstance* findRSI(int id);
     EMAInstance* findEMA(int id);
+    StochasticInstance* findStochastic(int id);
 
 
     void setChartWidth(int width);
@@ -141,6 +143,11 @@ signals:
     void emaAdded(int id, int period);
     void emaChanged(int id, int period);
     void emaRemoved(int id);
+
+    // Signaux pour le Stochastique
+    void stochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
+    void stochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
+    void stochasticRemoved(int id);
     
 protected:
     // void resizeEvent(QResizeEvent* event) override;
@@ -150,7 +157,6 @@ private slots:
     void onMouseMovePlotArea(QMouseEvent* event);
 
 public slots:
-    // Pour les setter des indicateur il faudrait evité de faire cela j'aurait plutoto penser a un seul setter genre setConfig(int id, const IndicatorConfig& config)
     // Pour le RSI
     int addRSI(int period = 14);
     bool setRSIConfig(int id, const RSIInstance& config);
@@ -160,6 +166,11 @@ public slots:
     int addEMA(int period = 20);
     bool setEMAConfig(int id, const EMAInstance& config);
     bool removeEMA(int id);
+
+    // Pour le Stochastique
+    int addStochastic(int fastKPeriod = 14, int slowKPeriod = 3, int slowDPeriod = 3);
+    bool setStochasticConfig(int id, const StochasticInstance& config);
+    bool removeStochastic(int id);
 
 private:
     // ======== Structures de données internes ========
@@ -215,6 +226,7 @@ private:
     struct IndicatorCache {
         std::map<int, std::vector<double>> rsi;  // Clé: période, Valeur: données RSI
         std::map<int, std::vector<double>> ema;  // Clé: période, Valeur: données EMA
+        std::map<std::tuple<int,int,int>, std::pair<std::vector<double>, std::vector<double>>> stochastic;
         bool isValid = false;
     };
     

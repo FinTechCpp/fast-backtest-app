@@ -29,6 +29,7 @@
 
 #include "dialog/rsi_dialog.h"
 #include "dialog/ema_dialog.h"
+#include "dialog/stochastic_dialog.h"
 
 class App;
 class RSIDialog;
@@ -65,6 +66,12 @@ private slots:
     void onEMAChanged(int id, int period);
     void onEMARemoved(int id);
     void onEditEMA();
+
+    // Slots pour le Stochastique
+    void onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
+    void onStochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
+    void onStochasticRemoved(int id);
+    
     void refreshIndicatorsList();
 
 private:

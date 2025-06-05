@@ -15,6 +15,11 @@ env:
 jobs:
   build-windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+      actions: read
     
     steps:
     - name: Checkout code
@@ -38,6 +43,8 @@ jobs:
     - name: Verify Qt installation
       run: |
         echo "Qt version: ${{ env.QT_VERSION }}"
+        echo "Qt6_DIR: $env:Qt6_DIR"
+        echo "QT_ROOT_DIR: $env:QT_ROOT_DIR"
         qmake --version
         where qmake
 
@@ -47,7 +54,9 @@ jobs:
     - name: Configure CMake
       working-directory: build
       run: |
-        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+        $qtPath = if ($env:Qt6_DIR) { $env:Qt6_DIR } else { $env:QT_ROOT_DIR }
+        echo "Using Qt path: $qtPath"
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_PREFIX_PATH="$qtPath"
 
     - name: Build project
       working-directory: build

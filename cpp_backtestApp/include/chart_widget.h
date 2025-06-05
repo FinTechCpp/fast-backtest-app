@@ -74,23 +74,6 @@ public:
      */
     struct StochasticInstance {
         int id;                 ///< Identifiant unique 
-        int kPeriod;            ///< Période pour calculer la ligne %K
-        int dPeriod;            ///< Période pour calculer la ligne %D
-        bool visible = true;    ///< Si l'indicateur est visible
-        int height = 120;       ///< Hauteur du panneau
-        int kColor = 0x0000FF;  ///< Couleur de la ligne %K (bleu par défaut)
-        int dColor = 0xFF0000;  ///< Couleur de la ligne %D (rouge par défaut)
-        
-        bool operator==(const StochasticInstance& other) const {
-            return id == other.id;
-        }
-    };
-
-    /**
-     * @brief Structure qui représente une instance d'indicateur Stochastique
-     */
-    struct StochasticInstance {
-        int id;                 ///< Identifiant unique 
         int fastKPeriod;        ///< Période pour calculer le %K brut
         int slowKPeriod;        ///< Période de lissage pour %K
         int slowDPeriod;        ///< Période pour calculer %D

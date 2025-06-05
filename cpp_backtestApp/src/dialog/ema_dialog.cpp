@@ -345,8 +345,9 @@ void EMADialog::onApply()
     for (const auto& ema : m_currentEMAs) {
         if (ema.visible) {
             int id = m_chartWidget->addEMA(ema.period);
-            m_chartWidget->setEMAVisible(id, true);
-            m_chartWidget->setEMAColor(id, ema.color);
+            m_chartWidget->setEMAConfig(id, ema);
+            // m_chartWidget->setEMAVisible(id, true);
+            // m_chartWidget->setEMAColor(id, ema.color);
         }
     }
     
@@ -369,8 +370,9 @@ void EMADialog::onCancel()
     // 2. Restaurer les EMA d'origine
     for (const auto& ema : m_originalEMAs) {
         int id = m_chartWidget->addEMA(ema.period);
-        m_chartWidget->setEMAVisible(id, ema.visible);
-        m_chartWidget->setEMAColor(id, ema.color);
+        m_chartWidget->setEMAConfig(id, ema);
+        // m_chartWidget->setEMAVisible(id, ema.visible);
+        // m_chartWidget->setEMAColor(id, ema.color);
     }
     
     // 3. Mettre à jour le graphique

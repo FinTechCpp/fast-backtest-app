@@ -1,0 +1,194 @@
+name: Windows Release Build
+
+on:
+  push:
+    branches: [ github-actions ]
+  pull_request:
+    branches: [ github-actions ]
+
+env:
+  BUILD_TYPE: Release
+  QT_VERSION: 6.8.3
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up MSVC
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: windows
+        target: desktop
+        arch: win64_msvc2022_64
+        modules: qtcharts qtwidgets qtcore
+        cache: true
+
+    - name: Verify Qt installation
+      run: |
+        echo "Qt version: ${{ env.Qt6_DIR }}"
+        qmake --version
+        where qmake
+
+    - name: Create build directory
+      run: mkdir build
+
+    - name: Configure CMake
+      working-directory: build
+      run: |
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+
+    - name: Build project
+      working-directory: build
+      run: |
+        cmake --build . --config ${{ env.BUILD_TYPE }} --parallel 4
+
+    - name: Verify executable exists
+      run: |
+        if (Test-Path "build/cpp_backtestApp/${{ env.BUILD_TYPE }}/backtestapp.exe") {
+          echo "✅ Executable found"
+          Get-ChildItem "build/cpp_backtestApp/${{ env.BUILD_TYPE }}/"
+        } else {
+          echo "❌ Executable not found"
+          Get-ChildItem "build/cpp_backtestApp/" -Recurse
+          exit 1
+        }
+
+    - name: Deploy Qt dependencies
+      run: |
+        $qtDir = "${{ env.Qt6_DIR }}"
+        $winDeployQt = "$qtDir/bin/windeployqt.exe"
+        $exePath = "build/cpp_backtestApp/${{ env.BUILD_TYPE }}/backtestapp.exe"
+        
+        if (Test-Path $winDeployQt) {
+          echo "Deploying Qt dependencies..."
+          & $winDeployQt --release --no-translations --no-system-d3d-compiler --no-opengl-sw $exePath
+        } else {
+          echo "windeployqt not found at: $winDeployQt"
+          exit 1
+        }
+
+    - name: Copy ChartDirector DLL
+      run: |
+        $chartDirDll = "ChartDirector/lib/chartdir70.dll"
+        $targetDir = "build/cpp_backtestApp/${{ env.BUILD_TYPE }}/"
+        
+        if (Test-Path $chartDirDll) {
+          Copy-Item $chartDirDll $targetDir
+          echo "✅ ChartDirector DLL copied"
+        } else {
+          echo "⚠️ ChartDirector DLL not found at: $chartDirDll"
+        }
+
+    - name: Create distribution folder
+      run: |
+        $distDir = "ig-trading-bot-windows"
+        $sourceDir = "build/cpp_backtestApp/${{ env.BUILD_TYPE }}"
+        
+        # Créer le dossier de distribution
+        New-Item -ItemType Directory -Path $distDir -Force
+        
+        # Copier l'exécutable et toutes les DLL
+        Copy-Item "$sourceDir/*" $distDir -Recurse -Force
+        
+        # Copier les dossiers de données si ils existent
+        if (Test-Path "data") {
+          Copy-Item "data" "$distDir/data" -Recurse -Force
+        }
+        
+        # Copier les fichiers README/LICENSE si ils existent
+        @("README.md", "LICENSE", "CHANGELOG.md") | ForEach-Object {
+          if (Test-Path $_) {
+            Copy-Item $_ $distDir -Force
+          }
+        }
+        
+        # Afficher le contenu du dossier de distribution
+        echo "Distribution folder contents:"
+        Get-ChildItem $distDir -Recurse
+
+    - name: Create ZIP archive
+      run: |
+        $archiveName = "ig-trading-bot-windows-v${{ github.run_number }}.zip"
+        Compress-Archive -Path "ig-trading-bot-windows/*" -DestinationPath $archiveName
+        echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ig-trading-bot-windows
+        path: ig-trading-bot-windows/
+        retention-days: 30
+
+    - name: Get commit info
+      id: commit
+      run: |
+        $shortSha = "${{ github.sha }}".Substring(0, 7)
+        $commitMsg = git log -1 --pretty=format:"%s"
+        echo "SHORT_SHA=$shortSha" >> $env:GITHUB_ENV
+        echo "COMMIT_MSG=$commitMsg" >> $env:GITHUB_ENV
+
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: windows-v${{ github.run_number }}
+        release_name: Windows Release v${{ github.run_number }}
+        body: |
+          🚀 **Nouvelle release Windows automatique**
+          
+          **Informations de build:**
+          - Commit: ${{ env.SHORT_SHA }}
+          - Message: ${{ env.COMMIT_MSG }}
+          - Qt Version: ${{ env.QT_VERSION }}
+          - Build Type: ${{ env.BUILD_TYPE }}
+          - Date: ${{ github.event.head_commit.timestamp }}
+          
+          **Contenu:**
+          - Exécutable Windows 64-bit (`backtestapp.exe`)
+          - Toutes les DLL Qt nécessaires
+          - ChartDirector DLL
+          - Fichiers de données (si présents)
+          
+          **Installation:**
+          1. Téléchargez le fichier ZIP
+          2. Extrayez-le dans un dossier de votre choix
+          3. Lancez `backtestapp.exe`
+          
+          ---
+          *Build automatique généré par GitHub Actions*
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./${{ env.ARCHIVE_NAME }}
+        asset_name: ${{ env.ARCHIVE_NAME }}
+        asset_content_type: application/zip
+
+    - name: Build Summary
+      run: |
+        echo "## ✅ Build Successful" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Release Created:** [windows-v${{ github.run_number }}](${{ steps.create_release.outputs.html_url }})" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Build Details:**" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Commit: ${{ env.SHORT_SHA }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Qt Version: ${{ env.QT_VERSION }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Build Type: ${{ env.BUILD_TYPE }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Archive: ${{ env.ARCHIVE_NAME }}" >> $env:GITHUB_STEP_SUMMARY

@@ -4,6 +4,7 @@
 #include <QMouseEvent>
 #include <algorithm>
 #include <cmath>
+#include <set>
 
 const std::array<ChartWidget::ChartTypeInfo, static_cast<size_t>(ChartWidget::ChartType::Count)> ChartWidget::s_chartTypeData = {{
     { ChartWidget::ChartType::CandleStick, "CandleStick" },
@@ -122,29 +123,6 @@ void ChartWidget::setChartType(ChartType chartType)
     }
 
     // Si nous avons déjà des données, mettre à jour le graphique
-    if (hasValidData())
-        updateChart();
-}
-
-void ChartWidget::setRSIPeriod(int period)
-{
-    if (period < 2) period = 2;  // Minimum 2 périodes
-    
-    if (m_config.rsiPeriod == period)
-        return; // Pas de changement
-    
-    m_config.rsiPeriod = period;
-    
-    // Vérifier si la période est déjà dans le cache
-    if (m_indicatorCache.isValid && m_indicatorCache.rsi.find(period) == m_indicatorCache.rsi.end()) {
-        // Si non, calculer le RSI pour cette période et l'ajouter au cache
-        if (!m_priceData.close.empty()) {
-            std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
-            TechnicalIndicators::calculateRSI(m_priceData.close, period, rsiCache);
-        }
-    }
-    
-    // Mettre à jour le graphique si nécessaire
     if (hasValidData())
         updateChart();
 }
@@ -320,6 +298,190 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     m_chartViewer->updateDisplay();
 }
 
+int ChartWidget::addRSI(int period)
+{
+    if (period < 2) period = 2;  // Validation de base
+    
+    // Créer une nouvelle instance RSI
+    RSIInstance rsi;
+    rsi.id = m_nextRSIId++;
+    rsi.period = period;
+    
+    // S'assurer que les données RSI sont en cache
+    ensureRSICached(period);
+    
+    // Ajouter aux instances actives
+    m_rsiInstances.push_back(rsi);
+    
+    // Émettre le signal
+    emit rsiAdded(rsi.id, period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData()) {
+        updateChart();
+    }
+    
+    return rsi.id;
+}
+
+bool ChartWidget::setRSIPeriod(int id, int period)
+{
+    if (period < 2) period = 2;  // Validation de base
+    
+    RSIInstance* rsi = findRSI(id);
+    if (!rsi) {
+        return false;
+    }
+    
+    // Mettre à jour la période
+    rsi->period = period;
+    
+    // S'assurer que les nouvelles données RSI sont en cache
+    ensureRSICached(period);
+    
+    // Émettre le signal
+    emit rsiChanged(id, period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData()) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+bool ChartWidget::setRSIVisible(int id, bool visible)
+{
+    RSIInstance* rsi = findRSI(id);
+    if (!rsi) {
+        return false;
+    }
+    
+    // Mettre à jour la visibilité
+    rsi->visible = visible;
+    
+    // Émettre le signal
+    emit rsiChanged(id, rsi->period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+bool ChartWidget::setRSIColor(int id, int color)
+{
+    RSIInstance* rsi = findRSI(id);
+    if (!rsi) {
+        return false;
+    }
+    
+    // Mettre à jour la couleur
+    rsi->color = color;
+    
+    // Émettre le signal
+    emit rsiChanged(id, rsi->period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+bool ChartWidget::setRSIHeight(int id, int height)
+{
+    RSIInstance* rsi = findRSI(id);
+    if (!rsi) {
+        return false;
+    }
+    
+    // Mettre à jour la hauteur
+    rsi->height = height;
+    
+    // Émettre le signal
+    emit rsiChanged(id, rsi->period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+bool ChartWidget::setRSIRange(int id, double range)
+{
+    RSIInstance* rsi = findRSI(id);
+    if (!rsi) {
+        return false;
+    }
+    
+    // Mettre à jour la plage
+    rsi->range = range;
+    
+    // Émettre le signal
+    emit rsiChanged(id, rsi->period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+bool ChartWidget::removeRSI(int id)
+{
+    auto it = std::find_if(m_rsiInstances.begin(), m_rsiInstances.end(),
+                         [id](const RSIInstance& rsi) { return rsi.id == id; });
+    
+    if (it == m_rsiInstances.end()) {
+        return false;
+    }
+    
+    // Supprimer l'instance
+    m_rsiInstances.erase(it);
+    
+    // Émettre le signal
+    emit rsiRemoved(id);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+ChartWidget::RSIInstance* ChartWidget::findRSI(int id)
+{
+    auto it = std::find_if(m_rsiInstances.begin(), m_rsiInstances.end(),
+                         [id](const RSIInstance& rsi) { return rsi.id == id; });
+    
+    if (it == m_rsiInstances.end()) {
+        return nullptr;
+    }
+    
+    return &(*it);
+}
+
+void ChartWidget::ensureRSICached(int period)
+{
+    // Vérifier que la période RSI est en cache
+    if (m_indicatorCache.isValid && !m_priceData.close.empty()) {
+        if (m_indicatorCache.rsi.find(period) == m_indicatorCache.rsi.end()) {
+            // Calculer le RSI pour cette période
+            std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
+            TechnicalIndicators::calculateRSI(m_priceData.close, period, rsiCache);
+            qDebug() << "Calculé RSI avec période" << period;
+        }
+    }
+}
+
 void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
     if (!data || data->size() == 0) {
         qWarning() << "Données de backtest vides ou invalides";
@@ -398,20 +560,26 @@ void ChartWidget::updateIndicatorCache()
         return;
     }
 
-    // Réserver l'espace nécessaire
-    size_t dataSize = m_priceData.timestamps.size();
-    // m_indicatorCache.rsi14.resize(dataSize);
+    // Vider le cache existant
+    m_indicatorCache.rsi.clear();
+    m_indicatorCache.ema.clear();
 
-    // Précalculer le RSI pour toutes les périodes configurées
-    std::vector<double>& rsiCache = m_indicatorCache.rsi[14];
-    TechnicalIndicators::calculateRSI(m_priceData.close, 14, rsiCache);
+    // Recueillir toutes les périodes RSI nécessaires
+    std::set<int> rsiPeriods;
 
-    // Précalculer l'EMA pour toutes les périodes configurées
-    std::vector<double>& emaCache = m_indicatorCache.ema[30];
-    TechnicalIndicators::calculateEMA(m_priceData.close, 30, emaCache);
+    // Ajouter les périodes de toutes les instances RSI actives
+    for (const auto& rsi : m_rsiInstances) {
+        rsiPeriods.insert(rsi.period);
+    }
+
+    // Calculer tous les RSI nécessaires
+    for (int period : rsiPeriods) {
+        std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
+        TechnicalIndicators::calculateRSI(m_priceData.close, period, rsiCache);
+    }
 
     m_indicatorCache.isValid = true;
-    qDebug() << "Cache d'indicateurs mis à jour avec" << dataSize << "points";
+    qDebug() << "Cache d'indicateurs mis à jour avec" << m_priceData.close.size() << "points";
 }
 
 void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve, 
@@ -572,50 +740,10 @@ void ChartWidget::drawChartWithViewport()
 }
 
 DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec) {
-    if (vec.empty()) {
+    if (vec.empty())
         return DoubleArray(nullptr, 0);
-    }
     return DoubleArray(vec.data(), static_cast<int>(vec.size()));
-    // Créer une copie des données pour éviter les problèmes de durée de vie
-    // double* data = new double[vec.size()];
-    // std::copy(vec.begin(), vec.end(), data);
-    // return DoubleArray(data, static_cast<int>(vec.size()));
-    // Note: ChartDirector libère la mémoire des DoubleArray qu'il consomme
 }
-
-// possiblement faisable en simd ??? 
-// void ChartWidget::calculateHeikinAshi(
-//     const std::vector<double>& open,
-//     const std::vector<double>& high,
-//     const std::vector<double>& low, 
-//     const std::vector<double>& close,
-//     std::vector<double>& ha_open, 
-//     std::vector<double>& ha_high,
-//     std::vector<double>& ha_low, 
-//     std::vector<double>& ha_close) 
-// {
-//     size_t size = open.size();
-//     if (size == 0) return;
-    
-//     ha_open.resize(size);
-//     ha_high.resize(size);
-//     ha_low.resize(size);
-//     ha_close.resize(size);
-    
-//     // Première bougie
-//     ha_open[0] = open[0];
-//     ha_close[0] = (open[0] + high[0] + low[0] + close[0]) / 4.0;
-//     ha_high[0] = high[0];
-//     ha_low[0] = low[0];
-    
-//     // Calcul des autres bougies
-//     for (size_t i = 1; i < size; ++i) {
-//         ha_close[i] = (open[i] + high[i] + low[i] + close[i]) / 4.0;
-//         ha_open[i] = (ha_open[i-1] + ha_close[i-1]) / 2.0;
-//         ha_high[i] = std::max(std::max(high[i], ha_open[i]), ha_close[i]);
-//         ha_low[i] = std::min(std::min(low[i], ha_open[i]), ha_close[i]);
-//     }
-// }
 
 FinanceChart* ChartWidget::drawChart(
     const DoubleArray& timestamps, 
@@ -682,9 +810,12 @@ FinanceChart* ChartWidget::drawChart(
         c->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
 
-    // Ajouter le RSI à partir du cache avec une période de 14 (par défaut)
-    int rsiPeriod = m_config.rsiPeriod; // Nouvelle configuration
-    addRSIFromCache(c, 120, startIndex, timestamps.len, rsiPeriod);
+    // Ajouter tous les RSI actifs
+    for (const auto& rsi : m_rsiInstances) {
+        if (rsi.visible) {
+            addRSIToChart(c, rsi, startIndex, timestamps.len);
+        }
+    }
 
     // 4. Ajouter les trades si disponibles
     addTradeMarkers(c, timestamps, startIndex);
@@ -883,53 +1014,42 @@ void ChartWidget::addMarkers(XYChart* chart, const std::vector<std::pair<double,
     layer->moveFront();
 }
 
-void ChartWidget::addRSIFromCache(FinanceChart* chart, int height, int startIndex, int pointsToShow, int period)
+void ChartWidget::addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow)
 {
-    if (!m_indicatorCache.isValid) {
-        qWarning() << "Cache d'indicateurs non valide lors de l'ajout du RSI";
-        return;
-    }
+    if (!m_indicatorCache.isValid) return;
 
-    auto it = m_indicatorCache.rsi.find(period);
+    auto it = m_indicatorCache.rsi.find(rsi.period);
     if (it == m_indicatorCache.rsi.end()) {
-        qWarning() << "Période RSI" << period << "non disponible dans le cache";
-        return;
+        ensureRSICached(rsi.period);
+        it = m_indicatorCache.rsi.find(rsi.period);
+        if (it == m_indicatorCache.rsi.end()) {
+            return; // Toujours pas disponible
+        }
     }
 
     const std::vector<double>& rsiData = it->second;
     
-    // S'assurer que les indices sont valides
-    if (startIndex >= (int)rsiData.size()) {
-        return;
-    }
+    if (startIndex >= (int)rsiData.size()) return;
 
     // Limiter le nombre de points à afficher
     int endIndex = std::min(startIndex + pointsToShow, (int)rsiData.size());
     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) {
-        return;
-    }
+    if (actualPoints <= 0) return;
 
     // Extraire les données RSI visibles du cache
     DoubleArray rsiArray(&rsiData[startIndex], actualPoints);
-
-    // Configurer les paramètres pour le RSI
-    int color = 0x800080;          // Violet
-    double range = 20;             // Plage des seuils (70/30)
-    int upColor = 0xff6666;        // Rouge clair
-    int downColor = 0x6666ff;      // Bleu clair
-
+    
     // Ajouter le graphique d'indicateur
-    XYChart* c = chart->addIndicator(height);
-
+    XYChart* c = chart->addIndicator(rsi.height);
+    
     // Configurer et ajouter le RSI
     char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "RSI (%d)", period);
-    LineLayer* layer = chart->addLineIndicator2(c, rsiArray, color, buffer);
+    snprintf(buffer, sizeof(buffer), "RSI (%d)", rsi.period);
+    LineLayer* layer = chart->addLineIndicator2(c, rsiArray, rsi.color, buffer);
 
     // Ajouter les seuils
-    chart->addThreshold(c, layer, 50 + range, upColor, 50 - range, downColor);
+    chart->addThreshold(c, layer, 50 + rsi.range, rsi.upperColor, 50 - rsi.range, rsi.lowerColor);
     
     // Configurer l'échelle de l'axe Y
     c->yAxis()->setLinearScale(0, 100);

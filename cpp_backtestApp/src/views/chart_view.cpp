@@ -27,6 +27,40 @@ ChartView::ChartView(QWidget* parent)
     
     // Construire l'interface
     setupUI();
+
+    // // Ajouter un RSI avec période 14
+    // int rsi14Id = m_chartWidget->addRSI(14);
+
+    // // Ajouter un autre RSI avec période 9
+    // int rsi9Id = m_chartWidget->addRSI(9);
+
+    // // Modifier la période du premier RSI
+    // m_chartWidget->setRSIPeriod(rsi14Id, 21);
+
+    // // Changer la couleur du second RSI
+    // m_chartWidget->setRSIColor(rsi9Id, 0x0000FF); // Bleu
+
+    // // Masquer temporairement un indicateur
+    // m_chartWidget->setRSIVisible(rsi9Id, false);
+
+    // // Modifier la hauteur du premier RSI
+    // m_chartWidget->setRSIHeight(rsi14Id, 150);
+
+    // // Supprimer le second RSI
+    // m_chartWidget->removeRSI(rsi9Id);
+
+    // // Connexion aux signaux
+    // connect(m_chartWidget, &ChartWidget::rsiAdded, [](int id, int period) {
+    //     qDebug() << "RSI ajouté:" << "id=" << id << "période=" << period;
+    // });
+
+    // connect(m_chartWidget, &ChartWidget::rsiChanged, [](int id, int period) {
+    //     qDebug() << "RSI modifié:" << "id=" << id << "période=" << period;
+    // });
+
+    // connect(m_chartWidget, &ChartWidget::rsiRemoved, [](int id) {
+    //     qDebug() << "RSI supprimé:" << "id=" << id;
+    // });
 }
 
 ChartView::~ChartView()

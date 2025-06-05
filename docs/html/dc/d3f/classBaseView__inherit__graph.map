@@ -1,7 +1,0 @@
-<map id="BaseView" name="BaseView">
-<area shape="rect" id="node1" title="Classe de base abstraite pour toutes les vues de résultats du backtest." alt="" coords="277,131,515,369"/>
-<area shape="rect" id="node3" href="$d0/d48/classChartView.html" title="Vue pour afficher les graphiques de prix et d&#39;indicateurs." alt="" coords="5,469,240,1250"/>
-<area shape="rect" id="node4" href="$da/db4/classHistogramView.html" title="Vue pour afficher l&#39;histogramme des profits et pertes." alt="" coords="265,586,527,1133"/>
-<area shape="rect" id="node5" href="$df/dd2/classStatsView.html" title="Vue pour afficher les statistiques du backtest." alt="" coords="551,417,790,1301"/>
-<area shape="rect" id="node2" title=" " alt="" coords="357,5,435,83"/>
-</map>

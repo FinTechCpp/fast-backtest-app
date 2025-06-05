@@ -1,7 +1,0 @@
-<map id="HistogramView::createChart" name="HistogramView::createChart">
-<area shape="rect" id="node1" title=" " alt="" coords="827,31,1032,57"/>
-<area shape="rect" id="node2" href="$classHistogramView.html#a17234af751e8e6205b408ce44961dc10" title=" " alt="" coords="536,31,779,57"/>
-<area shape="rect" id="node3" href="$classHistogramView.html#af72a9a6181c37875dd3b4ffe90047ff6" title="Méthode virtuelle pour construire l&#39;interface À implémenter dans les classes filles." alt="" coords="296,5,475,32"/>
-<area shape="rect" id="node5" href="$classHistogramView.html#a785a4ea7726e56236ffeb79c411a83eb" title="Met à jour la vue avec les nouvelles données du backtest." alt="" coords="283,56,488,83"/>
-<area shape="rect" id="node4" href="$classHistogramView.html#a74bfb95d092909c80aff1e54428f1d25" title=" " alt="" coords="5,5,235,32"/>
-</map>

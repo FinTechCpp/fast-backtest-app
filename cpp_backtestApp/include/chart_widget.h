@@ -36,6 +36,56 @@ public:
         
         Count         ///< Nombre total de types de graphiques
     };
+
+    /**
+     * @brief Structure qui représente une instance d'indicateur RSI
+     */
+    struct RSIInstance {
+        int id;                 ///< Identifiant unique 
+        int period;             ///< Période du RSI
+        bool visible = true;    ///< Si l'indicateur est visible
+        int height = 120;       ///< Hauteur du panneau
+        int color = 0x800080;   ///< Couleur de la ligne principale (violet par défaut)
+        double range = 20;      ///< Plage pour les niveaux de survente/surachat (70/30)
+        int upperColor = 0xff6666; ///< Couleur pour la zone de surachat
+        int lowerColor = 0x6666ff; ///< Couleur pour la zone de survente
+        
+        bool operator==(const RSIInstance& other) const {
+            return id == other.id;
+        }
+    };
+
+    /**
+     * @brief Structure qui représente une instance d'indicateur EMA
+     */
+    struct EMAInstance {
+        int id;                ///< Identifiant unique 
+        int period;            ///< Période de l'EMA
+        bool visible = true;   ///< Si l'indicateur est visible
+        int color = 0x0000FF;  ///< Couleur de la ligne (bleu par défaut)
+        
+        bool operator==(const EMAInstance& other) const {
+            return id == other.id;
+        }
+    };
+
+    /**
+     * @brief Structure qui représente une instance d'indicateur Stochastique
+     */
+    struct StochasticInstance {
+        int id;                 ///< Identifiant unique 
+        int fastKPeriod;        ///< Période pour calculer le %K brut
+        int slowKPeriod;        ///< Période de lissage pour %K
+        int slowDPeriod;        ///< Période pour calculer %D
+        bool visible = true;    ///< Si l'indicateur est visible
+        int height = 120;       ///< Hauteur du panneau
+        int kColor = 0x0000FF;  ///< Couleur de la ligne %K (bleu par défaut)
+        int dColor = 0xFF0000;  ///< Couleur de la ligne %D (rouge par défaut)
+        
+        bool operator==(const StochasticInstance& other) const {
+            return id == other.id;
+        }
+    };
     
     // ======== Constructeurs et destructeur ========
     explicit ChartWidget(QWidget* parent = nullptr);
@@ -50,6 +100,12 @@ public:
     // Configuration et contrôle du graphique
     void setChartType(ChartType chartType);
     ChartType getChartType() const { return m_config.chartType; }
+    const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
+    const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
+    RSIInstance* findRSI(int id);
+    EMAInstance* findEMA(int id);
+
+
     void setChartWidth(int width);
     void setShowVolume(bool show);
     void setShowTrades(bool show);
@@ -75,6 +131,16 @@ signals:
     void chartCreated();
     void viewPortChanged();
     void mouseOverPoint(double timestamp, double price);
+
+    // Signaux pour le RSI
+    void rsiAdded(int id, int period);
+    void rsiChanged(int id, int period);
+    void rsiRemoved(int id);
+
+    // Signaux pour l'EMA
+    void emaAdded(int id, int period);
+    void emaChanged(int id, int period);
+    void emaRemoved(int id);
     
 protected:
     // void resizeEvent(QResizeEvent* event) override;
@@ -82,6 +148,18 @@ protected:
 private slots:
     void onViewPortChanged();
     void onMouseMovePlotArea(QMouseEvent* event);
+
+public slots:
+    // Pour les setter des indicateur il faudrait evité de faire cela j'aurait plutoto penser a un seul setter genre setConfig(int id, const IndicatorConfig& config)
+    // Pour le RSI
+    int addRSI(int period = 14);
+    bool setRSIConfig(int id, const RSIInstance& config);
+    bool removeRSI(int id);
+
+    // Pour l'EMA
+    int addEMA(int period = 20);
+    bool setEMAConfig(int id, const EMAInstance& config);
+    bool removeEMA(int id);
 
 private:
     // ======== Structures de données internes ========
@@ -118,7 +196,6 @@ private:
         bool showTrades = true;
         bool showVolume = true;
         bool showEquity = true;
-        int rsiPeriod = 14;
     };
 
     /**
@@ -191,7 +268,6 @@ private:
     FinanceChart* finalizeChart(FinanceChart* chart);
     void addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, const char* name,
                   int symbolType, int symbolSize = 5, int color = -1);
-    void addRSIFromCache(FinanceChart* chart, int height, int startIndex, int pointsToShow, int period);
 
     // 6. Gestion des interactions utilisateur
     void trackFinance(MultiChart* m, int mouseX);
@@ -214,7 +290,27 @@ private:
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
     std::map<be::Date, double> m_timestampCache; // Cache pour dateToChartTimestamp
-    
+
+    std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
+    std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
+    std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
+
+    int m_nextRSIId = 1;                     ///< Prochain ID disponible pour RSI
+    int m_nextEMAId = 1;                     ///< Prochain ID disponible pour EMA
+    int m_nextStochasticId = 1;              ///< Prochain ID disponible pour Stochastique
+
+    // Méthodes privées pour le RSI
+    void addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow);
+    void ensureRSICached(int period);
+
+    // Méthodes privées pour l'EMA
+    void addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow);
+    void ensureEMACached(int period);
+
+    // Méthodes privées pour le Stochastic
+    void addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow);
+    void ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod);
+
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;
     FinanceChart* m_financeChart = nullptr;

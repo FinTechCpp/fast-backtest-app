@@ -1,6 +1,0 @@
-<map id="HistogramView::updateData" name="HistogramView::updateData">
-<area shape="rect" id="node1" title="Met à jour la vue avec les nouvelles données du backtest." alt="" coords="5,31,211,57"/>
-<area shape="rect" id="node2" href="$classHistogramView.html#abbf208651ca3988ff35094b8d9f509c2" title="Réinitialise la vue à son état initial." alt="" coords="299,5,461,32"/>
-<area shape="rect" id="node3" href="$classHistogramView.html#a17234af751e8e6205b408ce44961dc10" title=" " alt="" coords="259,56,501,83"/>
-<area shape="rect" id="node4" href="$classHistogramView.html#ab3da7462bde413d55a6225b90db13126" title=" " alt="" coords="549,56,755,83"/>
-</map>

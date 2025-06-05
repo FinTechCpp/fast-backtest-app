@@ -1,5 +1,0 @@
-<map id="GeneralParamsPanel" name="GeneralParamsPanel">
-<area shape="rect" id="node1" title="Panel des paramètres généraux du backtest." alt="" coords="9,292,239,604"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,86,80,163"/>
-<area shape="rect" id="node3" href="$dc/d47/classBasePanel.html" title="Classe de base abstraite pour tous les panels de l&#39;application." alt="" coords="104,5,307,244"/>
-</map>

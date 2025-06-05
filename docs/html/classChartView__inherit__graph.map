@@ -1,5 +1,0 @@
-<map id="ChartView" name="ChartView">
-<area shape="rect" id="node1" title="Vue pour afficher les graphiques de prix et d&#39;indicateurs." alt="" coords="5,155,95,181"/>
-<area shape="rect" id="node2" href="$classBaseView.html" title="Classe de base abstraite pour toutes les vues de résultats du backtest." alt="" coords="7,80,93,107"/>
-<area shape="rect" id="node3" title=" " alt="" coords="11,5,89,32"/>
-</map>

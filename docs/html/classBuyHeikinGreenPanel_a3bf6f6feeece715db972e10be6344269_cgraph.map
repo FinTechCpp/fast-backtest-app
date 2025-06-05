@@ -1,4 +1,0 @@
-<map id="BuyHeikinGreenPanel::create" name="BuyHeikinGreenPanel::create">
-<area shape="rect" id="node1" title="Crée et retourne l&#39;interface graphique du panel." alt="" coords="5,5,168,47"/>
-<area shape="rect" id="node2" href="$classBuyHeikinGreenPanel.html#a1dd048cdf181d5130e6466b695e60dae" title="Active/désactive un groupe de widgets." alt="" coords="216,5,379,47"/>
-</map>

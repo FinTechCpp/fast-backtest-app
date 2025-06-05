@@ -1,4 +1,0 @@
-<map id="ChartView::clear" name="ChartView::clear">
-<area shape="rect" id="node1" title="Réinitialise la vue à son état initial." alt="" coords="225,5,353,32"/>
-<area shape="rect" id="node2" href="$d0/d48/classChartView.html#a560c444b2ec080d3289bad7b9f0b6ddd" title="Met à jour la vue avec les nouvelles données du backtest." alt="" coords="5,5,177,32"/>
-</map>

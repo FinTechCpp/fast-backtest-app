@@ -1,8 +1,0 @@
-<map id="DataLoader::loadData" name="DataLoader::loadData">
-<area shape="rect" id="node1" title="Charge les données OHLC depuis un fichier CSV." alt="" coords="5,46,169,73"/>
-<area shape="rect" id="node2" href="$d4/d85/classDataLoader.html#a3ee2405c8a07e380a3c0348182e81c07" title="Trouve le fichier CSV correspondant au symbole et intervalle." alt="" coords="222,17,405,43"/>
-<area shape="rect" id="node4" href="$d4/d85/classDataLoader.html#a5fe10f484c9669bb98254b8b85768467" title="Charge les données depuis un fichier CSV." alt="" coords="217,71,409,98"/>
-<area shape="rect" id="node3" href="$d4/d85/classDataLoader.html#a535eb4871c755c7af8845ceeae3400a3" title=" " alt="" coords="468,5,673,47"/>
-<area shape="rect" id="node5" href="$d4/d85/classDataLoader.html#a3ee99352364377565cb79ca2258072ad" title="Calcule la date de début à partir de la période." alt="" coords="457,71,684,98"/>
-<area shape="rect" id="node6" href="$d4/d85/classDataLoader.html#a12adb9f283a9e728497c3b7dc8acea73" title="Parse une ligne CSV en barre OHLC." alt="" coords="473,122,668,149"/>
-</map>

@@ -26,6 +26,8 @@ build-mxe-image:
 build-windows:
   stage: build
   image: ubuntu:22.04
+  tags:
+    - saas-linux-medium-amd64  # Runner GitLab.com avec plus de ressources
   before_script:
     - apt-get update
     - apt-get install -y autoconf automake autopoint bash bison bzip2 flex g++ g++-multilib gettext git gperf intltool libc6-dev-i386 libgdk-pixbuf2.0-dev libltdl-dev libgl-dev libpcre3-dev libssl-dev libtool-bin libxml-parser-perl lzip make openssl p7zip-full patch perl python3 python3-mako python3-pkg-resources ruby sed unzip wget xz-utils
@@ -72,6 +74,7 @@ build-windows:
       - /opt/mxe/log/
       - /opt/mxe/usr/x86_64-w64-mingw32.static/
     policy: pull-push
+  timeout: 3h  # MXE peut prendre du temps
 
 # Créer une release GitLab
 create-release:
@@ -90,4 +93,4 @@ create-release:
   dependencies:
     - build-windows
   only:
-    - develop 
+    - develop

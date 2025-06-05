@@ -19,7 +19,7 @@ build-mxe-image:
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - docker push $CI_REGISTRY_IMAGE/mxe-qt6-builder:latest
   only:
-    - develop
+    - gitlab-workflow
   when: manual
 
 build-windows:
@@ -192,7 +192,7 @@ build-windows:
     expire_in: 1 week
     name: "ig-trading-bot-windows-${CI_COMMIT_SHORT_SHA}"
   only:
-    - develop 
+    - gitlab-workflow 
   cache:
     key: "mxe-qt6-${CI_RUNNER_ID}"
     paths:
@@ -219,4 +219,4 @@ create-release:
   dependencies:
     - build-windows
   only:
-    - develop
+    - gitlab-workflow

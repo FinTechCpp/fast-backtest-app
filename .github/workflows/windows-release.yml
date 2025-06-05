@@ -114,13 +114,10 @@ jobs:
         echo "COMMIT_MSG=$commitMsg" >> $env:GITHUB_ENV
 
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: windows-v${{ github.run_number }}
-        release_name: Windows Release v${{ github.run_number }}
+        name: Windows Release v${{ github.run_number }}
         body: |
           🚀 **Nouvelle release Windows automatique**
           
@@ -146,16 +143,8 @@ jobs:
           *Build automatique généré par GitHub Actions*
         draft: false
         prerelease: false
-
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./${{ env.ARCHIVE_NAME }}
-        asset_name: ${{ env.ARCHIVE_NAME }}
-        asset_content_type: application/zip
+        files: ${{ env.ARCHIVE_NAME }}
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build Summary
       run: |

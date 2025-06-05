@@ -25,8 +25,6 @@ build-mxe-image:
 build-windows:
   stage: build
   image: ubuntu:22.04
-  #tags:
-   # - docker           # Utiliser seulement le tag que votre runner a
   variables:
     DEBIAN_FRONTEND: noninteractive
   before_script:
@@ -37,14 +35,32 @@ build-windows:
     - git clone https://github.com/mxe/mxe.git
     - cd mxe
     
-    # Compiler spécifiquement Qt6 avec les modules nécessaires
-    - make MXE_TARGETS='x86_64-w64-mingw32.static' qt6-qtbase qt6-qtwidgets qt6-qtcharts cmake pkgconf -j$(nproc)
+    # Afficher les packages Qt6 disponibles pour diagnostic
+    - echo "Packages Qt6 disponibles :"
+    - ls src/qt/qt6/qt6-*.mk | head -10
+    
+    # Compiler uniquement les packages qui existent
+    - echo "Compilation de qt6-qtbase (inclut Core, Widgets, Gui, Network)..."
+    - make MXE_TARGETS='x86_64-w64-mingw32.static' qt6-qtbase -j$(nproc)
+    
+    - echo "Compilation de qt6-qtcharts..."
+    - make MXE_TARGETS='x86_64-w64-mingw32.static' qt6-qtcharts -j$(nproc)
+    
+    - echo "Compilation de cmake et pkgconf..."
+    - make MXE_TARGETS='x86_64-w64-mingw32.static' cmake pkgconf -j$(nproc)
     
     - export PATH="/opt/mxe/usr/bin:${PATH}"
+    
+    # Vérifier que les outils sont disponibles
+    - echo "Outils MXE disponibles :"
+    - ls /opt/mxe/usr/bin/x86_64-w64-mingw32.static-* | head -5
   script:
     - cd $CI_PROJECT_DIR
     - mkdir -p build-windows
     - cd build-windows
+    
+    # Vérifier que l'outil cmake existe
+    - which x86_64-w64-mingw32.static-cmake
     
     # Configuration CMake avec MXE
     - x86_64-w64-mingw32.static-cmake .. \

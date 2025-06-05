@@ -46,11 +46,10 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /opt
 RUN git clone https://github.com/mxe/mxe.git
 
-# Compiler MXE avec Qt6 pour Windows 64-bit
+# Compiler MXE avec Qt6 pour Windows 64-bit (correction: pas de qtwidgets)
 WORKDIR /opt/mxe
 RUN make MXE_TARGETS='x86_64-w64-mingw32.static' \
-    MXE_PLUGIN_DIRS='plugins/examples/host-toolchain/' \
-    qtbase qtwidgets qtcharts cmake pkgconf -j$(nproc)
+    qt6-qtbase qt6-qtcharts cmake pkgconf -j$(nproc)
 
 # Ajouter MXE au PATH
 ENV PATH="/opt/mxe/usr/bin:${PATH}"

@@ -22,14 +22,11 @@ build-mxe-image:
     - develop
   when: manual
 
-# Compilation croisée Windows
 build-windows:
   stage: build
   image: ubuntu:22.04
   tags:
-    - docker           # Utiliser vos tags configurés
-    - linux
-    - mxe-builder
+    - docker           # Utiliser seulement le tag que votre runner a
   variables:
     DEBIAN_FRONTEND: noninteractive
   before_script:

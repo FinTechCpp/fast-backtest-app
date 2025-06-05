@@ -438,6 +438,79 @@ bool ChartWidget::removeEMA(int id)
     return true;
 }
 
+int ChartWidget::addStochastic(int fastKPeriod, int slowKPeriod, int slowDPeriod)
+{
+    if (fastKPeriod < 2) fastKPeriod = 2;  // Validation de base
+    if (slowKPeriod < 2) slowKPeriod = 2;
+    if (slowDPeriod < 2) slowDPeriod = 2;
+    
+    // Créer une nouvelle instance Stochastique
+    StochasticInstance stochastic;
+    stochastic.id = m_nextStochasticId++;
+    stochastic.fastKPeriod = fastKPeriod;
+    stochastic.slowKPeriod = slowKPeriod;
+    stochastic.slowDPeriod = slowDPeriod;
+    
+    // S'assurer que les données Stochastique sont en cache
+    ensureStochasticCached(fastKPeriod, slowKPeriod, slowDPeriod);
+    
+    // Ajouter aux instances actives
+    m_stochasticInstances.push_back(stochastic);
+    
+    // Émettre le signal
+    emit stochasticAdded(stochastic.id, fastKPeriod, slowKPeriod, slowDPeriod);
+    
+    // Mettre à jour le graphique
+    if (hasValidData()) {
+        updateChart();
+    }
+    
+    return stochastic.id;
+}
+
+bool ChartWidget::setStochasticConfig(int id, const StochasticInstance& config)
+{
+    StochasticInstance* stochastic = findStochastic(id);
+    if (!stochastic) return false;
+
+    // Mettre à jour la configuration
+    *stochastic = config;
+
+    // S'assurer que les nouvelles données Stochastiques sont en cache
+    ensureStochasticCached(config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
+
+    // Émettre le signal
+    emit stochasticChanged(id, config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
+
+    // Mettre à jour le graphique
+    if (hasValidData())
+        updateChart();
+
+    return true;
+}
+
+bool ChartWidget::removeStochastic(int id)
+{
+    auto it = std::find_if(m_stochasticInstances.begin(), m_stochasticInstances.end(),
+                         [id](const StochasticInstance& stochastic) { return stochastic.id == id; });
+    
+    if (it == m_stochasticInstances.end()) {
+        return false;
+    }
+    
+    // Supprimer l'instance
+    m_stochasticInstances.erase(it);
+    
+    // Émettre le signal
+    emit stochasticRemoved(id);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
 ChartWidget::RSIInstance* ChartWidget::findRSI(int id)
 {
     auto it = std::find_if(m_rsiInstances.begin(), m_rsiInstances.end(),
@@ -456,6 +529,18 @@ ChartWidget::EMAInstance* ChartWidget::findEMA(int id)
                          [id](const EMAInstance& ema) { return ema.id == id; });
     
     if (it == m_emaInstances.end()) {
+        return nullptr;
+    }
+    
+    return &(*it);
+}
+
+ChartWidget::StochasticInstance* ChartWidget::findStochastic(int id)
+{
+    auto it = std::find_if(m_stochasticInstances.begin(), m_stochasticInstances.end(),
+                         [id](const StochasticInstance& stochastic) { return stochastic.id == id; });
+    
+    if (it == m_stochasticInstances.end()) {
         return nullptr;
     }
     
@@ -488,8 +573,26 @@ void ChartWidget::ensureEMACached(int period)
     }
 }
 
-void ChartWidget::addStochasticToChart(FinanceChart *chart, const StochasticInstance &stochastic, int startIndex, int pointsToShow)
+void ChartWidget::ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod)
 {
+    // Vérifier que les périodes Stochastic sont en cache
+    if (m_indicatorCache.isValid && !m_priceData.close.empty() && !m_priceData.high.empty() && !m_priceData.low.empty()) {
+        std::tuple<int, int, int> key = std::make_tuple(fastKPeriod, slowKPeriod, slowDPeriod);
+        
+        if (m_indicatorCache.stochastic.find(key) == m_indicatorCache.stochastic.end()) {
+            // Calculer le Stochastic pour cette combinaison de périodes
+            auto& cacheEntry = m_indicatorCache.stochastic[key];
+            std::vector<double>& kValues = cacheEntry.first;
+            std::vector<double>& dValues = cacheEntry.second;
+            
+            TechnicalIndicators::calculateStochastic(
+                m_priceData.high, m_priceData.low, m_priceData.close,
+                fastKPeriod, slowKPeriod, slowDPeriod, kValues, dValues);
+                
+            qDebug() << "Calculé Stochastic avec périodes fastK:" << fastKPeriod 
+                     << "slowK:" << slowKPeriod << "slowD:" << slowDPeriod;
+        }
+    }
 }
 
 void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
@@ -573,10 +676,12 @@ void ChartWidget::updateIndicatorCache()
     // Vider le cache existant
     m_indicatorCache.rsi.clear();
     m_indicatorCache.ema.clear();
+    m_indicatorCache.stochastic.clear();
 
     // Recueillir toutes les périodes RSI nécessaires
     std::set<int> rsiPeriods;
     std::set<int> emaPeriods;
+    std::set<std::tuple<int, int, int>> stochasticParams;
 
     // Ajouter les périodes de toutes les instances RSI actives
     for (const auto& rsi : m_rsiInstances) {
@@ -586,6 +691,11 @@ void ChartWidget::updateIndicatorCache()
     // Ajouter les périodes de toutes les instances EMA actives
     for (const auto& ema : m_emaInstances) {
         emaPeriods.insert(ema.period);
+    }
+
+    // Ajouter les paramètres de toutes les instances Stochastique actives
+    for (const auto& stoch : m_stochasticInstances) {
+        stochasticParams.insert(std::make_tuple(stoch.fastKPeriod, stoch.slowKPeriod, stoch.slowDPeriod));
     }
 
 
@@ -599,6 +709,21 @@ void ChartWidget::updateIndicatorCache()
     for (int period : emaPeriods) {
         std::vector<double>& emaCache = m_indicatorCache.ema[period];
         TechnicalIndicators::calculateEMA(m_priceData.close, period, emaCache);
+    }
+
+    // Calculer tous les Stochastiques nécessaires
+    for (const auto& params : stochasticParams) {
+        int fastKPeriod = std::get<0>(params);
+        int slowKPeriod = std::get<1>(params);
+        int slowDPeriod = std::get<2>(params);
+        
+        auto& stochCache = m_indicatorCache.stochastic[params];
+        std::vector<double>& kValues = stochCache.first;
+        std::vector<double>& dValues = stochCache.second;
+        
+        TechnicalIndicators::calculateStochastic(
+            m_priceData.high, m_priceData.low, m_priceData.close,
+            fastKPeriod, slowKPeriod, slowDPeriod, kValues, dValues);
     }
 
     m_indicatorCache.isValid = true;
@@ -847,6 +972,13 @@ FinanceChart* ChartWidget::drawChart(
         }
     }
 
+    // Ajouter tous les Stochastiques actifs
+    for (const auto& stochastic : m_stochasticInstances) {
+        if (stochastic.visible) {
+            addStochasticToChart(c, stochastic, startIndex, timestamps.len);
+        }
+    }
+
     // 4. Ajouter les trades si disponibles
     addTradeMarkers(c, timestamps, startIndex);
     
@@ -1087,7 +1219,7 @@ void ChartWidget::addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int
 
 void ChartWidget::addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow)
 {
-    if (!m_indicatorCache.isValid) {
+    if (!m_indicatorCache.isValid || !chart || !chart->getChart(1)) {
         return;
     }
 
@@ -1120,11 +1252,65 @@ void ChartWidget::addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int
     // Configurer et ajouter l'EMA directement sur le graphique principal
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "EMA (%d)", ema.period);
-    if (!chart->getChart(1)) {
-        return;
-    }
     chart->addLineIndicator2((XYChart*)chart->getChart(1), emaArray, ema.color, buffer);
 }
+
+void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow)
+{
+    if (!m_indicatorCache.isValid) return;
+
+    // Clé pour retrouver les données en cache
+    std::tuple<int, int, int> key = std::make_tuple(stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
+    
+    auto it = m_indicatorCache.stochastic.find(key);
+    if (it == m_indicatorCache.stochastic.end()) {
+        ensureStochasticCached(stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
+        it = m_indicatorCache.stochastic.find(key);
+        if (it == m_indicatorCache.stochastic.end()) {
+            return; // Toujours pas disponible
+        }
+    }
+
+    const std::vector<double>& kValues = it->second.first;
+    const std::vector<double>& dValues = it->second.second;
+    
+    if (startIndex >= (int)kValues.size() || startIndex >= (int)dValues.size()) {
+        return;
+    }
+
+    // Limiter le nombre de points à afficher
+    int endIndex = std::min(startIndex + pointsToShow, (int)kValues.size());
+    int actualPoints = endIndex - startIndex;
+
+    if (actualPoints <= 0) {
+        return;
+    }
+
+    // Extraire les données Stochastic visibles du cache
+    DoubleArray kArray(&kValues[startIndex], actualPoints);
+    DoubleArray dArray(&dValues[startIndex], actualPoints);
+    
+    // Ajouter le graphique d'indicateur
+    XYChart* c = chart->addIndicator(stochastic.height);
+    
+    // Configurer et ajouter les lignes %K et %D
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "Stochastic %%K (%d, %d, %d)", 
+             stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
+    
+    chart->addLineIndicator2(c, kArray, stochastic.kColor, buffer);
+    
+    snprintf(buffer, sizeof(buffer), "%%D (%d)", stochastic.slowDPeriod);
+    chart->addLineIndicator2(c, dArray, stochastic.dColor, buffer);
+    
+    // Configurer l'échelle de l'axe Y
+    c->yAxis()->setLinearScale(0, 100);
+    
+    // Ajouter les lignes horizontales pour les niveaux 20 et 80
+    c->yAxis()->addMark(80, 0xff6666, "80");
+    c->yAxis()->addMark(20, 0x6666ff, "20");
+}
+
 
 void ChartWidget::trackFinance(MultiChart* m, int mouseX)
 {

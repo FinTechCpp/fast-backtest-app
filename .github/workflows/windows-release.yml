@@ -65,32 +65,6 @@ jobs:
           exit 1
         }
 
-    - name: Deploy Qt dependencies
-      run: |
-        $qtDir = "${{ env.Qt6_DIR }}"
-        $winDeployQt = "$qtDir/bin/windeployqt.exe"
-        $exePath = "build/cpp_backtestApp/${{ env.BUILD_TYPE }}/backtestapp.exe"
-        
-        if (Test-Path $winDeployQt) {
-          echo "Deploying Qt dependencies..."
-          & $winDeployQt --release --no-translations --no-system-d3d-compiler --no-opengl-sw $exePath
-        } else {
-          echo "windeployqt not found at: $winDeployQt"
-          exit 1
-        }
-
-    - name: Copy ChartDirector DLL
-      run: |
-        $chartDirDll = "ChartDirector/lib/chartdir70.dll"
-        $targetDir = "build/cpp_backtestApp/${{ env.BUILD_TYPE }}/"
-        
-        if (Test-Path $chartDirDll) {
-          Copy-Item $chartDirDll $targetDir
-          echo "✅ ChartDirector DLL copied"
-        } else {
-          echo "⚠️ ChartDirector DLL not found at: $chartDirDll"
-        }
-
     - name: Create distribution folder
       run: |
         $distDir = "ig-trading-bot-windows"

@@ -4,6 +4,7 @@
 #include <QRegularExpression>
 #include <QDebug>
 #include <QFile>
+#include <QSettings>
 #include <QTextStream>
 #include <QStringList>
 #include <QTimeZone>
@@ -18,6 +19,15 @@ DataLoader::~DataLoader() {}
 
 QString DataLoader::findMarketDataDirectory()
 {
+    // 1. PREMIÈRE ÉTAPE: Vérifier si un chemin personnalisé est défini dans QSettings
+    QSettings settings("IG-Trading-Bot", "BacktestApp");
+    QString customPath = settings.value("marketDataPath").toString();
+    if (!customPath.isEmpty() && QDir(customPath).exists()) {
+        qDebug() << "Utilisation du répertoire personnalisé:" << customPath;
+        return customPath;
+    }
+
+    // 2. Sinon, continuer avec la recherche standard
     QString exeDir = QCoreApplication::applicationDirPath();
     QDir currentDir(exeDir);
 
@@ -45,6 +55,32 @@ QString DataLoader::findMarketDataDirectory()
     } while (currentDir.cdUp());
 
     return QString(); // Not found
+}
+
+bool DataLoader::setCustomMarketDataDirectory(const QString& path)
+{
+    // Vérifier que le chemin existe ou peut être créé
+    QDir dir(path);
+    if (!dir.exists()) {
+        if (!QDir().mkpath(path)) {
+            qWarning() << "Impossible de créer le répertoire:" << path;
+            return false;
+        }
+    }
+    
+    // Vérifier les permissions d'écriture
+    QFileInfo dirInfo(path);
+    if (!dirInfo.isWritable()) {
+        qWarning() << "Le répertoire n'est pas accessible en écriture:" << path;
+        return false;
+    }
+    
+    // Sauvegarder le chemin dans les paramètres
+    QSettings settings("IG-Trading-Bot", "BacktestApp");
+    settings.setValue("marketDataPath", path);
+    qInfo() << "Répertoire personnalisé défini:" << path;
+    
+    return true;
 }
 
 QStringList DataLoader::getMarketDataPaths()

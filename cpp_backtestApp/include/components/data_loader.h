@@ -40,14 +40,17 @@ public:
     ~DataLoader();
     
     /**
+     * @brief Trouve le répertoire marketData
+     * @return Chemin vers le répertoire marketData, QString vide si non trouvé
+     */
+    static QString findMarketDataDirectory();
+    
+    /**
      * @brief Charge les données OHLC depuis un fichier CSV
      * @param symbol Symbole du marché (ex: "NDX")
      * @param interval Intervalle des données (ex: "20secs")
      * @param period Période de données à charger (ex: "10d", "1m", "6m", "1y")
      * @param endDate Date de fin au format QDateTime
-     * @param tradingFrom Heure de début du trading
-     * @param tradingTo Heure de fin du trading
-     * @param tradingDays Liste des jours de trading (0=Lundi, 6=Dimanche)
      * @return Vecteur de barres OHLC filtrées
      */
     static std::vector<OHLCBar> loadData(
@@ -124,10 +127,16 @@ public:
      * @return Nombre de secondes
      */
     static int intervalToSeconds(const QString& interval);
+    
+    /**
+     * @brief Définit un répertoire personnalisé pour les données de marché
+     * @param path Chemin vers le répertoire à utiliser
+     * @return true si le répertoire est valide et a été défini, false sinon
+     */
+    static bool setCustomMarketDataDirectory(const QString& path);
 
 private:
     static const QString MARKET_DATA_PATH;
     static QStringList getMarketDataPaths();
-    static QString findMarketDataDirectory();
 };
 

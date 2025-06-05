@@ -457,12 +457,141 @@ bool ChartWidget::removeRSI(int id)
     return true;
 }
 
+int ChartWidget::addEMA(int period)
+{
+    if (period < 2) period = 2;  // Validation de base
+    
+    // Créer une nouvelle instance EMA
+    EMAInstance ema;
+    ema.id = m_nextEMAId++;
+    ema.period = period;
+    
+    // S'assurer que les données EMA sont en cache
+    ensureEMACached(period);
+    
+    // Ajouter aux instances actives
+    m_emaInstances.push_back(ema);
+    
+    // Émettre le signal
+    emit emaAdded(ema.id, period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData()) {
+        updateChart();
+    }
+    
+    return ema.id;
+}
+
+bool ChartWidget::setEMAPeriod(int id, int period)
+{
+    if (period < 2) period = 2;  // Validation de base
+    
+    EMAInstance* ema = findEMA(id);
+    if (!ema) {
+        return false;
+    }
+    
+    // Mettre à jour la période
+    ema->period = period;
+    
+    // S'assurer que les nouvelles données EMA sont en cache
+    ensureEMACached(period);
+    
+    // Émettre le signal
+    emit emaChanged(id, period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData()) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+bool ChartWidget::setEMAVisible(int id, bool visible)
+{
+    EMAInstance* ema = findEMA(id);
+    if (!ema) {
+        return false;
+    }
+    
+    // Mettre à jour la visibilité
+    ema->visible = visible;
+    
+    // Émettre le signal
+    emit emaChanged(id, ema->period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+bool ChartWidget::setEMAColor(int id, int color)
+{
+    EMAInstance* ema = findEMA(id);
+    if (!ema) {
+        return false;
+    }
+    
+    // Mettre à jour la couleur
+    ema->color = color;
+    
+    // Émettre le signal
+    emit emaChanged(id, ema->period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
+
+bool ChartWidget::removeEMA(int id)
+{
+    auto it = std::find_if(m_emaInstances.begin(), m_emaInstances.end(),
+                         [id](const EMAInstance& ema) { return ema.id == id; });
+    
+    if (it == m_emaInstances.end()) {
+        return false;
+    }
+    
+    // Supprimer l'instance
+    m_emaInstances.erase(it);
+    
+    // Émettre le signal
+    emit emaRemoved(id);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChart();
+    }
+    
+    return true;
+}
+
 ChartWidget::RSIInstance* ChartWidget::findRSI(int id)
 {
     auto it = std::find_if(m_rsiInstances.begin(), m_rsiInstances.end(),
                          [id](const RSIInstance& rsi) { return rsi.id == id; });
     
     if (it == m_rsiInstances.end()) {
+        return nullptr;
+    }
+    
+    return &(*it);
+}
+
+ChartWidget::EMAInstance* ChartWidget::findEMA(int id)
+{
+    auto it = std::find_if(m_emaInstances.begin(), m_emaInstances.end(),
+                         [id](const EMAInstance& ema) { return ema.id == id; });
+    
+    if (it == m_emaInstances.end()) {
         return nullptr;
     }
     
@@ -481,6 +610,20 @@ void ChartWidget::ensureRSICached(int period)
         }
     }
 }
+
+void ChartWidget::ensureEMACached(int period)
+{
+    // Vérifier que la période EMA est en cache
+    if (m_indicatorCache.isValid && !m_priceData.close.empty()) {
+        if (m_indicatorCache.ema.find(period) == m_indicatorCache.ema.end()) {
+            // Calculer l'EMA pour cette période
+            std::vector<double>& emaCache = m_indicatorCache.ema[period];
+            TechnicalIndicators::calculateEMA(m_priceData.close, period, emaCache);
+            qDebug() << "Calculé EMA avec période" << period;
+        }
+    }
+}
+
 
 void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
     if (!data || data->size() == 0) {
@@ -566,16 +709,29 @@ void ChartWidget::updateIndicatorCache()
 
     // Recueillir toutes les périodes RSI nécessaires
     std::set<int> rsiPeriods;
+    std::set<int> emaPeriods;
 
     // Ajouter les périodes de toutes les instances RSI actives
     for (const auto& rsi : m_rsiInstances) {
         rsiPeriods.insert(rsi.period);
     }
 
+    // Ajouter les périodes de toutes les instances EMA actives
+    for (const auto& ema : m_emaInstances) {
+        emaPeriods.insert(ema.period);
+    }
+
+
     // Calculer tous les RSI nécessaires
     for (int period : rsiPeriods) {
         std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
         TechnicalIndicators::calculateRSI(m_priceData.close, period, rsiCache);
+    }
+
+    // Calculer tous les EMA nécessaires
+    for (int period : emaPeriods) {
+        std::vector<double>& emaCache = m_indicatorCache.ema[period];
+        TechnicalIndicators::calculateEMA(m_priceData.close, period, emaCache);
     }
 
     m_indicatorCache.isValid = true;
@@ -817,6 +973,13 @@ FinanceChart* ChartWidget::drawChart(
         }
     }
 
+    // Ajouter tous les EMA actifs
+    for (const auto& ema : m_emaInstances) {
+        if (ema.visible) {
+            addEMAToChart(c, ema, startIndex, timestamps.len);
+        }
+    }
+
     // 4. Ajouter les trades si disponibles
     addTradeMarkers(c, timestamps, startIndex);
     
@@ -1053,6 +1216,47 @@ void ChartWidget::addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int
     
     // Configurer l'échelle de l'axe Y
     c->yAxis()->setLinearScale(0, 100);
+}
+
+void ChartWidget::addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow)
+{
+    if (!m_indicatorCache.isValid) {
+        return;
+    }
+
+    auto it = m_indicatorCache.ema.find(ema.period);
+    if (it == m_indicatorCache.ema.end()) {
+        ensureEMACached(ema.period);
+        it = m_indicatorCache.ema.find(ema.period);
+        if (it == m_indicatorCache.ema.end()) {
+            return; // Toujours pas disponible
+        }
+    }
+
+    const std::vector<double>& emaData = it->second;
+    
+    if (startIndex >= (int)emaData.size()) {
+        return;
+    }
+
+    // Limiter le nombre de points à afficher
+    int endIndex = std::min(startIndex + pointsToShow, (int)emaData.size());
+    int actualPoints = endIndex - startIndex;
+
+    if (actualPoints <= 0) {
+        return;
+    }
+
+    // Extraire les données EMA visibles du cache
+    DoubleArray emaArray(&emaData[startIndex], actualPoints);
+    
+    // Configurer et ajouter l'EMA directement sur le graphique principal
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "EMA (%d)", ema.period);
+    if (!chart->getChart(1)) {
+        return;
+    }
+    chart->addLineIndicator2((XYChart*)chart->getChart(1), emaArray, ema.color, buffer);
 }
 
 void ChartWidget::trackFinance(MultiChart* m, int mouseX)

@@ -54,6 +54,20 @@ public:
             return id == other.id;
         }
     };
+
+    /**
+     * @brief Structure qui représente une instance d'indicateur EMA
+     */
+    struct EMAInstance {
+        int id;                ///< Identifiant unique 
+        int period;            ///< Période de l'EMA
+        bool visible = true;   ///< Si l'indicateur est visible
+        int color = 0x0000FF;  ///< Couleur de la ligne (bleu par défaut)
+        
+        bool operator==(const EMAInstance& other) const {
+            return id == other.id;
+        }
+    };
     
     // ======== Constructeurs et destructeur ========
     explicit ChartWidget(QWidget* parent = nullptr);
@@ -68,6 +82,12 @@ public:
     // Configuration et contrôle du graphique
     void setChartType(ChartType chartType);
     ChartType getChartType() const { return m_config.chartType; }
+    const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
+    const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
+    RSIInstance* findRSI(int id);
+    EMAInstance* findEMA(int id);
+
+
     void setChartWidth(int width);
     void setShowVolume(bool show);
     void setShowTrades(bool show);
@@ -98,6 +118,11 @@ signals:
     void rsiAdded(int id, int period);
     void rsiChanged(int id, int period);
     void rsiRemoved(int id);
+
+    // Signaux pour l'EMA
+    void emaAdded(int id, int period);
+    void emaChanged(int id, int period);
+    void emaRemoved(int id);
     
 protected:
     // void resizeEvent(QResizeEvent* event) override;
@@ -115,6 +140,13 @@ public slots:
     bool setRSIHeight(int id, int height);
     bool setRSIRange(int id, double range);
     bool removeRSI(int id);
+
+    // Pour l'EMA
+    int addEMA(int period = 20);
+    bool setEMAPeriod(int id, int period);
+    bool setEMAVisible(int id, bool visible);
+    bool setEMAColor(int id, int color);
+    bool removeEMA(int id);
 
 private:
     // ======== Structures de données internes ========
@@ -247,12 +279,18 @@ private:
     std::map<be::Date, double> m_timestampCache; // Cache pour dateToChartTimestamp
 
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
+    std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
+
     int m_nextRSIId = 1;                     ///< Prochain ID disponible pour RSI
+    int m_nextEMAId = 1;                     ///< Prochain ID disponible pour EMA
 
     // Méthodes privées pour le RSI
     void addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow);
-    RSIInstance* findRSI(int id);
     void ensureRSICached(int period);
+
+    // Méthodes privées pour l'EMA
+    void addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow);
+    void ensureEMACached(int period);
     
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;

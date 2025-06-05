@@ -69,7 +69,7 @@ else()
         elseif(DEFINED ENV{QT_ROOT_DIR})
             list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_ROOT_DIR}")
             message(STATUS "Utilisation de QT_ROOT_DIR depuis l'environnement: $ENV{QT_ROOT_DIR}")
-        else
+        else()
             message(WARNING "Qt6 non trouvé automatiquement. Assurez-vous que Qt6 est installé dans C:/Qt/ ou définissez CMAKE_PREFIX_PATH")
         endif()
     elseif(UNIX AND NOT APPLE)

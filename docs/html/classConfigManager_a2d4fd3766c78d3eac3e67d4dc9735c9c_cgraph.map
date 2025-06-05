@@ -1,7 +1,0 @@
-<map id="ConfigManager::getProfileFromUI" name="ConfigManager::getProfileFromUI">
-<area shape="rect" id="node1" title=" " alt="" coords="5,57,196,98"/>
-<area shape="rect" id="node2" href="$classApp.html#abc976f427450f86d2fb3860c4e95dbed" title=" " alt="" coords="244,64,416,91"/>
-<area shape="rect" id="node3" href="$classBasePanel.html#ad49908813b6dec308db7bfbb32a9d999" title="Récupère les valeurs des widgets du panel." alt="" coords="464,5,625,32"/>
-<area shape="rect" id="node4" href="$classGeneralParamsPanel.html#af5c4f87007fdce8d8ef1238f64708881" title="Récupère les valeurs des widgets du panel." alt="" coords="467,57,623,98"/>
-<area shape="rect" id="node5" href="$classStrategyBasePanel.html#ad4efc8d3a9fe28097a271c30a3bb18bf" title="Récupère les valeurs des widgets du panel." alt="" coords="469,122,621,163"/>
-</map>

@@ -1,7 +1,0 @@
-<map id="DataLoader::loadFromCSV" name="DataLoader::loadFromCSV">
-<area shape="rect" id="node1" title="Charge les données depuis un fichier CSV." alt="" coords="1033,13,1225,39"/>
-<area shape="rect" id="node2" href="$classDataLoader.html#ab40a74d379a145b5d93bd9ae3f7c67e2" title="Charge les données OHLC depuis un fichier CSV." alt="" coords="821,13,985,39"/>
-<area shape="rect" id="node3" href="$classBacktestRunner.html#add4493e489a11be9383ad14451221897" title=" " alt="" coords="563,13,773,39"/>
-<area shape="rect" id="node4" href="$classBacktestRunner.html#a4ded5e8156a6ac70b195aa87c0f7fe91" title=" " alt="" coords="244,13,515,39"/>
-<area shape="rect" id="node5" href="$classBacktestRunner.html#a129c1bba65d590dd0e1f24aeee0cfa6e" title=" " alt="" coords="5,5,196,47"/>
-</map>

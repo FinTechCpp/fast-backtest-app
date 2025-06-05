@@ -1,4 +1,0 @@
-<map id="CrossEMAPanel::validateEmaPeriods" name="CrossEMAPanel::validateEmaPeriods">
-<area shape="rect" id="node1" title="Valide que l&#39;EMA long est toujours supérieur à l&#39;EMA court." alt="" coords="224,5,436,47"/>
-<area shape="rect" id="node2" href="$d3/d37/classCrossEMAPanel.html#a566d7146f1a5572346e15bb1ae83e21f" title="Crée et retourne l&#39;interface graphique du panel." alt="" coords="5,13,176,39"/>
-</map>

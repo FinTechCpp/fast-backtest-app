@@ -1,5 +1,0 @@
-<map id="BuyHeikinGreenPanel" name="BuyHeikinGreenPanel">
-<area shape="rect" id="node1" title="Panel spécifique à la stratégie BuyHeikinGreen." alt="" coords="15,80,177,107"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,80,32"/>
-<area shape="rect" id="node3" href="$classBasePanel.html" title="Classe de base abstraite pour tous les panels de l&#39;application." alt="" coords="105,5,194,32"/>
-</map>

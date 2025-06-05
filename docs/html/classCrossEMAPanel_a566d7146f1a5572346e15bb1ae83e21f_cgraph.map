@@ -1,4 +1,0 @@
-<map id="CrossEMAPanel::create" name="CrossEMAPanel::create">
-<area shape="rect" id="node1" title="Crée et retourne l&#39;interface graphique du panel." alt="" coords="5,13,176,39"/>
-<area shape="rect" id="node2" href="$classCrossEMAPanel.html#a8501fb7d62aac4408e86434277671e36" title="Valide que l&#39;EMA long est toujours supérieur à l&#39;EMA court." alt="" coords="224,5,436,47"/>
-</map>

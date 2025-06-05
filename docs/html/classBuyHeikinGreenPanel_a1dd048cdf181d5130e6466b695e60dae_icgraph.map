@@ -1,5 +1,0 @@
-<map id="BuyHeikinGreenPanel::_toggleWidgetGroup" name="BuyHeikinGreenPanel::_toggleWidgetGroup">
-<area shape="rect" id="node1" title="Active/désactive un groupe de widgets." alt="" coords="216,39,379,80"/>
-<area shape="rect" id="node2" href="$classBuyHeikinGreenPanel.html#a3bf6f6feeece715db972e10be6344269" title="Crée et retourne l&#39;interface graphique du panel." alt="" coords="5,5,168,47"/>
-<area shape="rect" id="node3" href="$classBuyHeikinGreenPanel.html#a69989a5858ac737fada1ddff9be2d07f" title="Définit les valeurs des widgets du panel." alt="" coords="5,71,168,112"/>
-</map>

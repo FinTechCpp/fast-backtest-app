@@ -1,7 +1,0 @@
-<map id="HistogramView" name="HistogramView">
-<area shape="rect" id="node1" title="Vue pour afficher l&#39;histogramme des profits et pertes." alt="" coords="125,712,387,1229"/>
-<area shape="rect" id="node2" href="$dd/d94/classBaseView.html" title="Classe de base abstraite pour toutes les vues de résultats du backtest." alt="" coords="5,271,243,510"/>
-<area shape="rect" id="node3" title=" " alt="" coords="85,5,163,83"/>
-<area shape="rect" id="node4" href="$df/dde/classInteractiveChartView.html" title=" " alt="" coords="267,132,515,649"/>
-<area shape="rect" id="node5" title=" " alt="" coords="341,5,440,83"/>
-</map>

@@ -1,6 +1,0 @@
-<map id="DataLoader::parseCSVLine" name="DataLoader::parseCSVLine">
-<area shape="rect" id="node1" title="Parse une ligne CSV en barre OHLC." alt="" coords="659,5,853,32"/>
-<area shape="rect" id="node2" href="$d4/d85/classDataLoader.html#a5fe10f484c9669bb98254b8b85768467" title="Charge les données depuis un fichier CSV." alt="" coords="419,5,611,32"/>
-<area shape="rect" id="node3" href="$d4/d85/classDataLoader.html#a13ecda40d5c99a9f6f92fcea73546802" title="Charge les données OHLC depuis un fichier CSV." alt="" coords="207,5,371,32"/>
-<area shape="rect" id="node4" href="$d7/daa/classBacktestWorker.html#a3dbd6f88f5cedaf165388f916d73e8c7" title=" " alt="" coords="5,5,159,32"/>
-</map>

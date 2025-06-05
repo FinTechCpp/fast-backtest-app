@@ -1,7 +1,0 @@
-<map id="StrategyBasePanel::create" name="StrategyBasePanel::create">
-<area shape="rect" id="node1" title="Crée et retourne l&#39;interface graphique du panel." alt="" coords="5,71,157,112"/>
-<area shape="rect" id="node2" href="$classStrategyBasePanel.html#aa0bd57b363b0b922fbb6ef0ecba32669" title=" " alt="" coords="205,5,357,47"/>
-<area shape="rect" id="node4" href="$classStrategyBasePanel.html#aa4a6a5ee65245f1391d5e8fa62da97e5" title=" " alt="" coords="205,71,357,112"/>
-<area shape="rect" id="node5" href="$classStrategyBasePanel.html#a76dd6d7f0bc490c349945c9d20696b7d" title=" " alt="" coords="205,136,357,177"/>
-<area shape="rect" id="node3" href="$classStrategyBasePanel.html#a53c2bcd38bece4abebc307c2e5bcb61e" title=" " alt="" coords="405,5,580,47"/>
-</map>

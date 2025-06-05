@@ -6,10 +6,10 @@ $(PKG)_WEBSITE  := https://www.qt.io/
 $(PKG)_DESCR    := Qt6
 $(PKG)_IGNORE   :=
 $(PKG)_VERSION  := 6.8.3
-$(PKG)_CHECKSUM := 40caedbf83cc9a1959610830563565889878bc95f115868bbf545d1914acf28e
+$(PKG)_CHECKSUM := d3e19d5e0c5bdc7f845f5de9f7b42c61c056b8b394c52830b4de4e6b72f68f88
 $(PKG)_SUBDIR   := $(PKG_BASENAME)-everywhere-src-$($(PKG)_VERSION)
 $(PKG)_FILE     := $(PKG_BASENAME)-everywhere-src-$($(PKG)_VERSION).tar.xz
-$(PKG)_URL      := https://download.qt.io/archive/qt/6.9/$($(PKG)_VERSION)/submodules/$($(PKG)_FILE)
+$(PKG)_URL      := https://download.qt.io/archive/qt/6.8/$($(PKG)_VERSION)/submodules/$($(PKG)_FILE)
 $(PKG)_TARGETS  := $(BUILD) $(MXE_TARGETS)
 $(PKG)_DEPS     := cc freetype harfbuzz jpeg libpng mesa mariadb-connector-c openssl pcre2 sqlite zlib zstd $(BUILD)~$(PKG) \
                    $(if $(findstring shared,$(MXE_TARGETS)), icu4c)
@@ -17,7 +17,7 @@ $(PKG)_DEPS_$(BUILD) :=
 $(PKG)_OO_DEPS_$(BUILD) := ninja
 
 define $(PKG)_UPDATE
-    $(WGET) -q -O- https://download.qt.io/official_releases/qt/6.9/ | \
+    $(WGET) -q -O- https://download.qt.io/official_releases/qt/6.8/ | \
     $(SED) -n 's,.*href="\(6\.[0-9]\.[^/]*\)/".*,\1,p' | \
     grep -iv -- '-rc' | \
     $(SORT) -V | \
@@ -67,7 +67,7 @@ define $(PKG)_BUILD
     cmake --build '$(BUILD_DIR)' -j '$(JOBS)'
     cmake --install '$(BUILD_DIR)'
     $(if $(BUILD_STATIC),$(SED) -i -e 's/^QMAKE_PRL_LIBS .*/& -lodbc32/;' \
-	      -e 's/^QMAKE_PRL_LIBS_FOR_CMAKE .*/&;-lodbc32/;' \
+          -e 's/^QMAKE_PRL_LIBS_FOR_CMAKE .*/&;-lodbc32/;' \
               '$(PREFIX)/$(TARGET)/$(MXE_QT6_ID)/plugins/sqldrivers/qsqlodbc.prl',)
 
     mkdir -p '$(CMAKE_TOOLCHAIN_DIR)'

@@ -18,4 +18,4 @@ live_interface/candles_history.json
 .vscode/c_cpp_properties.json
 .env
 docs/
-# marketData/
+marketData/

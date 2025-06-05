@@ -97,4 +97,12 @@
         "cinttypes": "cpp",
         "valarray": "cpp"
     },
+    "yaml.schemas": {
+        "https://json.schemastore.org/github-workflow.json": [
+            ".github/workflows/*.yml",
+            ".github/workflows/*.yaml"
+        ]
+    },
+    "yaml.validate": true,
+    "yaml.completion": true
 }

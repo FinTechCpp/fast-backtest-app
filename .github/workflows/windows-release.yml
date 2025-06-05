@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/github-workflow.json
+
 name: Windows Release Build
 
 on:
@@ -30,12 +32,12 @@ jobs:
         host: windows
         target: desktop
         arch: win64_msvc2022_64
-        modules: qtcharts qtwidgets qtcore
+        modules: qtcharts 
         cache: true
 
     - name: Verify Qt installation
       run: |
-        echo "Qt version: ${{ env.Qt6_DIR }}"
+        echo "Qt version: ${{ env.QT_VERSION }}"
         qmake --version
         where qmake
 

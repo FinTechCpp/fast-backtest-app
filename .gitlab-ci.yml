@@ -1,0 +1,93 @@
+stages:
+  - build
+  - release
+
+variables:
+  # Configuration MXE
+  MXE_TARGET: "x86_64-w64-mingw32.static"
+  CMAKE_TOOLCHAIN_FILE: "/opt/mxe/usr/x86_64-w64-mingw32.static/share/cmake/mxe-conf.cmake"
+
+# Build Docker image avec MXE (optionnel, si vous voulez utiliser une image custom)
+build-mxe-image:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t mxe-qt6-builder .
+    - docker tag mxe-qt6-builder $CI_REGISTRY_IMAGE/mxe-qt6-builder:latest
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker push $CI_REGISTRY_IMAGE/mxe-qt6-builder:latest
+  only:
+    - develop
+  when: manual
+
+# Compilation croisée Windows
+build-windows:
+  stage: build
+  image: ubuntu:22.04
+  before_script:
+    - apt-get update
+    - apt-get install -y autoconf automake autopoint bash bison bzip2 flex g++ g++-multilib gettext git gperf intltool libc6-dev-i386 libgdk-pixbuf2.0-dev libltdl-dev libgl-dev libpcre3-dev libssl-dev libtool-bin libxml-parser-perl lzip make openssl p7zip-full patch perl python3 python3-mako python3-pkg-resources ruby sed unzip wget xz-utils
+    
+    - cd /opt
+    - git clone https://github.com/mxe/mxe.git
+    - cd mxe
+    
+    # Compiler spécifiquement Qt6 avec les modules nécessaires
+    - make MXE_TARGETS='x86_64-w64-mingw32.static' qt6-qtbase qt6-qtwidgets qt6-qtcharts cmake pkgconf -j$(nproc)
+    
+    - export PATH="/opt/mxe/usr/bin:${PATH}"
+  script:
+    - cd $CI_PROJECT_DIR
+    - mkdir -p build-windows
+    - cd build-windows
+    
+    # Configuration CMake avec MXE (commande correcte)
+    - x86_64-w64-mingw32.static-cmake .. \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/install \
+        -DBUILD_WITH_DEBUG=OFF
+    
+    - make -j$(nproc)
+    - make install DESTDIR=$CI_PROJECT_DIR/windows-release
+    
+    - cd $CI_PROJECT_DIR
+    - mkdir -p artifacts/windows
+    - cp -r windows-release/install/* artifacts/windows/
+    
+    - cd artifacts
+    - tar -czf ig-trading-bot-windows-x64.tar.gz windows/
+  artifacts:
+    paths:
+      - artifacts/ig-trading-bot-windows-x64.tar.gz
+    expire_in: 1 week
+    name: "ig-trading-bot-windows-${CI_COMMIT_SHORT_SHA}"
+  only:
+    - develop 
+  cache:
+    key: "mxe-qt6-${CI_RUNNER_ID}"
+    paths:
+      - /opt/mxe/pkg/
+      - /opt/mxe/log/
+      - /opt/mxe/usr/x86_64-w64-mingw32.static/
+    policy: pull-push
+
+# Créer une release GitLab
+create-release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  script:
+    - echo "Création de la release pour le commit $CI_COMMIT_SHA"
+  release:
+    name: 'Release $CI_COMMIT_SHORT_SHA'
+    description: 'Version automatique générée depuis le commit $CI_COMMIT_SHA'
+    tag_name: 'v1.0.$CI_PIPELINE_IID'
+    assets:
+      links:
+        - name: 'ig-trading-bot-windows-x64.tar.gz'
+          url: '$CI_PROJECT_URL/-/jobs/$CI_JOB_ID/artifacts/file/artifacts/ig-trading-bot-windows-x64.tar.gz'
+  dependencies:
+    - build-windows
+  only:
+    - develop 

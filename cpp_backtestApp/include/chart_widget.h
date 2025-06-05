@@ -293,9 +293,11 @@ private:
 
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
     std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
+    std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
 
     int m_nextRSIId = 1;                     ///< Prochain ID disponible pour RSI
     int m_nextEMAId = 1;                     ///< Prochain ID disponible pour EMA
+    int m_nextStochasticId = 1;              ///< Prochain ID disponible pour Stochastique
 
     // Méthodes privées pour le RSI
     void addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow);
@@ -306,7 +308,9 @@ private:
     void ensureEMACached(int period);
 
     // Méthodes privées pour le Stochastic
-    
+    void addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow);
+    void ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod);
+
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;
     FinanceChart* m_financeChart = nullptr;

@@ -488,6 +488,9 @@ void ChartWidget::ensureEMACached(int period)
     }
 }
 
+void ChartWidget::addStochasticToChart(FinanceChart *chart, const StochasticInstance &stochastic, int startIndex, int pointsToShow)
+{
+}
 
 void ChartWidget::convertBacktestData(const std::shared_ptr<be::Data>& data) {
     if (!data || data->size() == 0) {

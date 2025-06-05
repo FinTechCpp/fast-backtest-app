@@ -1305,10 +1305,10 @@ void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInst
     
     // Configurer l'échelle de l'axe Y
     c->yAxis()->setLinearScale(0, 100);
-    
-    // Ajouter les lignes horizontales pour les niveaux 20 et 80
-    c->yAxis()->addMark(80, 0xff6666, "80");
-    c->yAxis()->addMark(20, 0x6666ff, "20");
+
+    // Ajouter les seuils pour les niveaux de surachat et de survente
+    c->yAxis()->addMark(stochastic.overboughtLevel, 0xff6666, std::to_string(stochastic.overboughtLevel).c_str());
+    c->yAxis()->addMark(stochastic.oversoldLevel, 0x6666ff, std::to_string(stochastic.oversoldLevel).c_str());
 }
 
 

@@ -12,6 +12,8 @@
 
 #include "chart_widget.h"
 
+// TODO: Il faudrait faire une classs mere pour avoir les deux boutons "Appliquer" et "Annuler"
+// Il faut aussi ajouter un bouton reset pour revenir aux valeurs par defaut
 /**
  * @brief Dialogue modal pour configurer plusieurs EMA
  */

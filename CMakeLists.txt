@@ -58,17 +58,17 @@ else()
             "C:/Qt/*/msvc2019_64"             # Installation Qt standard avec MSVC 2019
             "$ENV{USERPROFILE}/Qt/*/msvc2022_64"  # Installation utilisateur
             "$ENV{QTDIR}"                     # Variable d'environnement QTDIR
+            "$ENV{QT_ROOT_DIR}"               # Variable utilisée par GitHub Actions
+            "D:/a/*/Qt/*/msvc2022_64"         # Chemin GitHub Actions
         )
         
-        # Chercher la version la plus récente de Qt6
-        file(GLOB QT_CANDIDATES ${QT_SEARCH_PATHS})
-        if(QT_CANDIDATES)
-            # Trier pour avoir la version la plus récente en premier
-            list(SORT QT_CANDIDATES)
-            list(REVERSE QT_CANDIDATES)
-            list(GET QT_CANDIDATES 0 QT_PATH)
-            list(APPEND CMAKE_PREFIX_PATH "${QT_PATH}")
-            message(STATUS "Qt6 détecté automatiquement: ${QT_PATH}")
+        # After the QT_CANDIDATES check, replace the existing warning with:
+        if(DEFINED ENV{Qt6_DIR})
+            list(APPEND CMAKE_PREFIX_PATH "$ENV{Qt6_DIR}")
+            message(STATUS "Utilisation de Qt6_DIR depuis l'environnement: $ENV{Qt6_DIR}")
+        elseif(DEFINED ENV{QT_ROOT_DIR})
+            list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_ROOT_DIR}")
+            message(STATUS "Utilisation de QT_ROOT_DIR depuis l'environnement: $ENV{QT_ROOT_DIR}")
         else()
             message(WARNING "Qt6 non trouvé automatiquement. Assurez-vous que Qt6 est installé dans C:/Qt/ ou définissez CMAKE_PREFIX_PATH")
         endif()

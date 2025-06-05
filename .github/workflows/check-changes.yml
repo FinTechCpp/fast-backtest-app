@@ -1,0 +1,30 @@
+name: Check Changes
+
+on:
+  push:
+    branches: [ github-actions ]
+  pull_request:
+    branches: [ github-actions ]
+
+jobs:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      cpp-changed: ${{ steps.changes.outputs.cpp }}
+      cmake-changed: ${{ steps.changes.outputs.cmake }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            cpp:
+              - 'cpp_**/**'
+              - 'ChartDirector/**'
+              - '*.cpp'
+              - '*.h'
+              - '*.hpp'
+            cmake:
+              - '**/CMakeLists.txt'
+              - 'CMakeLists.txt'
+              - 'build_and_run.sh'

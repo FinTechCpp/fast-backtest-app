@@ -36,6 +36,8 @@ private slots:
     void onHeightChanged(int height);
     void onKColorButtonClicked();
     void onDColorButtonClicked();
+    void onOverboughtLevelChanged(int level); // Nouveau slot
+    void onOversoldLevelChanged(int level);   // Nouveau slot
     
 private:
     ChartWidget* m_chartWidget;
@@ -47,6 +49,8 @@ private:
     QSpinBox* m_slowKPeriodSpinBox;
     QSpinBox* m_slowDPeriodSpinBox;
     QSpinBox* m_heightSpinBox;
+    QSpinBox* m_overboughtLevelSpinBox; // Nouveau contrôle
+    QSpinBox* m_oversoldLevelSpinBox;   // Nouveau contrôle
     QPushButton* m_kColorButton;
     QPushButton* m_dColorButton;
     QDialogButtonBox* m_buttonBox;

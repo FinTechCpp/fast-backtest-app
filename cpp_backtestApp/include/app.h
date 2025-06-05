@@ -32,6 +32,7 @@ class ResultManager;
 class BacktestRunner;
 class BasePanel;
 class ProfileMenuManager;
+class DataMenuManager;
 
 class App : public QMainWindow
 {
@@ -74,7 +75,10 @@ private:
     QAction* m_aboutAction;
     
     // Gestionnaire de menu des profils
-    ProfileMenuManager* m_profileMenuManager;  // AJOUT
+    ProfileMenuManager* m_profileMenuManager; 
+
+    // Gestionnaire de menu des données
+    DataMenuManager* m_dataMenuManager;
 
     void createMenus();
     void createActions();

@@ -27,8 +27,11 @@
 #include "views/baseview.h"
 #include "chart_widget.h" // Inclure le nouveau widget
 
+#include "dialog/rsi_dialog.h"
+#include "dialog/ema_dialog.h"
+
 class App;
-class IndicatorDialog;
+class RSIDialog;
 
 /**
  * @brief Vue pour afficher les graphiques de prix et d'indicateurs
@@ -94,82 +97,4 @@ private:
     void showChartWidget();
     void setupIndicatorControls();
     void createIndicatorWidgets(int id, const QString& name);
-};
-
-/**
- * @brief Dialogue modal pour modifier les paramètres d'un indicateur technique
- */
-class IndicatorDialog : public QDialog
-{
-    Q_OBJECT
-    
-public:
-    // Construction pour RSI
-    IndicatorDialog(QWidget* parent, ChartWidget* chartWidget, int rsiId, const ChartWidget::RSIInstance& rsi);
-    ~IndicatorDialog();
-    
-private slots:
-    void onApply();
-    void onCancel();
-    void onPeriodChanged(int period);
-    void onHeightChanged(int height);
-    void onRangeChanged(double range);
-    void onColorButtonClicked();
-    void onUpperColorButtonClicked();
-    void onLowerColorButtonClicked();
-    
-private:
-    ChartWidget* m_chartWidget;
-    int m_rsiId;
-    ChartWidget::RSIInstance m_originalRsi;  // Pour restaurer en cas d'annulation
-    ChartWidget::RSIInstance m_currentRsi;   // Pour les modifications en cours
-    
-    QSpinBox* m_periodSpinBox;
-    QSpinBox* m_heightSpinBox;
-    QDoubleSpinBox* m_rangeSpinBox;
-    QPushButton* m_colorButton;
-    QPushButton* m_upperColorButton;
-    QPushButton* m_lowerColorButton;
-    QDialogButtonBox* m_buttonBox;
-    
-    void updateColorButtonStyle(QPushButton* button, int color);
-    void updateRSI();
-};
-
-/**
- * @brief Dialogue modal pour configurer plusieurs EMA
- */
-class EMADialog : public QDialog
-{
-    Q_OBJECT
-    
-public:
-    // Construction pour EMA
-    EMADialog(QWidget* parent, ChartWidget* chartWidget);
-    ~EMADialog();
-    
-private slots:
-    void onApply();
-    void onCancel();
-    void onAddEMA();
-    void onRemoveEMA(int row);
-    void onColorButtonClicked(int row);
-    void onEnabledStateChanged(int row, bool enabled);
-    void onPeriodChanged(int row, int period);
-    
-private:
-    ChartWidget* m_chartWidget;
-    std::vector<ChartWidget::EMAInstance> m_originalEMAs;  // Pour restaurer en cas d'annulation
-    std::vector<ChartWidget::EMAInstance> m_currentEMAs;   // Pour les modifications en cours
-    std::map<int, int> m_rowToEMAId;        // Mappage de la ligne de l'UI à l'ID de l'EMA
-    
-    QVBoxLayout* m_emaListLayout;
-    QPushButton* m_addEMAButton;
-    QDialogButtonBox* m_buttonBox;
-    
-    int m_nextRowId = 0;
-    
-    void updateColorButtonStyle(QPushButton* button, int color);
-    QWidget* createEMARow(const ChartWidget::EMAInstance& ema, int row);
-    void refreshEMAList();
 };

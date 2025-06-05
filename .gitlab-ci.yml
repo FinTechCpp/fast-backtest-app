@@ -31,22 +31,24 @@ build-windows:
     - apt-get update
     - apt-get install -y autoconf automake autopoint bash bison bzip2 flex g++ g++-multilib gettext git gperf intltool libc6-dev-i386 libgdk-pixbuf2.0-dev libltdl-dev libgl-dev libpcre3-dev libssl-dev libtool-bin libxml-parser-perl lzip make openssl p7zip-full patch perl python3 python3-mako python3-pkg-resources ruby sed unzip wget xz-utils
     
+    # Create python symlink for MXE compatibility
+    - ln -sf /usr/bin/python3 /usr/bin/python
+    
     - cd /opt
     - git clone https://github.com/mxe/mxe.git
     - cd mxe
     
-    # Afficher les packages Qt6 disponibles pour diagnostic
-    - echo "Packages Qt6 disponibles :"
-    - ls src/qt/qt6/qt6-*.mk | head -10
+    # Appliquer vos modifications pour Qt 6.8.3
+    - echo "Application des patches pour Qt 6.8.3..."
+    - cp $CI_PROJECT_DIR/patches/mxe/qt6-qtbase.mk src/qt/qt6/
     
-    # Compiler uniquement les packages qui existent
-    - echo "Compilation de qt6-qtbase (inclut Core, Widgets, Gui, Network)..."
+    # Vérifier la version après patch
+    - echo "Version Qt configurée :"
+    - grep "_VERSION.*:= 6.8.3" src/qt/qt6/qt6-qtbase.mk
+    
+    # Compiler avec Qt 6.8.3
     - make MXE_TARGETS='x86_64-w64-mingw32.static' qt6-qtbase -j$(nproc)
-    
-    - echo "Compilation de qt6-qtcharts..."
     - make MXE_TARGETS='x86_64-w64-mingw32.static' qt6-qtcharts -j$(nproc)
-    
-    - echo "Compilation de cmake et pkgconf..."
     - make MXE_TARGETS='x86_64-w64-mingw32.static' cmake pkgconf -j$(nproc)
     
     - export PATH="/opt/mxe/usr/bin:${PATH}"

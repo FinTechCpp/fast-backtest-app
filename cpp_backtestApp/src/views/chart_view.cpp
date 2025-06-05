@@ -50,7 +50,7 @@ void ChartView::setupUI()
     m_leftPanel = new QWidget();
     m_leftPanel->setObjectName("leftPanel");
     m_leftPanel->setStyleSheet("#leftPanel { background-color: #BADDFF; }");
-    m_leftPanel->setFixedWidth(180); // Augmenter la largeur pour les contrôles d'indicateurs
+    m_leftPanel->setFixedWidth(200); // Augmenter la largeur pour les contrôles d'indicateurs
     
     // Ajouter un layout vertical au panneau gauche
     QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_leftPanel);

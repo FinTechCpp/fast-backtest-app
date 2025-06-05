@@ -81,6 +81,8 @@ public:
         int height = 120;       ///< Hauteur du panneau
         int kColor = 0x0000FF;  ///< Couleur de la ligne %K (bleu par défaut)
         int dColor = 0xFF0000;  ///< Couleur de la ligne %D (rouge par défaut)
+        int overboughtLevel = 80; ///< Niveau de surachat
+        int oversoldLevel = 20;   ///< Niveau de survente
         
         bool operator==(const StochasticInstance& other) const {
             return id == other.id;

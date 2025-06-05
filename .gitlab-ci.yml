@@ -25,8 +25,8 @@ build-mxe-image:
 build-windows:
   stage: build
   image: ubuntu:22.04
-  tags:
-    - docker           # Utiliser seulement le tag que votre runner a
+  #tags:
+   # - docker           # Utiliser seulement le tag que votre runner a
   variables:
     DEBIAN_FRONTEND: noninteractive
   before_script:

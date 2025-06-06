@@ -26,6 +26,26 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0  # Nécessaire pour l'historique complet
+
+    - name: Calculate version
+      id: version
+      run: |
+        # Lire la version de base depuis le fichier VERSION
+        $baseVersion = Get-Content "VERSION" -Raw
+        $baseVersion = $baseVersion.Trim()
+        
+        # Compter les commits depuis le dernier tag
+        $commitCount = git rev-list --count HEAD
+        
+        # Générer la version finale
+        $version = "$baseVersion.$commitCount"
+        
+        echo "BASE_VERSION=$baseVersion" >> $env:GITHUB_ENV
+        echo "VERSION=$version" >> $env:GITHUB_ENV
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+        
+        echo "Version calculée: $version"
 
     - name: Set up MSVC
       uses: microsoft/setup-msbuild@v2
@@ -103,7 +123,7 @@ jobs:
 
     - name: Create ZIP archive
       run: |
-        $archiveName = "ig-trading-bot-windows-v${{ github.run_number }}.zip"
+        $archiveName = "ig-trading-bot-windows-v${{ env.VERSION }}.zip"
         Compress-Archive -Path "ig-trading-bot-windows/*" -DestinationPath $archiveName
         echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
 
@@ -125,12 +145,14 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: windows-v${{ github.run_number }}
-        name: Windows Release v${{ github.run_number }}
+        tag_name: v${{ env.VERSION }}
+        name: Windows Release v${{ env.VERSION }}
         body: |
-          🚀 **Nouvelle release Windows automatique**
+          🚀 **Nouvelle release Windows v${{ env.VERSION }}**
           
           **Informations de build:**
+          - Version: ${{ env.VERSION }}
+          - Version de base: ${{ env.BASE_VERSION }}
           - Commit: ${{ env.SHORT_SHA }}
           - Message: ${{ env.COMMIT_MSG }}
           - Qt Version: ${{ env.QT_VERSION }}
@@ -159,9 +181,10 @@ jobs:
       run: |
         echo "## ✅ Build Successful" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Release Created:** [windows-v${{ github.run_number }}](${{ steps.create_release.outputs.html_url }})" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Release Created:** [v${{ env.VERSION }}](https://github.com/hugoMiCode/ig-trading-bot/releases/tag/v${{ env.VERSION }})" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**Build Details:**" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Version: ${{ env.VERSION }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- Commit: ${{ env.SHORT_SHA }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- Qt Version: ${{ env.QT_VERSION }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- Build Type: ${{ env.BUILD_TYPE }}" >> $env:GITHUB_STEP_SUMMARY

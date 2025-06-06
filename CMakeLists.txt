@@ -102,7 +102,7 @@ else()
 endif()
 
 # Vérifier que Qt est disponible (obligatoire)
-find_package(Qt6 COMPONENTS Core Widgets Charts REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 
 # Ajouter les sous-projets (bibliothèques)
 add_subdirectory(cpp_backtestEngine)

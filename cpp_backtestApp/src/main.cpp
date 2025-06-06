@@ -16,6 +16,7 @@
 #include "app.h"
 #include "components/backtest_runner.h"
 #include "components/data_loader.h"
+#include "components/UpdateChecker.h"
 #include "backtest.hpp"   // Pour be::* types
 #include "stats.hpp"      // Pour be::Stats
 
@@ -182,6 +183,29 @@ int main(int argc, char *argv[])
     // MAINTENANT on peut utiliser les logs
     qInfo() << "=== Démarrage de l'application ===";
     qInfo() << "Arguments:" << QStringList(argv, argv + argc);
+    
+    // Vérification des mises à jour
+    UpdateChecker updateChecker;
+    QObject::connect(&updateChecker, &UpdateChecker::updateAvailable, 
+        [&](const QString& newVersion, const QString& downloadUrl) {
+            qInfo() << "Mise à jour disponible:" << newVersion;
+            
+            // Demander à l'utilisateur s'il souhaite mettre à jour
+            QMessageBox msgBox;
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.setText(QString("Une nouvelle version (%1) est disponible.").arg(newVersion));
+            msgBox.setInformativeText("Voulez-vous la télécharger et l'installer maintenant ?");
+            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
+            msgBox.setDefaultButton(QMessageBox::Yes);
+            
+            if (msgBox.exec() == QMessageBox::Yes) {
+                // Télécharger et installer la mise à jour
+                updateChecker.downloadAndInstallUpdate();
+            }
+        });
+
+    // Lancer la vérification des mises à jour
+    updateChecker.checkForUpdates();
     
     // Enregistrer les types personnalisés pour Qt
     qRegisterMetaType<OHLCBar>("OHLCBar");

@@ -1,5 +1,5 @@
 # Trouver les packages Qt nécessaires
-find_package(Qt6 COMPONENTS Core Widgets Charts REQUIRED)
+find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 
 # Activer l'outil de méta-objets Qt (moc)
 set(CMAKE_AUTOMOC ON)
@@ -27,12 +27,30 @@ target_include_directories(backtestapp
         ${CMAKE_SOURCE_DIR}/ChartDirector/qtdemo/helloworld
 )
 
+# Lire la version depuis le fichier VERSION ou variable d'environnement
+if(DEFINED ENV{VERSION})
+    set(APP_VERSION $ENV{VERSION})
+else()
+    file(READ "${CMAKE_SOURCE_DIR}/VERSION" APP_VERSION)
+    string(STRIP "${APP_VERSION}" APP_VERSION)
+endif()
+
+# Créer un fichier de configuration
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/version.h"
+)
+
+# Ajouter le répertoire de build aux includes
+target_include_directories(backtestapp PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 # Lier avec Qt et les bibliothèques de backtest
 target_link_libraries(backtestapp
     PRIVATE
         Qt6::Core
         Qt6::Widgets
         Qt6::Charts
+        Qt::Network
         cpp_backtestEngine
         cpp_strategies
         chartdirector

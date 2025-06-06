@@ -39,8 +39,8 @@ void GeneralParamsPanel::initialize()
     
     // Période
     m_widgets["period"] = new QComboBox(this);
-    static_cast<QComboBox*>(m_widgets["period"])->addItems({"1m", "2m", "3m", "6m", "1y", "2y"});
-    static_cast<QComboBox*>(m_widgets["period"])->setCurrentIndex(3);
+    static_cast<QComboBox*>(m_widgets["period"])->addItems({"1m", "2m", "3m", "6m", "1y", "3y"});
+    static_cast<QComboBox*>(m_widgets["period"])->setCurrentIndex(5);
     paramsLayout->addRow(new QLabel("Période de données:", this), m_widgets["period"]);
     
     // Intervalle
@@ -55,7 +55,7 @@ void GeneralParamsPanel::initialize()
     // Date de fin
     m_widgets["end_date"] = new QDateEdit(this);
     QDateEdit* dateEdit = static_cast<QDateEdit*>(m_widgets["end_date"]);
-    dateEdit->setDate(QDate(2025, 4, 30));
+    dateEdit->setDate(QDate(2025, 5, 30));
     dateEdit->setCalendarPopup(true);
     paramsLayout->addRow(new QLabel("Date de fin:", this), m_widgets["end_date"]);
     

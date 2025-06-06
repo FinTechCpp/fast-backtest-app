@@ -92,7 +92,9 @@ public:
         // auto allTrades = getClosedTrades(); // NE PAS FAIRE CECI
     
         // Compter les trades fermés pour détecter les nouveaux
-        size_t currentTradeCount = _broker->closedTrades().size();
+        //Récupérer une référence à closedTrades au lieu d'une copie
+        const auto& closedTrades = _broker->closedTrades();
+        size_t currentTradeCount = closedTrades.size();
         
         // Seulement si de nouveaux trades ont été fermés
         if (currentTradeCount > last_closed_trade_count) {

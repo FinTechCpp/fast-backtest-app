@@ -102,13 +102,10 @@ std::vector<Trade> Strategy::getTrades() const {
 }
 
 std::vector<Trade> Strategy::getClosedTrades() const {
-    // Le broker retourne des shared_ptr<Trade>, nous devons les convertir en Trade
+    const auto& brokerTrades = _broker->closedTrades();
     std::vector<Trade> closedTrades;
-    
-    // Pré-allouer la mémoire pour éviter les réallocations
-    closedTrades.reserve(_broker->closedTrades().size());
-    
-    for (const auto& trade_ptr : _broker->closedTrades()) {
+    closedTrades.reserve(brokerTrades.size());
+    for (const auto& trade_ptr : brokerTrades) {
         closedTrades.push_back(*trade_ptr);
     }
     return closedTrades;

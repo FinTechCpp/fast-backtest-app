@@ -17,8 +17,10 @@ Position::operator bool() const {
 
 double Position::size() const {
     // Somme des tailles de tous les trades actifs
+    //Utilise une réference constante pour éviter de copier les trades ()
+    const auto& activeTrades = _broker->trades();
     double totalSize = 0.0;
-    for (const auto& trade : _broker->trades()) {
+    for (const auto& trade : activeTrades) {
         totalSize += trade->size();
     }
     return totalSize;

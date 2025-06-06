@@ -107,7 +107,8 @@ std::map<std::string, double> Stats::toMap() const {
     // Valeurs d'équité
     map["Equity Final [$]"] = equityFinal;
     map["Equity Peak [$]"] = equityPeak;
-    
+    map["Equity Initial [$]"] = equityInitial;
+
     // Valeurs de rendement
     map["Return [%]"] = returnPct;
     map["Buy & Hold Return [%]"] = buyHoldReturnPct;
@@ -159,6 +160,7 @@ std::ostream& operator<<(std::ostream& os, const Stats& stats) {
     os << "\n-- Résultats --\n";
     os << "  Équité finale: " << stats.equityFinal << "\n";
     os << "  Équité maximale: " << stats.equityPeak << "\n";
+    os << "  Équité initiale: " << stats.equityInitial << "\n";
     os << "  Rendement: " << stats.returnPct << "%\n";
     os << "  Buy & Hold: " << stats.buyHoldReturnPct << "%\n";
     os << "  Rendement annualisé: " << stats.returnAnnPct << "%\n";
@@ -251,6 +253,7 @@ Stats computeStats(
     // Équité
     stats.equityFinal = equity.back();
     stats.equityPeak = *std::max_element(equity.begin(), equity.end());
+    stats.equityInitial = equity.front();  // Équité initiale
     
     // Rendement total
     stats.returnPct = equity.size() > 1 && std::abs(equity.front()) > 1e-10 ? 
@@ -582,6 +585,7 @@ Stats dummyStats() {
     stats.exposureTimePct = NaN;
     stats.equityFinal = NaN;
     stats.equityPeak = NaN;
+    stats.equityInitial = NaN;
     stats.returnPct = NaN;
     stats.buyHoldReturnPct = NaN;
     stats.returnAnnPct = NaN;

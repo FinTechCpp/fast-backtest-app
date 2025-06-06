@@ -32,6 +32,7 @@ struct Stats {
     // Statistiques d'équité
     double equityFinal = 0;              ///< Équité finale en unités monétaires
     double equityPeak = 0;               ///< Équité maximale atteinte
+    double equityInitial = 0;            ///< Équité initiale au début du backtest
     
     // Statistiques de rendement
     double returnPct = 0;                ///< Rendement total en pourcentage

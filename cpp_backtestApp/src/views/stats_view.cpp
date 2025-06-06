@@ -378,13 +378,16 @@ void StatsView::initializeMetricDefinitions() {
         // Section performance
         {"equity_final", "Capital final:", "Montant final du capital", "performance",
             [](const be::Stats& s) { 
-                return s.equityFinal >= s.equityPeak * 0.9 ? MetricStatus::Good :
-                       (s.equityFinal < s.equityPeak * 0.7 ? MetricStatus::Bad : MetricStatus::Neutral); 
+                return s.equityFinal > s.equityInitial ? MetricStatus::Good : 
+                      (s.equityFinal < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
             },
             [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityFinal, 'f', 2)); }
         },
         {"equity_peak", "Capital maximal:", "Montant maximal atteint par le capital", "performance",
-            [](const be::Stats& s) { return MetricStatus::Good; },
+            [](const be::Stats& s) { 
+                return s.equityPeak > s.equityInitial ? MetricStatus::Good : 
+                (s.equityPeak < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
             [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityPeak, 'f', 2)); }
         },
         {"total_return", "Rendement total:", "Pourcentage de gain/perte sur l'ensemble du backtest", "performance",
@@ -435,17 +438,11 @@ void StatsView::initializeMetricDefinitions() {
         
         // Section risque
         {"max_drawdown", "Drawdown maximal:", "Perte maximale depuis un sommet précédent", "risk",
-            [](const be::Stats& s) { 
-                return s.maxDrawdownPct < 5 ? MetricStatus::Good : 
-                      (s.maxDrawdownPct > 10 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
+            [](const be::Stats& s) { return MetricStatus::Neutral; },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.maxDrawdownPct, 'f', 2)); }
         },
         {"avg_drawdown", "Drawdown moyen:", "Perte moyenne depuis un sommet précédent", "risk",
-            [](const be::Stats& s) { 
-                return s.avgDrawdownPct < 2 ? MetricStatus::Good : 
-                      (s.avgDrawdownPct > 5 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
+            [](const be::Stats& s) { return MetricStatus::Neutral; },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgDrawdownPct, 'f', 2)); }
         },
         {"max_drawdown_duration", "Durée DD max:", "Durée de la plus longue période de drawdown", "risk",
@@ -502,7 +499,7 @@ void StatsView::initializeMetricDefinitions() {
         {"win_rate", "Taux de réussite:", "Pourcentage de trades rentables", "general",
             [](const be::Stats& s) { 
                 return s.winRatePct > 50 ? MetricStatus::Good : 
-                      (s.winRatePct < 40 ? MetricStatus::Bad : MetricStatus::Neutral); 
+                      (s.winRatePct < 50 ? MetricStatus::Bad : MetricStatus::Neutral); 
             },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.winRatePct, 'f', 2)); }
         },
@@ -534,8 +531,8 @@ void StatsView::initializeMetricDefinitions() {
         {"profit_factor", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)", "general",
             [](const be::Stats& s) {
                 if (std::isnan(s.profitFactor)) return MetricStatus::NA;
-                return s.profitFactor > 1.5 ? MetricStatus::Good : 
-                      (s.profitFactor < 1 ? MetricStatus::Bad : MetricStatus::Neutral);
+                return s.profitFactor > 1.1 ? MetricStatus::Good : 
+                      (s.profitFactor < 0.9 ? MetricStatus::Bad : MetricStatus::Neutral);
             },
             [](const be::Stats& s) {
                 return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
@@ -685,7 +682,7 @@ void StatsView::createTradesTableView() {
     m_tradesTable->setColumnWidth(7, 100); // Durée
 
     // Hauteur de la table
-    m_tradesTable->setMaximumHeight(1000);  // Très grande table
+    m_tradesTable->setMaximumHeight(1000);  
     m_tradesTable->setMinimumHeight(400);
 
     // Améliorer le style des tableaux

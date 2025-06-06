@@ -35,8 +35,20 @@ jobs:
         $baseVersion = Get-Content "VERSION" -Raw
         $baseVersion = $baseVersion.Trim()
         
-        # Compter les commits depuis le dernier tag
-        $commitCount = git rev-list --count HEAD
+        # Obtenir le dernier tag existant
+        $lastTag = git describe --tags --abbrev=0 2>$null
+        if (-not $lastTag) {
+          # Si aucun tag n'existe, commencer à partir de 0
+          $commitCount = git rev-list --count HEAD
+        } else {
+          # Compter les commits depuis le dernier tag
+          $commitCount = git rev-list --count "$lastTag..HEAD"
+        }
+        
+        # Si aucun nouveau commit depuis le dernier tag, incrémenter quand même
+        if ($commitCount -eq 0) {
+          $commitCount = 1
+        }
         
         # Générer la version finale
         $version = "$baseVersion.$commitCount"
@@ -44,7 +56,11 @@ jobs:
         echo "BASE_VERSION=$baseVersion" >> $env:GITHUB_ENV
         echo "VERSION=$version" >> $env:GITHUB_ENV
         echo "version=$version" >> $env:GITHUB_OUTPUT
+        echo "LAST_TAG=$lastTag" >> $env:GITHUB_ENV
+        echo "COMMIT_COUNT=$commitCount" >> $env:GITHUB_ENV
         
+        echo "Dernier tag: $lastTag"
+        echo "Nouveaux commits: $commitCount"
         echo "Version calculée: $version"
 
     - name: Set up MSVC

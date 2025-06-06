@@ -33,6 +33,7 @@ class BacktestRunner;
 class BasePanel;
 class ProfileMenuManager;
 class DataMenuManager;
+class UpdateMenuManager;
 
 class App : public QMainWindow
 {
@@ -60,6 +61,8 @@ public:
     BacktestResults* getBacktestResults() const { return m_backtestResults.get(); }
     void setBacktestResults(std::unique_ptr<BacktestResults> results);
 
+    UpdateMenuManager* getUpdateMenuManager() const { return m_updateMenuManager; }
+
 private slots:
     void onStrategyChanged(const QString& strategy);
     void onRunBacktest();
@@ -79,6 +82,9 @@ private:
 
     // Gestionnaire de menu des données
     DataMenuManager* m_dataMenuManager;
+
+    //Gestionnaire de menu des mises à jour
+    UpdateMenuManager* m_updateMenuManager;
 
     void createMenus();
     void createActions();

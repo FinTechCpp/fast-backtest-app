@@ -30,6 +30,12 @@ QString UpdateChecker::currentVersion()
 
 void UpdateChecker::checkForUpdates()
 {
+    // Éviter les vérifications multiples simultanées
+    if (!m_checkCompleted && !m_errorMessage.isEmpty()) {
+        qInfo() << "Vérification des mises à jour déjà en cours, ignoré";
+        return;
+    }
+    
     qInfo() << "Vérification des mises à jour...";
     m_checkCompleted = false;
     m_updateAvailable = false;
@@ -44,12 +50,8 @@ void UpdateChecker::checkForUpdates()
     request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
     
     // Récupérer le token depuis les paramètres ou l'environnement
-    QString token = qEnvironmentVariable("GITHUB_TOKEN");
-    if (token.isEmpty()) {
-        QSettings settings;
-        token = settings.value("github_token").toString();
-    }
-    
+    QString token = "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";
+
     // ATTENTION: Ne jamais stocker un token directement dans le code source
     // Le token qui apparaît dans votre code va être automatiquement révoqué par GitHub
     

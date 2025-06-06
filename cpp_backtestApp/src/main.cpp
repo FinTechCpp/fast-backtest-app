@@ -9,6 +9,7 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QDateTime>
+#include <QTimer>
 #include <QDebug>
 #include <QMessageBox>
 #include <QMetaType>
@@ -17,6 +18,7 @@
 #include "components/backtest_runner.h"
 #include "components/data_loader.h"
 #include "components/UpdateChecker.h"
+#include "menu/update_menu_manager.h"
 #include "backtest.hpp"   // Pour be::* types
 #include "stats.hpp"      // Pour be::Stats
 

@@ -99,14 +99,15 @@ Stats Backtest::run() {
     
     // Exécuter le backtest barre par barre - nouvelle approche avec itérateur
     try {
-        // Dans l'ancien code on sautait la première barre (start=1)
-        // Avec notre nouvelle interface, nous allons avancer d'une position
-        _data->moveNext(); // Avancer à la position 1
+        // Réinitialiser l'itérateur et avancer à la première position
+        _data->reset();
+        _data->moveNext();
         
-        while (_data->hasNext()) {
+        // Continuer tant qu'il y a des données valides
+        while (_data->position() < _data->size() - 1) {  // S'assurer qu'on ne dépasse pas
             // Traiter les ordres et mettre à jour l'état du broker
             try {
-                _broker->next(); // Cette méthode utilise maintenant l'itérateur directement
+                _broker->next();
             } catch (const OutOfMoneyError& e) {
                 std::cerr << "Out of money at position " << _data->position() << ". Stopping backtest.\n";
                 break;
@@ -118,13 +119,15 @@ Stats Backtest::run() {
             // Exécuter la logique de la stratégie pour la barre actuelle
             strategy->next();
             
-            // Rapport de progression (tous les 100 barres ou à la fin)
+            // Rapport de progression
             if (_progressCallback && (_data->position() % 100 == 0 || _data->position() == dataSize - 1)) { 
                 _progressCallback(_data->position() + 1, dataSize);
             }
             
-            // Avancer à la prochaine barre
-            _data->moveNext();
+            // Avancer à la prochaine barre (mais vérifier qu'on peut)
+            if (!_data->moveNext()) {
+                break;  // Sortir proprement si moveNext échoue
+            }
         }
         
         // Si finalizeTrades est activé, fermer tous les trades ouverts
@@ -139,6 +142,7 @@ Stats Backtest::run() {
         }
     } catch (const std::exception& e) {
         std::cerr << "Error during backtest: " << e.what() << "\n";
+        return dummyStats(); // ou une autre valeur par défaut appropriée
     }
     
     // Récupérer la courbe d'équité depuis le broker

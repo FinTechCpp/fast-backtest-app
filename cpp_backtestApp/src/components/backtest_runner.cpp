@@ -74,6 +74,7 @@ void BacktestRunner::runBacktest()
     }
     
     m_runButton->setEnabled(false);
+    m_runButton->setVisible(false);
     m_loadingIndicator->setVisible(true);
     m_isRunning = true;
     
@@ -151,6 +152,7 @@ void BacktestRunner::onBacktestError(const QString& errorMessage)
 void BacktestRunner::resetUI()
 {
     m_runButton->setEnabled(true);
+    m_runButton->setVisible(true);
     m_loadingIndicator->setVisible(false);
     m_isRunning = false;
 }

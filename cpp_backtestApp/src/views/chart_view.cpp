@@ -148,6 +148,17 @@ void ChartView::setupUI()
     
     // Configurer le widget pour s'étendre
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    if (m_app) {
+        connect(m_app, &App::windowResizeStarted, m_chartWidget, [this]() {
+            m_chartWidget->setResizing(true);
+        });
+        
+        connect(m_app, &App::windowResizeFinished, m_chartWidget, [this](QSize size) {
+            m_chartWidget->setResizing(false);
+            m_chartWidget->onWindowResized(size);
+        });
+    }
 }
 
 void ChartView::setupIndicatorControls()

@@ -824,6 +824,71 @@ double ChartWidget::dateToChartTimestamp(const be::Date& date) {
         
     return chartTimestamp;
 }
+
+void ChartWidget::onWindowResized(QSize newSize)
+{
+    // Apply any pending resize
+    if (!m_pendingResize.isNull()) {
+        newSize = m_pendingResize;
+        m_pendingResize = QSize();
+    }
+    
+    // Only update if width is valid
+    if (newSize.width() > 10) {
+        m_config.chartWidth = newSize.width() - 10;
+        
+        // Update the chart if we have valid data
+        if (hasValidData() && m_chartViewer) {
+            // Save current viewport state
+            double currentLeft = m_chartViewer->getViewPortLeft();
+            double currentWidth = m_chartViewer->getViewPortWidth();
+            
+            // Redraw the chart
+            drawChartWithViewport();
+            
+            // Restore viewport state
+            m_chartViewer->setViewPortLeft(currentLeft);
+            m_chartViewer->setViewPortWidth(currentWidth);
+            m_chartViewer->updateViewPort(true, false);
+        }
+    }
+}
+
+void ChartWidget::resizeEvent(QResizeEvent* event)
+{
+    QWidget::resizeEvent(event);
+    
+    // Don't update chart while resizing - wait until the resize is finished
+    if (m_isResizing) {
+        // Just store the new size for later
+        m_pendingResize = event->size();
+        return;
+    }
+    
+    // If not currently in resize operation, update immediately
+    QSize newSize = event->size();
+    
+    // Update chart width
+    if (newSize.width() > 10) {
+        m_config.chartWidth = newSize.width() - 10;
+        
+        // Update the chart if we have valid data
+        if (hasValidData() && m_chartViewer) {
+            // Save current viewport state
+            double currentLeft = m_chartViewer->getViewPortLeft();
+            double currentWidth = m_chartViewer->getViewPortWidth();
+            
+            // Redraw the chart
+            drawChartWithViewport();
+            
+            // Restore viewport state
+            m_chartViewer->setViewPortLeft(currentLeft);
+            m_chartViewer->setViewPortWidth(currentWidth);
+            m_chartViewer->updateViewPort(true, false);
+        }
+    }
+}
+
 void ChartWidget::drawChartWithViewport()
 {
     if (!hasValidData() || !m_chartViewer) {

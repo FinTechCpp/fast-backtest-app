@@ -130,6 +130,10 @@ public:
     // Conversion de ChartType 
     static QString chartTypeToString(ChartType type);
     static ChartType stringToChartType(const QString& typeStr);
+
+    // Resize et gestion de la vue
+    void setResizing(bool isResizing) { m_isResizing = isResizing; }
+    bool isResizing() const { return m_isResizing; }
     
 signals:
     void chartCreated();
@@ -152,7 +156,7 @@ signals:
     void stochasticRemoved(int id);
     
 protected:
-    // void resizeEvent(QResizeEvent* event) override;
+    void resizeEvent(QResizeEvent* event) override;
     
 private slots:
     void onViewPortChanged();
@@ -173,6 +177,9 @@ public slots:
     int addStochastic(int fastKPeriod = 14, int slowKPeriod = 3, int slowDPeriod = 3);
     bool setStochasticConfig(int id, const StochasticInstance& config);
     bool removeStochastic(int id);
+
+    // Pour gérer le redimensionnement du graphique
+    void onWindowResized(QSize newSize);
 
 private:
     // ======== Structures de données internes ========
@@ -331,4 +338,8 @@ private:
     
     // 4. Constantes statiques
     static const std::array<ChartTypeInfo, static_cast<size_t>(ChartType::Count)> s_chartTypeData;
+
+    bool m_isResizing = false;  ///< Indique si le widget est en cours de redimensionnement
+    QSize m_pendingResize;  ///< Taille en attente de redimensionnement
+
 };

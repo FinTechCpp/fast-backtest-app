@@ -11,10 +11,22 @@ option(BUILD_WITH_DEBUG "Compiler avec les symboles de débogage" OFF)
 
 if(BUILD_WITH_DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
-    add_compile_options(-g -O0)
+    
+    # Utiliser les flags appropriés selon le compilateur
+    if(MSVC)
+        add_compile_options(/Od /Zi)
+    else()
+        add_compile_options(-g -O0)
+    endif()
 else()
     set(CMAKE_BUILD_TYPE Release)
-    add_compile_options(-O3)
+    
+    # Utiliser les flags appropriés selon le compilateur
+    if(MSVC)
+        add_compile_options(/O2)
+    else()
+        add_compile_options(-O3)
+    endif()
 endif()
 
 # Détection de compilation croisée MXE

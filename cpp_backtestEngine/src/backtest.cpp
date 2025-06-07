@@ -108,7 +108,7 @@ Stats Backtest::run() {
             // Traiter les ordres et mettre à jour l'état du broker
             try {
                 _broker->next();
-            } catch (const OutOfMoneyError& e) {
+            } catch (const OutOfMoneyError&) {
                 std::cerr << "Out of money at position " << _data->position() << ". Stopping backtest.\n";
                 break;
             } catch (const std::exception& e) {

@@ -51,7 +51,7 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
     setHorizontalHeaderLabels(headers);
     
     // Ajouter les nouvelles données
-    setRowCount(trades.size());
+    setRowCount(static_cast<int>(trades.size()));
     
     for (int row = 0; row < static_cast<int>(trades.size()); ++row) {
         const auto& trade = trades[row];

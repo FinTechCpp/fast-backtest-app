@@ -42,7 +42,7 @@ void QChartImage::displayChart(BaseChart *c)
         if (dpi > 0)
         {
             char buffer[1024];
-            sprintf(buffer, "+dpi=%d", dpi);
+            sprintf_s(buffer, "+dpi=%d", dpi);
             c->setOutputOptions(buffer);
         }
         MemBlock m = c->makeChart(Chart::QTIMG);
@@ -122,7 +122,7 @@ private:
             int y[] = { 19, 26, 28, 21 };
             d.polygon(IntArray(x, 4), IntArray(y, 4), 0x000000, 0x000000);
             char buffer[1024];
-            sprintf(buffer, "dpi=%d", (int)(96 * scale + 0.5));
+            sprintf_s(buffer, "dpi=%d", (int)(96 * scale + 0.5));
             d.setOutputOptions(buffer);
             MemBlock m = d.outPNG();
             QImage img = QImage::fromData((const uchar*)m.data, m.len);

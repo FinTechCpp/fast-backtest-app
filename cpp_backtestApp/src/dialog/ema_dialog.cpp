@@ -326,7 +326,7 @@ void EMADialog::onAddEMA()
     m_currentEMAs.push_back(newEMA);
     
     // Créer la nouvelle ligne dans l'interface
-    int row = m_currentEMAs.size() - 1;
+    int row = static_cast<int>(m_currentEMAs.size() - 1);
     QWidget* rowWidget = createEMARow(newEMA, row);
     m_emaListLayout->addWidget(rowWidget);
     m_rowToEMAId[row] = newEMA.id;

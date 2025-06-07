@@ -200,11 +200,11 @@ void BacktestWorker::run()
         QDateTime endDate;
         if (m_mainWindow->getGeneralParamsPanel()->getValues().contains("end_date")) {
             QVariant dateVariant = m_mainWindow->getGeneralParamsPanel()->getValues()["end_date"];
-            if (dateVariant.typeId() == QVariant::Date) {
+            if (dateVariant.userType() == QMetaType::QDate) {
                 endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
-            } else if (dateVariant.typeId() == QVariant::DateTime) {
+            } else if (dateVariant.userType() == QMetaType::QDateTime) {
                 endDate = dateVariant.toDateTime();
-            } else if (dateVariant.typeId() == QVariant::String) {
+            } else if (dateVariant.userType() == QMetaType::QString) {
                 QString dateStr = dateVariant.toString();
                 QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
                 
@@ -288,7 +288,7 @@ void BacktestWorker::run()
         backtest.setProgressCallback([this, &timer](size_t current, size_t total) {
             qint64 elapsed = timer.elapsed();
             QString chrono = QTime::fromMSecsSinceStartOfDay(elapsed).toString("mm:ss");
-            emit progressUpdated(current, total, chrono);
+            emit progressUpdated(static_cast<int>(current), static_cast<int>(total), chrono);
         });
         
         qDebug() << "Exécution du backtest...";
@@ -309,8 +309,17 @@ void BacktestWorker::run()
 
 std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLCBar>& bars)
 {
+    // Pré-allouer de la mémoire pour éviter les réallocations
+    size_t size = bars.size();
     std::vector<be::Date> dates;
     std::vector<double> open, high, low, close, volume;
+    
+    dates.reserve(size);
+    open.reserve(size);
+    high.reserve(size);
+    low.reserve(size);
+    close.reserve(size);
+    volume.reserve(size);
     
     for (const auto& bar : bars) {
         // Convertir la date depuis la structure OHLCBar vers be::Date
@@ -331,6 +340,14 @@ std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLC
         close.push_back(bar.close);
         volume.push_back(bar.volume);
     }
+    
+    // Vérifier la taille des vecteurs pour débogage
+    qDebug() << "Tailles des vecteurs de données:"
+             << "dates:" << dates.size()
+             << "open:" << open.size()
+             << "high:" << high.size()
+             << "low:" << low.size()
+             << "close:" << close.size();
     
     return std::make_shared<be::Data>(dates, open, high, low, close, volume);
 }

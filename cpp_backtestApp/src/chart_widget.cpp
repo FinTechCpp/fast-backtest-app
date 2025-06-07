@@ -897,7 +897,7 @@ void ChartWidget::drawChartWithViewport()
     
     try {
         // Calculer les indices de début et fin basés sur le viewport
-        int totalPoints = m_priceData.timestamps.size();
+        int totalPoints = static_cast<int>(m_priceData.timestamps.size());
         
         double viewPortLeft = m_chartViewer->getViewPortLeft();
         double viewPortWidth = m_chartViewer->getViewPortWidth();
@@ -1159,9 +1159,9 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
         }
 
         // Traiter le point d'entrée
-        int entryBarIndex = trade->entryBar();
-        if (entryBarIndex >= startIndex && entryBarIndex < startIndex + timestamps.len) {
-            double relativeIndex = entryBarIndex - startIndex;
+        size_t entryBarIndex = trade->entryBar();
+        if (entryBarIndex >= static_cast<size_t>(startIndex) && entryBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+            double relativeIndex = static_cast<double>(entryBarIndex - startIndex);
             
             // Marqueur carré pour la position d'entrée
             entryMarkers.push_back({relativeIndex, trade->entryPrice()});
@@ -1176,9 +1176,9 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
         
         // Traiter le point de sortie (seulement pour les trades fermés)
         if (trade->isClosed()) {
-            int exitBarIndex = trade->exitBar();
-            if (exitBarIndex >= startIndex && exitBarIndex < startIndex + timestamps.len) {
-                double relativeExitIndex = exitBarIndex - startIndex;
+            size_t exitBarIndex = trade->exitBar();
+            if (exitBarIndex >= static_cast<size_t>(startIndex) && exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+                double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
                 
                 // Marqueur carré pour la position de sortie
                 exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});

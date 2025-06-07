@@ -204,7 +204,7 @@ void Broker::processOrders() {
             try {
                 const Candle& prevCandle = _data->at(_currentBar - 1);
                 prevClose = prevCandle.close;
-            } catch (const std::exception& e) {
+            } catch (const std::exception&) {
                 // En cas d'erreur, utiliser le prix d'ouverture actuel
                 prevClose = open;
             }
@@ -341,7 +341,7 @@ void Broker::processOrders() {
                         
                         // Ordre plus grand que la position existante
                         if (std::abs(needSize) >= std::abs(trade->size())) {
-                            needSize += trade->size();
+                            needSize += static_cast<int>(trade->size());
                             try {
                                 closeTrade(trade, price, timeIndex);
                             } catch (const std::exception& e) {

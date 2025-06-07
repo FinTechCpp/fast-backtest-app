@@ -49,7 +49,7 @@ DrawdownInfo computeDrawdownDurationPeaks(const std::vector<double>& dd) {
         if (end - start <= 1) continue;
         
         // Calculer la durée
-        double duration = end - start;
+        double duration = static_cast<double>(end - start);
         info.durations.push_back(duration);
         
         // Calculer le pic de drawdown dans cette période
@@ -283,19 +283,19 @@ Stats computeStats(
     
     // Nombre de trades
     size_t n_trades = trades.size();
-    stats.numTrades = n_trades;
+    stats.numTrades = static_cast<unsigned int>(n_trades);
     
     // Statistiques des trades (victoires/défaites)
-    int winning_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl > 0; });
-    int losing_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl < 0; });
-    int neutral_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl == 0; });
+    std::ptrdiff_t winning_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl > 0; });
+    std::ptrdiff_t losing_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl < 0; });
+    std::ptrdiff_t neutral_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl == 0; });
     
     double win_rate = n_trades ? static_cast<double>(winning_trades) / n_trades : NaN;
     
     stats.winRatePct = win_rate * 100;
-    stats.numWinningTrades = winning_trades;
-    stats.numLosingTrades = losing_trades;
-    stats.numNeutralTrades = neutral_trades;
+    stats.numWinningTrades = static_cast<double>(winning_trades);
+    stats.numLosingTrades = static_cast<double>(losing_trades);
+    stats.numNeutralTrades = static_cast<double>(neutral_trades);
     
     // Meilleurs et pires trades
     if (!return_pct_values.empty()) {

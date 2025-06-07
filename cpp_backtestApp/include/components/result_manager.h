@@ -13,7 +13,7 @@ class StatsView;
 class ChartView;
 class HistogramView;
 class QTimer;
-class BacktestResults;  // Forward declaration
+struct BacktestResults;  // Forward declaration
 
 /**
  * @brief Gestionnaire principal des résultats - GÈRE les vues, n'EST PAS une vue

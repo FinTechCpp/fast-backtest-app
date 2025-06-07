@@ -136,7 +136,7 @@ void GeneralParamsPanel::setValues(const QMap<QString, QVariant>& values)
             }
             else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
                 // Parser correctement la date
-                if (value.typeId() == QVariant::String) {
+                if (value.typeId() == QMetaType::QString) {
                     QString dateStr = value.toString();
                     QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
                     
@@ -155,7 +155,7 @@ void GeneralParamsPanel::setValues(const QMap<QString, QVariant>& values)
                         qWarning() << "Impossible de parser la date:" << dateStr;
                     }
                 }
-                else if (value.typeId() == QVariant::Date) {
+                else if (value.typeId() == QMetaType::QDate) {
                     dateEdit->setDate(value.toDate());
                 }
             }

@@ -1119,6 +1119,8 @@ FinanceChart* ChartWidget::drawChart(
     // Configurer les données
     c->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
 
+    // METHODE DE GITAN : Cacher la légende par défaut de ChartDirector en la rendant transparente 
+    c->setLegendStyle("normal", 8, Chart::Transparent, Chart::Transparent);
     
     // Ajouter le titre du graphique
     std::string chartTypeStr = chartTypeToString(m_config.chartType).toStdString();
@@ -1535,6 +1537,8 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
     
     // Itérer sur tous les graphiques XY dans le FinanceChart
     XYChart *c = 0;
+    
+
     for (int i = 0; i < m->getChartCount(); ++i) {
         c = (XYChart*)m->getChart(i);
         
@@ -1688,7 +1692,7 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         
         // Afficher la légende en haut de la zone de tracé
         TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
-        t->draw(plotAreaLeftX + 5, plotAreaTopY + 15, 0x000000, Chart::TopLeft);
+        t->draw(plotAreaLeftX + 5, plotAreaTopY + 5, 0x000000, Chart::TopLeft);
         t->destroy();
     }
 }

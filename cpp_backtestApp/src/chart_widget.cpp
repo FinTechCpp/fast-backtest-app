@@ -1207,7 +1207,7 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
     if (m_equityData.equity_values.empty() || timestamps.len == 0)
         return ; // Pas de données d'équité ou pas de bougies visibles
 
-    int equityHeight = 150;     // Hauteur du graphique d'équité
+    int equityHeight = 120;     // Hauteur du graphique d'équité
 
     // Trouver les indices correspondant à la fenêtre visible
     int equityStartIndex = startIndex;  // Utiliser le même index de début que pour les bougies
@@ -1645,6 +1645,7 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         PlotArea* plotArea = c->getPlotArea();
         int plotAreaLeftX = plotArea->getLeftX() + c->getAbsOffsetX();
         int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
+        int plotAreaBottomY = plotAreaTopY + plotArea->getHeight();
 
         // Calculer la position Y de la souris et la valeur correspondante sur l'axe Y
         int mouseY = m_chartViewer->getPlotAreaMouseY() - c->getAbsOffsetY();
@@ -1694,6 +1695,31 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
         t->draw(plotAreaLeftX + 5, plotAreaTopY + 5, 0x000000, Chart::TopLeft);
         t->destroy();
+
+        // Seulement pour le dernier graphique (celui du bas avec l'axe X visible)
+        if (i == m->getChartCount() - 1) {
+            // Obtenir le texte formaté du timestamp
+            std::string timeStampText = c->xAxis()->getFormattedLabel(xValue, "dd mmm yy hh:mm:ss");
+            
+            // Créer un fond rectangulaire pour le texte
+            int textHeight = 16;
+            int textWidth = 150;  // Ajuster selon la longueur du texte
+            int xLabelPos = c->getXCoor(xValue) ;
+            int yLabelPos = plotAreaBottomY + 15;  // Position juste en dessous de l'axe X
+            
+            // Dessiner le fond du texte
+            d->rect(xLabelPos - textWidth/2, yLabelPos - textHeight/2,
+                    xLabelPos + textWidth/2, yLabelPos + textHeight/2,
+                    0x000000, 0xffffcc);
+            
+            // Créer et dessiner le texte
+            TTFText* timeLabel = d->text(timeStampText.c_str(), "Arial", 8);
+            timeLabel->draw(xLabelPos, yLabelPos, 0x000000, Chart::Center);
+            timeLabel->destroy();
+            
+            // Dessiner une petite marque verticale sur l'axe X
+            d->vline(plotAreaBottomY, plotAreaBottomY + 5, c->getXCoor(xValue), 0x000000);
+        }
     }
 }
 

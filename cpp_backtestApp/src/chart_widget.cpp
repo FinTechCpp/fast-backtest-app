@@ -284,8 +284,8 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     // Si l'outil règle est activé et que le premier point a été sélectionné
     if (m_rulerToolEnabled && m_rulerFirstPointSelected) {
         // Mettre à jour le point final avec la position actuelle de la souris
-        m_rulerEndX = m_chartViewer->getChartMouseX();
-        m_rulerEndY = m_chartViewer->getChartMouseY();
+        m_rulerEndX = m_chartViewer->getPlotAreaMouseX();
+        m_rulerEndY = m_chartViewer->getPlotAreaMouseY();
     }
     
     // Comportement normal de suivi du graphique
@@ -325,8 +325,9 @@ void ChartWidget::onMouseClickPlotArea(QMouseEvent* event)
     if (event->button() == Qt::LeftButton) {
         // Si c'est le premier clic, enregistrer le point de départ
         if (!m_rulerFirstPointSelected) {
-            m_rulerStartX = m_chartViewer->getChartMouseX();
-            m_rulerStartY = m_chartViewer->getChartMouseY();
+            // Use plot area coordinates instead of chart coordinates
+            m_rulerStartX = m_chartViewer->getPlotAreaMouseX();
+            m_rulerStartY = m_chartViewer->getPlotAreaMouseY();
             m_rulerFirstPointSelected = true;
             
             // Initialiser aussi le point final pour éviter des valeurs incorrectes lors du dessin
@@ -334,8 +335,8 @@ void ChartWidget::onMouseClickPlotArea(QMouseEvent* event)
             m_rulerEndY = m_rulerStartY;
         } else {
             // Si c'est le deuxième clic, enregistrer le point final et réinitialiser
-            m_rulerEndX = m_chartViewer->getChartMouseX();
-            m_rulerEndY = m_chartViewer->getChartMouseY();
+            m_rulerEndX = m_chartViewer->getPlotAreaMouseX();
+            m_rulerEndY = m_chartViewer->getPlotAreaMouseY();
             m_rulerFirstPointSelected = false;
         }
         
@@ -354,7 +355,7 @@ void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
     if (!m || m->getChartCount() == 0) return;
     
     // Obtenir le premier graphique XY (graphique principal)
-    XYChart* c = (XYChart*)m->getChart();
+    XYChart* c = (XYChart*)m->getChart(1);
     if (!c) return;
 
     // Convertir les coordonnées en pixels en valeurs d'axes
@@ -363,6 +364,14 @@ void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
     double yValueStart = c->getYValue(m_rulerStartY);
     double yValueEnd = c->getYValue(m_rulerEndY);
 
+    //Récupérer les timestamps formattés
+    const char* startTimeStr = c->xAxis()->getFormattedLabel(xValueStart, "yyyy-mm-dd hh:nn:ss");
+    const char* endTimeStr = c->xAxis()->getFormattedLabel(xValueEnd, "yyyy-mm-dd hh:nn:ss");
+
+    // Log both raw values and formatted timestamps
+    std::cout << "XValue Start: " << xValueStart << " (" << startTimeStr << "), XValue End: " 
+              << xValueEnd << " (" << endTimeStr << ")" << std::endl;
+              
     // Valeurs delta en X et en Y entre premier clic et position actuelle de la souris
     double deltaX = xValueStart - xValueEnd;
     double deltaY = yValueEnd - yValueStart; // Axe Y inversé pour correspondre à la direction de l'écran
@@ -1155,7 +1164,7 @@ FinanceChart* ChartWidget::drawChart(
     
     // 2. Ajouter le graphique principal
     c->addMainChart(mainChartHeight);
-    
+
     // Ajouter le type de graphique approprié selon le type actuel
     if (m_config.chartType == ChartType::CandleStick || m_config.chartType == ChartType::HeikinAshi) {
         c->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
@@ -1680,7 +1689,7 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         // La légende commence par l'étiquette de date, puis la légende ohlc (le cas échéant), et ensuite les entrées pour les indicateurs
         std::ostringstream legendText;
         legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
-            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "dd mmm yy hh:mm:ss")
+            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "yyyy-mm-dd hh:nn:ss")
             << "]<*/font*>" << ohlcLegend.str();
         for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
             legendText << "      " << legendEntries[i];
@@ -1699,7 +1708,7 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         // Seulement pour le dernier graphique (celui du bas avec l'axe X visible)
         if (i == m->getChartCount() - 1) {
             // Obtenir le texte formaté du timestamp
-            std::string timeStampText = c->xAxis()->getFormattedLabel(xValue, "dd mmm yy hh:mm:ss");
+            std::string timeStampText = c->xAxis()->getFormattedLabel(xValue, "yyyy-mm-dd hh:nn:ss");
             
             // Créer un fond rectangulaire pour le texte
             int textHeight = 16;

@@ -1,29 +1,12 @@
 ## Installation
 
-<!-- À refaire complètement quand le projet sera stabilisé -->
-
 ### 1. Cloner le dépôt
 
 Clonez le dépôt et placez-vous à la racine du projet :
 
 ```bash
-git clone http://10.8.0.1:9000/finance/ig-trading-bot.git
+git clone https://github.com/hugoMiCode/ig-trading-bot
 cd ig-trading-bot
-```
-
-### 2. Configurer l'environnement virtuel
-
-Le projet nécessite un environnement virtuel conda:
-
-**Installation conda**
-```bash
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-bash ~/Miniconda3-latest-Linux-x86_64.sh
-```
-**Création environnement**
-```bash
-conda create -n trading python=3.12 -y
-conda activate trading
 ```
 
 ### 3. Installer les dépendances
@@ -31,30 +14,7 @@ conda activate trading
 Installez les dépendances nécessaires à partir du fichier `requirements.txt` :
 
 ```bash
-conda install -c conda-forge ta-lib -y
 pip install -r requirements.txt
-```
-
-Installer nvm 
-```bash
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
-nvm install --lts
-```
-
-Installer lightweight-charts-python
-```bash
-cd ~/ig-trading-bot/lightweight-charts-python
-pip install -e .
-npm install 
-./build.sh
-```
-
-### 4. Installer le package en mode développement
-
-Le projet est organisé en tant que package Python (nommé par exemple **igtradingbot** ou **ig_trading_bot**). Pour que les imports soient correctement résolus, installez le package en mode développement :
-
-```bash
-pip install -e .
 ```
 
 L’installation en mode développement vous permet de modifier le code source et de voir immédiatement les modifications sans avoir à réinstaller le package.
@@ -131,16 +91,121 @@ Pour exécuter le bot en mode live :
 python scripts/liveIG.py
 ```
 
-### En mode backtesting
+# Guide de compilation et d'exécution du projet ig-trading-bot
 
-Pour exécuter le backtest :
+Ce guide explique comment compiler, exécuter et déboguer le projet ig-trading-bot de manière progressive, en partant des méthodes manuelles jusqu'aux configurations plus avancées.
+
+## Prérequis
+
+- CMake 3.14 ou supérieur
+- GCC/G++ avec support C++17
+- Qt6.8.3 (Core, Widgets, Charts)
+- VS Code (pour le débogage)
+- Extensions VS Code: C/C++, CMake Tools
+
+## Méthode 1: Compilation manuelle avec CMake
+
+Cette méthode est la plus basique et fonctionne sur tout système compatible:
 
 ```bash
-cd ~/ig-trading-bot
-python backtest_interface/PyQt/app.py 
+# Créer le dossier de build
+mkdir -p build
+cd build
+
+# Configurer le projet - mode Release (par défaut)
+cmake ..
+
+# Compiler le projet
+make -j$(nproc)  # Utilise tous les cœurs disponibles
+
+# Exécuter l'application
+./cpp_backtestApp/backtestapp
 ```
 
----
+### Compilation en mode Debug
 
-En structurant ainsi votre projet et en installant votre package en mode développement, vous n'aurez plus besoin d'ajouter dynamiquement des chemins via `sys.path` dans vos fichiers. Tous les modules s'importeront de manière cohérente grâce aux imports absolus, et vous pourrez disposer de plusieurs points d'entrée adaptés à vos différents cas d'utilisation.
+```bash
+# Dans le dossier build
+cmake -DBUILD_WITH_DEBUG=ON ..
+make -j$(nproc)
+```
+
+## Méthode 2: Utilisation du script build_and_run.sh
+
+Le script automatise le processus de compilation et d'exécution:
+
+```bash
+# Compilation standard et exécution
+./build_and_run.sh
+
+# Compilation en mode debug et exécution
+./build_and_run.sh --debug
+
+# Nettoyage du dossier build avant compilation
+./build_and_run.sh --clean
+
+# Compilation sans exécution
+./build_and_run.sh --no-run
+```
+
+## Méthode 3: Configuration VS Code pour le débogage
+
+Utiliser les fichiers `.vscode/launch.json` et `./vscode/tasks.json` 
+
+Choisir son système d'exploitation et le mode (Debug/Release) dans l'onglet run/debug de VSCode
+
+**launch.json** 
+
+**tasks.json** 
+
+### Comment utiliser le débogueur
+
+1. Placez des points d'arrêt en cliquant dans la marge à gauche des numéros de ligne
+2. Appuyez sur F5 pour lancer le débogueur
+3. Utilisez les contrôles de débogage:
+   - F10: Pas à pas principal (step over)
+   - F11: Pas à pas détaillé (step into)
+   - Shift+F11: Sortir de la fonction (step out)
+   - F5: Continuer l'exécution
+
+## Points d'entrée du projet
+
+Voici un résumé des différentes façons de compiler et exécuter le projet:
+
+1. **Compilation et exécution manuelles**:
+   ```bash
+   cmake ..
+   make (Linux / macOS)
+   cmake --build . --config Release --parallel (Windows)
+   ./cpp_backtestApp/backtestapp
+   ```
+
+2. **Script automatisé**:
+   ```bash
+   ./build_and_run.sh
+   ```
+
+3. **Compilation avec VS Code**:
+   - Ctrl+Shift+B: Lance la tâche de compilation par défaut (build-debug)
+   - Terminal > Run Task > build-release: Pour une version optimisée
+
+4. **Débogage avec VS Code**:
+   - F5: Lance le débogueur avec les points d'arrêt définis
+
+## Structure du projet
+
+- **CMakeLists.txt**: Fichier de configuration principal du projet
+- **build_and_run.sh**: Script d'automatisation de compilation/exécution
+- **cpp_backtestApp/**: Application principale avec interface Qt6
+- **cpp_backtestEngine/**: Moteur de backtest
+- **cpp_strategies/**: Implémentations des stratégies
+- **ChartDirector/**: Bibliothèque pour les graphiques
+
+Cette structure permet une séparation claire des composants et facilite la maintenance du code.
+
+## Remarques importantes
+
+- En mode Debug (--debug), l'application est compilée avec les symboles de débogage (-g) et sans optimisations (-O0)
+- En mode Release (par défaut), les optimisations (-O3) sont activées pour de meilleures performances
+- Le fichier compile_commands.json aide VS Code à comprendre la structure du projet mais n'est pas essentiel à la compilation
 

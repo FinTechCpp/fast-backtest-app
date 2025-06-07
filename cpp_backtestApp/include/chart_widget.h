@@ -135,6 +135,9 @@ public:
     void setResizing(bool isResizing) { m_isResizing = isResizing; }
     bool isResizing() const { return m_isResizing; }
     
+    // Méthode pour activer/désactiver l'outil règle
+    void setRulerToolEnabled(bool enabled);
+    
 signals:
     void chartCreated();
     void viewPortChanged();
@@ -161,7 +164,8 @@ protected:
 private slots:
     void onViewPortChanged();
     void onMouseMovePlotArea(QMouseEvent* event);
-
+    void onMouseClickPlotArea(QMouseEvent* event); // Nouvelle méthode
+    
 public slots:
     // Pour le RSI
     int addRSI(int period = 14);
@@ -342,4 +346,14 @@ private:
     bool m_isResizing = false;  ///< Indique si le widget est en cours de redimensionnement
     QSize m_pendingResize;  ///< Taille en attente de redimensionnement
 
+    // Variables pour l'outil règle
+    bool m_rulerToolEnabled;           // Si l'outil règle est activé
+    bool m_rulerFirstPointSelected;    // Si le premier point a été sélectionné
+    double m_rulerStartX;              // Coordonnée X du point de départ
+    double m_rulerStartY;              // Coordonnée Y du point de départ
+    double m_rulerEndX;                // Coordonnée X actuelle
+    double m_rulerEndY;                // Coordonnée Y actuelle
+    
+    // Méthode pour dessiner la règle
+    void drawRuler(MultiChart* chart, int mouseX, int mouseY, DrawArea* d);
 };

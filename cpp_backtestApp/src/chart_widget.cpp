@@ -17,6 +17,12 @@ ChartWidget::ChartWidget(QWidget* parent)
     : QWidget(parent)
     , m_chartViewer(nullptr)
     , m_financeChart(nullptr)
+    , m_rulerToolEnabled(false)
+    , m_rulerFirstPointSelected(false)
+    , m_rulerStartX(0)
+    , m_rulerStartY(0)
+    , m_rulerEndX(0)
+    , m_rulerEndY(0)
 {
     // Configurer le widget
     setObjectName("chartWidget");
@@ -46,6 +52,8 @@ ChartWidget::ChartWidget(QWidget* parent)
             this, &ChartWidget::onViewPortChanged);
     connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, 
             this, &ChartWidget::onMouseMovePlotArea);
+    connect(m_chartViewer, &QChartViewer::clicked, 
+            this, &ChartWidget::onMouseClickPlotArea);
     
     // Ajouter le viewer au layout
     layout->addWidget(m_chartViewer);
@@ -270,8 +278,17 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
         return;
     }
     
-    // Appliquer le tracking
     int mouseX = m_chartViewer->getPlotAreaMouseX();
+    int mouseY = m_chartViewer->getPlotAreaMouseY();
+
+    // Si l'outil règle est activé et que le premier point a été sélectionné
+    if (m_rulerToolEnabled && m_rulerFirstPointSelected) {
+        // Mettre à jour le point final avec la position actuelle de la souris
+        m_rulerEndX = m_chartViewer->getChartMouseX();
+        m_rulerEndY = m_chartViewer->getChartMouseY();
+    }
+    
+    // Comportement normal de suivi du graphique
     trackFinance(m_financeChart, mouseX);
     
     // Récupérer les informations sur le point
@@ -298,6 +315,129 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     m_chartViewer->updateDisplay();
 }
 
+void ChartWidget::onMouseClickPlotArea(QMouseEvent* event)
+{
+    if (!m_rulerToolEnabled || !m_chartViewer || !m_chartViewer->getChart()) {
+        return;
+    }
+    
+    // Si le bouton gauche est cliqué et que l'outil règle est activé
+    if (event->button() == Qt::LeftButton) {
+        // Si c'est le premier clic, enregistrer le point de départ
+        if (!m_rulerFirstPointSelected) {
+            m_rulerStartX = m_chartViewer->getChartMouseX();
+            m_rulerStartY = m_chartViewer->getChartMouseY();
+            m_rulerFirstPointSelected = true;
+            
+            // Initialiser aussi le point final pour éviter des valeurs incorrectes lors du dessin
+            m_rulerEndX = m_rulerStartX;
+            m_rulerEndY = m_rulerStartY;
+        } else {
+            // Si c'est le deuxième clic, enregistrer le point final et réinitialiser
+            m_rulerEndX = m_chartViewer->getChartMouseX();
+            m_rulerEndY = m_chartViewer->getChartMouseY();
+            m_rulerFirstPointSelected = false;
+        }
+        
+        // Mettre à jour l'affichage
+        if (m_chartViewer->getChart()) {
+            m_chartViewer->updateDisplay();
+        }
+    }
+}
+
+
+//-----Ruler Tool Implementation-----
+void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
+{   
+    // Vérifier que le chart est valide et qu'il y a au moins un graphique
+    if (!m || m->getChartCount() == 0) return;
+    
+    // Obtenir le premier graphique XY (graphique principal)
+    XYChart* c = (XYChart*)m->getChart();
+    if (!c) return;
+
+    // Convertir les coordonnées en pixels en valeurs d'axes
+    double xValueStart = c->getXValue(m_rulerStartX);
+    double xValueEnd = c->getXValue(m_rulerEndX);
+    double yValueStart = c->getYValue(m_rulerStartY);
+    double yValueEnd = c->getYValue(m_rulerEndY);
+
+    // Valeurs delta en X et en Y entre premier clic et position actuelle de la souris
+    double deltaX = xValueStart - xValueEnd;
+    double deltaY = yValueEnd - yValueStart; // Axe Y inversé pour correspondre à la direction de l'écran
+
+    // Définir ici la couleur du rectangle en fonction de deltaY
+    int deltaColor = (deltaY < 0) ? 0xFF0000 : 0x008800; // Rouge si deltaY négatif, vert foncé sinon
+
+    // Texte pour deltaX (au-dessus du rectangle)
+    char bufferX[50];
+    
+    // Calculer la durée réelle en secondes (valeur absolue)
+    int totalSeconds = static_cast<int>(fabs(deltaX));
+    int hours = totalSeconds / 3600;
+    int minutes = (totalSeconds % 3600) / 60;
+    int seconds = totalSeconds % 60;
+    
+    // Formater avec le signe approprié et adapter le format selon la durée
+    if (hours > 0) {
+        sprintf_s(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+    } else if (minutes > 0) {
+        sprintf_s(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+    } else {
+        sprintf_s(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+    }
+    
+    // Texte pour deltaY (à droite du rectangle)
+    char bufferY[50];
+    sprintf_s(bufferY, "%.5f %s", deltaY, "$");
+    
+    // Ajouter le % de variation pour le deltaY si applicable
+    if (yValueStart != 0) {  // Éviter division par zéro
+        double percentChange = (deltaY / yValueStart) * 100.0;
+        sprintf_s(bufferY, "%+.2f \n(%.2f%%)", deltaY, percentChange);
+    }
+
+    // Dessiner le rectangle entre les deux points
+    d->rect(m_rulerStartX, m_rulerStartY, m_rulerEndX, m_rulerEndY, deltaColor, Chart::Transparent);
+
+    // Position pour le texte deltaX (au-dessus du rectangle)
+    int textXPosX = (m_rulerStartX + m_rulerEndX) / 2; // Centre du rectangle
+    int textXPosY = std::min(m_rulerStartY, m_rulerEndY) - 15; // Au-dessus
+    
+    // Position pour le texte deltaY (à droite du rectangle)
+    int textYPosX = std::max(m_rulerStartX, m_rulerEndX) + 10; // À droite
+    int textYPosY = (m_rulerStartY + m_rulerEndY) / 2; // Milieu vertical
+    
+    // Créer et afficher le texte pour deltaX
+    TTFText* tForXDelta = d->text(bufferX, "Arial", 12);
+    tForXDelta->draw(textXPosX, textXPosY, deltaColor, Chart::Bottom);
+    tForXDelta->destroy();
+    
+    // Créer et afficher le texte pour deltaY
+    TTFText* tForYDelta = d->text(bufferY, "Arial", 12);
+    tForYDelta->draw(textYPosX, textYPosY, deltaColor, Chart::Left);
+    tForYDelta->destroy();
+}
+
+void ChartWidget::setRulerToolEnabled(bool enabled)
+{
+    m_rulerToolEnabled = enabled;
+    
+    // Si l'outil est désactivé, réinitialiser l'état
+    if (!enabled) {
+        m_rulerFirstPointSelected = false;
+        
+        // Mettre à jour le graphique pour supprimer la règle
+        if (m_chartViewer && m_chartViewer->getChart()) {
+            m_chartViewer->updateDisplay();
+        }
+    }
+}
+//-----End Ruler Tool Implementation-----
+
+
+//-----Indicators Implementation-----
 int ChartWidget::addRSI(int period)
 {
     if (period < 2) period = 2;  // Validation de base
@@ -1379,12 +1519,16 @@ void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInst
 
 void ChartWidget::trackFinance(MultiChart* m, int mouseX)
 {
+    
     // Nettoyer la couche dynamique actuelle
     DrawArea* d = m->initDynamicLayer();
     
     // Vérifier que le graphique n'est pas vide
     if (m->getChartCount() == 0)
         return;
+
+    if (m_rulerToolEnabled && m_rulerFirstPointSelected)
+        drawRuler(m, mouseX, m_chartViewer->getPlotAreaMouseY(), d);
     
     // Obtenir la valeur x la plus proche de la souris
     int xValue = (int)(((XYChart*)m->getChart(0))->getNearestXValue(mouseX));
@@ -1498,11 +1642,11 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
         int plotAreaLeftX = plotArea->getLeftX() + c->getAbsOffsetX();
         int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
 
-        // NOUVEAU : Calculer la position Y de la souris et la valeur correspondante sur l'axe Y
+        // Calculer la position Y de la souris et la valeur correspondante sur l'axe Y
         int mouseY = m_chartViewer->getPlotAreaMouseY() - c->getAbsOffsetY();
         double yValue = c->getYValue(mouseY);
 
-        // NOUVEAU : Afficher le tooltip de l'axe Y sur le côté droit
+        // Afficher le tooltip de l'axe Y sur le côté droit
         if (mouseY >= plotArea->getTopY() && mouseY <= plotArea->getTopY() + plotArea->getHeight()) {
             // Position du tooltip sur l'axe Y (côté droit de la zone de tracé)
             int yAxisTooltipX = plotAreaLeftX + plotArea->getWidth() + 5;
@@ -1523,7 +1667,7 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
             yTooltip->draw(yAxisTooltipX, yAxisTooltipY, 0x000000, Chart::Left);
             yTooltip->destroy();
             
-            // NOUVEAU : Dessiner une ligne horizontale pour le crosshair Y
+            // Dessiner une ligne horizontale pour le crosshair Y
             d->hline(plotAreaLeftX, plotAreaLeftX + plotArea->getWidth(), 
                     yAxisTooltipY, d->dashLineColor(0x000000, 0x0101));
         }

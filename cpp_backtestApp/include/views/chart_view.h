@@ -58,6 +58,7 @@ private slots:
     void onIndicatorTypeSelected(int index);
     void onEditIndicator(int id);
     void onRemoveIndicator(int id);
+    void onRulerToolToggled(bool checked); // Nouvelle méthode
     void onRSIAdded(int id, int period);
     void onRSIChanged(int id, int period);
     void onRSIRemoved(int id);
@@ -86,6 +87,7 @@ private:
     QLabel* m_chartPlaceholder;
     QLabel* m_settingsTitle;      // Titre du panneau
     QComboBox* m_chartTypeCombo;  // Combo box pour le type de bougie
+    QCheckBox* m_rulerToolCheckBox; // Checkbox pour l'outil règle
     
     // Composants pour les indicateurs
     QPushButton* m_addIndicatorButton;

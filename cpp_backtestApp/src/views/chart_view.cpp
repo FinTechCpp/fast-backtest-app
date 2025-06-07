@@ -79,6 +79,19 @@ void ChartView::setupUI()
     connect(m_chartTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &ChartView::onChartTypeChanged);
     
+    // Ajouter une séparation
+    QFrame* rulerSeparator = new QFrame();
+    rulerSeparator->setFrameShape(QFrame::HLine);
+    rulerSeparator->setFrameShadow(QFrame::Sunken);
+    leftPanelLayout->addWidget(rulerSeparator);
+    
+    // Ajouter la case à cocher pour l'outil règle
+    m_rulerToolCheckBox = new QCheckBox("Outil règle");
+    leftPanelLayout->addWidget(m_rulerToolCheckBox);
+    
+    // Connecter le signal de changement de la case à cocher
+    connect(m_rulerToolCheckBox, &QCheckBox::toggled, this, &ChartView::onRulerToolToggled);
+    
     // Section des indicateurs techniques
     QLabel* indicatorsLabel = new QLabel("Technical Indicators");
     indicatorsLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
@@ -628,3 +641,9 @@ void ChartView::clear()
     showPlaceholder("Exécutez un backtest pour afficher les graphiques");
 }
 
+void ChartView::onRulerToolToggled(bool checked)
+{
+    if (m_chartWidget) {
+        m_chartWidget->setRulerToolEnabled(checked);
+    }
+}

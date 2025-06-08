@@ -14,6 +14,7 @@ file(GLOB_RECURSE HEADERS "include/*.h")
 add_executable(backtestapp 
     ${SOURCES}
     ${HEADERS}
+    ${CMAKE_CURRENT_SOURCE_DIR}/qresources.qrc
 )
 
 # Configurer les chemins d'inclusion principaux

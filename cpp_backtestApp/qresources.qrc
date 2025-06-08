@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC>
+    <qresource prefix="/">
+        <file>icons/ruler_checked.png</file>
+        <file>icons/ruler_unchecked.png</file>
+    </qresource>
+</RCC>

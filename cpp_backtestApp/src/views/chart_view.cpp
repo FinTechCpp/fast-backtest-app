@@ -5,6 +5,8 @@
 #include <QLabel>
 #include <QFrame>
 #include <QResizeEvent>
+#include <QToolButton>
+
 #include "views/chart_view.h"
 
 ChartView::ChartView(QWidget* parent)
@@ -79,18 +81,37 @@ void ChartView::setupUI()
     connect(m_chartTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &ChartView::onChartTypeChanged);
     
-    // Ajouter une séparation
-    QFrame* rulerSeparator = new QFrame();
-    rulerSeparator->setFrameShape(QFrame::HLine);
-    rulerSeparator->setFrameShadow(QFrame::Sunken);
-    leftPanelLayout->addWidget(rulerSeparator);
+    // Remplacer la case à cocher par un QToolButton stylisé
+    QToolButton* rulerToolButton = new QToolButton();
+    rulerToolButton->setIcon(QIcon(":/icons/ruler_unchecked.png"));
+    rulerToolButton->setIconSize(QSize(32, 32));
+    rulerToolButton->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    rulerToolButton->setCheckable(true);
+    rulerToolButton->setStyleSheet(
+        "QToolButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+        "QToolButton:checked {"
+        "    background-color:rgb(0, 141, 0);"
+        "}"
+    );
     
-    // Ajouter la case à cocher pour l'outil règle
-    m_rulerToolCheckBox = new QCheckBox("Outil règle");
-    leftPanelLayout->addWidget(m_rulerToolCheckBox);
+    // Connecter le signal de changement du bouton
+    connect(rulerToolButton, &QToolButton::toggled, this, &ChartView::onRulerToolToggled);
     
-    // Connecter le signal de changement de la case à cocher
-    connect(m_rulerToolCheckBox, &QCheckBox::toggled, this, &ChartView::onRulerToolToggled);
+    // Connecter le signal pour changer l'icône quand l'état change
+    connect(rulerToolButton, &QToolButton::toggled, [rulerToolButton](bool checked) {
+        if (checked) {
+            rulerToolButton->setIcon(QIcon(":/icons/ruler_checked.png"));
+        } else {
+            rulerToolButton->setIcon(QIcon(":/icons/ruler_unchecked.png"));
+        }
+    });
+    
+    leftPanelLayout->addWidget(rulerToolButton);
     
     // Section des indicateurs techniques
     QLabel* indicatorsLabel = new QLabel("Technical Indicators");

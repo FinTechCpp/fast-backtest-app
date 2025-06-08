@@ -38,9 +38,8 @@ int get_day_of_week(const DateTime& date) {
     timeinfo.tm_mday = date.day;
     
     std::time_t time = std::mktime(&timeinfo);
-    std::tm local_tm = {};
-    localtime_s(&local_tm, &time);
-    int weekday = local_tm.tm_wday;
+    std::tm* local_tm = std::localtime(&time);
+    int weekday = local_tm->tm_wday;
     
     // Convertir de Sunday=0 à Sunday=6
     return (weekday == 0) ? 6 : weekday - 1;

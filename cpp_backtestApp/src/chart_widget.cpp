@@ -390,21 +390,21 @@ void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
     
     // Formater avec le signe approprié et adapter le format selon la durée
     if (hours > 0) {
-        sprintf_s(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+        sprintf(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
     } else if (minutes > 0) {
-        sprintf_s(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+        sprintf(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
     } else {
-        sprintf_s(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+        sprintf(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
     }
     
     // Texte pour deltaY (à droite du rectangle)
     char bufferY[50];
-    sprintf_s(bufferY, "%.5f %s", deltaY, "$");
+    sprintf(bufferY, "%.5f %s", deltaY, "$");
     
     // Ajouter le % de variation pour le deltaY si applicable
     if (yValueStart != 0) {  // Éviter division par zéro
         double percentChange = (deltaY / yValueStart) * 100.0;
-        sprintf_s(bufferY, "%+.2f \n(%.2f%%)", deltaY, percentChange);
+        sprintf(bufferY, "%+.2f \n(%.2f%%)", deltaY, percentChange);
     }
 
     // Dessiner le rectangle entre les deux points

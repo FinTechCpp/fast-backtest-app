@@ -60,11 +60,10 @@ public:
                 now.time_since_epoch()) % 1000;
             
             // Formater le timestamp
-            std::tm time_info;
-            localtime_s(&time_info, &time_t_now);
             std::stringstream ss;
-            ss << std::put_time(&time_info, "%Y-%m-%d %H:%M:%S");
+            ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
             ss << "," << std::setw(3) << std::setfill('0') << ms.count();
+            
             
             // Afficher le log avec le timestamp
             std::cout << ss.str() << " [" << logLevel << "]: " << message << std::endl;

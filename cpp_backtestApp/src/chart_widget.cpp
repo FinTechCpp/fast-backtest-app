@@ -393,6 +393,8 @@ void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
 
     // Définir la couleur du rectangle en fonction de deltaY
     int deltaColor = (deltaY < 0) ? 0xFF0000 : 0x008800;
+    int alpha = 0xCC; // Niveau de transparence (assez particulier avec chartdirector, j'ai pas tout compris)
+    int finalColor =  (alpha << 24) | deltaColor; // Couleur avec alpha (résultat en ARGB : 0xCCFF0000 ou 0xCC008800)
 
     // Texte pour deltaX (au-dessus du rectangle)
     char bufferX[50];
@@ -423,7 +425,7 @@ void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
     }
 
     // Dessiner le rectangle entre les deux points
-    d->rect(m_rulerStartX, m_rulerStartY, m_rulerEndX, m_rulerEndY, deltaColor, Chart::Transparent);
+    d->rect(m_rulerStartX, m_rulerStartY, m_rulerEndX, m_rulerEndY, deltaColor, finalColor);
 
     // Position pour le texte deltaX (au-dessus du rectangle)
     int textXPosX = (m_rulerStartX + m_rulerEndX) / 2; // Centre du rectangle

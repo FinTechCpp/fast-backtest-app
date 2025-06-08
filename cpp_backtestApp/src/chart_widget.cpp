@@ -358,45 +358,60 @@ void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
     XYChart* c = (XYChart*)m->getChart(1);
     if (!c) return;
 
-    // Convertir les coordonnées en pixels en valeurs d'axes
-    double xValueStart = c->getXValue(m_rulerStartX);
-    double xValueEnd = c->getXValue(m_rulerEndX);
+    // Obtenir les indices correspondant aux positions du curseur
+    double xValueStartIndex = c->getNearestXValue(m_rulerStartX);
+    double xValueEndIndex = c->getNearestXValue(m_rulerEndX);
     double yValueStart = c->getYValue(m_rulerStartY);
     double yValueEnd = c->getYValue(m_rulerEndY);
 
-    //Récupérer les timestamps formattés
-    const char* startTimeStr = c->xAxis()->getFormattedLabel(xValueStart, "yyyy-mm-dd hh:nn:ss");
-    const char* endTimeStr = c->xAxis()->getFormattedLabel(xValueEnd, "yyyy-mm-dd hh:nn:ss");
+    // Récupérer les timestamps formattés pour l'affichage
+    const char* startTimeStr = c->xAxis()->getFormattedLabel(xValueStartIndex, "yyyy-mm-dd hh:nn:ss");
+    const char* endTimeStr = c->xAxis()->getFormattedLabel(xValueEndIndex, "yyyy-mm-dd hh:nn:ss");
 
-    // Log both raw values and formatted timestamps
-    std::cout << "XValue Start: " << xValueStart << " (" << startTimeStr << "), XValue End: " 
-              << xValueEnd << " (" << endTimeStr << ")" << std::endl;
-              
-    // Valeurs delta en X et en Y entre premier clic et position actuelle de la souris
-    double deltaX = xValueStart - xValueEnd;
-    double deltaY = yValueEnd - yValueStart; // Axe Y inversé pour correspondre à la direction de l'écran
+    // Convertir les indices en timestamps réels
+    double startTimestamp = 0;
+    double endTimestamp = 0;
+    
+    // Trouver les timestamps correspondants aux indices
+    int startIdx = static_cast<int>(std::round(xValueStartIndex));
+    int endIdx = static_cast<int>(std::round(xValueEndIndex));
+    
+    // Assurer que les indices sont dans les limites du tableau
+    if (startIdx >= 0 && startIdx < static_cast<int>(m_priceData.timestamps.size()) &&
+        endIdx >= 0 && endIdx < static_cast<int>(m_priceData.timestamps.size())) {
+        startTimestamp = m_priceData.timestamps[startIdx];
+        endTimestamp = m_priceData.timestamps[endIdx];
+    } else {
+        // Indices hors limites - utiliser une valeur par défaut
+        std::cout << "Indices hors limites : " << startIdx << ", " << endIdx << std::endl;
+        return;
+    }
+    
+    // Calculer la différence de temps en secondes
+    double deltaX = fabs(startTimestamp - endTimestamp);
+    double deltaY = yValueEnd - yValueStart;
 
-    // Définir ici la couleur du rectangle en fonction de deltaY
-    int deltaColor = (deltaY < 0) ? 0xFF0000 : 0x008800; // Rouge si deltaY négatif, vert foncé sinon
+    // Définir la couleur du rectangle en fonction de deltaY
+    int deltaColor = (deltaY < 0) ? 0xFF0000 : 0x008800;
 
     // Texte pour deltaX (au-dessus du rectangle)
     char bufferX[50];
     
-    // Calculer la durée réelle en secondes (valeur absolue)
-    int totalSeconds = static_cast<int>(fabs(deltaX));
+    // Calculer la durée réelle en secondes
+    int totalSeconds = static_cast<int>(deltaX);
     int hours = totalSeconds / 3600;
     int minutes = (totalSeconds % 3600) / 60;
     int seconds = totalSeconds % 60;
     
     // Formater avec le signe approprié et adapter le format selon la durée
     if (hours > 0) {
-        sprintf(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+        sprintf(bufferX, "%02dh%02dm%02ds", hours, minutes, seconds);
     } else if (minutes > 0) {
-        sprintf(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+        sprintf(bufferX, "%02dm%02ds", minutes, seconds);
     } else {
-        sprintf(bufferX, "%s%02dh%02dm%02ds", (-deltaX < 0 ? "-" : "+"), hours, minutes, seconds);
+        sprintf(bufferX, "%02ds", seconds);
     }
-    
+        
     // Texte pour deltaY (à droite du rectangle)
     char bufferY[50];
     sprintf(bufferY, "%.5f %s", deltaY, "$");
@@ -1547,7 +1562,6 @@ void ChartWidget::trackFinance(MultiChart* m, int mouseX)
     // Itérer sur tous les graphiques XY dans le FinanceChart
     XYChart *c = 0;
     
-
     for (int i = 0; i < m->getChartCount(); ++i) {
         c = (XYChart*)m->getChart(i);
         

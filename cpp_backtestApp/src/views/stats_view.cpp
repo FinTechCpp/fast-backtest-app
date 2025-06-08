@@ -672,14 +672,19 @@ void StatsView::createTradesTableView() {
     header->setSectionResizeMode(QHeaderView::Interactive);
     
     // Définir des largeurs minimales pour certaines colonnes
-    m_tradesTable->setColumnWidth(0, 50);  // #
-    m_tradesTable->setColumnWidth(1, 80);  // Type
-    m_tradesTable->setColumnWidth(2, 100); // Taille
+    m_tradesTable->setColumnWidth(0, 10);  // #
+    m_tradesTable->setColumnWidth(1, 50);  // Type
+    m_tradesTable->setColumnWidth(2, 70); // Taille
     m_tradesTable->setColumnWidth(3, 120); // Prix d'entrée
     m_tradesTable->setColumnWidth(4, 120); // Prix de sortie
     m_tradesTable->setColumnWidth(5, 100); // PnL
     m_tradesTable->setColumnWidth(6, 80);  // PnL %
     m_tradesTable->setColumnWidth(7, 100); // Durée
+    m_tradesTable->setColumnWidth(8, 150); // Date d'entrée
+    m_tradesTable->setColumnWidth(9, 150); // Date de sortie
+    m_tradesTable->setColumnWidth(10, 100); // Stop Loss
+    m_tradesTable->setColumnWidth(11, 100); // Take Profit
+    m_tradesTable->setColumnWidth(12, 30); // Tag
 
     // Hauteur de la table
     m_tradesTable->setMaximumHeight(1000);  

@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
     qInfo() << "=== Démarrage de l'application ===";
     qInfo() << "Arguments:" << QStringList(argv, argv + argc);
     
-    // Vérification des mises à jour
+    // ==== Vérification de la version ====
     UpdateChecker updateChecker;
     QObject::connect(&updateChecker, &UpdateChecker::updateAvailable, 
         [&](const QString& newVersion, const QString& downloadUrl) {
@@ -207,8 +207,9 @@ int main(int argc, char *argv[])
         });
 
     // Lancer la vérification des mises à jour
-    updateChecker.checkForUpdates();
-    
+    //updateChecker.checkForUpdates(); // Désactivé pour le moment
+    //==== Attendre la fin de la vérification ====
+
     // Enregistrer les types personnalisés pour Qt
     qRegisterMetaType<OHLCBar>("OHLCBar");
     qRegisterMetaType<std::vector<OHLCBar>>("std::vector<OHLCBar>");

@@ -64,8 +64,10 @@ void UpdateChecker::checkForUpdates()
     
     // Envoi de la requête
     QNetworkReply* reply = m_networkManager->get(request);
+    qDebug() << "Requête envoyée, en attente de réponse...";
     
     connect(reply, &QNetworkReply::finished, this, &UpdateChecker::onVersionCheckFinished);
+    qDebug() << "Requête terminée, connectée au slot onVersionCheckFinished";
 }
 
 bool UpdateChecker::waitForUpdateCheck(int timeout)
@@ -153,11 +155,38 @@ void UpdateChecker::parseReleaseObject(const QJsonObject& releaseObj)
     
     qInfo() << "Version actuelle:" << currentVersion() << "- Dernière version:" << m_latestVersion;
     
-    // Le reste du code reste identique à parseReleaseInfo
+    // Vérification si une version plus récente est disponible
     if (isNewerVersion(m_latestVersion)) {
         // Récupération de l'URL de téléchargement
         QJsonArray assets = releaseObj["assets"].toArray();
-        // ... le reste du code existant
+        for (const QJsonValue& asset : assets) {
+            QJsonObject assetObj = asset.toObject();
+            QString name = assetObj["name"].toString();
+            
+            // Sélection de l'asset en fonction de la plateforme
+            #ifdef Q_OS_WIN
+            if (name.endsWith(".zip") || name.endsWith(".exe")) {
+            #elif defined(Q_OS_MAC)
+            if (name.endsWith(".dmg") || name.endsWith(".zip")) {
+            #else // Linux
+            if (name.endsWith(".AppImage") || name.endsWith(".tar.gz") || name.endsWith(".zip")) {
+            #endif
+                m_downloadUrl = assetObj["browser_download_url"].toString();
+                break;
+            }
+        }
+        
+        if (!m_downloadUrl.isEmpty()) {
+            m_updateAvailable = true;
+            qInfo() << "Mise à jour disponible:" << m_latestVersion;
+            emit updateAvailable(m_latestVersion, m_downloadUrl);
+        } else {
+            m_errorMessage = "Aucun téléchargement adapté trouvé dans la dernière release";
+            emit updateCheckFailed(m_errorMessage);
+        }
+    } else {
+        qInfo() << "Aucune mise à jour disponible";
+        emit noUpdateAvailable();
     }
 }
 

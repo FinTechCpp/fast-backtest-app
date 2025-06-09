@@ -1406,11 +1406,14 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
     std::vector<std::pair<double, double>> exitMarkers;
     std::vector<std::pair<double, double>> entryArrows[RESULT_COUNT]; // Winning, Losing, Neutral
     std::vector<std::pair<double, double>> exitArrows[RESULT_COUNT];  // Winning, Losing, Neutral
+
+    std::vector<TPSLSegment> tpslSegments;
     
     // Préallocation
     size_t estimatedMarkers = std::min(size_t(100), m_trades.size() * 2);
     entryMarkers.reserve(estimatedMarkers);
     exitMarkers.reserve(estimatedMarkers);
+    tpslSegments.reserve(estimatedMarkers * 2);
     for (int i = 0; i < RESULT_COUNT; i++) {
         entryArrows[i].reserve(estimatedMarkers);
         exitArrows[i].reserve(estimatedMarkers);
@@ -1442,6 +1445,33 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
                 const be::Candle& entryCandle = m_backtestData->at(entryBarIndex);
                 double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
                 entryArrows[resultIndex].push_back({relativeIndex, arrowY});
+            }
+
+            // Si le trade est fermé, on peut ajouter les segments TP/SL
+            if (trade->isClosed()) {
+                size_t exitBarIndex = trade->exitBar();
+                if (exitBarIndex >= static_cast<size_t>(startIndex) && exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+                    double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
+                    
+                    // Récupérer les valeurs de TP et SL si elles existent
+                    double tpValue = trade->tp();
+                    if (tpValue > 0) {
+                        tpslSegments.push_back({
+                            relativeIndex, relativeExitIndex, 
+                            tpValue, true, // true = TP
+                            COLORS[resultIndex]
+                        });
+                    }
+                    
+                    double slValue = trade->sl();
+                    if (slValue > 0) {
+                        tpslSegments.push_back({
+                            relativeIndex, relativeExitIndex,
+                            slValue, false, // false = SL
+                            COLORS[resultIndex]
+                        });
+                    }
+                }
             }
         }
         
@@ -1481,6 +1511,67 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
             std::string name = std::string(resultNames[i]) + " Exit";
             addMarkers(mainChart, exitArrows[i], name.c_str(), Chart::TriangleSymbol, 15, COLORS[i]);
         }
+    }
+
+    // Ajouter les segments TP/SL
+    addTPSLSegments(mainChart, tpslSegments);
+}
+
+void ChartWidget::addTPSLSegments(XYChart* chart, const std::vector<TPSLSegment>& segments) {
+    if (segments.empty()) return;
+    
+    // Créer des vecteurs séparés pour les segments TP et SL
+    std::vector<double> tpXData, tpYData;
+    std::vector<double> slXData, slYData;
+    
+    // Parcourir tous les segments et les séparer par type
+    for (const auto& segment : segments) {
+        std::vector<double>& xData = segment.isTakeProfit ? tpXData : slXData;
+        std::vector<double>& yData = segment.isTakeProfit ? tpYData : slYData;
+        
+        // Ajouter le point de départ du segment horizontal
+        xData.push_back(segment.startX);
+        yData.push_back(segment.level);
+        
+        // Ajouter le point de fin du segment horizontal
+        xData.push_back(segment.endX);
+        yData.push_back(segment.level);
+        
+        // Ajouter un point NoValue pour créer une discontinuité
+        xData.push_back(Chart::NoValue);
+        yData.push_back(Chart::NoValue);
+    }
+    
+    // Ajouter les segments de Take Profit
+    if (!tpXData.empty()) {
+        LineLayer* tpLayer = chart->addLineLayer();
+        tpLayer->setLineWidth(1);  // Ligne fine
+        tpLayer->setFastLineMode(true);  // Mode rapide pour les lignes droites
+        
+        // Convertir en DoubleArray pour ChartDirector
+        DoubleArray tpX = vectorToDoubleArray(tpXData);
+        DoubleArray tpY = vectorToDoubleArray(tpYData);
+        
+        // Définir les données X et Y séparément
+        tpLayer->setXData(tpX);
+        tpLayer->addDataSet(tpY, 0x00AA00, "Take Profit");
+        tpLayer->moveFront();  // Mettre au premier plan
+    }
+    
+    // Ajouter les segments de Stop Loss
+    if (!slXData.empty()) {
+        LineLayer* slLayer = chart->addLineLayer();
+        slLayer->setLineWidth(1);  // Ligne fine
+        slLayer->setFastLineMode(true);  // Mode rapide pour les lignes droites
+        
+        // Convertir en DoubleArray pour ChartDirector
+        DoubleArray slX = vectorToDoubleArray(slXData);
+        DoubleArray slY = vectorToDoubleArray(slYData);
+        
+        // Définir les données X et Y séparément
+        slLayer->setXData(slX);
+        slLayer->addDataSet(slY, 0xCC0000, "Stop Loss");
+        slLayer->moveFront();  // Mettre au premier plan
     }
 }
 

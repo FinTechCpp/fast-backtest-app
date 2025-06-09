@@ -251,6 +251,14 @@ private:
         const char* name;
     };
 
+    struct TPSLSegment {
+        double startX;        // Index du point d'entrée
+        double endX;          // Index du point de sortie
+        double level;         // Niveau de prix (TP ou SL)
+        bool isTakeProfit;    // true = TP, false = SL
+        int color;            // Couleur basée sur le résultat du trade
+    };
+
     // ======== Méthodes privées ========
     // 1. Traitement et conversion des données
     void convertBacktestData(const std::shared_ptr<be::Data>& data);
@@ -290,6 +298,7 @@ private:
     void addEquityCurveSection(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
     void addMainChartSection(FinanceChart* chart, int chartHeight);
     void addTradeMarkers(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
+    void addTPSLSegments(XYChart* chart, const std::vector<TPSLSegment>& segments);
     FinanceChart* finalizeChart(FinanceChart* chart);
     void addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, const char* name,
                   int symbolType, int symbolSize = 5, int color = -1);

@@ -1290,7 +1290,7 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
     int downColor = 0xFF0000;   // Rouge pour descendant
     
     // Créer trois couches de stepline séparées, une pour chaque couleur
-    StepLineLayer* equityLineLayer = equityChart->addStepLineLayer(equityValues, 0x000000, "Equity");
+    StepLineLayer* equityLineLayer = equityChart->addStepLineLayer(equityValues, Chart::Transparent, "Equity");
     StepLineLayer* constantLayer = equityChart->addStepLineLayer();
     StepLineLayer* upLayer = equityChart->addStepLineLayer();
     StepLineLayer* downLayer = equityChart->addStepLineLayer(); 

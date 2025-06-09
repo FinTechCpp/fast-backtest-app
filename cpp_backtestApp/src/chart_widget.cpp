@@ -1294,8 +1294,10 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
     StepLineLayer* upLayer = equityChart->addStepLineLayer();
     StepLineLayer* downLayer = equityChart->addStepLineLayer();
     
+    constantLayer->setFastLineMode(true);
+    upLayer->setFastLineMode(true);
+    downLayer->setFastLineMode(true);
 
-    
     // Configurer l'alignement des steplines (début de chaque période)
     constantLayer->setAlignment(Chart::Left);
     upLayer->setAlignment(Chart::Left);
@@ -1532,6 +1534,7 @@ void ChartWidget::addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "RSI (%d)", rsi.period);
     LineLayer* layer = chart->addLineIndicator2(c, rsiArray, rsi.color, buffer);
+    layer->setFastLineMode(true);
 
     // Ajouter les seuils
     chart->addThreshold(c, layer, 50 + rsi.range, rsi.upperColor, 50 - rsi.range, rsi.lowerColor);
@@ -1575,7 +1578,8 @@ void ChartWidget::addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int
     // Configurer et ajouter l'EMA directement sur le graphique principal
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "EMA (%d)", ema.period);
-    chart->addLineIndicator2((XYChart*)chart->getChart(1), emaArray, ema.color, buffer);
+    LineLayer* layer = chart->addLineIndicator2((XYChart*)chart->getChart(1), emaArray, ema.color, buffer);
+    layer->setFastLineMode(true);
 }
 
 void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow)
@@ -1620,12 +1624,14 @@ void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInst
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "Stochastic %%K (%d, %d, %d)", 
              stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
-    
-    chart->addLineIndicator2(c, kArray, stochastic.kColor, buffer);
-    
+
+    LineLayer* kLayer = chart->addLineIndicator2(c, kArray, stochastic.kColor, buffer);
+    kLayer->setFastLineMode(true);
+
     snprintf(buffer, sizeof(buffer), "%%D (%d)", stochastic.slowDPeriod);
-    chart->addLineIndicator2(c, dArray, stochastic.dColor, buffer);
-    
+    LineLayer* dLayer = chart->addLineIndicator2(c, dArray, stochastic.dColor, buffer);
+    dLayer->setFastLineMode(true);
+
     // Configurer l'échelle de l'axe Y
     c->yAxis()->setLinearScale(0, 100);
 

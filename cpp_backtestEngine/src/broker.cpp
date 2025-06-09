@@ -351,14 +351,14 @@ void Broker::processOrders() {
                 }
                 
                 // Vérifier si nous avons assez de marge disponible
-                if (std::abs(needSize) * adjustedPriceWithCommission > marginAvailable() * _leverage) {
-                    // Pas assez de marge, annuler l'ordre
-                    auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
-                    if (orderToRemove != _orders.end()) {
-                        _orders.erase(orderToRemove);
-                    }
-                    continue;
-                }
+                // if (std::abs(needSize) * adjustedPriceWithCommission > marginAvailable() * _leverage) {
+                //     // Pas assez de marge, annuler l'ordre
+                //     auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
+                //     if (orderToRemove != _orders.end()) {
+                //         _orders.erase(orderToRemove);
+                //     }
+                //     continue;
+                // }
                 
                 // Ouvrir un nouveau trade si besoin
                 if (needSize != 0) {

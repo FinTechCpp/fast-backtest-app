@@ -48,7 +48,7 @@ public:
     ) : be::Strategy(broker, data), strategy_config(bhg_config) {
         // Créer l'instance de la stratégie
         strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
-        strategy->set_log_level(LogLevel::WARNING);
+        strategy->set_log_level(LogLevel::INFO);
 
         auto log_callback = [](const std::string& message, int level) {
             LogLevel logLevel = static_cast<LogLevel>(level);
@@ -88,27 +88,10 @@ public:
      * Cette méthode convertit les données de marché en format attendu par la stratégie,
      * met à jour la stratégie et traite les signaux générés.
      */
-    void next() override {
-        // Au lieu de récupérer tous les trades à chaque fois
-        // auto allTrades = getClosedTrades(); // NE PAS FAIRE CECI
-    
-        // Compter les trades fermés pour détecter les nouveaux
-        //Récupérer une référence à closedTrades au lieu d'une copie
-        const auto& closedTrades = _broker->closedTrades();
-        size_t currentTradeCount = closedTrades.size();
-        
-        // Seulement si de nouveaux trades ont été fermés
-        if (currentTradeCount > last_closed_trade_count) {
-            // Traiter uniquement les nouveaux trades si nécessaire
-
-            last_closed_trade_count = currentTradeCount;
-        }
-        
-        // Créer un objet Candle à partir des données actuelles
+    void next() override {    
         Candle candle;
         
         // Remplir la structure DateTime à partir de la bougie courante
-        // Utilisation de la nouvelle interface
         const be::Candle& currentCandle = getData()->current();
         be::Date current_date = currentCandle.date;
 
@@ -131,26 +114,27 @@ public:
 
         candle.position.in_position = last_trade ? true : false;
         if (candle.position.in_position) {
-            // candle.position.position_pl_pct = last_trade->plPercent();
             candle.position.entry_price = last_trade->entryPrice();
             candle.position.take_profit_price = last_trade->tp();
         }
         
-        // Ajouter le P&L du dernier trade fermé s'il y en a un
-        candle.position.closed_trade_pnl = 0.0;
-        if (last_trade_closed) {
-            candle.position.closed_trade_pnl = last_trade_pnl;
-            last_trade_closed = false;
-            last_trade_pnl = 0.0;
+        //Récupérer une référence à closedTrades au lieu d'une copie
+        const auto& closedTrades = _broker->closedTrades();
+        size_t currentTradeCount = closedTrades.size();
+        
+        // Seulement si de nouveaux trades ont été fermés
+        if (currentTradeCount > last_closed_trade_count) {
+            last_closed_trade_count = currentTradeCount;
+
+            candle.position.closed_trade_pnl = closedTrades.back()->pl();
         }
         
         // Mettre à jour la stratégie et obtenir le signal
         Signal* signal = strategy->update_candle(candle);
 
 
-        if (!signal) {
+        if (!signal)
             return; // Pas de signal à traiter
-        }
         
         // Traiter le signal s'il y en a un
         if (signal->action == "LIQUIDATE") {
@@ -159,7 +143,6 @@ public:
             }
         }
         else if (signal->action == "MOVE_SL") {
-            // Déplacer le stop loss
             last_trade->sl(signal->new_sl);
         }
         else if (trades.empty() && signal->action == "BUY") {

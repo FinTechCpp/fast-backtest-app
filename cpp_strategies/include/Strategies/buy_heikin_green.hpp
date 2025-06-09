@@ -502,7 +502,7 @@ public:
             current_atrlog,
             logger
         );
-        
+
         // Calcul de la taille de position
         buy_quantity = PositionManager::calculatePositionSize(
             base_config,

@@ -182,20 +182,10 @@ void ChartWidget::createChart()
             m_financeChart = drawChart(timeStamps, highData, lowData, 
                                       openData, closeData, volumeData, m_config.chartWidth);
         }
-        
-        // Configurer le viewport initial
-        int totalPoints = timeStamps.len;
-        if (totalPoints > 100) {
-            // Afficher les 100 derniers points par défaut
-            double visiblePortion = 100.0 / totalPoints;
-            m_chartViewer->setViewPortWidth(visiblePortion);
-            m_chartViewer->setViewPortLeft(1.0 - visiblePortion);
-        } else {
-            // Afficher toutes les données
-            m_chartViewer->setViewPortWidth(1.0);
-            m_chartViewer->setViewPortLeft(0);
-        }
-        
+        // Afficher toutes les données
+        m_chartViewer->setViewPortWidth(1.0);
+        m_chartViewer->setViewPortLeft(0);
+
         // Mettre à jour l'affichage
         m_chartViewer->updateViewPort(true, false);
         
@@ -909,60 +899,36 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
     // Réinitialiser les données d'équité
     m_equityData = EquityData();
     
-    // Cas où les données sont alignées (même nombre de points)
-    if (numPoints == numBars) {
-        m_equityData.timestamps.reserve(numBars);
-        m_equityData.equity_values.reserve(numBars);
-        
-        // Convertir les dates en timestamps et copier les valeurs d'équité
-        for (size_t i = 0; i < numBars; ++i) {
-            double timestamp = dateToChartTimestamp(data->at(i).date);
-            m_equityData.timestamps.push_back(timestamp);
-            m_equityData.equity_values.push_back(equityCurve[i]);
-        }
+    // Valider les tailles
+    if (numPoints != numBars) {
+        qWarning() << "Tailles incompatibles: equityCurve:" << numPoints << "data:" << numBars;
+        return;
     }
-    else if (numPoints < numBars) {
-        m_equityData.timestamps.reserve(numBars);
-        m_equityData.equity_values.resize(numBars);
+    
+    // Préallouer pour le pire cas
+    m_equityData.timestamps.reserve(numPoints);
+    m_equityData.equity_values.reserve(numPoints);
+    
+    // Compresser les données en ne gardant que les points où l'équité change
+    double lastValue = equityCurve[0];
+    
+    // Toujours ajouter le premier point
+    m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(0).date));
+    m_equityData.equity_values.push_back(lastValue);
+    
+    // Parcourir le reste des points
+    for (size_t i = 1; i < numPoints; ++i) {
+        double currentValue = equityCurve[i];
         
-        // Convertir les timestamps
-        for (size_t i = 0; i < numBars; ++i) {
-            double timestamp = dateToChartTimestamp(data->at(i).date);
-            m_equityData.timestamps.push_back(timestamp);
-        }
-        
-        // La courbe d'équité commence généralement au premier indice, donc aligner le début
-        // On suppose que equityCurve[0] correspond à la première bougie
-        double initialEquity = equityCurve[0];
-        
-        // Replier l'équité depuis le début
-        for (size_t i = 0; i < numBars; ++i) {
-            if (i < numPoints) {
-                // Utiliser directement les valeurs disponibles
-                m_equityData.equity_values[i] = equityCurve[i];
-            } else {
-                // Utiliser la dernière valeur disponible pour les bougies supplémentaires
-                m_equityData.equity_values[i] = equityCurve[numPoints - 1];
-            }
-        }
-    }
-    // Cas où il y a plus de points d'équité que de barres
-    else {
-        m_equityData.timestamps.reserve(numBars);
-        m_equityData.equity_values.resize(numBars);
-        
-        // On va supposer que l'equity curve est générée à chaque bougie,
-        // donc on prend simplement les points correspondants
-        for (size_t i = 0; i < numBars; ++i) {
-            double timestamp = dateToChartTimestamp(data->at(i).date);
-            m_equityData.timestamps.push_back(timestamp);
-            
-            // Prendre directement les équivalents (au lieu de sous-échantillonner)
-            m_equityData.equity_values[i] = equityCurve[i];
+        // Si la valeur a changé ou si c'est le dernier point, l'ajouter
+        if (std::abs(currentValue - lastValue) > 1e-10 || i == numPoints - 1) {
+            m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(i).date));
+            m_equityData.equity_values.push_back(currentValue);
+            lastValue = currentValue;
         }
     }
     
-    // Calculer le drawdown
+    // Calculer le drawdown (inchangé)
     if (!m_equityData.equity_values.empty()) {
         m_equityData.drawdown.resize(m_equityData.equity_values.size());
         double peak = m_equityData.equity_values[0];
@@ -975,6 +941,9 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
             m_equityData.drawdown[i] = dd;
         }
     }
+    
+    qInfo() << "Courbe d'équité compressée:" << numPoints << "points réduits à" 
+            << m_equityData.timestamps.size() << "points significatifs";
 }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {
@@ -1141,7 +1110,18 @@ FinanceChart* ChartWidget::drawChart(
     
     // Créer un nouveau graphique
     FinanceChart* c = new FinanceChart(chartWidth);
-    
+
+    c->setPlotAreaStyle(0xE2F4FF, 0xCC999999, 0xCC999999, 0xCC999999, 0xCC999999);
+    c->setDateLabelFormat(
+        "{value|yyyy}", 
+        "{value|yyyy-mm-dd}", 
+        "{value|mm-dd}", 
+        "{value|yyyy-mm-dd}", 
+        "{value|mm-dd}", 
+        "{value|yyyy-mm-dd hh:nn:ss}", 
+        "{value|hh:nn:ss}"
+    );    c->setDateLabelSpacing(50); // Espacement des étiquettes de date
+
     // Configurer les données
     c->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
 
@@ -1231,52 +1211,161 @@ FinanceChart *ChartWidget::initializeChart(int chartWidth)
 void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
 {
     if (m_equityData.equity_values.empty() || timestamps.len == 0)
-        return ; // Pas de données d'équité ou pas de bougies visibles
+        return; // Pas de données d'équité ou pas de bougies visibles
 
     int equityHeight = 120;     // Hauteur du graphique d'équité
 
-    // Trouver les indices correspondant à la fenêtre visible
-    int equityStartIndex = startIndex;  // Utiliser le même index de début que pour les bougies
-    int equityEndIndex = std::min(equityStartIndex + timestamps.len, (int)m_equityData.equity_values.size());
+    // Obtenir la plage de temps visible
+    double visibleStartTime = timestamps[0];
+    double visibleEndTime = timestamps[timestamps.len - 1];
     
-    if (equityStartIndex < (int)m_equityData.equity_values.size()) {
-        // Créer un sous-tableau pour les valeurs d'equity visibles
-        std::vector<double> visibleEquity(m_equityData.equity_values.begin() + equityStartIndex,
-                                        m_equityData.equity_values.begin() + equityEndIndex);
-                                        
-        // Si nécessaire, compléter pour avoir la même taille que le nombre de bougies visibles
-        while (visibleEquity.size() < (size_t)timestamps.len) {
-            visibleEquity.push_back(visibleEquity.back());
+    // Créer les vecteurs pour les données d'équité interpolées
+    std::vector<double> interpolatedTimes;
+    std::vector<double> interpolatedValues;
+    std::vector<double> colorValues;  // Pour stocker les valeurs de couleur
+    
+    interpolatedTimes.reserve(timestamps.len);
+    interpolatedValues.reserve(timestamps.len);
+    colorValues.reserve(timestamps.len - 1);  // Un segment de moins que de points
+    
+    // Trouver le premier point d'équité qui précède ou correspond à visibleStartTime
+    size_t equityIndex = 0;
+    while (equityIndex + 1 < m_equityData.timestamps.size() && 
+           m_equityData.timestamps[equityIndex + 1] < visibleStartTime) {
+        equityIndex++;
+    }
+    
+    // Valeur d'équité au début de la fenêtre visible
+    double currentEquityValue = m_equityData.equity_values[equityIndex];
+    
+    // Pour chaque timestamp visible, interpoler la valeur d'équité
+    for (int i = 0; i < timestamps.len; ++i) {
+        double currentTime = timestamps[i];
+        
+        // Avancer dans les données d'équité si nécessaire
+        while (equityIndex + 1 < m_equityData.timestamps.size() && 
+               m_equityData.timestamps[equityIndex + 1] <= currentTime) {
+            equityIndex++;
+            currentEquityValue = m_equityData.equity_values[equityIndex];
         }
         
-        // Convertir en DoubleArray
-        DoubleArray equityValues = vectorToDoubleArray(visibleEquity);
+        // Ajouter le point interpolé
+        interpolatedTimes.push_back(i); // Utiliser l'index comme position X
+        interpolatedValues.push_back(currentEquityValue);
         
-        // Ajouter l'indicateur pour l'equity curve
-        XYChart* equityChart = chart->addIndicator(equityHeight);
-        
-        // Configuration du titre et des libellés
-        equityChart->yAxis()->setTitle("Capital");
-        equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
-        
-        // Ajouter la ligne principale d'équité
-        LineLayer* equityLayer = equityChart->addLineLayer();
-        equityLayer->addDataSet(equityValues, 0x008800, "Equity");
-        equityLayer->setLineWidth(2);
-        
-        // Optionnel: ajouter un point à la fin de la courbe pour marquer la valeur actuelle
-        if (!visibleEquity.empty()) {
-            std::vector<double> lastPointX = {(double)(visibleEquity.size() - 1)};
-            std::vector<double> lastPointY = {visibleEquity.back()};
+        // Déterminer la couleur du segment (pour tous sauf le premier point)
+        if (i > 0) {
+            double prev = interpolatedValues[i-1];
+            double curr = currentEquityValue;
+            double diff = curr - prev;
             
-            DoubleArray xPoint = vectorToDoubleArray(lastPointX);
-            DoubleArray yPoint = vectorToDoubleArray(lastPointY);
-            
-            ScatterLayer* endPoint = equityChart->addScatterLayer(xPoint, yPoint, 
-                                                                "Current", Chart::CircleShape, 7, 
-                                                                0x008800, 0x008800);
-            endPoint->moveFront();
+            // Définir la valeur de couleur basée sur la direction
+            if (std::abs(diff) < 1e-10) {
+                // Constant (bleu)
+                colorValues.push_back(0);  
+            } else if (diff > 0) {
+                // Ascendant (vert)
+                colorValues.push_back(1);
+            } else {
+                // Descendant (rouge)
+                colorValues.push_back(2);
+            }
         }
+    }
+    
+    // Convertir en DoubleArray
+    DoubleArray equityTimes = vectorToDoubleArray(interpolatedTimes);
+    DoubleArray equityValues = vectorToDoubleArray(interpolatedValues);
+    
+    // Ajouter l'indicateur pour l'equity curve
+    XYChart* equityChart = chart->addIndicator(equityHeight);
+    
+    // Configuration du titre et des libellés
+    equityChart->yAxis()->setTitle("Capital");
+    equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
+    
+    // Définir les couleurs pour les segments
+    int constColor = 0x0000FF;  // Bleu pour constant
+    int upColor = 0x008800;     // Vert pour ascendant
+    int downColor = 0xFF0000;   // Rouge pour descendant
+    
+    // Créer trois couches de ligne séparées, une pour chaque couleur
+    LineLayer* constantLayer = equityChart->addLineLayer();
+    LineLayer* upLayer = equityChart->addLineLayer();
+    LineLayer* downLayer = equityChart->addLineLayer();
+    
+    // Création des ensembles de données pour chaque type de segment
+    std::vector<std::vector<double>> segmentX(3);
+    std::vector<std::vector<double>> segmentY(3);
+    
+    // Parcourir les points et créer des segments colorés
+    for (size_t i = 1; i < interpolatedValues.size(); ++i) {
+        int colorIndex = static_cast<int>(colorValues[i-1]);
+        
+        // Ajouter le point de début et de fin pour ce segment
+        segmentX[colorIndex].push_back(interpolatedTimes[i-1]);
+        segmentY[colorIndex].push_back(interpolatedValues[i-1]);
+        
+        segmentX[colorIndex].push_back(interpolatedTimes[i]);
+        segmentY[colorIndex].push_back(interpolatedValues[i]);
+        
+        // Ajouter un NoValue pour séparer les segments non-contigus de même couleur
+        segmentX[colorIndex].push_back(Chart::NoValue);
+        segmentY[colorIndex].push_back(Chart::NoValue);
+    }
+    
+    // Ajouter les segments à leurs couches respectives
+    if (!segmentX[0].empty()) {
+        // Get arrays for x and y values
+        DoubleArray x = vectorToDoubleArray(segmentX[0]);
+        DoubleArray y = vectorToDoubleArray(segmentY[0]);
+        
+        // Create a line layer for constant segments
+        LineLayer* constantLayer = equityChart->addLineLayer();
+        // Set the data directly from the x-y arrays
+        constantLayer->setXData(x);
+        DataSet* constDataSet = constantLayer->addDataSet(y, constColor, "Constant");
+        constantLayer->setLineWidth(2);
+    }
+    
+    if (!segmentX[1].empty()) {
+        // Get arrays for x and y values
+        DoubleArray x = vectorToDoubleArray(segmentX[1]);
+        DoubleArray y = vectorToDoubleArray(segmentY[1]);
+        
+        // Create a line layer for up segments
+        LineLayer* upLayer = equityChart->addLineLayer();
+        // Set the data directly from the x-y arrays
+        upLayer->setXData(x);
+        DataSet* upDataSet = upLayer->addDataSet(y, upColor, "Up");
+        upLayer->setLineWidth(2);
+    }
+    
+    if (!segmentX[2].empty()) {
+        // Get arrays for x and y values
+        DoubleArray x = vectorToDoubleArray(segmentX[2]);
+        DoubleArray y = vectorToDoubleArray(segmentY[2]);
+        
+        // Create a line layer for down segments
+        LineLayer* downLayer = equityChart->addLineLayer();
+        // Set the data directly from the x-y arrays
+        downLayer->setXData(x);
+        DataSet* downDataSet = downLayer->addDataSet(y, downColor, "Down");
+        downLayer->setLineWidth(2);
+    }
+    
+    // Optionnel: ajouter un point à la fin de la courbe pour marquer la valeur actuelle
+    if (!interpolatedValues.empty()) {
+        std::vector<double> lastPointX = {(double)(interpolatedTimes.size() - 1)};
+        std::vector<double> lastPointY = {interpolatedValues.back()};
+        
+        DoubleArray xPoint = vectorToDoubleArray(lastPointX);
+        DoubleArray yPoint = vectorToDoubleArray(lastPointY);
+        
+        ScatterLayer* endPoint = equityChart->addScatterLayer(xPoint, yPoint, 
+                                                            "Current", Chart::CircleShape, 7, 
+                                                            0x000000, 0x000000);
+        endPoint->moveFront();
     }
 }
 

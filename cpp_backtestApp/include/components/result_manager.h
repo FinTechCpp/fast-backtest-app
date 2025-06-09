@@ -6,14 +6,14 @@
 #include <QMap>
 #include <QString>
 #include <QResizeEvent>
-#include "views/baseview.h"  // Ajouté pour inclure la définition de BacktestResults
+#include "views/baseview.h"  
 
 // Forward declarations
 class StatsView;
 class ChartView;
 class HistogramView;
 class QTimer;
-struct BacktestResults;  // Forward declaration
+struct BacktestResults;  
 
 /**
  * @brief Gestionnaire principal des résultats - GÈRE les vues, n'EST PAS une vue

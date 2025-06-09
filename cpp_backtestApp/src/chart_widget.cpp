@@ -1261,7 +1261,7 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
             
             // Définir la valeur de couleur basée sur la direction
             if (std::abs(diff) < 1e-10) {
-                // Constant (bleu)
+                // Constant (gris)
                 colorValues.push_back(0);  
             } else if (diff > 0) {
                 // Ascendant (vert)
@@ -1285,18 +1285,29 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
     equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
     
     // Définir les couleurs pour les segments
-    int constColor = 0x999999;  // Bleu pour constant
+    int constColor = 0x999999;  // gris pour constant
     int upColor = 0x53DD00;     // Vert pour ascendant
     int downColor = 0xFF0000;   // Rouge pour descendant
     
     // Créer trois couches de stepline séparées, une pour chaque couleur
+    StepLineLayer* equityLineLayer = equityChart->addStepLineLayer(equityValues, 0x000000, "Equity");
     StepLineLayer* constantLayer = equityChart->addStepLineLayer();
     StepLineLayer* upLayer = equityChart->addStepLineLayer();
-    StepLineLayer* downLayer = equityChart->addStepLineLayer();
+    StepLineLayer* downLayer = equityChart->addStepLineLayer(); 
     
     constantLayer->setFastLineMode(true);
     upLayer->setFastLineMode(true);
     downLayer->setFastLineMode(true);
+
+    // Créer une ligne horizontale pour le cash initial
+    double initialCash = m_equityData.equity_values.front();
+
+    Mark* mark = equityChart->yAxis()->addMark(m_equityData.equity_values.front(), 0x000000,"Initial Cash");
+    mark->setLineWidth(2);
+    mark->setMarkColor(equityChart->dashLineColor(0x000000), 0xffffff);
+    mark->setAlignment(Chart::Left);
+    mark->setBackground(0x000000, 0xffffff, 1);
+    equityChart->addInterLineLayer(equityLineLayer->getLine(), mark->getLine(), 0xCC53DD00, 0xCCff0000);
 
     // Configurer l'alignement des steplines (début de chaque période)
     constantLayer->setAlignment(Chart::Left);
@@ -1343,7 +1354,7 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
         // Create a step line layer for up segments
         upLayer->setXData(x);
         DataSet* upDataSet = upLayer->addDataSet(y, upColor, "Up");
-        upLayer->setLineWidth(4);
+        upLayer->setLineWidth(5);
     }
     
     if (!segmentX[2].empty()) {
@@ -1354,10 +1365,10 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
         // Create a step line layer for down segments
         downLayer->setXData(x);
         DataSet* downDataSet = downLayer->addDataSet(y, downColor, "Down");
-        downLayer->setLineWidth(4);
+        downLayer->setLineWidth(5);
     }
     
-    // Optionnel: ajouter un point à la fin de la courbe pour marquer la valeur actuelle
+    // Ajouter un point à la fin de la courbe pour marquer la valeur actuelle
     if (!interpolatedValues.empty()) {
         std::vector<double> lastPointX = {(double)(interpolatedTimes.size() - 1)};
         std::vector<double> lastPointY = {interpolatedValues.back()};

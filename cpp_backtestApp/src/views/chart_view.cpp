@@ -7,8 +7,6 @@
 #include <QResizeEvent>
 #include <QToolButton>
 
-#include "views/chart_view.h"
-
 ChartView::ChartView(QWidget* parent)
     : BaseView(parent)
     , m_cachedResults(nullptr)
@@ -567,36 +565,29 @@ void ChartView::updateData(BacktestResults* results)
         return;
     }
     
-    try {
-        // Passer directement les objets du backtest au ChartWidget
-        m_chartWidget->setBacktestData(results->data);
-        m_chartWidget->setBacktestTrades(results->stats.trades);
-        m_chartWidget->setEquityCurve(results->stats.equityCurve);
 
-        m_dataExtracted = true;
-        
-        // Définir le type de graphique
-        QString chartType = m_chartTypeCombo->currentData().toString();
-        m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
-        
-        // Afficher le widget de graphique et masquer le placeholder
-        showChartWidget();
-        
-        // Créer le graphique
-        m_chartWidget->createChart();
-        
-        // Rafraîchir la liste des indicateurs
-        refreshIndicatorsList();
-        
-        m_dataExtracted = true;
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur C++:" << e.what();
-        showPlaceholder("Erreur lors de la création du graphique");
-    } catch (...) {
-        qCritical() << "Erreur inconnue dans ChartView::updateData()";
-        showPlaceholder("Erreur inconnue");
-    }
+    
+    // Passer directement les objets du backtest au ChartWidget
+    m_chartWidget->setBacktestData(results->data);
+    m_chartWidget->setBacktestTrades(results->stats.trades);
+    m_chartWidget->setEquityCurve(results->stats.equityCurve);
+
+    m_dataExtracted = true;
+    
+    // Définir le type de graphique
+    QString chartType = m_chartTypeCombo->currentData().toString();
+    m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
+    
+    // Afficher le widget de graphique et masquer le placeholder
+    showChartWidget();
+    
+    // Créer le graphique
+    m_chartWidget->createChart();
+    
+    // Rafraîchir la liste des indicateurs
+    refreshIndicatorsList();
+    
+    m_dataExtracted = true;
 
     int elapsed = start.msecsTo(QTime::currentTime());
 }

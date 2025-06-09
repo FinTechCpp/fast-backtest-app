@@ -1285,14 +1285,21 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
     equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
     
     // Définir les couleurs pour les segments
-    int constColor = 0x0000FF;  // Bleu pour constant
-    int upColor = 0x008800;     // Vert pour ascendant
+    int constColor = 0x999999;  // Bleu pour constant
+    int upColor = 0x53DD00;     // Vert pour ascendant
     int downColor = 0xFF0000;   // Rouge pour descendant
     
-    // Créer trois couches de ligne séparées, une pour chaque couleur
-    LineLayer* constantLayer = equityChart->addLineLayer();
-    LineLayer* upLayer = equityChart->addLineLayer();
-    LineLayer* downLayer = equityChart->addLineLayer();
+    // Créer trois couches de stepline séparées, une pour chaque couleur
+    StepLineLayer* constantLayer = equityChart->addStepLineLayer();
+    StepLineLayer* upLayer = equityChart->addStepLineLayer();
+    StepLineLayer* downLayer = equityChart->addStepLineLayer();
+    
+
+    
+    // Configurer l'alignement des steplines (début de chaque période)
+    constantLayer->setAlignment(Chart::Left);
+    upLayer->setAlignment(Chart::Left);
+    downLayer->setAlignment(Chart::Left);
     
     // Création des ensembles de données pour chaque type de segment
     std::vector<std::vector<double>> segmentX(3);
@@ -1320,9 +1327,7 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
         DoubleArray x = vectorToDoubleArray(segmentX[0]);
         DoubleArray y = vectorToDoubleArray(segmentY[0]);
         
-        // Create a line layer for constant segments
-        LineLayer* constantLayer = equityChart->addLineLayer();
-        // Set the data directly from the x-y arrays
+        // Create a step line layer for constant segments
         constantLayer->setXData(x);
         DataSet* constDataSet = constantLayer->addDataSet(y, constColor, "Constant");
         constantLayer->setLineWidth(2);
@@ -1333,12 +1338,10 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
         DoubleArray x = vectorToDoubleArray(segmentX[1]);
         DoubleArray y = vectorToDoubleArray(segmentY[1]);
         
-        // Create a line layer for up segments
-        LineLayer* upLayer = equityChart->addLineLayer();
-        // Set the data directly from the x-y arrays
+        // Create a step line layer for up segments
         upLayer->setXData(x);
         DataSet* upDataSet = upLayer->addDataSet(y, upColor, "Up");
-        upLayer->setLineWidth(2);
+        upLayer->setLineWidth(4);
     }
     
     if (!segmentX[2].empty()) {
@@ -1346,12 +1349,10 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
         DoubleArray x = vectorToDoubleArray(segmentX[2]);
         DoubleArray y = vectorToDoubleArray(segmentY[2]);
         
-        // Create a line layer for down segments
-        LineLayer* downLayer = equityChart->addLineLayer();
-        // Set the data directly from the x-y arrays
+        // Create a step line layer for down segments
         downLayer->setXData(x);
         DataSet* downDataSet = downLayer->addDataSet(y, downColor, "Down");
-        downLayer->setLineWidth(2);
+        downLayer->setLineWidth(4);
     }
     
     // Optionnel: ajouter un point à la fin de la courbe pour marquer la valeur actuelle

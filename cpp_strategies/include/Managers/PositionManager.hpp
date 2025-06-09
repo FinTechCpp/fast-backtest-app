@@ -17,7 +17,7 @@ public:
         double current_atr,
         bool is_long,
         const CandleManager& candle_manager,
-        const Candle& current_candle,
+        const BasicCandle& basic_candle,
         const std::unique_ptr<LoggerManager>& logger
     ) {
         if (config.use_atr_for_sl && current_atr > 0.0) {
@@ -25,7 +25,7 @@ public:
         } 
         else if (config.use_minmax_for_sl && candle_manager.size() >= static_cast<size_t>(config.sl_minmax_periods)) {
             return calculateStopLossWithMinMax(
-                config, current_price, candle_manager, current_candle, is_long, logger);
+                config, current_price, candle_manager, basic_candle, is_long, logger);
         } 
         else {
             // Utiliser valeur fixe pour SL
@@ -99,7 +99,7 @@ private:
         const StrategyBaseConfig& config,
         double current_price,
         const CandleManager& candle_manager,
-        const Candle& current_candle,
+        const BasicCandle& basic_candle,
         bool is_long,
         const std::unique_ptr<LoggerManager>& logger
     ) {
@@ -111,7 +111,7 @@ private:
         
         if (is_long) {
             // Pour LONG: recherche du minimum 
-            double min_price = current_candle.low;
+            double min_price = basic_candle.low;
             
             for (const auto& candle : recent_candles) {
                 min_price = std::min(min_price, candle.low);
@@ -138,7 +138,7 @@ private:
         } 
         else {
             // Pour SHORT: recherche du maximum
-            double max_price = current_candle.high;
+            double max_price = basic_candle.high;
             
             for (const auto& candle : recent_candles) {
                 max_price = std::max(max_price, candle.high);

@@ -46,11 +46,6 @@ private:
         return candle;
     }
     
-    // Extraire BasicCandle d'une Candle (pour compatibilité si nécessaire)
-    BasicCandle extract_basic(const Candle& candle) const {
-        return BasicCandle(candle.date, candle.open, candle.high, candle.low, candle.close);
-    }
-    
     // Nettoyer les buffers si nécessaire (logique d'hystérésis)
     void check_and_clean_buffers() {
         if (candle_buffer.size() > hysteresis_threshold) {
@@ -136,11 +131,6 @@ public:
             // Vérifier et nettoyer les buffers si nécessaire
             check_and_clean_buffers();
         }
-    }
-    
-    // Surcharge pour la compatibilité
-    void add_candle(const Candle& candle) {
-        add_candle(extract_basic(candle));
     }
     
     // Récupérer la dernière bougie

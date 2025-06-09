@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <memory>
+#include <chrono>
 
 enum class LogCategory {
     GENERAL,
@@ -15,18 +16,15 @@ enum class LogCategory {
     TIME
 };
 
-// enum LogLevel {
-//     DEBUG = 0,
-//     WARNING = 1,
-//     INFO = 2,
-//     ERROR = 3
-// };
-
 class LoggerManager {
 private:
     bool enabled = true;
     LogLevel verbosity_level = LogLevel::DEBUG;
     DateTime current_candle_date;
+
+    // Variables pour le chronomètre
+    std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
+    bool chrono_running = false;
     
     // Buffer pour stocker les logs par catégorie
     std::vector<std::string> general_logs;
@@ -80,7 +78,7 @@ public:
     void set_enabled(bool state) { enabled = state; }
     void set_verbosity(int level) { verbosity_level = static_cast<LogLevel>(level); }
     LogLevel get_verbosity() const { return verbosity_level; }
-    void set_current_candle(const Candle& candle) { current_candle_date = candle.date; }
+    void set_current_candle(const Candle& candle) { current_candle_date = candle.ohlc.date; }
     void clear() {
         general_logs.clear();
         indicator_logs.clear();
@@ -89,6 +87,40 @@ public:
         execution_logs.clear();
         risk_logs.clear();
         time_logs.clear();
+    }
+    
+    // Méthodes pour gérer le chronomètre
+    void start_chrono() {
+        start_time = std::chrono::high_resolution_clock::now();
+        chrono_running = true;
+    }
+    
+    double stop_chrono_and_log() {
+        if (!chrono_running) {
+            log_general("Tentative d'arrêt du chronomètre alors qu'il n'est pas démarré", LogLevel::WARNING);
+            return 0.0;
+        }
+
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+        double duration_ms = duration.count() / 1000.0;
+        
+        // Logger le temps d'exécution
+        log_execution_time(duration_ms);
+        
+        chrono_running = false;
+        return duration_ms;
+    }
+    
+    // Nouvelle méthode pour finaliser les logs et les envoyer
+    void finalize_and_send_logs() {
+        // Si le chronomètre est toujours en cours, l'arrêter et logger le temps
+        if (chrono_running) {
+            stop_chrono_and_log();
+        }
+        
+        // Envoyer tous les logs
+        cpp_log(get_all_logs(), get_verbosity());
     }
     
     // Logs généraux

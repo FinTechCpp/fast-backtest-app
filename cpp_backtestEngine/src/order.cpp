@@ -34,29 +34,6 @@ Order::Order(std::shared_ptr<Broker> broker,
     }
 }
 
-void Order::cancel() {
-    _broker->cancelOrder(*this);
-
-    // Gérer les références SL/TP dans le trade parent
-    if (_parentTrade) {
-        std::shared_ptr<Trade> trade = _parentTrade;
-        
-        // On ne peut pas accéder directement à _slOrder et _tpOrder dans Trade 
-        // car ils ne sont pas exposés par l'interface publique
-        // Nous allons donc vérifier si c'est un ordre SL ou TP à l'aide
-        // des méthodes sl() et tp()
-        
-        // Note: cette partie simplifiée sera à améliorer lorsque Trade sera implémentée
-        if (_stopPrice > 0 && trade->sl() == _stopPrice) {
-            trade->sl(0.0); // Reset SL
-        }
-        else if (_limitPrice > 0 && trade->tp() == _limitPrice) {
-            trade->tp(0.0); // Reset TP
-        }
-        // Sinon, c'est probablement un ordre placé par Trade.close()
-    }
-}
-
 bool Order::isContingent() const {
     if (!_parentTrade) {
         return false;

@@ -59,14 +59,6 @@ public:
           double slPoints = 0.0,
           double tpPoints = 0.0);
     
-    /**
-     * @brief Annule l'ordre
-     * 
-     * Retire l'ordre de la liste des ordres en attente du broker.
-     * Si l'ordre est un SL/TP lié à un trade, met également à jour les références dans le trade.
-     */
-    void cancel();
-    
     // Getters
     double size() const { return _size; } ///< Taille de l'ordre (positive pour achat, négative pour vente)
     double limit() const { return _limitPrice; } ///< Prix limite pour un ordre limite (0 si non applicable)

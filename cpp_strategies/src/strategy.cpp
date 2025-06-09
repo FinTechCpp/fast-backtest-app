@@ -171,29 +171,51 @@ bool Strategy::check_time() {
 }
 
 std::unique_ptr<Signal> Strategy::check_break_even() {
-    if (!in_position || !base_config.use_break_even) {
+    if (!position_info.in_position || !base_config.use_break_even) {
         return nullptr;
     }
-    
-    if (entry_price == 0.0 || position_pl_pct == 0.0) {
+
+    if (position_info.entry_price <= 0.0 || position_info.take_profit_price <= 0.0) {
+        // Données insuffisantes pour calculer le break-even
         return nullptr;
     }
+
+    // Récupérer la dernière bougie
+    const BasicCandle& latest_candle = candle_manager.get_latest_candle();
+    if (!latest_candle.date.is_valid()) {
+        return nullptr;  // Pas de bougie valide
+    }
     
-    // Calculate threshold based on take profit distance
-    double threshold_pct = (base_config.take_profit_distance / entry_price) * 100.0;
-    
-    // Check if we've reached the threshold to activate break-even
-    if (position_pl_pct > (base_config.break_even_threshold * threshold_pct)) {
-        logger->log_general("Activation break-even: P&L = " + std::to_string(position_pl_pct) + 
-                          "% > seuil (" + std::to_string(base_config.break_even_threshold * threshold_pct) + 
-                          "%)", LogLevel::INFO);
-                
+    // Calculer le prix seuil pour le break-even
+    double entry_to_tp_distance = position_info.take_profit_price - position_info.entry_price;
+    double break_even_price = position_info.entry_price + (entry_to_tp_distance * base_config.break_even_threshold);
+
+    double position_sign = (position_info.take_profit_price - position_info.entry_price) > 0 ? 1.0 : -1.0;
+    double reference_price = position_sign > 0 ? latest_candle.high : latest_candle.low;
+
+
+    // Pour un long: vérifie si high >= seuil
+    // Pour un short: vérifie si low <= seuil
+    bool threshold_reached = position_sign > 0 ? 
+                             reference_price >= break_even_price : 
+                             reference_price <= break_even_price;
+
+
+    if (threshold_reached) {
+        logger->log_general("Activation break-even: " + 
+                          std::string(position_sign > 0 ? "High" : "Low") + "=" + 
+                          std::to_string(reference_price) + 
+                          " " + std::string(position_sign > 0 ? ">=" : "<=") + 
+                          " seuil (" + std::to_string(break_even_price) + 
+                          "), " + std::to_string(base_config.break_even_threshold * 100) + 
+                          "% du chemin vers TP", LogLevel::INFO);
+
         auto be_signal = std::make_unique<Signal>();
         be_signal->action = "MOVE_SL";
-        be_signal->new_sl = entry_price;
+        be_signal->new_sl = position_info.entry_price;
         return be_signal;
     }
-    
+
     return nullptr;
 }
 
@@ -319,7 +341,7 @@ void Strategy::execute() {
     // Quick time check before executing anything else
     if (!check_time()) {
         logger->log_execution_step("Vérification horaires", false);
-        if (in_position) {
+        if (position_info.in_position) {
             logger->log_general("Hors horaires de trading - Liquidation de position", LogLevel::INFO);
         }
         
@@ -384,42 +406,32 @@ Strategy::Strategy(const StrategyBaseConfig& config)
 
 // Main update method
 Signal* Strategy::update_candle(const Candle& candle) {    
-    auto start_time = std::chrono::high_resolution_clock::now();
+    logger->start_chrono();
 
-    // TODO: C'est probablement a supprimer cela sert juste dans les stratégies de fille pour avoir les information extra (in_position, entry_price, position_size, position_pl_pct)
-    current_candle = candle;
+    position_info = candle.position;
 
     // Mettre à jour le logger avec la bougie actuelle
     logger->set_current_candle(candle);
     logger->clear();  // Vider les logs précédents
     
-    logger->log_general("Traitement bougie: " + candle.date.to_string() + 
-            " OHLC: " + std::to_string(candle.open) + "/" + 
-            std::to_string(candle.high) + "/" + 
-            std::to_string(candle.low) + "/" + 
-            std::to_string(candle.close), LogLevel::INFO);
+    logger->log_general("Traitement bougie: " + candle.ohlc.date.to_string() + 
+            " OHLC: " + std::to_string(candle.ohlc.open) + "/" + 
+            std::to_string(candle.ohlc.high) + "/" + 
+            std::to_string(candle.ohlc.low) + "/" + 
+            std::to_string(candle.ohlc.close), LogLevel::INFO);
     
     // Store the last trade P&L si fourni dans candle
-    if (candle.closed_trade_pnl != 0.0) {
-        last_trade_pnl = candle.closed_trade_pnl;
+    if (position_info.closed_trade_pnl != 0.0) {
+        last_trade_pnl = position_info.closed_trade_pnl;
         logger->log_general("PnL du trade fermé: " + std::to_string(last_trade_pnl), LogLevel::INFO);
     }
-    
-    // Update position information
-    in_position = candle.in_position;
-    entry_price = candle.entry_price;
-    position_size = candle.position_size;
-    position_pl_pct = candle.position_pl_pct;
 
-    if (in_position) {
-        logger->log_general("En position: Prix d'entrée=" + std::to_string(entry_price) + 
-                          ", Taille=" + std::to_string(position_size) + 
-                          ", P&L=" + std::to_string(position_pl_pct) + "%");
+    if (position_info.in_position) {
+        logger->log_general("En position: Prix d'entrée=" + std::to_string(position_info.entry_price));
     }
-    
+
     // Add to buffer for historical calculations
-    BasicCandle basic_candle(candle.date, candle.open, candle.high, candle.low, candle.close);
-    candle_manager.add_candle(basic_candle);
+    candle_manager.add_candle(candle.ohlc);
 
     
     // Check for break-even signal before executing strategy
@@ -429,14 +441,7 @@ Signal* Strategy::update_candle(const Candle& candle) {
                           std::to_string(be_signal->new_sl));
         signal = std::move(be_signal);
 
-        // Calculer le temps d'exécution avant de retourner
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        double duration_ms = duration.count() / 1000.0;
-        logger->log_execution_time(duration_ms);
-        
-        // Obtenir tous les logs complets et les envoyer dans un seul message de log
-        cpp_log(logger->get_all_logs(), logger->get_verbosity());
+        logger->finalize_and_send_logs();
 
         return signal.get();
     }
@@ -446,16 +451,7 @@ Signal* Strategy::update_candle(const Candle& candle) {
     execute();
     logger->log_execution_end();
 
-    // Arrêter le chronomètre et calculer la durée
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-    double duration_ms = duration.count() / 1000.0;
-    
-    // Logger le temps d'exécution
-    logger->log_execution_time(duration_ms);
-
-    // Obtenir tous les logs complets et les envoyer dans un seul message de log
-    cpp_log(logger->get_all_logs(), logger->get_verbosity());
+    logger->finalize_and_send_logs();
     
     return signal.get();
 }

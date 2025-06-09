@@ -76,23 +76,41 @@ struct BasicCandle {
         : date(dt), open(o), high(h), low(l), close(c) {}
 };
 
-// Structure de bougie
-struct Candle : public BasicCandle {
+// Structure pour les données de position/trading
+struct PositionInfo {
     bool in_position = false;
     double entry_price = 0.0;
-    double position_size = 0.0;
-    double position_pl_pct = 0.0;
+    double take_profit_price = 0.0;
+    // double position_pl_pct = 0.0;
     double closed_trade_pnl = 0.0;
+
+    PositionInfo() = default;
+
+    PositionInfo(bool in_pos, double entry, double tp, double sl, double closed_pnl = 0.0)
+        : in_position(in_pos), entry_price(entry), take_profit_price(tp), closed_trade_pnl(closed_pnl) {}
+};
+
+// Composition plutôt qu'héritage pour la structure utilisée dans les stratégies
+struct Candle {
+    BasicCandle ohlc;
+    PositionInfo position;
 
     Candle() = default;
 
+    // Constructeur pratique pour les données OHLC
     Candle(const DateTime& dt, double o, double h, double l, double c)
-        : BasicCandle(dt, o, h, l, c) {}
+        : ohlc(dt, o, h, l, c) {}
 
-    Candle(const DateTime& dt, double o, double h, double l, double c,
-           bool in_pos, double entry_price, double pos_size, double pos_pl_pct)
-        : BasicCandle(dt, o, h, l, c), in_position(in_pos), entry_price(entry_price),
-          position_size(pos_size), position_pl_pct(pos_pl_pct) {}
+    // Constructeur complet
+    Candle(const BasicCandle& basic, const PositionInfo& pos)
+        : ohlc(basic), position(pos) {}
+
+    // Accesseurs pratiques pour éviter d'écrire candle.ohlc.xxx
+    double open() const { return ohlc.open; }
+    double high() const { return ohlc.high; }
+    double low() const { return ohlc.low; }
+    double close() const { return ohlc.close; }
+    const DateTime& date() const { return ohlc.date; }
 };
 
 extern std::function<void(const std::string&, int)> g_py_log_callback;

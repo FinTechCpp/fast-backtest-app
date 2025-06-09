@@ -492,7 +492,7 @@ public:
             current_atrlog, 
             true,  // is_long = true 
             candle_manager, 
-            current_candle, 
+            candle_manager.get_latest_candle(), 
             logger
         );
         

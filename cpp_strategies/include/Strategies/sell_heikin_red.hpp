@@ -182,17 +182,17 @@ private:
         }
         
         // Update EMAs
-        current_ema_short = ema_short_calculator->update(current_candle);
-        current_ema_long = ema_long_calculator->update(current_candle);
-        
+        current_ema_short = ema_short_calculator->update(candle_manager.get_latest_candle());
+        current_ema_long = ema_long_calculator->update(candle_manager.get_latest_candle());
+
         // Update Stochastic
-        auto stoch_values = stochastic_calculator->update(current_candle);
+        auto stoch_values = stochastic_calculator->update(candle_manager.get_latest_candle());
         current_stoch_k = stoch_values.first;
         current_stoch_d = stoch_values.second;
         
         // Update ATR
-        current_atr = atr_calculator->update(current_candle);
-        
+        current_atr = atr_calculator->update(candle_manager.get_latest_candle());
+
         return true;
     }
 
@@ -297,7 +297,7 @@ public:
             current_atr, 
             false,  // is_long = false (SHORT)
             candle_manager, 
-            current_candle, 
+            candle_manager.get_latest_candle(), 
             logger
         );
         

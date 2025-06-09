@@ -117,30 +117,30 @@ public:
         const be::Candle& currentCandle = getData()->current();
         be::Date current_date = currentCandle.date;
         
-        candle.date.year = current_date.getYear();
-        candle.date.month = current_date.getMonth();
-        candle.date.day = current_date.getDay();
-        candle.date.time.hour = current_date.getHour();
-        candle.date.time.minute = current_date.getMinute();
-        candle.date.time.second = current_date.getSecond();
+        candle.ohlc.date.year = current_date.getYear();
+        candle.ohlc.date.month = current_date.getMonth();
+        candle.ohlc.date.day = current_date.getDay();
+        candle.ohlc.date.time.hour = current_date.getHour();
+        candle.ohlc.date.time.minute = current_date.getMinute();
+        candle.ohlc.date.time.second = current_date.getSecond();
         
         // Remplir les valeurs OHLC avec la nouvelle interface
-        candle.open = currentCandle.open;
-        candle.high = currentCandle.high;
-        candle.low = currentCandle.low;
-        candle.close = currentCandle.close;
-        
+        candle.ohlc.open = currentCandle.open;
+        candle.ohlc.high = currentCandle.high;
+        candle.ohlc.low = currentCandle.low;
+        candle.ohlc.close = currentCandle.close;
+
         // Remplir les informations de position
-        be::Position position = getPosition();
-        candle.in_position = position ? true : false;
-        candle.position_pl_pct = position ? position.plPercent() : 0.0;
-        // candle.entry_price = position ? position.entryPrice() : 0.0;
-        candle.position_size = position ? position.size() : 0.0;
-        
+        // be::Position position = getPosition();
+        // candle.position.in_position = position ? true : false;
+        // candle.position.position_pl_pct = position ? position.plPercent() : 0.0;
+        // // candle.position.entry_price = position ? position.entryPrice() : 0.0;
+        // candle.position.position_size = position ? position.size() : 0.0;
+
         // Ajouter le P&L du dernier trade fermé s'il y en a un
-        candle.closed_trade_pnl = 0.0;
+        candle.position.closed_trade_pnl = 0.0;
         if (last_trade_closed) {
-            candle.closed_trade_pnl = last_trade_pnl;
+            candle.position.closed_trade_pnl = last_trade_pnl;
             last_trade_closed = false;
             last_trade_pnl = 0.0;
         }
@@ -153,55 +153,55 @@ public:
             return; // Pas de signal à traiter
         }
         
-        // Traiter le signal s'il y en a un
-        if (signal->action == "LIQUIDATE") {
-            if (position) {
-                position.close();
-                std::cout << "Closing position due to LIQUIDATE signal" << std::endl;
-            }
-        }
-        else if (signal->action == "MOVE_SL") {
-            // Déplacer le stop loss
-            if (position) {
-                // position.updateSl(signal->new_sl);
-                std::cout << "Moving stop loss to " << signal->new_sl << std::endl;
-            }
-        }
-        else if (!position && signal->action == "BUY") {
-            // Exécuter un signal d'achat
-            buy(
-                signal->quantity,
-                0,
-                0,
-                0,
-                0,
-                signal->stop_loss, 
-                signal->take_profit
-                // signal->tag
-            );
+        // // Traiter le signal s'il y en a un
+        // if (signal->action == "LIQUIDATE") {
+        //     if (position) {
+        //         position.close();
+        //         std::cout << "Closing position due to LIQUIDATE signal" << std::endl;
+        //     }
+        // }
+        // else if (signal->action == "MOVE_SL") {
+        //     // Déplacer le stop loss
+        //     if (position) {
+        //         // position.updateSl(signal->new_sl);
+        //         std::cout << "Moving stop loss to " << signal->new_sl << std::endl;
+        //     }
+        // }
+        // else if (!position && signal->action == "BUY") {
+        //     // Exécuter un signal d'achat
+        //     buy(
+        //         signal->quantity,
+        //         0,
+        //         0,
+        //         0,
+        //         0,
+        //         signal->stop_loss, 
+        //         signal->take_profit
+        //         // signal->tag
+        //     );
 
-            std::cout << "Opening BUY position: Price=" << signal->price 
-                     << ", Size=" << signal->quantity
-                     << ", SL=" << signal->stop_loss
-                     << ", TP=" << signal->take_profit << std::endl;
-        }
-        else if (!position && signal->action == "SELL") {
-            // Exécuter un signal de vente
-            sell(
-                signal->quantity,
-                0,
-                0,
-                0,
-                0,
-                signal->stop_loss, 
-                signal->take_profit
-                // signal->tag
-            );
+        //     std::cout << "Opening BUY position: Price=" << signal->price 
+        //              << ", Size=" << signal->quantity
+        //              << ", SL=" << signal->stop_loss
+        //              << ", TP=" << signal->take_profit << std::endl;
+        // }
+        // else if (!position && signal->action == "SELL") {
+        //     // Exécuter un signal de vente
+        //     sell(
+        //         signal->quantity,
+        //         0,
+        //         0,
+        //         0,
+        //         0,
+        //         signal->stop_loss, 
+        //         signal->take_profit
+        //         // signal->tag
+        //     );
 
-            std::cout << "Opening SELL position: Price=" << signal->price 
-                     << ", Size=" << signal->quantity
-                     << ", SL=" << signal->stop_loss
-                     << ", TP=" << signal->take_profit << std::endl;
-        }
+        //     std::cout << "Opening SELL position: Price=" << signal->price 
+        //              << ", Size=" << signal->quantity
+        //              << ", SL=" << signal->stop_loss
+        //              << ", TP=" << signal->take_profit << std::endl;
+        // }
     }
 };

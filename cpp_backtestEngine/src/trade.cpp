@@ -42,7 +42,7 @@ void Trade::close(double portion) {
     
     // Créer un ordre pour fermer la position
     // Notez que nous passons this comme trade parent, le broker gèrera l'association
-    Order order = _broker->newOrder(closeSize, 0.0, 0.0, 0.0, 0.0, _tag);
+    Order order = _broker->newOrder(closeSize, 0.0, 0.0, 0.0, 0.0, _tag, 0.0, 0.0, shared_from_this());
 }
 
 double Trade::pl() const {
@@ -68,7 +68,7 @@ void Trade::sl(double price) {
     // Si price est 0, on annule l'ordre SL existant
     if (price == 0.0) {
         if (_slOrder) {
-            _slOrder->cancel();
+            _broker->cancelOrder(*_slOrder);
             _slOrder = nullptr;
         }
         return;
@@ -80,20 +80,20 @@ void Trade::sl(double price) {
     }
     
     // Vérifier que le prix est cohérent avec la direction du trade
-    if ((isLong() && price >= _entryPrice) || (isShort() && price <= _entryPrice)) {
-        throw std::invalid_argument("SL price must be below entry for long trades and above entry for short trades");
-    }
+    // if ((isLong() && price >= _entryPrice) || (isShort() && price <= _entryPrice)) {
+    //     throw std::invalid_argument("SL price must be below entry for long trades and above entry for short trades");
+    // }
     
     // Annuler l'ordre existant s'il y en a un
     if (_slOrder) {
-        _slOrder->cancel();
+        _broker->cancelOrder(*_slOrder);  // Méthode à ajouter au broker
         _slOrder = nullptr;
     }
     
     // Créer un nouvel ordre SL
     // Comme le broker est ami (friend) de la classe Trade, il peut accéder à _slOrder
     // directement et le modifier
-    Order slOrder = _broker->newOrder(-_size, 0.0, price, 0.0, 0.0, _tag);
+    Order slOrder = _broker->newOrder(-_size, 0.0, price, 0.0, 0.0, _tag, 0.0, 0.0, shared_from_this());
     _slOrder = std::make_shared<Order>(slOrder);
 }
 
@@ -105,7 +105,8 @@ void Trade::tp(double price) {
     // Si price est 0, on annule l'ordre TP existant
     if (price == 0.0) {
         if (_tpOrder) {
-            _tpOrder->cancel();
+            // Au lieu de cancel(), on annule directement l'association
+            _broker->cancelOrder(*_tpOrder);  // Méthode à ajouter au broker
             _tpOrder = nullptr;
         }
         return;
@@ -123,12 +124,12 @@ void Trade::tp(double price) {
     
     // Annuler l'ordre existant s'il y en a un
     if (_tpOrder) {
-        _tpOrder->cancel();
+        _broker->cancelOrder(*_tpOrder);  // Méthode à ajouter au broker
         _tpOrder = nullptr;
     }
     
-    // Créer un nouvel ordre TP
-    Order tpOrder = _broker->newOrder(-_size, price, 0.0, 0.0, 0.0, _tag);
+    // Créer un nouvel ordre TP avec shared_from_this() comme parent
+    Order tpOrder = _broker->newOrder(-_size, price, 0.0, 0.0, 0.0, _tag, 0.0, 0.0, shared_from_this());
     _tpOrder = std::make_shared<Order>(tpOrder);
 }
 

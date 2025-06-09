@@ -60,7 +60,6 @@ public:
     // Access properties
     double getEquity() const;
     std::shared_ptr<Data> getData() const;
-    Position getPosition() const;
     std::vector<Order> getOrders() const;
     std::vector<Trade> getTrades() const;
     std::vector<Trade> getClosedTrades() const;

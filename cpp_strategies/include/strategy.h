@@ -47,13 +47,9 @@ protected:
     StrategyBaseConfig base_config;
     CandleManager candle_manager;
     std::unique_ptr<LoggerManager> logger;
-    Candle current_candle; // TODO : a supprimer faut trouver un moyen de stocker ce qui est important dans le candle autrelment
+    // Candle current_candle; // TODO : a supprimer faut trouver un moyen de stocker ce qui est important dans le candle autrelment
+    PositionInfo position_info;
 
-    bool in_position = false;
-    double entry_price = 0.0;
-    double position_size = 0.0;
-    double position_pl_pct = 0.0;
-    
     // Signal components
     double buy_quantity = 0.0;
     double buy_price = 0.0;

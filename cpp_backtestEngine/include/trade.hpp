@@ -37,7 +37,7 @@ class Order;
  * - Un appel explicite à close()
  * - Une fermeture par le Broker (ex: lors de la finalisation d'un backtest)
  */
-class Trade {
+class Trade : public std::enable_shared_from_this<Trade> {
 public:
     /**
      * @brief Construit un nouveau Trade

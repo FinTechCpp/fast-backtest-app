@@ -5,7 +5,6 @@
 #include <functional>
 #include "order.hpp"
 #include "trade.hpp"
-#include "position.hpp"
 
 namespace be {
 
@@ -53,7 +52,6 @@ public:
     double cash() const { return _cash; }
     double equity() const;
     double marginAvailable() const;
-    Position position() const;
     std::vector<Order> orders() const { return _orders; }
     const std::vector<std::shared_ptr<Trade>>& trades() const { return _trades; }
     const std::vector<std::shared_ptr<Trade>>& closedTrades() const { return _closedTrades; }

@@ -134,15 +134,6 @@ Order Broker::newOrder(double size, double limit, double stop, double sl, double
     return order;
 }
 
-void Broker::cancelOrder(const Order& order) {
-    auto it = std::find_if(_orders.begin(), _orders.end(),
-        [&order](const Order& o) { return o == order; });
-        
-    if (it != _orders.end()) {
-        _orders.erase(it);
-    }
-}
-
 double Broker::lastPrice() const {
     return _data->currentClose();
 }
@@ -161,10 +152,6 @@ double Broker::marginAvailable() const {
         marginUsed += std::abs(trade->size()) * trade->entryPrice() / _leverage;
     }
     return std::max(0.0, equity() - marginUsed);
-}
-
-Position Broker::position() const {
-    return Position(const_cast<Broker*>(this)->shared_from_this());
 }
 
 double Broker::adjustedPrice(double size, double price) const {
@@ -379,21 +366,12 @@ void Broker::processOrders() {
                     double slPrice = order.sl();
                     double tpPrice = order.tp();
                     
-                    if (order.slPoints() > 0.0) {
-                        if (order.isLong()) {
-                            slPrice = price - order.slPoints();
-                        } else {
-                            slPrice = price + order.slPoints();
-                        }
-                    }
-                    
-                    if (order.tpPoints() > 0.0) {
-                        if (order.isLong()) {
-                            tpPrice = price + order.tpPoints();
-                        } else {
-                            tpPrice = price - order.tpPoints();
-                        }
-                    }
+                    // Calculate SL/TP prices using points if specified
+                    if (order.slPoints() > 0.0)
+                        slPrice = price - order.slPoints() * (order.isLong() ? 1 : -1);
+
+                    if (order.tpPoints() > 0.0)
+                        tpPrice = price + order.tpPoints() * (order.isLong() ? 1 : -1);
                     
                     // Ouvrir le trade
                     try {
@@ -549,7 +527,16 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     }
 }
 
-// cette methode est tres bien mais il faudrait mettre en commun avec processOrders() et mettre 
+void Broker::cancelOrder(const Order& order) {
+    auto it = std::find_if(_orders.begin(), _orders.end(),
+        [&order](const Order& o) { return o == order; });
+        
+    if (it != _orders.end()) {
+        _orders.erase(it);
+    }
+}
+
+// cette methode est tres bien mais il faudrait mettre en commun avec processOrders() et mettre
 // ce qui est en commun dans des fonction pour simplifier la lecture
 void Broker::finalizeOrders() {
     try {

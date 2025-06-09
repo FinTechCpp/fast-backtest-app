@@ -1,7 +1,6 @@
 #include "strategy.hpp"
 #include "broker.hpp"
 #include "data.hpp"
-#include "position.hpp"
 #include "trade.hpp"
 #include <algorithm>
 #include <stdexcept>
@@ -82,10 +81,6 @@ double Strategy::getEquity() const {
 
 std::shared_ptr<Data> Strategy::getData() const {
     return _data;
-}
-
-Position Strategy::getPosition() const {
-    return _broker->position();
 }
 
 std::vector<Order> Strategy::getOrders() const {

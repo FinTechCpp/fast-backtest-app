@@ -161,9 +161,6 @@ public:
         else if (signal->action == "MOVE_SL") {
             // Déplacer le stop loss
             last_trade->sl(signal->new_sl);
-
-            std::cout << "Déplacement du stop loss pour le trade en cours à " 
-                      << signal->new_sl << std::endl;
         }
         else if (trades.empty() && signal->action == "BUY") {
             // Exécuter un signal d'achat

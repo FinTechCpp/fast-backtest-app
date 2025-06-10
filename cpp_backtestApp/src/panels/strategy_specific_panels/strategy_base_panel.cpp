@@ -17,7 +17,7 @@ void StrategyBasePanel::initialize()
     // Période ATR commune (en haut du groupe)
     QFormLayout* atrLayout = new QFormLayout();
     m_widgets["atr_period"] = new QSpinBox();
-    static_cast<QSpinBox*>(m_widgets["atr_period"])->setRange(1, 100);
+    static_cast<QSpinBox*>(m_widgets["atr_period"])->setRange(1, 1000);
     static_cast<QSpinBox*>(m_widgets["atr_period"])->setValue(14);
     static_cast<QSpinBox*>(m_widgets["atr_period"])->setEnabled(false);
     atrLayout->addRow(new QLabel("Période ATR:"), m_widgets["atr_period"]);
@@ -41,7 +41,7 @@ void StrategyBasePanel::initialize()
     // Stop Loss Distance (fixe)
     m_widgets["stop_loss_distance"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setRange(0, 1000);
+    static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setRange(0, 10000);
     static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setSingleStep(1);
     static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setValue(20);
     slLayout->addRow(new QLabel("Distance [pts]:"), m_widgets["stop_loss_distance"]);
@@ -49,7 +49,7 @@ void StrategyBasePanel::initialize()
     // Paramètres ATR - Multiplicateur SL
     m_widgets["sl_atr_multiplier"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setRange(0.1, 100.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setRange(0.1, 1000.0);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setSingleStep(0.1);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setValue(2.0);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setEnabled(false);
@@ -57,14 +57,14 @@ void StrategyBasePanel::initialize()
     
     // Paramètres Min/Max SL
     m_widgets["sl_minmax_periods"] = new QSpinBox();
-    static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setRange(1, 100);
+    static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setRange(1, 1000);
     static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setValue(5);
     static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setEnabled(false);
     slLayout->addRow(new QLabel("Périodes Min/Max:"), m_widgets["sl_minmax_periods"]);
     
     m_widgets["sl_minmax_delta"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setRange(0.1, 100.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setRange(0.1, 1000.0);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setValue(5.0);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setEnabled(false);
     slLayout->addRow(new QLabel("Delta Min/Max:"), m_widgets["sl_minmax_delta"]);
@@ -72,7 +72,7 @@ void StrategyBasePanel::initialize()
     // SL minimum
     m_widgets["min_stop_loss_distance"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["min_stop_loss_distance"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["min_stop_loss_distance"])->setRange(0.1, 100.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["min_stop_loss_distance"])->setRange(0.1, 1000.0);
     static_cast<QDoubleSpinBox*>(m_widgets["min_stop_loss_distance"])->setValue(5.0);
     slLayout->addRow(new QLabel("SL Minimum [pts]:"), m_widgets["min_stop_loss_distance"]);
     
@@ -95,7 +95,7 @@ void StrategyBasePanel::initialize()
     // Take Profit Distance (fixe)
     m_widgets["take_profit_distance"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setRange(0, 1000);
+    static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setRange(0, 10000);
     static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setSingleStep(1);
     static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setValue(30);
     tpLayout->addRow(new QLabel("Distance [pts]:"), m_widgets["take_profit_distance"]);
@@ -103,7 +103,7 @@ void StrategyBasePanel::initialize()
     // Paramètres ATR - Multiplicateur TP
     m_widgets["tp_atr_multiplier"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setRange(0.1, 100.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setRange(0.1, 1000.0);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setSingleStep(0.1);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setValue(3.0);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setEnabled(false);
@@ -112,7 +112,7 @@ void StrategyBasePanel::initialize()
     // TP minimum
     m_widgets["min_take_profit_distance"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["min_take_profit_distance"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["min_take_profit_distance"])->setRange(0.1, 100.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["min_take_profit_distance"])->setRange(0.1, 1000.0);
     static_cast<QDoubleSpinBox*>(m_widgets["min_take_profit_distance"])->setValue(5.0);
     tpLayout->addRow(new QLabel("TP Minimum [pts]:"), m_widgets["min_take_profit_distance"]);
     
@@ -180,12 +180,11 @@ void StrategyBasePanel::initialize()
     
     m_widgets["daily_max_loss_percentage"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setRange(0.1, 50.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setRange(0.1, 100.0);
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setValue(2.0);
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setSuffix("%");
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setEnabled(false);
     riskLayout->addRow(new QLabel("Perte max journalière:"), m_widgets["daily_max_loss_percentage"]);
-    
     
     m_widgets["use_break_even"] = new QCheckBox("Activer Break Even");
     QObject::connect(static_cast<QCheckBox*>(m_widgets["use_break_even"]), 

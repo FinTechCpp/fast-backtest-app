@@ -206,7 +206,6 @@ inline std::ostream& operator<<(std::ostream& os, const StrategyBaseConfig& conf
     os << "  Risk percentage: " << config.risk_percentage << "%\n";
     os << "  Cash: " << config.cash << "\n";
     os << "  Max position %: " << config.max_position_percentage << "%\n";
-    os << "  Leverage limit: " << config.leverage_limit << "x\n";
     
     // Break-even parameters
     os << "  Use break-even: " << (config.use_break_even ? "Yes" : "No") << "\n";

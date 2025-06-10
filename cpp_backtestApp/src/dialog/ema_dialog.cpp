@@ -352,7 +352,7 @@ void EMADialog::onApply()
     }
     
     // 3. Mettre à jour le graphique
-    m_chartWidget->updateChart();
+    m_chartWidget->updateChartDisplay();
     
     // 4. Fermer la boîte de dialogue
     accept();
@@ -376,7 +376,7 @@ void EMADialog::onCancel()
     }
     
     // 3. Mettre à jour le graphique
-    m_chartWidget->updateChart();
+    m_chartWidget->updateChartDisplay();
     
     // 4. Fermer la boîte de dialogue
     reject();

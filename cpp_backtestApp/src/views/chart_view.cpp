@@ -186,10 +186,10 @@ void ChartView::setupUI()
             m_chartWidget->setResizing(true);
         });
         
-        connect(m_app, &App::windowResizeFinished, m_chartWidget, [this](QSize size) {
-            m_chartWidget->setResizing(false);
-            m_chartWidget->onWindowResized(size);
-        });
+        // connect(m_app, &App::windowResizeFinished, m_chartWidget, [this](QSize size) {
+        //     m_chartWidget->setResizing(false);
+        //     m_chartWidget->onWindowResized(size);
+        // });
     }
 }
 
@@ -267,7 +267,7 @@ void ChartView::onRSIAdded(int id, int period)
     
     // Mettre à jour le graphique
     if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
+        m_chartWidget->updateChartDisplay();
     }
 }
 
@@ -282,7 +282,7 @@ void ChartView::onRSIChanged(int id, int period)
     
     // Mettre à jour le graphique
     if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
+        m_chartWidget->updateChartDisplay();
     }
 }
 
@@ -290,11 +290,6 @@ void ChartView::onRSIRemoved(int id)
 {
     qDebug() << "RSI supprimé:" << "id=" << id;
     refreshIndicatorsList();
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
-    }
 }
 
 void ChartView::onEMAAdded(int id, int period)
@@ -307,7 +302,7 @@ void ChartView::onEMAAdded(int id, int period)
     
     // Mettre à jour le graphique
     if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
+        m_chartWidget->updateChartDisplay();
     }
 }
 
@@ -322,7 +317,7 @@ void ChartView::onEMAChanged(int id, int period)
     
     // Mettre à jour le graphique
     if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
+        m_chartWidget->updateChartDisplay();
     }
 }
 
@@ -330,11 +325,6 @@ void ChartView::onEMARemoved(int id)
 {
     qDebug() << "EMA supprimé:" << "id=" << id;
     refreshIndicatorsList();
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
-    }
 }
 
 void ChartView::onEditEMA()
@@ -364,7 +354,7 @@ void ChartView::onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int 
     
     // Mettre à jour le graphique
     if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
+        m_chartWidget->updateChartDisplay();
     }
 }
 
@@ -379,21 +369,16 @@ void ChartView::onStochasticChanged(int id, int fastKPeriod, int slowKPeriod, in
         m_indicatorLabels[id]->setText(name);
     }
     
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
-    }
+    // // Mettre à jour le graphique
+    // if (m_chartWidget->hasValidData()) {
+    //     m_chartWidget->updateChart();
+    // }
 }
 
 void ChartView::onStochasticRemoved(int id)
 {
     qDebug() << "Stochastic supprimé:" << "id=" << id;
     refreshIndicatorsList();
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChart();
-    }
 }
 
 void ChartView::createIndicatorWidgets(int id, const QString &name)
@@ -544,6 +529,12 @@ void ChartView::refreshIndicatorsList()
         
         m_indicatorsLayout->addWidget(emaConfigWidget);
     }
+
+    // todo a supprimer c'est le chart qui doit etre autonome
+    if (m_chartWidget->hasValidData()) {
+        // Mettre à jour le graphique après avoir rafraîchi la liste des indicateurs
+        m_chartWidget->updateChartDisplay();
+    }
 }
 
 void ChartView::updateData(BacktestResults* results)
@@ -596,11 +587,6 @@ void ChartView::onChartTypeChanged(int index)
         
         // Mettre à jour le type de graphique dans le widget
         m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
-            
-        // Si nous avons déjà des données valides, mettre à jour le graphique
-        if (m_chartWidget->isVisible()) {
-            m_chartWidget->updateChart();
-        }
     }
 }
 

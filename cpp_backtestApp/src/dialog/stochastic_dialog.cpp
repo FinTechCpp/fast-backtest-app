@@ -184,7 +184,7 @@ void StochasticDialog::onDColorButtonClicked()
 void StochasticDialog::onApply()
 {
     m_chartWidget->setStochasticConfig(m_stochasticId, m_currentStochastic);
-    m_chartWidget->updateChart();
+    m_chartWidget->updateChartDisplay();
     accept();
 }
 
@@ -194,7 +194,7 @@ void StochasticDialog::onCancel()
     m_chartWidget->setStochasticConfig(m_stochasticId, m_originalStochastic);
     
     // Mettre à jour le graphique
-    m_chartWidget->updateChart();
+    m_chartWidget->updateChartDisplay();
     
     // Fermer la boîte de dialogue
     reject();

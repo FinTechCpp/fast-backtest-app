@@ -72,25 +72,23 @@ ChartWidget::~ChartWidget()
     qDebug() << "ChartWidget détruit";
 }
 
-void ChartWidget::setBacktestResults(const BacktestResults* results)
-{
+void ChartWidget::setBacktestResults(const BacktestResults* results) {
     if (!results) {
         qWarning() << "Tentative de définir des résultats de backtest nuls";
         return;
     }
 
     m_backtestData = results->data;
+    m_trades = results->stats.trades;
 
     prepareTimestampsCache();
     updateHeikinAshiCache();
     updateIndicatorCache();
-
-    m_trades = results->stats.trades;
     convertEquityCurve(results->stats.equityCurve, m_backtestData);
 
     // Mettre à jour le graphique si nous avons des données valides
     if (hasValidData()) {
-        updateChart();
+        updateChartDisplay(false, false);
     }
 }
 
@@ -108,96 +106,108 @@ void ChartWidget::setChartType(ChartType chartType)
 
     // Si nous avons déjà des données, mettre à jour le graphique
     if (hasValidData())
-        updateChart();
+        updateChartDisplay(true, true);
 }
 
-void ChartWidget::createChart()
-{
-    if (!hasValidData()) {
-        qWarning() << "Tentative de création d'un graphique sans données valides";
-        return;
+bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
+    if (!hasValidData() || !m_chartViewer) {
+        return false;
     }
-
-    qDebug() << "Création du graphique...";
     
     try {
-        // Convertir les données en DoubleArray
-        DoubleArray timeStamps = vectorToDoubleArray(m_timestampsCache);
-        DoubleArray volumeData = vectorToDoubleArray(m_backtestData->getVolume());
-
-        // Si le type est HeikinAshi, utiliser les données du cache
-        // if (m_config.chartType == ChartType::HeikinAshi) {
-        //     // Vérifier si le cache est valide, sinon le recalculer
-        //     if (!m_heikinAshiCache.isValid) {
-        //         updateHeikinAshiCache();
-        //     }
+        // Sauvegarder l'état actuel du viewport si nécessaire
+        double currentLeft = 0.0;
+        double currentWidth = 1.0;
+        
+        if (preserveViewport && m_chartViewer) {
+            currentLeft = m_chartViewer->getViewPortLeft();
+            currentWidth = m_chartViewer->getViewPortWidth();
+        }
+        
+        // Nettoyer le graphique précédent
+        if (m_financeChart) {
+            delete m_financeChart;
+            m_financeChart = nullptr;
+        }
+        
+        // Déterminer les indices de début et fin basés sur le viewport
+        int startIndex = 0;
+        int pointsToShow = static_cast<int>(m_timestampsCache.size());
+        
+        if (useViewport) {
+            int totalPoints = pointsToShow;
+            double viewPortLeft = m_chartViewer->getViewPortLeft();
+            double viewPortWidth = m_chartViewer->getViewPortWidth();
             
-        //     // Convertir les données du cache en DoubleArray
-        //     DoubleArray haOpenArray = vectorToDoubleArray(m_heikinAshiCache.open);
-        //     DoubleArray haHighArray = vectorToDoubleArray(m_heikinAshiCache.high);
-        //     DoubleArray haLowArray = vectorToDoubleArray(m_heikinAshiCache.low);
-        //     DoubleArray haCloseArray = vectorToDoubleArray(m_heikinAshiCache.close);
+            startIndex = (int)floor(viewPortLeft * totalPoints);
+            int endIndex = (int)ceil((viewPortLeft + viewPortWidth) * totalPoints) - 1;
             
-        //     // Configurer le range complet pour le viewport
-        //     m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
+            // S'assurer que les indices sont dans les limites
+            startIndex = std::max(0, std::min(startIndex, totalPoints - 1));
+            endIndex = std::max(startIndex, std::min(endIndex, totalPoints - 1));
             
-        //     // Créer le graphique avec les données Heikin-Ashi
-        //     m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
-        //                               haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
-        // } else {
-        //     // Pour les autres types, utiliser les données OHLC standards
-        //     DoubleArray openData = vectorToDoubleArray(m_backtestData->getOpen());
-        //     DoubleArray highData = vectorToDoubleArray(m_backtestData->getHigh());
-        //     DoubleArray lowData = vectorToDoubleArray(m_backtestData->getLow());
-        //     DoubleArray closeData = vectorToDoubleArray(m_backtestData->getClose());
-
-        //     // Configurer le range complet pour le viewport
-        //     m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
+            pointsToShow = endIndex - startIndex + 1;
+        }
+        
+        // Extraire les données à afficher
+        DoubleArray timeStamps;
+        DoubleArray openData, highData, lowData, closeData, volumeData;
+        
+        if (startIndex < static_cast<int>(m_timestampsCache.size())) {
+            timeStamps = DoubleArray(&m_timestampsCache[startIndex], pointsToShow);
+            volumeData = DoubleArray(&m_backtestData->getVolume()[startIndex], pointsToShow);
             
-        //     // Créer le graphique avec les données standard
-        //     m_financeChart = drawChart(timeStamps, highData, lowData, 
-        //                               openData, closeData, volumeData, m_config.chartWidth);
-        // }
-        // Afficher toutes les données
-        m_chartViewer->setViewPortWidth(1.0);
-        m_chartViewer->setViewPortLeft(0);
-
+            // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
+            if (m_config.chartType == ChartType::HeikinAshi) {
+                // Vérifier si le cache est valide
+                if (!m_heikinAshiCache.isValid) {
+                    updateHeikinAshiCache();
+                }
+                
+                // Utiliser les données Heikin-Ashi
+                openData = DoubleArray(&m_heikinAshiCache.open[startIndex], pointsToShow);
+                highData = DoubleArray(&m_heikinAshiCache.high[startIndex], pointsToShow);
+                lowData = DoubleArray(&m_heikinAshiCache.low[startIndex], pointsToShow);
+                closeData = DoubleArray(&m_heikinAshiCache.close[startIndex], pointsToShow);
+            } else {
+                // Utiliser les données OHLC standards
+                openData = DoubleArray(&m_backtestData->getOpen()[startIndex], pointsToShow);
+                highData = DoubleArray(&m_backtestData->getHigh()[startIndex], pointsToShow);
+                lowData = DoubleArray(&m_backtestData->getLow()[startIndex], pointsToShow);
+                closeData = DoubleArray(&m_backtestData->getClose()[startIndex], pointsToShow);
+            }
+        } else {
+            // Pas de données à afficher
+            return false;
+        }
+        
+        // Créer le graphique
+        m_financeChart = drawChart(timeStamps, highData, lowData, openData, closeData, 
+                                  volumeData, m_config.chartWidth);
+        
+        // Configurer le viewport
+        if (!useViewport) {
+            // Afficher toutes les données
+            m_chartViewer->setViewPortWidth(1.0);
+            m_chartViewer->setViewPortLeft(0);
+        } else if (preserveViewport) {
+            // Restaurer le viewport précédent
+            m_chartViewer->setViewPortLeft(currentLeft);
+            m_chartViewer->setViewPortWidth(currentWidth);
+        }
+        
         // Mettre à jour l'affichage
         m_chartViewer->updateViewPort(true, false);
         
-        // Émettre un signal pour indiquer que le graphique a été créé
-        emit chartCreated();
+        // Émettre un signal si c'est une création initiale
+        if (!useViewport) {
+            emit chartCreated();
+        }
         
+        return true;
     } catch (const std::exception& e) {
-        qCritical() << "Erreur lors de la création du graphique:" << e.what();
-    }
-}
-
-void ChartWidget::updateChart()
-{
-    // Cette méthode recréera le graphique
-    if (m_financeChart) {
-        delete m_financeChart;
-        m_financeChart = nullptr;
-    }
-    
-    // Sauvegarder l'état actuel du viewport
-    double currentLeft = 0;
-    double currentWidth = 1.0;
-    
-    if (m_chartViewer) {
-        currentLeft = m_chartViewer->getViewPortLeft();
-        currentWidth = m_chartViewer->getViewPortWidth();
-    }
-    
-    // Recréer le graphique
-    createChart();
-    
-    // Restaurer le viewport
-    if (m_chartViewer) {
-        m_chartViewer->setViewPortLeft(currentLeft);
-        m_chartViewer->setViewPortWidth(currentWidth);
-        m_chartViewer->updateViewPort(true, false);
+        qCritical() << "Erreur lors de la création/mise à jour du graphique:" << e.what();
+        return false;
     }
 }
 
@@ -240,10 +250,10 @@ bool ChartWidget::hasValidData() const {
 void ChartWidget::onViewPortChanged()
 {
     // Redessiner le graphique avec le nouveau viewport
-    drawChartWithViewport();
-    
+    updateChartDisplay(true, true);
+
     // Émettre un signal pour indiquer que le viewport a changé
-    emit viewPortChanged();
+    // emit viewPortChanged();
 }
 
 void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
@@ -457,9 +467,8 @@ int ChartWidget::addRSI(int period)
     emit rsiAdded(rsi.id, period);
     
     // Mettre à jour le graphique
-    if (hasValidData()) {
-        updateChart();
-    }
+    if (hasValidData())
+        updateChartDisplay(true, true);
     
     return rsi.id;
 }
@@ -480,7 +489,7 @@ bool ChartWidget::setRSIConfig(int id, const RSIInstance &config)
 
     // Mettre à jour le graphique
     if (hasValidData())
-        updateChart();
+        updateChartDisplay(true, true);
 
     return true;
 }
@@ -502,7 +511,7 @@ bool ChartWidget::removeRSI(int id)
     
     // Mettre à jour le graphique
     if (hasValidData() && m_financeChart) {
-        updateChart();
+        updateChartDisplay(true, true);
     }
     
     return true;
@@ -528,7 +537,7 @@ int ChartWidget::addEMA(int period)
     
     // Mettre à jour le graphique
     if (hasValidData()) {
-        updateChart();
+        updateChartDisplay(true, true);
     }
     
     return ema.id;
@@ -550,7 +559,7 @@ bool ChartWidget::setEMAConfig(int id, const EMAInstance &config)
 
     // Mettre à jour le graphique
     if (hasValidData())
-        updateChart();
+        updateChartDisplay(true, true);
 
     return true;
 }
@@ -572,7 +581,7 @@ bool ChartWidget::removeEMA(int id)
     
     // Mettre à jour le graphique
     if (hasValidData() && m_financeChart) {
-        updateChart();
+        updateChartDisplay(true, true);
     }
     
     return true;
@@ -602,7 +611,7 @@ int ChartWidget::addStochastic(int fastKPeriod, int slowKPeriod, int slowDPeriod
     
     // Mettre à jour le graphique
     if (hasValidData()) {
-        updateChart();
+        updateChartDisplay(true, true);
     }
     
     return stochastic.id;
@@ -624,7 +633,7 @@ bool ChartWidget::setStochasticConfig(int id, const StochasticInstance& config)
 
     // Mettre à jour le graphique
     if (hasValidData())
-        updateChart();
+        updateChartDisplay(true, true);
 
     return true;
 }
@@ -646,7 +655,7 @@ bool ChartWidget::removeStochastic(int id)
     
     // Mettre à jour le graphique
     if (hasValidData() && m_financeChart) {
-        updateChart();
+        updateChartDisplay(true, true);
     }
     
     return true;
@@ -905,130 +914,55 @@ void ChartWidget::prepareTimestampsCache() {
     }
 }
 
-void ChartWidget::onWindowResized(QSize newSize)
-{
-    // Apply any pending resize
-    if (!m_pendingResize.isNull()) {
-        newSize = m_pendingResize;
-        m_pendingResize = QSize();
-    }
+// void ChartWidget::onWindowResized(QSize newSize)
+// {
+//     // Apply any pending resize
+//     if (!m_pendingResize.isNull()) {
+//         newSize = m_pendingResize;
+//         m_pendingResize = QSize();
+//     }
     
-    // Only update if width is valid
-    if (newSize.width() > 10) {
-        m_config.chartWidth = newSize.width() - 10;
+//     // Only update if width is valid
+//     if (newSize.width() > 10) {
+//         m_config.chartWidth = newSize.width() - 10;
         
-        // Update the chart if we have valid data
-        if (hasValidData() && m_chartViewer) {
-            // Save current viewport state
-            double currentLeft = m_chartViewer->getViewPortLeft();
-            double currentWidth = m_chartViewer->getViewPortWidth();
+//         // Update the chart if we have valid data
+//         if (hasValidData() && m_chartViewer) {
+//             // Save current viewport state
+//             double currentLeft = m_chartViewer->getViewPortLeft();
+//             double currentWidth = m_chartViewer->getViewPortWidth();
             
-            // Redraw the chart
-            drawChartWithViewport();
+//             // Redraw the chart
+//             drawChartWithViewport();
             
-            // Restore viewport state
-            m_chartViewer->setViewPortLeft(currentLeft);
-            m_chartViewer->setViewPortWidth(currentWidth);
-            m_chartViewer->updateViewPort(true, false);
-        }
-    }
-}
+//             // Restore viewport state
+//             m_chartViewer->setViewPortLeft(currentLeft);
+//             m_chartViewer->setViewPortWidth(currentWidth);
+//             m_chartViewer->updateViewPort(true, false);
+//         }
+//     }
+// }
 
 void ChartWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
+    QSize newSize = event->size();
     
     // Don't update chart while resizing - wait until the resize is finished
     if (m_isResizing) {
         // Just store the new size for later
-        m_pendingResize = event->size();
+        m_pendingResize = newSize;
         return;
     }
     
-    // If not currently in resize operation, update immediately
-    QSize newSize = event->size();
-    
-    // Update chart width
-    if (newSize.width() > 10) {
+    // Update chart width if it's significant
+    if (newSize.width() > 10 && std::abs(newSize.width() - m_config.chartWidth) > 5) {
         m_config.chartWidth = newSize.width() - 10;
         
-        // Update the chart if we have valid data
-        if (hasValidData() && m_chartViewer) {
-            // Save current viewport state
-            double currentLeft = m_chartViewer->getViewPortLeft();
-            double currentWidth = m_chartViewer->getViewPortWidth();
-            
-            // Redraw the chart
-            drawChartWithViewport();
-            
-            // Restore viewport state
-            m_chartViewer->setViewPortLeft(currentLeft);
-            m_chartViewer->setViewPortWidth(currentWidth);
-            m_chartViewer->updateViewPort(true, false);
+        // Update only if we have valid data and the chart exists
+        if (hasValidData() && m_chartViewer && m_financeChart) {
+            updateChartDisplay(true, true);
         }
-    }
-}
-
-void ChartWidget::drawChartWithViewport()
-{
-    if (!hasValidData() || !m_chartViewer) {
-        return;
-    }
-    
-    try {
-        // Calculer les indices de début et fin basés sur le viewport
-        int totalPoints = static_cast<int>(m_timestampsCache.size());
-        
-        double viewPortLeft = m_chartViewer->getViewPortLeft();
-        double viewPortWidth = m_chartViewer->getViewPortWidth();
-        
-        int startIndex = (int)floor(viewPortLeft * totalPoints);
-        int endIndex = (int)ceil((viewPortLeft + viewPortWidth) * totalPoints) - 1;
-        
-        // S'assurer que les indices sont dans les limites
-        startIndex = std::max(0, std::min(startIndex, totalPoints - 1));
-        endIndex = std::max(startIndex, std::min(endIndex, totalPoints - 1));
-        
-        int pointsToShow = endIndex - startIndex + 1;
-        
-        // Extraire les données visibles pour les prix
-        DoubleArray timeStamps = DoubleArray(&m_timestampsCache[startIndex], pointsToShow);
-        DoubleArray volumeData = DoubleArray(&m_backtestData->getVolume()[startIndex], pointsToShow);
-
-
-        // Si le type est HeikinAshi, utiliser le cache préalablement calculé
-        if (m_config.chartType == ChartType::HeikinAshi) {
-            // Vérifier si le cache est valide, sinon le recalculer
-            if (!m_heikinAshiCache.isValid) {
-                updateHeikinAshiCache();
-            }
-            
-            // Utiliser les données du cache pour la plage visible
-            DoubleArray haOpenArray = DoubleArray(&m_heikinAshiCache.open[startIndex], pointsToShow);
-            DoubleArray haHighArray = DoubleArray(&m_heikinAshiCache.high[startIndex], pointsToShow);
-            DoubleArray haLowArray = DoubleArray(&m_heikinAshiCache.low[startIndex], pointsToShow);
-            DoubleArray haCloseArray = DoubleArray(&m_heikinAshiCache.close[startIndex], pointsToShow);
-            
-            // Créer le graphique avec les données Heikin-Ashi
-            m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
-                                      haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
-        } else {
-            // Pour les autres types, utiliser les données OHLC standards
-            DoubleArray openData = DoubleArray(&m_backtestData->getOpen()[startIndex], pointsToShow);
-            DoubleArray highData = DoubleArray(&m_backtestData->getHigh()[startIndex], pointsToShow);
-            DoubleArray lowData = DoubleArray(&m_backtestData->getLow()[startIndex], pointsToShow);
-            DoubleArray closeData = DoubleArray(&m_backtestData->getClose()[startIndex], pointsToShow);
-
-            // Créer le graphique
-            m_financeChart = drawChart(timeStamps, highData, lowData, 
-                                      openData, closeData, volumeData, m_config.chartWidth);
-        }
-        
-        // Mettre à jour l'affichage
-        m_chartViewer->updateDisplay();
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur dans drawChartWithViewport:" << e.what();
     }
 }
 

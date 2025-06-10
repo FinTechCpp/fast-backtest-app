@@ -187,7 +187,7 @@ void RSIDialog::onApply()
     // m_chartWidget->setRSIUpperColor(m_rsiId, m_currentRsi.upperColor);
     // m_chartWidget->setRSILowerColor(m_rsiId, m_currentRsi.lowerColor);
 
-    m_chartWidget->updateChart();
+    m_chartWidget->updateChartDisplay();
 
     accept();
 }
@@ -198,7 +198,7 @@ void RSIDialog::onCancel()
     m_chartWidget->setRSIConfig(m_rsiId, m_originalRsi);
     
     // Mettre à jour le graphique
-    m_chartWidget->updateChart();
+    m_chartWidget->updateChartDisplay();
     
     // Fermer la boîte de dialogue
     reject();

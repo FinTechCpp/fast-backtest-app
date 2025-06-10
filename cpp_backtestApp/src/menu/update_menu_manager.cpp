@@ -259,7 +259,6 @@ void UpdateMenuManager::onUpdateFailed(const QString& error)
 }
 
 // Ajoutez les méthodes qui manquent
-
 void UpdateMenuManager::checkForUpdatesAuto()
 {
     // Vérification silencieuse (sans UI)

@@ -11,6 +11,7 @@
 #include "data.hpp"
 #include "trade.hpp"
 #include "components/technical_indicators.h"
+#include "components/backtest_results.h"
 
 // Include ChartDirector headers
 #include "qchartviewer.h"
@@ -95,10 +96,8 @@ public:
     
     // ======== API Publique ========
     // Méthodes d'initialisation des données
-    void setBacktestData(const std::shared_ptr<be::Data>& data);
-    void setBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);
-    void setEquityCurve(const std::vector<double>& equityCurve);
-    
+    void setBacktestResults(const BacktestResults* results);
+
     // Configuration et contrôle du graphique
     void setChartType(ChartType chartType);
     ChartType getChartType() const { return m_config.chartType; }

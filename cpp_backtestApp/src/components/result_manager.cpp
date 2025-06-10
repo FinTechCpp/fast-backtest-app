@@ -30,21 +30,24 @@ void ResultManager::updateAllViews(BacktestResults* results)
 {
     QTime start = QTime::currentTime();
     qDebug() << "updateAllViews appelé avec BacktestResults:" << results;
-    
+
     try {
         for (auto it = m_views.begin(); it != m_views.end(); ++it) {
             BaseView* view = it.value();
             if (view) {
+                QTime viewStart = QTime::currentTime();
                 view->updateData(results);  // Mise à jour pour utiliser la nouvelle signature
+                int viewElapsed = viewStart.msecsTo(QTime::currentTime());
+                std::cout << "Vue '" << it.key().toStdString() << "' mise à jour en " << viewElapsed << " ms" << std::endl;
             }
         }
-        
+
         qInfo() << "Toutes les vues mises à jour avec succès";
     }
     catch (const std::exception& e) {
         qCritical() << "Erreur lors de la mise à jour des vues:" << e.what();
     }
-    
+
     int elapsed = start.msecsTo(QTime::currentTime());
     qInfo() << "ResultManager::updateAllViews() took" << elapsed << "ms";
 }

@@ -72,47 +72,19 @@ ChartWidget::~ChartWidget()
     qDebug() << "ChartWidget détruit";
 }
 
-void ChartWidget::setBacktestData(const std::shared_ptr<be::Data>& data) {
-    if (!data) {
-        qWarning() << "Tentative de définir des données de backtest nulles";
+void ChartWidget::setBacktestResults(const BacktestResults* results)
+{
+    if (!results) {
+        qWarning() << "Tentative de définir des résultats de backtest nuls";
         return;
     }
 
-    m_backtestData = data;
-    
-    // Convertir les données en format interne
-    convertBacktestData(data);
-    
+    m_backtestData = results->data;
+    convertBacktestData(m_backtestData);
+    m_trades = results->stats.trades;
+    convertEquityCurve(results->stats.equityCurve, m_backtestData);
+
     // Mettre à jour le graphique si nous avons des données valides
-    if (hasValidData()) {
-        updateChart();
-    }
-}
-
-void ChartWidget::setBacktestTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
-    if (trades.empty()) {
-        qWarning() << "Tentative de définir une liste de trades vide";
-        return;
-    }
-    
-    m_trades = trades;
-    
-    // Mettre à jour le graphique uniquement si nous avons déjà des données de prix valides
-    if (hasValidData()) {
-        updateChart();
-    }
-}
-
-void ChartWidget::setEquityCurve(const std::vector<double>& equityCurve) {
-    if (equityCurve.empty()) {
-        qWarning() << "Tentative de définir une courbe d'équité vide";
-        return;
-    }
-    
-    // Convertir la courbe d'équité
-    convertEquityCurve(equityCurve, m_backtestData);
-    
-    // Mettre à jour le graphique
     if (hasValidData()) {
         updateChart();
     }

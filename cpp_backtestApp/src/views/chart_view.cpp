@@ -567,10 +567,22 @@ void ChartView::updateData(BacktestResults* results)
     
 
     
-    // Passer directement les objets du backtest au ChartWidget
-    m_chartWidget->setBacktestData(results->data);
-    m_chartWidget->setBacktestTrades(results->stats.trades);
-    m_chartWidget->setEquityCurve(results->stats.equityCurve);
+    // Mesurer et afficher le temps de chaque méthode avec std::cout
+    // QTime viewStart = QTime::currentTime();
+    // m_chartWidget->setBacktestData(results->data);
+    // std::cout << "[ChartView] setBacktestData: " << viewStart.msecsTo(QTime::currentTime()) << " ms" << std::endl;
+
+    // viewStart = QTime::currentTime();
+    // m_chartWidget->setBacktestTrades(results->stats.trades);
+    // std::cout << "[ChartView] setBacktestTrades: " << viewStart.msecsTo(QTime::currentTime()) << " ms" << std::endl;
+
+    // viewStart = QTime::currentTime();
+    // m_chartWidget->setEquityCurve(results->stats.equityCurve);
+    // std::cout << "[ChartView] setEquityCurve: " << viewStart.msecsTo(QTime::currentTime()) << " ms" << std::endl;
+
+    QTime viewStart = QTime::currentTime();
+    m_chartWidget->setBacktestResults(results);
+    std::cout << "[ChartView] setBacktestResults: " << viewStart.msecsTo(QTime::currentTime()) << " ms" << std::endl;
 
     m_dataExtracted = true;
     

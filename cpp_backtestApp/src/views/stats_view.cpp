@@ -323,7 +323,7 @@ void StatsView::updateData(BacktestResults* results)
         return;
     }
 
-    std::cout << m_currentResults->stats << std::endl;
+    // std::cout << m_currentResults->stats << std::endl;
 
     try {
         // Créer les tables si ce n'est pas déjà fait

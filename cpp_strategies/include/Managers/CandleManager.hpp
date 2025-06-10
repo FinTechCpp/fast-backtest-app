@@ -85,52 +85,21 @@ private:
 public:
     // Constructeur avec paramètres de gestion du buffer
     CandleManager(size_t max_size = 200, size_t threshold = 250, size_t target = 180) 
-        : max_buffer_size(max_size), hysteresis_threshold(threshold), clean_target_size(target) {}
+        : max_buffer_size(max_size), hysteresis_threshold(threshold), clean_target_size(target) {
+            candle_buffer.reserve(max_buffer_size);
+            ha_buffer.reserve(max_buffer_size);
+        }
     
     // Ajouter une nouvelle bougie (BasicCandle)
     void add_candle(const BasicCandle& candle) {
-        // Vérifier si une bougie avec la même date existe déjà
-        auto it = std::find_if(candle_buffer.begin(), candle_buffer.end(),
-                             [&candle](const BasicCandle& c) { 
-                                 return c.date == candle.date; 
-                             });
+        // Nouvelle bougie
+        candle_buffer.push_back(candle);
         
-        if (it != candle_buffer.end()) {
-            // Bougie existante mise à jour
-            *it = candle;
-            
-            // On doit recalculer le buffer HA à partir de cette position
-            size_t pos = std::distance(candle_buffer.begin(), it);
-            if (pos < ha_buffer.size()) {
-                // Supprimer les bougies HA à partir de cette position
-                ha_buffer.resize(pos);
-                
-                // Recalculer les bougies HA à partir d'ici
-                for (size_t i = pos; i < candle_buffer.size(); ++i) {
-                    add_heikin_ashi_candle(candle_buffer[i]);
-                }
-            }
-        } else {
-            // Nouvelle bougie
-            candle_buffer.push_back(candle);
-            
-            // Trier si nécessaire (généralement pas besoin si les données arrivent déjà triées)
-            if (candle_buffer.size() > 1 && candle_buffer[candle_buffer.size()-2].date > candle.date) {
-                std::sort(candle_buffer.begin(), candle_buffer.end(), 
-                         [](const BasicCandle& a, const BasicCandle& b) {
-                             return a.date < b.date;
-                         });
-                
-                // Si on a trié, il faut recalculer tout le buffer HA
-                recalculate_all_heikin_ashi();
-            } else {
-                // Calcul incrémental pour la nouvelle bougie
-                add_heikin_ashi_candle(candle);
-            }
-            
-            // Vérifier et nettoyer les buffers si nécessaire
-            check_and_clean_buffers();
-        }
+        // Calcul incrémental pour la nouvelle bougie
+        add_heikin_ashi_candle(candle);
+        
+        // Vérifier et nettoyer les buffers si nécessaire
+        check_and_clean_buffers();
     }
     
     // Récupérer la dernière bougie

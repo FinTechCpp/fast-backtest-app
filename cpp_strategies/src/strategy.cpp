@@ -118,56 +118,59 @@ void Strategy::update_daily_pnl_tracking() {
 // Méthode pour vérifier si on est dans les horaires de trading
 bool Strategy::check_time() {
     if (!candle_manager.get_latest_candle().date.is_valid()) {
-        // Utiliser log_time_check avec false pour indiquer qu'on est hors horaires
         logger->log_time_check(false, "Date de bougie invalide", LogLevel::WARNING);
         return false;
     }
-    
-    // Vérifier si la date a changé depuis la dernière vérification
-    if (candle_manager.get_latest_candle().date != last_check_date) {
-        last_check_date = candle_manager.get_latest_candle().date;
-        
-        // Calculer le jour de la semaine (0=lundi, 6=dimanche)
-        int weekday = get_day_of_week(candle_manager.get_latest_candle().date);
-        
-        // Vérifier si c'est un jour de trading
-        weekday_check = std::find(base_config.trading_days.begin(), 
-                                  base_config.trading_days.end(), 
+
+    const DateTime& current_date = candle_manager.get_latest_candle().date;
+    const Time& current_time = current_date.time;
+
+    // Mettre à jour le jour de la semaine une seule fois par jour
+    if (current_date.day != last_check_date.day ||
+        current_date.month != last_check_date.month ||
+        current_date.year != last_check_date.year) {
+
+        last_check_date = current_date;
+
+        int weekday = get_day_of_week(current_date);
+        weekday_check = std::find(base_config.trading_days.begin(),
+                                  base_config.trading_days.end(),
                                   weekday) != base_config.trading_days.end();
-        
+
         if (!weekday_check) {
-            logger->log_time_check(false, "Jour non autorisé pour le trading: " + 
-                                 candle_manager.get_latest_candle().date.to_string(), LogLevel::INFO);
+            logger->log_time_check(false, "Jour non autorisé pour le trading: " +
+                                 current_date.to_string(), LogLevel::INFO);
             return false;
         }
-        
-        // Vérifier les heures de trading
-        const Time& current_time = candle_manager.get_latest_candle().date.time;
-        
-        bool after_start = (base_config.trading_from < current_time || 
-                            base_config.trading_from == current_time);
-                            
-        bool before_end = (current_time < base_config.trading_to || 
-                           current_time == base_config.trading_to);
-                           
-        time_check = after_start && before_end;
-        
-        if (!time_check) {
-            logger->log_time_check(false, 
-                                 std::to_string(current_time.hour) + ":" + 
-                                 std::to_string(current_time.minute), LogLevel::INFO);
-        } else {
-            // Ajouter un message positif quand on est dans les heures de trading
-            logger->log_time_check(true, 
-                                 std::to_string(current_time.hour) + ":" +
-                                 std::to_string(current_time.minute), LogLevel::DEBUG);
-        }
-        
-        return time_check;
     }
-    
-    // Utiliser le résultat mis en cache
-    return weekday_check && time_check;
+
+    // Vérifier les heures de trading à chaque bougie
+    bool after_start = (base_config.trading_from < current_time ||
+                        base_config.trading_from == current_time);
+
+    bool before_end = (current_time < base_config.trading_to ||
+                       current_time == base_config.trading_to);
+
+    time_check = after_start && before_end;
+
+    if (!weekday_check) {
+        // On a déjà loggé ce cas plus haut, mais on le re-log si jamais
+        logger->log_time_check(false, "Jour non autorisé pour le trading: " +
+                             current_date.to_string(), LogLevel::INFO);
+        return false;
+    }
+
+    if (!time_check) {
+        logger->log_time_check(false,
+                             std::to_string(current_time.hour) + ":" +
+                             std::to_string(current_time.minute), LogLevel::INFO);
+    } else {
+        logger->log_time_check(true,
+                             std::to_string(current_time.hour) + ":" +
+                             std::to_string(current_time.minute), LogLevel::DEBUG);
+    }
+
+    return time_check;
 }
 
 std::unique_ptr<Signal> Strategy::check_break_even() {

@@ -264,6 +264,7 @@ private:
     void convertEquityCurve(const std::vector<double>& equityCurve, 
                           const std::shared_ptr<be::Data>& data);
     double dateToChartTimestamp(const be::Date& date);
+    void prepareTimestampsCache();
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
     void updateHeikinAshiCache();
     void updateIndicatorCache();
@@ -316,13 +317,12 @@ private:
     ChartConfig m_config;
     
     // 2. Données
-    PriceData m_priceData;
     std::shared_ptr<be::Data> m_backtestData; 
+    std::vector<double> m_timestampsCache;
     HeikinAshiCache m_heikinAshiCache;
     IndicatorCache m_indicatorCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
-    std::map<be::Date, double> m_timestampCache; // Cache pour dateToChartTimestamp
 
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
     std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives

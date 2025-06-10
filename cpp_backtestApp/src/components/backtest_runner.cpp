@@ -182,129 +182,122 @@ BacktestWorker::~BacktestWorker()
 
 void BacktestWorker::run()
 {
-    try {        
-        // Récupération des paramètres généraux
-        QString strategyName = m_mainWindow->getGeneralParamsPanel()->getValues()["strategy"].toString();
-        QString symbol = m_mainWindow->getGeneralParamsPanel()->getValues().value("symbol", "NDX").toString();
-        QString interval = m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString();
-        QString period = m_mainWindow->getGeneralParamsPanel()->getValues().value("period", "10d").toString();
-        double cash = m_mainWindow->getGeneralParamsPanel()->getValues().value("cash", 100000.0).toDouble();
-        double spread = m_mainWindow->getGeneralParamsPanel()->getValues().value("spread", 0.0001).toDouble();
-        double commission = m_mainWindow->getGeneralParamsPanel()->getValues().value("commission", 0.0).toDouble();
-        bool tradeOnClose = m_mainWindow->getGeneralParamsPanel()->getValues().value("trade_on_close", false).toBool();
-        bool hedging = m_mainWindow->getGeneralParamsPanel()->getValues().value("hedging", false).toBool();
-        bool exclusiveOrders = m_mainWindow->getGeneralParamsPanel()->getValues().value("exclusive_orders", true).toBool();
-        bool finalizeTrades = m_mainWindow->getGeneralParamsPanel()->getValues().value("finalize_trades", true).toBool();
+    // Récupération des paramètres généraux
+    QString strategyName = m_mainWindow->getGeneralParamsPanel()->getValues()["strategy"].toString();
+    QString symbol = m_mainWindow->getGeneralParamsPanel()->getValues().value("symbol", "NDX").toString();
+    QString interval = m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString();
+    QString period = m_mainWindow->getGeneralParamsPanel()->getValues().value("period", "10d").toString();
+    double cash = m_mainWindow->getGeneralParamsPanel()->getValues().value("cash", 100000.0).toDouble();
+    double spread = m_mainWindow->getGeneralParamsPanel()->getValues().value("spread", 0.0001).toDouble();
+    double commission = m_mainWindow->getGeneralParamsPanel()->getValues().value("commission", 0.0).toDouble();
+    double leverage_limit = m_mainWindow->getGeneralParamsPanel()->getValues().value("leverage_limit", 20.0).toDouble();
+    bool tradeOnClose = m_mainWindow->getGeneralParamsPanel()->getValues().value("trade_on_close", false).toBool();
+    bool hedging = m_mainWindow->getGeneralParamsPanel()->getValues().value("hedging", false).toBool();
+    bool exclusiveOrders = m_mainWindow->getGeneralParamsPanel()->getValues().value("exclusive_orders", true).toBool();
+    bool finalizeTrades = m_mainWindow->getGeneralParamsPanel()->getValues().value("finalize_trades", true).toBool();
 
-        // Récupération et conversion de la date de fin
-        QDateTime endDate;
-        if (m_mainWindow->getGeneralParamsPanel()->getValues().contains("end_date")) {
-            QVariant dateVariant = m_mainWindow->getGeneralParamsPanel()->getValues()["end_date"];
-            if (dateVariant.userType() == QMetaType::QDate) {
-                endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
-            } else if (dateVariant.userType() == QMetaType::QDateTime) {
-                endDate = dateVariant.toDateTime();
-            } else if (dateVariant.userType() == QMetaType::QString) {
-                QString dateStr = dateVariant.toString();
-                QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
-                
-                for (const QString& format : dateFormats) {
-                    QDate parsedDate = QDate::fromString(dateStr, format);
-                    if (parsedDate.isValid()) {
-                        endDate = QDateTime(parsedDate, QTime(23, 59, 59));
-                        break;
-                    }
+    // Récupération et conversion de la date de fin
+    QDateTime endDate;
+    if (m_mainWindow->getGeneralParamsPanel()->getValues().contains("end_date")) {
+        QVariant dateVariant = m_mainWindow->getGeneralParamsPanel()->getValues()["end_date"];
+        if (dateVariant.userType() == QMetaType::QDate) {
+            endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
+        } else if (dateVariant.userType() == QMetaType::QDateTime) {
+            endDate = dateVariant.toDateTime();
+        } else if (dateVariant.userType() == QMetaType::QString) {
+            QString dateStr = dateVariant.toString();
+            QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
+            
+            for (const QString& format : dateFormats) {
+                QDate parsedDate = QDate::fromString(dateStr, format);
+                if (parsedDate.isValid()) {
+                    endDate = QDateTime(parsedDate, QTime(23, 59, 59));
+                    break;
                 }
             }
         }
-        
-        if (!endDate.isValid()) {
-            endDate = QDateTime::currentDateTime();
-        }
-
-        // TODO : mettre des debug ici pour vérifier les valeurs
-        // std::cout << "Paramètres de chargement des données:" << std::endl;
-        // std::cout << "- Stratégie:" << strategyName.toStdString() << std::endl;
-        // std::cout << "- Symbole:" << symbol.toStdString() << std::endl;
-        // std::cout << "- Intervalle:" << interval.toStdString() << std::endl;
-        // std::cout << "- Période:" << period.toStdString() << std::endl;
-        // std::cout << "- Capital initial:" << cash << std::endl;
-        // std::cout << "- Spread:" << spread << std::endl;
-        // std::cout << "- Commission:" << commission << std::endl;
-        // std::cout << "- Trade à la clôture:" << (tradeOnClose ? "Oui" : "Non") << std::endl;
-        // std::cout << "- Hedging:" << (hedging ? "Oui" : "Non") << std::endl;
-        // std::cout << "- Ordres exclusifs:" << (exclusiveOrders ? "Oui" : "Non") << std::endl;
-        // std::cout << "- Finalisation des trades:" << (finalizeTrades ? "Oui" : "Non") << std::endl;
-        // std::cout << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss").toStdString() << std::endl;
-
-        
-        auto strategyCreator = StrategyRegistry::getInstance().getCreator(strategyName);
-        if (!strategyCreator) {
-            emit error(QString("Stratégie non supportée: %1").arg(strategyName));
-            return;
-        }
-        
-        // Chargement des données avec DataLoader puis conversion en be::Data
-        std::vector<OHLCBar> rawData = DataLoader::loadData(symbol, interval, period, endDate);
-        
-        if (rawData.empty()) {
-            emit error("Aucune donnée chargée");
-            return;
-        }
-        // Convertir en format be::Data
-        std::shared_ptr<be::Data> data = convertToBeData(rawData);
-        
-        // Créer un objet BacktestResults pour stocker les résultats
-        m_results = std::make_unique<BacktestResults>();
-        m_results->data = data;
-        
-        qDebug() << "Données disponibles:" << data->size() << "barres";
-        qDebug() << "Démarrage du backtest C++...";
-        
-
-        // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
-        auto strategyFactory = [strategyCreator, this](std::shared_ptr<be::Broker> b, std::shared_ptr<be::Data> d) {
-            return strategyCreator(b, d, m_mainWindow);
-        };
-
-        
-        // Créer et exécuter le backtest
-        be::Backtest backtest(
-            data,               // Données historiques
-            strategyFactory,    // Factory de stratégie
-            cash,               // Capital initial
-            spread,             // Spread
-            commission,         // Commission
-            1.0,                // Marge (défaut: 1.0)
-            tradeOnClose,       // Trade à la clôture
-            hedging,            // Hedging
-            exclusiveOrders,    // Ordres exclusifs
-            finalizeTrades      // Finalisation des trades
-        );
-        
-        QElapsedTimer timer;
-        timer.start();
-
-        backtest.setProgressCallback([this, &timer](size_t current, size_t total) {
-            qint64 elapsed = timer.elapsed();
-            QString chrono = QTime::fromMSecsSinceStartOfDay(elapsed).toString("mm:ss");
-            emit progressUpdated(static_cast<int>(current), static_cast<int>(total), chrono);
-        });
-        
-        qDebug() << "Exécution du backtest...";
-        m_results->stats = backtest.run();
-        qDebug() << "Backtest terminé avec succès";
-        
-        // Émettre le signal avec les résultats
-        emit finished(m_results.get());
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Exception dans BacktestWorker::run():" << e.what();
-        emit error(QString("Erreur d'exécution: %1").arg(e.what()));
-    } catch (...) {
-        qCritical() << "Exception inconnue dans BacktestWorker::run()";
-        emit error("Erreur d'exécution inconnue");
     }
+    
+    if (!endDate.isValid()) {
+        endDate = QDateTime::currentDateTime();
+    }
+
+    // TODO : mettre des debug ici pour vérifier les valeurs
+    // std::cout << "Paramètres de chargement des données:" << std::endl;
+    // std::cout << "- Stratégie:" << strategyName.toStdString() << std::endl;
+    // std::cout << "- Symbole:" << symbol.toStdString() << std::endl;
+    // std::cout << "- Intervalle:" << interval.toStdString() << std::endl;
+    // std::cout << "- Période:" << period.toStdString() << std::endl;
+    // std::cout << "- Capital initial:" << cash << std::endl;
+    // std::cout << "- Spread:" << spread << std::endl;
+    // std::cout << "- Commission:" << commission << std::endl;
+    // std::cout << "- Trade à la clôture:" << (tradeOnClose ? "Oui" : "Non") << std::endl;
+    // std::cout << "- Hedging:" << (hedging ? "Oui" : "Non") << std::endl;
+    // std::cout << "- Ordres exclusifs:" << (exclusiveOrders ? "Oui" : "Non") << std::endl;
+    // std::cout << "- Finalisation des trades:" << (finalizeTrades ? "Oui" : "Non") << std::endl;
+    // std::cout << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss").toStdString() << std::endl;
+
+    
+    auto strategyCreator = StrategyRegistry::getInstance().getCreator(strategyName);
+    if (!strategyCreator) {
+        emit error(QString("Stratégie non supportée: %1").arg(strategyName));
+        return;
+    }
+    
+    // Chargement des données avec DataLoader puis conversion en be::Data
+    std::vector<OHLCBar> rawData = DataLoader::loadData(symbol, interval, period, endDate);
+    
+    if (rawData.empty()) {
+        emit error("Aucune donnée chargée");
+        return;
+    }
+    // Convertir en format be::Data
+    std::shared_ptr<be::Data> data = convertToBeData(rawData);
+    
+    // Créer un objet BacktestResults pour stocker les résultats
+    m_results = std::make_unique<BacktestResults>();
+    m_results->data = data;
+    
+    qDebug() << "Données disponibles:" << data->size() << "barres";
+    qDebug() << "Démarrage du backtest C++...";
+    
+
+    // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
+    auto strategyFactory = [strategyCreator, this](std::shared_ptr<be::Broker> b, std::shared_ptr<be::Data> d) {
+        return strategyCreator(b, d, m_mainWindow);
+    };
+    double margin = 1 / leverage_limit; // Calculer la marge à partir du levier
+    
+    // Créer et exécuter le backtest
+    be::Backtest backtest(
+        data,               // Données historiques
+        strategyFactory,    // Factory de stratégie
+        cash,               // Capital initial
+        spread,             // Spread
+        commission,         // Commission
+        margin,                // Marge (défaut: 1.0)
+        tradeOnClose,       // Trade à la clôture
+        hedging,            // Hedging
+        exclusiveOrders,    // Ordres exclusifs
+        finalizeTrades      // Finalisation des trades
+    );
+    
+    QElapsedTimer timer;
+    timer.start();
+
+    backtest.setProgressCallback([this, &timer](size_t current, size_t total) {
+        qint64 elapsed = timer.elapsed();
+        QString chrono = QTime::fromMSecsSinceStartOfDay(elapsed).toString("mm:ss");
+        emit progressUpdated(static_cast<int>(current), static_cast<int>(total), chrono);
+    });
+    
+    qDebug() << "Exécution du backtest...";
+    m_results->stats = backtest.run();
+    qDebug() << "Backtest terminé avec succès";
+    
+    // Émettre le signal avec les résultats
+    emit finished(m_results.get());
+        
 }
 
 std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLCBar>& bars)

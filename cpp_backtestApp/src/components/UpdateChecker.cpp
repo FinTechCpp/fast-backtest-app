@@ -8,8 +8,12 @@
 #include <QCoreApplication>
 #include <QDebug>
 #include <QSettings>
+#include <QDesktopServices>
+#include <QMessageBox>
 #include "version.h"  
 
+QString GITHUB_TOKEN = "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"; // Remplacer par votre token GitHub
+QUrl GITHUB_API_URL = QUrl("https://api.github.com/repos/hugoMiCode/ig-trading-bot/releases/latest");
 
 UpdateChecker::UpdateChecker(QObject* parent)
     : QObject(parent),
@@ -42,7 +46,7 @@ void UpdateChecker::checkForUpdates()
     m_errorMessage.clear();
     
     // Utiliser l'endpoint qui liste toutes les releases
-    QNetworkRequest request(QUrl("https://api.github.com/repos/hugoMiCode/ig-trading-bot/releases"));
+    QNetworkRequest request(GITHUB_API_URL);
     
     // Configuration des en-têtes
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
@@ -50,10 +54,7 @@ void UpdateChecker::checkForUpdates()
     request.setRawHeader("X-GitHub-Api-Version", "2022-11-28");
     
     // Récupérer le token depuis les paramètres ou l'environnement
-    QString token = "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";
-
-    // ATTENTION: Ne jamais stocker un token directement dans le code source
-    // Le token qui apparaît dans votre code va être automatiquement révoqué par GitHub
+    QString token = GITHUB_TOKEN;
     
     if (!token.isEmpty()) {
         request.setRawHeader("Authorization", QString("Bearer %1").arg(token).toUtf8());
@@ -164,9 +165,9 @@ void UpdateChecker::parseReleaseObject(const QJsonObject& releaseObj)
             QString name = assetObj["name"].toString();
             
             // Sélection de l'asset en fonction de la plateforme
-            #ifdef Q_OS_WIN
+            #ifdef Q_OS_WIN // Windows
             if (name.endsWith(".zip") || name.endsWith(".exe")) {
-            #elif defined(Q_OS_MAC)
+            #elif defined(Q_OS_MAC) // macOS
             if (name.endsWith(".dmg") || name.endsWith(".zip")) {
             #else // Linux
             if (name.endsWith(".AppImage") || name.endsWith(".tar.gz") || name.endsWith(".zip")) {
@@ -261,20 +262,13 @@ void UpdateChecker::downloadAndInstallUpdate()
 
     qInfo() << "Téléchargement de la mise à jour depuis:" << m_downloadUrl;
     
-    QNetworkRequest request(m_downloadUrl);
-    QNetworkReply* reply = m_networkManager->get(request);
+    // Ouvrir l'URL dans le navigateur par défaut
+    bool success = QDesktopServices::openUrl(QUrl(m_downloadUrl));
     
-    connect(reply, &QNetworkReply::downloadProgress, 
-            this, &UpdateChecker::onDownloadProgress);
-    connect(reply, &QNetworkReply::finished, 
-            this, &UpdateChecker::onDownloadFinished);
-}
-
-void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
-{
-    if (bytesTotal > 0) {
-        int percentage = static_cast<int>((bytesReceived * 100) / bytesTotal);
-        emit downloadProgress(percentage);
+    if (success) {
+        emit updateCompleted();
+    } else {
+        emit updateFailed("Impossible d'ouvrir le navigateur pour le téléchargement");
     }
 }
 
@@ -282,31 +276,78 @@ void UpdateChecker::onDownloadFinished()
 {
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
     if (!reply) {
+        qWarning() << "onDownloadFinished: reply est null";
         return;
     }
     
+    qDebug() << "Téléchargement terminé";
+    qDebug() << "Code de statut HTTP:" << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    qDebug() << "Erreur réseau:" << reply->error();
+    qDebug() << "Taille des données reçues:" << reply->bytesAvailable() << "octets";
+    
     if (reply->error() == QNetworkReply::NoError) {
+        QByteArray data = reply->readAll();
+        
+        if (data.isEmpty()) {
+            m_errorMessage = "Aucune donnée reçue lors du téléchargement";
+            emit updateFailed(m_errorMessage);
+            reply->deleteLater();
+            return;
+        }
+        
         // Sauvegarde du fichier de mise à jour
-        QString fileName = m_downloadUrl.split('/').last();
+        QString fileName = QUrl(m_downloadUrl).fileName();
+        if (fileName.isEmpty()) {
+            fileName = "update_file";
+        }
+        
         QString downloadPath = QDir::tempPath() + "/" + fileName;
+        qDebug() << "Sauvegarde vers:" << downloadPath;
         
         QFile file(downloadPath);
         if (file.open(QIODevice::WriteOnly)) {
-            file.write(reply->readAll());
+            qint64 bytesWritten = file.write(data);
             file.close();
             
-            qInfo() << "Mise à jour téléchargée vers:" << downloadPath;
-            installUpdate(downloadPath);
+            if (bytesWritten == data.size()) {
+                qInfo() << "Mise à jour téléchargée avec succès vers:" << downloadPath;
+                qInfo() << "Taille du fichier:" << bytesWritten << "octets";
+                installUpdate(downloadPath);
+            } else {
+                m_errorMessage = QString("Erreur lors de l'écriture du fichier: %1/%2 octets écrits")
+                                .arg(bytesWritten).arg(data.size());
+                emit updateFailed(m_errorMessage);
+            }
         } else {
             m_errorMessage = "Impossible de sauvegarder le fichier de mise à jour: " + file.errorString();
             emit updateFailed(m_errorMessage);
         }
     } else {
-        m_errorMessage = "Échec du téléchargement: " + reply->errorString();
+        // Plus de détails sur l'erreur
+        int httpCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        QString errorDetails = QString("Code HTTP: %1, Erreur: %2")
+                              .arg(httpCode)
+                              .arg(reply->errorString());
+        
+        // Vérifier s'il y a du contenu dans la réponse d'erreur
+        QByteArray errorResponse = reply->readAll();
+        if (!errorResponse.isEmpty()) {
+            qDebug() << "Réponse d'erreur:" << errorResponse;
+        }
+        
+        m_errorMessage = "Échec du téléchargement: " + errorDetails;
         emit updateFailed(m_errorMessage);
     }
     
     reply->deleteLater();
+}
+void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+
+{
+    if (bytesTotal > 0) {
+        int percentage = static_cast<int>((bytesReceived * 100) / bytesTotal);
+        emit downloadProgress(percentage);
+    }
 }
 
 void UpdateChecker::installUpdate(const QString& filePath)

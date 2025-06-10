@@ -88,6 +88,7 @@ void ConfigManager::setupDefaultValues()
     m_defaultValues["spread"] = 0.0001;
     m_defaultValues["cash"] = 100000.0;
     m_defaultValues["strategy"] = "BuyHeikinGreenBA";
+    m_defaultValues["leverage_limit"] = 20.0;
     
     // Valeurs par défaut pour les paramètres de stratégie de base
     m_defaultValues["stop_loss_distance"] = 20.0;

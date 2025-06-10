@@ -74,6 +74,14 @@ void GeneralParamsPanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["cash"])->setSingleStep(1000);
     static_cast<QDoubleSpinBox*>(m_widgets["cash"])->setValue(100000);
     paramsLayout->addRow(new QLabel("Cash initial:", this), m_widgets["cash"]);
+
+    // Levier maximal autorisé
+    m_widgets["leverage_limit"] = new QDoubleSpinBox(this);
+    static_cast<QDoubleSpinBox*>(m_widgets["leverage_limit"])->setDecimals(2);
+    static_cast<QDoubleSpinBox*>(m_widgets["leverage_limit"])->setRange(1, 10000);
+    static_cast<QDoubleSpinBox*>(m_widgets["leverage_limit"])->setSingleStep(1);
+    static_cast<QDoubleSpinBox*>(m_widgets["leverage_limit"])->setValue(20);
+    paramsLayout->addRow(new QLabel("Levier maximal autorisé :", this), m_widgets["leverage_limit"]);
 }
 
 QMap<QString, QVariant> GeneralParamsPanel::getValues()

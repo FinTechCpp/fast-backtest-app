@@ -1,3 +1,64 @@
+# IG Trading Bot
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-3.12+-green.svg)](https://python.org)
+[![C++](https://img.shields.io/badge/c++-17-blue.svg)](https://isocpp.org)
+[![Qt](https://img.shields.io/badge/qt-6.8.3-41CD52.svg)](https://qt.io)
+[![CMake](https://img.shields.io/badge/cmake-3.14+-064F8C.svg)](https://cmake.org)
+
+## 🚀 Présentation
+
+**IG Trading Bot** est une plateforme complète de trading algorithmique conçue pour l'écosystème IG Markets. Ce projet hybride combine la flexibilité du Python pour le trading en temps réel avec la puissance du C++ pour les backtests haute performance.
+
+### ✨ Points forts du projet
+
+- **🔄 Architecture hybride** : Python pour l'API trading, C++ pour le calcul intensif
+- **📊 Interface graphique avancée** : Application Qt native avec visualisations ChartDirector
+- **⚡ Performance optimisée** : Moteur de backtest C++ multi-threadé
+- **🎯 Stratégies modulaires** : Framework extensible pour développer vos propres algorithmes
+- **📈 Analyse complète** : Métriques avancées, graphiques interactifs et historiques détaillés
+- **🛡️ Gestion des risques** : Contrôles intégrés et modes démo/live
+
+### 🎯 Fonctionnalités principales
+
+#### Trading automatisé
+- ✅ Connexion native à l'API IG Markets
+- ✅ Exécution en temps réel avec gestion des ordres
+- ✅ Surveillance continue des positions
+- ✅ Mode démo pour tests sécurisés
+
+#### Backtesting haute performance
+- ✅ Moteur C++ optimisé pour la vitesse
+- ✅ Interface graphique Qt avec visualisations avancées
+- ✅ Métriques complètes (Sharpe, Sortino, drawdown, etc.)
+- ✅ Analyse des trades et courbes d'équité
+
+#### Stratégies et indicateurs
+- ✅ Stratégies de suivi de tendance prêtes à l'emploi
+- ✅ Indicateurs techniques : RSI, EMA, Stochastique
+- ✅ Framework extensible pour stratégies personnalisées
+- ✅ Pont Python-C++ pour maximum de flexibilité
+
+#### Monitoring et analyse
+- ✅ Interface web pour surveillance en temps réel
+- ✅ Logging détaillé et historiques
+- ✅ Notebooks Jupyter pour analyse de données
+- ✅ Export des résultats et rapports
+
+### 🏗️ Architecture technique
+
+Le projet adopte une architecture modulaire permettant d'exploiter les forces de chaque langage :
+
+- **Frontend** : Interface Qt6 native pour une expérience utilisateur fluide
+- **Backend Trading** : Python avec intégration API IG Markets
+- **Moteur de calcul** : C++17 pour les backtests et calculs intensifs
+- **Visualisation** : ChartDirector pour des graphiques professionnels
+- **Build system** : CMake cross-platform avec scripts d'automatisation
+
+Cette approche garantit à la fois la rapidité d'exécution pour les backtests et la flexibilité pour le développement de stratégies.
+
+---
+
 ## Installation
 
 ### 1. Cloner le dépôt
@@ -9,7 +70,7 @@ git clone https://github.com/hugoMiCode/ig-trading-bot
 cd ig-trading-bot
 ```
 
-### 3. Installer les dépendances
+### 2. Installer les dépendances
 
 Installez les dépendances nécessaires à partir du fichier `requirements.txt` :
 
@@ -19,7 +80,7 @@ pip install -r requirements.txt
 
 L’installation en mode développement vous permet de modifier le code source et de voir immédiatement les modifications sans avoir à réinstaller le package.
 
-### 5. Configurer vos identifiants IG
+### 3. Configurer vos identifiants IG
 
 Copiez le fichier `.env-example` en `.env` et renseignez-y vos identifiants et configurations :
 
@@ -33,51 +94,82 @@ Ouvrez ensuite `.env` dans votre éditeur et ajoutez vos informations.
 
 ## Structure du projet
 
-La structure du projet a été réorganisée pour centraliser le code source dans un package unique et séparer les points d'entrée. Par exemple :
-
 ```
 ig-trading-bot/
-├── setup.py                  # Script d'installation en mode développement
+├── build_and_run.sh*
+├── ChartDirector/
+│   ├── CMakeLists.txt
+│   ├── cppdemo/
+│   ├── include/
+│   ├── lib/
+│   ├── LICENSE.TXT
+│   ├── qtdemo/
+│   └── README.TXT
+├── CMakeLists.txt
+├── cpp_adaptator/
+│   ├── CMakeLists.txt
+│   ├── include/
+│   └── src/
+├── cpp_backtestApp/
+│   ├── backtest_config.ini
+│   ├── CMakeLists.txt
+│   ├── icons/
+│   ├── include/
+│   ├── qresources.qrc
+│   └── src/
+├── cpp_backtestEngine/
+│   ├── CMakeLists.txt
+│   ├── include/
+│   └── src/
+├── cpp_strategies/
+│   ├── CMakeLists.txt
+│   ├── include/
+│   ├── pyproject.toml
+│   ├── setup.py
+│   └── src/
+├── Doxyfile
+├── igtrader/
+│   └── WrapperIGAPI/
+├── live_interface/
+│   ├── api_server.py
+│   ├── ig_candle_service.py
+│   └── static/
+├── logs/
+│   └── backtest/
+├── marketData/
+├── Notebooks/
+│   ├── Backtest.ipynb
+│   ├── Helpers.py
+│   ├── IBKR_API.ipynb
+│   ├── PolygonAPI.ipynb
+│   └── __pycache__/
+├── pyproject.toml
 ├── README.md
 ├── requirements.txt
-├── igtradingbot/             # Package principal
-│   ├── __init__.py
-│   ├── Strategies/         # Sous-package pour vos stratégies
-│   │   ├── __init__.py
-│   │   ├── Strategy.py
-│   │   ├── Helpers.py
-│   │   ├── BuyTrendFollowingStrategy/
-│   │   │   ├── __init__.py
-│   │   │   ├── BuyTrendFollowingStrategy.py
-│   │   │   └── BacktestAdapter.py
-│   │   └── SellTrendFollowingStrategy/
-│   │       ├── __init__.py
-│   │       ├── SellTrendFollowingStrategy.py
-│   │       └── BacktestAdapter.py
-│   └── trading_ig/         # Sous-package pour l'intégration avec IG (Broker, API, etc.)
-│       ├── __init__.py
-│       └── Broker.py
-└── scripts/                  # Points d'entrée et scripts divers
-    ├── liveIG.py
-    ├── backtest_runner.py
-    └── main.py
+├── scripts/
+│   ├── cmd_app.py
+│   ├── live_Display_IG.py
+│   └── liveIG.py
+├── setup.py
+└── VERSION
 ```
 
-Dans vos scripts (dans le dossier `scripts/`), vous utiliserez des imports absolus. Par exemple, dans `liveIG.py` :
+### Description des composants
 
-```python
-from igtradingbot.trading_ig.Broker import Broker
-from igtradingbot.Strategies.BuyTrendFollowingStrategy.BuyTrendFollowingStrategy import BuyTrendFollowingStrategy
+#### Composants Python
+- **`igtrader/`** : Interface avec l'API IG Markets
+- **`live_interface/`** : Serveur API et services de données en temps réel
+- **`scripts/`** : Points d'entrée pour différents modes d'exécution
+- **`Notebooks/`** : Analyse et développement de stratégies
 
-def main():
-    broker = Broker(epic="IX.D.NASDAQ.IFE.IP", working_resolution='1Min')
-    strategy = BuyTrendFollowingStrategy()
-    # Logique de live trading...
-    print("Live trading started")
+#### Composants C++
+- **`cpp_backtestEngine/`** : Moteur de backtest haute performance
+- **`cpp_backtestApp/`** : Interface graphique Qt pour les backtests
+- **`cpp_strategies/`** : Stratégies de trading en C++
+- **`cpp_adaptator/`** : Pont entre Python et C++
 
-if __name__ == "__main__":
-    main()
-```
+#### Dépendances externes
+- **`ChartDirector/`** : Bibliothèque de graphiques (licence commerciale)
 
 ---
 
@@ -99,7 +191,7 @@ Ce guide explique comment compiler, exécuter et déboguer le projet ig-trading-
 
 - CMake 3.14 ou supérieur
 - GCC/G++ avec support C++17
-- Qt6.8.3 (Core, Widgets, Charts)
+- Qt6.8.3 (Core, Widgets, Charts, Network)
 - VS Code (pour le débogage)
 - Extensions VS Code: C/C++, CMake Tools
 
@@ -130,7 +222,7 @@ cmake -DBUILD_WITH_DEBUG=ON ..
 make -j$(nproc)
 ```
 
-## Méthode 2: Utilisation du script build_and_run.sh
+## Méthode 2: Utilisation du script **build_and_run.sh**
 
 Le script automatise le processus de compilation et d'exécution:
 
@@ -150,13 +242,9 @@ Le script automatise le processus de compilation et d'exécution:
 
 ## Méthode 3: Configuration VS Code pour le débogage
 
-Utiliser les fichiers `.vscode/launch.json` et `./vscode/tasks.json` 
+Utiliser les fichiers `./vscode/launch.json` et `./vscode/tasks.json` 
 
 Choisir son système d'exploitation et le mode (Debug/Release) dans l'onglet run/debug de VSCode
-
-**launch.json** 
-
-**tasks.json** 
 
 ### Comment utiliser le débogueur
 
@@ -171,16 +259,23 @@ Choisir son système d'exploitation et le mode (Debug/Release) dans l'onglet run
 ## Points d'entrée du projet
 
 Voici un résumé des différentes façons de compiler et exécuter le projet:
-
 1. **Compilation et exécution manuelles**:
+   
+   **Linux / macOS :**
    ```bash
    cmake ..
-   make (Linux / macOS)
-   cmake --build . --config Release --parallel (Windows)
+   make -j$(nproc)
    ./cpp_backtestApp/backtestapp
    ```
+   
+   **Windows :**
+   ```bash
+   cmake ..
+   cmake --build . --config Release --parallel
+   .\cpp_backtestApp\backtestapp.exe
+   ```
 
-2. **Script automatisé**:
+2. **Script automatisé** (Linux/macOS uniquement):
    ```bash
    ./build_and_run.sh
    ```
@@ -192,20 +287,23 @@ Voici un résumé des différentes façons de compiler et exécuter le projet:
 4. **Débogage avec VS Code**:
    - F5: Lance le débogueur avec les points d'arrêt définis
 
-## Structure du projet
-
-- **CMakeLists.txt**: Fichier de configuration principal du projet
-- **build_and_run.sh**: Script d'automatisation de compilation/exécution
-- **cpp_backtestApp/**: Application principale avec interface Qt6
-- **cpp_backtestEngine/**: Moteur de backtest
-- **cpp_strategies/**: Implémentations des stratégies
-- **ChartDirector/**: Bibliothèque pour les graphiques
-
-Cette structure permet une séparation claire des composants et facilite la maintenance du code.
-
 ## Remarques importantes
 
-- En mode Debug (--debug), l'application est compilée avec les symboles de débogage (-g) et sans optimisations (-O0)
-- En mode Release (par défaut), les optimisations (-O3) sont activées pour de meilleures performances
-- Le fichier compile_commands.json aide VS Code à comprendre la structure du projet mais n'est pas essentiel à la compilation
+
+### Contributeurs
+
+Merci à tous ceux qui ont contribué à ce projet :
+
+- **[hugoMiCode](https://github.com/hugoMiCode)** - Co-créateur et mainteneur principal
+- **[maks7d](https://github.com/maks7d)** - Co-créateur 
+
+#### Comment contribuer
+
+1. Forkez le projet
+2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
+3. Commitez vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Poussez vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une Pull Request
+
+Les contributions de tous types sont les bienvenues : corrections de bugs, nouvelles fonctionnalités, amélioration de la documentation, tests, etc.
 

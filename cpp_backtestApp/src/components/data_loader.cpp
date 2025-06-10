@@ -17,6 +17,220 @@ const QString DataLoader::MARKET_DATA_PATH = QDir(QCoreApplication::applicationD
 DataLoader::DataLoader() {}
 DataLoader::~DataLoader() {}
 
+DataFileInfo DataLoader::checkDataFile(const QString& filePath)
+{
+    DataFileInfo info;
+    
+    // Set basic file info
+    QFileInfo fileInfo(filePath);
+    info.filePath = filePath;
+    info.fileName = fileInfo.fileName();
+    info.fileSize = fileInfo.size();
+    
+    // Default to invalid until we confirm it's valid
+    info.isValid = false;
+    
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Impossible d'ouvrir le fichier:" << filePath;
+        return info;
+    }
+    
+    QTextStream in(&file);
+    QString line;
+    int lineNumber = 0;
+    
+    // Check if first line is header
+    if (in.readLineInto(&line)) {
+        lineNumber++;
+        if (line.startsWith("date,") || line.contains(",open,high,low,close")) {
+            info.hasHeader = true;
+        } else {
+            // Try to parse the first line
+            auto bar = parseCSVLine(line);
+            if (bar) {
+                info.hasHeader = false;
+                info.totalRows = 1;
+                info.startDate = bar->timestamp;
+                info.endDate = bar->timestamp;
+                info.minPrice = std::min({bar->open, bar->high, bar->low, bar->close});
+                info.maxPrice = std::max({bar->open, bar->high, bar->low, bar->close});
+                
+                // Check OHLC relationship integrity
+                if (bar->high < bar->low || bar->high < bar->open || bar->high < bar->close ||
+                    bar->low > bar->open || bar->low > bar->close) {
+                    info.invalidRows++;
+                    info.invalidRowDetails.append(QString("Ligne %1: Relation OHLC invalide").arg(lineNumber));
+                } else {
+                    info.isValid = true;
+                }
+            } else {
+                info.invalidRows++;
+                info.invalidRowDetails.append(QString("Ligne %1: Format invalide").arg(lineNumber));
+            }
+        }
+    }
+    
+    QDateTime prevTimestamp;
+    QList<int> intervals; // Store time differences to detect the interval
+    
+    // Process remaining lines
+    while (in.readLineInto(&line)) {
+        lineNumber++;
+        
+        // Skip processing for header row
+        if (lineNumber == 1 && info.hasHeader) {
+            info.totalRows++;
+            continue;
+        }
+        
+        auto bar = parseCSVLine(line);
+        if (bar) {
+            info.totalRows++;
+            
+            // Check OHLC relationship integrity
+            if (bar->high < bar->low || bar->high < bar->open || bar->high < bar->close ||
+                bar->low > bar->open || bar->low > bar->close) {
+                info.invalidRows++;
+                info.invalidRowDetails.append(QString("Ligne %1: Relation OHLC invalide").arg(lineNumber));
+                continue;
+            }
+            
+            // Update date range
+            if (info.startDate.isNull() || bar->timestamp < info.startDate) {
+                info.startDate = bar->timestamp;
+            }
+            if (info.endDate.isNull() || bar->timestamp > info.endDate) {
+                info.endDate = bar->timestamp;
+            }
+            
+            // Update price range
+            info.minPrice = std::min({info.minPrice, bar->open, bar->high, bar->low, bar->close});
+            info.maxPrice = std::max({info.maxPrice, bar->open, bar->high, bar->low, bar->close});
+            
+            // Check for time gaps
+            if (!prevTimestamp.isNull()) {
+                int seconds = prevTimestamp.secsTo(bar->timestamp);
+                
+                // Store interval for detection (ignore large gaps for interval detection)
+                if (seconds > 0 && seconds < 3600) {
+                    intervals.append(seconds);
+                }
+                
+                // Check if timestamps are out of order
+                if (seconds < 0) {
+                    info.invalidRows++;
+                    info.invalidRowDetails.append(
+                        QString("Ligne %1: Horodatage hors séquence (%2 après %3)")
+                            .arg(lineNumber)
+                            .arg(bar->timestamp.toString("yyyy-MM-dd hh:mm:ss"))
+                            .arg(prevTimestamp.toString("yyyy-MM-dd hh:mm:ss"))
+                    );
+                }
+                
+                // Flag large gaps (more than 5 minutes initially)
+                if (seconds > 300) {
+                    // Store this gap
+                    if (info.largestGaps.size() < 10) { // Keep up to 10 largest gaps
+                        info.largestGaps.append(qMakePair(prevTimestamp, bar->timestamp));
+                        // Sort by gap size (largest first)
+                        std::sort(info.largestGaps.begin(), info.largestGaps.end(), 
+                            [](const QPair<QDateTime, QDateTime>& a, const QPair<QDateTime, QDateTime>& b) {
+                                return a.first.secsTo(a.second) > b.first.secsTo(b.second);
+                            });
+                    } else if (seconds > prevTimestamp.secsTo(info.largestGaps.last().second)) {
+                        // Replace the smallest gap if this one is larger
+                        info.largestGaps.removeLast();
+                        info.largestGaps.append(qMakePair(prevTimestamp, bar->timestamp));
+                        std::sort(info.largestGaps.begin(), info.largestGaps.end(), 
+                            [](const QPair<QDateTime, QDateTime>& a, const QPair<QDateTime, QDateTime>& b) {
+                                return a.first.secsTo(a.second) > b.first.secsTo(b.second);
+                            });
+                    }
+                }
+            }
+            
+            prevTimestamp = bar->timestamp;
+            info.isValid = true;
+        } else {
+            info.invalidRows++;
+            info.invalidRowDetails.append(QString("Ligne %1: Format invalide").arg(lineNumber));
+        }
+    }
+    
+    file.close();
+    
+    // Calculate duration in days
+    if (info.startDate.isValid() && info.endDate.isValid()) {
+        info.durationDays = info.startDate.daysTo(info.endDate) + 1; // Include both start and end day
+    }
+    
+    // Detect interval from collected time differences
+    if (!intervals.isEmpty()) {
+        // Sort and take the most common interval (mode)
+        std::sort(intervals.begin(), intervals.end());
+        
+        // Find the most frequent interval
+        QMap<int, int> frequencyMap;
+        for (int interval : intervals) {
+            frequencyMap[interval]++;
+        }
+        
+        int mostFrequentInterval = 0;
+        int highestFrequency = 0;
+        
+        for (auto it = frequencyMap.begin(); it != frequencyMap.end(); ++it) {
+            if (it.value() > highestFrequency) {
+                highestFrequency = it.value();
+                mostFrequentInterval = it.key();
+            }
+        }
+        
+        // Convert to human-readable interval
+        if (mostFrequentInterval < 60) {
+            info.interval = QString("%1secs").arg(mostFrequentInterval);
+        } else if (mostFrequentInterval < 3600) {
+            info.interval = QString("%1min").arg(mostFrequentInterval / 60);
+        } else {
+            info.interval = QString("%1h").arg(mostFrequentInterval / 3600);
+        }
+        
+        // Now refine gap detection with detected interval
+        int expectedInterval = mostFrequentInterval;
+        info.gapsCount = 0;
+        
+        for (const auto& gap : info.largestGaps) {
+            int gapSeconds = gap.first.secsTo(gap.second);
+            
+            // Check if this is a significant gap (more than 2x expected interval)
+            // but ignore gaps overnight/weekends
+            if (gapSeconds > expectedInterval * 2) {
+                // Check if the gap is during market hours
+                // This is a simple check - real implementation should account for market calendar
+                QTime startTime = gap.first.time();
+                QTime endTime = gap.second.time();
+                int daysDiff = gap.first.daysTo(gap.second);
+                
+                // If gap spans more than 1 day or is overnight, it might be normal
+                // Simplified check for after market close to before market open
+                bool isNormalGap = (daysDiff > 1) || 
+                                  (daysDiff == 1 && startTime.hour() >= 16 && endTime.hour() <= 9) ||
+                                  (startTime.hour() >= 16 && endTime.hour() >= 9 && daysDiff == 0);
+                
+                if (!isNormalGap) {
+                    info.gapsCount++;
+                }
+            }
+        }
+    }
+    
+    // Final validity check
+    info.isValid = info.isValid && (info.invalidRows == 0 || 
+                                   (info.invalidRows * 100.0 / info.totalRows) < 5.0); // Less than 5% invalid
+    
+    return info;
+}
+
 QString DataLoader::findMarketDataDirectory()
 {
     // 1. PREMIÈRE ÉTAPE: Vérifier si un chemin personnalisé est défini dans QSettings

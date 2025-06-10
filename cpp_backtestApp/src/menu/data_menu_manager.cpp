@@ -7,6 +7,11 @@
 #include <QDir>
 #include <QSettings>
 #include <QStandardPaths>
+#include <QDialog>
+#include <QScrollArea>
+#include <QVBoxLayout>
+#include <QTextEdit>
+#include <QPushButton>
 #include "components/data_loader.h"
 
 DataMenuManager::DataMenuManager(QObject* parent)
@@ -193,6 +198,7 @@ void DataMenuManager::onImportFromAPI()
     );
 }
 
+
 void DataMenuManager::onValidateData()
 {
     qDebug() << "Validation des données demandée";
@@ -223,8 +229,7 @@ void DataMenuManager::onValidateData()
                            qobject_cast<QWidget*>(parent()));
     progress.setWindowModality(Qt::WindowModal);
     
-    QStringList validFiles;
-    QStringList invalidFiles;
+    QList<DataFileInfo> fileInfos;
     
     for (int i = 0; i < csvFiles.size(); ++i) {
         progress.setValue(i);
@@ -236,36 +241,131 @@ void DataMenuManager::onValidateData()
         QString filePath = dir.absoluteFilePath(csvFiles.at(i));
         progress.setLabelText(tr("Validation de %1...").arg(csvFiles.at(i)));
         
-        // Tester de charger quelques lignes du fichier
-        auto testData = DataLoader::loadFromCSV(filePath, "1d", "");
-        
-        if (!testData.empty()) {
-            validFiles << csvFiles.at(i);
-        } else {
-            invalidFiles << csvFiles.at(i);
-        }
+        // Utiliser la nouvelle fonction de validation
+        DataFileInfo info = DataLoader::checkDataFile(filePath);
+        fileInfos.append(info);
         
         QApplication::processEvents();
     }
     
     progress.setValue(csvFiles.size());
     
-    QString message = tr("Validation terminée:\n");
-    message += tr("- %1 fichier(s) valide(s)\n").arg(validFiles.size());
-    message += tr("- %1 fichier(s) invalide(s)").arg(invalidFiles.size());
+    // Préparer le rapport détaillé
+    int validCount = 0;
+    int invalidCount = 0;
     
-    if (!invalidFiles.isEmpty()) {
-        message += tr("\n\nFichiers invalides:\n");
-        for (const QString& file : invalidFiles) {
-            message += "- " + file + "\n";
+    for (const DataFileInfo& info : fileInfos) {
+        if (info.isValid) {
+            validCount++;
+        } else {
+            invalidCount++;
         }
     }
     
+    QString summaryMessage = tr("Validation terminée:\n");
+    summaryMessage += tr("- %1 fichier(s) valide(s)\n").arg(validCount);
+    summaryMessage += tr("- %1 fichier(s) invalide(s)").arg(invalidCount);
+    
+    if (invalidCount > 0) {
+        summaryMessage += tr("\n\nFichiers invalides:\n");
+        for (const DataFileInfo& info : fileInfos) {
+            if (!info.isValid) {
+                summaryMessage += "- " + info.fileName + "\n";
+            }
+        }
+    }
+    
+    // Afficher le résumé dans une boîte de dialogue standard
     QMessageBox::information(
         qobject_cast<QWidget*>(parent()),
         tr("Validation des données"),
-        message
+        summaryMessage
     );
+    
+    // Créer une boîte de dialogue détaillée
+    QDialog* detailsDialog = new QDialog(qobject_cast<QWidget*>(parent()));
+    detailsDialog->setWindowTitle(tr("Détails de la validation"));
+    detailsDialog->resize(700, 500);
+    
+    QVBoxLayout* layout = new QVBoxLayout(detailsDialog);
+    
+    QTextEdit* textEdit = new QTextEdit(detailsDialog);
+    textEdit->setReadOnly(true);
+    
+    // Générer le rapport détaillé
+    QString detailedReport = tr("<h2>Rapport de validation des données</h2>");
+    detailedReport += tr("<p>Répertoire: %1</p>").arg(marketDataDir);
+    
+    for (const DataFileInfo& info : fileInfos) {
+        detailedReport += tr("<hr><h3>%1</h3>").arg(info.fileName);
+        detailedReport += tr("<p><b>Statut:</b> %1</p>")
+                            .arg(info.isValid ? tr("<span style='color:green'>Valide</span>") 
+                                              : tr("<span style='color:red'>Invalide</span>"));
+        
+        detailedReport += tr("<p><b>Informations de base:</b><br>");
+        detailedReport += tr("Taille: %1 MB<br>")
+                            .arg(info.fileSize / (1024.0 * 1024.0), 0, 'f', 2);
+        detailedReport += tr("Nombre de lignes: %1<br>").arg(info.totalRows);
+        detailedReport += tr("En-tête: %1</p>").arg(info.hasHeader ? tr("Oui") : tr("Non"));
+        
+        if (info.isValid) {
+            detailedReport += tr("<p><b>Métriques:</b><br>");
+            detailedReport += tr("Intervalle détecté: %1<br>").arg(info.interval);
+            detailedReport += tr("Période: %1 à %2 (%3 jours)<br>")
+                                .arg(info.startDate.toString("yyyy-MM-dd hh:mm"))
+                                .arg(info.endDate.toString("yyyy-MM-dd hh:mm"))
+                                .arg(info.durationDays);
+            detailedReport += tr("Plage de prix: %1 à %2</p>")
+                                .arg(info.minPrice, 0, 'f', 2)
+                                .arg(info.maxPrice, 0, 'f', 2);
+            
+            if (info.gapsCount > 0) {
+                detailedReport += tr("<p><b>Trous dans les données:</b> %1<br>").arg(info.gapsCount);
+                
+                // Afficher les plus grands trous (jusqu'à 5)
+                int showCount = qMin(5, info.largestGaps.size());
+                for (int i = 0; i < showCount; i++) {
+                    QDateTime gapStart = info.largestGaps[i].first;
+                    QDateTime gapEnd = info.largestGaps[i].second;
+                    int hours = gapStart.secsTo(gapEnd) / 3600;
+                    int minutes = (gapStart.secsTo(gapEnd) % 3600) / 60;
+                    
+                    detailedReport += tr("• %1 à %2 (%3h %4m)<br>")
+                                      .arg(gapStart.toString("yyyy-MM-dd hh:mm"))
+                                      .arg(gapEnd.toString("yyyy-MM-dd hh:mm"))
+                                      .arg(hours)
+                                      .arg(minutes);
+                }
+                detailedReport += tr("</p>");
+            } else {
+                detailedReport += tr("<p><b>Trous dans les données:</b> Aucun</p>");
+            }
+        }
+        
+        if (info.invalidRows > 0) {
+            detailedReport += tr("<p><b>Lignes invalides:</b> %1").arg(info.invalidRows);
+            
+            // Afficher les détails des lignes invalides (limité à 10)
+            int showCount = qMin(10, info.invalidRowDetails.size());
+            if (showCount > 0) {
+                detailedReport += tr("<br>Détails (max 10):<br>");
+                for (int i = 0; i < showCount; i++) {
+                    detailedReport += tr("• %1<br>").arg(info.invalidRowDetails[i]);
+                }
+            }
+            detailedReport += tr("</p>");
+        }
+    }
+    
+    textEdit->setHtml(detailedReport);
+    
+    QPushButton* closeButton = new QPushButton(tr("Fermer"), detailsDialog);
+    connect(closeButton, &QPushButton::clicked, detailsDialog, &QDialog::accept);
+    
+    layout->addWidget(textEdit);
+    layout->addWidget(closeButton, 0, Qt::AlignRight);
+    
+    detailsDialog->exec();
 }
 
 void DataMenuManager::onCleanData()

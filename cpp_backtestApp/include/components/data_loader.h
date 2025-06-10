@@ -7,9 +7,12 @@
 #include <QFileInfo>
 #include <QTextStream>
 #include <QDebug>
+#include <QList>
+#include <QPair>
 #include <vector>
 #include <map>
 #include <memory>
+#include <limits>
 
 /**
  * @brief Structure pour stocker une barre OHLC
@@ -29,6 +32,49 @@ struct OHLCBar {
 
 Q_DECLARE_METATYPE(OHLCBar)
 Q_DECLARE_METATYPE(std::vector<OHLCBar>)
+
+/**
+ * @brief Structure pour stocker les informations de validation d'un fichier de données
+ */
+struct DataFileInfo {
+    // Basic file info
+    QString filePath;
+    QString fileName;
+    qint64 fileSize;
+    
+    // Data metrics
+    int totalRows;
+    QDateTime startDate;
+    QDateTime endDate;
+    int durationDays;
+    QString interval; // Detected interval between data points (e.g., "10secs")
+    
+    // Integrity checks
+    bool hasHeader;
+    bool isValid;
+    int invalidRows;
+    QStringList invalidRowDetails; // Contains reasons for invalid rows
+    int gapsCount;
+    QList<QPair<QDateTime, QDateTime>> largestGaps; // Stores significant gaps
+    
+    // Price stats
+    double minPrice;
+    double maxPrice;
+    
+    // Constructor with defaults
+    DataFileInfo() : 
+        fileSize(0), 
+        totalRows(0), 
+        durationDays(0), 
+        hasHeader(false), 
+        isValid(false), 
+        invalidRows(0), 
+        gapsCount(0),
+        minPrice(std::numeric_limits<double>::max()),
+        maxPrice(std::numeric_limits<double>::lowest()) {}
+};
+
+Q_DECLARE_METATYPE(DataFileInfo)
 
 /**
  * @brief Classe pour charger et traiter les données de marché
@@ -134,6 +180,13 @@ public:
      * @return true si le répertoire est valide et a été défini, false sinon
      */
     static bool setCustomMarketDataDirectory(const QString& path);
+    
+    /**
+     * @brief Vérifie l'intégrité des données d'un fichier CSV OHLC
+     * @param filePath Chemin vers le fichier à vérifier
+     * @return Structure contenant les informations sur le fichier et son intégrité
+     */
+    static DataFileInfo checkDataFile(const QString& filePath);
 
 private:
     static const QString MARKET_DATA_PATH;

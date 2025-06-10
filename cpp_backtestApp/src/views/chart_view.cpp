@@ -564,25 +564,8 @@ void ChartView::updateData(BacktestResults* results)
         showPlaceholder("Aucune donnée disponible");
         return;
     }
-    
 
-    
-    // Mesurer et afficher le temps de chaque méthode avec std::cout
-    // QTime viewStart = QTime::currentTime();
-    // m_chartWidget->setBacktestData(results->data);
-    // std::cout << "[ChartView] setBacktestData: " << viewStart.msecsTo(QTime::currentTime()) << " ms" << std::endl;
-
-    // viewStart = QTime::currentTime();
-    // m_chartWidget->setBacktestTrades(results->stats.trades);
-    // std::cout << "[ChartView] setBacktestTrades: " << viewStart.msecsTo(QTime::currentTime()) << " ms" << std::endl;
-
-    // viewStart = QTime::currentTime();
-    // m_chartWidget->setEquityCurve(results->stats.equityCurve);
-    // std::cout << "[ChartView] setEquityCurve: " << viewStart.msecsTo(QTime::currentTime()) << " ms" << std::endl;
-
-    QTime viewStart = QTime::currentTime();
     m_chartWidget->setBacktestResults(results);
-    std::cout << "[ChartView] setBacktestResults: " << viewStart.msecsTo(QTime::currentTime()) << " ms" << std::endl;
 
     m_dataExtracted = true;
     
@@ -592,9 +575,6 @@ void ChartView::updateData(BacktestResults* results)
     
     // Afficher le widget de graphique et masquer le placeholder
     showChartWidget();
-    
-    // Créer le graphique
-    m_chartWidget->createChart();
     
     // Rafraîchir la liste des indicateurs
     refreshIndicatorsList();

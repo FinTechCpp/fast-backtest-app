@@ -126,38 +126,38 @@ void ChartWidget::createChart()
         DoubleArray volumeData = vectorToDoubleArray(m_backtestData->getVolume());
 
         // Si le type est HeikinAshi, utiliser les données du cache
-        if (m_config.chartType == ChartType::HeikinAshi) {
-            // Vérifier si le cache est valide, sinon le recalculer
-            if (!m_heikinAshiCache.isValid) {
-                updateHeikinAshiCache();
-            }
+        // if (m_config.chartType == ChartType::HeikinAshi) {
+        //     // Vérifier si le cache est valide, sinon le recalculer
+        //     if (!m_heikinAshiCache.isValid) {
+        //         updateHeikinAshiCache();
+        //     }
             
-            // Convertir les données du cache en DoubleArray
-            DoubleArray haOpenArray = vectorToDoubleArray(m_heikinAshiCache.open);
-            DoubleArray haHighArray = vectorToDoubleArray(m_heikinAshiCache.high);
-            DoubleArray haLowArray = vectorToDoubleArray(m_heikinAshiCache.low);
-            DoubleArray haCloseArray = vectorToDoubleArray(m_heikinAshiCache.close);
+        //     // Convertir les données du cache en DoubleArray
+        //     DoubleArray haOpenArray = vectorToDoubleArray(m_heikinAshiCache.open);
+        //     DoubleArray haHighArray = vectorToDoubleArray(m_heikinAshiCache.high);
+        //     DoubleArray haLowArray = vectorToDoubleArray(m_heikinAshiCache.low);
+        //     DoubleArray haCloseArray = vectorToDoubleArray(m_heikinAshiCache.close);
             
-            // Configurer le range complet pour le viewport
-            m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
+        //     // Configurer le range complet pour le viewport
+        //     m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
             
-            // Créer le graphique avec les données Heikin-Ashi
-            m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
-                                      haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
-        } else {
-            // Pour les autres types, utiliser les données OHLC standards
-            DoubleArray openData = vectorToDoubleArray(m_backtestData->getOpen());
-            DoubleArray highData = vectorToDoubleArray(m_backtestData->getHigh());
-            DoubleArray lowData = vectorToDoubleArray(m_backtestData->getLow());
-            DoubleArray closeData = vectorToDoubleArray(m_backtestData->getClose());
+        //     // Créer le graphique avec les données Heikin-Ashi
+        //     m_financeChart = drawChart(timeStamps, haHighArray, haLowArray, 
+        //                               haOpenArray, haCloseArray, volumeData, m_config.chartWidth);
+        // } else {
+        //     // Pour les autres types, utiliser les données OHLC standards
+        //     DoubleArray openData = vectorToDoubleArray(m_backtestData->getOpen());
+        //     DoubleArray highData = vectorToDoubleArray(m_backtestData->getHigh());
+        //     DoubleArray lowData = vectorToDoubleArray(m_backtestData->getLow());
+        //     DoubleArray closeData = vectorToDoubleArray(m_backtestData->getClose());
 
-            // Configurer le range complet pour le viewport
-            m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
+        //     // Configurer le range complet pour le viewport
+        //     m_chartViewer->setFullRange("x", 0, timeStamps.len - 1);
             
-            // Créer le graphique avec les données standard
-            m_financeChart = drawChart(timeStamps, highData, lowData, 
-                                      openData, closeData, volumeData, m_config.chartWidth);
-        }
+        //     // Créer le graphique avec les données standard
+        //     m_financeChart = drawChart(timeStamps, highData, lowData, 
+        //                               openData, closeData, volumeData, m_config.chartWidth);
+        // }
         // Afficher toutes les données
         m_chartViewer->setViewPortWidth(1.0);
         m_chartViewer->setViewPortLeft(0);

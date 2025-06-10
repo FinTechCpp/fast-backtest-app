@@ -19,3 +19,5 @@ live_interface/candles_history.json
 .env
 docs/
 # marketData/
+perf.data
+perf.data.old

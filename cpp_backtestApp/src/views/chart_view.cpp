@@ -168,6 +168,11 @@ void ChartView::setupUI()
     connect(m_chartWidget, &ChartWidget::stochasticAdded, this, &ChartView::onStochasticAdded);
     connect(m_chartWidget, &ChartWidget::stochasticChanged, this, &ChartView::onStochasticChanged);
     connect(m_chartWidget, &ChartWidget::stochasticRemoved, this, &ChartView::onStochasticRemoved);
+
+    // Connecter les signaux pour l'Average True Range (ATR)
+    connect(m_chartWidget, &ChartWidget::atrAdded, this, &ChartView::onATRAdded);
+    connect(m_chartWidget, &ChartWidget::atrChanged, this, &ChartView::onATRChanged);
+    connect(m_chartWidget, &ChartWidget::atrRemoved, this, &ChartView::onATRRemoved);
     
     // Ajouter les widgets au layout du panneau droit
     rightPanelLayout->addWidget(m_chartPlaceholder);
@@ -212,7 +217,8 @@ void ChartView::setupIndicatorControls()
     m_indicatorTypeCombo = new QComboBox();
     m_indicatorTypeCombo->addItem("RSI", "RSI");
     m_indicatorTypeCombo->addItem("EMA", "EMA");
-    m_indicatorTypeCombo->addItem("Stochastic", "STOCH");  // Ajouter le Stochastique
+    m_indicatorTypeCombo->addItem("Stochastic", "STOCH");  
+    m_indicatorTypeCombo->addItem("ATR", "ATR"); 
     // Ajouter d'autres types d'indicateurs ici au besoin
     
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
@@ -253,6 +259,10 @@ void ChartView::onAddIndicatorClicked()
     else if (indicatorType == "STOCH") {
         // Ajouter un Stochastique avec les paramètres par défaut
         m_chartWidget->addStochastic(14, 3, 3);
+    }
+    else if (indicatorType == "ATR") {
+        // Ajouter un ATR avec la période par défaut (14)
+        m_chartWidget->addATR(14);
     }
     // Ajouter d'autres types d'indicateurs ici
 }
@@ -381,6 +391,39 @@ void ChartView::onStochasticRemoved(int id)
     refreshIndicatorsList();
 }
 
+void ChartView::onATRAdded(int id, int period)
+{
+    qDebug() << "ATR ajouté:" << "id=" << id << "période=" << period;
+    
+    // Créer les widgets pour cet ATR
+    QString name = QString("ATR (%1)").arg(period);
+    createIndicatorWidgets(id, name);
+    
+    // Mettre à jour le graphique
+    if (m_chartWidget->hasValidData()) {
+        m_chartWidget->updateChartDisplay();
+    }
+}
+void ChartView::onATRChanged(int id, int period)
+{
+    qDebug() << "ATR modifié:" << "id=" << id << "période=" << period;
+    
+    // Mettre à jour le libellé
+    if (m_indicatorLabels.contains(id)) {
+        m_indicatorLabels[id]->setText(QString("ATR (%1)").arg(period));
+    }
+    
+    // Mettre à jour le graphique
+    if (m_chartWidget->hasValidData()) {
+        m_chartWidget->updateChartDisplay();
+    }
+}
+void ChartView::onATRRemoved(int id)
+{
+    qDebug() << "ATR supprimé:" << "id=" << id;
+    refreshIndicatorsList();
+}
+
 void ChartView::createIndicatorWidgets(int id, const QString &name)
 {
     // Créer un widget horizontal pour cet indicateur
@@ -448,11 +491,21 @@ void ChartView::onEditIndicator(int id)
         delete dialog;
         return;
     }
+
+    // Rechercher si c'est un ATR
+    ChartWidget::ATRInstance* atr = m_chartWidget->findATR(id);
+    if (atr) {
+        // Créer et afficher le dialogue d'édition pour ATR
+        ATRDialog* dialog = new ATRDialog(this, m_chartWidget, id, *atr);
+        dialog->exec();
+        delete dialog;
+        return;
+    }
     
     qDebug() << "Indicateur introuvable:" << id;
 }
 
-// Mettre à jour onRemoveIndicator pour gérer aussi le Stochastique
+//Remove tous les indicateurs individuellement par leur ID
 void ChartView::onRemoveIndicator(int id)
 {
     // Essayer de supprimer comme RSI
@@ -467,6 +520,9 @@ void ChartView::onRemoveIndicator(int id)
     
     // Essayer de supprimer comme Stochastique
     m_chartWidget->removeStochastic(id);
+
+    // Essayer de supprimer comme ATR
+    m_chartWidget->removeATR(id);
 }
 
 
@@ -508,6 +564,15 @@ void ChartView::refreshIndicatorsList()
         if (stoch.visible) {
             QString name = QString("Stochastic (%1,%2,%3)").arg(stoch.fastKPeriod).arg(stoch.slowKPeriod).arg(stoch.slowDPeriod);
             createIndicatorWidgets(stoch.id, name);
+        }
+    }
+
+    // Pour chaque ATR actif, recréer les widgets
+    const std::vector<ChartWidget::ATRInstance>& atrInstances = m_chartWidget->getATRInstances();
+    for (const auto& atr : atrInstances) {
+        if (atr.visible) {
+            QString name = QString("ATR (%1)").arg(atr.period);
+            createIndicatorWidgets(atr.id, name);
         }
     }
     

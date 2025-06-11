@@ -89,6 +89,22 @@ public:
             return id == other.id;
         }
     };
+
+    /**
+     * @brief Structure qui représente une instance d'indicateur ATR
+     */
+    struct ATRInstance {
+        int id;                ///< Identifiant unique 
+        int period;            ///< Période de l'ATR
+        bool visible = true;   ///< Si l'indicateur est visible
+        int height = 120;      ///< Hauteur du panneau
+        int color = 0x006400;  ///< Couleur de la ligne (vert foncé par défaut)
+        
+        bool operator==(const ATRInstance& other) const {
+            return id == other.id;
+        }
+    };
+
     
     // ======== Constructeurs et destructeur ========
     explicit ChartWidget(QWidget* parent = nullptr);
@@ -104,10 +120,11 @@ public:
     const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
     const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
     const std::vector<StochasticInstance>& getStochasticInstances() const { return m_stochasticInstances; }
+    const std::vector<ATRInstance>& getATRInstances() const { return m_atrInstances; }
     RSIInstance* findRSI(int id);
     EMAInstance* findEMA(int id);
     StochasticInstance* findStochastic(int id);
-
+    ATRInstance* findATR(int id);
 
     void setChartWidth(int width);
     void setShowVolume(bool show);
@@ -164,6 +181,11 @@ signals:
     void stochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void stochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void stochasticRemoved(int id);
+
+    // Signaux pour l'ATR
+    void atrAdded(int id, int period);
+    void atrChanged(int id, int period);
+    void atrRemoved(int id);
     
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -188,6 +210,11 @@ public slots:
     int addStochastic(int fastKPeriod = 14, int slowKPeriod = 3, int slowDPeriod = 3);
     bool setStochasticConfig(int id, const StochasticInstance& config);
     bool removeStochastic(int id);
+
+    // Pour l'ATR
+    int addATR(int period = 14);
+    bool setATRConfig(int id, const ATRInstance& config);
+    bool removeATR(int id);
 
     // Pour gérer le redimensionnement du graphique
     // void onWindowResized(QSize newSize);
@@ -235,9 +262,10 @@ private:
         std::map<int, std::vector<double>> rsi;  // Clé: période, Valeur: données RSI
         std::map<int, std::vector<double>> ema;  // Clé: période, Valeur: données EMA
         std::map<std::tuple<int,int,int>, std::pair<std::vector<double>, std::vector<double>>> stochastic;
+        std::map<int, std::vector<double>> atr;  // Clé: période, Valeur: données ATR
         bool isValid = false;
     };
-    
+
     /**
      * @brief Structure de métadonnées pour chaque type de graphique
      */
@@ -322,10 +350,12 @@ private:
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
     std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
     std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
+    std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
 
     int m_nextRSIId = 1;                     ///< Prochain ID disponible pour RSI
     int m_nextEMAId = 1;                     ///< Prochain ID disponible pour EMA
     int m_nextStochasticId = 1;              ///< Prochain ID disponible pour Stochastique
+    int m_nextATRId = 1;                      ///< Prochain ID disponible pour ATR
 
     // Méthodes privées pour le RSI
     void addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow);
@@ -338,6 +368,10 @@ private:
     // Méthodes privées pour le Stochastic
     void addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow);
     void ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod);
+
+    // Méthodes privées pour l'ATR
+    void addATRToChart(FinanceChart* chart, const ATRInstance& atr, int startIndex, int pointsToShow);
+    void ensureATRCached(int period);
 
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;

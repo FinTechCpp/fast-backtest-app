@@ -202,3 +202,40 @@ void TechnicalIndicators::calculateStochastic(
         dValues[i] = sum / slowDPeriod;
     }
 }
+
+void TechnicalIndicators::calculateATR(
+    const std::vector<double>& highData,
+    const std::vector<double>& lowData,
+    const std::vector<double>& closeData,
+    int period,
+    std::vector<double>& atrValues)
+{
+    size_t dataSize = closeData.size();
+    atrValues.resize(dataSize);
+    
+    if (dataSize < static_cast<size_t>(period)) {
+        std::fill(atrValues.begin(), atrValues.end(), 0.0);  // Pas assez de données
+        return;
+    }
+    
+    // Calculer les variations de prix
+    std::vector<double> tr(dataSize - 1);
+    for (size_t i = 1; i < dataSize; ++i) {
+        double highLow = highData[i] - lowData[i];
+        double highClose = std::abs(highData[i] - closeData[i - 1]);
+        double lowClose = std::abs(lowData[i] - closeData[i - 1]);
+        tr[i - 1] = std::max({highLow, highClose, lowClose});
+    }
+    
+    // Calculer la première moyenne
+    double sum = 0.0;
+    for (int i = 0; i < period; ++i) {
+        sum += tr[i];
+        atrValues[i] = sum / period;  // Valeur initiale de l'ATR
+    }
+    
+    // Calculer l'ATR pour les points restants (méthode Wilder)
+    for (size_t i = period; i < dataSize; ++i) {
+        atrValues[i] = (atrValues[i - 1] * (period - 1) + tr[i - 1]) / period;
+    }
+}

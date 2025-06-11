@@ -24,12 +24,14 @@
 #include <vector>
 #include <memory>
 #include <map>
+
 #include "views/baseview.h"
-#include "chart_widget.h" // Inclure le nouveau widget
+#include "chart_widget.h"
 
 #include "dialog/rsi_dialog.h"
 #include "dialog/ema_dialog.h"
 #include "dialog/stochastic_dialog.h"
+#include "dialog/atr_dialog.h"
 
 class App;
 class RSIDialog;
@@ -58,7 +60,7 @@ private slots:
     void onIndicatorTypeSelected(int index);
     void onEditIndicator(int id);
     void onRemoveIndicator(int id);
-    void onRulerToolToggled(bool checked); // Nouvelle méthode
+    void onRulerToolToggled(bool checked); 
     void onRSIAdded(int id, int period);
     void onRSIChanged(int id, int period);
     void onRSIRemoved(int id);
@@ -72,6 +74,11 @@ private slots:
     void onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void onStochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void onStochasticRemoved(int id);
+
+    // Slots pour l'ATR
+    void onATRAdded(int id, int period);
+    void onATRChanged(int id, int period);
+    void onATRRemoved(int id);
     
     void refreshIndicatorsList();
 

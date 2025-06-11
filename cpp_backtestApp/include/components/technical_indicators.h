@@ -74,5 +74,12 @@ public:
         int slowDPeriod,
         std::vector<double>& kValues,
         std::vector<double>& dValues);
-    // D'autres méthodes pour d'autres indicateurs peuvent être ajoutées...
-};
+
+    static void calculateATR(
+        const std::vector<double>& highData,
+        const std::vector<double>& lowData,
+        const std::vector<double>& closeData,
+        int period,
+        std::vector<double>& atrValues
+    );
+    };

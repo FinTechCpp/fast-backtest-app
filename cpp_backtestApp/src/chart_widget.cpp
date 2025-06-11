@@ -660,6 +660,77 @@ bool ChartWidget::removeStochastic(int id)
     
     return true;
 }
+
+int ChartWidget::addATR(int period)
+{
+    if (period < 2) period = 2;  // Validation de base
+    
+    // Créer une nouvelle instance ATR
+    ATRInstance atr;
+    atr.id = m_nextATRId++;
+    atr.period = period;
+    
+    // S'assurer que les données ATR sont en cache
+    ensureATRCached(period);
+    
+    // Ajouter aux instances actives
+    m_atrInstances.push_back(atr);
+    
+    // Émettre le signal
+    emit atrAdded(atr.id, period);
+    
+    // Mettre à jour le graphique
+    if (hasValidData()) {
+        updateChartDisplay(true, true);
+    }
+    
+    return atr.id;
+}
+
+bool ChartWidget::setATRConfig(int id, const ATRInstance &config)
+{
+    ATRInstance* atr = findATR(id);
+    if (!atr) return false;
+
+    // Mettre à jour la configuration
+    *atr = config;
+
+    // S'assurer que les nouvelles données ATR sont en cache
+    ensureATRCached(config.period);
+
+    // Émettre le signal
+    emit atrChanged(id, config.period);
+
+    // Mettre à jour le graphique
+    if (hasValidData())
+        updateChartDisplay(true, true);
+
+    return true;
+}
+
+bool ChartWidget::removeATR(int id)
+{
+    auto it = std::find_if(m_atrInstances.begin(), m_atrInstances.end(),
+                         [id](const ATRInstance& atr) { return atr.id == id; });
+    
+    if (it == m_atrInstances.end()) {
+        return false;
+    }
+    
+    // Supprimer l'instance
+    m_atrInstances.erase(it);
+    
+    // Émettre le signal
+    emit atrRemoved(id);
+    
+    // Mettre à jour le graphique
+    if (hasValidData() && m_financeChart) {
+        updateChartDisplay(true, true);
+    }
+    
+    return true;
+}
+
 ChartWidget::RSIInstance* ChartWidget::findRSI(int id)
 {
     auto it = std::find_if(m_rsiInstances.begin(), m_rsiInstances.end(),
@@ -690,6 +761,18 @@ ChartWidget::StochasticInstance* ChartWidget::findStochastic(int id)
                          [id](const StochasticInstance& stochastic) { return stochastic.id == id; });
     
     if (it == m_stochasticInstances.end()) {
+        return nullptr;
+    }
+    
+    return &(*it);
+}
+
+ChartWidget::ATRInstance* ChartWidget::findATR(int id)
+{
+    auto it = std::find_if(m_atrInstances.begin(), m_atrInstances.end(),
+                         [id](const ATRInstance& atr) { return atr.id == id; });
+    
+    if (it == m_atrInstances.end()) {
         return nullptr;
     }
     
@@ -744,6 +827,19 @@ void ChartWidget::ensureStochasticCached(int fastKPeriod, int slowKPeriod, int s
     }
 }
 
+void ChartWidget::ensureATRCached(int period)
+{
+    // Vérifier que la période ATR est en cache
+    if (m_indicatorCache.isValid && !m_backtestData->getClose().empty() && !m_backtestData->getHigh().empty() && !m_backtestData->getLow().empty()) {
+        if (m_indicatorCache.atr.find(period) == m_indicatorCache.atr.end()) {
+            // Calculer l'ATR pour cette période
+            std::vector<double>& atrCache = m_indicatorCache.atr[period];
+            TechnicalIndicators::calculateATR(m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(), period, atrCache);
+            qDebug() << "Calculé ATR avec période" << period;
+        }
+    }
+}
+
 void ChartWidget::updateHeikinAshiCache()
 {
     if (!hasValidData()) {
@@ -778,11 +874,13 @@ void ChartWidget::updateIndicatorCache()
     m_indicatorCache.rsi.clear();
     m_indicatorCache.ema.clear();
     m_indicatorCache.stochastic.clear();
+    m_indicatorCache.atr.clear();
 
     // Recueillir toutes les périodes RSI nécessaires
     std::set<int> rsiPeriods;
     std::set<int> emaPeriods;
     std::set<std::tuple<int, int, int>> stochasticParams;
+    std::set<int> atrPeriods;
 
     // Ajouter les périodes de toutes les instances RSI actives
     for (const auto& rsi : m_rsiInstances) {
@@ -797,6 +895,11 @@ void ChartWidget::updateIndicatorCache()
     // Ajouter les paramètres de toutes les instances Stochastique actives
     for (const auto& stoch : m_stochasticInstances) {
         stochasticParams.insert(std::make_tuple(stoch.fastKPeriod, stoch.slowKPeriod, stoch.slowDPeriod));
+    }
+
+    // Ajouter les périodes de toutes les instances ATR actives
+    for (const auto& atr : m_atrInstances) {
+        atrPeriods.insert(atr.period);
     }
 
 
@@ -825,6 +928,12 @@ void ChartWidget::updateIndicatorCache()
         TechnicalIndicators::calculateStochastic(
             m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(),
             fastKPeriod, slowKPeriod, slowDPeriod, kValues, dValues);
+    }
+
+    // Calculer tous les ATR nécessaires
+    for (int period : atrPeriods) {
+        std::vector<double>& atrCache = m_indicatorCache.atr[period];
+        TechnicalIndicators::calculateATR(m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(), period, atrCache);
     }
 
     m_indicatorCache.isValid = true;
@@ -1068,6 +1177,13 @@ FinanceChart* ChartWidget::drawChart(
     for (const auto& stochastic : m_stochasticInstances) {
         if (stochastic.visible) {
             addStochasticToChart(c, stochastic, startIndex, timestamps.len);
+        }
+    }
+
+    // Ajouter tous les ATR actifs
+    for (const auto& atr : m_atrInstances) {
+        if (atr.visible) {
+            addATRToChart(c, atr, startIndex, timestamps.len);
         }
     }
 
@@ -1619,6 +1735,45 @@ void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInst
     // Ajouter les seuils pour les niveaux de surachat et de survente
     c->yAxis()->addMark(stochastic.overboughtLevel, 0xff6666, std::to_string(stochastic.overboughtLevel).c_str());
     c->yAxis()->addMark(stochastic.oversoldLevel, 0x6666ff, std::to_string(stochastic.oversoldLevel).c_str());
+}
+
+void ChartWidget::addATRToChart(FinanceChart* chart, const ATRInstance& atr, int startIndex, int pointsToShow)
+{
+    if (!m_indicatorCache.isValid) return;
+
+    auto it = m_indicatorCache.atr.find(atr.period);
+    if (it == m_indicatorCache.atr.end()) {
+        ensureATRCached(atr.period);
+        it = m_indicatorCache.atr.find(atr.period);
+        if (it == m_indicatorCache.atr.end()) {
+            return; // Toujours pas disponible
+        }
+    }
+
+    const std::vector<double>& atrData = it->second;
+    
+    if (startIndex >= (int)atrData.size()) return;
+
+    // Limiter le nombre de points à afficher
+    int endIndex = std::min(startIndex + pointsToShow, (int)atrData.size());
+    int actualPoints = endIndex - startIndex;
+
+    if (actualPoints <= 0) return;
+
+    // Extraire les données ATR visibles du cache
+    DoubleArray atrArray(&atrData[startIndex], actualPoints);
+    
+    // Ajouter le graphique d'indicateur
+    XYChart* c = chart->addIndicator(atr.height);
+    
+    // Configurer et ajouter l'ATR
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "ATR (%d)", atr.period);
+    LineLayer* layer = chart->addLineIndicator2(c, atrArray, atr.color, buffer);
+    layer->setFastLineMode(true);
+
+    // Configurer l'échelle de l'axe Y
+    c->yAxis()->setLinearScale(0, *std::max_element(atrData.begin() + startIndex, atrData.begin() + endIndex));
 }
 
 

@@ -1724,17 +1724,20 @@ void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInst
 
     LineLayer* kLayer = chart->addLineIndicator2(c, kArray, stochastic.kColor, buffer);
     kLayer->setFastLineMode(true);
-
+    
     snprintf(buffer, sizeof(buffer), "%%D (%d)", stochastic.slowDPeriod);
     LineLayer* dLayer = chart->addLineIndicator2(c, dArray, stochastic.dColor, buffer);
     dLayer->setFastLineMode(true);
-
+    
     // Configurer l'échelle de l'axe Y
     c->yAxis()->setLinearScale(0, 100);
-
+    
     // Ajouter les seuils pour les niveaux de surachat et de survente
-    c->yAxis()->addMark(stochastic.overboughtLevel, 0xff6666, std::to_string(stochastic.overboughtLevel).c_str());
-    c->yAxis()->addMark(stochastic.oversoldLevel, 0x6666ff, std::to_string(stochastic.oversoldLevel).c_str());
+    Mark* overboughtMark = c->yAxis()->addMark(stochastic.overboughtLevel, 0xff6666, std::to_string(stochastic.overboughtLevel).c_str());
+    Mark* oversoldMark = c->yAxis()->addMark(stochastic.oversoldLevel, 0x6666ff, std::to_string(stochastic.oversoldLevel).c_str());
+
+    c->addInterLineLayer(kLayer->getLine(), overboughtMark->getLine(), 0xCCff0000, Chart::Transparent);
+    c->addInterLineLayer(kLayer->getLine(), oversoldMark->getLine(), Chart::Transparent, 0xCC0000ff);
 }
 
 void ChartWidget::addATRToChart(FinanceChart* chart, const ATRInstance& atr, int startIndex, int pointsToShow)

@@ -178,17 +178,6 @@ void RSIDialog::updateRSI()
 void RSIDialog::onApply()
 {
     m_chartWidget->setRSIConfig(m_rsiId, m_currentRsi);
-    // m_chartWidget->setRSIPeriod(m_rsiId, m_currentRsi.period);
-    // m_chartWidget->setRSIHeight(m_rsiId, m_currentRsi.height);
-    // m_chartWidget->setRSIRange(m_rsiId, m_currentRsi.range);
-    // m_chartWidget->setRSIColor(m_rsiId, m_currentRsi.color);
-
-    // Note: Si ces setters n'existent pas encore, vous devrez les implémenter dans ChartWidget
-    // m_chartWidget->setRSIUpperColor(m_rsiId, m_currentRsi.upperColor);
-    // m_chartWidget->setRSILowerColor(m_rsiId, m_currentRsi.lowerColor);
-
-    m_chartWidget->updateChartDisplay();
-
     accept();
 }
 
@@ -196,11 +185,6 @@ void RSIDialog::onCancel()
 {
     // Restaurer les paramètres d'origine
     m_chartWidget->setRSIConfig(m_rsiId, m_originalRsi);
-    
-    // Mettre à jour le graphique
-    m_chartWidget->updateChartDisplay();
-    
-    // Fermer la boîte de dialogue
     reject();
 }
 

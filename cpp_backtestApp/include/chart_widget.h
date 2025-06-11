@@ -108,7 +108,7 @@ public:
     
     // ======== Constructeurs et destructeur ========
     explicit ChartWidget(QWidget* parent = nullptr);
-    ~ChartWidget() override;
+    ~ChartWidget() override = default;
     
     // ======== API Publique ========
     // Méthodes d'initialisation des données
@@ -134,16 +134,7 @@ public:
     void setRSIPeriod(int period);
     
     // Actions sur le graphique
-    // void createChart();    ///< Crée le graphique complet avec les données actuelles
-    // void updateChart();    ///< Met à jour le graphique avec les nouvelles données
-    /**
-     * @brief Crée ou met à jour le graphique avec les données actuelles
-     * 
-     * @param useViewport Si true, utiliser le viewport actuel; sinon, afficher toutes les données
-     * @param preserveViewport Si true, préserver la position du viewport actuel après mise à jour
-     * @return True si le graphique a été créé/mis à jour avec succès
-     */
-    bool updateChartDisplay(bool useViewport = true, bool preserveViewport = true);
+
     void clearChart();     ///< Efface le graphique et les données
     void resetZoom();      ///< Réinitialise le zoom à l'état initial
     
@@ -308,13 +299,21 @@ private:
     void setupChartViewer();
     
     // 4. Méthodes de rendu du graphique
-    FinanceChart* drawChart(const DoubleArray& timestamps, 
+    void createOrUpdateChart(const DoubleArray& timestamps, 
                           const DoubleArray& highData, 
                           const DoubleArray& lowData, 
                           const DoubleArray& openData, 
                           const DoubleArray& closeData,
                           const DoubleArray& volumeData,
                           int chartWidth);
+    /**
+     * @brief Crée ou met à jour le graphique avec les données actuelles
+     * 
+     * @param useViewport Si true, utiliser le viewport actuel; sinon, afficher toutes les données
+     * @param preserveViewport Si true, préserver la position du viewport actuel après mise à jour
+     * @return True si le graphique a été créé/mis à jour avec succès
+     */
+    bool updateChartDisplay(bool useViewport = true, bool preserveViewport = true);
     
     // 5. Composants du graphique
     FinanceChart* initializeChart(int chartWidth);
@@ -370,12 +369,12 @@ private:
     void ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod);
 
     // Méthodes privées pour l'ATR
-    void addATRToChart(FinanceChart* chart, const ATRInstance& atr, int startIndex, int pointsToShow);
+    void addATRToChart(std::unique_ptr<FinanceChart>& chart, const ATRInstance& atr, int startIndex, int pointsToShow);
     void ensureATRCached(int period);
 
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;
-    FinanceChart* m_financeChart = nullptr;
+    std::unique_ptr<FinanceChart> m_financeChart = nullptr;
     
     // 4. Constantes statiques
     static const std::array<ChartTypeInfo, static_cast<size_t>(ChartType::Count)> s_chartTypeData;

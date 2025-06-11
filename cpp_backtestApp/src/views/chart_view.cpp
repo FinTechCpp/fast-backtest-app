@@ -268,72 +268,42 @@ void ChartView::onAddIndicatorClicked()
 }
 
 void ChartView::onRSIAdded(int id, int period)
-{
-    qDebug() << "RSI ajouté:" << "id=" << id << "période=" << period;
-    
+{    
     // Créer les widgets pour ce RSI
     QString name = QString("RSI (%1)").arg(period);
     createIndicatorWidgets(id, name);
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChartDisplay();
-    }
 }
 
 void ChartView::onRSIChanged(int id, int period)
 {
-    qDebug() << "RSI modifié:" << "id=" << id << "période=" << period;
-    
     // Mettre à jour le libellé
     if (m_indicatorLabels.contains(id)) {
         m_indicatorLabels[id]->setText(QString("RSI (%1)").arg(period));
-    }
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChartDisplay();
     }
 }
 
 void ChartView::onRSIRemoved(int id)
 {
-    qDebug() << "RSI supprimé:" << "id=" << id;
     refreshIndicatorsList();
 }
 
 void ChartView::onEMAAdded(int id, int period)
 {
-    qDebug() << "EMA ajouté:" << "id=" << id << "période=" << period;
-    
     // Créer les widgets pour cet EMA
     QString name = QString("EMA (%1)").arg(period);
     createIndicatorWidgets(id, name);
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChartDisplay();
-    }
 }
 
 void ChartView::onEMAChanged(int id, int period)
 {
-    qDebug() << "EMA modifié:" << "id=" << id << "période=" << period;
-    
     // Mettre à jour le libellé
     if (m_indicatorLabels.contains(id)) {
         m_indicatorLabels[id]->setText(QString("EMA (%1)").arg(period));
-    }
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChartDisplay();
     }
 }
 
 void ChartView::onEMARemoved(int id)
 {
-    qDebug() << "EMA supprimé:" << "id=" << id;
     refreshIndicatorsList();
 }
 
@@ -354,73 +324,41 @@ void ChartView::onEditEMA()
 }
 
 void ChartView::onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
-{
-    qDebug() << "Stochastic ajouté:" << "id=" << id << "fastK=" << fastKPeriod
-             << "slowK=" << slowKPeriod << "slowD=" << slowDPeriod;
-    
+{    
     // Créer les widgets pour ce Stochastique
     QString name = QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
     createIndicatorWidgets(id, name);
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChartDisplay();
-    }
 }
 
 void ChartView::onStochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
 {
-    qDebug() << "Stochastic modifié:" << "id=" << id << "fastK=" << fastKPeriod
-             << "slowK=" << slowKPeriod << "slowD=" << slowDPeriod;
-    
     // Mettre à jour le libellé
     if (m_indicatorLabels.contains(id)) {
         QString name = QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
         m_indicatorLabels[id]->setText(name);
     }
-    
-    // // Mettre à jour le graphique
-    // if (m_chartWidget->hasValidData()) {
-    //     m_chartWidget->updateChart();
-    // }
 }
 
 void ChartView::onStochasticRemoved(int id)
 {
-    qDebug() << "Stochastic supprimé:" << "id=" << id;
     refreshIndicatorsList();
 }
 
 void ChartView::onATRAdded(int id, int period)
 {
-    qDebug() << "ATR ajouté:" << "id=" << id << "période=" << period;
-    
     // Créer les widgets pour cet ATR
     QString name = QString("ATR (%1)").arg(period);
     createIndicatorWidgets(id, name);
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChartDisplay();
-    }
 }
 void ChartView::onATRChanged(int id, int period)
 {
-    qDebug() << "ATR modifié:" << "id=" << id << "période=" << period;
-    
     // Mettre à jour le libellé
     if (m_indicatorLabels.contains(id)) {
         m_indicatorLabels[id]->setText(QString("ATR (%1)").arg(period));
     }
-    
-    // Mettre à jour le graphique
-    if (m_chartWidget->hasValidData()) {
-        m_chartWidget->updateChartDisplay();
-    }
 }
 void ChartView::onATRRemoved(int id)
 {
-    qDebug() << "ATR supprimé:" << "id=" << id;
     refreshIndicatorsList();
 }
 
@@ -462,6 +400,7 @@ void ChartView::createIndicatorWidgets(int id, const QString &name)
     m_indicatorsLayout->addWidget(indicatorWidget);
 }
 
+// oula cela ne va pas du tout il faut mutualiser les id des indicateur ou je ne sias pas mais la c'est pas propre
 void ChartView::onEditIndicator(int id)
 {
     // Rechercher l'instance RSI avec cet ID
@@ -596,10 +535,10 @@ void ChartView::refreshIndicatorsList()
     }
 
     // todo a supprimer c'est le chart qui doit etre autonome
-    if (m_chartWidget->hasValidData()) {
-        // Mettre à jour le graphique après avoir rafraîchi la liste des indicateurs
-        m_chartWidget->updateChartDisplay();
-    }
+    // if (m_chartWidget->hasValidData()) {
+    //     // Mettre à jour le graphique après avoir rafraîchi la liste des indicateurs
+    //     m_chartWidget->updateChartDisplay();
+    // }
 }
 
 void ChartView::updateData(BacktestResults* results)

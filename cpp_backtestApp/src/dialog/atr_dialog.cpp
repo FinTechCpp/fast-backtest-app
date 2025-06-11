@@ -119,7 +119,6 @@ void ATRDialog::updateATR()
 void ATRDialog::onApply()
 {
     m_chartWidget->setATRConfig(m_atrId, m_currentAtr);
-    m_chartWidget->updateChartDisplay();
     accept();
 }
 
@@ -127,10 +126,5 @@ void ATRDialog::onCancel()
 {
     // Restaurer les paramètres d'origine
     m_chartWidget->setATRConfig(m_atrId, m_originalAtr);
-    
-    // Mettre à jour le graphique
-    m_chartWidget->updateChartDisplay();
-    
-    // Fermer la boîte de dialogue
     reject();
 }

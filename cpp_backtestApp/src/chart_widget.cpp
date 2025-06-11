@@ -61,17 +61,6 @@ ChartWidget::ChartWidget(QWidget* parent)
     qDebug() << "ChartWidget créé";
 }
 
-ChartWidget::~ChartWidget()
-{
-    // Nettoyer le graphique
-    if (m_financeChart) {
-        delete m_financeChart;
-        m_financeChart = nullptr;
-    }
-    
-    qDebug() << "ChartWidget détruit";
-}
-
 void ChartWidget::setBacktestResults(const BacktestResults* results) {
     if (!results) {
         qWarning() << "Tentative de définir des résultats de backtest nuls";
@@ -113,6 +102,8 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
     if (!hasValidData() || !m_chartViewer) {
         return false;
     }
+
+    std::cout << "Mise à jour de l'affichage du graphique" << std::endl;
     
     try {
         // Sauvegarder l'état actuel du viewport si nécessaire
@@ -122,12 +113,6 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         if (preserveViewport && m_chartViewer) {
             currentLeft = m_chartViewer->getViewPortLeft();
             currentWidth = m_chartViewer->getViewPortWidth();
-        }
-        
-        // Nettoyer le graphique précédent
-        if (m_financeChart) {
-            delete m_financeChart;
-            m_financeChart = nullptr;
         }
         
         // Déterminer les indices de début et fin basés sur le viewport
@@ -182,14 +167,14 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         }
         
         // Créer le graphique
-        m_financeChart = drawChart(timeStamps, highData, lowData, openData, closeData, 
+        createOrUpdateChart(timeStamps, highData, lowData, openData, closeData, 
                                   volumeData, m_config.chartWidth);
         
         // Configurer le viewport
         if (!useViewport) {
             // Afficher toutes les données
-            m_chartViewer->setViewPortWidth(1.0);
             m_chartViewer->setViewPortLeft(0);
+            m_chartViewer->setViewPortWidth(1.0);
         } else if (preserveViewport) {
             // Restaurer le viewport précédent
             m_chartViewer->setViewPortLeft(currentLeft);
@@ -197,7 +182,7 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         }
         
         // Mettre à jour l'affichage
-        m_chartViewer->updateViewPort(true, false);
+        // m_chartViewer->updateViewPort(true, false);
         
         // Émettre un signal si c'est une création initiale
         if (!useViewport) {
@@ -214,10 +199,7 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
 void ChartWidget::clearChart()
 {
     // Nettoyer le graphique
-    if (m_financeChart) {
-        delete m_financeChart;
-        m_financeChart = nullptr;
-    }
+    m_financeChart.reset();
     
     // Réinitialiser le viewer
     if (m_chartViewer) {
@@ -225,8 +207,6 @@ void ChartWidget::clearChart()
     }
     
     // Effacer les données
-    // m_priceData = PriceData();
-    // m_tradeData = TradeData();
     m_equityData = EquityData();
 }
 
@@ -273,7 +253,7 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     }
     
     // Comportement normal de suivi du graphique
-    trackFinance(m_financeChart, mouseX);
+    trackFinance(m_financeChart.get(), mouseX);
     
     // Récupérer les informations sur le point
     if (m_financeChart->getChartCount() > 1) {
@@ -462,13 +442,25 @@ int ChartWidget::addRSI(int period)
     
     // Ajouter aux instances actives
     m_rsiInstances.push_back(rsi);
-    
-    // Émettre le signal
-    emit rsiAdded(rsi.id, period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData())
+        
+    // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
+    if (hasValidData() && m_chartViewer) {
+        // Déterminer l'index de début et le nombre de points visibles actuellement
+        int startIndex = m_chartViewer->getViewPortLeft();
+        int pointsToShow = m_chartViewer->getViewPortWidth();
+
+        // Ajouter directement le RSI au graphique existant
+        addRSIToChart((FinanceChart*)m_chartViewer->getChart(), rsi, startIndex, pointsToShow);
+
+        m_chartViewer->updateViewPort(false, false);
+    }
+    else if (hasValidData()) {
+        // Si pas de graphique mais des données valides, créer le graphique complet
         updateChartDisplay(true, true);
+    }
+
+    emit rsiAdded(rsi.id, rsi.period);
+
     
     return rsi.id;
 }
@@ -531,14 +523,25 @@ int ChartWidget::addEMA(int period)
     
     // Ajouter aux instances actives
     m_emaInstances.push_back(ema);
-    
-    // Émettre le signal
-    emit emaAdded(ema.id, period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData()) {
+
+    // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
+    if (hasValidData() && m_financeChart && m_chartViewer) {
+        // Déterminer l'index de début et le nombre de points visibles actuellement
+        int startIndex = m_chartViewer->getViewPortLeft();
+        int pointsToShow = m_chartViewer->getViewPortWidth();
+
+        // Ajouter directement le RSI au graphique existant
+        addEMAToChart((FinanceChart*)m_chartViewer->getChart(), ema, startIndex, pointsToShow);
+        
+        m_chartViewer->updateViewPort(false, false);
+    }
+    else if (hasValidData()) {
+        // Si pas de graphique mais des données valides, créer le graphique complet
         updateChartDisplay(true, true);
     }
+
+    // Émettre le signal
+    emit emaAdded(ema.id, ema.period);
     
     return ema.id;
 }
@@ -605,14 +608,26 @@ int ChartWidget::addStochastic(int fastKPeriod, int slowKPeriod, int slowDPeriod
     
     // Ajouter aux instances actives
     m_stochasticInstances.push_back(stochastic);
-    
-    // Émettre le signal
-    emit stochasticAdded(stochastic.id, fastKPeriod, slowKPeriod, slowDPeriod);
-    
-    // Mettre à jour le graphique
-    if (hasValidData()) {
+
+
+    // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
+    if (hasValidData() && m_financeChart && m_chartViewer) {
+        // Déterminer l'index de début et le nombre de points visibles actuellement
+        int startIndex = m_chartViewer->getViewPortLeft();
+        int pointsToShow = m_chartViewer->getViewPortWidth();
+
+        // Ajouter directement le Stochastique au graphique existant
+        addStochasticToChart((FinanceChart*)m_chartViewer->getChart(), stochastic, startIndex, pointsToShow);
+
+        m_chartViewer->updateViewPort(false, false);
+    }
+    else if (hasValidData()) {
+        // Si pas de graphique mais des données valides, créer le graphique complet
         updateChartDisplay(true, true);
     }
+
+    // Émettre le signal
+    emit stochasticAdded(stochastic.id, stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
     
     return stochastic.id;
 }
@@ -676,13 +691,25 @@ int ChartWidget::addATR(int period)
     // Ajouter aux instances actives
     m_atrInstances.push_back(atr);
     
-    // Émettre le signal
-    emit atrAdded(atr.id, period);
-    
-    // Mettre à jour le graphique
-    if (hasValidData()) {
+    // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
+    if (hasValidData() && m_financeChart && m_chartViewer) {
+        // Déterminer l'index de début et le nombre de points visibles actuellement
+        int startIndex = m_chartViewer->getViewPortLeft();
+        int pointsToShow = m_chartViewer->getViewPortWidth();
+
+        // Ajouter directement le Stochastique au graphique existant
+        addATRToChart(m_financeChart, atr, startIndex, pointsToShow);
+        std::cout << "On va appeler updateViewPort" << std::endl;
+
+        m_chartViewer->updateViewPort(false, true);
+    }
+    else if (hasValidData()) {
+        // Si pas de graphique mais des données valides, créer le graphique complet
         updateChartDisplay(true, true);
     }
+
+    // Émettre le signal
+    emit atrAdded(atr.id, atr.period);
     
     return atr.id;
 }
@@ -700,6 +727,8 @@ bool ChartWidget::setATRConfig(int id, const ATRInstance &config)
 
     // Émettre le signal
     emit atrChanged(id, config.period);
+
+    std::cout << "ATR modifié avec ID: " << id << " et période: " << config.period << std::endl;
 
     // Mettre à jour le graphique
     if (hasValidData())
@@ -722,6 +751,8 @@ bool ChartWidget::removeATR(int id)
     
     // Émettre le signal
     emit atrRemoved(id);
+
+    std::cout << "ATR supprimé avec ID: " << id << std::endl;
     
     // Mettre à jour le graphique
     if (hasValidData() && m_financeChart) {
@@ -820,9 +851,6 @@ void ChartWidget::ensureStochasticCached(int fastKPeriod, int slowKPeriod, int s
             TechnicalIndicators::calculateStochastic(
                 m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(),
                 fastKPeriod, slowKPeriod, slowDPeriod, kValues, dValues);
-                
-            qDebug() << "Calculé Stochastic avec périodes fastK:" << fastKPeriod 
-                     << "slowK:" << slowKPeriod << "slowD:" << slowDPeriod;
         }
     }
 }
@@ -832,10 +860,8 @@ void ChartWidget::ensureATRCached(int period)
     // Vérifier que la période ATR est en cache
     if (m_indicatorCache.isValid && !m_backtestData->getClose().empty() && !m_backtestData->getHigh().empty() && !m_backtestData->getLow().empty()) {
         if (m_indicatorCache.atr.find(period) == m_indicatorCache.atr.end()) {
-            // Calculer l'ATR pour cette période
             std::vector<double>& atrCache = m_indicatorCache.atr[period];
             TechnicalIndicators::calculateATR(m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(), period, atrCache);
-            qDebug() << "Calculé ATR avec période" << period;
         }
     }
 }
@@ -1070,7 +1096,7 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
         
         // Update only if we have valid data and the chart exists
         if (hasValidData() && m_chartViewer && m_financeChart) {
-            updateChartDisplay(true, true);
+            m_chartViewer->updateViewPort(false, false);
         }
     }
 }
@@ -1081,7 +1107,7 @@ DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec) {
     return DoubleArray(vec.data(), static_cast<int>(vec.size()));
 }
 
-FinanceChart* ChartWidget::drawChart(
+void ChartWidget::createOrUpdateChart(
     const DoubleArray& timestamps, 
     const DoubleArray& highData, 
     const DoubleArray& lowData, 
@@ -1090,17 +1116,12 @@ FinanceChart* ChartWidget::drawChart(
     const DoubleArray& volumeData,
     int chartWidth)
 {
-    // Nettoyer le graphique précédent
-    if (m_financeChart) {
-        delete m_financeChart;
-        m_financeChart = nullptr;
-    }
     
     // Créer un nouveau graphique
-    FinanceChart* c = new FinanceChart(chartWidth);
+    m_financeChart = std::make_unique<FinanceChart>(chartWidth);
 
-    c->setPlotAreaStyle(0xE2F4FF, 0xCC999999, 0xCC999999, 0xCC999999, 0xCC999999);
-    c->setDateLabelFormat(
+    m_financeChart->setPlotAreaStyle(0xE2F4FF, 0xCC999999, 0xCC999999, 0xCC999999, 0xCC999999);
+    m_financeChart->setDateLabelFormat(
         "{value|yyyy}", 
         "{value|yyyy-mm-dd}", 
         "{value|mm-dd}", 
@@ -1108,20 +1129,21 @@ FinanceChart* ChartWidget::drawChart(
         "{value|mm-dd}", 
         "{value|yyyy-mm-dd hh:nn:ss}", 
         "{value|hh:nn:ss}"
-    );    c->setDateLabelSpacing(50); // Espacement des étiquettes de date
+    );
+    m_financeChart->setDateLabelSpacing(50); // Espacement des étiquettes de date
 
     // Configurer les données
-    c->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
+    m_financeChart->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
 
     // METHODE DE GITAN : Cacher la légende par défaut de ChartDirector en la rendant transparente 
-    c->setLegendStyle("normal", 8, Chart::Transparent, Chart::Transparent);
-    
+    m_financeChart->setLegendStyle("normal", 8, Chart::Transparent, Chart::Transparent);
+
     // Ajouter le titre du graphique
     std::string chartTypeStr = chartTypeToString(m_config.chartType).toStdString();
     std::string title = "Graphique de trading (" + chartTypeStr + ") - " + 
                        std::to_string(timestamps.len) + " points";
-    c->addTitle(title.c_str());
-    
+    m_financeChart->addTitle(title.c_str());
+
     // Hauteurs pour les différentes parties du graphique
     int mainChartHeight = 400;  // Hauteur du graphique principal
     int volumeHeight = 100;     // Hauteur du graphique de volume
@@ -1145,57 +1167,54 @@ FinanceChart* ChartWidget::drawChart(
     }
     
     // 1. Ajouter la courbe d'équité en haut si disponible
-    addEquityCurveSection(c, timestamps, startIndex);
-    
+    addEquityCurveSection(m_financeChart.get(), timestamps, startIndex);
+
     // 2. Ajouter le graphique principal
-    c->addMainChart(mainChartHeight);
+    m_financeChart->addMainChart(mainChartHeight);
 
     // Ajouter le type de graphique approprié selon le type actuel
     if (m_config.chartType == ChartType::CandleStick || m_config.chartType == ChartType::HeikinAshi) {
-        c->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
+        m_financeChart->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
     } else if (m_config.chartType == ChartType::OHLC) {
-        c->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
+        m_financeChart->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
     } else if (m_config.chartType == ChartType::Close) {
-        c->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
+        m_financeChart->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
 
     // Ajouter tous les RSI actifs
     for (const auto& rsi : m_rsiInstances) {
         if (rsi.visible) {
-            addRSIToChart(c, rsi, startIndex, timestamps.len);
+            addRSIToChart(m_financeChart.get(), rsi, startIndex, timestamps.len);
         }
     }
 
     // Ajouter tous les EMA actifs
     for (const auto& ema : m_emaInstances) {
         if (ema.visible) {
-            addEMAToChart(c, ema, startIndex, timestamps.len);
+            addEMAToChart(m_financeChart.get(), ema, startIndex, timestamps.len);
         }
     }
 
     // Ajouter tous les Stochastiques actifs
     for (const auto& stochastic : m_stochasticInstances) {
         if (stochastic.visible) {
-            addStochasticToChart(c, stochastic, startIndex, timestamps.len);
+            addStochasticToChart(m_financeChart.get(), stochastic, startIndex, timestamps.len);
         }
     }
 
     // Ajouter tous les ATR actifs
     for (const auto& atr : m_atrInstances) {
         if (atr.visible) {
-            addATRToChart(c, atr, startIndex, timestamps.len);
+            addATRToChart(m_financeChart, atr, startIndex, timestamps.len);
         }
     }
 
     // 4. Ajouter les trades si disponibles
-    addTradeMarkers(c, timestamps, startIndex);
-    
-    // Mettre à jour le graphique dans le viewer
-    m_chartViewer->setChart(c);
-    // m_chartViewer->setFullRange("x", 0, timestamps.len - 1);
+    addTradeMarkers(m_financeChart.get(), timestamps, startIndex);
 
-    
-    return c;
+    // Mettre à jour le graphique dans le viewer
+    if (m_chartViewer)
+        m_chartViewer->setChart(m_financeChart.get());
 }
 
 FinanceChart *ChartWidget::initializeChart(int chartWidth)
@@ -1740,7 +1759,7 @@ void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInst
     c->addInterLineLayer(kLayer->getLine(), oversoldMark->getLine(), Chart::Transparent, 0xCC0000ff);
 }
 
-void ChartWidget::addATRToChart(FinanceChart* chart, const ATRInstance& atr, int startIndex, int pointsToShow)
+void ChartWidget::addATRToChart(std::unique_ptr<FinanceChart>& chart, const ATRInstance& atr, int startIndex, int pointsToShow)
 {
     if (!m_indicatorCache.isValid) return;
 

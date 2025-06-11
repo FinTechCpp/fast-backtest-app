@@ -351,9 +351,6 @@ void EMADialog::onApply()
         }
     }
     
-    // 3. Mettre à jour le graphique
-    m_chartWidget->updateChartDisplay();
-    
     // 4. Fermer la boîte de dialogue
     accept();
 }
@@ -374,9 +371,6 @@ void EMADialog::onCancel()
         // m_chartWidget->setEMAVisible(id, ema.visible);
         // m_chartWidget->setEMAColor(id, ema.color);
     }
-    
-    // 3. Mettre à jour le graphique
-    m_chartWidget->updateChartDisplay();
     
     // 4. Fermer la boîte de dialogue
     reject();

@@ -162,9 +162,9 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ env.VERSION }}
-        name: Windows Release v${{ env.VERSION }}
+        name: IG-Trading-Bot v${{ env.VERSION }}
         body: |
-          🚀 **Nouvelle release Windows v${{ env.VERSION }}**
+          🚀 **Nouvelle release v${{ env.VERSION }}**
           
           **Informations de build:**
           - Version: ${{ env.VERSION }}

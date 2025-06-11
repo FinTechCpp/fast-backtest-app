@@ -105,95 +105,90 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
 
     std::cout << "Mise à jour de l'affichage du graphique" << std::endl;
     
-    try {
-        // Sauvegarder l'état actuel du viewport si nécessaire
-        double currentLeft = 0.0;
-        double currentWidth = 1.0;
+    // Sauvegarder l'état actuel du viewport si nécessaire
+    double currentLeft = 0.0;
+    double currentWidth = 1.0;
+    
+    if (preserveViewport && m_chartViewer) {
+        currentLeft = m_chartViewer->getViewPortLeft();
+        currentWidth = m_chartViewer->getViewPortWidth();
+    }
+    
+    // Déterminer les indices de début et fin basés sur le viewport
+    int startIndex = 0;
+    int pointsToShow = static_cast<int>(m_timestampsCache.size());
+    
+    if (useViewport) {
+        int totalPoints = pointsToShow;
+        double viewPortLeft = m_chartViewer->getViewPortLeft();
+        double viewPortWidth = m_chartViewer->getViewPortWidth();
         
-        if (preserveViewport && m_chartViewer) {
-            currentLeft = m_chartViewer->getViewPortLeft();
-            currentWidth = m_chartViewer->getViewPortWidth();
-        }
+        startIndex = (int)floor(viewPortLeft * totalPoints);
+        int endIndex = (int)ceil((viewPortLeft + viewPortWidth) * totalPoints) - 1;
         
-        // Déterminer les indices de début et fin basés sur le viewport
-        int startIndex = 0;
-        int pointsToShow = static_cast<int>(m_timestampsCache.size());
+        // S'assurer que les indices sont dans les limites
+        startIndex = std::max(0, std::min(startIndex, totalPoints - 1));
+        endIndex = std::max(startIndex, std::min(endIndex, totalPoints - 1));
         
-        if (useViewport) {
-            int totalPoints = pointsToShow;
-            double viewPortLeft = m_chartViewer->getViewPortLeft();
-            double viewPortWidth = m_chartViewer->getViewPortWidth();
-            
-            startIndex = (int)floor(viewPortLeft * totalPoints);
-            int endIndex = (int)ceil((viewPortLeft + viewPortWidth) * totalPoints) - 1;
-            
-            // S'assurer que les indices sont dans les limites
-            startIndex = std::max(0, std::min(startIndex, totalPoints - 1));
-            endIndex = std::max(startIndex, std::min(endIndex, totalPoints - 1));
-            
-            pointsToShow = endIndex - startIndex + 1;
-        }
+        pointsToShow = endIndex - startIndex + 1;
+    }
+    
+    // Extraire les données à afficher
+    DoubleArray timeStamps;
+    DoubleArray openData, highData, lowData, closeData, volumeData;
+    
+    if (startIndex < static_cast<int>(m_timestampsCache.size())) {
+        timeStamps = DoubleArray(&m_timestampsCache[startIndex], pointsToShow);
+        volumeData = DoubleArray(&m_backtestData->getVolume()[startIndex], pointsToShow);
         
-        // Extraire les données à afficher
-        DoubleArray timeStamps;
-        DoubleArray openData, highData, lowData, closeData, volumeData;
-        
-        if (startIndex < static_cast<int>(m_timestampsCache.size())) {
-            timeStamps = DoubleArray(&m_timestampsCache[startIndex], pointsToShow);
-            volumeData = DoubleArray(&m_backtestData->getVolume()[startIndex], pointsToShow);
-            
-            // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
-            if (m_config.chartType == ChartType::HeikinAshi) {
-                // Vérifier si le cache est valide
-                if (!m_heikinAshiCache.isValid) {
-                    updateHeikinAshiCache();
-                }
-                
-                // Utiliser les données Heikin-Ashi
-                openData = DoubleArray(&m_heikinAshiCache.open[startIndex], pointsToShow);
-                highData = DoubleArray(&m_heikinAshiCache.high[startIndex], pointsToShow);
-                lowData = DoubleArray(&m_heikinAshiCache.low[startIndex], pointsToShow);
-                closeData = DoubleArray(&m_heikinAshiCache.close[startIndex], pointsToShow);
-            } else {
-                // Utiliser les données OHLC standards
-                openData = DoubleArray(&m_backtestData->getOpen()[startIndex], pointsToShow);
-                highData = DoubleArray(&m_backtestData->getHigh()[startIndex], pointsToShow);
-                lowData = DoubleArray(&m_backtestData->getLow()[startIndex], pointsToShow);
-                closeData = DoubleArray(&m_backtestData->getClose()[startIndex], pointsToShow);
+        // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
+        if (m_config.chartType == ChartType::HeikinAshi) {
+            // Vérifier si le cache est valide
+            if (!m_heikinAshiCache.isValid) {
+                updateHeikinAshiCache();
             }
+            
+            // Utiliser les données Heikin-Ashi
+            openData = DoubleArray(&m_heikinAshiCache.open[startIndex], pointsToShow);
+            highData = DoubleArray(&m_heikinAshiCache.high[startIndex], pointsToShow);
+            lowData = DoubleArray(&m_heikinAshiCache.low[startIndex], pointsToShow);
+            closeData = DoubleArray(&m_heikinAshiCache.close[startIndex], pointsToShow);
         } else {
-            // Pas de données à afficher
-            return false;
+            // Utiliser les données OHLC standards
+            openData = DoubleArray(&m_backtestData->getOpen()[startIndex], pointsToShow);
+            highData = DoubleArray(&m_backtestData->getHigh()[startIndex], pointsToShow);
+            lowData = DoubleArray(&m_backtestData->getLow()[startIndex], pointsToShow);
+            closeData = DoubleArray(&m_backtestData->getClose()[startIndex], pointsToShow);
         }
-        
-        // Créer le graphique
-        createOrUpdateChart(timeStamps, highData, lowData, openData, closeData, 
-                                  volumeData, m_config.chartWidth);
-        
-        // Configurer le viewport
-        if (!useViewport) {
-            // Afficher toutes les données
-            m_chartViewer->setViewPortLeft(0);
-            m_chartViewer->setViewPortWidth(1.0);
-        } else if (preserveViewport) {
-            // Restaurer le viewport précédent
-            m_chartViewer->setViewPortLeft(currentLeft);
-            m_chartViewer->setViewPortWidth(currentWidth);
-        }
-        
-        // Mettre à jour l'affichage
-        // m_chartViewer->updateViewPort(true, false);
-        
-        // Émettre un signal si c'est une création initiale
-        if (!useViewport) {
-            emit chartCreated();
-        }
-        
-        return true;
-    } catch (const std::exception& e) {
-        qCritical() << "Erreur lors de la création/mise à jour du graphique:" << e.what();
+    } else {
+        // Pas de données à afficher
         return false;
     }
+    
+    // Créer le graphique
+    createOrUpdateChart(timeStamps, highData, lowData, openData, closeData, 
+                                volumeData, m_config.chartWidth);
+    
+    // Configurer le viewport
+    if (!useViewport) {
+        // Afficher toutes les données
+        m_chartViewer->setViewPortLeft(0);
+        m_chartViewer->setViewPortWidth(1.0);
+    } else if (preserveViewport) {
+        // Restaurer le viewport précédent
+        m_chartViewer->setViewPortLeft(currentLeft);
+        m_chartViewer->setViewPortWidth(currentWidth);
+    }
+    
+    // Mettre à jour l'affichage
+    // m_chartViewer->updateViewPort(true, false);
+    
+    // Émettre un signal si c'est une création initiale
+    if (!useViewport) {
+        emit chartCreated();
+    }
+    
+    return true;
 }
 
 void ChartWidget::clearChart()
@@ -1091,7 +1086,7 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
     }
     
     // Update chart width if it's significant
-    if (newSize.width() > 10 && std::abs(newSize.width() - m_config.chartWidth) > 5) {
+    if (newSize.width() > 10 && std::abs(newSize.width() - m_config.chartWidth) > 50) {
         m_config.chartWidth = newSize.width() - 10;
         
         // Update only if we have valid data and the chart exists
@@ -1144,10 +1139,6 @@ void ChartWidget::createOrUpdateChart(
                        std::to_string(timestamps.len) + " points";
     m_financeChart->addTitle(title.c_str());
 
-    // Hauteurs pour les différentes parties du graphique
-    int mainChartHeight = 400;  // Hauteur du graphique principal
-    int volumeHeight = 100;     // Hauteur du graphique de volume
-
     // Déterminer l'index de début et de fin des données actuellement affichées
     // timestamps contient uniquement les bougies visibles
     int startIndex = 0;  // L'index de début des données visibles par rapport au dataset complet
@@ -1170,7 +1161,7 @@ void ChartWidget::createOrUpdateChart(
     addEquityCurveSection(m_financeChart.get(), timestamps, startIndex);
 
     // 2. Ajouter le graphique principal
-    m_financeChart->addMainChart(mainChartHeight);
+    m_financeChart->addMainChart(m_config.mainChartHeight);
 
     // Ajouter le type de graphique approprié selon le type actuel
     if (m_config.chartType == ChartType::CandleStick || m_config.chartType == ChartType::HeikinAshi) {

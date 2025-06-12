@@ -1,5 +1,17 @@
 import pandas as pd
 import re
+from datetime import datetime, timedelta, time
+import pytz
+from collections import defaultdict
+import json
+from pathlib import Path
+import matplotlib.pyplot as plt
+import seaborn as sns
+from typing import Dict, List, Tuple, Optional
+from collections import Counter
+import numpy as np
+import holidays
+import matplotlib.dates as mdates
 
 def merge_ohlc_dataframes(existing_df, new_df, frequency='10s'):
     """
@@ -178,186 +190,262 @@ def add_index_to_csv(file_path):
     df.to_csv(file_path, index=False)
     
     print(f"Added index column to {file_path} and saved successfully.")
-    
-def checkDataFile(file_path, interval, market_open_time, market_close_time, market_days=None):
+
+def checkDataFile(
+    file_path: str, 
+    interval: str = '10s', 
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None
+) -> Dict:
     """
-    Verify the integrity of an OHLC CSV file by checking for gaps during market hours.
+    Check NASDAQ 100 historical OHLC data for gaps, verifying each trading day has 
+    continuous data with the expected pattern: starting at market open + interval 
+    and ending at market close - interval.
     
     Parameters:
     -----------
     file_path : str
-        Path to the CSV file containing OHLC data
+        Path to the CSV file containing the OHLC data
     interval : str
-        Time interval between candles (e.g., '10s', '1min', '5min')
-    market_open_time : str
-        Market opening time in HH:MM format (e.g., '09:30')
-    market_close_time : str
-        Market closing time in HH:MM format (e.g., '16:00')
-    market_days : list, optional
-        List of market days (0=Monday, 6=Sunday). Default is [0,1,2,3,4] (weekdays)
+        Frequency of the data (e.g., '10s', '1min', '10secs')
+    start_date : str, optional
+        Start date for analysis in format 'YYYY-MM-DD', if None use earliest date
+    end_date : str, optional
+        End date for analysis in format 'YYYY-MM-DD', if None use latest date
         
     Returns:
     --------
     dict
-        A report containing integrity check results
+        A report containing analysis results including:
+        - Total trading days analyzed
+        - Days with gaps
+        - Detailed list of gaps by date
+        - Summary statistics
     """
+    # Load the data
+    df = pd.read_csv(file_path)
     
-    # Default to weekdays if no market days specified
-    if market_days is None:
-        market_days = [0, 1, 2, 3, 4]  # Monday to Friday
+    # Ensure date column is datetime with timezone
+    df['date'] = pd.to_datetime(df['date'])
     
-    # Initialize the report
+    # Extract date only for grouping
+    df['trading_date'] = df['date'].dt.date
+    
+    # Filter by date range if specified
+    if start_date:
+        start_date = pd.to_datetime(start_date).date()
+        df = df[df['trading_date'] >= start_date]
+    if end_date:
+        end_date = pd.to_datetime(end_date).date()
+        df = df[df['trading_date'] <= end_date]
+    
+    # Create US market holidays calendar
+    us_market_holidays = holidays.US(years=range(df['date'].min().year, df['date'].max().year + 1))
+    
+    # Parse interval to seconds - improved to handle more formats
+    if any(x in interval.lower() for x in ['sec', 's']):
+        # Handle '10s', '10sec', '10secs', etc.
+        interval_seconds = int(''.join(filter(str.isdigit, interval)))
+    elif any(x in interval.lower() for x in ['min', 'm']):
+        # Handle '1min', '5m', etc.
+        interval_seconds = int(''.join(filter(str.isdigit, interval))) * 60
+    else:
+        raise ValueError(f"Unsupported interval format: {interval}")
+    
+    # Calculate expected number of data points for 6h30m of trading
+    # Accounting for missing first and last candle
+    trading_seconds = 6 * 3600 + 30 * 60  # 6 hours and 30 minutes in seconds
+    expected_points = (trading_seconds // interval_seconds) - 2  # -2 for first and last candle
+    
+    # Initialize report
     report = {
-        'file_path': file_path,
-        'total_rows': 0,
-        'date_range': None,
-        'missing_gaps': [],
-        'gaps_count': 0,
-        'data_quality': {},
-        'market_coverage': {},
-        'errors': []
+        "analysis_summary": {
+            "file_analyzed": file_path,
+            "interval": interval,
+            "trading_duration": "6 hours 30 minutes (excluding first and last candle)",
+            "expected_points_per_day": expected_points,
+            "date_range": f"{df['trading_date'].min()} to {df['trading_date'].max()}",
+        },
+        "total_trading_days": 0,
+        "days_with_gaps": 0,
+        "total_gaps": 0,
+        "gaps_by_date": {},
+        "missing_days": []
     }
     
-    try:
-        # Load the CSV file
-        df = pd.read_csv(file_path)
-        report['total_rows'] = len(df)
+    # Get all dates in range
+    all_dates = pd.date_range(start=df['trading_date'].min(), end=df['trading_date'].max())
+    all_trading_dates = [d.date() for d in all_dates 
+                         if d.weekday() < 5 and d.date() not in us_market_holidays]
+    
+    # Find days present in the data
+    existing_dates = set(df['trading_date'].unique())
+    
+    # Check for completely missing days
+    missing_days = [str(d) for d in all_trading_dates if d not in existing_dates]
+    report["missing_days"] = missing_days
+    
+    # Analyze each trading day
+    for date, group in df.groupby('trading_date'):
+        # Skip weekends and holidays
+        weekday = pd.Timestamp(date).weekday()
+        if weekday >= 5 or date in us_market_holidays:
+            continue
         
-        # Check required columns
-        required_columns = ['date', 'open', 'high', 'low', 'close']
-        missing_columns = [col for col in required_columns if col not in df.columns]
-        if missing_columns:
-            report['errors'].append(f"Missing required columns: {missing_columns}")
-            return report
+        report["total_trading_days"] += 1
         
-        # Convert date column to datetime
-        try:
-            df['date'] = pd.to_datetime(df['date'])
-        except Exception as e:
-            report['errors'].append(f"Error parsing date column: {str(e)}")
-            return report
+        # Sort by timestamp
+        group = group.sort_values('date')
         
-        if df.empty:
-            report['errors'].append("DataFrame is empty")
-            return report
-        
-        # Sort by date
-        df = df.sort_values('date').reset_index(drop=True)
-        
-        # Get date range
-        min_date = df['date'].min()
-        max_date = df['date'].max()
-        report['date_range'] = {
-            'start': min_date.strftime('%Y-%m-%d %H:%M:%S'),
-            'end': max_date.strftime('%Y-%m-%d %H:%M:%S')
-        }
-        
-        # Parse market hours
-        try:
-            open_hour, open_minute = map(int, market_open_time.split(':'))
-            close_hour, close_minute = map(int, market_close_time.split(':'))
-        except ValueError:
-            report['errors'].append("Invalid market time format. Use HH:MM format.")
-            return report
-        
-        # Parse interval
-        match = re.match(r'(\d+)([a-zA-Z]+)', interval)
-        if not match:
-            report['errors'].append(f"Invalid interval format: {interval}")
-            return report
-        
-        interval_value = int(match.group(1))
-        interval_unit = match.group(2)
-        
-        # Convert interval to pandas frequency and calculate interval in seconds
-        if interval_unit in ['s', 'sec', 'secs', 'second', 'seconds']:
-            freq = f"{interval_value}s"
-            interval_seconds = interval_value
-        elif interval_unit in ['min', 'mins', 'minute', 'minutes']:
-            freq = f"{interval_value}min"
-            interval_seconds = interval_value * 60
-        elif interval_unit in ['h', 'hour', 'hours']:
-            freq = f"{interval_value}H"
-            interval_seconds = interval_value * 3600
-        else:
-            report['errors'].append(f"Unsupported interval unit: {interval_unit}")
-            return report
-        
-        # Check data quality
-        report['data_quality'] = {
-            'duplicates': df['date'].duplicated().sum(),
-            'null_values': df.isnull().sum().to_dict(),
-            'invalid_ohlc': 0
-        }
-        
-        # Check OHLC logic (high >= low, open/close within high/low range)
-        invalid_ohlc = 0
-        for _, row in df.iterrows():
-            if (row['high'] < row['low'] or 
-                row['open'] > row['high'] or row['open'] < row['low'] or
-                row['close'] > row['high'] or row['close'] < row['low']):
-                invalid_ohlc += 1
-        
-        report['data_quality']['invalid_ohlc'] = invalid_ohlc
-        
-        # Generate expected timestamps during market hours
-        current_date = min_date.date()
-        end_date = max_date.date()
-        expected_timestamps = []
-        
-        while current_date <= end_date:
-            # Check if current date is a market day
-            if current_date.weekday() in market_days:
-                # Create datetime objects for market open and close
-                market_open = pd.Timestamp.combine(current_date, pd.Timestamp(f"{open_hour:02d}:{open_minute:02d}").time())
-                market_close = pd.Timestamp.combine(current_date, pd.Timestamp(f"{close_hour:02d}:{close_minute:02d}").time())
-                
-                # Add timezone if the original data has timezone
-                if df['date'].dt.tz is not None:
-                    market_open = market_open.tz_localize(df['date'].dt.tz)
-                    market_close = market_close.tz_localize(df['date'].dt.tz)
-                
-                # Calculate the first candle timestamp (market_open + interval)
-                first_candle_time = market_open + pd.Timedelta(seconds=interval_seconds)
-                
-                # Calculate the last candle timestamp (market_close - interval)
-                last_candle_time = market_close - pd.Timedelta(seconds=interval_seconds)
-                
-                # Only generate timestamps if first_candle_time <= last_candle_time
-                if first_candle_time <= last_candle_time:
-                    # Generate all expected timestamps for this market day
-                    day_timestamps = pd.date_range(start=first_candle_time, end=last_candle_time, freq=freq)
-                    expected_timestamps.extend(day_timestamps)
+        # Check if we have enough data points for the day
+        if len(group) < expected_points:
+            report["days_with_gaps"] += 1
+            report["total_gaps"] += 1
             
-            current_date += pd.Timedelta(days=1)
+            report["gaps_by_date"][str(date)] = {
+                "expected_points": expected_points,
+                "actual_points": len(group),
+                "missing_points": expected_points - len(group),
+                "gaps": [f"Insufficient data points - found {len(group)}, expected {expected_points}"]
+            }
+            continue
         
-        # Convert to set for faster lookup
-        existing_timestamps = set(df['date'])
-        expected_timestamps_set = set(expected_timestamps)
+        # Get the timestamps and check for gaps in the continuous sequence
+        timestamps = group['date'].values
         
-        # Find missing timestamps within the actual data range
-        data_start = min_date
-        data_end = max_date
-        relevant_expected = [ts for ts in expected_timestamps if data_start <= ts <= data_end]
-        missing_timestamps = [ts for ts in relevant_expected if ts not in existing_timestamps]
+        # Check for gaps in the sequence (intervals larger than expected)
+        gaps = identify_gaps(timestamps, interval_seconds)
         
-        # Update report with gap information
-        report['missing_gaps'] = [ts.strftime('%Y-%m-%d %H:%M:%S') for ts in sorted(missing_timestamps)]
-        report['gaps_count'] = len(missing_timestamps)
-        
-        # Market coverage statistics
-        total_expected_in_range = len(relevant_expected)
-        actual_data_points = len(df)
-        coverage_percentage = ((total_expected_in_range - len(missing_timestamps)) / total_expected_in_range * 100) if total_expected_in_range > 0 else 0
-        
-        report['market_coverage'] = {
-            'expected_data_points': total_expected_in_range,
-            'actual_data_points': actual_data_points,
-            'coverage_percentage': round(coverage_percentage, 2),
-            'market_days_checked': len([d for d in pd.date_range(min_date.date(), max_date.date()) if d.weekday() in market_days])
-        }
-        
-    except Exception as e:
-        report['errors'].append(f"Unexpected error: {str(e)}")
+        if gaps:
+            report["days_with_gaps"] += 1
+            report["total_gaps"] += len(gaps)
+            
+            # Calculate total missing points from gaps
+            missing_points = sum(gap["missing_points"] for gap in gaps)
+            
+            report["gaps_by_date"][str(date)] = {
+                "expected_points": expected_points,
+                "actual_points": len(group),
+                "missing_points": missing_points,
+                "gaps": [f"{gap['start']} to {gap['end']} ({gap['missing_points']} points)" for gap in gaps]
+            }
+    
+    # Add summary stats
+    report["analysis_summary"]["gap_percentage"] = (
+        report["days_with_gaps"] / report["total_trading_days"] * 100 
+        if report["total_trading_days"] > 0 else 0
+    )
     
     return report
+
+def identify_gaps(timestamps, interval_seconds):
+    """
+    Identify gaps in a sequence of timestamps.
+    
+    Parameters:
+    -----------
+    timestamps : array
+        Array of sorted timestamps
+    interval_seconds : int
+        Expected interval between consecutive timestamps in seconds
+        
+    Returns:
+    --------
+    list
+        List of gap dictionaries with start time, end time, and missing points count
+    """
+    if len(timestamps) <= 1:
+        return []
+    
+    gaps = []
+    expected_interval = pd.Timedelta(seconds=interval_seconds)
+    
+    # Find gaps (jumps larger than the expected interval)
+    for i in range(1, len(timestamps)):
+        diff = timestamps[i] - timestamps[i-1]
+        if diff > expected_interval * 1.1:  # Allow 10% tolerance
+            missing_points = int(diff.total_seconds() / interval_seconds) - 1
+            if missing_points > 0:  # Only count if there are actually missing points
+                gaps.append({
+                    "start": timestamps[i-1],
+                    "end": timestamps[i],
+                    "missing_points": missing_points
+                })
+    
+    return gaps
+
+def visualize_data_gaps(report: Dict, figsize: Tuple[int, int] = (12, 8), min_gap_threshold: int = 5):
+    """
+    Visualize the gaps in the data from the report generated by checkDataFile.
+    
+    Parameters:
+    -----------
+    report : dict
+        The report dictionary returned by checkDataFile
+    figsize : tuple
+        Figure size for the plot
+    min_gap_threshold : int
+        Minimum number of missing points to highlight as significant gap
+    """
+    
+    # Set up the plot
+    plt.figure(figsize=figsize)
+    sns.set_style("whitegrid")
+    
+    # Extract data for plotting
+    dates = []
+    missing_percentages = []
+    significant_gaps = []
+    
+    for date_str, data in report["gaps_by_date"].items():
+        date = pd.to_datetime(date_str).date()
+        missing_pct = (data["missing_points"] / data["expected_points"]) * 100
+        
+        dates.append(date)
+        missing_percentages.append(missing_pct)
+        
+        # Mark significant gaps
+        if data["missing_points"] > min_gap_threshold:
+            significant_gaps.append(date)
+    
+    # Sort by date
+    sorted_indices = np.argsort(dates)
+    dates = [dates[i] for i in sorted_indices]
+    missing_percentages = [missing_percentages[i] for i in sorted_indices]
+    
+    # Create the plot - regular gaps
+    plt.bar(dates, missing_percentages, color='lightcoral', alpha=0.5, label='All Gaps')
+    
+    # Highlight significant gaps
+    if significant_gaps:
+        significant_indices = [i for i, date in enumerate(dates) if date in significant_gaps]
+        significant_percentages = [missing_percentages[i] for i in significant_indices]
+        significant_dates = [dates[i] for i in significant_indices]
+        plt.bar(significant_dates, significant_percentages, color='crimson', label=f'Significant Gaps (>{min_gap_threshold} points)')
+    
+    plt.axhline(y=5, color='orange', linestyle='--', label='5% Threshold')
+    
+    # Add labels and title
+    plt.xlabel('Date')
+    plt.ylabel('Missing Data (%)')
+    plt.title('NASDAQ 100 Data Gaps Analysis')
+    
+    # Format x-axis
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.gca().xaxis.set_major_locator(mdates.MonthLocator(interval=2))  # Major ticks every 2 months
+    plt.xticks(rotation=45)
+    
+    # Add summary info
+    summary_text = (
+        f"Total Trading Days: {report['total_trading_days']}\n"
+        f"Days With Gaps: {report['days_with_gaps']} ({report['analysis_summary']['gap_percentage']:.1f}%)\n"
+        f"Days With Significant Gaps: {len(significant_gaps)}\n"
+        f"Total Gaps: {report['total_gaps']}"
+    )
+    plt.figtext(0.02, 0.02, summary_text, ha='left', fontsize=10, 
+                bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    
+    plt.tight_layout()
+    plt.legend()
+    
+    return plt.gcf()

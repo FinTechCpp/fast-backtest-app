@@ -225,7 +225,8 @@ bool ChartWidget::hasValidData() const {
 void ChartWidget::onViewPortChanged()
 {
     // Redessiner le graphique avec le nouveau viewport
-    updateChartDisplay(true, true);
+    // if (m_chartViewer->needUpdateChart())
+        updateChartDisplay(true, true);
 
     // Émettre un signal pour indiquer que le viewport a changé
     // emit viewPortChanged();
@@ -248,8 +249,8 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     }
     
     // Comportement normal de suivi du graphique
-    trackFinance(m_financeChart.get(), mouseX);
-    
+    trackFinance((MultiChart *)m_chartViewer->getChart(), m_chartViewer->getPlotAreaMouseX());
+
     // Récupérer les informations sur le point
     if (m_financeChart->getChartCount() > 1) {
         XYChart* mainChart = (XYChart*)m_financeChart->getChart(1);
@@ -445,6 +446,9 @@ int ChartWidget::addRSI(int period)
         int pointsToShow = m_chartViewer->getViewPortWidth();
 
         // Ajouter directement le RSI au graphique existant
+        // il faut essayer avec un multichart voir si on est pas obliger de redessiner tous 
+        // changer le proto de la methode et s'inspirer de trackFinance
+        // addRSIToChart((MultiChart*)m_chartViewer->getChart(), rsi, startIndex, pointsToShow);
         addRSIToChart((FinanceChart*)m_chartViewer->getChart(), rsi, startIndex, pointsToShow);
 
         m_chartViewer->updateViewPort(false, false);

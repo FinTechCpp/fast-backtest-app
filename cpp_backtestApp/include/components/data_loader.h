@@ -191,5 +191,8 @@ public:
 private:
     static const QString MARKET_DATA_PATH;
     static QStringList getMarketDataPaths();
+    
+    // Ajout de la méthode helper pour la conversion en double
+    static inline double parseDouble(const QChar* begin, const QChar* end);
 };
 

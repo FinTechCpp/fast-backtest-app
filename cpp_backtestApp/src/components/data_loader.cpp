@@ -578,35 +578,96 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
     // Pointer vers le début de la date (après l'index et la virgule)
     const QChar* d = line.constData() + firstComma + 1;
     
-    // Parser manuellement "2022-02-14 14:30:10+00:00"
-    int year = (d[0].digitValue() * 1000) + (d[1].digitValue() * 100) + 
-               (d[2].digitValue() * 10) + d[3].digitValue();
-    int month = (d[5].digitValue() * 10) + d[6].digitValue();
-    int day = (d[8].digitValue() * 10) + d[9].digitValue();
-    int hour = (d[11].digitValue() * 10) + d[12].digitValue();
-    int minute = (d[14].digitValue() * 10) + d[15].digitValue();
-    int second = (d[17].digitValue() * 10) + d[18].digitValue();
+    // Parser manuellement "2022-02-14 14:30:10+00:00" avec calcul direct (évite digitValue)
+    int year = ((d[0].unicode() - '0') * 1000) + ((d[1].unicode() - '0') * 100) + 
+               ((d[2].unicode() - '0') * 10) + (d[3].unicode() - '0');
+    int month = ((d[5].unicode() - '0') * 10) + (d[6].unicode() - '0');
+    int day = ((d[8].unicode() - '0') * 10) + (d[9].unicode() - '0');
+    int hour = ((d[11].unicode() - '0') * 10) + (d[12].unicode() - '0');
+    int minute = ((d[14].unicode() - '0') * 10) + (d[15].unicode() - '0');
+    int second = ((d[17].unicode() - '0') * 10) + (d[18].unicode() - '0');
     
-    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), QTimeZone::utc());
+    // Utiliser Qt::UTC directement plutôt que QTimeZone::utc() qui est coûteux
+    static const QDate nullDate(1970, 1, 1);
+    static const QTime nullTime(0, 0, 0);
     
-    if (!timestamp.isValid()) {
+    // Vérifier rapidement si les valeurs sont dans des plages valides avant de créer QDateTime
+    if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31 ||
+        hour > 23 || minute > 59 || second > 59) {
         return nullptr;
     }
     
-    // Ajuster la position des virgules pour tenir compte de l'index
-    int comma1 = line.indexOf(',', firstComma + 25);
-    int comma2 = line.indexOf(',', comma1 + 1);
-    int comma3 = line.indexOf(',', comma2 + 1);
-    int comma4 = line.indexOf(',', comma3 + 1);
+    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), Qt::UTC);
     
-    if (comma1 == -1 || comma2 == -1 || comma3 == -1 || comma4 == -1) {
-        comma4 = line.length(); // Pas de volume
+    // Optimisation: trouver toutes les virgules en un seul passage
+    const QChar* ptr = line.constData();
+    const QChar* end = ptr + line.length();
+    ptr += firstComma + 25;  // Sauter l'index et la partie date
+    
+    // Trouver les virgules pour les données OHLC
+    const QChar* commaPos[4] = {nullptr, nullptr, nullptr, nullptr};
+    int commaCount = 0;
+    
+    while (ptr < end && commaCount < 4) {
+        if (ptr->unicode() == ',') {
+            commaPos[commaCount++] = ptr;
+        }
+        ++ptr;
     }
     
-    double open = line.sliced(comma1 + 1, comma2 - comma1 - 1).toDouble();
-    double high = line.sliced(comma2 + 1, comma3 - comma2 - 1).toDouble();
-    double low = line.sliced(comma3 + 1, comma4 - comma3 - 1).toDouble();
-    double close = line.sliced(comma4 + 1).toDouble();
+    if (commaCount < 3) return nullptr; // Pas assez de virgules pour les données OHLC
     
-    return std::make_unique<OHLCBar>(timestamp, open, high, low, close, 0.0);
+    // Parser les valeurs numériques directement
+    double values[4];  // open, high, low, close
+    
+    // Parser open
+    values[0] = parseDouble(commaPos[0] + 1, commaPos[1]);
+    
+    // Parser high
+    values[1] = parseDouble(commaPos[1] + 1, commaPos[2]);
+    
+    // Parser low et close
+    if (commaCount == 4) {
+        values[2] = parseDouble(commaPos[2] + 1, commaPos[3]);
+        values[3] = parseDouble(commaPos[3] + 1, end);
+    } else {
+        values[2] = parseDouble(commaPos[2] + 1, end);
+        values[3] = 0.0;
+    }
+    
+    return std::make_unique<OHLCBar>(timestamp, values[0], values[1], values[2], values[3], 0.0);
+}
+
+// Version optimisée de parseDouble qui évite digitValue()
+inline double DataLoader::parseDouble(const QChar* begin, const QChar* end)
+{
+    double result = 0.0;
+    bool negative = false;
+    double fraction = 0.0;
+    double divisor = 1.0;
+    
+    // Gestion du signe négatif
+    if (begin < end && begin->unicode() == '-') {
+        negative = true;
+        ++begin;
+    }
+    
+    // Partie entière - calcul direct avec unicode() plutôt que digitValue()
+    while (begin < end && begin->unicode() >= '0' && begin->unicode() <= '9') {
+        result = result * 10.0 + (begin->unicode() - '0');
+        ++begin;
+    }
+    
+    // Partie décimale
+    if (begin < end && begin->unicode() == '.') {
+        ++begin;
+        while (begin < end && begin->unicode() >= '0' && begin->unicode() <= '9') {
+            fraction = fraction * 10.0 + (begin->unicode() - '0');
+            divisor *= 10.0;
+            ++begin;
+        }
+        result += fraction / divisor;
+    }
+    
+    return negative ? -result : result;
 }

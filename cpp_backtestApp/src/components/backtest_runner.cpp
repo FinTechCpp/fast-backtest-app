@@ -114,7 +114,7 @@ void BacktestRunner::runBacktest()
     
     connect(m_worker, &BacktestWorker::finished, this, &BacktestRunner::onBacktestFinished);
     connect(m_worker, &BacktestWorker::error, this, &BacktestRunner::onBacktestError);
-    connect(m_worker, &BacktestWorker::progressUpdated, this, &BacktestRunner::onProgressUpdated); // Ajouter cette ligne
+    connect(m_worker, &BacktestWorker::progressUpdated, this, &BacktestRunner::onProgressUpdated); 
     connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
     m_worker->start();
 }
@@ -215,6 +215,10 @@ BacktestWorker::~BacktestWorker()
 
 void BacktestWorker::run()
 {
+    QElapsedTimer timer;
+    timer.start();
+
+    
     // Récupération des paramètres généraux
     QString strategyName = m_mainWindow->getGeneralParamsPanel()->getValues()["strategy"].toString();
     QString symbol = m_mainWindow->getGeneralParamsPanel()->getValues().value("symbol", "NDX").toString();
@@ -228,7 +232,7 @@ void BacktestWorker::run()
     bool hedging = m_mainWindow->getGeneralParamsPanel()->getValues().value("hedging", false).toBool();
     bool exclusiveOrders = m_mainWindow->getGeneralParamsPanel()->getValues().value("exclusive_orders", true).toBool();
     bool finalizeTrades = m_mainWindow->getGeneralParamsPanel()->getValues().value("finalize_trades", true).toBool();
-
+    
     // Récupération et conversion de la date de fin
     QDateTime endDate;
     if (m_mainWindow->getGeneralParamsPanel()->getValues().contains("end_date")) {
@@ -254,7 +258,7 @@ void BacktestWorker::run()
     if (!endDate.isValid()) {
         endDate = QDateTime::currentDateTime();
     }
-
+    
     // TODO : mettre des debug ici pour vérifier les valeurs
     // std::cout << "Paramètres de chargement des données:" << std::endl;
     // std::cout << "- Stratégie:" << strategyName.toStdString() << std::endl;
@@ -269,7 +273,7 @@ void BacktestWorker::run()
     // std::cout << "- Ordres exclusifs:" << (exclusiveOrders ? "Oui" : "Non") << std::endl;
     // std::cout << "- Finalisation des trades:" << (finalizeTrades ? "Oui" : "Non") << std::endl;
     // std::cout << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss").toStdString() << std::endl;
-
+    
     
     auto strategyCreator = StrategyRegistry::getInstance().getCreator(strategyName);
     if (!strategyCreator) {
@@ -294,7 +298,7 @@ void BacktestWorker::run()
     qDebug() << "Données disponibles:" << data->size() << "barres";
     qDebug() << "Démarrage du backtest C++...";
     
-
+    
     // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
     auto strategyFactory = [strategyCreator, this](std::shared_ptr<be::Broker> b, std::shared_ptr<be::Data> d) {
         return strategyCreator(b, d, m_mainWindow);
@@ -315,9 +319,6 @@ void BacktestWorker::run()
         finalizeTrades      // Finalisation des trades
     );
     
-    QElapsedTimer timer;
-    timer.start();
-
     backtest.setProgressCallback([this, &timer](size_t current, size_t total) {
         qint64 elapsed = timer.elapsed();
         QString chrono = QTime::fromMSecsSinceStartOfDay(elapsed).toString("mm:ss.zz");

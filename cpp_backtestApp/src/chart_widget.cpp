@@ -61,6 +61,20 @@ ChartWidget::ChartWidget(QWidget* parent)
     qDebug() << "ChartWidget créé";
 }
 
+ChartWidget::~ChartWidget() {
+    for (auto& pair : m_aggregationCache) {
+        if (pair.second.isValid) {
+            // Libérer la mémoire des DoubleArray
+            delete[] pair.second.timestamps.data;
+            delete[] pair.second.open.data;
+            delete[] pair.second.high.data;
+            delete[] pair.second.low.data;
+            delete[] pair.second.close.data;
+            delete[] pair.second.volume.data;
+        }
+    }
+}
+
 void ChartWidget::setBacktestResults(const BacktestResults* results) {
     if (!results) {
         qWarning() << "Tentative de définir des résultats de backtest nuls";
@@ -73,6 +87,10 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
     prepareTimestampsCache();
     updateHeikinAshiCache();
     updateIndicatorCache();
+
+    // Invalider et recalculer tous les niveaux d'agrégation
+    m_aggregationCache.clear();
+    
     convertEquityCurve(results->stats.equityCurve, m_backtestData);
 
     // Mettre à jour le graphique si nous avons des données valides
@@ -98,12 +116,300 @@ void ChartWidget::setChartType(ChartType chartType)
         updateChartDisplay(true, true);
 }
 
+void ChartWidget::aggregateData(AggregationLevel level) {
+    // Si déjà en cache et valide, ne rien faire
+    if (m_aggregationCache.find(level) != m_aggregationCache.end() && 
+        m_aggregationCache[level].isValid) {
+        return;
+    }
+        
+    // Créer un nouvel enregistrement dans le cache
+    AggregatedOHLCV& aggregatedData = m_aggregationCache[level];
+    
+    // Vérifier qu'on a des données à agréger
+    if (m_timestampsCache.empty() || !m_backtestData) {
+        aggregatedData.isValid = false;
+        return;
+    }
+
+    // Pour le cas Raw, pas d'agrégation (copier directement)
+    if (level == AggregationLevel::Raw) {
+        // Créer des DoubleArray qui pointent directement vers les données brutes
+        aggregatedData.timestamps = DoubleArray(m_timestampsCache.data(), m_timestampsCache.size());
+        aggregatedData.open = DoubleArray(m_backtestData->getOpen().data(), m_backtestData->getOpen().size());
+        aggregatedData.high = DoubleArray(m_backtestData->getHigh().data(), m_backtestData->getHigh().size());
+        aggregatedData.low = DoubleArray(m_backtestData->getLow().data(), m_backtestData->getLow().size());
+        aggregatedData.close = DoubleArray(m_backtestData->getClose().data(), m_backtestData->getClose().size());
+        aggregatedData.volume = DoubleArray(m_backtestData->getVolume().data(), m_backtestData->getVolume().size());
+        aggregatedData.isValid = true;
+        return;
+    }
+    
+    
+    // Créer les ArrayMath pour l'agrégation
+    ArrayMath timestampsMath(DoubleArray(m_timestampsCache.data(), m_timestampsCache.size()));
+    
+    // Appliquer le sélecteur approprié selon le niveau d'agrégation
+    switch (level) {
+        case AggregationLevel::OneMinute:
+            timestampsMath.selectStartOfMinute();
+            break;
+        case AggregationLevel::OneHour:
+            timestampsMath.selectStartOfHour();
+            break;
+        case AggregationLevel::OneDay:
+            timestampsMath.selectStartOfDay();
+            break;
+        case AggregationLevel::OneWeek:
+            timestampsMath.selectStartOfWeek();
+            break;
+        case AggregationLevel::OneMonth:
+            timestampsMath.selectStartOfMonth();
+            break;
+        default:
+            // Ne devrait pas arriver car Raw est géré plus haut
+            aggregatedData.isValid = false;
+            return;
+    }
+    
+    // Obtenir les indices après sélection
+    DoubleArray indices = timestampsMath.result();
+    
+    if (indices.len <= 0) {
+        qDebug() << "Agrégation échouée - aucun point sélectionné";
+        aggregatedData.isValid = false;
+        return;
+    }
+
+    // Agréger les données OHLCV avec les stratégies appropriées
+    DoubleArray times = timestampsMath.aggregate(
+        DoubleArray(m_timestampsCache.data(), m_timestampsCache.size()), 
+        Chart::AggregateFirst);
+        
+    DoubleArray open = timestampsMath.aggregate(
+        DoubleArray(m_backtestData->getOpen().data(), m_backtestData->getOpen().size()), 
+        Chart::AggregateFirst);
+        
+    DoubleArray high = timestampsMath.aggregate(
+        DoubleArray(m_backtestData->getHigh().data(), m_backtestData->getHigh().size()), 
+        Chart::AggregateMax);
+        
+    DoubleArray low = timestampsMath.aggregate(
+        DoubleArray(m_backtestData->getLow().data(), m_backtestData->getLow().size()), 
+        Chart::AggregateMin);
+        
+    DoubleArray close = timestampsMath.aggregate(
+        DoubleArray(m_backtestData->getClose().data(), m_backtestData->getClose().size()), 
+        Chart::AggregateLast);
+        
+    DoubleArray volume = timestampsMath.aggregate(
+        DoubleArray(m_backtestData->getVolume().data(), m_backtestData->getVolume().size()), 
+        Chart::AggregateSum);
+
+    // Vérifier que tous les tableaux agrégés ont la même taille
+    if (times.len != open.len || times.len != high.len || times.len != low.len || 
+        times.len != close.len || times.len != volume.len) {
+        qDebug() << "Agrégation échouée - les tableaux ont des dimensions différentes";
+        aggregatedData.isValid = false;
+        return;
+    }
+    
+    // Stocker les résultats dans le cache
+    // Nous devons créer nos propres copies pour stocker les données de façon permanente
+    double* copyTimestamps = new double[times.len];
+    double* copyOpen = new double[times.len];
+    double* copyHigh = new double[times.len];
+    double* copyLow = new double[times.len];
+    double* copyClose = new double[times.len];
+    double* copyVolume = new double[times.len];
+    
+    // Copier les données
+    memcpy(copyTimestamps, times.data, times.len * sizeof(double));
+    memcpy(copyOpen, open.data, open.len * sizeof(double));
+    memcpy(copyHigh, high.data, high.len * sizeof(double));
+    memcpy(copyLow, low.data, low.len * sizeof(double));
+    memcpy(copyClose, close.data, close.len * sizeof(double));
+    memcpy(copyVolume, volume.data, volume.len * sizeof(double));
+    
+    // Stocker les DoubleArray avec leurs propres copies de données
+    aggregatedData.timestamps = DoubleArray(copyTimestamps, times.len);
+    aggregatedData.open = DoubleArray(copyOpen, open.len);
+    aggregatedData.high = DoubleArray(copyHigh, high.len);
+    aggregatedData.low = DoubleArray(copyLow, low.len);
+    aggregatedData.close = DoubleArray(copyClose, close.len);
+    aggregatedData.volume = DoubleArray(copyVolume, volume.len);
+    
+    aggregatedData.isValid = true;
+}
+
+ChartWidget::AggregatedOHLCV ChartWidget::getOptimallyAggregatedData(
+    const DoubleArray& timestamps,
+    const DoubleArray& open,
+    const DoubleArray& high, 
+    const DoubleArray& low,
+    const DoubleArray& close,
+    const DoubleArray& volume)
+{
+    AggregatedOHLCV result;
+    result.level = AggregationLevel::Raw;
+    
+    // Si le nombre de points est inférieur au seuil, utiliser les données brutes
+    if (timestamps.len <= MAX_DISPLAY_POINTS) {
+        // Créer de nouvelles DoubleArray qui pointent vers les mêmes données
+        result.timestamps = timestamps;
+        result.open = open;
+        result.high = high;
+        result.low = low;
+        result.close = close;
+        result.volume = volume;
+        return result;
+    }
+    
+    // Déterminer le niveau d'agrégation de départ en fonction de la période des données
+    AggregationLevel startLevel = determineStartingAggregationLevel(timestamps);
+    startLevel = AggregationLevel::Raw;
+    std::cout << "Niveau d'agrégation de départ déterminé : " << static_cast<int>(startLevel) << std::endl;
+    
+    // Liste ordonnée des niveaux d'agrégation disponibles
+    std::array<AggregationLevel, 6> aggregationLevels = {
+        AggregationLevel::Raw,
+        AggregationLevel::OneMinute,
+        AggregationLevel::OneHour,
+        AggregationLevel::OneDay,
+        AggregationLevel::OneWeek,
+        AggregationLevel::OneMonth
+    };
+    
+    // Trouver l'indice du niveau de départ dans notre liste
+    size_t startIdx = 0;
+    for (size_t i = 0; i < aggregationLevels.size(); i++) {
+        if (aggregationLevels[i] == startLevel) {
+            startIdx = i;
+            break;
+        }
+    }
+    
+    // Parcourir les niveaux d'agrégation à partir du niveau de départ
+    for (size_t i = startIdx + 1; i < aggregationLevels.size(); i++) {
+        AggregationLevel level = aggregationLevels[i];
+        
+        // Vérifier si ce niveau est déjà en cache, sinon le calculer
+        if (m_aggregationCache.find(level) == m_aggregationCache.end() || 
+            !m_aggregationCache[level].isValid) {
+            aggregateData(level);
+        }
+
+        const AggregatedOHLCV& aggregatedData = m_aggregationCache[level];
+        if (!aggregatedData.isValid) continue;
+
+        // Extraire les timestamps de début et de fin de l'intervalle à afficher
+        double startTime = timestamps[0];
+        double endTime = timestamps[timestamps.len - 1];
+
+        // Trouver les indices correspondants dans les données agrégées
+        // Probleme dans ces deux methode aggStrat et aggEnd sont a 877769
+        size_t aggStartIdx = findClosestIndex(aggregatedData.timestamps, startTime);
+        size_t aggEndIdx = findClosestIndex(aggregatedData.timestamps, endTime, true);
+
+        // Calculer combien de points agrégés seraient visibles dans cette plage
+        int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? (aggEndIdx - aggStartIdx + 1) : 0;
+        
+        // Si l'agrégation est valide et réduit suffisamment les données
+        if (visibleAggPoints > 0 && visibleAggPoints <= MAX_DISPLAY_POINTS) {
+            // Créer de nouvelles DoubleArray qui pointent vers les données agrégées
+            result.timestamps = DoubleArray(&aggregatedData.timestamps.data[aggStartIdx], visibleAggPoints);
+            result.open = DoubleArray(&aggregatedData.open.data[aggStartIdx], visibleAggPoints);
+            result.high = DoubleArray(&aggregatedData.high.data[aggStartIdx], visibleAggPoints);
+            result.low = DoubleArray(&aggregatedData.low.data[aggStartIdx], visibleAggPoints);
+            result.close = DoubleArray(&aggregatedData.close.data[aggStartIdx], visibleAggPoints);
+            result.volume = DoubleArray(&aggregatedData.volume.data[aggStartIdx], visibleAggPoints);
+            result.level = level;
+            
+            return result;
+        }
+    }
+    
+    // Si aucun niveau ne convient, utiliser le plus élevé disponible
+    AggregationLevel highestLevel = AggregationLevel::OneMonth;
+    if (m_aggregationCache.find(highestLevel) != m_aggregationCache.end() && 
+        m_aggregationCache[highestLevel].isValid) {
+        
+        const AggregatedOHLCV& aggregatedData = m_aggregationCache[highestLevel];
+        
+        // Utiliser toutes les données agrégées de ce niveau
+        result.timestamps = DoubleArray(&aggregatedData.timestamps.data[0], aggregatedData.timestamps.len);
+        result.open = DoubleArray(&aggregatedData.open.data[0], aggregatedData.open.len);
+        result.high = DoubleArray(&aggregatedData.high.data[0], aggregatedData.high.len);
+        result.low = DoubleArray(&aggregatedData.low.data[0], aggregatedData.low.len);
+        result.close = DoubleArray(&aggregatedData.close.data[0], aggregatedData.close.len);
+        result.volume = DoubleArray(&aggregatedData.volume.data[0], aggregatedData.volume.len);
+        result.level = highestLevel;
+    } else {
+        // En dernier recours, utiliser les données d'origine
+        result.timestamps = timestamps;
+        result.open = open;
+        result.high = high;
+        result.low = low;
+        result.close = close;
+        result.volume = volume;
+        result.level = AggregationLevel::Raw;
+    }
+    
+    return result;
+}
+
+ChartWidget::AggregationLevel ChartWidget::determineStartingAggregationLevel(const DoubleArray& timestamps) {
+    // Si moins de deux timestamps, impossible de déterminer la période
+    if (timestamps.len < 2) {
+        return AggregationLevel::Raw;
+    }
+
+    // La période est constante : prendre la différence entre les deux premiers points
+    double period = timestamps[1] - timestamps[0];
+
+    // Déterminer le niveau de départ en fonction de la période
+    if (period >= 2592000) {        // Plus d'un mois: pas d'agrégation possible
+        return AggregationLevel::OneMonth;
+    } else if (period >= 604800) {  // Plus d'une semaine
+        return AggregationLevel::OneWeek;
+    } else if (period >= 86400) {   // Plus d'un jour
+        return AggregationLevel::OneDay;
+    } else if (period >= 3600) {    // Plus d'une heure
+        return AggregationLevel::OneHour;
+    } else if (period >= 60) {      // Plus d'une minute
+        return AggregationLevel::OneMinute;
+    } else {
+        return AggregationLevel::Raw;  // Moins d'une minute
+    }
+}
+
+size_t ChartWidget::findClosestIndex(const DoubleArray& values, double target, bool searchForward) {
+    // Si searchForward est true, on cherche le premier élément >= target
+    // Sinon, on cherche le dernier élément <= target
+
+    if (values.len == 0) return 0;
+
+    if (searchForward) {
+        // Rechercher vers l'avant (premier élément >= target)
+        for (int i = 0; i < values.len; i++)
+            if (values[i] >= target)
+                return i;
+        return values.len - 1;
+    } else {
+        // Rechercher vers l'arrière (dernier élément <= target)
+        for (int i = values.len - 1; i >= 0; i--)
+            if (values[i] <= target)
+                return i;
+        return 0;
+    }
+}
+
 bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
     if (!hasValidData() || !m_chartViewer) {
         return false;
     }
 
-    std::cout << "Mise à jour de l'affichage du graphique" << std::endl;
+    // std::cout << "Mise à jour de l'affichage du graphique" << std::endl;
     
     // Sauvegarder l'état actuel du viewport si nécessaire
     double currentLeft = 0.0;
@@ -134,11 +440,11 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
     }
     
     // Extraire les données à afficher
-    DoubleArray timeStamps;
+    DoubleArray timestamps;
     DoubleArray openData, highData, lowData, closeData, volumeData;
     
     if (startIndex < static_cast<int>(m_timestampsCache.size())) {
-        timeStamps = DoubleArray(&m_timestampsCache[startIndex], pointsToShow);
+        timestamps = DoubleArray(&m_timestampsCache[startIndex], pointsToShow);
         volumeData = DoubleArray(&m_backtestData->getVolume()[startIndex], pointsToShow);
         
         // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
@@ -164,11 +470,25 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         // Pas de données à afficher
         return false;
     }
-    
-    // Créer le graphique
-    createOrUpdateChart(timeStamps, highData, lowData, openData, closeData, 
+
+    // AggregatedOHLCV aggregated = getOptimallyAggregatedData(
+    //         timeStamps, openData, highData, lowData, closeData, volumeData);
+
+    // std::cout << "Données agrégées : " 
+    //           << aggregated.timestamps.len << " points, niveau " 
+    //           << static_cast<int>(aggregated.level) << std::endl;
+
+    // Excellent ce code fonctionne pour l'agrégation et tous les niveaux, 
+    // maintenant il faut faire la fonction qui arrive à choisir correctement le niveau d'agrégation (getOptimallyAggregatedData)
+    // aggregateData(AggregationLevel::OneMonth);
+    // AggregatedOHLCV aggregated = m_aggregationCache[AggregationLevel::OneMonth];
+    // createOrUpdateChart(aggregated.timestamps, aggregated.high, aggregated.low, aggregated.open, aggregated.close, 
+    //                             aggregated.volume, m_config.chartWidth);
+
+    createOrUpdateChart(timestamps, highData, lowData, openData, closeData, 
                                 volumeData, m_config.chartWidth);
-    
+
+
     // Configurer le viewport
     if (!useViewport) {
         // Afficher toutes les données
@@ -1006,23 +1326,6 @@ void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve,
             lastValue = currentValue;
         }
     }
-    
-    // Calculer le drawdown (inchangé)
-    if (!m_equityData.equity_values.empty()) {
-        m_equityData.drawdown.resize(m_equityData.equity_values.size());
-        double peak = m_equityData.equity_values[0];
-        
-        for (size_t i = 0; i < m_equityData.equity_values.size(); ++i) {
-            if (m_equityData.equity_values[i] > peak) {
-                peak = m_equityData.equity_values[i];
-            }
-            double dd = (peak - m_equityData.equity_values[i]) / peak * 100.0;
-            m_equityData.drawdown[i] = dd;
-        }
-    }
-    
-    qInfo() << "Courbe d'équité compressée:" << numPoints << "points réduits à" 
-            << m_equityData.timestamps.size() << "points significatifs";
 }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {

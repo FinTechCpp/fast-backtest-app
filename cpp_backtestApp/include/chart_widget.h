@@ -108,7 +108,7 @@ public:
     
     // ======== Constructeurs et destructeur ========
     explicit ChartWidget(QWidget* parent = nullptr);
-    ~ChartWidget() override = default;
+    ~ChartWidget() override;
     
     // ======== API Publique ========
     // Méthodes d'initialisation des données
@@ -212,13 +212,58 @@ public slots:
 
 private:
     // ======== Structures de données internes ========
+
+    enum class AggregationLevel {
+        Raw,         // Données brutes
+        OneMinute,   // 1 minute
+        OneHour,     // 1 heure
+        OneDay,      // 1 jour
+        OneWeek,     // 1 semaine
+        OneMonth     // 1 mois
+    };
+
+    // struct AggregatedData {
+    //     std::vector<double> timestamps;
+    //     std::vector<double> open;
+    //     std::vector<double> high;
+    //     std::vector<double> low;
+    //     std::vector<double> close;
+    //     std::vector<double> volume;
+    //     bool isValid = false;
+    // };
+
+    struct AggregatedOHLCV {
+        DoubleArray timestamps;
+        DoubleArray open;
+        DoubleArray high;
+        DoubleArray low;
+        DoubleArray close;
+        DoubleArray volume;
+        AggregationLevel level;  // Pour informations uniquement
+        bool isValid = false;
+    };
+
+    AggregationLevel determineStartingAggregationLevel(const DoubleArray& timestamps);
+    size_t findClosestIndex(const DoubleArray& values, double target, bool searchForward = false);
+    AggregatedOHLCV getOptimallyAggregatedData(const DoubleArray& timestamps, const DoubleArray& open,
+                                                            const DoubleArray& high, const DoubleArray& low,
+                                                            const DoubleArray& close, const DoubleArray& volume);
+
+    void aggregateData(AggregationLevel level);
+
+
+    // Cache pour les données agrégées
+    std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregationCache;
+        
+    // Seuil pour l'agrégation (nombre max de points avant agrégation)
+    const int MAX_DISPLAY_POINTS = 2000;
+
     /**
      * @brief Structure pour stocker les données d'équité
      */
     struct EquityData {
         std::vector<double> timestamps;
         std::vector<double> equity_values;
-        std::vector<double> drawdown;
     };
 
     /**

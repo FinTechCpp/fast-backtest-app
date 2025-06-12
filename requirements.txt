@@ -7,3 +7,7 @@ pandas==2.2.3
 pillow==11.1.0
 python-dotenv==1.0.1
 ib_async==1.0.3
+jupyter
+ipykernel
+numpy
+pandas

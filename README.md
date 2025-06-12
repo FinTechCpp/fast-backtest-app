@@ -57,6 +57,12 @@ Le projet adopte une architecture modulaire permettant d'exploiter les forces de
 
 Cette approche garantit à la fois la rapidité d'exécution pour les backtests et la flexibilité pour le développement de stratégies.
 
+### 📸 Aperçu de l'interface
+
+![Interface de l'application](images/app_example.png)
+
+*Interface graphique Qt de l'application de backtesting avec visualisations ChartDirector*
+
 ---
 
 ## Installation

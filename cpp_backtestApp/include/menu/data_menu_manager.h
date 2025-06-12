@@ -5,6 +5,11 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QString>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 // Forward declarations
 class DataLoader;
@@ -32,7 +37,11 @@ private slots:
     void onValidateData();
     void onCleanData();
     void onShowDataInfo();
-    void onSetCustomDirectory(); 
+    void onSetCustomDirectory();
+    
+    // Slots pour les requêtes HTTP
+    void onMarketDataListReceived();
+    void onFileDownloadFinished();
 
 private:
     // Menu principal
@@ -46,5 +55,10 @@ private:
     QAction* m_dataInfoAction;
     QAction* m_setDirectoryAction;
     
+    // Réseau
+    QNetworkAccessManager* m_networkManager;
+    
     void createActions();
+    void compareAndDownloadFiles(const QJsonArray& remoteFiles);
+    QString getFileLastModified(const QString& filePath);
 };

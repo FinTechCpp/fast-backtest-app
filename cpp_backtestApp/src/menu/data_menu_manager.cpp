@@ -12,6 +12,9 @@
 #include <QVBoxLayout>
 #include <QTextEdit>
 #include <QPushButton>
+#include <QFileInfo>
+#include <QNetworkRequest>
+#include <QDateTime>
 #include "components/data_loader.h"
 
 DataMenuManager::DataMenuManager(QObject* parent)
@@ -23,6 +26,7 @@ DataMenuManager::DataMenuManager(QObject* parent)
     , m_cleanDataAction(nullptr)
     , m_dataInfoAction(nullptr)
     , m_setDirectoryAction(nullptr)
+    , m_networkManager(new QNetworkAccessManager(this))
 {
 }
 
@@ -191,11 +195,20 @@ void DataMenuManager::onImportFromAPI()
 {
     qDebug() << "Import depuis API demandé";
     
-    QMessageBox::information(
-        qobject_cast<QWidget*>(parent()),
-        tr("Fonctionnalité à venir"),
-        tr("L'importation depuis une API sera disponible dans une future version.")
-    );
+    // URL de l'API pour récupérer la liste des fichiers de données de marché
+    QUrl apiUrl("http://10.8.0.1:9004/market-data");
+    
+    QNetworkRequest request(apiUrl);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader("Accept", "application/json");
+    
+    // Envoyer la requête GET pour récupérer la liste des fichiers
+    QNetworkReply* reply = m_networkManager->get(request);
+    
+    // Connecter le signal finished au slot qui traite la réponse
+    connect(reply, &QNetworkReply::finished, this, &DataMenuManager::onMarketDataListReceived);
+    
+    qDebug() << "Requête envoyée vers:" << apiUrl.toString();
 }
 
 
@@ -460,4 +473,224 @@ void DataMenuManager::onSetCustomDirectory()
             tr("Impossible de définir ce répertoire pour les données.\nVérifiez les permissions d'accès.")
         );
     }
+}
+
+void DataMenuManager::onMarketDataListReceived()
+{
+    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
+    if (!reply) {
+        return;
+    }
+    
+    if (reply->error() == QNetworkReply::NoError) {
+        QByteArray responseData = reply->readAll();
+        qDebug() << "Réponse reçue, taille:" << responseData.size() << "octets";
+        
+        QJsonDocument doc = QJsonDocument::fromJson(responseData);
+        if (doc.isObject()) {
+            QJsonObject response = doc.object();
+            QJsonArray files = response["market_data_files"].toArray();
+            
+            qDebug() << "Nombre de fichiers sur le serveur:" << files.size();
+            
+            if (files.isEmpty()) {
+                QMessageBox::information(
+                    qobject_cast<QWidget*>(parent()),
+                    tr("Synchronisation"),
+                    tr("Aucun fichier disponible sur le serveur.")
+                );
+            } else {
+                compareAndDownloadFiles(files);
+            }
+        } else {
+            QMessageBox::warning(
+                qobject_cast<QWidget*>(parent()),
+                tr("Erreur"),
+                tr("Format de réponse invalide du serveur.")
+            );
+        }
+    } else {
+        QString errorMsg = tr("Erreur de connexion à l'API: %1").arg(reply->errorString());
+        qWarning() << errorMsg;
+        
+        QMessageBox::warning(
+            qobject_cast<QWidget*>(parent()),
+            tr("Erreur de connexion"),
+            errorMsg
+        );
+    }
+    
+    reply->deleteLater();
+}
+
+void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
+{
+    QString marketDataDir = DataLoader::findMarketDataDirectory();
+    if (marketDataDir.isEmpty()) {
+        // Créer le répertoire s'il n'existe pas
+        QString projectRoot = QCoreApplication::applicationDirPath();
+        QDir currentDir(projectRoot);
+        while (currentDir.cdUp() && currentDir.dirName() != "ig-trading-bot") {}
+        
+        if (currentDir.dirName() == "ig-trading-bot") {
+            marketDataDir = currentDir.absoluteFilePath("marketData");
+            QDir().mkpath(marketDataDir);
+        } else {
+            marketDataDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+        }
+    }
+    
+    QDir localDir(marketDataDir);
+    QStringList localFiles = localDir.entryList(QStringList() << "*.csv" << "*.parquet", QDir::Files);
+    
+    QStringList filesToDownload;
+    QStringList updateMessages;
+    
+    // Comparer chaque fichier distant avec les fichiers locaux
+    for (const QJsonValue& fileValue : remoteFiles) {
+        QJsonObject fileObj = fileValue.toObject();
+        QString filename = fileObj["filename"].toString();
+        QString remoteModified = fileObj["modified"].toString();
+        qint64 remoteSize = fileObj["size"].toVariant().toLongLong();
+        
+        QString localFilePath = localDir.absoluteFilePath(filename);
+        bool shouldDownload = false;
+        QString reason;
+        
+        if (!QFile::exists(localFilePath)) {
+            // Fichier n'existe pas localement
+            shouldDownload = true;
+            reason = tr("nouveau fichier");
+        } else {
+            // Comparer la date de modification
+            QFileInfo localFileInfo(localFilePath);
+            QDateTime localModified = localFileInfo.lastModified();
+            QDateTime remoteDateTime = QDateTime::fromString(remoteModified, Qt::ISODate);
+            
+            if (remoteDateTime > localModified) {
+                shouldDownload = true;
+                reason = tr("fichier plus récent (%1 vs %2)")
+                    .arg(remoteDateTime.toString("yyyy-MM-dd hh:mm"))
+                    .arg(localModified.toString("yyyy-MM-dd hh:mm"));
+            } else if (localFileInfo.size() != remoteSize) {
+                shouldDownload = true;
+                reason = tr("taille différente (%1 vs %2 octets)")
+                    .arg(remoteSize)
+                    .arg(localFileInfo.size());
+            }
+        }
+        
+        if (shouldDownload) {
+            filesToDownload.append(filename);
+            updateMessages.append(tr("• %1 (%2)").arg(filename).arg(reason));
+        }
+    }
+    
+    if (filesToDownload.isEmpty()) {
+        QMessageBox::information(
+            qobject_cast<QWidget*>(parent()),
+            tr("Synchronisation"),
+            tr("Tous les fichiers locaux sont à jour.")
+        );
+        return;
+    }
+    
+    // Demander confirmation à l'utilisateur
+    QString message = tr("Les fichiers suivants seront téléchargés/mis à jour:\n\n");
+    message += updateMessages.join("\n");
+    message += tr("\n\nVoulez-vous continuer ?");
+    
+    int ret = QMessageBox::question(
+        qobject_cast<QWidget*>(parent()),
+        tr("Synchronisation des fichiers"),
+        message,
+        QMessageBox::Yes | QMessageBox::No
+    );
+    
+    if (ret != QMessageBox::Yes) {
+        return;
+    }
+    
+    // Créer une boîte de dialogue de progression
+    QProgressDialog* progress = new QProgressDialog(
+        tr("Téléchargement des fichiers..."), 
+        tr("Annuler"), 
+        0, 
+        filesToDownload.size(), 
+        qobject_cast<QWidget*>(parent())
+    );
+    progress->setWindowModality(Qt::WindowModal);
+    progress->show();
+    
+    // Télécharger les fichiers un par un
+    for (int i = 0; i < filesToDownload.size(); ++i) {
+        if (progress->wasCanceled()) {
+            break;
+        }
+        
+        QString filename = filesToDownload.at(i);
+        progress->setValue(i);
+        progress->setLabelText(tr("Téléchargement de %1...").arg(filename));
+        
+        // Construire l'URL de téléchargement
+        QUrl downloadUrl(QString("http://10.8.0.1:9004/download-market-data/%1").arg(filename));
+        
+        QNetworkRequest request(downloadUrl);
+        QNetworkReply* downloadReply = m_networkManager->get(request);
+        
+        // Attendre la fin du téléchargement (synchrone pour simplifier)
+        QEventLoop loop;
+        connect(downloadReply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
+        loop.exec();
+        
+        if (downloadReply->error() == QNetworkReply::NoError) {
+            // Sauvegarder le fichier
+            QString localFilePath = localDir.absoluteFilePath(filename);
+            QFile localFile(localFilePath);
+            
+            if (localFile.open(QIODevice::WriteOnly)) {
+                localFile.write(downloadReply->readAll());
+                localFile.close();
+                qDebug() << "Fichier téléchargé:" << filename;
+            } else {
+                qWarning() << "Impossible d'écrire le fichier:" << filename;
+            }
+        } else {
+            qWarning() << "Erreur téléchargement" << filename << ":" << downloadReply->errorString();
+        }
+        
+        downloadReply->deleteLater();
+        QApplication::processEvents();
+    }
+    
+    progress->setValue(filesToDownload.size());
+    progress->close();
+    delete progress;
+    
+    QMessageBox::information(
+        qobject_cast<QWidget*>(parent()),
+        tr("Synchronisation terminée"),
+        tr("Synchronisation terminée.\n%1 fichier(s) téléchargé(s).")
+            .arg(filesToDownload.size())
+    );
+}
+
+void DataMenuManager::onFileDownloadFinished()
+{
+    // Cette méthode peut être utilisée pour des téléchargements asynchrones si nécessaire
+    QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
+    if (!reply) {
+        return;
+    }
+    
+    reply->deleteLater();
+}
+
+QString DataMenuManager::getFileLastModified(const QString& filePath)
+{
+    QFileInfo fileInfo(filePath);
+    if (fileInfo.exists()) {
+        return fileInfo.lastModified().toString(Qt::ISODate);
+    }
+    return QString();
 }

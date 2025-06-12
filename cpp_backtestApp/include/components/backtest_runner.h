@@ -59,8 +59,13 @@ private:
     QHBoxLayout* m_buttonLayout;
     QPushButton* m_runButton;
     QProgressBar* m_loadingIndicator;
+    QLabel* m_statsLabel;
     class BacktestWorker* m_worker;
     bool m_isRunning;
+    
+    // Variables pour capturer les dernières statistiques
+    int m_lastTotalCandles;
+    QString m_lastChrono;
     
     void createUIComponents();
     void resetUI();

@@ -1,5 +1,4 @@
 #include "components/backtest_runner.h"
-// Garder uniquement les inclusions nécessaires à l'UI
 #include "components/config_manager.h"
 #include "components/data_loader.h"
 #include "app.h"
@@ -9,15 +8,17 @@
 #include <QDebug>
 #include <QApplication>  
 
-// Constructeur, destructeur et méthodes UI restent inchangés
 BacktestRunner::BacktestRunner(QObject* parent)
     : QObject(parent)
     , m_mainWindow(qobject_cast<App*>(parent))
     , m_buttonLayout(nullptr)
     , m_runButton(nullptr)
     , m_loadingIndicator(nullptr)
+    , m_statsLabel(nullptr)
     , m_worker(nullptr)
     , m_isRunning(false)
+    , m_lastTotalCandles(0)
+    , m_lastChrono("")
 {
     createUIComponents();
 }
@@ -30,7 +31,6 @@ BacktestRunner::~BacktestRunner()
     }
 }
 
-// Méthodes d'UI inchangées
 void BacktestRunner::createUIComponents()
 {
     m_buttonLayout = new QHBoxLayout();
@@ -48,7 +48,7 @@ void BacktestRunner::createUIComponents()
     m_loadingIndicator->setMinimum(0);
     m_loadingIndicator->setTextVisible(true);
     m_loadingIndicator->setVisible(false);
-    m_loadingIndicator->setMinimumHeight(40); // Augmenter encore plus
+    m_loadingIndicator->setMinimumHeight(40); 
     m_loadingIndicator->setStyleSheet(
         "QProgressBar {"
         "   text-align: center;"
@@ -63,7 +63,21 @@ void BacktestRunner::createUIComponents()
         "}"
     );
     
-    m_buttonLayout->addWidget(m_runButton);
+    // Créer le label pour les statistiques d'exécution
+    m_statsLabel = new QLabel();
+    m_statsLabel->setVisible(false);
+    m_statsLabel->setMinimumHeight(40);
+    m_statsLabel->setStyleSheet("QLabel { background-color: #e8f4fd; color: #2c3e50; border: 1px solid #bdc3c7; border-radius: 4px; padding: 4px; margin: 2px 0px; font-size: 11px; }");
+    m_statsLabel->setAlignment(Qt::AlignCenter);
+
+    // Créer un layout vertical pour le bouton et les stats
+    QVBoxLayout* buttonStatsLayout = new QVBoxLayout();
+    buttonStatsLayout->addWidget(m_runButton);
+    buttonStatsLayout->addWidget(m_statsLabel);
+    buttonStatsLayout->setSpacing(4); // Espacement réduit entre le bouton et le label
+    
+    // Ajouter le layout vertical au layout horizontal principal
+    m_buttonLayout->addLayout(buttonStatsLayout);
     m_buttonLayout->addWidget(m_loadingIndicator);
 }
 
@@ -76,6 +90,7 @@ void BacktestRunner::runBacktest()
     m_runButton->setEnabled(false);
     m_runButton->setVisible(false);
     m_loadingIndicator->setVisible(true);
+    m_statsLabel->setVisible(false); // Cacher les stats précédentes
     m_isRunning = true;
     
     emit backtestStarted();
@@ -108,8 +123,12 @@ void BacktestRunner::onProgressUpdated(int current, int total, const QString& ch
     int percentage = (current * 100) / total;
     m_loadingIndicator->setValue(percentage);
     
+    // Capturer les dernières statistiques
+    m_lastTotalCandles = total;
+    m_lastChrono = chrono;
+    
     // Calculer la vitesse en candles/seconde
-    qint64 elapsedMs = QTime::fromString(chrono, "mm:ss").msecsTo(QTime(0, 0, 0)) * -1;
+    qint64 elapsedMs = QTime::fromString(chrono, "mm:ss.zz").msecsTo(QTime(0, 0, 0)) * -1;
     double candlesPerSecond = (current * 1000.0) / elapsedMs;
     // Utiliser des espaces pour séparer visuellement
     m_loadingIndicator->setFormat(QString("%1/%2 (%p%)  %3 c/s - %4")
@@ -131,6 +150,20 @@ void BacktestRunner::onBacktestFinished(BacktestResults* results) {
     
     qInfo() << "Backtest terminé avec succès, transmission des résultats";
     qDebug() << "Taille des données reçues:" << results->data->size() << "barres";
+    
+    // Afficher les statistiques d'exécution
+    if (!m_lastChrono.isEmpty() && m_lastTotalCandles > 0) {
+        qint64 elapsedMs = QTime::fromString(m_lastChrono, "mm:ss.zz").msecsTo(QTime(0, 0, 0)) * -1;
+        double avgCandlesPerSecond = (m_lastTotalCandles * 1000.0) / elapsedMs;
+        
+        QString statsText = QString("📊 %1 candles • ⏱️ %2 • ⚡ %3 c/s")
+                              .arg(m_lastTotalCandles)
+                              .arg(m_lastChrono)
+                              .arg(QString::number(avgCandlesPerSecond, 'f', 1));
+        
+        m_statsLabel->setText(statsText);
+        m_statsLabel->setVisible(true);
+    }
     
     // Transférer la propriété des résultats à l'application
     if (m_mainWindow) {
@@ -287,7 +320,7 @@ void BacktestWorker::run()
 
     backtest.setProgressCallback([this, &timer](size_t current, size_t total) {
         qint64 elapsed = timer.elapsed();
-        QString chrono = QTime::fromMSecsSinceStartOfDay(elapsed).toString("mm:ss");
+        QString chrono = QTime::fromMSecsSinceStartOfDay(elapsed).toString("mm:ss.zz");
         emit progressUpdated(static_cast<int>(current), static_cast<int>(total), chrono);
     });
     

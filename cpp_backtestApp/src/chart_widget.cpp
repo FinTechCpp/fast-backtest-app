@@ -107,6 +107,7 @@ void ChartWidget::setChartType(ChartType chartType)
 }
 
 void ChartWidget::aggregateData(AggregationLevel level) {
+    std::cout << "Agrégation des données au niveau: " << static_cast<int>(level) << std::endl;
     // Si déjà en cache et valide, ne rien faire
     if (m_aggregationCache.find(level) != m_aggregationCache.end() && 
         m_aggregationCache[level].isValid) {
@@ -135,10 +136,18 @@ void ChartWidget::aggregateData(AggregationLevel level) {
         aggregatedData.isValid = true;
         return;
     }
+
+    // Faire des copies des données originales pour l'agrégation
+    std::vector<double> timestampsCopy = m_timestampsCache;
+    std::vector<double> openCopy = m_backtestData->getOpen();
+    std::vector<double> highCopy = m_backtestData->getHigh();
+    std::vector<double> lowCopy = m_backtestData->getLow();
+    std::vector<double> closeCopy = m_backtestData->getClose();
+    std::vector<double> volumeCopy = m_backtestData->getVolume();
     
     
-    // Créer les ArrayMath pour l'agrégation
-    ArrayMath timestampsMath(DoubleArray(m_timestampsCache.data(), m_timestampsCache.size()));
+    // Créer les ArrayMath pour l'agrégation en utilisant les copies
+    ArrayMath timestampsMath(DoubleArray(timestampsCopy.data(), timestampsCopy.size()));
     
     // Appliquer le sélecteur approprié selon le niveau d'agrégation
     switch (level) {
@@ -156,45 +165,35 @@ void ChartWidget::aggregateData(AggregationLevel level) {
             aggregatedData.isValid = false;
             return;
     }
-    
-    // Obtenir les indices après sélection
-    DoubleArray indices = timestampsMath.result();
-    
-    if (indices.len <= 0) {
-        qDebug() << "Agrégation échouée - aucun point sélectionné";
-        aggregatedData.isValid = false;
-        return;
-    }
 
-    // Agréger les données OHLCV avec les stratégies appropriées
+    // Agréger les données OHLCV avec les stratégies appropriées en utilisant les copies
     DoubleArray times = timestampsMath.aggregate(
-        DoubleArray(m_timestampsCache.data(), m_timestampsCache.size()), 
+        DoubleArray(timestampsCopy.data(), timestampsCopy.size()), 
         Chart::AggregateFirst);
     
     DoubleArray open = timestampsMath.aggregate(
-        DoubleArray(m_backtestData->getOpen().data(), m_backtestData->getOpen().size()), 
+        DoubleArray(openCopy.data(), openCopy.size()), 
         Chart::AggregateFirst);
     
     DoubleArray high = timestampsMath.aggregate(
-        DoubleArray(m_backtestData->getHigh().data(), m_backtestData->getHigh().size()), 
+        DoubleArray(highCopy.data(), highCopy.size()), 
         Chart::AggregateMax);
     
     DoubleArray low = timestampsMath.aggregate(
-        DoubleArray(m_backtestData->getLow().data(), m_backtestData->getLow().size()), 
+        DoubleArray(lowCopy.data(), lowCopy.size()), 
         Chart::AggregateMin);
     
     DoubleArray close = timestampsMath.aggregate(
-        DoubleArray(m_backtestData->getClose().data(), m_backtestData->getClose().size()), 
+        DoubleArray(closeCopy.data(), closeCopy.size()), 
         Chart::AggregateLast);
     
     DoubleArray volume = timestampsMath.aggregate(
-        DoubleArray(m_backtestData->getVolume().data(), m_backtestData->getVolume().size()), 
+        DoubleArray(volumeCopy.data(), volumeCopy.size()), 
         Chart::AggregateSum);
 
     // Vérifier que tous les tableaux agrégés ont la même taille
     if (times.len != open.len || times.len != high.len || times.len != low.len || 
         times.len != close.len || times.len != volume.len) {
-        qDebug() << "Agrégation échouée - les tableaux ont des dimensions différentes";
         aggregatedData.isValid = false;
         return;
     }
@@ -221,206 +220,91 @@ void ChartWidget::aggregateData(AggregationLevel level) {
     aggregatedData.isValid = true;
 }
 
-// ChartWidget::AggregatedOHLCV ChartWidget::getOptimallyAggregatedData(
-//     const DoubleArray& timestamps,
-//     const DoubleArray& open,
-//     const DoubleArray& high, 
-//     const DoubleArray& low,
-//     const DoubleArray& close,
-//     const DoubleArray& volume)
-// {
-//     AggregatedOHLCV result;
-//     result.level = AggregationLevel::Raw;
-    
-//     // Si le nombre de points est inférieur au seuil, utiliser les données brutes
-//     if (timestamps.len <= MAX_DISPLAY_POINTS) {
-//         // Créer de nouvelles DoubleArray qui pointent vers les mêmes données
-//         result.timestamps = timestamps;
-//         result.open = open;
-//         result.high = high;
-//         result.low = low;
-//         result.close = close;
-//         result.volume = volume;
-//         return result;
-//     }
-    
-//     // Déterminer le niveau d'agrégation de départ en fonction de la période des données
-//     AggregationLevel startLevel = determineStartingAggregationLevel(timestamps);
-//     startLevel = AggregationLevel::Raw;
-//     std::cout << "Niveau d'agrégation de départ déterminé : " << static_cast<int>(startLevel) << std::endl;
-    
-//     // Liste ordonnée des niveaux d'agrégation disponibles
-//     std::array<AggregationLevel, 6> aggregationLevels = {
-//         AggregationLevel::Raw,
-//         AggregationLevel::OneMinute,
-//         AggregationLevel::OneHour,
-//         AggregationLevel::OneDay,
-//     };
-    
-//     // Trouver l'indice du niveau de départ dans notre liste
-//     size_t startIdx = 0;
-//     for (size_t i = 0; i < aggregationLevels.size(); i++) {
-//         if (aggregationLevels[i] == startLevel) {
-//             startIdx = i;
-//             break;
-//         }
-//     }
-    
-//     // Parcourir les niveaux d'agrégation à partir du niveau de départ
-//     for (size_t i = startIdx + 1; i < aggregationLevels.size(); i++) {
-//         AggregationLevel level = aggregationLevels[i];
-        
-//         // Vérifier si ce niveau est déjà en cache, sinon le calculer
-//         if (m_aggregationCache.find(level) == m_aggregationCache.end() || 
-//             !m_aggregationCache[level].isValid) {
-//             aggregateData(level);
-//         }
+ChartWidget::AggregationInfo ChartWidget::getOptimalAggregationInfo(const DoubleArray &timestamps) {
+    AggregationInfo result;
+    result.level = AggregationLevel::Raw;
+    result.startIndex = 0;
+    result.pointCount = timestamps.len;
+    result.isValid = true;
 
-//         const AggregatedOHLCV& aggregatedData = m_aggregationCache[level];
-//         if (!aggregatedData.isValid) continue;
 
-//         // Extraire les timestamps de début et de fin de l'intervalle à afficher
-//         double startTime = timestamps[0];
-//         double endTime = timestamps[timestamps.len - 1];
+    if (timestamps.len <= MAX_DISPLAY_POINTS) return result;
 
-//         // Trouver les indices correspondants dans les données agrégées
-//         // Probleme dans ces deux methode aggStrat et aggEnd sont a 877769
-//         size_t aggStartIdx = findClosestIndex(aggregatedData.timestamps, startTime);
-//         size_t aggEndIdx = findClosestIndex(aggregatedData.timestamps, endTime, true);
+    // Déterminer le niveau d'agrégation de départ en fonction de la période des données
+    AggregationLevel startLevel = determineStartingAggregationLevel(timestamps);
 
-//         // Calculer combien de points agrégés seraient visibles dans cette plage
-//         int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? (aggEndIdx - aggStartIdx + 1) : 0;
-        
-//         // Si l'agrégation est valide et réduit suffisamment les données
-//         if (visibleAggPoints > 0 && visibleAggPoints <= MAX_DISPLAY_POINTS) {
-//             // Créer de nouvelles DoubleArray qui pointent vers les données agrégées
-//             result.timestamps = DoubleArray(&aggregatedData.timestamps.data[aggStartIdx], visibleAggPoints);
-//             result.open = DoubleArray(&aggregatedData.open.data[aggStartIdx], visibleAggPoints);
-//             result.high = DoubleArray(&aggregatedData.high.data[aggStartIdx], visibleAggPoints);
-//             result.low = DoubleArray(&aggregatedData.low.data[aggStartIdx], visibleAggPoints);
-//             result.close = DoubleArray(&aggregatedData.close.data[aggStartIdx], visibleAggPoints);
-//             result.volume = DoubleArray(&aggregatedData.volume.data[aggStartIdx], visibleAggPoints);
-//             result.level = level;
+    // Liste ordonnée des niveaux d'agrégation disponibles
+    std::array<AggregationLevel, 4> aggregationLevels = {
+        AggregationLevel::Raw,
+        AggregationLevel::OneMinute,
+        AggregationLevel::OneHour,
+        AggregationLevel::OneDay,
+    };
+
+    // Trouver l'indice du niveau de départ dans notre liste
+    size_t startIdx = 0;
+    for (size_t i = 0; i < aggregationLevels.size(); i++) {
+        if (aggregationLevels[i] == startLevel) {
+            startIdx = i;
+            break;
+        }
+    }
+
+    // Parcourir les niveaux d'agrégation à partir du niveau de départ
+    for (size_t i = startIdx + 1; i < aggregationLevels.size(); i++) {
+        AggregationLevel level = aggregationLevels[i];
+
+        // Vérifier si ce niveau est déjà en cache, sinon le calculer
+        if (m_aggregationCache.find(level) == m_aggregationCache.end() || 
+            !m_aggregationCache[level].isValid) {
+            aggregateData(level);
+        }
+
+        const AggregatedOHLCV& aggregatedData = m_aggregationCache[level];
+        if (!aggregatedData.isValid) continue;
+
+        // Extraire les timestamps de début et de fin de l'intervalle à afficher
+        double startTime = timestamps[0];
+        double endTime = timestamps[timestamps.len - 1];
             
-//             return result;
-//         }
-//     }
-    
-//     // Si aucun niveau ne convient, utiliser le plus élevé disponible
-//     AggregationLevel highestLevel = AggregationLevel::OneDay;
-//     if (m_aggregationCache.find(highestLevel) != m_aggregationCache.end() && 
-//         m_aggregationCache[highestLevel].isValid) {
-        
-//         const AggregatedOHLCV& aggregatedData = m_aggregationCache[highestLevel];
-        
-//         // Utiliser toutes les données agrégées de ce niveau
-//         result.timestamps = DoubleArray(&aggregatedData.timestamps.data[0], aggregatedData.timestamps.len);
-//         result.open = DoubleArray(&aggregatedData.open.data[0], aggregatedData.open.len);
-//         result.high = DoubleArray(&aggregatedData.high.data[0], aggregatedData.high.len);
-//         result.low = DoubleArray(&aggregatedData.low.data[0], aggregatedData.low.len);
-//         result.close = DoubleArray(&aggregatedData.close.data[0], aggregatedData.close.len);
-//         result.volume = DoubleArray(&aggregatedData.volume.data[0], aggregatedData.volume.len);
-//         result.level = highestLevel;
-//     } else {
-//         // En dernier recours, utiliser les données d'origine
-//         result.timestamps = timestamps;
-//         result.open = open;
-//         result.high = high;
-//         result.low = low;
-//         result.close = close;
-//         result.volume = volume;
-//         result.level = AggregationLevel::Raw;
-//     }
-    
-//     return result;
-// }
+        // Trouver les indices correspondants dans les données agrégées
+        size_t aggStartIdx = findClosestIndex(aggregatedData.timestamps, startTime);
+        size_t aggEndIdx = findClosestIndex(aggregatedData.timestamps, endTime, true);
 
-// ChartWidget::AggregationInfo ChartWidget::getOptimalAggregationInfo(const DoubleArray &timestamps) {
-//     AggregationInfo result;
-//     result.level = AggregationLevel::Raw;
-//     result.startIndex = 0;
-//     result.pointCount = timestamps.len;
-//     result.isValid = true;
+        // Protection contre les indices identiques
+        // if (aggStartIdx == aggEndIdx) {
+        //     if (aggStartIdx > 0) aggStartIdx--;
+        //     else if (aggEndIdx < aggregatedData.timestamps.len - 1) aggEndIdx++;
+        // }
+
+        // Calculer combien de points agrégés seraient visibles dans cette plage
+        int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? (aggEndIdx - aggStartIdx + 1) : 0;
+
+        std::cout << "Niveau " << static_cast<int>(level) << ": " << visibleAggPoints 
+                  << " points (indices " << aggStartIdx << "-" << aggEndIdx << ")" << std::endl;
+
+        // Si l'agrégation est valide et réduit suffisamment les données
+        if (visibleAggPoints > 0 && visibleAggPoints <= MAX_DISPLAY_POINTS) {
+            result.level = level;
+            result.startIndex = aggStartIdx;
+            result.pointCount = visibleAggPoints;
+            return result;
+        }
+    }
+
+    // Si aucun niveau ne convient, utiliser le plus élevé disponible
+    AggregationLevel highestLevel = AggregationLevel::OneDay;
+    if (m_aggregationCache.find(highestLevel) != m_aggregationCache.end() && 
+        m_aggregationCache[highestLevel].isValid) {
+
+        result.level = highestLevel;
+        result.startIndex = 0;
+        result.pointCount = m_aggregationCache[highestLevel].timestamps.size();
+    }
 
 
-//     if (timestamps.len <= MAX_DISPLAY_POINTS) return result;
-
-//     // Déterminer le niveau d'agrégation de départ en fonction de la période des données
-//     AggregationLevel startLevel = determineStartingAggregationLevel(timestamps);
-//     std::cout << "Niveau d'agrégation de départ déterminé : " << static_cast<int>(startLevel) << std::endl;
-
-//     // Liste ordonnée des niveaux d'agrégation disponibles
-//     std::array<AggregationLevel, 4> aggregationLevels = {
-//         AggregationLevel::Raw,
-//         AggregationLevel::OneMinute,
-//         AggregationLevel::OneHour,
-//         AggregationLevel::OneDay,
-//     };
-
-//     // Trouver l'indice du niveau de départ dans notre liste
-//     size_t startIdx = 0;
-//     for (size_t i = 0; i < aggregationLevels.size(); i++) {
-//         if (aggregationLevels[i] == startLevel) {
-//             startIdx = i;
-//             break;
-//         }
-//     }
-
-//     // Parcourir les niveaux d'agrégation à partir du niveau de départ
-//     for (size_t i = startIdx + 1; i < aggregationLevels.size(); i++) {
-//         AggregationLevel level = aggregationLevels[i];
-        
-//         // Vérifier si ce niveau est déjà en cache, sinon le calculer
-//         if (m_aggregationCache.find(level) == m_aggregationCache.end() || 
-//             !m_aggregationCache[level].isValid) {
-//             aggregateData(level);
-//         }
-
-//         const AggregatedOHLCV& aggregatedData = m_aggregationCache[level];
-//         if (!aggregatedData.isValid) continue;
-
-//         // Extraire les timestamps de début et de fin de l'intervalle à afficher
-//         double startTime = timestamps[0];
-//         double endTime = timestamps[timestamps.len - 1];
-                  
-//         // Trouver les indices correspondants dans les données agrégées
-//         size_t aggStartIdx = findClosestIndex(aggregatedData.timestamps, startTime);
-//         size_t aggEndIdx = findClosestIndex(aggregatedData.timestamps, endTime, true);
-
-//         // Protection contre les indices identiques
-//         // if (aggStartIdx == aggEndIdx) {
-//         //     if (aggStartIdx > 0) aggStartIdx--;
-//         //     else if (aggEndIdx < aggregatedData.timestamps.len - 1) aggEndIdx++;
-//         // }
-
-//         // Calculer combien de points agrégés seraient visibles dans cette plage
-//         int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? (aggEndIdx - aggStartIdx + 1) : 0;
-        
-//         std::cout << "Niveau " << static_cast<int>(level) << ": " << visibleAggPoints 
-//                   << " points (indices " << aggStartIdx << "-" << aggEndIdx << ")" << std::endl;
-        
-//         // Si l'agrégation est valide et réduit suffisamment les données
-//         if (visibleAggPoints > 0 && visibleAggPoints <= MAX_DISPLAY_POINTS) {
-//             result.level = level;
-//             result.startIndex = aggStartIdx;
-//             result.pointCount = visibleAggPoints;
-//             return result;
-//         }
-//     }
-    
-//     // Si aucun niveau ne convient, utiliser le plus élevé disponible
-//     AggregationLevel highestLevel = AggregationLevel::OneDay;
-//     if (m_aggregationCache.find(highestLevel) != m_aggregationCache.end() && 
-//         m_aggregationCache[highestLevel].isValid) {
-        
-//         result.level = highestLevel;
-//         result.startIndex = 0;
-//         result.pointCount = m_aggregationCache[highestLevel].timestamps.len;
-//     }
-    
-
-//     return result;
-// }
+    return result;
+}
 
 ChartWidget::AggregationLevel ChartWidget::determineStartingAggregationLevel(const DoubleArray& timestamps) {
     // Si moins de deux timestamps, impossible de déterminer la période
@@ -534,38 +418,29 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
     // AggregatedOHLCV aggregated = getOptimallyAggregatedData(
     //         timestamps, openData, highData, lowData, closeData, volumeData);
 
-    // AggregationInfo aggInfo = getOptimalAggregationInfo(timestamps);
+    AggregationInfo aggInfo = getOptimalAggregationInfo(timestamps);
 
-    // std::cout << "Niveau d'agrégation optimal : " 
-    //           << static_cast<int>(aggInfo.level) 
-    //           << ", points à afficher : " << aggInfo.pointCount 
-    //           << ", point de départ : " << aggInfo.startIndex << std::endl;
+    struct AggregationInfo {
+        AggregationLevel level;    // Le niveau d'agrégation optimal
+        size_t startIndex;         // L'indice de début dans les données mises en cache
+        int pointCount;            // Le nombre de points à extraire
+        bool isValid = false;      // Indicateur de validité
+    };
 
+    AggregatedOHLCV aggregated = m_aggregationCache[aggInfo.level];
 
-    // std::cout << "Données agrégées : " 
-    //           << aggregated.timestamps.len << " points, niveau " 
-    //           << static_cast<int>(aggregated.level) << std::endl;
+    DoubleArray aggregatedTimestamps = DoubleArray(&aggregated.timestamps[0] + aggInfo.startIndex, aggInfo.pointCount);
+    DoubleArray aggregatedOpen = DoubleArray(&aggregated.open[0] + aggInfo.startIndex, aggInfo.pointCount);
+    DoubleArray aggregatedHigh = DoubleArray(&aggregated.high[0] + aggInfo.startIndex, aggInfo.pointCount);
+    DoubleArray aggregatedLow = DoubleArray(&aggregated.low[0] + aggInfo.startIndex, aggInfo.pointCount);
+    DoubleArray aggregatedClose = DoubleArray(&aggregated.close[0] + aggInfo.startIndex, aggInfo.pointCount);
+    DoubleArray aggregatedVolume = DoubleArray(&aggregated.volume[0] + aggInfo.startIndex, aggInfo.pointCount);
 
-    // Excellent ce code fonctionne pour l'agrégation et tous les niveaux, 
-    // maintenant il faut faire la fonction qui arrive à choisir correctement le niveau d'agrégation (getOptimallyAggregatedData)
-    // aggregateData(AggregationLevel::Raw);
-    // aggregateData(AggregationLevel::OneMinute);
-    // // aggregateData(AggregationLevel::OneHour);
-    // // aggregateData(AggregationLevel::OneDay);
-    // AggregatedOHLCV aggregated = m_aggregationCache[AggregationLevel::OneMinute];
+    createOrUpdateChart(aggregatedTimestamps, aggregatedHigh, aggregatedLow, aggregatedOpen, aggregatedClose, 
+                                aggregatedVolume, m_config.chartWidth);
 
-    // DoubleArray aggregatedTimestamps = DoubleArray(&aggregated.timestamps[0], aggregated.timestamps.size());
-    // DoubleArray aggregatedOpen = DoubleArray(&aggregated.open[0], aggregated.open.size());
-    // DoubleArray aggregatedHigh = DoubleArray(&aggregated.high[0], aggregated.high.size());
-    // DoubleArray aggregatedLow = DoubleArray(&aggregated.low[0], aggregated.low.size());
-    // DoubleArray aggregatedClose = DoubleArray(&aggregated.close[0], aggregated.close.size());
-    // DoubleArray aggregatedVolume = DoubleArray(&aggregated.volume[0], aggregated.volume.size());
-
-    // createOrUpdateChart(aggregatedTimestamps, aggregatedHigh, aggregatedLow, aggregatedOpen, aggregatedClose, 
-    //                             aggregatedVolume, m_config.chartWidth);
-
-    createOrUpdateChart(timestamps, highData, lowData, openData, closeData, 
-                                volumeData, m_config.chartWidth);
+    // createOrUpdateChart(timestamps, highData, lowData, openData, closeData, 
+    //                             volumeData, m_config.chartWidth);
 
 
     // Configurer le viewport

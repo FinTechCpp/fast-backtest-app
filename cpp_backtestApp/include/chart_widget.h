@@ -218,36 +218,43 @@ private:
         OneMinute,   // 1 minute
         OneHour,     // 1 heure
         OneDay,      // 1 jour
-        OneWeek,     // 1 semaine
-        OneMonth     // 1 mois
     };
 
-    // struct AggregatedData {
-    //     std::vector<double> timestamps;
-    //     std::vector<double> open;
-    //     std::vector<double> high;
-    //     std::vector<double> low;
-    //     std::vector<double> close;
-    //     std::vector<double> volume;
+    struct AggregationInfo {
+        AggregationLevel level;    // Le niveau d'agrégation optimal
+        size_t startIndex;         // L'indice de début dans les données mises en cache
+        int pointCount;            // Le nombre de points à extraire
+        bool isValid = false;      // Indicateur de validité
+    };
+
+    // struct AggregatedOHLCV {
+    //     DoubleArray timestamps;
+    //     DoubleArray open;
+    //     DoubleArray high;
+    //     DoubleArray low;
+    //     DoubleArray close;
+    //     DoubleArray volume;
+    //     AggregationLevel level;  // Pour informations uniquement
     //     bool isValid = false;
     // };
 
     struct AggregatedOHLCV {
-        DoubleArray timestamps;
-        DoubleArray open;
-        DoubleArray high;
-        DoubleArray low;
-        DoubleArray close;
-        DoubleArray volume;
-        AggregationLevel level;  // Pour informations uniquement
+        std::vector<double> timestamps;
+        std::vector<double> open;
+        std::vector<double> high;
+        std::vector<double> low;
+        std::vector<double> close;
+        std::vector<double> volume;
+        AggregationLevel level;
         bool isValid = false;
     };
 
     AggregationLevel determineStartingAggregationLevel(const DoubleArray& timestamps);
-    size_t findClosestIndex(const DoubleArray& values, double target, bool searchForward = false);
+    size_t findClosestIndex(const std::vector<double>& values, double target, bool searchForward = false);
     AggregatedOHLCV getOptimallyAggregatedData(const DoubleArray& timestamps, const DoubleArray& open,
                                                             const DoubleArray& high, const DoubleArray& low,
                                                             const DoubleArray& close, const DoubleArray& volume);
+    AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
 
     void aggregateData(AggregationLevel level);
 
@@ -322,7 +329,7 @@ private:
     // 1. Traitement et conversion des données
     void convertBacktestData(const std::shared_ptr<be::Data>& data);
     void convertEquityCurve(const std::vector<double>& equityCurve, 
-                          const std::shared_ptr<be::Data>& data);
+                          const std::shared_ptr<const be::Data>& data);
     double dateToChartTimestamp(const be::Date& date);
     void prepareTimestampsCache();
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
@@ -384,7 +391,7 @@ private:
     ChartConfig m_config;
     
     // 2. Données
-    std::shared_ptr<be::Data> m_backtestData; 
+    std::shared_ptr<const be::Data> m_backtestData; 
     std::vector<double> m_timestampsCache;
     HeikinAshiCache m_heikinAshiCache;
     IndicatorCache m_indicatorCache;

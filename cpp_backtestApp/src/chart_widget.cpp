@@ -107,7 +107,6 @@ void ChartWidget::setChartType(ChartType chartType)
 }
 
 void ChartWidget::aggregateData(AggregationLevel level) {
-    std::cout << "Agrégation des données au niveau: " << static_cast<int>(level) << std::endl;
     // Si déjà en cache et valide, ne rien faire
     if (m_aggregationCache.find(level) != m_aggregationCache.end() && 
         m_aggregationCache[level].isValid) {
@@ -137,15 +136,45 @@ void ChartWidget::aggregateData(AggregationLevel level) {
         return;
     }
 
+    // Trouver le niveau d'agrégation source optimal (le plus élevé disponible inférieur au niveau demandé)
+    AggregationLevel sourceLevel = AggregationLevel::Raw;
+    
+    // Ordre hiérarchique des niveaux d'agrégation
+    std::vector<AggregationLevel> levelHierarchy = {
+        AggregationLevel::Raw,
+        AggregationLevel::OneMinute,
+        AggregationLevel::OneHour,
+        AggregationLevel::OneDay
+    };
+    
+    // Trouver le niveau le plus élevé disponible qui est inférieur au niveau demandé
+    for (auto it = levelHierarchy.rbegin(); it != levelHierarchy.rend(); ++it) {
+        if (*it < level && 
+            m_aggregationCache.find(*it) != m_aggregationCache.end() && 
+            m_aggregationCache[*it].isValid) {
+            sourceLevel = *it;
+            break;
+        }
+    }
+
+    // Si aucun niveau inférieur n'est disponible, on utilise les données brutes
+    if (sourceLevel == AggregationLevel::Raw && !m_aggregationCache[sourceLevel].isValid) {
+        // Calculer le niveau Raw s'il n'est pas déjà calculé
+        aggregateData(AggregationLevel::Raw);
+    }
+
+    // Obtenir les données source
+    const AggregatedOHLCV& sourceData = m_aggregationCache[sourceLevel];
+
     // Faire des copies des données originales pour l'agrégation
-    std::vector<double> timestampsCopy = m_timestampsCache;
-    std::vector<double> openCopy = m_backtestData->getOpen();
-    std::vector<double> highCopy = m_backtestData->getHigh();
-    std::vector<double> lowCopy = m_backtestData->getLow();
-    std::vector<double> closeCopy = m_backtestData->getClose();
-    std::vector<double> volumeCopy = m_backtestData->getVolume();
-    
-    
+    std::vector<double> timestampsCopy = sourceData.timestamps;
+    std::vector<double> openCopy = sourceData.open;
+    std::vector<double> highCopy = sourceData.high;
+    std::vector<double> lowCopy = sourceData.low;
+    std::vector<double> closeCopy = sourceData.close;
+    std::vector<double> volumeCopy = sourceData.volume;
+
+
     // Créer les ArrayMath pour l'agrégation en utilisant les copies
     ArrayMath timestampsMath(DoubleArray(timestampsCopy.data(), timestampsCopy.size()));
     
@@ -442,7 +471,6 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         createOrUpdateChart(aggregatedTimestamps, aggregatedHigh, aggregatedLow, aggregatedOpen, aggregatedClose, 
                                     aggregatedVolume, m_config.chartWidth);
     }
-
 
 
     // Configurer le viewport

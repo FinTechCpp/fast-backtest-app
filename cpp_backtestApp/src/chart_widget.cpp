@@ -427,20 +427,25 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         bool isValid = false;      // Indicateur de validité
     };
 
-    AggregatedOHLCV aggregated = m_aggregationCache[aggInfo.level];
+    if (aggInfo.level == AggregationLevel::Raw) {
+        // Si le niveau d'agrégation est Raw, utiliser les données brutes
+        createOrUpdateChart(timestamps, highData, lowData, openData, closeData, 
+                            volumeData, m_config.chartWidth);
+    }
+    else {
+        AggregatedOHLCV aggregated = m_aggregationCache[aggInfo.level];
+    
+        DoubleArray aggregatedTimestamps = DoubleArray(&aggregated.timestamps[0] + aggInfo.startIndex, aggInfo.pointCount);
+        DoubleArray aggregatedOpen = DoubleArray(&aggregated.open[0] + aggInfo.startIndex, aggInfo.pointCount);
+        DoubleArray aggregatedHigh = DoubleArray(&aggregated.high[0] + aggInfo.startIndex, aggInfo.pointCount);
+        DoubleArray aggregatedLow = DoubleArray(&aggregated.low[0] + aggInfo.startIndex, aggInfo.pointCount);
+        DoubleArray aggregatedClose = DoubleArray(&aggregated.close[0] + aggInfo.startIndex, aggInfo.pointCount);
+        DoubleArray aggregatedVolume = DoubleArray(&aggregated.volume[0] + aggInfo.startIndex, aggInfo.pointCount);
+    
+        createOrUpdateChart(aggregatedTimestamps, aggregatedHigh, aggregatedLow, aggregatedOpen, aggregatedClose, 
+                                    aggregatedVolume, m_config.chartWidth);
+    }
 
-    DoubleArray aggregatedTimestamps = DoubleArray(&aggregated.timestamps[0] + aggInfo.startIndex, aggInfo.pointCount);
-    DoubleArray aggregatedOpen = DoubleArray(&aggregated.open[0] + aggInfo.startIndex, aggInfo.pointCount);
-    DoubleArray aggregatedHigh = DoubleArray(&aggregated.high[0] + aggInfo.startIndex, aggInfo.pointCount);
-    DoubleArray aggregatedLow = DoubleArray(&aggregated.low[0] + aggInfo.startIndex, aggInfo.pointCount);
-    DoubleArray aggregatedClose = DoubleArray(&aggregated.close[0] + aggInfo.startIndex, aggInfo.pointCount);
-    DoubleArray aggregatedVolume = DoubleArray(&aggregated.volume[0] + aggInfo.startIndex, aggInfo.pointCount);
-
-    createOrUpdateChart(aggregatedTimestamps, aggregatedHigh, aggregatedLow, aggregatedOpen, aggregatedClose, 
-                                aggregatedVolume, m_config.chartWidth);
-
-    // createOrUpdateChart(timestamps, highData, lowData, openData, closeData, 
-    //                             volumeData, m_config.chartWidth);
 
 
     // Configurer le viewport

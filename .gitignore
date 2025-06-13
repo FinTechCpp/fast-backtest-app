@@ -6,7 +6,7 @@
 *.o
 dist/
 *build/
-libchartdir.so
+# libchartdir.so
 
 # VS Code files
 .vscode/c_cpp_properties.json

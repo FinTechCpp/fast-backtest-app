@@ -14,23 +14,8 @@
     "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
     "C_Cpp.default.includePath": [
         "${workspaceFolder}/**",
-        "~/Qt/6.8.3/macos/include/**",
-        "~/Qt/6.8.3/macos/mkspecs/macx-clang",
-        "~/Qt/6.8.3/macos/lib/QtCore.framework/Headers",
-        "~/Qt/6.8.3/macos/lib/QtGui.framework/Headers",
-        "~/Qt/6.8.3/macos/lib/QtWidgets.framework/Headers",
-        "~/Qt/6.8.3/macos/lib/QtNetwork.framework/Headers",
-        "~/Qt/6.8.3/macos/lib/QtCharts.framework/Headers",
-        "~/Qt/6.8.3/macos/lib/QtOpenGL.framework/Headers",
-        "~/Qt/6.8.3/macos/lib/QtOpenGLWidgets.framework/Headers",
-        "~/Qt/6.8.3/macos/lib/QtPrintSupport.framework/Headers",
-        "${workspaceFolder}/cpp_backtestEngine/include",
-        "${workspaceFolder}/cpp_strategies/include",
-        "${workspaceFolder}/cpp_strategies/include/Strategies",
-        "~/repos/ig-trading-bot/ChartDirector/include",
         "/usr/include/qt6/**",
-        "/usr/include/x86_64-linux-gnu/qt6/**",
-
+        "/usr/include/x86_64-linux-gnu/qt6/**"
     ],
     "C_Cpp.default.cppStandard": "c++17",
     
@@ -119,22 +104,5 @@
         ]
     },
     "yaml.validate": true,
-    "yaml.completion": true,
-    
-    // Configuration spécifique macOS
-    "C_Cpp.default.macFrameworkPath": [
-        "~/Qt/6.8.3/macos/lib",
-        "/System/Library/Frameworks",
-        "/Library/Frameworks"
-    ],
-    "C_Cpp.default.systemIncludePath": [
-        "/usr/local/include",
-        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include",
-        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1",
-        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/*/include",
-        "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"
-    ]
-    // "cmake.generator": "Ninja",
-    // "C_Cpp.errorSquiggles": "enabled"
-    // "C_Cpp.default.compilerPath": "/usr/bin/g++-13"
+    "yaml.completion": true
 }

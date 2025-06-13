@@ -271,17 +271,8 @@ ChartWidget::AggregationInfo ChartWidget::getOptimalAggregationInfo(const Double
         size_t aggStartIdx = findClosestIndex(aggregatedData.timestamps, startTime);
         size_t aggEndIdx = findClosestIndex(aggregatedData.timestamps, endTime, true);
 
-        // Protection contre les indices identiques
-        // if (aggStartIdx == aggEndIdx) {
-        //     if (aggStartIdx > 0) aggStartIdx--;
-        //     else if (aggEndIdx < aggregatedData.timestamps.len - 1) aggEndIdx++;
-        // }
-
         // Calculer combien de points agrégés seraient visibles dans cette plage
         int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? (aggEndIdx - aggStartIdx + 1) : 0;
-
-        std::cout << "Niveau " << static_cast<int>(level) << ": " << visibleAggPoints 
-                  << " points (indices " << aggStartIdx << "-" << aggEndIdx << ")" << std::endl;
 
         // Si l'agrégation est valide et réduit suffisamment les données
         if (visibleAggPoints > 0 && visibleAggPoints <= MAX_DISPLAY_POINTS) {
@@ -306,7 +297,23 @@ ChartWidget::AggregationInfo ChartWidget::getOptimalAggregationInfo(const Double
     return result;
 }
 
-ChartWidget::AggregationLevel ChartWidget::determineStartingAggregationLevel(const DoubleArray& timestamps) {
+std::string ChartWidget::aggregationLevelToString(AggregationLevel level) {
+    switch (level) {
+        case AggregationLevel::Raw:
+            return "Raw";
+        case AggregationLevel::OneMinute:
+            return "1 Min";
+        case AggregationLevel::OneHour:
+            return "1 Hour";
+        case AggregationLevel::OneDay:
+            return "1 Day";
+        default:
+            return "Unknown";
+    }
+}
+
+ChartWidget::AggregationLevel ChartWidget::determineStartingAggregationLevel(const DoubleArray &timestamps)
+{
     // Si moins de deux timestamps, impossible de déterminer la période
     if (timestamps.len < 2) {
         return AggregationLevel::Raw;
@@ -415,33 +422,23 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         return false;
     }
 
-    // AggregatedOHLCV aggregated = getOptimallyAggregatedData(
-    //         timestamps, openData, highData, lowData, closeData, volumeData);
+    m_currentAggregation = getOptimalAggregationInfo(timestamps);
 
-    AggregationInfo aggInfo = getOptimalAggregationInfo(timestamps);
-
-    struct AggregationInfo {
-        AggregationLevel level;    // Le niveau d'agrégation optimal
-        size_t startIndex;         // L'indice de début dans les données mises en cache
-        int pointCount;            // Le nombre de points à extraire
-        bool isValid = false;      // Indicateur de validité
-    };
-
-    if (aggInfo.level == AggregationLevel::Raw) {
+    if (m_currentAggregation.level == AggregationLevel::Raw) {
         // Si le niveau d'agrégation est Raw, utiliser les données brutes
         createOrUpdateChart(timestamps, highData, lowData, openData, closeData, 
                             volumeData, m_config.chartWidth);
     }
     else {
-        AggregatedOHLCV aggregated = m_aggregationCache[aggInfo.level];
-    
-        DoubleArray aggregatedTimestamps = DoubleArray(&aggregated.timestamps[0] + aggInfo.startIndex, aggInfo.pointCount);
-        DoubleArray aggregatedOpen = DoubleArray(&aggregated.open[0] + aggInfo.startIndex, aggInfo.pointCount);
-        DoubleArray aggregatedHigh = DoubleArray(&aggregated.high[0] + aggInfo.startIndex, aggInfo.pointCount);
-        DoubleArray aggregatedLow = DoubleArray(&aggregated.low[0] + aggInfo.startIndex, aggInfo.pointCount);
-        DoubleArray aggregatedClose = DoubleArray(&aggregated.close[0] + aggInfo.startIndex, aggInfo.pointCount);
-        DoubleArray aggregatedVolume = DoubleArray(&aggregated.volume[0] + aggInfo.startIndex, aggInfo.pointCount);
-    
+        AggregatedOHLCV aggregated = m_aggregationCache[m_currentAggregation.level];
+
+        DoubleArray aggregatedTimestamps = DoubleArray(&aggregated.timestamps[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
+        DoubleArray aggregatedOpen = DoubleArray(&aggregated.open[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
+        DoubleArray aggregatedHigh = DoubleArray(&aggregated.high[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
+        DoubleArray aggregatedLow = DoubleArray(&aggregated.low[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
+        DoubleArray aggregatedClose = DoubleArray(&aggregated.close[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
+        DoubleArray aggregatedVolume = DoubleArray(&aggregated.volume[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
+
         createOrUpdateChart(aggregatedTimestamps, aggregatedHigh, aggregatedLow, aggregatedOpen, aggregatedClose, 
                                     aggregatedVolume, m_config.chartWidth);
     }
@@ -458,9 +455,6 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         m_chartViewer->setViewPortLeft(currentLeft);
         m_chartViewer->setViewPortWidth(currentWidth);
     }
-    
-    // Mettre à jour l'affichage
-    // m_chartViewer->updateViewPort(true, false);
     
     // Émettre un signal si c'est une création initiale
     if (!useViewport) {
@@ -1401,7 +1395,8 @@ void ChartWidget::createOrUpdateChart(
 
     // Ajouter le titre du graphique
     std::string chartTypeStr = chartTypeToString(m_config.chartType).toStdString();
-    std::string title = "Graphique de trading (" + chartTypeStr + ") - " + 
+    std::string aggregationStr = aggregationLevelToString(m_currentAggregation.level);
+    std::string title = "Graphique de trading (" + chartTypeStr + ", " + aggregationStr + ") - " + 
                        std::to_string(timestamps.len) + " points";
     m_financeChart->addTitle(title.c_str());
 
@@ -1424,7 +1419,7 @@ void ChartWidget::createOrUpdateChart(
     }
     
     // 1. Ajouter la courbe d'équité en haut si disponible
-    // addEquityCurveSection(m_financeChart.get(), timestamps, startIndex);
+    addEquityCurveSection(m_financeChart.get(), timestamps, startIndex);
 
     // 2. Ajouter le graphique principal
     m_financeChart->addMainChart(m_config.mainChartHeight);
@@ -1467,7 +1462,7 @@ void ChartWidget::createOrUpdateChart(
     }
 
     // 4. Ajouter les trades si disponibles
-    // addTradeMarkers(m_financeChart.get(), timestamps, startIndex);
+    addTradeMarkers(m_financeChart.get(), timestamps, startIndex);
 
     // Mettre à jour le graphique dans le viewer
     if (m_chartViewer)
@@ -1662,6 +1657,11 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
 {
     if (m_trades.empty() || !m_backtestData)
         return;
+
+    // pour l'instant on affiche rien mais il faudrait afficher par exemple just eles points d'entrée pour montrer les trades de loin
+    if (m_currentAggregation.level != AggregationLevel::Raw)
+        return;
+
 
     // Ajouter les marqueurs au graphique principal
     XYChart* mainChart = (XYChart*)chart->getChart(1);

@@ -227,17 +227,6 @@ private:
         bool isValid = false;      // Indicateur de validité
     };
 
-    // struct AggregatedOHLCV {
-    //     DoubleArray timestamps;
-    //     DoubleArray open;
-    //     DoubleArray high;
-    //     DoubleArray low;
-    //     DoubleArray close;
-    //     DoubleArray volume;
-    //     AggregationLevel level;  // Pour informations uniquement
-    //     bool isValid = false;
-    // };
-
     struct AggregatedOHLCV {
         std::vector<double> timestamps;
         std::vector<double> open;
@@ -249,21 +238,19 @@ private:
         bool isValid = false;
     };
 
+    std::string aggregationLevelToString(AggregationLevel level);
     AggregationLevel determineStartingAggregationLevel(const DoubleArray& timestamps);
     size_t findClosestIndex(const std::vector<double>& values, double target, bool searchForward = false);
-    AggregatedOHLCV getOptimallyAggregatedData(const DoubleArray& timestamps, const DoubleArray& open,
-                                                            const DoubleArray& high, const DoubleArray& low,
-                                                            const DoubleArray& close, const DoubleArray& volume);
     AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
 
     void aggregateData(AggregationLevel level);
 
 
-    // Cache pour les données agrégées
     std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregationCache;
+    AggregationInfo m_currentAggregation;
         
     // Seuil pour l'agrégation (nombre max de points avant agrégation)
-    const int MAX_DISPLAY_POINTS = 2000;
+    const int MAX_DISPLAY_POINTS = 10000;
 
     /**
      * @brief Structure pour stocker les données d'équité

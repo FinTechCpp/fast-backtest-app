@@ -13,6 +13,7 @@
 #include "components/technical_indicators.h"
 #include "components/backtest_results.h"
 #include "chart_data_manager.h"
+#include "chart_renderer.h"
 
 // Include ChartDirector headers
 #include "qchartviewer.h"
@@ -27,85 +28,6 @@ class ChartWidget : public QWidget
     Q_OBJECT
 
 public:
-    /**
-     * @brief Enum pour les différents types de graphiques financiers
-     */
-    enum class ChartType {
-        CandleStick,  ///< Graphique en chandeliers japonais
-        HeikinAshi,   ///< Chandeliers Heikin Ashi (moyenne)
-        OHLC,         ///< Barres OHLC (Open-High-Low-Close)
-        Close,        ///< Ligne de prix de clôture uniquement
-        
-        Count         ///< Nombre total de types de graphiques
-    };
-
-    /**
-     * @brief Structure qui représente une instance d'indicateur RSI
-     */
-    struct RSIInstance {
-        int id;                 ///< Identifiant unique 
-        int period;             ///< Période du RSI
-        bool visible = true;    ///< Si l'indicateur est visible
-        int height = 120;       ///< Hauteur du panneau
-        int color = 0x800080;   ///< Couleur de la ligne principale (violet par défaut)
-        double range = 20;      ///< Plage pour les niveaux de survente/surachat (70/30)
-        int upperColor = 0xff6666; ///< Couleur pour la zone de surachat
-        int lowerColor = 0x6666ff; ///< Couleur pour la zone de survente
-        
-        bool operator==(const RSIInstance& other) const {
-            return id == other.id;
-        }
-    };
-
-    /**
-     * @brief Structure qui représente une instance d'indicateur EMA
-     */
-    struct EMAInstance {
-        int id;                ///< Identifiant unique 
-        int period;            ///< Période de l'EMA
-        bool visible = true;   ///< Si l'indicateur est visible
-        int color = 0x0000FF;  ///< Couleur de la ligne (bleu par défaut)
-        
-        bool operator==(const EMAInstance& other) const {
-            return id == other.id;
-        }
-    };
-
-    /**
-     * @brief Structure qui représente une instance d'indicateur Stochastique
-     */
-    struct StochasticInstance {
-        int id;                 ///< Identifiant unique 
-        int fastKPeriod;        ///< Période pour calculer le %K brut
-        int slowKPeriod;        ///< Période de lissage pour %K
-        int slowDPeriod;        ///< Période pour calculer %D
-        bool visible = true;    ///< Si l'indicateur est visible
-        int height = 120;       ///< Hauteur du panneau
-        int kColor = 0x0000FF;  ///< Couleur de la ligne %K (bleu par défaut)
-        int dColor = 0xFF0000;  ///< Couleur de la ligne %D (rouge par défaut)
-        int overboughtLevel = 80; ///< Niveau de surachat
-        int oversoldLevel = 20;   ///< Niveau de survente
-        
-        bool operator==(const StochasticInstance& other) const {
-            return id == other.id;
-        }
-    };
-
-    /**
-     * @brief Structure qui représente une instance d'indicateur ATR
-     */
-    struct ATRInstance {
-        int id;                ///< Identifiant unique 
-        int period;            ///< Période de l'ATR
-        bool visible = true;   ///< Si l'indicateur est visible
-        int height = 120;      ///< Hauteur du panneau
-        int color = 0x006400;  ///< Couleur de la ligne (vert foncé par défaut)
-        
-        bool operator==(const ATRInstance& other) const {
-            return id == other.id;
-        }
-    };
-
     
     // ======== Constructeurs et destructeur ========
     explicit ChartWidget(QWidget* parent = nullptr);
@@ -116,8 +38,8 @@ public:
     void setBacktestResults(const BacktestResults* results);
 
     // Configuration et contrôle du graphique
-    void setChartType(ChartType chartType);
-    ChartType getChartType() const { return m_config.chartType; }
+    void setChartType(ChartDataManager::ChartType chartType);
+    ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
     const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
     const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
     const std::vector<StochasticInstance>& getStochasticInstances() const { return m_stochasticInstances; }
@@ -144,8 +66,8 @@ public:
     bool isChartCreated() const;
     
     // Conversion de ChartType 
-    static QString chartTypeToString(ChartType type);
-    static ChartType stringToChartType(const QString& typeStr);
+    static QString chartTypeToString(ChartDataManager::ChartType type);
+    static ChartDataManager::ChartType stringToChartType(const QString& typeStr);
 
     // Resize et gestion de la vue
     void setResizing(bool isResizing) { m_isResizing = isResizing; }
@@ -215,50 +137,20 @@ private:
     // ======== Structures de données internes ========
 
     ChartDataManager m_dataManager;
+    ChartRenderer m_renderer;
 
 
     ChartDataManager::AggregationInfo m_currentAggregation;
 
-    /**
-     * @brief Structure pour la configuration du graphique
-     */
-    struct ChartConfig {
-        ChartType chartType = ChartType::CandleStick;
-        int chartWidth = 1200;
-        int mainChartHeight = 400;
-        int equityHeight = 150;
-        int volumeHeight = 100;
-        bool showTrades = true;
-        bool showVolume = true;
-        bool showEquity = true;
-    };
 
     /**
      * @brief Structure pour stocker les indicateurs en cache
      */
-    struct IndicatorCache {
-        std::map<int, std::vector<double>> rsi;  // Clé: période, Valeur: données RSI
-        std::map<int, std::vector<double>> ema;  // Clé: période, Valeur: données EMA
-        std::map<std::tuple<int,int,int>, std::pair<std::vector<double>, std::vector<double>>> stochastic;
-        std::map<int, std::vector<double>> atr;  // Clé: période, Valeur: données ATR
-        bool isValid = false;
-    };
 
     /**
      * @brief Structure de métadonnées pour chaque type de graphique
      */
-    struct ChartTypeInfo {
-        ChartType type;
-        const char* name;
-    };
 
-    struct TPSLSegment {
-        double startX;        // Index du point d'entrée
-        double endX;          // Index du point de sortie
-        double level;         // Niveau de prix (TP ou SL)
-        bool isTakeProfit;    // true = TP, false = SL
-        int color;            // Couleur basée sur le résultat du trade
-    };
 
     // ======== Méthodes privées ========
     // 1. Traitement et conversion des données
@@ -285,13 +177,13 @@ private:
     void setupChartViewer();
     
     // 4. Méthodes de rendu du graphique
-    void createOrUpdateChart(const DoubleArray& timestamps, 
-                          const DoubleArray& highData, 
-                          const DoubleArray& lowData, 
-                          const DoubleArray& openData, 
-                          const DoubleArray& closeData,
-                          const DoubleArray& volumeData,
-                          int chartWidth);
+    // void createOrUpdateChart(const DoubleArray& timestamps, 
+    //                       const DoubleArray& highData, 
+    //                       const DoubleArray& lowData, 
+    //                       const DoubleArray& openData, 
+    //                       const DoubleArray& closeData,
+    //                       const DoubleArray& volumeData,
+    //                       int chartWidth);
     /**
      * @brief Crée ou met à jour le graphique avec les données actuelles
      * 
@@ -302,32 +194,23 @@ private:
     bool updateChartDisplay(bool useViewport = true, bool preserveViewport = true);
     
     // 5. Composants du graphique
-    FinanceChart* initializeChart(int chartWidth);
-    void addEquityCurveSection(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
-    void addMainChartSection(FinanceChart* chart, int chartHeight);
-    void addTradeMarkers(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
-    void addTPSLSegments(XYChart* chart, const std::vector<TPSLSegment>& segments);
-    FinanceChart* finalizeChart(FinanceChart* chart);
-    void addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, const char* name,
-                  int symbolType, int symbolSize = 5, int color = -1);
+    // void addEquityCurveSection(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
+    // void addTradeMarkers(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
+    // void addTPSLSegments(XYChart* chart, const std::vector<TPSLSegment>& segments);
+    // void addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, const char* name,
+    //               int symbolType, int symbolSize = 5, int color = -1);
 
     // 6. Gestion des interactions utilisateur
-    void trackFinance(MultiChart* m, int mouseX);
-    
-    // 7. Fonctions utilitaires pour le tracking
-    void setupTrackingLayer(DrawArea* d, XYChart* c);
-    std::string getOHLCLegend(XYChart* c, Layer* layer, int xIndex);
-    std::vector<std::string> getIndicatorLegends(XYChart* c, Layer* layer, int xIndex);
-    void drawTrackingLine(DrawArea* d, XYChart* c, int mouseX, int xValue);
+    // void trackFinance(MultiChart* m, int mouseX);
     
     // ======== Membres de données ========
     // 1. Configuration
-    ChartConfig m_config;
+    ChartConfiguration m_config;
     
     // 2. Données
-    IndicatorCache m_indicatorCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
-
+    
+    IndicatorCache m_indicatorCache;
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
     std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
     std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
@@ -339,27 +222,25 @@ private:
     int m_nextATRId = 1;                      ///< Prochain ID disponible pour ATR
 
     // Méthodes privées pour le RSI
-    void addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow);
+    // void addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow);
     void ensureRSICached(int period);
 
     // Méthodes privées pour l'EMA
-    void addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow);
+    // void addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow);
     void ensureEMACached(int period);
 
     // Méthodes privées pour le Stochastic
-    void addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow);
+    // void addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow);
     void ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod);
 
     // Méthodes privées pour l'ATR
-    void addATRToChart(std::unique_ptr<FinanceChart>& chart, const ATRInstance& atr, int startIndex, int pointsToShow);
+    // void addATRToChart(std::unique_ptr<FinanceChart>& chart, const ATRInstance& atr, int startIndex, int pointsToShow);
     void ensureATRCached(int period);
 
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;
-    std::unique_ptr<FinanceChart> m_financeChart = nullptr;
+    // std::unique_ptr<FinanceChart> m_financeChart = nullptr;
     
-    // 4. Constantes statiques
-    static const std::array<ChartTypeInfo, static_cast<size_t>(ChartType::Count)> s_chartTypeData;
 
     bool m_isResizing = false;  ///< Indique si le widget est en cours de redimensionnement
     QSize m_pendingResize;  ///< Taille en attente de redimensionnement
@@ -373,5 +254,5 @@ private:
     double m_rulerEndY;                // Coordonnée Y actuelle
     
     // Méthode pour dessiner la règle
-    void drawRuler(MultiChart* chart, int mouseX, int mouseY, DrawArea* d);
+    // void drawRuler(MultiChart* chart, int mouseX, int mouseY, DrawArea* d);
 };

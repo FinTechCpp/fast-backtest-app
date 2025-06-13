@@ -14,6 +14,7 @@
 #include <QFormLayout>
 
 #include "chart_widget.h"
+#include "chart_renderer.h"
 
 /**
  * @brief Dialogue modal pour modifier les paramètres d'un indicateur ATR (Average True Range)
@@ -24,7 +25,7 @@ class ATRDialog : public QDialog
     
 public:
     // Construction pour ATR
-    ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const ChartWidget::ATRInstance& atr);
+    ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const ATRInstance& atr);
     ~ATRDialog();
     
 private slots:
@@ -37,8 +38,8 @@ private slots:
 private:
     ChartWidget* m_chartWidget;
     int m_atrId;
-    ChartWidget::ATRInstance m_originalAtr;  // Pour restaurer en cas d'annulation
-    ChartWidget::ATRInstance m_currentAtr;   // Pour les modifications en cours
+    ATRInstance m_originalAtr;  // Pour restaurer en cas d'annulation
+    ATRInstance m_currentAtr;   // Pour les modifications en cours
     
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;

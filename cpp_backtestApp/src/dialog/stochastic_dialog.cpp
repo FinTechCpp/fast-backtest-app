@@ -1,6 +1,6 @@
 #include "dialog/stochastic_dialog.h"
 
-StochasticDialog::StochasticDialog(QWidget* parent, ChartWidget* chartWidget, int stochasticId, const ChartWidget::StochasticInstance& stochastic)
+StochasticDialog::StochasticDialog(QWidget* parent, ChartWidget* chartWidget, int stochasticId, const StochasticInstance& stochastic)
     : QDialog(parent)
     , m_chartWidget(chartWidget)
     , m_stochasticId(stochasticId)

@@ -1,6 +1,6 @@
 #include "dialog/atr_dialog.h"
 
-ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const ChartWidget::ATRInstance& atr)
+ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const ATRInstance& atr)
     : QDialog(parent)
     , m_chartWidget(chartWidget)
     , m_atrId(atrId)

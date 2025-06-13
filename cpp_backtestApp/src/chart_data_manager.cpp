@@ -2,6 +2,14 @@
 #include "components/technical_indicators.h"
 #include <QDebug>
 
+
+const std::array<ChartDataManager::ChartTypeInfo, static_cast<size_t>(ChartDataManager::ChartType::Count)> ChartDataManager::s_chartTypeData = {{
+    { ChartDataManager::ChartType::CandleStick, "CandleStick" },
+    { ChartDataManager::ChartType::HeikinAshi, "HeikinAshi" },
+    { ChartDataManager::ChartType::OHLC, "OHLC" },
+    { ChartDataManager::ChartType::Close, "Close" }
+}};
+
 ChartDataManager::ChartDataManager() {
 }
 
@@ -218,7 +226,7 @@ void ChartDataManager::aggregateData(AggregationLevel level) {
 ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(const DoubleArray& timestamps) {
     AggregationInfo result;
     result.level = AggregationLevel::Raw;
-    result.startIndex = 0;
+    result.startIndex = findClosestIndex(m_timestampsCache, timestamps[0]);
     result.pointCount = timestamps.len;
     result.isValid = true;
 
@@ -389,7 +397,7 @@ bool ChartDataManager::hasValidData() const {
            m_timestampsCache.size() == size;
 }
 
-std::string ChartDataManager::aggregationLevelToString(AggregationLevel level) const {
+std::string ChartDataManager::aggregationLevelToString(AggregationLevel level) {
     switch (level) {
         case AggregationLevel::Raw:
             return "Raw";
@@ -403,6 +411,27 @@ std::string ChartDataManager::aggregationLevelToString(AggregationLevel level) c
             return "Unknown";
     }
 }
+
+std::string ChartDataManager::chartTypeToString(ChartType type) {
+    for (const auto& info : s_chartTypeData)
+        if (info.type == type)
+            return QString(info.name).toStdString();
+    return QString("Unknown").toStdString();
+}
+
+ChartDataManager::ChartType ChartDataManager::stringToChartType(const std::string& typeStr){
+    for (const auto& info : s_chartTypeData)
+        if (typeStr == info.name)
+            return info.type;
+    return ChartDataManager::ChartType::CandleStick; // Valeur par défaut
+}
+
+DoubleArray ChartDataManager::vectorToDoubleArray(const std::vector<double>& vec) {
+    if (vec.empty())
+        return DoubleArray(nullptr, 0);
+    return DoubleArray(vec.data(), static_cast<int>(vec.size()));
+}
+
 
 const ChartDataManager::AggregatedOHLCV& ChartDataManager::getAggregatedData(AggregationLevel level) const {
     static AggregatedOHLCV emptyData;

@@ -404,7 +404,7 @@ void ChartView::createIndicatorWidgets(int id, const QString &name)
 void ChartView::onEditIndicator(int id)
 {
     // Rechercher l'instance RSI avec cet ID
-    ChartWidget::RSIInstance* rsi = m_chartWidget->findRSI(id);
+    RSIInstance* rsi = m_chartWidget->findRSI(id);
     if (rsi) {
         // Créer et afficher le dialogue d'édition pour RSI
         RSIDialog* dialog = new RSIDialog(this, m_chartWidget, id, *rsi);
@@ -414,7 +414,7 @@ void ChartView::onEditIndicator(int id)
     }
     
     // Rechercher si c'est un EMA
-    ChartWidget::EMAInstance* ema = m_chartWidget->findEMA(id);
+    EMAInstance* ema = m_chartWidget->findEMA(id);
     if (ema) {
         // Pour les EMA, on ouvre le dialogue général des EMA
         onEditEMA();
@@ -422,7 +422,7 @@ void ChartView::onEditIndicator(int id)
     }
 
     // Rechercher si c'est un Stochastique
-    ChartWidget::StochasticInstance* stochastic = m_chartWidget->findStochastic(id);
+    StochasticInstance* stochastic = m_chartWidget->findStochastic(id);
     if (stochastic) {
         // Créer et afficher le dialogue d'édition pour Stochastique
         StochasticDialog* dialog = new StochasticDialog(this, m_chartWidget, id, *stochastic);
@@ -432,7 +432,7 @@ void ChartView::onEditIndicator(int id)
     }
 
     // Rechercher si c'est un ATR
-    ChartWidget::ATRInstance* atr = m_chartWidget->findATR(id);
+    ATRInstance* atr = m_chartWidget->findATR(id);
     if (atr) {
         // Créer et afficher le dialogue d'édition pour ATR
         ATRDialog* dialog = new ATRDialog(this, m_chartWidget, id, *atr);
@@ -482,14 +482,14 @@ void ChartView::refreshIndicatorsList()
     m_removeButtons.clear();
     
     // Pour chaque RSI actif, recréer les widgets
-    const std::vector<ChartWidget::RSIInstance>& rsiInstances = m_chartWidget->getRSIInstances();
+    const std::vector<RSIInstance>& rsiInstances = m_chartWidget->getRSIInstances();
     for (const auto& rsi : rsiInstances) {
         QString name = QString("RSI (%1)").arg(rsi.period);
         createIndicatorWidgets(rsi.id, name);
     }
 
     // Pour chaque EMA actif, recréer les widgets
-    const std::vector<ChartWidget::EMAInstance>& emaInstances = m_chartWidget->getEMAInstances();
+    const std::vector<EMAInstance>& emaInstances = m_chartWidget->getEMAInstances();
     for (const auto& ema : emaInstances) {
         if (ema.visible) {
             QString name = QString("EMA (%1)").arg(ema.period);
@@ -498,7 +498,7 @@ void ChartView::refreshIndicatorsList()
     }
 
     // Pour chaque Stochastic actif, recréer les widgets
-    const std::vector<ChartWidget::StochasticInstance>& stochInstances = m_chartWidget->getStochasticInstances();
+    const std::vector<StochasticInstance>& stochInstances = m_chartWidget->getStochasticInstances();
     for (const auto& stoch : stochInstances) {
         if (stoch.visible) {
             QString name = QString("Stochastic (%1,%2,%3)").arg(stoch.fastKPeriod).arg(stoch.slowKPeriod).arg(stoch.slowDPeriod);
@@ -507,7 +507,7 @@ void ChartView::refreshIndicatorsList()
     }
 
     // Pour chaque ATR actif, recréer les widgets
-    const std::vector<ChartWidget::ATRInstance>& atrInstances = m_chartWidget->getATRInstances();
+    const std::vector<ATRInstance>& atrInstances = m_chartWidget->getATRInstances();
     for (const auto& atr : atrInstances) {
         if (atr.visible) {
             QString name = QString("ATR (%1)").arg(atr.period);
@@ -625,7 +625,7 @@ void ChartView::clear()
     
     // Nettoyer le widget de graphique
     if (m_chartWidget) {
-        m_chartWidget->clearChart();
+        // m_chartWidget->clearChart();
     }
     
     // Vider la liste des indicateurs

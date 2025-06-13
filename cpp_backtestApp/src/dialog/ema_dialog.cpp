@@ -64,7 +64,7 @@ EMADialog::EMADialog(QWidget* parent, ChartWidget* chartWidget)
     mainLayout->addWidget(scrollArea);
     
     // Récupérer les instances EMA existantes
-    const std::vector<ChartWidget::EMAInstance>& emaInstances = m_chartWidget->getEMAInstances();
+    const std::vector<EMAInstance>& emaInstances = m_chartWidget->getEMAInstances();
     m_originalEMAs = emaInstances;
     
     // Initialiser les 5 EMA fixés
@@ -81,7 +81,7 @@ EMADialog::EMADialog(QWidget* parent, ChartWidget* chartWidget)
     
     // Créer 5 EMA fixes
     for (int i = 0; i < 5; i++) {
-        ChartWidget::EMAInstance ema;
+        EMAInstance ema;
         ema.id = -1 - i;  // ID temporaire négatif
         ema.period = 20;  // Période par défaut
         ema.visible = (i == 0);  // Seul le premier est activé par défaut
@@ -139,7 +139,7 @@ void EMADialog::updateColorButtonStyle(QPushButton* button, int color)
     button->setText(QString("#%1").arg(color, 6, 16, QChar('0')));
 }
 
-QWidget* EMADialog::createEMARow(const ChartWidget::EMAInstance& ema, int row)
+QWidget* EMADialog::createEMARow(const EMAInstance& ema, int row)
 {
     QWidget* rowWidget = new QWidget();
     QHBoxLayout* layout = new QHBoxLayout(rowWidget);
@@ -207,7 +207,7 @@ void EMADialog::refreshEMAList()
     for (int row = 0; row < 5; ++row) {
         // Assurer qu'il y a 5 EMA dans m_currentEMAs
         if (row >= static_cast<int>(m_currentEMAs.size())) {
-            ChartWidget::EMAInstance ema;
+            EMAInstance ema;
             ema.id = -1 - row;
             ema.period = 20;
             ema.visible = false;
@@ -250,7 +250,7 @@ void EMADialog::onPeriodChanged(int row, int period)
     
     // Mettre à jour la période de l'EMA
     auto it = std::find_if(m_currentEMAs.begin(), m_currentEMAs.end(), 
-                         [this, row](const ChartWidget::EMAInstance& ema) {
+                         [this, row](const EMAInstance& ema) {
                              return ema.id == m_rowToEMAId[row];
                          });
     
@@ -265,7 +265,7 @@ void EMADialog::onColorButtonClicked(int row)
     
     // Trouver l'EMA correspondant à cette ligne
     auto it = std::find_if(m_currentEMAs.begin(), m_currentEMAs.end(), 
-                         [this, row](const ChartWidget::EMAInstance& ema) {
+                         [this, row](const EMAInstance& ema) {
                              return ema.id == m_rowToEMAId[row];
                          });
     
@@ -304,7 +304,7 @@ void EMADialog::onColorButtonClicked(int row)
 void EMADialog::onAddEMA()
 {
     // Créer un nouvel EMA avec des valeurs par défaut
-    ChartWidget::EMAInstance newEMA;
+    EMAInstance newEMA;
     newEMA.id = -1 - m_nextRowId; // ID temporaire négatif
     newEMA.period = 20;
     newEMA.visible = true;

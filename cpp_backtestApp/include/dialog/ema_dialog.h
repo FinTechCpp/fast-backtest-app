@@ -36,8 +36,8 @@ private slots:
     
 private:
     ChartWidget* m_chartWidget;
-    std::vector<ChartWidget::EMAInstance> m_originalEMAs;  // Pour restaurer en cas d'annulation
-    std::vector<ChartWidget::EMAInstance> m_currentEMAs;   // Pour les modifications en cours
+    std::vector<EMAInstance> m_originalEMAs;  // Pour restaurer en cas d'annulation
+    std::vector<EMAInstance> m_currentEMAs;   // Pour les modifications en cours
     std::map<int, int> m_rowToEMAId;        // Mappage de la ligne de l'UI à l'ID de l'EMA
     
     QVBoxLayout* m_emaListLayout;
@@ -47,6 +47,6 @@ private:
     int m_nextRowId = 0;
     
     void updateColorButtonStyle(QPushButton* button, int color);
-    QWidget* createEMARow(const ChartWidget::EMAInstance& ema, int row);
+    QWidget* createEMARow(const EMAInstance& ema, int row);
     void refreshEMAList();
 };

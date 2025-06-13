@@ -24,7 +24,7 @@ class RSIDialog : public QDialog
     
 public:
     // Construction pour RSI
-    RSIDialog(QWidget* parent, ChartWidget* chartWidget, int rsiId, const ChartWidget::RSIInstance& rsi);
+    RSIDialog(QWidget* parent, ChartWidget* chartWidget, int rsiId, const RSIInstance& rsi);
     ~RSIDialog();
     
 private slots:
@@ -40,8 +40,8 @@ private slots:
 private:
     ChartWidget* m_chartWidget;
     int m_rsiId;
-    ChartWidget::RSIInstance m_originalRsi;  // Pour restaurer en cas d'annulation
-    ChartWidget::RSIInstance m_currentRsi;   // Pour les modifications en cours
+    RSIInstance m_originalRsi;  // Pour restaurer en cas d'annulation
+    RSIInstance m_currentRsi;   // Pour les modifications en cours
     
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;

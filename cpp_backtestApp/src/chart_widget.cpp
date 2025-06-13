@@ -6,17 +6,11 @@
 #include <cmath>
 #include <set>
 
-const std::array<ChartWidget::ChartTypeInfo, static_cast<size_t>(ChartWidget::ChartType::Count)> ChartWidget::s_chartTypeData = {{
-    { ChartWidget::ChartType::CandleStick, "CandleStick" },
-    { ChartWidget::ChartType::HeikinAshi, "HeikinAshi" },
-    { ChartWidget::ChartType::OHLC, "OHLC" },
-    { ChartWidget::ChartType::Close, "Close" }
-}};
+
 
 ChartWidget::ChartWidget(QWidget* parent)
     : QWidget(parent)
     , m_chartViewer(nullptr)
-    , m_financeChart(nullptr)
     , m_rulerToolEnabled(false)
     , m_rulerFirstPointSelected(false)
     , m_rulerStartX(0)
@@ -92,7 +86,19 @@ bool ChartWidget::hasValidData() const {
     return m_dataManager.hasValidData();
 }
 
-void ChartWidget::setChartType(ChartType chartType)
+
+// mouais vrm pas terrible on pourrait directement utiliser les méthodes de ChartDataManager
+QString ChartWidget::chartTypeToString(ChartDataManager::ChartType type)
+{
+    return QString::fromStdString(ChartDataManager::chartTypeToString(type));
+}
+
+ChartDataManager::ChartType ChartWidget::stringToChartType(const QString &typeStr)
+{
+    return ChartDataManager::stringToChartType(typeStr.toStdString());
+}
+
+void ChartWidget::setChartType(ChartDataManager::ChartType chartType)
 {
     if (m_config.chartType == chartType)
         return; // Pas de changement, rien à faire
@@ -100,7 +106,7 @@ void ChartWidget::setChartType(ChartType chartType)
     m_config.chartType = chartType;
 
     // Si nous passons en mode HeikinAshi et que le cache n'est pas valide, le recalculer
-    if (chartType == ChartType::HeikinAshi && !m_dataManager.getHeikinAshiCache().isValid && m_dataManager.hasValidData()) {
+    if (chartType == ChartDataManager::ChartType::HeikinAshi && !m_dataManager.getHeikinAshiCache().isValid && m_dataManager.hasValidData()) {
         m_dataManager.updateHeikinAshiCache();
     }
 
@@ -113,8 +119,6 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
     if (!m_dataManager.hasValidData() || !m_chartViewer) {
         return false;
     }
-
-    // std::cout << "Mise à jour de l'affichage du graphique" << std::endl;
     
     // Sauvegarder l'état actuel du viewport si nécessaire
     double currentLeft = 0.0;
@@ -143,64 +147,11 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
         
         pointsToShow = endIndex - startIndex + 1;
     }
+
+
+    m_currentAggregation = m_dataManager.getOptimalAggregationInfo(DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow));
     
-    // Extraire les données à afficher
-    DoubleArray timestamps;
-    DoubleArray openData, highData, lowData, closeData, volumeData;
-    
-    if (startIndex < static_cast<int>(m_dataManager.getTimestamps().size())) {
-        timestamps = DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow);
-        volumeData = DoubleArray(&m_dataManager.getBacktestData()->getVolume()[startIndex], pointsToShow);
-        
-        // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
-        if (m_config.chartType == ChartType::HeikinAshi) {
-            const ChartDataManager::HeikinAshiCache& heikinAshiCache = m_dataManager.getHeikinAshiCache();
-            
-            // Vérifier si le cache est valide
-            if (!heikinAshiCache.isValid) {
-                m_dataManager.updateHeikinAshiCache();
-            }
-
-            
-            // Utiliser les données Heikin-Ashi
-            openData = DoubleArray(&heikinAshiCache.open[startIndex], pointsToShow);
-            highData = DoubleArray(&heikinAshiCache.high[startIndex], pointsToShow);
-            lowData = DoubleArray(&heikinAshiCache.low[startIndex], pointsToShow);
-            closeData = DoubleArray(&heikinAshiCache.close[startIndex], pointsToShow);
-        } else {
-            const std::shared_ptr<const be::Data>& backtestData = m_dataManager.getBacktestData();
-
-            // Utiliser les données OHLC standards
-            openData = DoubleArray(&backtestData->getOpen()[startIndex], pointsToShow);
-            highData = DoubleArray(&backtestData->getHigh()[startIndex], pointsToShow);
-            lowData = DoubleArray(&backtestData->getLow()[startIndex], pointsToShow);
-            closeData = DoubleArray(&backtestData->getClose()[startIndex], pointsToShow);
-        }
-    } else {
-        // Pas de données à afficher
-        return false;
-    }
-
-    m_currentAggregation = m_dataManager.getOptimalAggregationInfo(timestamps);
-
-    if (m_currentAggregation.level == ChartDataManager::AggregationLevel::Raw) {
-        // Si le niveau d'agrégation est Raw, utiliser les données brutes
-        createOrUpdateChart(timestamps, highData, lowData, openData, closeData, 
-                            volumeData, m_config.chartWidth);
-    }
-    else {
-        ChartDataManager::AggregatedOHLCV aggregated = m_dataManager.getAggregatedData(m_currentAggregation.level);
-
-        DoubleArray aggregatedTimestamps = DoubleArray(&aggregated.timestamps[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
-        DoubleArray aggregatedOpen = DoubleArray(&aggregated.open[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
-        DoubleArray aggregatedHigh = DoubleArray(&aggregated.high[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
-        DoubleArray aggregatedLow = DoubleArray(&aggregated.low[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
-        DoubleArray aggregatedClose = DoubleArray(&aggregated.close[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
-        DoubleArray aggregatedVolume = DoubleArray(&aggregated.volume[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
-
-        createOrUpdateChart(aggregatedTimestamps, aggregatedHigh, aggregatedLow, aggregatedOpen, aggregatedClose, 
-                                    aggregatedVolume, m_config.chartWidth);
-    }
+    m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager,m_config, m_trades, m_currentAggregation, m_rsiInstances, m_emaInstances, m_stochasticInstances, m_atrInstances, m_indicatorCache);
 
 
     // Configurer le viewport
@@ -222,17 +173,6 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
     return true;
 }
 
-void ChartWidget::clearChart()
-{
-    // Nettoyer le graphique
-    m_financeChart.reset();
-    
-    // Réinitialiser le viewer
-    if (m_chartViewer) {
-        m_chartViewer->setChart(nullptr);
-    }
-}
-
 void ChartWidget::onViewPortChanged()
 {
     // Redessiner le graphique avec le nouveau viewport
@@ -245,9 +185,7 @@ void ChartWidget::onViewPortChanged()
 
 void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
 {
-    if (!m_financeChart || !m_chartViewer) {
-        return;
-    }
+    if (!m_chartViewer) return;
     
     int mouseX = m_chartViewer->getPlotAreaMouseX();
     int mouseY = m_chartViewer->getPlotAreaMouseY();
@@ -257,30 +195,45 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
         // Mettre à jour le point final avec la position actuelle de la souris
         m_rulerEndX = m_chartViewer->getPlotAreaMouseX();
         m_rulerEndY = m_chartViewer->getPlotAreaMouseY();
+
+        
+
+        // m_renderer.drawRuler((MultiChart *)m_chartViewer->getChart(), m_rulerStartX, m_rulerStartY, m_rulerEndX, m_rulerEndY);
+
     }
-    
+
     // Comportement normal de suivi du graphique
-    trackFinance((MultiChart *)m_chartViewer->getChart(), m_chartViewer->getPlotAreaMouseX());
+    // m_renderer.trackFinance((MultiChart *)m_chartViewer->getChart(), m_chartViewer->getPlotAreaMouseX());
+
+    m_renderer.updateDynamicLayer(
+        (MultiChart *)m_chartViewer->getChart(),
+        m_rulerToolEnabled,
+        m_rulerFirstPointSelected,
+        m_rulerStartX, m_rulerStartY,
+        m_rulerEndX, m_rulerEndY,
+        mouseX,
+        m_dataManager
+    );
 
     // Récupérer les informations sur le point
-    if (m_financeChart->getChartCount() > 1) {
-        XYChart* mainChart = (XYChart*)m_financeChart->getChart(1);
-        double xValue = mainChart->getNearestXValue(mouseX);
+    // if (m_financeChart->getChart()->getChartCount() > 1) {
+    //     XYChart* mainChart = (XYChart*)m_financeChart->getChart(1);
+    //     double xValue = mainChart->getNearestXValue(mouseX);
         
-        // Trouver l'indice correspondant
-        int dataIndex = -1;
-        for (int i = 0; i < (int)m_dataManager.getTimestamps().size(); ++i) {
-            if (fabs(m_dataManager.getTimestamps()[i] - xValue) < 1e-6) {
-                dataIndex = i;
-                break;
-            }
-        }
+    //     // Trouver l'indice correspondant
+    //     int dataIndex = -1;
+    //     for (int i = 0; i < (int)m_dataManager.getTimestamps().size(); ++i) {
+    //         if (fabs(m_dataManager.getTimestamps()[i] - xValue) < 1e-6) {
+    //             dataIndex = i;
+    //             break;
+    //         }
+    //     }
 
-        if (dataIndex >= 0 && dataIndex < (int)m_dataManager.getBacktestData()->getClose().size()) {
-            // Émettre un signal avec les informations du point
-            emit mouseOverPoint(m_dataManager.getTimestamps()[dataIndex], m_dataManager.getBacktestData()->getClose()[dataIndex]);
-        }
-    }
+    //     if (dataIndex >= 0 && dataIndex < (int)m_dataManager.getBacktestData()->getClose().size()) {
+    //         // Émettre un signal avec les informations du point
+    //         emit mouseOverPoint(m_dataManager.getTimestamps()[dataIndex], m_dataManager.getBacktestData()->getClose()[dataIndex]);
+    //     }
+    // }
     
     // Mettre à jour l'affichage
     m_chartViewer->updateDisplay();
@@ -320,102 +273,102 @@ void ChartWidget::onMouseClickPlotArea(QMouseEvent* event)
 
 
 //-----Ruler Tool Implementation-----
-void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
-{   
-    // Vérifier que le chart est valide et qu'il y a au moins un graphique
-    if (!m || m->getChartCount() == 0) return;
+// void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
+// {   
+//     // Vérifier que le chart est valide et qu'il y a au moins un graphique
+//     if (!m || m->getChartCount() == 0) return;
     
-    // Obtenir le premier graphique XY (graphique principal)
-    XYChart* c = (XYChart*)m->getChart(1);
-    if (!c) return;
+//     // Obtenir le premier graphique XY (graphique principal)
+//     XYChart* c = (XYChart*)m->getChart(1);
+//     if (!c) return;
 
-    // Obtenir les indices correspondant aux positions du curseur
-    double xValueStartIndex = c->getNearestXValue(m_rulerStartX);
-    double xValueEndIndex = c->getNearestXValue(m_rulerEndX);
-    double yValueStart = c->getYValue(m_rulerStartY);
-    double yValueEnd = c->getYValue(m_rulerEndY);
+//     // Obtenir les indices correspondant aux positions du curseur
+//     double xValueStartIndex = c->getNearestXValue(m_rulerStartX);
+//     double xValueEndIndex = c->getNearestXValue(m_rulerEndX);
+//     double yValueStart = c->getYValue(m_rulerStartY);
+//     double yValueEnd = c->getYValue(m_rulerEndY);
 
-    // Récupérer les timestamps formattés pour l'affichage
-    const char* startTimeStr = c->xAxis()->getFormattedLabel(xValueStartIndex, "yyyy-mm-dd hh:nn:ss");
-    const char* endTimeStr = c->xAxis()->getFormattedLabel(xValueEndIndex, "yyyy-mm-dd hh:nn:ss");
+//     // Récupérer les timestamps formattés pour l'affichage
+//     const char* startTimeStr = c->xAxis()->getFormattedLabel(xValueStartIndex, "yyyy-mm-dd hh:nn:ss");
+//     const char* endTimeStr = c->xAxis()->getFormattedLabel(xValueEndIndex, "yyyy-mm-dd hh:nn:ss");
 
-    // Convertir les indices en timestamps réels
-    double startTimestamp = 0;
-    double endTimestamp = 0;
+//     // Convertir les indices en timestamps réels
+//     double startTimestamp = 0;
+//     double endTimestamp = 0;
     
-    // Trouver les timestamps correspondants aux indices
-    int startIdx = static_cast<int>(std::round(xValueStartIndex));
-    int endIdx = static_cast<int>(std::round(xValueEndIndex));
+//     // Trouver les timestamps correspondants aux indices
+//     int startIdx = static_cast<int>(std::round(xValueStartIndex));
+//     int endIdx = static_cast<int>(std::round(xValueEndIndex));
     
-    // Assurer que les indices sont dans les limites du tableau
-    if (startIdx >= 0 && startIdx < static_cast<int>(m_dataManager.getTimestamps().size()) &&
-        endIdx >= 0 && endIdx < static_cast<int>(m_dataManager.getTimestamps().size())) {
-        startTimestamp = m_dataManager.getTimestamps()[startIdx];
-        endTimestamp = m_dataManager.getTimestamps()[endIdx];
-    } else {
-        // Indices hors limites - utiliser une valeur par défaut
-        std::cout << "Indices hors limites : " << startIdx << ", " << endIdx << std::endl;
-        return;
-    }
+//     // Assurer que les indices sont dans les limites du tableau
+//     if (startIdx >= 0 && startIdx < static_cast<int>(m_dataManager.getTimestamps().size()) &&
+//         endIdx >= 0 && endIdx < static_cast<int>(m_dataManager.getTimestamps().size())) {
+//         startTimestamp = m_dataManager.getTimestamps()[startIdx];
+//         endTimestamp = m_dataManager.getTimestamps()[endIdx];
+//     } else {
+//         // Indices hors limites - utiliser une valeur par défaut
+//         std::cout << "Indices hors limites : " << startIdx << ", " << endIdx << std::endl;
+//         return;
+//     }
     
-    // Calculer la différence de temps en secondes
-    double deltaX = fabs(startTimestamp - endTimestamp);
-    double deltaY = yValueEnd - yValueStart;
+//     // Calculer la différence de temps en secondes
+//     double deltaX = fabs(startTimestamp - endTimestamp);
+//     double deltaY = yValueEnd - yValueStart;
 
-    // Définir la couleur du rectangle en fonction de deltaY
-    int deltaColor = (deltaY < 0) ? 0xFF0000 : 0x008800;
-    int alpha = 0xCC; // Niveau de transparence (assez particulier avec chartdirector, j'ai pas tout compris)
-    int finalColor =  (alpha << 24) | deltaColor; // Couleur avec alpha (résultat en ARGB : 0xCCFF0000 ou 0xCC008800)
+//     // Définir la couleur du rectangle en fonction de deltaY
+//     int deltaColor = (deltaY < 0) ? 0xFF0000 : 0x008800;
+//     int alpha = 0xCC; // Niveau de transparence (assez particulier avec chartdirector, j'ai pas tout compris)
+//     int finalColor =  (alpha << 24) | deltaColor; // Couleur avec alpha (résultat en ARGB : 0xCCFF0000 ou 0xCC008800)
 
-    // Texte pour deltaX (au-dessus du rectangle)
-    char bufferX[50];
+//     // Texte pour deltaX (au-dessus du rectangle)
+//     char bufferX[50];
     
-    // Calculer la durée réelle en secondes
-    int totalSeconds = static_cast<int>(deltaX);
-    int hours = totalSeconds / 3600;
-    int minutes = (totalSeconds % 3600) / 60;
-    int seconds = totalSeconds % 60;
+//     // Calculer la durée réelle en secondes
+//     int totalSeconds = static_cast<int>(deltaX);
+//     int hours = totalSeconds / 3600;
+//     int minutes = (totalSeconds % 3600) / 60;
+//     int seconds = totalSeconds % 60;
     
-    // Formater avec le signe approprié et adapter le format selon la durée
-    if (hours > 0) {
-        sprintf(bufferX, "%02dh%02dm%02ds", hours, minutes, seconds);
-    } else if (minutes > 0) {
-        sprintf(bufferX, "%02dm%02ds", minutes, seconds);
-    } else {
-        sprintf(bufferX, "%02ds", seconds);
-    }
+//     // Formater avec le signe approprié et adapter le format selon la durée
+//     if (hours > 0) {
+//         sprintf(bufferX, "%02dh%02dm%02ds", hours, minutes, seconds);
+//     } else if (minutes > 0) {
+//         sprintf(bufferX, "%02dm%02ds", minutes, seconds);
+//     } else {
+//         sprintf(bufferX, "%02ds", seconds);
+//     }
         
-    // Texte pour deltaY (à droite du rectangle)
-    char bufferY[50];
-    sprintf(bufferY, "%.5f %s", deltaY, "$");
+//     // Texte pour deltaY (à droite du rectangle)
+//     char bufferY[50];
+//     sprintf(bufferY, "%.5f %s", deltaY, "$");
     
-    // Ajouter le % de variation pour le deltaY si applicable
-    if (yValueStart != 0) {  // Éviter division par zéro
-        double percentChange = (deltaY / yValueStart) * 100.0;
-        sprintf(bufferY, "%+.2f \n(%.2f%%)", deltaY, percentChange);
-    }
+//     // Ajouter le % de variation pour le deltaY si applicable
+//     if (yValueStart != 0) {  // Éviter division par zéro
+//         double percentChange = (deltaY / yValueStart) * 100.0;
+//         sprintf(bufferY, "%+.2f \n(%.2f%%)", deltaY, percentChange);
+//     }
 
-    // Dessiner le rectangle entre les deux points
-    d->rect(m_rulerStartX, m_rulerStartY, m_rulerEndX, m_rulerEndY, deltaColor, finalColor);
+//     // Dessiner le rectangle entre les deux points
+//     d->rect(m_rulerStartX, m_rulerStartY, m_rulerEndX, m_rulerEndY, deltaColor, finalColor);
 
-    // Position pour le texte deltaX (au-dessus du rectangle)
-    int textXPosX = (m_rulerStartX + m_rulerEndX) / 2; // Centre du rectangle
-    int textXPosY = std::min(m_rulerStartY, m_rulerEndY) - 15; // Au-dessus
+//     // Position pour le texte deltaX (au-dessus du rectangle)
+//     int textXPosX = (m_rulerStartX + m_rulerEndX) / 2; // Centre du rectangle
+//     int textXPosY = std::min(m_rulerStartY, m_rulerEndY) - 15; // Au-dessus
     
-    // Position pour le texte deltaY (à droite du rectangle)
-    int textYPosX = std::max(m_rulerStartX, m_rulerEndX) + 10; // À droite
-    int textYPosY = (m_rulerStartY + m_rulerEndY) / 2; // Milieu vertical
+//     // Position pour le texte deltaY (à droite du rectangle)
+//     int textYPosX = std::max(m_rulerStartX, m_rulerEndX) + 10; // À droite
+//     int textYPosY = (m_rulerStartY + m_rulerEndY) / 2; // Milieu vertical
     
-    // Créer et afficher le texte pour deltaX
-    TTFText* tForXDelta = d->text(bufferX, "Arial", 12);
-    tForXDelta->draw(textXPosX, textXPosY, deltaColor, Chart::Bottom);
-    tForXDelta->destroy();
+//     // Créer et afficher le texte pour deltaX
+//     TTFText* tForXDelta = d->text(bufferX, "Arial", 12);
+//     tForXDelta->draw(textXPosX, textXPosY, deltaColor, Chart::Bottom);
+//     tForXDelta->destroy();
     
-    // Créer et afficher le texte pour deltaY
-    TTFText* tForYDelta = d->text(bufferY, "Arial", 12);
-    tForYDelta->draw(textYPosX, textYPosY, deltaColor, Chart::Left);
-    tForYDelta->destroy();
-}
+//     // Créer et afficher le texte pour deltaY
+//     TTFText* tForYDelta = d->text(bufferY, "Arial", 12);
+//     tForYDelta->draw(textYPosX, textYPosY, deltaColor, Chart::Left);
+//     tForYDelta->destroy();
+// }
 
 void ChartWidget::setRulerToolEnabled(bool enabled)
 {
@@ -460,7 +413,7 @@ int ChartWidget::addRSI(int period)
         // il faut essayer avec un multichart voir si on est pas obliger de redessiner tous 
         // changer le proto de la methode et s'inspirer de trackFinance
         // addRSIToChart((MultiChart*)m_chartViewer->getChart(), rsi, startIndex, pointsToShow);
-        addRSIToChart((FinanceChart*)m_chartViewer->getChart(), rsi, startIndex, pointsToShow);
+        // addRSIToChart((FinanceChart*)m_chartViewer->getChart(), rsi, startIndex, pointsToShow);
 
         m_chartViewer->updateViewPort(false, false);
     }
@@ -512,7 +465,7 @@ bool ChartWidget::removeRSI(int id)
     emit rsiRemoved(id);
     
     // Mettre à jour le graphique
-    if (m_dataManager.hasValidData() && m_financeChart) {
+    if (m_dataManager.hasValidData()) {
         updateChartDisplay(true, true);
     }
     
@@ -535,13 +488,13 @@ int ChartWidget::addEMA(int period)
     m_emaInstances.push_back(ema);
 
     // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (m_dataManager.hasValidData() && m_financeChart && m_chartViewer) {
+    if (m_dataManager.hasValidData() && m_chartViewer) {
         // Déterminer l'index de début et le nombre de points visibles actuellement
         int startIndex = m_chartViewer->getViewPortLeft();
         int pointsToShow = m_chartViewer->getViewPortWidth();
 
         // Ajouter directement le RSI au graphique existant
-        addEMAToChart((FinanceChart*)m_chartViewer->getChart(), ema, startIndex, pointsToShow);
+        // addEMAToChart((FinanceChart*)m_chartViewer->getChart(), ema, startIndex, pointsToShow);
         
         m_chartViewer->updateViewPort(false, false);
     }
@@ -593,7 +546,7 @@ bool ChartWidget::removeEMA(int id)
     emit emaRemoved(id);
     
     // Mettre à jour le graphique
-    if (m_dataManager.hasValidData() && m_financeChart) {
+    if (m_dataManager.hasValidData()) {
         updateChartDisplay(true, true);
     }
     
@@ -621,13 +574,13 @@ int ChartWidget::addStochastic(int fastKPeriod, int slowKPeriod, int slowDPeriod
 
 
     // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (m_dataManager.hasValidData() && m_financeChart && m_chartViewer) {
+    if (m_dataManager.hasValidData() && m_chartViewer) {
         // Déterminer l'index de début et le nombre de points visibles actuellement
         int startIndex = m_chartViewer->getViewPortLeft();
         int pointsToShow = m_chartViewer->getViewPortWidth();
 
         // Ajouter directement le Stochastique au graphique existant
-        addStochasticToChart((FinanceChart*)m_chartViewer->getChart(), stochastic, startIndex, pointsToShow);
+        // addStochasticToChart((FinanceChart*)m_chartViewer->getChart(), stochastic, startIndex, pointsToShow);
 
         m_chartViewer->updateViewPort(false, false);
     }
@@ -679,7 +632,7 @@ bool ChartWidget::removeStochastic(int id)
     emit stochasticRemoved(id);
     
     // Mettre à jour le graphique
-    if (m_dataManager.hasValidData() && m_financeChart) {
+    if (m_dataManager.hasValidData()) {
         updateChartDisplay(true, true);
     }
     
@@ -702,14 +655,14 @@ int ChartWidget::addATR(int period)
     m_atrInstances.push_back(atr);
     
     // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (m_dataManager.hasValidData() && m_financeChart && m_chartViewer) {
+    if (m_dataManager.hasValidData() && m_chartViewer) {
         // Déterminer l'index de début et le nombre de points visibles actuellement
         int startIndex = m_chartViewer->getViewPortLeft();
         int pointsToShow = m_chartViewer->getViewPortWidth();
 
         // Ajouter directement le Stochastique au graphique existant
-        addATRToChart(m_financeChart, atr, startIndex, pointsToShow);
-        std::cout << "On va appeler updateViewPort" << std::endl;
+        // m_renderer.addATRToChart(m_financeChart, atr, startIndex, pointsToShow);
+        // std::cout << "On va appeler updateViewPort" << std::endl;
 
         m_chartViewer->updateViewPort(false, true);
     }
@@ -738,8 +691,6 @@ bool ChartWidget::setATRConfig(int id, const ATRInstance &config)
     // Émettre le signal
     emit atrChanged(id, config.period);
 
-    std::cout << "ATR modifié avec ID: " << id << " et période: " << config.period << std::endl;
-
     // Mettre à jour le graphique
     if (m_dataManager.hasValidData())
         updateChartDisplay(true, true);
@@ -761,18 +712,16 @@ bool ChartWidget::removeATR(int id)
     
     // Émettre le signal
     emit atrRemoved(id);
-
-    std::cout << "ATR supprimé avec ID: " << id << std::endl;
     
     // Mettre à jour le graphique
-    if (m_dataManager.hasValidData() && m_financeChart) {
+    if (m_dataManager.hasValidData()) {
         updateChartDisplay(true, true);
     }
     
     return true;
 }
 
-ChartWidget::RSIInstance* ChartWidget::findRSI(int id)
+RSIInstance* ChartWidget::findRSI(int id)
 {
     auto it = std::find_if(m_rsiInstances.begin(), m_rsiInstances.end(),
                          [id](const RSIInstance& rsi) { return rsi.id == id; });
@@ -784,7 +733,7 @@ ChartWidget::RSIInstance* ChartWidget::findRSI(int id)
     return &(*it);
 }
 
-ChartWidget::EMAInstance* ChartWidget::findEMA(int id)
+EMAInstance* ChartWidget::findEMA(int id)
 {
     auto it = std::find_if(m_emaInstances.begin(), m_emaInstances.end(),
                          [id](const EMAInstance& ema) { return ema.id == id; });
@@ -796,7 +745,7 @@ ChartWidget::EMAInstance* ChartWidget::findEMA(int id)
     return &(*it);
 }
 
-ChartWidget::StochasticInstance* ChartWidget::findStochastic(int id)
+StochasticInstance* ChartWidget::findStochastic(int id)
 {
     auto it = std::find_if(m_stochasticInstances.begin(), m_stochasticInstances.end(),
                          [id](const StochasticInstance& stochastic) { return stochastic.id == id; });
@@ -808,7 +757,7 @@ ChartWidget::StochasticInstance* ChartWidget::findStochastic(int id)
     return &(*it);
 }
 
-ChartWidget::ATRInstance* ChartWidget::findATR(int id)
+ATRInstance* ChartWidget::findATR(int id)
 {
     auto it = std::find_if(m_atrInstances.begin(), m_atrInstances.end(),
                          [id](const ATRInstance& atr) { return atr.id == id; });
@@ -1004,925 +953,900 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
         m_config.chartWidth = newSize.width() - 10;
         
         // Update only if we have valid data and the chart exists
-        if (m_dataManager.hasValidData() && m_chartViewer && m_financeChart) {
+        if (m_dataManager.hasValidData() && m_chartViewer) {
             m_chartViewer->updateViewPort(false, false);
         }
     }
 }
 
-DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec) {
-    if (vec.empty())
-        return DoubleArray(nullptr, 0);
-    return DoubleArray(vec.data(), static_cast<int>(vec.size()));
-}
+// DoubleArray ChartWidget::vectorToDoubleArray(const std::vector<double>& vec) {
+//     if (vec.empty())
+//         return DoubleArray(nullptr, 0);
+//     return DoubleArray(vec.data(), static_cast<int>(vec.size()));
+// }
 
-void ChartWidget::createOrUpdateChart(
-    const DoubleArray& timestamps, 
-    const DoubleArray& highData, 
-    const DoubleArray& lowData, 
-    const DoubleArray& openData, 
-    const DoubleArray& closeData,
-    const DoubleArray& volumeData,
-    int chartWidth)
-{
+// void ChartWidget::createOrUpdateChart(
+//     const DoubleArray& timestamps, 
+//     const DoubleArray& highData, 
+//     const DoubleArray& lowData, 
+//     const DoubleArray& openData, 
+//     const DoubleArray& closeData,
+//     const DoubleArray& volumeData,
+//     int chartWidth)
+// {
     
-    // Créer un nouveau graphique
-    m_financeChart = std::make_unique<FinanceChart>(chartWidth);
+//     // Créer un nouveau graphique
+//     m_financeChart = std::make_unique<FinanceChart>(chartWidth);
 
-    m_financeChart->setPlotAreaStyle(0xE2F4FF, 0xCC999999, 0xCC999999, 0xCC999999, 0xCC999999);
-    m_financeChart->setDateLabelFormat(
-        "{value|yyyy}", 
-        "{value|yyyy-mm-dd}", 
-        "{value|mm-dd}", 
-        "{value|yyyy-mm-dd}", 
-        "{value|mm-dd}", 
-        "{value|yyyy-mm-dd hh:nn:ss}", 
-        "{value|hh:nn:ss}"
-    );
-    m_financeChart->setDateLabelSpacing(50); // Espacement des étiquettes de date
+//     m_financeChart->setPlotAreaStyle(0xE2F4FF, 0xCC999999, 0xCC999999, 0xCC999999, 0xCC999999);
+//     m_financeChart->setDateLabelFormat(
+//         "{value|yyyy}", 
+//         "{value|yyyy-mm-dd}", 
+//         "{value|mm-dd}", 
+//         "{value|yyyy-mm-dd}", 
+//         "{value|mm-dd}", 
+//         "{value|yyyy-mm-dd hh:nn:ss}", 
+//         "{value|hh:nn:ss}"
+//     );
+//     m_financeChart->setDateLabelSpacing(50); // Espacement des étiquettes de date
 
-    // Configurer les données
-    m_financeChart->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
+//     // Configurer les données
+//     m_financeChart->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
 
-    // METHODE DE GITAN : Cacher la légende par défaut de ChartDirector en la rendant transparente 
-    m_financeChart->setLegendStyle("normal", 8, Chart::Transparent, Chart::Transparent);
+//     // METHODE DE GITAN : Cacher la légende par défaut de ChartDirector en la rendant transparente 
+//     m_financeChart->setLegendStyle("normal", 8, Chart::Transparent, Chart::Transparent);
 
-    // Ajouter le titre du graphique
-    std::string chartTypeStr = chartTypeToString(m_config.chartType).toStdString();
-    std::string aggregationStr = m_dataManager.aggregationLevelToString(m_currentAggregation.level);
-    std::string title = "Graphique de trading (" + chartTypeStr + ", " + aggregationStr + ") - " + 
-                       std::to_string(timestamps.len) + " points";
-    m_financeChart->addTitle(title.c_str());
+//     // Ajouter le titre du graphique
+//     std::string chartTypeStr = chartTypeToString(m_config.chartType).toStdString();
+//     std::string aggregationStr = m_dataManager.aggregationLevelToString(m_currentAggregation.level);
+//     std::string title = "Graphique de trading (" + chartTypeStr + ", " + aggregationStr + ") - " + 
+//                        std::to_string(timestamps.len) + " points";
+//     m_financeChart->addTitle(title.c_str());
 
-    // Déterminer l'index de début et de fin des données actuellement affichées
-    // timestamps contient uniquement les bougies visibles
-    int startIndex = 0;  // L'index de début des données visibles par rapport au dataset complet
+//     // Déterminer l'index de début et de fin des données actuellement affichées
+//     // timestamps contient uniquement les bougies visibles
+//     int startIndex = 0;  // L'index de début des données visibles par rapport au dataset complet
     
-    // Si nous sommes en mode viewport (zoom/déplacement), déterminer l'index de début
-    if (timestamps.len < (int)m_dataManager.getTimestamps().size()) {
-        double firstVisibleTimestamp = timestamps[0];
+//     // Si nous sommes en mode viewport (zoom/déplacement), déterminer l'index de début
+//     if (timestamps.len < (int)m_dataManager.getTimestamps().size()) {
+//         double firstVisibleTimestamp = timestamps[0];
         
-        // Trouver l'index correspondant dans le dataset complet
-        auto it = std::lower_bound(
-            m_dataManager.getTimestamps().begin(),
-            m_dataManager.getTimestamps().end(),
-            firstVisibleTimestamp,
-            [](double a, double b) { return a < b - 0.001; }
-        );
-        startIndex = std::distance(m_dataManager.getTimestamps().begin(), it);
-    }
+//         // Trouver l'index correspondant dans le dataset complet
+//         auto it = std::lower_bound(
+//             m_dataManager.getTimestamps().begin(),
+//             m_dataManager.getTimestamps().end(),
+//             firstVisibleTimestamp,
+//             [](double a, double b) { return a < b - 0.001; }
+//         );
+//         startIndex = std::distance(m_dataManager.getTimestamps().begin(), it);
+//     }
     
-    // 1. Ajouter la courbe d'équité en haut si disponible
-    addEquityCurveSection(m_financeChart.get(), timestamps, startIndex);
+//     // 1. Ajouter la courbe d'équité en haut si disponible
+//     addEquityCurveSection(m_financeChart.get(), timestamps, startIndex);
 
-    // 2. Ajouter le graphique principal
-    m_financeChart->addMainChart(m_config.mainChartHeight);
+//     // 2. Ajouter le graphique principal
+//     m_financeChart->addMainChart(m_config.mainChartHeight);
 
-    // Ajouter le type de graphique approprié selon le type actuel
-    if (m_config.chartType == ChartType::CandleStick || m_config.chartType == ChartType::HeikinAshi) {
-        m_financeChart->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
-    } else if (m_config.chartType == ChartType::OHLC) {
-        m_financeChart->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
-    } else if (m_config.chartType == ChartType::Close) {
-        m_financeChart->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
-    }
+//     // Ajouter le type de graphique approprié selon le type actuel
+//     if (m_config.chartType == ChartType::CandleStick || m_config.chartType == ChartType::HeikinAshi) {
+//         m_financeChart->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
+//     } else if (m_config.chartType == ChartType::OHLC) {
+//         m_financeChart->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
+//     } else if (m_config.chartType == ChartType::Close) {
+//         m_financeChart->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
+//     }
 
-    // Ajouter tous les RSI actifs
-    for (const auto& rsi : m_rsiInstances) {
-        if (rsi.visible) {
-            addRSIToChart(m_financeChart.get(), rsi, startIndex, timestamps.len);
-        }
-    }
+//     // Ajouter tous les RSI actifs
+//     for (const auto& rsi : m_rsiInstances) {
+//         if (rsi.visible) {
+//             addRSIToChart(m_financeChart.get(), rsi, startIndex, timestamps.len);
+//         }
+//     }
 
-    // Ajouter tous les EMA actifs
-    for (const auto& ema : m_emaInstances) {
-        if (ema.visible) {
-            addEMAToChart(m_financeChart.get(), ema, startIndex, timestamps.len);
-        }
-    }
+//     // Ajouter tous les EMA actifs
+//     for (const auto& ema : m_emaInstances) {
+//         if (ema.visible) {
+//             addEMAToChart(m_financeChart.get(), ema, startIndex, timestamps.len);
+//         }
+//     }
 
-    // Ajouter tous les Stochastiques actifs
-    for (const auto& stochastic : m_stochasticInstances) {
-        if (stochastic.visible) {
-            addStochasticToChart(m_financeChart.get(), stochastic, startIndex, timestamps.len);
-        }
-    }
+//     // Ajouter tous les Stochastiques actifs
+//     for (const auto& stochastic : m_stochasticInstances) {
+//         if (stochastic.visible) {
+//             addStochasticToChart(m_financeChart.get(), stochastic, startIndex, timestamps.len);
+//         }
+//     }
 
-    // Ajouter tous les ATR actifs
-    for (const auto& atr : m_atrInstances) {
-        if (atr.visible) {
-            addATRToChart(m_financeChart, atr, startIndex, timestamps.len);
-        }
-    }
+//     // Ajouter tous les ATR actifs
+//     for (const auto& atr : m_atrInstances) {
+//         if (atr.visible) {
+//             addATRToChart(m_financeChart, atr, startIndex, timestamps.len);
+//         }
+//     }
 
-    // 4. Ajouter les trades si disponibles
-    addTradeMarkers(m_financeChart.get(), timestamps, startIndex);
+//     // 4. Ajouter les trades si disponibles
+//     addTradeMarkers(m_financeChart.get(), timestamps, startIndex);
 
-    // Mettre à jour le graphique dans le viewer
-    if (m_chartViewer)
-        m_chartViewer->setChart(m_financeChart.get());
-}
+//     // Mettre à jour le graphique dans le viewer
+//     if (m_chartViewer)
+//         m_chartViewer->setChart(m_financeChart.get());
+// }
 
-FinanceChart *ChartWidget::initializeChart(int chartWidth)
-{
-    return nullptr;
-}
+// void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
+// {
+//     if (m_dataManager.getEquityData().equity_values.empty() || timestamps.len == 0)
+//         return; // Pas de données d'équité ou pas de bougies visibles
 
-void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
-{
-    if (m_dataManager.getEquityData().equity_values.empty() || timestamps.len == 0)
-        return; // Pas de données d'équité ou pas de bougies visibles
+//     int equityHeight = 120;     // Hauteur du graphique d'équité
 
-    int equityHeight = 120;     // Hauteur du graphique d'équité
-
-    // Obtenir la plage de temps visible
-    double visibleStartTime = timestamps[0];
-    double visibleEndTime = timestamps[timestamps.len - 1];
+//     // Obtenir la plage de temps visible
+//     double visibleStartTime = timestamps[0];
+//     double visibleEndTime = timestamps[timestamps.len - 1];
     
-    // Créer les vecteurs pour les données d'équité interpolées
-    std::vector<double> interpolatedTimes;
-    std::vector<double> interpolatedValues;
-    std::vector<double> colorValues;  // Pour stocker les valeurs de couleur
+//     // Créer les vecteurs pour les données d'équité interpolées
+//     std::vector<double> interpolatedTimes;
+//     std::vector<double> interpolatedValues;
+//     std::vector<double> colorValues;  // Pour stocker les valeurs de couleur
     
-    interpolatedTimes.reserve(timestamps.len);
-    interpolatedValues.reserve(timestamps.len);
-    colorValues.reserve(timestamps.len - 1);  // Un segment de moins que de points
+//     interpolatedTimes.reserve(timestamps.len);
+//     interpolatedValues.reserve(timestamps.len);
+//     colorValues.reserve(timestamps.len - 1);  // Un segment de moins que de points
     
-    // Trouver le premier point d'équité qui précède ou correspond à visibleStartTime
-    size_t equityIndex = 0;
-    while (equityIndex + 1 < m_dataManager.getEquityData().timestamps.size() && 
-           m_dataManager.getEquityData().timestamps[equityIndex + 1] < visibleStartTime) {
-        equityIndex++;
-    }
+//     // Trouver le premier point d'équité qui précède ou correspond à visibleStartTime
+//     size_t equityIndex = 0;
+//     while (equityIndex + 1 < m_dataManager.getEquityData().timestamps.size() && 
+//            m_dataManager.getEquityData().timestamps[equityIndex + 1] < visibleStartTime) {
+//         equityIndex++;
+//     }
     
-    // Valeur d'équité au début de la fenêtre visible
-    double currentEquityValue = m_dataManager.getEquityData().equity_values[equityIndex];
+//     // Valeur d'équité au début de la fenêtre visible
+//     double currentEquityValue = m_dataManager.getEquityData().equity_values[equityIndex];
 
-    // Pour chaque timestamp visible, interpoler la valeur d'équité
-    for (int i = 0; i < timestamps.len; ++i) {
-        double currentTime = timestamps[i];
+//     // Pour chaque timestamp visible, interpoler la valeur d'équité
+//     for (int i = 0; i < timestamps.len; ++i) {
+//         double currentTime = timestamps[i];
         
-        // Avancer dans les données d'équité si nécessaire
-        while (equityIndex + 1 < m_dataManager.getEquityData().timestamps.size() && 
-               m_dataManager.getEquityData().timestamps[equityIndex + 1] <= currentTime) {
-            equityIndex++;
-            currentEquityValue = m_dataManager.getEquityData().equity_values[equityIndex];
-        }
+//         // Avancer dans les données d'équité si nécessaire
+//         while (equityIndex + 1 < m_dataManager.getEquityData().timestamps.size() && 
+//                m_dataManager.getEquityData().timestamps[equityIndex + 1] <= currentTime) {
+//             equityIndex++;
+//             currentEquityValue = m_dataManager.getEquityData().equity_values[equityIndex];
+//         }
         
-        // Ajouter le point interpolé
-        interpolatedTimes.push_back(i); // Utiliser l'index comme position X
-        interpolatedValues.push_back(currentEquityValue);
+//         // Ajouter le point interpolé
+//         interpolatedTimes.push_back(i); // Utiliser l'index comme position X
+//         interpolatedValues.push_back(currentEquityValue);
         
-        // Déterminer la couleur du segment (pour tous sauf le premier point)
-        if (i > 0) {
-            double prev = interpolatedValues[i-1];
-            double curr = currentEquityValue;
-            double diff = curr - prev;
+//         // Déterminer la couleur du segment (pour tous sauf le premier point)
+//         if (i > 0) {
+//             double prev = interpolatedValues[i-1];
+//             double curr = currentEquityValue;
+//             double diff = curr - prev;
             
-            // Définir la valeur de couleur basée sur la direction
-            if (std::abs(diff) < 1e-10) {
-                // Constant (gris)
-                colorValues.push_back(0);  
-            } else if (diff > 0) {
-                // Ascendant (vert)
-                colorValues.push_back(1);
-            } else {
-                // Descendant (rouge)
-                colorValues.push_back(2);
-            }
-        }
-    }
+//             // Définir la valeur de couleur basée sur la direction
+//             if (std::abs(diff) < 1e-10) {
+//                 // Constant (gris)
+//                 colorValues.push_back(0);  
+//             } else if (diff > 0) {
+//                 // Ascendant (vert)
+//                 colorValues.push_back(1);
+//             } else {
+//                 // Descendant (rouge)
+//                 colorValues.push_back(2);
+//             }
+//         }
+//     }
     
-    // Convertir en DoubleArray
-    DoubleArray equityTimes = vectorToDoubleArray(interpolatedTimes);
-    DoubleArray equityValues = vectorToDoubleArray(interpolatedValues);
+//     // Convertir en DoubleArray
+//     DoubleArray equityTimes = vectorToDoubleArray(interpolatedTimes);
+//     DoubleArray equityValues = vectorToDoubleArray(interpolatedValues);
     
-    // Ajouter l'indicateur pour l'equity curve
-    XYChart* equityChart = chart->addIndicator(equityHeight);
+//     // Ajouter l'indicateur pour l'equity curve
+//     XYChart* equityChart = chart->addIndicator(equityHeight);
     
-    // Configuration du titre et des libellés
-    equityChart->yAxis()->setTitle("Capital");
-    equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
+//     // Configuration du titre et des libellés
+//     equityChart->yAxis()->setTitle("Capital");
+//     equityChart->xAxis()->setColors(Chart::Transparent); // Masquer l'axe X
     
-    // Définir les couleurs pour les segments
-    int constColor = 0x999999;  // gris pour constant
-    int upColor = 0x53DD00;     // Vert pour ascendant
-    int downColor = 0xFF0000;   // Rouge pour descendant
+//     // Définir les couleurs pour les segments
+//     int constColor = 0x999999;  // gris pour constant
+//     int upColor = 0x53DD00;     // Vert pour ascendant
+//     int downColor = 0xFF0000;   // Rouge pour descendant
     
-    // Créer trois couches de stepline séparées, une pour chaque couleur
-    StepLineLayer* equityLineLayer = equityChart->addStepLineLayer(equityValues, Chart::Transparent, "Equity");
-    StepLineLayer* constantLayer = equityChart->addStepLineLayer();
-    StepLineLayer* upLayer = equityChart->addStepLineLayer();
-    StepLineLayer* downLayer = equityChart->addStepLineLayer(); 
+//     // Créer trois couches de stepline séparées, une pour chaque couleur
+//     StepLineLayer* equityLineLayer = equityChart->addStepLineLayer(equityValues, Chart::Transparent, "Equity");
+//     StepLineLayer* constantLayer = equityChart->addStepLineLayer();
+//     StepLineLayer* upLayer = equityChart->addStepLineLayer();
+//     StepLineLayer* downLayer = equityChart->addStepLineLayer(); 
     
-    constantLayer->setFastLineMode(true);
-    upLayer->setFastLineMode(true);
-    downLayer->setFastLineMode(true);
+//     constantLayer->setFastLineMode(true);
+//     upLayer->setFastLineMode(true);
+//     downLayer->setFastLineMode(true);
 
-    // Créer une ligne horizontale pour le cash initial
-    double initialCash = m_dataManager.getEquityData().equity_values.front();
+//     // Créer une ligne horizontale pour le cash initial
+//     double initialCash = m_dataManager.getEquityData().equity_values.front();
 
-    Mark* mark = equityChart->yAxis()->addMark(m_dataManager.getEquityData().equity_values.front(), 0x000000,"Initial Cash");
-    mark->setLineWidth(2);
-    mark->setMarkColor(equityChart->dashLineColor(0x000000), 0xffffff);
-    mark->setAlignment(Chart::Left);
-    mark->setBackground(0x000000, 0xffffff, 1);
-    equityChart->addInterLineLayer(equityLineLayer->getLine(), mark->getLine(), 0xCC53DD00, 0xCCff0000);
+//     Mark* mark = equityChart->yAxis()->addMark(m_dataManager.getEquityData().equity_values.front(), 0x000000,"Initial Cash");
+//     mark->setLineWidth(2);
+//     mark->setMarkColor(equityChart->dashLineColor(0x000000), 0xffffff);
+//     mark->setAlignment(Chart::Left);
+//     mark->setBackground(0x000000, 0xffffff, 1);
+//     equityChart->addInterLineLayer(equityLineLayer->getLine(), mark->getLine(), 0xCC53DD00, 0xCCff0000);
 
-    // Configurer l'alignement des steplines (début de chaque période)
-    constantLayer->setAlignment(Chart::Left);
-    upLayer->setAlignment(Chart::Left);
-    downLayer->setAlignment(Chart::Left);
+//     // Configurer l'alignement des steplines (début de chaque période)
+//     constantLayer->setAlignment(Chart::Left);
+//     upLayer->setAlignment(Chart::Left);
+//     downLayer->setAlignment(Chart::Left);
     
-    // Création des ensembles de données pour chaque type de segment
-    std::vector<std::vector<double>> segmentX(3);
-    std::vector<std::vector<double>> segmentY(3);
+//     // Création des ensembles de données pour chaque type de segment
+//     std::vector<std::vector<double>> segmentX(3);
+//     std::vector<std::vector<double>> segmentY(3);
     
-    // Parcourir les points et créer des segments colorés
-    for (size_t i = 1; i < interpolatedValues.size(); ++i) {
-        int colorIndex = static_cast<int>(colorValues[i-1]);
+//     // Parcourir les points et créer des segments colorés
+//     for (size_t i = 1; i < interpolatedValues.size(); ++i) {
+//         int colorIndex = static_cast<int>(colorValues[i-1]);
         
-        // Ajouter le point de début et de fin pour ce segment
-        segmentX[colorIndex].push_back(interpolatedTimes[i-1]);
-        segmentY[colorIndex].push_back(interpolatedValues[i-1]);
+//         // Ajouter le point de début et de fin pour ce segment
+//         segmentX[colorIndex].push_back(interpolatedTimes[i-1]);
+//         segmentY[colorIndex].push_back(interpolatedValues[i-1]);
         
-        segmentX[colorIndex].push_back(interpolatedTimes[i]);
-        segmentY[colorIndex].push_back(interpolatedValues[i]);
+//         segmentX[colorIndex].push_back(interpolatedTimes[i]);
+//         segmentY[colorIndex].push_back(interpolatedValues[i]);
         
-        // Ajouter un NoValue pour séparer les segments non-contigus de même couleur
-        segmentX[colorIndex].push_back(Chart::NoValue);
-        segmentY[colorIndex].push_back(Chart::NoValue);
-    }
+//         // Ajouter un NoValue pour séparer les segments non-contigus de même couleur
+//         segmentX[colorIndex].push_back(Chart::NoValue);
+//         segmentY[colorIndex].push_back(Chart::NoValue);
+//     }
     
-    // Ajouter les segments à leurs couches respectives
-    if (!segmentX[0].empty()) {
-        // Get arrays for x and y values
-        DoubleArray x = vectorToDoubleArray(segmentX[0]);
-        DoubleArray y = vectorToDoubleArray(segmentY[0]);
+//     // Ajouter les segments à leurs couches respectives
+//     if (!segmentX[0].empty()) {
+//         // Get arrays for x and y values
+//         DoubleArray x = vectorToDoubleArray(segmentX[0]);
+//         DoubleArray y = vectorToDoubleArray(segmentY[0]);
         
-        // Create a step line layer for constant segments
-        constantLayer->setXData(x);
-        DataSet* constDataSet = constantLayer->addDataSet(y, constColor, "Constant");
-        constantLayer->setLineWidth(2);
-    }
+//         // Create a step line layer for constant segments
+//         constantLayer->setXData(x);
+//         DataSet* constDataSet = constantLayer->addDataSet(y, constColor, "Constant");
+//         constantLayer->setLineWidth(2);
+//     }
     
-    if (!segmentX[1].empty()) {
-        // Get arrays for x and y values
-        DoubleArray x = vectorToDoubleArray(segmentX[1]);
-        DoubleArray y = vectorToDoubleArray(segmentY[1]);
+//     if (!segmentX[1].empty()) {
+//         // Get arrays for x and y values
+//         DoubleArray x = vectorToDoubleArray(segmentX[1]);
+//         DoubleArray y = vectorToDoubleArray(segmentY[1]);
         
-        // Create a step line layer for up segments
-        upLayer->setXData(x);
-        DataSet* upDataSet = upLayer->addDataSet(y, upColor, "Up");
-        upLayer->setLineWidth(5);
-    }
+//         // Create a step line layer for up segments
+//         upLayer->setXData(x);
+//         DataSet* upDataSet = upLayer->addDataSet(y, upColor, "Up");
+//         upLayer->setLineWidth(5);
+//     }
     
-    if (!segmentX[2].empty()) {
-        // Get arrays for x and y values
-        DoubleArray x = vectorToDoubleArray(segmentX[2]);
-        DoubleArray y = vectorToDoubleArray(segmentY[2]);
+//     if (!segmentX[2].empty()) {
+//         // Get arrays for x and y values
+//         DoubleArray x = vectorToDoubleArray(segmentX[2]);
+//         DoubleArray y = vectorToDoubleArray(segmentY[2]);
         
-        // Create a step line layer for down segments
-        downLayer->setXData(x);
-        DataSet* downDataSet = downLayer->addDataSet(y, downColor, "Down");
-        downLayer->setLineWidth(5);
-    }
+//         // Create a step line layer for down segments
+//         downLayer->setXData(x);
+//         DataSet* downDataSet = downLayer->addDataSet(y, downColor, "Down");
+//         downLayer->setLineWidth(5);
+//     }
     
-    // Ajouter un point à la fin de la courbe pour marquer la valeur actuelle
-    if (!interpolatedValues.empty()) {
-        std::vector<double> lastPointX = {(double)(interpolatedTimes.size() - 1)};
-        std::vector<double> lastPointY = {interpolatedValues.back()};
+//     // Ajouter un point à la fin de la courbe pour marquer la valeur actuelle
+//     if (!interpolatedValues.empty()) {
+//         std::vector<double> lastPointX = {(double)(interpolatedTimes.size() - 1)};
+//         std::vector<double> lastPointY = {interpolatedValues.back()};
         
-        DoubleArray xPoint = vectorToDoubleArray(lastPointX);
-        DoubleArray yPoint = vectorToDoubleArray(lastPointY);
+//         DoubleArray xPoint = vectorToDoubleArray(lastPointX);
+//         DoubleArray yPoint = vectorToDoubleArray(lastPointY);
         
-        ScatterLayer* endPoint = equityChart->addScatterLayer(xPoint, yPoint, 
-                                                            "Current", Chart::CircleShape, 7, 
-                                                            0x000000, 0x000000);
-        endPoint->moveFront();
-    }
-}
-
-void ChartWidget::addMainChartSection(FinanceChart *chart, int chartHeight)
-{
-}
-
-void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
-{
-    if (m_trades.empty() || !m_dataManager.hasValidData())
-        return;
-
-    // pour l'instant on affiche rien mais il faudrait afficher par exemple just eles points d'entrée pour montrer les trades de loin
-    if (m_currentAggregation.level != ChartDataManager::AggregationLevel::Raw)
-        return;
+//         ScatterLayer* endPoint = equityChart->addScatterLayer(xPoint, yPoint, 
+//                                                             "Current", Chart::CircleShape, 7, 
+//                                                             0x000000, 0x000000);
+//         endPoint->moveFront();
+//     }
+// }
 
 
-    // Ajouter les marqueurs au graphique principal
-    XYChart* mainChart = (XYChart*)chart->getChart(1);
-    if (!mainChart)
-        return;
+// void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
+// {
+//     if (m_trades.empty() || !m_dataManager.hasValidData())
+//         return;
 
-    // Structure pour organiser les marqueurs par type
-    enum TradeResult { WINNING = 0, LOSING = 1, NEUTRAL = 2, RESULT_COUNT = 3 };
-    const int COLORS[RESULT_COUNT] = { 0x00AA00, 0xCC0000, 0x000000 }; // Vert, Rouge, Noir
+//     // pour l'instant on affiche rien mais il faudrait afficher par exemple just eles points d'entrée pour montrer les trades de loin
+//     if (m_currentAggregation.level != ChartDataManager::AggregationLevel::Raw)
+//         return;
 
-    // Tous nos containers de marqueurs
-    std::vector<std::pair<double, double>> entryMarkers;
-    std::vector<std::pair<double, double>> exitMarkers;
-    std::vector<std::pair<double, double>> entryArrows[RESULT_COUNT]; // Winning, Losing, Neutral
-    std::vector<std::pair<double, double>> exitArrows[RESULT_COUNT];  // Winning, Losing, Neutral
 
-    std::vector<TPSLSegment> tpslSegments;
+//     // Ajouter les marqueurs au graphique principal
+//     XYChart* mainChart = (XYChart*)chart->getChart(1);
+//     if (!mainChart)
+//         return;
+
+//     // Structure pour organiser les marqueurs par type
+//     enum TradeResult { WINNING = 0, LOSING = 1, NEUTRAL = 2, RESULT_COUNT = 3 };
+//     const int COLORS[RESULT_COUNT] = { 0x00AA00, 0xCC0000, 0x000000 }; // Vert, Rouge, Noir
+
+//     // Tous nos containers de marqueurs
+//     std::vector<std::pair<double, double>> entryMarkers;
+//     std::vector<std::pair<double, double>> exitMarkers;
+//     std::vector<std::pair<double, double>> entryArrows[RESULT_COUNT]; // Winning, Losing, Neutral
+//     std::vector<std::pair<double, double>> exitArrows[RESULT_COUNT];  // Winning, Losing, Neutral
+
+//     std::vector<TPSLSegment> tpslSegments;
     
-    // Préallocation
-    size_t estimatedMarkers = std::min(size_t(100), m_trades.size() * 2);
-    entryMarkers.reserve(estimatedMarkers);
-    exitMarkers.reserve(estimatedMarkers);
-    tpslSegments.reserve(estimatedMarkers * 2);
-    for (int i = 0; i < RESULT_COUNT; i++) {
-        entryArrows[i].reserve(estimatedMarkers);
-        exitArrows[i].reserve(estimatedMarkers);
-    }
+//     // Préallocation
+//     size_t estimatedMarkers = std::min(size_t(100), m_trades.size() * 2);
+//     entryMarkers.reserve(estimatedMarkers);
+//     exitMarkers.reserve(estimatedMarkers);
+//     tpslSegments.reserve(estimatedMarkers * 2);
+//     for (int i = 0; i < RESULT_COUNT; i++) {
+//         entryArrows[i].reserve(estimatedMarkers);
+//         exitArrows[i].reserve(estimatedMarkers);
+//     }
 
-    // Pour chaque trade, vérifier s'il est visible dans la fenêtre actuelle
-    for (const auto& trade : m_trades) {
-        // Déterminer la catégorie du résultat
-        int resultIndex = NEUTRAL; // Par défaut
+//     // Pour chaque trade, vérifier s'il est visible dans la fenêtre actuelle
+//     for (const auto& trade : m_trades) {
+//         // Déterminer la catégorie du résultat
+//         int resultIndex = NEUTRAL; // Par défaut
         
-        if (trade->isClosed()) {
-            double pnl = trade->pl();
-            if (pnl > 0) 
-                resultIndex = WINNING;
-            else if (pnl < 0) 
-                resultIndex = LOSING;
-        }
+//         if (trade->isClosed()) {
+//             double pnl = trade->pl();
+//             if (pnl > 0) 
+//                 resultIndex = WINNING;
+//             else if (pnl < 0) 
+//                 resultIndex = LOSING;
+//         }
 
-        // Traiter le point d'entrée
-        size_t entryBarIndex = trade->entryBar();
-        if (entryBarIndex >= static_cast<size_t>(startIndex) && entryBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
-            double relativeIndex = static_cast<double>(entryBarIndex - startIndex);
+//         // Traiter le point d'entrée
+//         size_t entryBarIndex = trade->entryBar();
+//         if (entryBarIndex >= static_cast<size_t>(startIndex) && entryBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+//             double relativeIndex = static_cast<double>(entryBarIndex - startIndex);
             
-            // Marqueur carré pour la position d'entrée
-            entryMarkers.push_back({relativeIndex, trade->entryPrice()});
+//             // Marqueur carré pour la position d'entrée
+//             entryMarkers.push_back({relativeIndex, trade->entryPrice()});
             
-            // Flèche d'entrée
-            if (entryBarIndex < static_cast<int>(m_dataManager.getBacktestData()->size())) {
-                const be::Candle& entryCandle = m_dataManager.getBacktestData()->at(entryBarIndex);
-                double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
-                entryArrows[resultIndex].push_back({relativeIndex, arrowY});
-            }
+//             // Flèche d'entrée
+//             if (entryBarIndex < static_cast<int>(m_dataManager.getBacktestData()->size())) {
+//                 const be::Candle& entryCandle = m_dataManager.getBacktestData()->at(entryBarIndex);
+//                 double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
+//                 entryArrows[resultIndex].push_back({relativeIndex, arrowY});
+//             }
 
-            // Si le trade est fermé, on peut ajouter les segments TP/SL
-            if (trade->isClosed()) {
-                size_t exitBarIndex = trade->exitBar();
-                if (exitBarIndex >= static_cast<size_t>(startIndex) && exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
-                    double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
+//             // Si le trade est fermé, on peut ajouter les segments TP/SL
+//             if (trade->isClosed()) {
+//                 size_t exitBarIndex = trade->exitBar();
+//                 if (exitBarIndex >= static_cast<size_t>(startIndex) && exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+//                     double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
                     
-                    // Récupérer les valeurs de TP et SL si elles existent
-                    double tpValue = trade->tp();
-                    if (tpValue > 0) {
-                        tpslSegments.push_back({
-                            relativeIndex, relativeExitIndex, 
-                            tpValue, true, // true = TP
-                            COLORS[resultIndex]
-                        });
-                    }
+//                     // Récupérer les valeurs de TP et SL si elles existent
+//                     double tpValue = trade->tp();
+//                     if (tpValue > 0) {
+//                         tpslSegments.push_back({
+//                             relativeIndex, relativeExitIndex, 
+//                             tpValue, true, // true = TP
+//                             COLORS[resultIndex]
+//                         });
+//                     }
                     
-                    double slValue = trade->sl();
-                    if (slValue > 0) {
-                        tpslSegments.push_back({
-                            relativeIndex, relativeExitIndex,
-                            slValue, false, // false = SL
-                            COLORS[resultIndex]
-                        });
-                    }
-                }
-            }
-        }
+//                     double slValue = trade->sl();
+//                     if (slValue > 0) {
+//                         tpslSegments.push_back({
+//                             relativeIndex, relativeExitIndex,
+//                             slValue, false, // false = SL
+//                             COLORS[resultIndex]
+//                         });
+//                     }
+//                 }
+//             }
+//         }
         
-        // Traiter le point de sortie (seulement pour les trades fermés)
-        if (trade->isClosed()) {
-            size_t exitBarIndex = trade->exitBar();
-            if (exitBarIndex >= static_cast<size_t>(startIndex) && exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
-                double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
+//         // Traiter le point de sortie (seulement pour les trades fermés)
+//         if (trade->isClosed()) {
+//             size_t exitBarIndex = trade->exitBar();
+//             if (exitBarIndex >= static_cast<size_t>(startIndex) && exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+//                 double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
                 
-                // Marqueur carré pour la position de sortie
-                exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
+//                 // Marqueur carré pour la position de sortie
+//                 exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
                 
-                // Flèche de sortie
-                if (exitBarIndex < static_cast<int>(m_dataManager.getBacktestData()->size())) {
-                    const be::Candle& exitCandle = m_dataManager.getBacktestData()->at(exitBarIndex);
-                    double arrowY = exitCandle.low * 0.9995; // Légèrement en-dessous du low
-                    exitArrows[resultIndex].push_back({relativeExitIndex, arrowY});
-                }
-            }
-        }
-    }
+//                 // Flèche de sortie
+//                 if (exitBarIndex < static_cast<int>(m_dataManager.getBacktestData()->size())) {
+//                     const be::Candle& exitCandle = m_dataManager.getBacktestData()->at(exitBarIndex);
+//                     double arrowY = exitCandle.low * 0.9995; // Légèrement en-dessous du low
+//                     exitArrows[resultIndex].push_back({relativeExitIndex, arrowY});
+//                 }
+//             }
+//         }
+//     }
 
-    // Ajouter les marqueurs carrés pour les entrées et sorties
-    addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 7, 0x000000);
-    addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 7, 0x000000);
+//     // Ajouter les marqueurs carrés pour les entrées et sorties
+//     addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 7, 0x000000);
+//     addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 7, 0x000000);
     
-    // Ajouter les flèches
-    const char* resultNames[RESULT_COUNT] = { "Win", "Loss", "Flat" };
+//     // Ajouter les flèches
+//     const char* resultNames[RESULT_COUNT] = { "Win", "Loss", "Flat" };
     
-    for (int i = 0; i < RESULT_COUNT; i++) {
-        if (!entryArrows[i].empty()) {
-            std::string name = std::string(resultNames[i]) + " Entry";
-            addMarkers(mainChart, entryArrows[i], name.c_str(), Chart::InvertedTriangleSymbol, 15, COLORS[i]);
-        }
+//     for (int i = 0; i < RESULT_COUNT; i++) {
+//         if (!entryArrows[i].empty()) {
+//             std::string name = std::string(resultNames[i]) + " Entry";
+//             addMarkers(mainChart, entryArrows[i], name.c_str(), Chart::InvertedTriangleSymbol, 15, COLORS[i]);
+//         }
         
-        if (!exitArrows[i].empty()) {
-            std::string name = std::string(resultNames[i]) + " Exit";
-            addMarkers(mainChart, exitArrows[i], name.c_str(), Chart::TriangleSymbol, 15, COLORS[i]);
-        }
-    }
+//         if (!exitArrows[i].empty()) {
+//             std::string name = std::string(resultNames[i]) + " Exit";
+//             addMarkers(mainChart, exitArrows[i], name.c_str(), Chart::TriangleSymbol, 15, COLORS[i]);
+//         }
+//     }
 
-    // Ajouter les segments TP/SL
-    addTPSLSegments(mainChart, tpslSegments);
-}
+//     // Ajouter les segments TP/SL
+//     addTPSLSegments(mainChart, tpslSegments);
+// }
 
-void ChartWidget::addTPSLSegments(XYChart* chart, const std::vector<TPSLSegment>& segments) {
-    if (segments.empty()) return;
+// void ChartWidget::addTPSLSegments(XYChart* chart, const std::vector<TPSLSegment>& segments) {
+//     if (segments.empty()) return;
     
-    // Créer des vecteurs séparés pour les segments TP et SL
-    std::vector<double> tpXData, tpYData;
-    std::vector<double> slXData, slYData;
+//     // Créer des vecteurs séparés pour les segments TP et SL
+//     std::vector<double> tpXData, tpYData;
+//     std::vector<double> slXData, slYData;
     
-    // Parcourir tous les segments et les séparer par type
-    for (const auto& segment : segments) {
-        std::vector<double>& xData = segment.isTakeProfit ? tpXData : slXData;
-        std::vector<double>& yData = segment.isTakeProfit ? tpYData : slYData;
+//     // Parcourir tous les segments et les séparer par type
+//     for (const auto& segment : segments) {
+//         std::vector<double>& xData = segment.isTakeProfit ? tpXData : slXData;
+//         std::vector<double>& yData = segment.isTakeProfit ? tpYData : slYData;
         
-        // Ajouter le point de départ du segment horizontal
-        xData.push_back(segment.startX);
-        yData.push_back(segment.level);
+//         // Ajouter le point de départ du segment horizontal
+//         xData.push_back(segment.startX);
+//         yData.push_back(segment.level);
         
-        // Ajouter le point de fin du segment horizontal
-        xData.push_back(segment.endX);
-        yData.push_back(segment.level);
+//         // Ajouter le point de fin du segment horizontal
+//         xData.push_back(segment.endX);
+//         yData.push_back(segment.level);
         
-        // Ajouter un point NoValue pour créer une discontinuité
-        xData.push_back(Chart::NoValue);
-        yData.push_back(Chart::NoValue);
-    }
+//         // Ajouter un point NoValue pour créer une discontinuité
+//         xData.push_back(Chart::NoValue);
+//         yData.push_back(Chart::NoValue);
+//     }
     
-    // Ajouter les segments de Take Profit
-    if (!tpXData.empty()) {
-        LineLayer* tpLayer = chart->addLineLayer();
-        tpLayer->setLineWidth(1);  // Ligne fine
-        tpLayer->setFastLineMode(true);  // Mode rapide pour les lignes droites
+//     // Ajouter les segments de Take Profit
+//     if (!tpXData.empty()) {
+//         LineLayer* tpLayer = chart->addLineLayer();
+//         tpLayer->setLineWidth(1);  // Ligne fine
+//         tpLayer->setFastLineMode(true);  // Mode rapide pour les lignes droites
         
-        // Convertir en DoubleArray pour ChartDirector
-        DoubleArray tpX = vectorToDoubleArray(tpXData);
-        DoubleArray tpY = vectorToDoubleArray(tpYData);
+//         // Convertir en DoubleArray pour ChartDirector
+//         DoubleArray tpX = vectorToDoubleArray(tpXData);
+//         DoubleArray tpY = vectorToDoubleArray(tpYData);
         
-        // Définir les données X et Y séparément
-        tpLayer->setXData(tpX);
-        tpLayer->addDataSet(tpY, 0x00AA00, "Take Profit");
-        tpLayer->moveFront();  // Mettre au premier plan
-    }
+//         // Définir les données X et Y séparément
+//         tpLayer->setXData(tpX);
+//         tpLayer->addDataSet(tpY, 0x00AA00, "Take Profit");
+//         tpLayer->moveFront();  // Mettre au premier plan
+//     }
     
-    // Ajouter les segments de Stop Loss
-    if (!slXData.empty()) {
-        LineLayer* slLayer = chart->addLineLayer();
-        slLayer->setLineWidth(1);  // Ligne fine
-        slLayer->setFastLineMode(true);  // Mode rapide pour les lignes droites
+//     // Ajouter les segments de Stop Loss
+//     if (!slXData.empty()) {
+//         LineLayer* slLayer = chart->addLineLayer();
+//         slLayer->setLineWidth(1);  // Ligne fine
+//         slLayer->setFastLineMode(true);  // Mode rapide pour les lignes droites
         
-        // Convertir en DoubleArray pour ChartDirector
-        DoubleArray slX = vectorToDoubleArray(slXData);
-        DoubleArray slY = vectorToDoubleArray(slYData);
+//         // Convertir en DoubleArray pour ChartDirector
+//         DoubleArray slX = vectorToDoubleArray(slXData);
+//         DoubleArray slY = vectorToDoubleArray(slYData);
         
-        // Définir les données X et Y séparément
-        slLayer->setXData(slX);
-        slLayer->addDataSet(slY, 0xCC0000, "Stop Loss");
-        slLayer->moveFront();  // Mettre au premier plan
-    }
-}
+//         // Définir les données X et Y séparément
+//         slLayer->setXData(slX);
+//         slLayer->addDataSet(slY, 0xCC0000, "Stop Loss");
+//         slLayer->moveFront();  // Mettre au premier plan
+//     }
+// }
 
-FinanceChart *ChartWidget::finalizeChart(FinanceChart *chart)
-{
-    return nullptr;
-}
+// void ChartWidget::addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, 
+//                             const char* name, int symbolType, int symbolSize, int color) {
+//     if (arrows.empty()) return;
 
-void ChartWidget::addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, 
-                            const char* name, int symbolType, int symbolSize, int color) {
-    if (arrows.empty()) return;
-
-    std::vector<double> xValues;
-    std::vector<double> yValues;
-    xValues.reserve(arrows.size());
-    yValues.reserve(arrows.size());
+//     std::vector<double> xValues;
+//     std::vector<double> yValues;
+//     xValues.reserve(arrows.size());
+//     yValues.reserve(arrows.size());
     
-    for (const auto& pair : arrows) {
-        xValues.push_back(pair.first);
-        yValues.push_back(pair.second);
-    }
+//     for (const auto& pair : arrows) {
+//         xValues.push_back(pair.first);
+//         yValues.push_back(pair.second);
+//     }
 
-    // Convertir en DoubleArray
-    DoubleArray xArray = vectorToDoubleArray(xValues);
-    DoubleArray yArray = vectorToDoubleArray(yValues);
+//     // Convertir en DoubleArray
+//     DoubleArray xArray = vectorToDoubleArray(xValues);
+//     DoubleArray yArray = vectorToDoubleArray(yValues);
 
-    ScatterLayer* layer = chart->addScatterLayer(xArray, yArray, name, 
-                                              symbolType, symbolSize, color);
-    layer->moveFront();
-}
+//     ScatterLayer* layer = chart->addScatterLayer(xArray, yArray, name, 
+//                                               symbolType, symbolSize, color);
+//     layer->moveFront();
+// }
 
-void ChartWidget::addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow)
-{
-    if (!m_indicatorCache.isValid) return;
+// void ChartWidget::addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow)
+// {
+//     if (!m_indicatorCache.isValid) return;
 
-    auto it = m_indicatorCache.rsi.find(rsi.period);
-    if (it == m_indicatorCache.rsi.end()) {
-        ensureRSICached(rsi.period);
-        it = m_indicatorCache.rsi.find(rsi.period);
-        if (it == m_indicatorCache.rsi.end()) {
-            return; // Toujours pas disponible
-        }
-    }
+//     auto it = m_indicatorCache.rsi.find(rsi.period);
+//     if (it == m_indicatorCache.rsi.end()) {
+//         ensureRSICached(rsi.period);
+//         it = m_indicatorCache.rsi.find(rsi.period);
+//         if (it == m_indicatorCache.rsi.end()) {
+//             return; // Toujours pas disponible
+//         }
+//     }
 
-    const std::vector<double>& rsiData = it->second;
+//     const std::vector<double>& rsiData = it->second;
     
-    if (startIndex >= (int)rsiData.size()) return;
+//     if (startIndex >= (int)rsiData.size()) return;
 
-    // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)rsiData.size());
-    int actualPoints = endIndex - startIndex;
+//     // Limiter le nombre de points à afficher
+//     int endIndex = std::min(startIndex + pointsToShow, (int)rsiData.size());
+//     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) return;
+//     if (actualPoints <= 0) return;
 
-    // Extraire les données RSI visibles du cache
-    DoubleArray rsiArray(&rsiData[startIndex], actualPoints);
+//     // Extraire les données RSI visibles du cache
+//     DoubleArray rsiArray(&rsiData[startIndex], actualPoints);
     
-    // Ajouter le graphique d'indicateur
-    XYChart* c = chart->addIndicator(rsi.height);
+//     // Ajouter le graphique d'indicateur
+//     XYChart* c = chart->addIndicator(rsi.height);
     
-    // Configurer et ajouter le RSI
-    char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "RSI (%d)", rsi.period);
-    LineLayer* layer = chart->addLineIndicator2(c, rsiArray, rsi.color, buffer);
-    layer->setFastLineMode(true);
+//     // Configurer et ajouter le RSI
+//     char buffer[1024];
+//     snprintf(buffer, sizeof(buffer), "RSI (%d)", rsi.period);
+//     LineLayer* layer = chart->addLineIndicator2(c, rsiArray, rsi.color, buffer);
+//     layer->setFastLineMode(true);
 
-    // Ajouter les seuils
-    chart->addThreshold(c, layer, 50 + rsi.range, rsi.upperColor, 50 - rsi.range, rsi.lowerColor);
+//     // Ajouter les seuils
+//     chart->addThreshold(c, layer, 50 + rsi.range, rsi.upperColor, 50 - rsi.range, rsi.lowerColor);
     
-    // Configurer l'échelle de l'axe Y
-    c->yAxis()->setLinearScale(0, 100);
-}
+//     // Configurer l'échelle de l'axe Y
+//     c->yAxis()->setLinearScale(0, 100);
+// }
 
-void ChartWidget::addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow)
-{
-    if (!m_indicatorCache.isValid || !chart || !chart->getChart(1)) {
-        return;
-    }
+// void ChartWidget::addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow)
+// {
+//     if (!m_indicatorCache.isValid || !chart || !chart->getChart(1)) {
+//         return;
+//     }
 
-    auto it = m_indicatorCache.ema.find(ema.period);
-    if (it == m_indicatorCache.ema.end()) {
-        ensureEMACached(ema.period);
-        it = m_indicatorCache.ema.find(ema.period);
-        if (it == m_indicatorCache.ema.end()) {
-            return; // Toujours pas disponible
-        }
-    }
+//     auto it = m_indicatorCache.ema.find(ema.period);
+//     if (it == m_indicatorCache.ema.end()) {
+//         ensureEMACached(ema.period);
+//         it = m_indicatorCache.ema.find(ema.period);
+//         if (it == m_indicatorCache.ema.end()) {
+//             return; // Toujours pas disponible
+//         }
+//     }
 
-    const std::vector<double>& emaData = it->second;
+//     const std::vector<double>& emaData = it->second;
     
-    if (startIndex >= (int)emaData.size()) {
-        return;
-    }
+//     if (startIndex >= (int)emaData.size()) {
+//         return;
+//     }
 
-    // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)emaData.size());
-    int actualPoints = endIndex - startIndex;
+//     // Limiter le nombre de points à afficher
+//     int endIndex = std::min(startIndex + pointsToShow, (int)emaData.size());
+//     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) {
-        return;
-    }
+//     if (actualPoints <= 0) {
+//         return;
+//     }
 
-    // Extraire les données EMA visibles du cache
-    DoubleArray emaArray(&emaData[startIndex], actualPoints);
+//     // Extraire les données EMA visibles du cache
+//     DoubleArray emaArray(&emaData[startIndex], actualPoints);
     
-    // Configurer et ajouter l'EMA directement sur le graphique principal
-    char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "EMA (%d)", ema.period);
-    LineLayer* layer = chart->addLineIndicator2((XYChart*)chart->getChart(1), emaArray, ema.color, buffer);
-    layer->setFastLineMode(true);
-}
+//     // Configurer et ajouter l'EMA directement sur le graphique principal
+//     char buffer[1024];
+//     snprintf(buffer, sizeof(buffer), "EMA (%d)", ema.period);
+//     LineLayer* layer = chart->addLineIndicator2((XYChart*)chart->getChart(1), emaArray, ema.color, buffer);
+//     layer->setFastLineMode(true);
+// }
 
-void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow)
-{
-    if (!m_indicatorCache.isValid) return;
+// void ChartWidget::addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow)
+// {
+//     if (!m_indicatorCache.isValid) return;
 
-    // Clé pour retrouver les données en cache
-    std::tuple<int, int, int> key = std::make_tuple(stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
+//     // Clé pour retrouver les données en cache
+//     std::tuple<int, int, int> key = std::make_tuple(stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
     
-    auto it = m_indicatorCache.stochastic.find(key);
-    if (it == m_indicatorCache.stochastic.end()) {
-        ensureStochasticCached(stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
-        it = m_indicatorCache.stochastic.find(key);
-        if (it == m_indicatorCache.stochastic.end()) {
-            return; // Toujours pas disponible
-        }
-    }
+//     auto it = m_indicatorCache.stochastic.find(key);
+//     if (it == m_indicatorCache.stochastic.end()) {
+//         ensureStochasticCached(stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
+//         it = m_indicatorCache.stochastic.find(key);
+//         if (it == m_indicatorCache.stochastic.end()) {
+//             return; // Toujours pas disponible
+//         }
+//     }
 
-    const std::vector<double>& kValues = it->second.first;
-    const std::vector<double>& dValues = it->second.second;
+//     const std::vector<double>& kValues = it->second.first;
+//     const std::vector<double>& dValues = it->second.second;
     
-    if (startIndex >= (int)kValues.size() || startIndex >= (int)dValues.size()) {
-        return;
-    }
+//     if (startIndex >= (int)kValues.size() || startIndex >= (int)dValues.size()) {
+//         return;
+//     }
 
-    // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)kValues.size());
-    int actualPoints = endIndex - startIndex;
+//     // Limiter le nombre de points à afficher
+//     int endIndex = std::min(startIndex + pointsToShow, (int)kValues.size());
+//     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) {
-        return;
-    }
+//     if (actualPoints <= 0) {
+//         return;
+//     }
 
-    // Extraire les données Stochastic visibles du cache
-    DoubleArray kArray(&kValues[startIndex], actualPoints);
-    DoubleArray dArray(&dValues[startIndex], actualPoints);
+//     // Extraire les données Stochastic visibles du cache
+//     DoubleArray kArray(&kValues[startIndex], actualPoints);
+//     DoubleArray dArray(&dValues[startIndex], actualPoints);
     
-    // Ajouter le graphique d'indicateur
-    XYChart* c = chart->addIndicator(stochastic.height);
+//     // Ajouter le graphique d'indicateur
+//     XYChart* c = chart->addIndicator(stochastic.height);
     
-    // Configurer et ajouter les lignes %K et %D
-    char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "Stochastic %%K (%d, %d, %d)", 
-             stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
+//     // Configurer et ajouter les lignes %K et %D
+//     char buffer[1024];
+//     snprintf(buffer, sizeof(buffer), "Stochastic %%K (%d, %d, %d)", 
+//              stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
 
-    LineLayer* kLayer = chart->addLineIndicator2(c, kArray, stochastic.kColor, buffer);
-    kLayer->setFastLineMode(true);
+//     LineLayer* kLayer = chart->addLineIndicator2(c, kArray, stochastic.kColor, buffer);
+//     kLayer->setFastLineMode(true);
     
-    snprintf(buffer, sizeof(buffer), "%%D (%d)", stochastic.slowDPeriod);
-    LineLayer* dLayer = chart->addLineIndicator2(c, dArray, stochastic.dColor, buffer);
-    dLayer->setFastLineMode(true);
+//     snprintf(buffer, sizeof(buffer), "%%D (%d)", stochastic.slowDPeriod);
+//     LineLayer* dLayer = chart->addLineIndicator2(c, dArray, stochastic.dColor, buffer);
+//     dLayer->setFastLineMode(true);
     
-    // Configurer l'échelle de l'axe Y
-    c->yAxis()->setLinearScale(0, 100);
+//     // Configurer l'échelle de l'axe Y
+//     c->yAxis()->setLinearScale(0, 100);
     
-    // Ajouter les seuils pour les niveaux de surachat et de survente
-    Mark* overboughtMark = c->yAxis()->addMark(stochastic.overboughtLevel, 0xff6666, std::to_string(stochastic.overboughtLevel).c_str());
-    Mark* oversoldMark = c->yAxis()->addMark(stochastic.oversoldLevel, 0x6666ff, std::to_string(stochastic.oversoldLevel).c_str());
+//     // Ajouter les seuils pour les niveaux de surachat et de survente
+//     Mark* overboughtMark = c->yAxis()->addMark(stochastic.overboughtLevel, 0xff6666, std::to_string(stochastic.overboughtLevel).c_str());
+//     Mark* oversoldMark = c->yAxis()->addMark(stochastic.oversoldLevel, 0x6666ff, std::to_string(stochastic.oversoldLevel).c_str());
 
-    c->addInterLineLayer(kLayer->getLine(), overboughtMark->getLine(), 0xCCff0000, Chart::Transparent);
-    c->addInterLineLayer(kLayer->getLine(), oversoldMark->getLine(), Chart::Transparent, 0xCC0000ff);
-}
+//     c->addInterLineLayer(kLayer->getLine(), overboughtMark->getLine(), 0xCCff0000, Chart::Transparent);
+//     c->addInterLineLayer(kLayer->getLine(), oversoldMark->getLine(), Chart::Transparent, 0xCC0000ff);
+// }
 
-void ChartWidget::addATRToChart(std::unique_ptr<FinanceChart>& chart, const ATRInstance& atr, int startIndex, int pointsToShow)
-{
-    if (!m_indicatorCache.isValid) return;
+// void ChartWidget::addATRToChart(std::unique_ptr<FinanceChart>& chart, const ATRInstance& atr, int startIndex, int pointsToShow)
+// {
+//     if (!m_indicatorCache.isValid) return;
 
-    auto it = m_indicatorCache.atr.find(atr.period);
-    if (it == m_indicatorCache.atr.end()) {
-        ensureATRCached(atr.period);
-        it = m_indicatorCache.atr.find(atr.period);
-        if (it == m_indicatorCache.atr.end()) {
-            return; // Toujours pas disponible
-        }
-    }
+//     auto it = m_indicatorCache.atr.find(atr.period);
+//     if (it == m_indicatorCache.atr.end()) {
+//         ensureATRCached(atr.period);
+//         it = m_indicatorCache.atr.find(atr.period);
+//         if (it == m_indicatorCache.atr.end()) {
+//             return; // Toujours pas disponible
+//         }
+//     }
 
-    const std::vector<double>& atrData = it->second;
+//     const std::vector<double>& atrData = it->second;
     
-    if (startIndex >= (int)atrData.size()) return;
+//     if (startIndex >= (int)atrData.size()) return;
 
-    // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)atrData.size());
-    int actualPoints = endIndex - startIndex;
+//     // Limiter le nombre de points à afficher
+//     int endIndex = std::min(startIndex + pointsToShow, (int)atrData.size());
+//     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) return;
+//     if (actualPoints <= 0) return;
 
-    // Extraire les données ATR visibles du cache
-    DoubleArray atrArray(&atrData[startIndex], actualPoints);
+//     // Extraire les données ATR visibles du cache
+//     DoubleArray atrArray(&atrData[startIndex], actualPoints);
     
-    // Ajouter le graphique d'indicateur
-    XYChart* c = chart->addIndicator(atr.height);
+//     // Ajouter le graphique d'indicateur
+//     XYChart* c = chart->addIndicator(atr.height);
     
-    // Configurer et ajouter l'ATR
-    char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "ATR (%d)", atr.period);
-    LineLayer* layer = chart->addLineIndicator2(c, atrArray, atr.color, buffer);
-    layer->setFastLineMode(true);
+//     // Configurer et ajouter l'ATR
+//     char buffer[1024];
+//     snprintf(buffer, sizeof(buffer), "ATR (%d)", atr.period);
+//     LineLayer* layer = chart->addLineIndicator2(c, atrArray, atr.color, buffer);
+//     layer->setFastLineMode(true);
 
-    // Configurer l'échelle de l'axe Y
-    c->yAxis()->setLinearScale(0, *std::max_element(atrData.begin() + startIndex, atrData.begin() + endIndex));
-}
+//     // Configurer l'échelle de l'axe Y
+//     c->yAxis()->setLinearScale(0, *std::max_element(atrData.begin() + startIndex, atrData.begin() + endIndex));
+// }
 
 
-void ChartWidget::trackFinance(MultiChart* m, int mouseX)
-{
+// void ChartWidget::trackFinance(MultiChart* m, int mouseX)
+// {
     
-    // Nettoyer la couche dynamique actuelle
-    DrawArea* d = m->initDynamicLayer();
+//     // Nettoyer la couche dynamique actuelle
+//     DrawArea* d = m->initDynamicLayer();
     
-    // Vérifier que le graphique n'est pas vide
-    if (m->getChartCount() == 0)
-        return;
+//     // Vérifier que le graphique n'est pas vide
+//     if (m->getChartCount() == 0)
+//         return;
 
-    if (m_rulerToolEnabled && m_rulerFirstPointSelected)
-        drawRuler(m, mouseX, m_chartViewer->getPlotAreaMouseY(), d);
+//     if (m_rulerToolEnabled && m_rulerFirstPointSelected)
+//         drawRuler(m, mouseX, m_chartViewer->getPlotAreaMouseY(), d);
     
-    // Obtenir la valeur x la plus proche de la souris
-    int xValue = (int)(((XYChart*)m->getChart(0))->getNearestXValue(mouseX));
+//     // Obtenir la valeur x la plus proche de la souris
+//     int xValue = (int)(((XYChart*)m->getChart(0))->getNearestXValue(mouseX));
     
-    // Itérer sur tous les graphiques XY dans le FinanceChart
-    XYChart *c = 0;
+//     // Itérer sur tous les graphiques XY dans le FinanceChart
+//     XYChart *c = 0;
     
-    for (int i = 0; i < m->getChartCount(); ++i) {
-        c = (XYChart*)m->getChart(i);
+//     for (int i = 0; i < m->getChartCount(); ++i) {
+//         c = (XYChart*)m->getChart(i);
         
-        // Variables pour les entrées de légende
-        std::ostringstream ohlcLegend;
-        std::vector<std::string> legendEntries;
+//         // Variables pour les entrées de légende
+//         std::ostringstream ohlcLegend;
+//         std::vector<std::string> legendEntries;
         
-        // Itérer sur toutes les couches pour trouver le point de données le plus élevé
-        for (int j = 0; j < c->getLayerCount(); ++j) {
-            Layer* layer = c->getLayerByZ(j);
-            int xIndex = layer->getXIndexOf(xValue);
-            int dataSetCount = layer->getDataSetCount();
+//         // Itérer sur toutes les couches pour trouver le point de données le plus élevé
+//         for (int j = 0; j < c->getLayerCount(); ++j) {
+//             Layer* layer = c->getLayerByZ(j);
+//             int xIndex = layer->getXIndexOf(xValue);
+//             int dataSetCount = layer->getDataSetCount();
             
-            // Dans un FinanceChart, seules les couches montrant des données OHLC peuvent avoir 4 ensembles de données
-            if (dataSetCount == 4) {
-                double highValue = layer->getDataSet(0)->getValue(xIndex);
-                double lowValue = layer->getDataSet(1)->getValue(xIndex);
-                double openValue = layer->getDataSet(2)->getValue(xIndex);
-                double closeValue = layer->getDataSet(3)->getValue(xIndex);
+//             // Dans un FinanceChart, seules les couches montrant des données OHLC peuvent avoir 4 ensembles de données
+//             if (dataSetCount == 4) {
+//                 double highValue = layer->getDataSet(0)->getValue(xIndex);
+//                 double lowValue = layer->getDataSet(1)->getValue(xIndex);
+//                 double openValue = layer->getDataSet(2)->getValue(xIndex);
+//                 double closeValue = layer->getDataSet(3)->getValue(xIndex);
                 
-                if (closeValue != Chart::NoValue) {
-                    // Build the OHLC legend
-					ohlcLegend << "      <*block*>";
-					ohlcLegend << "Open: " << c->formatValue(openValue, "{value|P4}");
-					ohlcLegend << ", High: " << c->formatValue(highValue, "{value|P4}"); 
-					ohlcLegend << ", Low: " << c->formatValue(lowValue, "{value|P4}"); 
-					ohlcLegend << ", Close: " << c->formatValue(closeValue, "{value|P4}");
+//                 if (closeValue != Chart::NoValue) {
+//                     // Build the OHLC legend
+// 					ohlcLegend << "      <*block*>";
+// 					ohlcLegend << "Open: " << c->formatValue(openValue, "{value|P4}");
+// 					ohlcLegend << ", High: " << c->formatValue(highValue, "{value|P4}"); 
+// 					ohlcLegend << ", Low: " << c->formatValue(lowValue, "{value|P4}"); 
+// 					ohlcLegend << ", Close: " << c->formatValue(closeValue, "{value|P4}");
                     
-                    // Aussi dessiner un triangle vers le haut ou vers le bas pour les jours de hausse et de baisse et le % de variation
-                    double lastCloseValue = (xIndex > 0) ? 
-                        layer->getDataSet(3)->getValue(xIndex - 1) : 
-                        Chart::NoValue;
+//                     // Aussi dessiner un triangle vers le haut ou vers le bas pour les jours de hausse et de baisse et le % de variation
+//                     double lastCloseValue = (xIndex > 0) ? 
+//                         layer->getDataSet(3)->getValue(xIndex - 1) : 
+//                         Chart::NoValue;
 
-                    if (lastCloseValue != Chart::NoValue) {
-                        double change = closeValue - lastCloseValue;
-                        double percent = change * 100 / closeValue;
-                        std::string symbol = (change >= 0) ?
-                            "<*font,color=008800*><*img=@triangle,width=8,color=008800*>" :
-                            "<*font,color=CC0000*><*img=@invertedtriangle,width=8,color=CC0000*>";
+//                     if (lastCloseValue != Chart::NoValue) {
+//                         double change = closeValue - lastCloseValue;
+//                         double percent = change * 100 / closeValue;
+//                         std::string symbol = (change >= 0) ?
+//                             "<*font,color=008800*><*img=@triangle,width=8,color=008800*>" :
+//                             "<*font,color=CC0000*><*img=@invertedtriangle,width=8,color=CC0000*>";
 
-                        ohlcLegend << "  " << symbol << " " << c->formatValue(change, "{value|P4}");
-						ohlcLegend << " (" << c->formatValue(percent, "{value|2}") << "%)<*/font*>";
-                    }
+//                         ohlcLegend << "  " << symbol << " " << c->formatValue(change, "{value|P4}");
+// 						ohlcLegend << " (" << c->formatValue(percent, "{value|2}") << "%)<*/font*>";
+//                     }
 
-					ohlcLegend << "<*/*>";
-                }
-            } else {
-                // Itérer sur tous les ensembles de données de la couche
-                for (int k = 0; k < layer->getDataSetCount(); ++k) {
-                    DataSet* dataSet = layer->getDataSetByZ(k);
+// 					ohlcLegend << "<*/*>";
+//                 }
+//             } else {
+//                 // Itérer sur tous les ensembles de données de la couche
+//                 for (int k = 0; k < layer->getDataSetCount(); ++k) {
+//                     DataSet* dataSet = layer->getDataSetByZ(k);
                     
-                    std::string name = dataSet->getDataName();
-                    double value = dataSet->getValue(xIndex);
-                    if ((0 != name.size()) && (value != Chart::NoValue)) {
+//                     std::string name = dataSet->getDataName();
+//                     double value = dataSet->getValue(xIndex);
+//                     if ((0 != name.size()) && (value != Chart::NoValue)) {
                         
-                        // Dans un FinanceChart, le nom de l'ensemble de données consiste en le nom de l'indicateur et sa valeur la plus récente
+//                         // Dans un FinanceChart, le nom de l'ensemble de données consiste en le nom de l'indicateur et sa valeur la plus récente
                         
-                        // Le caractère d'unité
-                        std::string unitChar;
+//                         // Le caractère d'unité
+//                         std::string unitChar;
                         
-                        // Le nom de l'indicateur est la partie du nom jusqu'au caractère deux-points
-                        int delimiterPosition = (int)name.find(':');
-                        if ((int)name.npos != delimiterPosition) {
+//                         // Le nom de l'indicateur est la partie du nom jusqu'au caractère deux-points
+//                         int delimiterPosition = (int)name.find(':');
+//                         if ((int)name.npos != delimiterPosition) {
                             
-                            // L'unité, le cas échéant, est le(s) caractère(s) non-chiffre(s) final(s)
-                            int lastDigitPos = (int)name.find_last_of("0123456789");
-                            if (((int)name.npos != lastDigitPos) && (lastDigitPos + 1 < (int)name.size())
-                                && (lastDigitPos > delimiterPosition))
-                                unitChar = name.substr(lastDigitPos + 1);
+//                             // L'unité, le cas échéant, est le(s) caractère(s) non-chiffre(s) final(s)
+//                             int lastDigitPos = (int)name.find_last_of("0123456789");
+//                             if (((int)name.npos != lastDigitPos) && (lastDigitPos + 1 < (int)name.size())
+//                                 && (lastDigitPos > delimiterPosition))
+//                                 unitChar = name.substr(lastDigitPos + 1);
                             
-                            name.resize(delimiterPosition);
-                        }
+//                             name.resize(delimiterPosition);
+//                         }
                         
-                        // Dans un FinanceChart, s'il y a deux ensembles de données, cela doit représenter une plage
-                        if (dataSetCount == 2) {
-                            // Nous montrons les deux valeurs dans la plage dans une seule entrée de légende
-                            value = layer->getDataSet(0)->getValue(xIndex);
-                            double value2 = layer->getDataSet(1)->getValue(xIndex);
-                            name = name + ": " + c->formatValue((std::min)(value, value2), "{value|P3}");
-                            name = name + " - " + c->formatValue((std::max)(value, value2), "{value|P3}");
-                        } else {
-                            // Dans un FinanceChart, seule la couche pour les barres de volume a 3 ensembles de données pour les jours de hausse/baisse/plat
-                            if (dataSetCount == 3) {
-                                // Le volume réel est la somme des 3 ensembles de données
-                                value = layer->getDataSet(0)->getValue(xIndex) + layer->getDataSet(1
-                                    )->getValue(xIndex) + layer->getDataSet(2)->getValue(xIndex);
-                            }
+//                         // Dans un FinanceChart, s'il y a deux ensembles de données, cela doit représenter une plage
+//                         if (dataSetCount == 2) {
+//                             // Nous montrons les deux valeurs dans la plage dans une seule entrée de légende
+//                             value = layer->getDataSet(0)->getValue(xIndex);
+//                             double value2 = layer->getDataSet(1)->getValue(xIndex);
+//                             name = name + ": " + c->formatValue((std::min)(value, value2), "{value|P3}");
+//                             name = name + " - " + c->formatValue((std::max)(value, value2), "{value|P3}");
+//                         } else {
+//                             // Dans un FinanceChart, seule la couche pour les barres de volume a 3 ensembles de données pour les jours de hausse/baisse/plat
+//                             if (dataSetCount == 3) {
+//                                 // Le volume réel est la somme des 3 ensembles de données
+//                                 value = layer->getDataSet(0)->getValue(xIndex) + layer->getDataSet(1
+//                                     )->getValue(xIndex) + layer->getDataSet(2)->getValue(xIndex);
+//                             }
                             
-                            // Créer l'entrée de légende
-                            name = name + ": " + c->formatValue(value, "{value|P3}") + unitChar;
-                        }
+//                             // Créer l'entrée de légende
+//                             name = name + ": " + c->formatValue(value, "{value|P3}") + unitChar;
+//                         }
                         
-                        // Construire l'entrée de légende, composée d'une boîte carrée colorée et du nom (avec la valeur des données dedans)
-                        std::ostringstream legendEntry;
-                        legendEntry << "<*block*><*img=@square,width=8,edgeColor=000000,color="
-                            << std::hex << dataSet->getDataColor() << "*> " << name << "<*/*>";
-                        legendEntries.push_back(legendEntry.str());
-                    }
-                }
-            }
-        }
+//                         // Construire l'entrée de légende, composée d'une boîte carrée colorée et du nom (avec la valeur des données dedans)
+//                         std::ostringstream legendEntry;
+//                         legendEntry << "<*block*><*img=@square,width=8,edgeColor=000000,color="
+//                             << std::hex << dataSet->getDataColor() << "*> " << name << "<*/*>";
+//                         legendEntries.push_back(legendEntry.str());
+//                     }
+//                 }
+//             }
+//         }
         
-        // Obtenir la position de la zone de tracé par rapport à l'ensemble du FinanceChart
-        PlotArea* plotArea = c->getPlotArea();
-        int plotAreaLeftX = plotArea->getLeftX() + c->getAbsOffsetX();
-        int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
-        int plotAreaBottomY = plotAreaTopY + plotArea->getHeight();
+//         // Obtenir la position de la zone de tracé par rapport à l'ensemble du FinanceChart
+//         PlotArea* plotArea = c->getPlotArea();
+//         int plotAreaLeftX = plotArea->getLeftX() + c->getAbsOffsetX();
+//         int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
+//         int plotAreaBottomY = plotAreaTopY + plotArea->getHeight();
 
-        // Calculer la position Y de la souris et la valeur correspondante sur l'axe Y
-        int mouseY = m_chartViewer->getPlotAreaMouseY() - c->getAbsOffsetY();
-        double yValue = c->getYValue(mouseY);
+//         // Calculer la position Y de la souris et la valeur correspondante sur l'axe Y
+//         int mouseY = m_chartViewer->getPlotAreaMouseY() - c->getAbsOffsetY();
+//         double yValue = c->getYValue(mouseY);
 
-        // Afficher le tooltip de l'axe Y sur le côté droit
-        if (mouseY >= plotArea->getTopY() && mouseY <= plotArea->getTopY() + plotArea->getHeight()) {
-            // Position du tooltip sur l'axe Y (côté droit de la zone de tracé)
-            int yAxisTooltipX = plotAreaLeftX + plotArea->getWidth() + 5;
-            int yAxisTooltipY = mouseY + c->getAbsOffsetY();
+//         // Afficher le tooltip de l'axe Y sur le côté droit
+//         if (mouseY >= plotArea->getTopY() && mouseY <= plotArea->getTopY() + plotArea->getHeight()) {
+//             // Position du tooltip sur l'axe Y (côté droit de la zone de tracé)
+//             int yAxisTooltipX = plotAreaLeftX + plotArea->getWidth() + 5;
+//             int yAxisTooltipY = mouseY + c->getAbsOffsetY();
             
-            // Créer le texte du tooltip avec la valeur Y formatée
-            std::string yTooltipText = c->formatValue(yValue, "{value|P4}");
+//             // Créer le texte du tooltip avec la valeur Y formatée
+//             std::string yTooltipText = c->formatValue(yValue, "{value|P4}");
             
-            // Dessiner un rectangle de fond pour le tooltip Y
-            int tooltipWidth = 60;
-            int tooltipHeight = 20;
-            d->rect(yAxisTooltipX - 2, yAxisTooltipY - tooltipHeight/2 - 2, 
-                   yAxisTooltipX + tooltipWidth + 2, yAxisTooltipY + tooltipHeight/2 + 2, 
-                   0x000000, 0xffffcc);
+//             // Dessiner un rectangle de fond pour le tooltip Y
+//             int tooltipWidth = 60;
+//             int tooltipHeight = 20;
+//             d->rect(yAxisTooltipX - 2, yAxisTooltipY - tooltipHeight/2 - 2, 
+//                    yAxisTooltipX + tooltipWidth + 2, yAxisTooltipY + tooltipHeight/2 + 2, 
+//                    0x000000, 0xffffcc);
             
-            // Afficher le texte du tooltip Y
-            TTFText* yTooltip = d->text(yTooltipText.c_str(), "Arial", 8);
-            yTooltip->draw(yAxisTooltipX, yAxisTooltipY, 0x000000, Chart::Left);
-            yTooltip->destroy();
+//             // Afficher le texte du tooltip Y
+//             TTFText* yTooltip = d->text(yTooltipText.c_str(), "Arial", 8);
+//             yTooltip->draw(yAxisTooltipX, yAxisTooltipY, 0x000000, Chart::Left);
+//             yTooltip->destroy();
             
-            // Dessiner une ligne horizontale pour le crosshair Y
-            d->hline(plotAreaLeftX, plotAreaLeftX + plotArea->getWidth(), 
-                    yAxisTooltipY, d->dashLineColor(0x000000, 0x0101));
-        }
+//             // Dessiner une ligne horizontale pour le crosshair Y
+//             d->hline(plotAreaLeftX, plotAreaLeftX + plotArea->getWidth(), 
+//                     yAxisTooltipY, d->dashLineColor(0x000000, 0x0101));
+//         }
         
-        // La légende commence par l'étiquette de date, puis la légende ohlc (le cas échéant), et ensuite les entrées pour les indicateurs
-        std::ostringstream legendText;
-        legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
-            << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "yyyy-mm-dd hh:nn:ss")
-            << "]<*/font*>" << ohlcLegend.str();
-        for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
-            legendText << "      " << legendEntries[i];
-        }
-        legendText << "<*/*>";
+//         // La légende commence par l'étiquette de date, puis la légende ohlc (le cas échéant), et ensuite les entrées pour les indicateurs
+//         std::ostringstream legendText;
+//         legendText << "<*block,valign=top,maxWidth=" << (plotArea->getWidth() - 5)
+//             << "*><*font=Arial Bold*>[" << c->xAxis()->getFormattedLabel(xValue, "yyyy-mm-dd hh:nn:ss")
+//             << "]<*/font*>" << ohlcLegend.str();
+//         for (int i = ((int)legendEntries.size()) - 1; i >= 0; --i) {
+//             legendText << "      " << legendEntries[i];
+//         }
+//         legendText << "<*/*>";
         
-        // Dessiner une ligne de suivi verticale à la position x
-        d->vline(plotAreaTopY, plotAreaTopY + plotArea->getHeight(), c->getXCoor(xValue) +
-            c->getAbsOffsetX(), d->dashLineColor(0x000000, 0x0101));
+//         // Dessiner une ligne de suivi verticale à la position x
+//         d->vline(plotAreaTopY, plotAreaTopY + plotArea->getHeight(), c->getXCoor(xValue) +
+//             c->getAbsOffsetX(), d->dashLineColor(0x000000, 0x0101));
         
-        // Afficher la légende en haut de la zone de tracé
-        TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
-        t->draw(plotAreaLeftX + 5, plotAreaTopY + 5, 0x000000, Chart::TopLeft);
-        t->destroy();
+//         // Afficher la légende en haut de la zone de tracé
+//         TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
+//         t->draw(plotAreaLeftX + 5, plotAreaTopY + 5, 0x000000, Chart::TopLeft);
+//         t->destroy();
 
-        // Seulement pour le dernier graphique (celui du bas avec l'axe X visible)
-        if (i == m->getChartCount() - 1) {
-            // Obtenir le texte formaté du timestamp
-            std::string timeStampText = c->xAxis()->getFormattedLabel(xValue, "yyyy-mm-dd hh:nn:ss");
+//         // Seulement pour le dernier graphique (celui du bas avec l'axe X visible)
+//         if (i == m->getChartCount() - 1) {
+//             // Obtenir le texte formaté du timestamp
+//             std::string timeStampText = c->xAxis()->getFormattedLabel(xValue, "yyyy-mm-dd hh:nn:ss");
             
-            // Créer un fond rectangulaire pour le texte
-            int textHeight = 16;
-            int textWidth = 150;  // Ajuster selon la longueur du texte
-            int xLabelPos = c->getXCoor(xValue) ;
-            int yLabelPos = plotAreaBottomY + 15;  // Position juste en dessous de l'axe X
+//             // Créer un fond rectangulaire pour le texte
+//             int textHeight = 16;
+//             int textWidth = 150;  // Ajuster selon la longueur du texte
+//             int xLabelPos = c->getXCoor(xValue) ;
+//             int yLabelPos = plotAreaBottomY + 15;  // Position juste en dessous de l'axe X
             
-            // Dessiner le fond du texte
-            d->rect(xLabelPos - textWidth/2, yLabelPos - textHeight/2,
-                    xLabelPos + textWidth/2, yLabelPos + textHeight/2,
-                    0x000000, 0xffffcc);
+//             // Dessiner le fond du texte
+//             d->rect(xLabelPos - textWidth/2, yLabelPos - textHeight/2,
+//                     xLabelPos + textWidth/2, yLabelPos + textHeight/2,
+//                     0x000000, 0xffffcc);
             
-            // Créer et dessiner le texte
-            TTFText* timeLabel = d->text(timeStampText.c_str(), "Arial", 8);
-            timeLabel->draw(xLabelPos, yLabelPos, 0x000000, Chart::Center);
-            timeLabel->destroy();
+//             // Créer et dessiner le texte
+//             TTFText* timeLabel = d->text(timeStampText.c_str(), "Arial", 8);
+//             timeLabel->draw(xLabelPos, yLabelPos, 0x000000, Chart::Center);
+//             timeLabel->destroy();
             
-            // Dessiner une petite marque verticale sur l'axe X
-            d->vline(plotAreaBottomY, plotAreaBottomY + 5, c->getXCoor(xValue), 0x000000);
-        }
-    }
-}
+//             // Dessiner une petite marque verticale sur l'axe X
+//             d->vline(plotAreaBottomY, plotAreaBottomY + 5, c->getXCoor(xValue), 0x000000);
+//         }
+//     }
+// }
 
-QString ChartWidget::chartTypeToString(ChartType type) {
-    for (const auto& info : s_chartTypeData)
-        if (info.type == type)
-            return QString(info.name);
-    return QString("Unknown");
-}
 
-ChartWidget::ChartType ChartWidget::stringToChartType(const QString& typeStr) {
-    for (const auto& info : s_chartTypeData)
-        if (typeStr == info.name)
-            return info.type;
-    return ChartType::CandleStick; // Valeur par défaut
-}

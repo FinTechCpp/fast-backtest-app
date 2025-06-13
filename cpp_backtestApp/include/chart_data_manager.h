@@ -10,9 +10,27 @@
 #include "data.hpp"
 #include "chartdir.h"
 
+
+struct IndicatorCache {
+    std::map<int, std::vector<double>> rsi;  // Clé: période, Valeur: données RSI
+    std::map<int, std::vector<double>> ema;  // Clé: période, Valeur: données EMA
+    std::map<std::tuple<int,int,int>, std::pair<std::vector<double>, std::vector<double>>> stochastic;
+    std::map<int, std::vector<double>> atr;  // Clé: période, Valeur: données ATR
+    bool isValid = false;
+};
+
 class ChartDataManager {
 public:
     // Enumérations
+    enum class ChartType {
+        CandleStick,  ///< Graphique en chandeliers japonais
+        HeikinAshi,   ///< Chandeliers Heikin Ashi (moyenne)
+        OHLC,         ///< Barres OHLC (Open-High-Low-Close)
+        Close,        ///< Ligne de prix de clôture uniquement
+        
+        Count         ///< Nombre total de types de graphiques
+    };
+
     enum class AggregationLevel {
         Raw,         // Données brutes
         OneMinute,   // 1 minute
@@ -68,9 +86,19 @@ public:
     const EquityData& getEquityData() const { return m_equityData; }
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
     bool hasValidData() const;
-    std::string aggregationLevelToString(AggregationLevel level) const;
+
+    static std::string aggregationLevelToString(AggregationLevel level);
+    static std::string chartTypeToString(ChartType type);
+    static ChartType stringToChartType(const std::string& typeStr);
+    static DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
+
     
 private:
+
+    struct ChartTypeInfo {
+        ChartDataManager::ChartType type;
+        const char* name;
+    };
 
     void prepareTimestampsCache();
     void aggregateData(AggregationLevel level);
@@ -91,4 +119,8 @@ private:
     
     // Constantes
     const int MAX_DISPLAY_POINTS = 10000;
+
+
+    static const std::array<ChartTypeInfo, static_cast<size_t>(ChartDataManager::ChartType::Count)> s_chartTypeData;
+
 };

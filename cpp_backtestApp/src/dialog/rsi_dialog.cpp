@@ -1,6 +1,6 @@
 #include "dialog/rsi_dialog.h"
 
-RSIDialog::RSIDialog(QWidget* parent, ChartWidget* chartWidget, int rsiId, const ChartWidget::RSIInstance& rsi)
+RSIDialog::RSIDialog(QWidget* parent, ChartWidget* chartWidget, int rsiId, const RSIInstance& rsi)
     : QDialog(parent)
     , m_chartWidget(chartWidget)
     , m_rsiId(rsiId)

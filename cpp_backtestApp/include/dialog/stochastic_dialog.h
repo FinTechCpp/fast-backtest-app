@@ -24,7 +24,7 @@ class StochasticDialog : public QDialog
     
 public:
     // Construction pour Stochastic
-    StochasticDialog(QWidget* parent, ChartWidget* chartWidget, int stochasticId, const ChartWidget::StochasticInstance& stochastic);
+    StochasticDialog(QWidget* parent, ChartWidget* chartWidget, int stochasticId, const StochasticInstance& stochastic);
     ~StochasticDialog();
     
 private slots:
@@ -42,8 +42,8 @@ private slots:
 private:
     ChartWidget* m_chartWidget;
     int m_stochasticId;
-    ChartWidget::StochasticInstance m_originalStochastic;  // Pour restaurer en cas d'annulation
-    ChartWidget::StochasticInstance m_currentStochastic;   // Pour les modifications en cours
+    StochasticInstance m_originalStochastic;  // Pour restaurer en cas d'annulation
+    StochasticInstance m_currentStochastic;   // Pour les modifications en cours
     
     QSpinBox* m_fastKPeriodSpinBox;
     QSpinBox* m_slowKPeriodSpinBox;

@@ -133,6 +133,8 @@
         "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1",
         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/*/include",
         "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include"
-    ],
-    "cmake.generator": "Ninja"
+    ]
+    // "cmake.generator": "Ninja",
+    // "C_Cpp.errorSquiggles": "enabled"
+    // "C_Cpp.default.compilerPath": "/usr/bin/g++-13"
 }

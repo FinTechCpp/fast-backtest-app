@@ -31,37 +31,34 @@ jobs:
     - name: Calculate version
       id: version
       run: |
-        # Lire la version de base depuis le fichier VERSION
-        $baseVersion = Get-Content "VERSION" -Raw
-        $baseVersion = $baseVersion.Trim()
-        
         # Obtenir le dernier tag existant
         $lastTag = git describe --tags --abbrev=0 2>$null
+        
         if (-not $lastTag) {
-          # Si aucun tag n'existe, commencer à partir de 0
-          $commitCount = git rev-list --count HEAD
+          # Si aucun tag n'existe, utiliser la version de base du fichier VERSION
+          $baseVersion = Get-Content "VERSION" -Raw
+          $baseVersion = $baseVersion.Trim()
+          $version = "$baseVersion.1"  # Commencer avec .1
         } else {
-          # Compter les commits depuis le dernier tag
-          $commitCount = git rev-list --count "$lastTag..HEAD"
+          # Extraire la version du dernier tag (sans le 'v' au début)
+          $lastVersion = $lastTag -replace '^v', ''
+          
+          # Diviser la version en parties
+          $versionParts = $lastVersion.Split('.')
+          
+          # Incrémenter le dernier numéro
+          $lastPart = [int]$versionParts[-1] + 1
+          $versionParts[-1] = $lastPart
+          
+          # Reconstruire la version complète
+          $version = $versionParts -join '.'
         }
         
-        # Si aucun nouveau commit depuis le dernier tag, incrémenter quand même
-        if ($commitCount -eq 0) {
-          $commitCount = 1
-        }
-        
-        # Générer la version finale
-        $version = "$baseVersion.$commitCount"
-        
-        echo "BASE_VERSION=$baseVersion" >> $env:GITHUB_ENV
         echo "VERSION=$version" >> $env:GITHUB_ENV
         echo "version=$version" >> $env:GITHUB_OUTPUT
-        echo "LAST_TAG=$lastTag" >> $env:GITHUB_ENV
-        echo "COMMIT_COUNT=$commitCount" >> $env:GITHUB_ENV
         
         echo "Dernier tag: $lastTag"
-        echo "Nouveaux commits: $commitCount"
-        echo "Version calculée: $version"
+        echo "Nouvelle version: $version"
 
     - name: Set up MSVC
       uses: microsoft/setup-msbuild@v2

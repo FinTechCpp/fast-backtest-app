@@ -71,22 +71,25 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
         return;
     }
 
-    m_backtestData = results->data;
+    m_dataManager.setBacktestData(results->data);
+    m_dataManager.convertEquityCurve(results->stats.equityCurve);
+
+
     m_trades = results->stats.trades;
 
-    prepareTimestampsCache();
-    updateHeikinAshiCache();
+
     updateIndicatorCache();
 
-    // Invalider et recalculer tous les niveaux d'agrégation
-    m_aggregationCache.clear();
     
-    convertEquityCurve(results->stats.equityCurve, m_backtestData);
 
     // Mettre à jour le graphique si nous avons des données valides
-    if (hasValidData()) {
+    if (m_dataManager.hasValidData()) {
         updateChartDisplay(false, false);
     }
+}
+
+bool ChartWidget::hasValidData() const {
+    return m_dataManager.hasValidData();
 }
 
 void ChartWidget::setChartType(ChartType chartType)
@@ -97,295 +100,17 @@ void ChartWidget::setChartType(ChartType chartType)
     m_config.chartType = chartType;
 
     // Si nous passons en mode HeikinAshi et que le cache n'est pas valide, le recalculer
-    if (chartType == ChartType::HeikinAshi && !m_heikinAshiCache.isValid && hasValidData()) {
-        updateHeikinAshiCache();
+    if (chartType == ChartType::HeikinAshi && !m_dataManager.getHeikinAshiCache().isValid && m_dataManager.hasValidData()) {
+        m_dataManager.updateHeikinAshiCache();
     }
 
     // Si nous avons déjà des données, mettre à jour le graphique
-    if (hasValidData())
+    if (m_dataManager.hasValidData())
         updateChartDisplay(true, true);
 }
 
-void ChartWidget::aggregateData(AggregationLevel level) {
-    // Si déjà en cache et valide, ne rien faire
-    if (m_aggregationCache.find(level) != m_aggregationCache.end() && 
-        m_aggregationCache[level].isValid) {
-        return;
-    }
-        
-    // Créer un nouvel enregistrement dans le cache
-    AggregatedOHLCV& aggregatedData = m_aggregationCache[level];
-    
-    // Vérifier qu'on a des données à agréger
-    if (m_timestampsCache.empty() || !m_backtestData) {
-        aggregatedData.isValid = false;
-        return;
-    }
-
-    // Pour le cas Raw, copier les données originales
-    if (level == AggregationLevel::Raw) {
-        // Créer des copies des données brutes dans les vecteurs
-        aggregatedData.timestamps = m_timestampsCache;
-        aggregatedData.open = m_backtestData->getOpen();
-        aggregatedData.high = m_backtestData->getHigh();
-        aggregatedData.low = m_backtestData->getLow();
-        aggregatedData.close = m_backtestData->getClose();
-        aggregatedData.volume = m_backtestData->getVolume();
-        aggregatedData.level = AggregationLevel::Raw;
-        aggregatedData.isValid = true;
-        return;
-    }
-
-    // Trouver le niveau d'agrégation source optimal (le plus élevé disponible inférieur au niveau demandé)
-    AggregationLevel sourceLevel = AggregationLevel::Raw;
-    
-    // Ordre hiérarchique des niveaux d'agrégation
-    std::vector<AggregationLevel> levelHierarchy = {
-        AggregationLevel::Raw,
-        AggregationLevel::OneMinute,
-        AggregationLevel::OneHour,
-        AggregationLevel::OneDay
-    };
-    
-    // Trouver le niveau le plus élevé disponible qui est inférieur au niveau demandé
-    for (auto it = levelHierarchy.rbegin(); it != levelHierarchy.rend(); ++it) {
-        if (*it < level && 
-            m_aggregationCache.find(*it) != m_aggregationCache.end() && 
-            m_aggregationCache[*it].isValid) {
-            sourceLevel = *it;
-            break;
-        }
-    }
-
-    // Si aucun niveau inférieur n'est disponible, on utilise les données brutes
-    if (sourceLevel == AggregationLevel::Raw && !m_aggregationCache[sourceLevel].isValid) {
-        // Calculer le niveau Raw s'il n'est pas déjà calculé
-        aggregateData(AggregationLevel::Raw);
-    }
-
-    // Obtenir les données source
-    const AggregatedOHLCV& sourceData = m_aggregationCache[sourceLevel];
-
-    // Faire des copies des données originales pour l'agrégation
-    std::vector<double> timestampsCopy = sourceData.timestamps;
-    std::vector<double> openCopy = sourceData.open;
-    std::vector<double> highCopy = sourceData.high;
-    std::vector<double> lowCopy = sourceData.low;
-    std::vector<double> closeCopy = sourceData.close;
-    std::vector<double> volumeCopy = sourceData.volume;
-
-
-    // Créer les ArrayMath pour l'agrégation en utilisant les copies
-    ArrayMath timestampsMath(DoubleArray(timestampsCopy.data(), timestampsCopy.size()));
-    
-    // Appliquer le sélecteur approprié selon le niveau d'agrégation
-    switch (level) {
-        case AggregationLevel::OneMinute:
-            timestampsMath.selectStartOfMinute();
-            break;
-        case AggregationLevel::OneHour:
-            timestampsMath.selectStartOfHour();
-            break;
-        case AggregationLevel::OneDay:
-            timestampsMath.selectStartOfDay();
-            break;
-        default:
-            // Ne devrait pas arriver car Raw est géré plus haut
-            aggregatedData.isValid = false;
-            return;
-    }
-
-    // Agréger les données OHLCV avec les stratégies appropriées en utilisant les copies
-    DoubleArray times = timestampsMath.aggregate(
-        DoubleArray(timestampsCopy.data(), timestampsCopy.size()), 
-        Chart::AggregateFirst);
-    
-    DoubleArray open = timestampsMath.aggregate(
-        DoubleArray(openCopy.data(), openCopy.size()), 
-        Chart::AggregateFirst);
-    
-    DoubleArray high = timestampsMath.aggregate(
-        DoubleArray(highCopy.data(), highCopy.size()), 
-        Chart::AggregateMax);
-    
-    DoubleArray low = timestampsMath.aggregate(
-        DoubleArray(lowCopy.data(), lowCopy.size()), 
-        Chart::AggregateMin);
-    
-    DoubleArray close = timestampsMath.aggregate(
-        DoubleArray(closeCopy.data(), closeCopy.size()), 
-        Chart::AggregateLast);
-    
-    DoubleArray volume = timestampsMath.aggregate(
-        DoubleArray(volumeCopy.data(), volumeCopy.size()), 
-        Chart::AggregateSum);
-
-    // Vérifier que tous les tableaux agrégés ont la même taille
-    if (times.len != open.len || times.len != high.len || times.len != low.len || 
-        times.len != close.len || times.len != volume.len) {
-        aggregatedData.isValid = false;
-        return;
-    }
-    
-    // Stocker les résultats dans les vecteurs
-    aggregatedData.timestamps.resize(times.len);
-    aggregatedData.open.resize(open.len);
-    aggregatedData.high.resize(high.len);
-    aggregatedData.low.resize(low.len);
-    aggregatedData.close.resize(close.len);
-    aggregatedData.volume.resize(volume.len);
-
-    // Copier les données
-    for (int i = 0; i < times.len; i++) {
-        aggregatedData.timestamps[i] = times[i];
-        aggregatedData.open[i] = open[i];
-        aggregatedData.high[i] = high[i];
-        aggregatedData.low[i] = low[i];
-        aggregatedData.close[i] = close[i];
-        aggregatedData.volume[i] = volume[i];
-    }
-    
-    aggregatedData.level = level;
-    aggregatedData.isValid = true;
-}
-
-ChartWidget::AggregationInfo ChartWidget::getOptimalAggregationInfo(const DoubleArray &timestamps) {
-    AggregationInfo result;
-    result.level = AggregationLevel::Raw;
-    result.startIndex = 0;
-    result.pointCount = timestamps.len;
-    result.isValid = true;
-
-
-    if (timestamps.len <= MAX_DISPLAY_POINTS) return result;
-
-    // Déterminer le niveau d'agrégation de départ en fonction de la période des données
-    AggregationLevel startLevel = determineStartingAggregationLevel(timestamps);
-
-    // Liste ordonnée des niveaux d'agrégation disponibles
-    std::array<AggregationLevel, 4> aggregationLevels = {
-        AggregationLevel::Raw,
-        AggregationLevel::OneMinute,
-        AggregationLevel::OneHour,
-        AggregationLevel::OneDay,
-    };
-
-    // Trouver l'indice du niveau de départ dans notre liste
-    size_t startIdx = 0;
-    for (size_t i = 0; i < aggregationLevels.size(); i++) {
-        if (aggregationLevels[i] == startLevel) {
-            startIdx = i;
-            break;
-        }
-    }
-
-    // Parcourir les niveaux d'agrégation à partir du niveau de départ
-    for (size_t i = startIdx + 1; i < aggregationLevels.size(); i++) {
-        AggregationLevel level = aggregationLevels[i];
-
-        // Vérifier si ce niveau est déjà en cache, sinon le calculer
-        if (m_aggregationCache.find(level) == m_aggregationCache.end() || 
-            !m_aggregationCache[level].isValid) {
-            aggregateData(level);
-        }
-
-        const AggregatedOHLCV& aggregatedData = m_aggregationCache[level];
-        if (!aggregatedData.isValid) continue;
-
-        // Extraire les timestamps de début et de fin de l'intervalle à afficher
-        double startTime = timestamps[0];
-        double endTime = timestamps[timestamps.len - 1];
-            
-        // Trouver les indices correspondants dans les données agrégées
-        size_t aggStartIdx = findClosestIndex(aggregatedData.timestamps, startTime);
-        size_t aggEndIdx = findClosestIndex(aggregatedData.timestamps, endTime, true);
-
-        // Calculer combien de points agrégés seraient visibles dans cette plage
-        int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? (aggEndIdx - aggStartIdx + 1) : 0;
-
-        // Si l'agrégation est valide et réduit suffisamment les données
-        if (visibleAggPoints > 0 && visibleAggPoints <= MAX_DISPLAY_POINTS) {
-            result.level = level;
-            result.startIndex = aggStartIdx;
-            result.pointCount = visibleAggPoints;
-            return result;
-        }
-    }
-
-    // Si aucun niveau ne convient, utiliser le plus élevé disponible
-    AggregationLevel highestLevel = AggregationLevel::OneDay;
-    if (m_aggregationCache.find(highestLevel) != m_aggregationCache.end() && 
-        m_aggregationCache[highestLevel].isValid) {
-
-        result.level = highestLevel;
-        result.startIndex = 0;
-        result.pointCount = m_aggregationCache[highestLevel].timestamps.size();
-    }
-
-
-    return result;
-}
-
-std::string ChartWidget::aggregationLevelToString(AggregationLevel level) {
-    switch (level) {
-        case AggregationLevel::Raw:
-            return "Raw";
-        case AggregationLevel::OneMinute:
-            return "1 Min";
-        case AggregationLevel::OneHour:
-            return "1 Hour";
-        case AggregationLevel::OneDay:
-            return "1 Day";
-        default:
-            return "Unknown";
-    }
-}
-
-ChartWidget::AggregationLevel ChartWidget::determineStartingAggregationLevel(const DoubleArray &timestamps)
-{
-    // Si moins de deux timestamps, impossible de déterminer la période
-    if (timestamps.len < 2) {
-        return AggregationLevel::Raw;
-    }
-
-    // La période est constante : prendre la différence entre les deux premiers points
-    double period = timestamps[1] - timestamps[0];
-
-    // Déterminer le niveau de départ en fonction de la période
-    if (period >= 86400) {   // Plus d'un jour
-        return AggregationLevel::OneDay;
-    } else if (period >= 3600) {    // Plus d'une heure
-        return AggregationLevel::OneHour;
-    } else if (period >= 60) {      // Plus d'une minute
-        return AggregationLevel::OneMinute;
-    } else {
-        return AggregationLevel::Raw;  // Moins d'une minute
-    }
-}
-
-size_t ChartWidget::findClosestIndex(const std::vector<double>& values, double target, bool searchForward) {
-    // Si searchForward est true, on cherche le premier élément >= target
-    // Sinon, on cherche le dernier élément <= target
-
-    if (values.empty()) return 0;
-
-    if (searchForward) {
-        // Rechercher vers l'avant (premier élément >= target)
-        for (size_t i = 0; i < values.size(); i++)
-            if (values[i] >= target)
-                return i;
-        return values.size() - 1;
-    } else {
-        // Rechercher vers l'arrière (dernier élément <= target)
-        for (int i = values.size() - 1; i >= 0; i--)
-            if (values[i] <= target)
-                return i;
-        return 0;
-    }
-}
-
 bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
-    if (!hasValidData() || !m_chartViewer) {
+    if (!m_dataManager.hasValidData() || !m_chartViewer) {
         return false;
     }
 
@@ -402,7 +127,7 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
     
     // Déterminer les indices de début et fin basés sur le viewport
     int startIndex = 0;
-    int pointsToShow = static_cast<int>(m_timestampsCache.size());
+    int pointsToShow = static_cast<int>(m_dataManager.getTimestamps().size());
     
     if (useViewport) {
         int totalPoints = pointsToShow;
@@ -423,43 +148,48 @@ bool ChartWidget::updateChartDisplay(bool useViewport, bool preserveViewport) {
     DoubleArray timestamps;
     DoubleArray openData, highData, lowData, closeData, volumeData;
     
-    if (startIndex < static_cast<int>(m_timestampsCache.size())) {
-        timestamps = DoubleArray(&m_timestampsCache[startIndex], pointsToShow);
-        volumeData = DoubleArray(&m_backtestData->getVolume()[startIndex], pointsToShow);
+    if (startIndex < static_cast<int>(m_dataManager.getTimestamps().size())) {
+        timestamps = DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow);
+        volumeData = DoubleArray(&m_dataManager.getBacktestData()->getVolume()[startIndex], pointsToShow);
         
         // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
         if (m_config.chartType == ChartType::HeikinAshi) {
+            const ChartDataManager::HeikinAshiCache& heikinAshiCache = m_dataManager.getHeikinAshiCache();
+            
             // Vérifier si le cache est valide
-            if (!m_heikinAshiCache.isValid) {
-                updateHeikinAshiCache();
+            if (!heikinAshiCache.isValid) {
+                m_dataManager.updateHeikinAshiCache();
             }
+
             
             // Utiliser les données Heikin-Ashi
-            openData = DoubleArray(&m_heikinAshiCache.open[startIndex], pointsToShow);
-            highData = DoubleArray(&m_heikinAshiCache.high[startIndex], pointsToShow);
-            lowData = DoubleArray(&m_heikinAshiCache.low[startIndex], pointsToShow);
-            closeData = DoubleArray(&m_heikinAshiCache.close[startIndex], pointsToShow);
+            openData = DoubleArray(&heikinAshiCache.open[startIndex], pointsToShow);
+            highData = DoubleArray(&heikinAshiCache.high[startIndex], pointsToShow);
+            lowData = DoubleArray(&heikinAshiCache.low[startIndex], pointsToShow);
+            closeData = DoubleArray(&heikinAshiCache.close[startIndex], pointsToShow);
         } else {
+            const std::shared_ptr<const be::Data>& backtestData = m_dataManager.getBacktestData();
+
             // Utiliser les données OHLC standards
-            openData = DoubleArray(&m_backtestData->getOpen()[startIndex], pointsToShow);
-            highData = DoubleArray(&m_backtestData->getHigh()[startIndex], pointsToShow);
-            lowData = DoubleArray(&m_backtestData->getLow()[startIndex], pointsToShow);
-            closeData = DoubleArray(&m_backtestData->getClose()[startIndex], pointsToShow);
+            openData = DoubleArray(&backtestData->getOpen()[startIndex], pointsToShow);
+            highData = DoubleArray(&backtestData->getHigh()[startIndex], pointsToShow);
+            lowData = DoubleArray(&backtestData->getLow()[startIndex], pointsToShow);
+            closeData = DoubleArray(&backtestData->getClose()[startIndex], pointsToShow);
         }
     } else {
         // Pas de données à afficher
         return false;
     }
 
-    m_currentAggregation = getOptimalAggregationInfo(timestamps);
+    m_currentAggregation = m_dataManager.getOptimalAggregationInfo(timestamps);
 
-    if (m_currentAggregation.level == AggregationLevel::Raw) {
+    if (m_currentAggregation.level == ChartDataManager::AggregationLevel::Raw) {
         // Si le niveau d'agrégation est Raw, utiliser les données brutes
         createOrUpdateChart(timestamps, highData, lowData, openData, closeData, 
                             volumeData, m_config.chartWidth);
     }
     else {
-        AggregatedOHLCV aggregated = m_aggregationCache[m_currentAggregation.level];
+        ChartDataManager::AggregatedOHLCV aggregated = m_dataManager.getAggregatedData(m_currentAggregation.level);
 
         DoubleArray aggregatedTimestamps = DoubleArray(&aggregated.timestamps[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
         DoubleArray aggregatedOpen = DoubleArray(&aggregated.open[0] + m_currentAggregation.startIndex, m_currentAggregation.pointCount);
@@ -501,26 +231,6 @@ void ChartWidget::clearChart()
     if (m_chartViewer) {
         m_chartViewer->setChart(nullptr);
     }
-    
-    // Effacer les données
-    m_equityData = EquityData();
-}
-
-bool ChartWidget::hasValidData() const {
-    if (!m_backtestData)
-        return false;
-
-    const auto& open = m_backtestData->getOpen();
-    const auto& high = m_backtestData->getHigh();
-    const auto& low = m_backtestData->getLow();
-    const auto& close = m_backtestData->getClose();
-
-    size_t size = open.size();
-    return size > 0 &&
-           high.size() == size &&
-           low.size() == size &&
-           close.size() == size &&
-           m_timestampsCache.size() == size;
 }
 
 void ChartWidget::onViewPortChanged()
@@ -559,16 +269,16 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
         
         // Trouver l'indice correspondant
         int dataIndex = -1;
-        for (int i = 0; i < (int)m_timestampsCache.size(); ++i) {
-            if (fabs(m_timestampsCache[i] - xValue) < 1e-6) {
+        for (int i = 0; i < (int)m_dataManager.getTimestamps().size(); ++i) {
+            if (fabs(m_dataManager.getTimestamps()[i] - xValue) < 1e-6) {
                 dataIndex = i;
                 break;
             }
         }
 
-        if (dataIndex >= 0 && dataIndex < (int)m_backtestData->getClose().size()) {
+        if (dataIndex >= 0 && dataIndex < (int)m_dataManager.getBacktestData()->getClose().size()) {
             // Émettre un signal avec les informations du point
-            emit mouseOverPoint(m_timestampsCache[dataIndex], m_backtestData->getClose()[dataIndex]);
+            emit mouseOverPoint(m_dataManager.getTimestamps()[dataIndex], m_dataManager.getBacktestData()->getClose()[dataIndex]);
         }
     }
     
@@ -638,10 +348,10 @@ void ChartWidget::drawRuler(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
     int endIdx = static_cast<int>(std::round(xValueEndIndex));
     
     // Assurer que les indices sont dans les limites du tableau
-    if (startIdx >= 0 && startIdx < static_cast<int>(m_timestampsCache.size()) &&
-        endIdx >= 0 && endIdx < static_cast<int>(m_timestampsCache.size())) {
-        startTimestamp = m_timestampsCache[startIdx];
-        endTimestamp = m_timestampsCache[endIdx];
+    if (startIdx >= 0 && startIdx < static_cast<int>(m_dataManager.getTimestamps().size()) &&
+        endIdx >= 0 && endIdx < static_cast<int>(m_dataManager.getTimestamps().size())) {
+        startTimestamp = m_dataManager.getTimestamps()[startIdx];
+        endTimestamp = m_dataManager.getTimestamps()[endIdx];
     } else {
         // Indices hors limites - utiliser une valeur par défaut
         std::cout << "Indices hors limites : " << startIdx << ", " << endIdx << std::endl;
@@ -741,7 +451,7 @@ int ChartWidget::addRSI(int period)
     m_rsiInstances.push_back(rsi);
         
     // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (hasValidData() && m_chartViewer) {
+    if (m_dataManager.hasValidData() && m_chartViewer) {
         // Déterminer l'index de début et le nombre de points visibles actuellement
         int startIndex = m_chartViewer->getViewPortLeft();
         int pointsToShow = m_chartViewer->getViewPortWidth();
@@ -754,7 +464,7 @@ int ChartWidget::addRSI(int period)
 
         m_chartViewer->updateViewPort(false, false);
     }
-    else if (hasValidData()) {
+    else if (m_dataManager.hasValidData()) {
         // Si pas de graphique mais des données valides, créer le graphique complet
         updateChartDisplay(true, true);
     }
@@ -780,7 +490,7 @@ bool ChartWidget::setRSIConfig(int id, const RSIInstance &config)
     emit rsiChanged(id, config.period);
 
     // Mettre à jour le graphique
-    if (hasValidData())
+    if (m_dataManager.hasValidData())
         updateChartDisplay(true, true);
 
     return true;
@@ -802,7 +512,7 @@ bool ChartWidget::removeRSI(int id)
     emit rsiRemoved(id);
     
     // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
+    if (m_dataManager.hasValidData() && m_financeChart) {
         updateChartDisplay(true, true);
     }
     
@@ -825,7 +535,7 @@ int ChartWidget::addEMA(int period)
     m_emaInstances.push_back(ema);
 
     // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (hasValidData() && m_financeChart && m_chartViewer) {
+    if (m_dataManager.hasValidData() && m_financeChart && m_chartViewer) {
         // Déterminer l'index de début et le nombre de points visibles actuellement
         int startIndex = m_chartViewer->getViewPortLeft();
         int pointsToShow = m_chartViewer->getViewPortWidth();
@@ -835,7 +545,7 @@ int ChartWidget::addEMA(int period)
         
         m_chartViewer->updateViewPort(false, false);
     }
-    else if (hasValidData()) {
+    else if (m_dataManager.hasValidData()) {
         // Si pas de graphique mais des données valides, créer le graphique complet
         updateChartDisplay(true, true);
     }
@@ -861,7 +571,7 @@ bool ChartWidget::setEMAConfig(int id, const EMAInstance &config)
     emit emaChanged(id, config.period);
 
     // Mettre à jour le graphique
-    if (hasValidData())
+    if (m_dataManager.hasValidData())
         updateChartDisplay(true, true);
 
     return true;
@@ -883,7 +593,7 @@ bool ChartWidget::removeEMA(int id)
     emit emaRemoved(id);
     
     // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
+    if (m_dataManager.hasValidData() && m_financeChart) {
         updateChartDisplay(true, true);
     }
     
@@ -911,7 +621,7 @@ int ChartWidget::addStochastic(int fastKPeriod, int slowKPeriod, int slowDPeriod
 
 
     // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (hasValidData() && m_financeChart && m_chartViewer) {
+    if (m_dataManager.hasValidData() && m_financeChart && m_chartViewer) {
         // Déterminer l'index de début et le nombre de points visibles actuellement
         int startIndex = m_chartViewer->getViewPortLeft();
         int pointsToShow = m_chartViewer->getViewPortWidth();
@@ -921,7 +631,7 @@ int ChartWidget::addStochastic(int fastKPeriod, int slowKPeriod, int slowDPeriod
 
         m_chartViewer->updateViewPort(false, false);
     }
-    else if (hasValidData()) {
+    else if (m_dataManager.hasValidData()) {
         // Si pas de graphique mais des données valides, créer le graphique complet
         updateChartDisplay(true, true);
     }
@@ -947,7 +657,7 @@ bool ChartWidget::setStochasticConfig(int id, const StochasticInstance& config)
     emit stochasticChanged(id, config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
 
     // Mettre à jour le graphique
-    if (hasValidData())
+    if (m_dataManager.hasValidData())
         updateChartDisplay(true, true);
 
     return true;
@@ -969,7 +679,7 @@ bool ChartWidget::removeStochastic(int id)
     emit stochasticRemoved(id);
     
     // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
+    if (m_dataManager.hasValidData() && m_financeChart) {
         updateChartDisplay(true, true);
     }
     
@@ -992,7 +702,7 @@ int ChartWidget::addATR(int period)
     m_atrInstances.push_back(atr);
     
     // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (hasValidData() && m_financeChart && m_chartViewer) {
+    if (m_dataManager.hasValidData() && m_financeChart && m_chartViewer) {
         // Déterminer l'index de début et le nombre de points visibles actuellement
         int startIndex = m_chartViewer->getViewPortLeft();
         int pointsToShow = m_chartViewer->getViewPortWidth();
@@ -1003,7 +713,7 @@ int ChartWidget::addATR(int period)
 
         m_chartViewer->updateViewPort(false, true);
     }
-    else if (hasValidData()) {
+    else if (m_dataManager.hasValidData()) {
         // Si pas de graphique mais des données valides, créer le graphique complet
         updateChartDisplay(true, true);
     }
@@ -1031,7 +741,7 @@ bool ChartWidget::setATRConfig(int id, const ATRInstance &config)
     std::cout << "ATR modifié avec ID: " << id << " et période: " << config.period << std::endl;
 
     // Mettre à jour le graphique
-    if (hasValidData())
+    if (m_dataManager.hasValidData())
         updateChartDisplay(true, true);
 
     return true;
@@ -1055,7 +765,7 @@ bool ChartWidget::removeATR(int id)
     std::cout << "ATR supprimé avec ID: " << id << std::endl;
     
     // Mettre à jour le graphique
-    if (hasValidData() && m_financeChart) {
+    if (m_dataManager.hasValidData() && m_financeChart) {
         updateChartDisplay(true, true);
     }
     
@@ -1113,11 +823,11 @@ ChartWidget::ATRInstance* ChartWidget::findATR(int id)
 void ChartWidget::ensureRSICached(int period)
 {
     // Vérifier que la période RSI est en cache
-    if (m_indicatorCache.isValid && !m_backtestData->getClose().empty()) {
+    if (m_indicatorCache.isValid && !m_dataManager.getBacktestData()->getClose().empty()) {
         if (m_indicatorCache.rsi.find(period) == m_indicatorCache.rsi.end()) {
             // Calculer le RSI pour cette période
             std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
-            TechnicalIndicators::calculateRSI(m_backtestData->getClose(), period, rsiCache);
+            TechnicalIndicators::calculateRSI(m_dataManager.getBacktestData()->getClose(), period, rsiCache);
             qDebug() << "Calculé RSI avec période" << period;
         }
     }
@@ -1126,11 +836,11 @@ void ChartWidget::ensureRSICached(int period)
 void ChartWidget::ensureEMACached(int period)
 {
     // Vérifier que la période EMA est en cache
-    if (m_indicatorCache.isValid && !m_backtestData->getClose().empty()) {
+    if (m_indicatorCache.isValid && !m_dataManager.getBacktestData()->getClose().empty()) {
         if (m_indicatorCache.ema.find(period) == m_indicatorCache.ema.end()) {
             // Calculer l'EMA pour cette période
             std::vector<double>& emaCache = m_indicatorCache.ema[period];
-            TechnicalIndicators::calculateEMA(m_backtestData->getClose(), period, emaCache);
+            TechnicalIndicators::calculateEMA(m_dataManager.getBacktestData()->getClose(), period, emaCache);
             qDebug() << "Calculé EMA avec période" << period;
         }
     }
@@ -1139,7 +849,7 @@ void ChartWidget::ensureEMACached(int period)
 void ChartWidget::ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod)
 {
     // Vérifier que les périodes Stochastic sont en cache
-    if (m_indicatorCache.isValid && !m_backtestData->getClose().empty() && !m_backtestData->getHigh().empty() && !m_backtestData->getLow().empty()) {
+    if (m_indicatorCache.isValid && !m_dataManager.getBacktestData()->getClose().empty() && !m_dataManager.getBacktestData()->getHigh().empty() && !m_dataManager.getBacktestData()->getLow().empty()) {
         std::tuple<int, int, int> key = std::make_tuple(fastKPeriod, slowKPeriod, slowDPeriod);
         
         if (m_indicatorCache.stochastic.find(key) == m_indicatorCache.stochastic.end()) {
@@ -1149,7 +859,7 @@ void ChartWidget::ensureStochasticCached(int fastKPeriod, int slowKPeriod, int s
             std::vector<double>& dValues = cacheEntry.second;
             
             TechnicalIndicators::calculateStochastic(
-                m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(),
+                m_dataManager.getBacktestData()->getHigh(), m_dataManager.getBacktestData()->getLow(), m_dataManager.getBacktestData()->getClose(),
                 fastKPeriod, slowKPeriod, slowDPeriod, kValues, dValues);
         }
     }
@@ -1158,39 +868,17 @@ void ChartWidget::ensureStochasticCached(int fastKPeriod, int slowKPeriod, int s
 void ChartWidget::ensureATRCached(int period)
 {
     // Vérifier que la période ATR est en cache
-    if (m_indicatorCache.isValid && !m_backtestData->getClose().empty() && !m_backtestData->getHigh().empty() && !m_backtestData->getLow().empty()) {
+    if (m_indicatorCache.isValid && !m_dataManager.getBacktestData()->getClose().empty() && !m_dataManager.getBacktestData()->getHigh().empty() && !m_dataManager.getBacktestData()->getLow().empty()) {
         if (m_indicatorCache.atr.find(period) == m_indicatorCache.atr.end()) {
             std::vector<double>& atrCache = m_indicatorCache.atr[period];
-            TechnicalIndicators::calculateATR(m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(), period, atrCache);
+            TechnicalIndicators::calculateATR(m_dataManager.getBacktestData()->getHigh(), m_dataManager.getBacktestData()->getLow(), m_dataManager.getBacktestData()->getClose(), period, atrCache);
         }
     }
 }
 
-void ChartWidget::updateHeikinAshiCache()
-{
-    if (!hasValidData()) {
-        qWarning() << "Tentative de mise à jour du cache Heikin-Ashi avec des données vides";
-        m_heikinAshiCache.isValid = false;
-        return;
-    }
-
-    TechnicalIndicators::calculateHeikinAshi(
-        m_backtestData->getOpen(), 
-        m_backtestData->getHigh(), 
-        m_backtestData->getLow(),
-        m_backtestData->getClose(),
-        m_heikinAshiCache.open,
-        m_heikinAshiCache.high,
-        m_heikinAshiCache.low,
-        m_heikinAshiCache.close
-    );
-    
-    m_heikinAshiCache.isValid = true;
-}
-
 void ChartWidget::updateIndicatorCache()
 {
-    if (!hasValidData()) {
+    if (!m_dataManager.hasValidData()) {
         qWarning() << "Tentative de mise à jour du cache d'indicateurs avec des données invalides";
         m_indicatorCache.isValid = false;
         return;
@@ -1232,13 +920,13 @@ void ChartWidget::updateIndicatorCache()
     // Calculer tous les RSI nécessaires
     for (int period : rsiPeriods) {
         std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
-        TechnicalIndicators::calculateRSI(m_backtestData->getClose(), period, rsiCache);
+        TechnicalIndicators::calculateRSI(m_dataManager.getBacktestData()->getClose(), period, rsiCache);
     }
 
     // Calculer tous les EMA nécessaires
     for (int period : emaPeriods) {
         std::vector<double>& emaCache = m_indicatorCache.ema[period];
-        TechnicalIndicators::calculateEMA(m_backtestData->getClose(), period, emaCache);
+        TechnicalIndicators::calculateEMA(m_dataManager.getBacktestData()->getClose(), period, emaCache);
     }
 
     // Calculer tous les Stochastiques nécessaires
@@ -1252,84 +940,22 @@ void ChartWidget::updateIndicatorCache()
         std::vector<double>& dValues = stochCache.second;
         
         TechnicalIndicators::calculateStochastic(
-            m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(),
+            m_dataManager.getBacktestData()->getHigh(), m_dataManager.getBacktestData()->getLow(), m_dataManager.getBacktestData()->getClose(),
             fastKPeriod, slowKPeriod, slowDPeriod, kValues, dValues);
     }
 
     // Calculer tous les ATR nécessaires
     for (int period : atrPeriods) {
         std::vector<double>& atrCache = m_indicatorCache.atr[period];
-        TechnicalIndicators::calculateATR(m_backtestData->getHigh(), m_backtestData->getLow(), m_backtestData->getClose(), period, atrCache);
+        TechnicalIndicators::calculateATR(m_dataManager.getBacktestData()->getHigh(), m_dataManager.getBacktestData()->getLow(), m_dataManager.getBacktestData()->getClose(), period, atrCache);
     }
 
     m_indicatorCache.isValid = true;
-    qDebug() << "Cache d'indicateurs mis à jour avec" << m_backtestData->getClose().size() << "points";
-}
-
-void ChartWidget::convertEquityCurve(const std::vector<double>& equityCurve, 
-                                    const std::shared_ptr<const be::Data>& data) {
-    if (equityCurve.empty() || !data) {
-        qWarning() << "Courbe d'équité vide ou données de prix invalides";
-        return;
-    }
-    
-    size_t numPoints = equityCurve.size();
-    size_t numBars = data->size();
-    
-    // Réinitialiser les données d'équité
-    m_equityData = EquityData();
-    
-    // Valider les tailles
-    if (numPoints != numBars) {
-        qWarning() << "Tailles incompatibles: equityCurve:" << numPoints << "data:" << numBars;
-        return;
-    }
-    
-    // Préallouer pour le pire cas
-    m_equityData.timestamps.reserve(numPoints);
-    m_equityData.equity_values.reserve(numPoints);
-    
-    // Compresser les données en ne gardant que les points où l'équité change
-    double lastValue = equityCurve[0];
-    
-    // Toujours ajouter le premier point
-    m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(0).date));
-    m_equityData.equity_values.push_back(lastValue);
-    
-    // Parcourir le reste des points
-    for (size_t i = 1; i < numPoints; ++i) {
-        double currentValue = equityCurve[i];
-        
-        // Si la valeur a changé ou si c'est le dernier point, l'ajouter
-        if (std::abs(currentValue - lastValue) > 1e-10 || i == numPoints - 1) {
-            m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(i).date));
-            m_equityData.equity_values.push_back(currentValue);
-            lastValue = currentValue;
-        }
-    }
+    qDebug() << "Cache d'indicateurs mis à jour avec" << m_dataManager.getBacktestData()->getClose().size() << "points";
 }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {
     return Chart::chartTime(date.getYear(), date.getMonth(), date.getDay(), date.getHour(), date.getMinute(), date.getSecond());
-}
-
-void ChartWidget::prepareTimestampsCache() {
-    if (!m_backtestData || m_backtestData->size() == 0) {
-        m_timestampsCache.clear();
-        return;
-    }
-    
-    const auto& dates = m_backtestData->getDates();
-    size_t dataSize = dates.size();
-    
-    // Réserver la capacité et convertir toutes les dates en timestamps
-    m_timestampsCache.clear();
-    m_timestampsCache.reserve(dataSize);
-    
-    for (const auto& date : dates) {
-        double timestamp = dateToChartTimestamp(date);
-        m_timestampsCache.push_back(timestamp);
-    }
 }
 
 // void ChartWidget::onWindowResized(QSize newSize)
@@ -1345,7 +971,7 @@ void ChartWidget::prepareTimestampsCache() {
 //         m_config.chartWidth = newSize.width() - 10;
         
 //         // Update the chart if we have valid data
-//         if (hasValidData() && m_chartViewer) {
+//         if (m_dataManager.hasValidData() && m_chartViewer) {
 //             // Save current viewport state
 //             double currentLeft = m_chartViewer->getViewPortLeft();
 //             double currentWidth = m_chartViewer->getViewPortWidth();
@@ -1378,7 +1004,7 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
         m_config.chartWidth = newSize.width() - 10;
         
         // Update only if we have valid data and the chart exists
-        if (hasValidData() && m_chartViewer && m_financeChart) {
+        if (m_dataManager.hasValidData() && m_chartViewer && m_financeChart) {
             m_chartViewer->updateViewPort(false, false);
         }
     }
@@ -1423,7 +1049,7 @@ void ChartWidget::createOrUpdateChart(
 
     // Ajouter le titre du graphique
     std::string chartTypeStr = chartTypeToString(m_config.chartType).toStdString();
-    std::string aggregationStr = aggregationLevelToString(m_currentAggregation.level);
+    std::string aggregationStr = m_dataManager.aggregationLevelToString(m_currentAggregation.level);
     std::string title = "Graphique de trading (" + chartTypeStr + ", " + aggregationStr + ") - " + 
                        std::to_string(timestamps.len) + " points";
     m_financeChart->addTitle(title.c_str());
@@ -1433,17 +1059,17 @@ void ChartWidget::createOrUpdateChart(
     int startIndex = 0;  // L'index de début des données visibles par rapport au dataset complet
     
     // Si nous sommes en mode viewport (zoom/déplacement), déterminer l'index de début
-    if (timestamps.len < (int)m_timestampsCache.size()) {
+    if (timestamps.len < (int)m_dataManager.getTimestamps().size()) {
         double firstVisibleTimestamp = timestamps[0];
         
         // Trouver l'index correspondant dans le dataset complet
         auto it = std::lower_bound(
-            m_timestampsCache.begin(),
-            m_timestampsCache.end(),
+            m_dataManager.getTimestamps().begin(),
+            m_dataManager.getTimestamps().end(),
             firstVisibleTimestamp,
             [](double a, double b) { return a < b - 0.001; }
         );
-        startIndex = std::distance(m_timestampsCache.begin(), it);
+        startIndex = std::distance(m_dataManager.getTimestamps().begin(), it);
     }
     
     // 1. Ajouter la courbe d'équité en haut si disponible
@@ -1504,7 +1130,7 @@ FinanceChart *ChartWidget::initializeChart(int chartWidth)
 
 void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
 {
-    if (m_equityData.equity_values.empty() || timestamps.len == 0)
+    if (m_dataManager.getEquityData().equity_values.empty() || timestamps.len == 0)
         return; // Pas de données d'équité ou pas de bougies visibles
 
     int equityHeight = 120;     // Hauteur du graphique d'équité
@@ -1524,23 +1150,23 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
     
     // Trouver le premier point d'équité qui précède ou correspond à visibleStartTime
     size_t equityIndex = 0;
-    while (equityIndex + 1 < m_equityData.timestamps.size() && 
-           m_equityData.timestamps[equityIndex + 1] < visibleStartTime) {
+    while (equityIndex + 1 < m_dataManager.getEquityData().timestamps.size() && 
+           m_dataManager.getEquityData().timestamps[equityIndex + 1] < visibleStartTime) {
         equityIndex++;
     }
     
     // Valeur d'équité au début de la fenêtre visible
-    double currentEquityValue = m_equityData.equity_values[equityIndex];
-    
+    double currentEquityValue = m_dataManager.getEquityData().equity_values[equityIndex];
+
     // Pour chaque timestamp visible, interpoler la valeur d'équité
     for (int i = 0; i < timestamps.len; ++i) {
         double currentTime = timestamps[i];
         
         // Avancer dans les données d'équité si nécessaire
-        while (equityIndex + 1 < m_equityData.timestamps.size() && 
-               m_equityData.timestamps[equityIndex + 1] <= currentTime) {
+        while (equityIndex + 1 < m_dataManager.getEquityData().timestamps.size() && 
+               m_dataManager.getEquityData().timestamps[equityIndex + 1] <= currentTime) {
             equityIndex++;
-            currentEquityValue = m_equityData.equity_values[equityIndex];
+            currentEquityValue = m_dataManager.getEquityData().equity_values[equityIndex];
         }
         
         // Ajouter le point interpolé
@@ -1594,9 +1220,9 @@ void ChartWidget::addEquityCurveSection(FinanceChart *chart, const DoubleArray &
     downLayer->setFastLineMode(true);
 
     // Créer une ligne horizontale pour le cash initial
-    double initialCash = m_equityData.equity_values.front();
+    double initialCash = m_dataManager.getEquityData().equity_values.front();
 
-    Mark* mark = equityChart->yAxis()->addMark(m_equityData.equity_values.front(), 0x000000,"Initial Cash");
+    Mark* mark = equityChart->yAxis()->addMark(m_dataManager.getEquityData().equity_values.front(), 0x000000,"Initial Cash");
     mark->setLineWidth(2);
     mark->setMarkColor(equityChart->dashLineColor(0x000000), 0xffffff);
     mark->setAlignment(Chart::Left);
@@ -1683,11 +1309,11 @@ void ChartWidget::addMainChartSection(FinanceChart *chart, int chartHeight)
 
 void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timestamps, int startIndex)
 {
-    if (m_trades.empty() || !m_backtestData)
+    if (m_trades.empty() || !m_dataManager.hasValidData())
         return;
 
     // pour l'instant on affiche rien mais il faudrait afficher par exemple just eles points d'entrée pour montrer les trades de loin
-    if (m_currentAggregation.level != AggregationLevel::Raw)
+    if (m_currentAggregation.level != ChartDataManager::AggregationLevel::Raw)
         return;
 
 
@@ -1740,8 +1366,8 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
             entryMarkers.push_back({relativeIndex, trade->entryPrice()});
             
             // Flèche d'entrée
-            if (entryBarIndex < static_cast<int>(m_backtestData->size())) {
-                const be::Candle& entryCandle = m_backtestData->at(entryBarIndex);
+            if (entryBarIndex < static_cast<int>(m_dataManager.getBacktestData()->size())) {
+                const be::Candle& entryCandle = m_dataManager.getBacktestData()->at(entryBarIndex);
                 double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
                 entryArrows[resultIndex].push_back({relativeIndex, arrowY});
             }
@@ -1784,8 +1410,8 @@ void ChartWidget::addTradeMarkers(FinanceChart *chart, const DoubleArray &timest
                 exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
                 
                 // Flèche de sortie
-                if (exitBarIndex < static_cast<int>(m_backtestData->size())) {
-                    const be::Candle& exitCandle = m_backtestData->at(exitBarIndex);
+                if (exitBarIndex < static_cast<int>(m_dataManager.getBacktestData()->size())) {
+                    const be::Candle& exitCandle = m_dataManager.getBacktestData()->at(exitBarIndex);
                     double arrowY = exitCandle.low * 0.9995; // Légèrement en-dessous du low
                     exitArrows[resultIndex].push_back({relativeExitIndex, arrowY});
                 }

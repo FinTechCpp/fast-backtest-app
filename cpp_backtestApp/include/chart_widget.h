@@ -12,6 +12,7 @@
 #include "trade.hpp"
 #include "components/technical_indicators.h"
 #include "components/backtest_results.h"
+#include "chart_data_manager.h"
 
 // Include ChartDirector headers
 #include "qchartviewer.h"
@@ -213,52 +214,10 @@ public slots:
 private:
     // ======== Structures de données internes ========
 
-    enum class AggregationLevel {
-        Raw,         // Données brutes
-        OneMinute,   // 1 minute
-        OneHour,     // 1 heure
-        OneDay,      // 1 jour
-    };
-
-    struct AggregationInfo {
-        AggregationLevel level;    // Le niveau d'agrégation optimal
-        size_t startIndex;         // L'indice de début dans les données mises en cache
-        int pointCount;            // Le nombre de points à extraire
-        bool isValid = false;      // Indicateur de validité
-    };
-
-    struct AggregatedOHLCV {
-        std::vector<double> timestamps;
-        std::vector<double> open;
-        std::vector<double> high;
-        std::vector<double> low;
-        std::vector<double> close;
-        std::vector<double> volume;
-        AggregationLevel level;
-        bool isValid = false;
-    };
-
-    std::string aggregationLevelToString(AggregationLevel level);
-    AggregationLevel determineStartingAggregationLevel(const DoubleArray& timestamps);
-    size_t findClosestIndex(const std::vector<double>& values, double target, bool searchForward = false);
-    AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
-
-    void aggregateData(AggregationLevel level);
+    ChartDataManager m_dataManager;
 
 
-    std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregationCache;
-    AggregationInfo m_currentAggregation;
-        
-    // Seuil pour l'agrégation (nombre max de points avant agrégation)
-    const int MAX_DISPLAY_POINTS = 10000;
-
-    /**
-     * @brief Structure pour stocker les données d'équité
-     */
-    struct EquityData {
-        std::vector<double> timestamps;
-        std::vector<double> equity_values;
-    };
+    ChartDataManager::AggregationInfo m_currentAggregation;
 
     /**
      * @brief Structure pour la configuration du graphique
@@ -272,17 +231,6 @@ private:
         bool showTrades = true;
         bool showVolume = true;
         bool showEquity = true;
-    };
-
-    /**
-     * @brief Structure pour stocker les données Heikin-Ashi en cache
-     */
-    struct HeikinAshiCache {
-        std::vector<double> open;
-        std::vector<double> high;
-        std::vector<double> low;
-        std::vector<double> close;
-        bool isValid = false;
     };
 
     /**
@@ -320,7 +268,6 @@ private:
     double dateToChartTimestamp(const be::Date& date);
     void prepareTimestampsCache();
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
-    void updateHeikinAshiCache();
     void updateIndicatorCache();
 
     
@@ -378,12 +325,8 @@ private:
     ChartConfig m_config;
     
     // 2. Données
-    std::shared_ptr<const be::Data> m_backtestData; 
-    std::vector<double> m_timestampsCache;
-    HeikinAshiCache m_heikinAshiCache;
     IndicatorCache m_indicatorCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
-    EquityData m_equityData;
 
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
     std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives

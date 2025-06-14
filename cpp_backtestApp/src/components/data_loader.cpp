@@ -11,9 +11,6 @@
 #include <algorithm>
 #include <cmath>
 
-
-const QString DataLoader::MARKET_DATA_PATH = QDir(QCoreApplication::applicationDirPath()).absoluteFilePath("../../marketData");
-
 DataLoader::DataLoader() {}
 DataLoader::~DataLoader() {}
 

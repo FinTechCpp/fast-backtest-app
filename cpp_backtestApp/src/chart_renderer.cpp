@@ -157,18 +157,26 @@ void ChartRenderer::createOrUpdateChart(
     }
 }
 
-void ChartRenderer::updateDynamicLayer(MultiChart *chart, bool rulerEnabled, bool rulerFirstPointSelected, int rulerStartX, int rulerStartY, int rulerEndX, int rulerEndY, int mouseX, const ChartDataManager &dataManager)
+void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, bool rulerFirstPointSelected, int rulerStartX, int rulerStartY, const ChartDataManager &dataManager)
 {
+    int mouseX = viewer->getPlotAreaMouseX();
+
+    MultiChart* chart = dynamic_cast<MultiChart*>(viewer->getChart());
+
     // Vérifier que le chart est valide
-    if (!chart || chart->getChartCount() == 0) return;
-    
+    if (!viewer || chart->getChartCount() == 0) return;
+
     // Initialiser le dynamic layer une seule fois
     DrawArea* d = chart->initDynamicLayer();
 
     trackFinance(chart, mouseX, d);
 
-    if (rulerEnabled && rulerFirstPointSelected)
+    if (rulerEnabled && rulerFirstPointSelected) {
+        int rulerEndX = viewer->getPlotAreaMouseX();
+        int rulerEndY = viewer->getPlotAreaMouseY();
+
         drawRuler(chart, rulerStartX, rulerStartY, rulerEndX, rulerEndY, d);
+    }
 }
 
 void ChartRenderer::addEquityCurveSection(FinanceChart *chart, 

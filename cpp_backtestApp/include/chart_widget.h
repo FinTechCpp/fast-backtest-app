@@ -48,13 +48,6 @@ public:
     EMAInstance* findEMA(int id);
     StochasticInstance* findStochastic(int id);
     ATRInstance* findATR(int id);
-
-    void setChartWidth(int width);
-    void setShowVolume(bool show);
-    void setShowTrades(bool show);
-    void setShowEquity(bool show);
-
-    void setRSIPeriod(int period);
     
     // Actions sur le graphique
 
@@ -143,47 +136,13 @@ private:
     ChartDataManager::AggregationInfo m_currentAggregation;
 
 
-    /**
-     * @brief Structure pour stocker les indicateurs en cache
-     */
-
-    /**
-     * @brief Structure de métadonnées pour chaque type de graphique
-     */
-
-
     // ======== Méthodes privées ========
     // 1. Traitement et conversion des données
-    void convertBacktestData(const std::shared_ptr<be::Data>& data);
-    void convertEquityCurve(const std::vector<double>& equityCurve, 
-                          const std::shared_ptr<const be::Data>& data);
     double dateToChartTimestamp(const be::Date& date);
     void prepareTimestampsCache();
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
     void updateIndicatorCache();
 
-    
-    // 2. Fonctions utilitaires pour les données
-    template<typename T>
-    std::vector<T> getVisibleDataRange(const std::vector<T>& data, int startIndex, int count);
-    int calculateStartIndex(const DoubleArray& timestamps) const;
-    void prepareVisibleOHLCVData(int startIndex, int endIndex, 
-                               DoubleArray& timestamps, DoubleArray& open,
-                               DoubleArray& high, DoubleArray& low,
-                               DoubleArray& close, DoubleArray& volume);
-    
-    // 3. Méthodes d'initialisation et de configuration
-    void setupChart();
-    void setupChartViewer();
-    
-    // 4. Méthodes de rendu du graphique
-    // void createOrUpdateChart(const DoubleArray& timestamps, 
-    //                       const DoubleArray& highData, 
-    //                       const DoubleArray& lowData, 
-    //                       const DoubleArray& openData, 
-    //                       const DoubleArray& closeData,
-    //                       const DoubleArray& volumeData,
-    //                       int chartWidth);
     /**
      * @brief Crée ou met à jour le graphique avec les données actuelles
      * 
@@ -192,16 +151,7 @@ private:
      * @return True si le graphique a été créé/mis à jour avec succès
      */
     bool updateChartDisplay(bool useViewport = true, bool preserveViewport = true);
-    
-    // 5. Composants du graphique
-    // void addEquityCurveSection(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
-    // void addTradeMarkers(FinanceChart* chart, const DoubleArray& timestamps, int startIndex);
-    // void addTPSLSegments(XYChart* chart, const std::vector<TPSLSegment>& segments);
-    // void addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& arrows, const char* name,
-    //               int symbolType, int symbolSize = 5, int color = -1);
 
-    // 6. Gestion des interactions utilisateur
-    // void trackFinance(MultiChart* m, int mouseX);
     
     // ======== Membres de données ========
     // 1. Configuration
@@ -250,9 +200,4 @@ private:
     bool m_rulerFirstPointSelected;    // Si le premier point a été sélectionné
     double m_rulerStartX;              // Coordonnée X du point de départ
     double m_rulerStartY;              // Coordonnée Y du point de départ
-    double m_rulerEndX;                // Coordonnée X actuelle
-    double m_rulerEndY;                // Coordonnée Y actuelle
-    
-    // Méthode pour dessiner la règle
-    // void drawRuler(MultiChart* chart, int mouseX, int mouseY, DrawArea* d);
 };

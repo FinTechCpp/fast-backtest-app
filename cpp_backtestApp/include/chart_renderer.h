@@ -113,12 +113,10 @@ public:
         const IndicatorCache& indicatorCache
     );
 
-    void updateDynamicLayer(MultiChart* chart, 
+    void updateDynamicLayer(QChartViewer* viewer, 
                         bool rulerEnabled, 
                         bool rulerFirstPointSelected,
                         int rulerStartX, int rulerStartY, 
-                        int rulerEndX, int rulerEndY, 
-                        int mouseX,
                         const ChartDataManager& dataManager);
     
 private:

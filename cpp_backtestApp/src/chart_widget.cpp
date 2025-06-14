@@ -15,8 +15,6 @@ ChartWidget::ChartWidget(QWidget* parent)
     , m_rulerFirstPointSelected(false)
     , m_rulerStartX(0)
     , m_rulerStartY(0)
-    , m_rulerEndX(0)
-    , m_rulerEndY(0)
 {
     // Configurer le widget
     setObjectName("chartWidget");
@@ -187,31 +185,12 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
 {
     if (!m_chartViewer) return;
     
-    int mouseX = m_chartViewer->getPlotAreaMouseX();
-    int mouseY = m_chartViewer->getPlotAreaMouseY();
-
-    // Si l'outil règle est activé et que le premier point a été sélectionné
-    if (m_rulerToolEnabled && m_rulerFirstPointSelected) {
-        // Mettre à jour le point final avec la position actuelle de la souris
-        m_rulerEndX = m_chartViewer->getPlotAreaMouseX();
-        m_rulerEndY = m_chartViewer->getPlotAreaMouseY();
-
-        
-
-        // m_renderer.drawRuler((MultiChart *)m_chartViewer->getChart(), m_rulerStartX, m_rulerStartY, m_rulerEndX, m_rulerEndY);
-
-    }
-
-    // Comportement normal de suivi du graphique
-    // m_renderer.trackFinance((MultiChart *)m_chartViewer->getChart(), m_chartViewer->getPlotAreaMouseX());
 
     m_renderer.updateDynamicLayer(
-        (MultiChart *)m_chartViewer->getChart(),
+        m_chartViewer,
         m_rulerToolEnabled,
         m_rulerFirstPointSelected,
         m_rulerStartX, m_rulerStartY,
-        m_rulerEndX, m_rulerEndY,
-        mouseX,
         m_dataManager
     );
 
@@ -254,13 +233,7 @@ void ChartWidget::onMouseClickPlotArea(QMouseEvent* event)
             m_rulerStartY = m_chartViewer->getPlotAreaMouseY();
             m_rulerFirstPointSelected = true;
             
-            // Initialiser aussi le point final pour éviter des valeurs incorrectes lors du dessin
-            m_rulerEndX = m_rulerStartX;
-            m_rulerEndY = m_rulerStartY;
         } else {
-            // Si c'est le deuxième clic, enregistrer le point final et réinitialiser
-            m_rulerEndX = m_chartViewer->getPlotAreaMouseX();
-            m_rulerEndY = m_chartViewer->getPlotAreaMouseY();
             m_rulerFirstPointSelected = false;
         }
         

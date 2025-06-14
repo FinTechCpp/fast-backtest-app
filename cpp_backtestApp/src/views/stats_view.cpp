@@ -496,6 +496,16 @@ void StatsView::initializeMetricDefinitions() {
             [](const be::Stats& s) { return MetricStatus::Neutral; },
             [](const be::Stats& s) { return QString::number(s.numTrades); }
         },
+        {"profit_factor", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)", "general",
+            [](const be::Stats& s) {
+                if (std::isnan(s.profitFactor)) return MetricStatus::NA;
+                return s.profitFactor > 1.1 ? MetricStatus::Good : 
+                      (s.profitFactor < 0.9 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
+            }
+        },
         {"win_rate", "Taux de réussite:", "Pourcentage de trades rentables", "general",
             [](const be::Stats& s) { 
                 return s.winRatePct > 50 ? MetricStatus::Good : 
@@ -527,16 +537,6 @@ void StatsView::initializeMetricDefinitions() {
                       (s.avgTradePct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
             },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgTradePct, 'f', 2)); }
-        },
-        {"profit_factor", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)", "general",
-            [](const be::Stats& s) {
-                if (std::isnan(s.profitFactor)) return MetricStatus::NA;
-                return s.profitFactor > 1.1 ? MetricStatus::Good : 
-                      (s.profitFactor < 0.9 ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) {
-                return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
-            }
         },
         {"max_trade_duration", "Durée max trade:", "Durée maximale d'un trade", "general",
             [](const be::Stats& s) { return MetricStatus::Neutral; },

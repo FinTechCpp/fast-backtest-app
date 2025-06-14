@@ -13,7 +13,8 @@
 
 // Prédéclarations de classes
 class ChartDataManager;
-class ChartIndicatorManager;
+
+
 
 // Structure pour la configuration du graphique
 struct ChartConfiguration {
@@ -34,63 +35,6 @@ struct TPSLSegment {
     bool isTakeProfit;    // true = TP, false = SL
     int color;            // Couleur basée sur le résultat du trade
 };
-
-// Structures pour les indicateurs techniques (importées depuis ChartWidget)
-struct RSIInstance {
-    int id;                 // Identifiant unique 
-    int period;             // Période du RSI
-    bool visible = true;    // Si l'indicateur est visible
-    int height = 120;       // Hauteur du panneau
-    int color = 0x800080;   // Couleur de la ligne principale (violet par défaut)
-    double range = 20;      // Plage pour les niveaux de survente/surachat (70/30)
-    int upperColor = 0xff6666; // Couleur pour la zone de surachat
-    int lowerColor = 0x6666ff; // Couleur pour la zone de survente
-    
-    bool operator==(const RSIInstance& other) const {
-        return id == other.id;
-    }
-};
-
-struct EMAInstance {
-    int id;                // Identifiant unique 
-    int period;            // Période de l'EMA
-    bool visible = true;   // Si l'indicateur est visible
-    int color = 0x0000FF;  // Couleur de la ligne (bleu par défaut)
-    
-    bool operator==(const EMAInstance& other) const {
-        return id == other.id;
-    }
-};
-
-struct StochasticInstance {
-    int id;                 // Identifiant unique 
-    int fastKPeriod;        // Période pour calculer le %K brut
-    int slowKPeriod;        // Période de lissage pour %K
-    int slowDPeriod;        // Période pour calculer %D
-    bool visible = true;    // Si l'indicateur est visible
-    int height = 120;       // Hauteur du panneau
-    int kColor = 0x0000FF;  // Couleur de la ligne %K (bleu par défaut)
-    int dColor = 0xFF0000;  // Couleur de la ligne %D (rouge par défaut)
-    int overboughtLevel = 80; // Niveau de surachat
-    int oversoldLevel = 20;   // Niveau de survente
-    
-    bool operator==(const StochasticInstance& other) const {
-        return id == other.id;
-    }
-};
-
-struct ATRInstance {
-    int id;                // Identifiant unique 
-    int period;            // Période de l'ATR
-    bool visible = true;   // Si l'indicateur est visible
-    int height = 120;      // Hauteur du panneau
-    int color = 0x006400;  // Couleur de la ligne (vert foncé par défaut)
-    
-    bool operator==(const ATRInstance& other) const {
-        return id == other.id;
-    }
-};
-
 
 
 class ChartRenderer {

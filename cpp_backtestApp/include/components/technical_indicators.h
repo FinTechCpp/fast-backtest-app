@@ -16,7 +16,7 @@ public:
      * @brief Calcule l'indicateur RSI (Relative Strength Index)
      * 
      * @param closeData Les prix de clôture
-     * @param period La période pour le calcul du RSI (généralement 14)
+     * @param period La période pour le calcul du RSI
      * @param rsiValues Vecteur de sortie qui contiendra les valeurs RSI calculées
      */
     static void calculateRSI(const std::vector<double>& closeData, int period, std::vector<double>& rsiValues);
@@ -82,4 +82,4 @@ public:
         int period,
         std::vector<double>& atrValues
     );
-    };
+};

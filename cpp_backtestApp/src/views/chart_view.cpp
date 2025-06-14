@@ -250,7 +250,9 @@ void ChartView::onAddIndicatorClicked()
     
     if (indicatorType == "RSI") {
         // Ajouter un RSI avec la période par défaut (14)
-        m_chartWidget->addRSI(14);
+        RSIInstance rsi;
+        rsi.period = 14;
+        m_chartWidget->addRSI(rsi);
     }
     else if (indicatorType == "EMA") {
         // Pour EMA, ouvrir le dialogue de configuration directement

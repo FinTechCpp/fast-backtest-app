@@ -19,6 +19,74 @@ struct IndicatorCache {
     bool isValid = false;
 };
 
+// ces declaration devrait peut etre etre dans un fichier de declaration
+enum class IndicatorType {
+    RSI,
+    EMA,
+    STOCHASTIC,
+    ATR,
+    // autres types futurs
+};
+
+struct IndicatorBase {
+    IndicatorBase(IndicatorType type) : type(type) {}
+    int id = -1; // Identifiant unique de l'indicateur
+    IndicatorType type; // Type d'indicateur
+    bool visible = true; // Si l'indicateur est visible
+};
+
+// Structures pour les indicateurs techniques (importées depuis ChartWidget)
+struct RSIInstance : public IndicatorBase {
+    RSIInstance() : IndicatorBase(IndicatorType::RSI) {}
+    int period;             // Période du RSI
+    int height = 120;       // Hauteur du panneau
+    int color = 0x800080;   // Couleur de la ligne principale (violet par défaut)
+    double range = 20;      // Plage pour les niveaux de survente/surachat (70/30)
+    int upperColor = 0xff6666; // Couleur pour la zone de surachat
+    int lowerColor = 0x6666ff; // Couleur pour la zone de survente
+    
+    bool operator==(const RSIInstance& other) const {
+        return id == other.id;
+    }
+};
+
+struct EMAInstance : public IndicatorBase {
+    EMAInstance() : IndicatorBase(IndicatorType::EMA) {}
+    int period;            // Période de l'EMA
+    int color = 0x0000FF;  // Couleur de la ligne (bleu par défaut)
+    
+    bool operator==(const EMAInstance& other) const {
+        return id == other.id;
+    }
+};
+
+struct StochasticInstance : public IndicatorBase {
+    StochasticInstance() : IndicatorBase(IndicatorType::STOCHASTIC) {}
+    int fastKPeriod;        // Période pour calculer le %K brut
+    int slowKPeriod;        // Période de lissage pour %K
+    int slowDPeriod;        // Période pour calculer %D
+    int height = 120;       // Hauteur du panneau
+    int kColor = 0x0000FF;  // Couleur de la ligne %K (bleu par défaut)
+    int dColor = 0xFF0000;  // Couleur de la ligne %D (rouge par défaut)
+    int overboughtLevel = 80; // Niveau de surachat
+    int oversoldLevel = 20;   // Niveau de survente
+    
+    bool operator==(const StochasticInstance& other) const {
+        return id == other.id;
+    }
+};
+
+struct ATRInstance : public IndicatorBase {
+    ATRInstance() : IndicatorBase(IndicatorType::ATR) {}
+    int period;            // Période de l'ATR
+    int height = 120;      // Hauteur du panneau
+    int color = 0x006400;  // Couleur de la ligne (vert foncé par défaut)
+    
+    bool operator==(const ATRInstance& other) const {
+        return id == other.id;
+    }
+};
+
 class ChartDataManager {
 public:
     // Enumérations
@@ -71,6 +139,21 @@ public:
         std::vector<double> equity_values;
     };
 
+    // Structure pour stocker les indicateurs actifs
+    struct ActiveIndicators {
+        std::map<int, std::vector<double>> rsiValues;
+        std::map<int, std::vector<double>> emaValues;
+        std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
+        std::map<int, std::vector<double>> atrValues;
+        
+        void clear() {
+            rsiValues.clear();
+            emaValues.clear();
+            stochasticValues.clear();
+            atrValues.clear();
+        }
+    };
+
     ChartDataManager();
     ~ChartDataManager();
 
@@ -79,6 +162,25 @@ public:
     void setEquityCurve(const std::vector<double>& equityCurve);
     void updateHeikinAshiCache();
     AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
+    void calculateIndicator(const IndicatorBase& config) {
+        // Implémentation spécifique pour chaque type d'indicateur
+        // Par exemple, pour RSI, EMA, Stochastic, ATR, etc.
+        switch (config.type) {
+        case IndicatorType::RSI:
+            // Calculer RSI
+            break;
+        case IndicatorType::EMA:
+            // Calculer EMA
+            break;
+        case IndicatorType::STOCHASTIC:
+            // Calculer Stochastic
+            break;
+        case IndicatorType::ATR:
+            // Calculer ATR
+            break;
+        // Ajouter d'autres types d'indicateurs ici
+        }
+    }
     
     // Accesseurs
     const std::vector<double>& getTimestamps() const { return m_timestampsCache; }

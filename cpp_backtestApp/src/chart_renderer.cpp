@@ -160,6 +160,7 @@ void ChartRenderer::createOrUpdateChart(
 void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, bool rulerFirstPointSelected, int rulerStartX, int rulerStartY, const ChartDataManager &dataManager)
 {
     int mouseX = viewer->getPlotAreaMouseX();
+    int mouseY = viewer->getPlotAreaMouseY();
 
     MultiChart* chart = dynamic_cast<MultiChart*>(viewer->getChart());
 
@@ -169,7 +170,7 @@ void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 
     // Initialiser le dynamic layer une seule fois
     DrawArea* d = chart->initDynamicLayer();
 
-    trackFinance(chart, mouseX, d);
+    trackFinance(chart, mouseX, mouseY, d);
 
     if (rulerEnabled && rulerFirstPointSelected) {
         int rulerEndX = viewer->getPlotAreaMouseX();
@@ -895,7 +896,7 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
     tForYDelta->destroy();
 }
 
-void ChartRenderer::trackFinance(MultiChart* m, int mouseX, DrawArea* d)
+void ChartRenderer::trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea* d)
 {
     // Vérifier que le graphique n'est pas vide
     if (m->getChartCount() == 0)
@@ -1010,6 +1011,35 @@ void ChartRenderer::trackFinance(MultiChart* m, int mouseX, DrawArea* d)
         PlotArea* plotArea = c->getPlotArea();
         int plotAreaLeftX = plotArea->getLeftX() + c->getAbsOffsetX();
         int plotAreaTopY = plotArea->getTopY() + c->getAbsOffsetY();
+        int plotAreaBottomY = plotAreaTopY + plotArea->getHeight();
+        
+        // Seulement si on a pu récupérer la position Y
+        if (mouseY >= plotAreaTopY && mouseY <= plotAreaBottomY) {
+            double yValue = c->getYValue(mouseY - c->getAbsOffsetY());
+            
+            // Position du tooltip sur l'axe Y (côté droit de la zone de tracé)
+            int yAxisTooltipX = plotAreaLeftX + plotArea->getWidth() + 5;
+            int yAxisTooltipY = mouseY;
+            
+            // Créer le texte du tooltip avec la valeur Y formatée
+            std::string yTooltipText = c->formatValue(yValue, "{value|P4}");
+            
+            // Dessiner un rectangle de fond pour le tooltip Y
+            int tooltipWidth = 60;
+            int tooltipHeight = 20;
+            d->rect(yAxisTooltipX - 2, yAxisTooltipY - tooltipHeight/2 - 2, 
+                    yAxisTooltipX + tooltipWidth + 2, yAxisTooltipY + tooltipHeight/2 + 2, 
+                    0x000000, 0xffffcc);
+            
+            // Afficher le texte du tooltip Y
+            TTFText* yTooltip = d->text(yTooltipText.c_str(), "Arial", 8);
+            yTooltip->draw(yAxisTooltipX, yAxisTooltipY, 0x000000, Chart::Left);
+            yTooltip->destroy();
+            
+            // Dessiner une ligne horizontale pour le crosshair Y
+            d->hline(plotAreaLeftX, plotAreaLeftX + plotArea->getWidth(), 
+                    yAxisTooltipY, d->dashLineColor(0x000000, 0x0101));
+        }
         
         // La légende commence par l'étiquette de date
         std::ostringstream legendText;
@@ -1029,5 +1059,30 @@ void ChartRenderer::trackFinance(MultiChart* m, int mouseX, DrawArea* d)
         TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);
         t->draw(plotAreaLeftX + 5, plotAreaTopY + 5, 0x000000, Chart::TopLeft);
         t->destroy();
+        
+        // Seulement pour le dernier graphique (celui du bas avec l'axe X visible)
+        if (i == m->getChartCount() - 1) {
+            // Obtenir le texte formaté du timestamp
+            std::string timeStampText = c->xAxis()->getFormattedLabel(xValue, "yyyy-mm-dd hh:nn:ss");
+            
+            // Créer un fond rectangulaire pour le texte
+            int textHeight = 16;
+            int textWidth = 150;  // Ajuster selon la longueur du texte
+            int xLabelPos = c->getXCoor(xValue) + c->getAbsOffsetX();
+            int yLabelPos = plotAreaBottomY + 15;  // Position juste en dessous de l'axe X
+            
+            // Dessiner le fond du texte
+            d->rect(xLabelPos - textWidth/2, yLabelPos - textHeight/2,
+                   xLabelPos + textWidth/2, yLabelPos + textHeight/2,
+                   0x000000, 0xffffcc);
+            
+            // Créer et dessiner le texte
+            TTFText* timeLabel = d->text(timeStampText.c_str(), "Arial", 8);
+            timeLabel->draw(xLabelPos, yLabelPos, 0x000000, Chart::Center);
+            timeLabel->destroy();
+            
+            // Dessiner une petite marque verticale sur l'axe X
+            d->vline(plotAreaBottomY, plotAreaBottomY + 5, xLabelPos, 0x000000);
+        }
     }
 }

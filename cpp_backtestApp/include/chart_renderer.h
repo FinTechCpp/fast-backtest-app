@@ -18,7 +18,7 @@ class ChartIndicatorManager;
 // Structure pour la configuration du graphique
 struct ChartConfiguration {
     ChartDataManager::ChartType chartType = ChartDataManager::ChartType::CandleStick;
-    int chartWidth = 1200;
+    int chartWidth = 1200; // il faut que ce soit adaptatif
     int mainChartHeight = 400;
     int equityHeight = 150;
     int volumeHeight = 100;
@@ -124,7 +124,7 @@ private:
     void drawRuler(MultiChart* m, int startX, int startY, int endX, int endY, DrawArea* d);
     
     // Méthode pour le tracking de la souris
-    void trackFinance(MultiChart* m, int mouseX, DrawArea* d);
+    void trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea* d);
     
     // Méthodes de rendu des sections
     void addEquityCurveSection(FinanceChart *chart, 

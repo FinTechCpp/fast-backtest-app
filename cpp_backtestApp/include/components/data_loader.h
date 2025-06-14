@@ -189,7 +189,6 @@ public:
     static DataFileInfo checkDataFile(const QString& filePath);
 
 private:
-    static const QString MARKET_DATA_PATH;
     static QStringList getMarketDataPaths();
     
     // Ajout de la méthode helper pour la conversion en double

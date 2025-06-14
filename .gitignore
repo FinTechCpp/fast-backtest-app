@@ -15,7 +15,6 @@ perf.data
 
 # OHLC files
 live_interface/candles_history.json
-marketData/*
 
 # macOS specific files
 *.DS_Store

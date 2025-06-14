@@ -1,4 +1,2 @@
-marketData/*.parquet filter=lfs diff=lfs merge=lfs -text
-marketData/*.csv      filter=lfs diff=lfs merge=lfs -text
+marketData/* filter=lfs diff=lfs merge=lfs -text
 backtest_interface/PyQt/dist/app filter=lfs diff=lfs merge=lfs -text
-marketData/*.csv filter=lfs diff=lfs merge=lfs -text

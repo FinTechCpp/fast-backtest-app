@@ -34,6 +34,7 @@ public:
     enum class AggregationLevel {
         Raw,         // Données brutes
         OneMinute,   // 1 minute
+        // ajouter 10 minutes mais pas si evident
         OneHour,     // 1 heure
         OneDay,      // 1 jour
     };
@@ -75,9 +76,9 @@ public:
 
     // Méthodes pour la gestion des données
     void setBacktestData(const std::shared_ptr<const be::Data>& data);
+    void setEquityCurve(const std::vector<double>& equityCurve);
     void updateHeikinAshiCache();
     AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
-    void convertEquityCurve(const std::vector<double>& equityCurve);
     
     // Accesseurs
     const std::vector<double>& getTimestamps() const { return m_timestampsCache; }
@@ -87,6 +88,7 @@ public:
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
     bool hasValidData() const;
 
+    // methode utilitaires peut etre a deplacer
     static std::string aggregationLevelToString(AggregationLevel level);
     static std::string chartTypeToString(ChartType type);
     static ChartType stringToChartType(const std::string& typeStr);

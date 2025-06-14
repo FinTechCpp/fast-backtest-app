@@ -100,7 +100,7 @@ void ChartRenderer::createOrUpdateChart(
     }
     
     // 2. Ajouter le graphique principal
-    m_financeChart->addMainChart(config.mainChartHeight);
+    m_financeChart->addMainChart(config.chartHeight);
     
     // Ajouter le type de graphique approprié selon le type actuel
     if (config.chartType == ChartDataManager::ChartType::CandleStick || 
@@ -141,10 +141,10 @@ void ChartRenderer::createOrUpdateChart(
         }
     }
     
-    // 4. Ajouter le volume si demandé
-    if (config.showVolume) {
-        m_financeChart->addVolBars(config.volumeHeight, 0x99ff99, 0xff9999, 0x808080);
-    }
+    // // 4. Ajouter le volume si demandé
+    // if (config.showVolume) {
+    //     m_financeChart->addVolBars(config.volumeHeight, 0x99ff99, 0xff9999, 0x808080);
+    // }
     
     // 5. Ajouter les trades si disponibles et demandés
     if (config.showTrades) {

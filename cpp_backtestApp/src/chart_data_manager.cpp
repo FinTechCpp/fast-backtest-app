@@ -28,6 +28,48 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
     }
 }
 
+void ChartDataManager::setEquityCurve(const std::vector<double>& equityCurve) {
+    if (equityCurve.empty() || !m_backtestData) {
+        qWarning() << "Courbe d'équité vide ou données de prix invalides";
+        return;
+    }
+    
+    size_t numPoints = equityCurve.size();
+    size_t numBars = m_backtestData->size();
+    
+    // Réinitialiser les données d'équité
+    m_equityData = EquityData();
+    
+    // Valider les tailles
+    if (numPoints != numBars) {
+        qWarning() << "Tailles incompatibles: equityCurve:" << numPoints << "data:" << numBars;
+        return;
+    }
+    
+    // Préallouer pour le pire cas
+    m_equityData.timestamps.reserve(numPoints);
+    m_equityData.equity_values.reserve(numPoints);
+    
+    // Compresser les données en ne gardant que les points où l'équité change
+    double lastValue = equityCurve[0];
+    
+    // Toujours ajouter le premier point
+    m_equityData.timestamps.push_back(dateToChartTimestamp(m_backtestData->at(0).date));
+    m_equityData.equity_values.push_back(lastValue);
+    
+    // Parcourir le reste des points
+    for (size_t i = 1; i < numPoints; ++i) {
+        double currentValue = equityCurve[i];
+        
+        // Si la valeur a changé ou si c'est le dernier point, l'ajouter
+        if (std::abs(currentValue - lastValue) > 1e-10 || i == numPoints - 1) {
+            m_equityData.timestamps.push_back(dateToChartTimestamp(m_backtestData->at(i).date));
+            m_equityData.equity_values.push_back(currentValue);
+            lastValue = currentValue;
+        }
+    }
+}
+
 void ChartDataManager::prepareTimestampsCache() {
     if (!m_backtestData || m_backtestData->size() == 0) {
         m_timestampsCache.clear();
@@ -335,48 +377,6 @@ size_t ChartDataManager::findClosestIndex(const std::vector<double>& values, dou
             if (values[i] <= target)
                 return i;
         return 0;
-    }
-}
-
-void ChartDataManager::convertEquityCurve(const std::vector<double>& equityCurve) {
-    if (equityCurve.empty() || !m_backtestData) {
-        qWarning() << "Courbe d'équité vide ou données de prix invalides";
-        return;
-    }
-    
-    size_t numPoints = equityCurve.size();
-    size_t numBars = m_backtestData->size();
-    
-    // Réinitialiser les données d'équité
-    m_equityData = EquityData();
-    
-    // Valider les tailles
-    if (numPoints != numBars) {
-        qWarning() << "Tailles incompatibles: equityCurve:" << numPoints << "data:" << numBars;
-        return;
-    }
-    
-    // Préallouer pour le pire cas
-    m_equityData.timestamps.reserve(numPoints);
-    m_equityData.equity_values.reserve(numPoints);
-    
-    // Compresser les données en ne gardant que les points où l'équité change
-    double lastValue = equityCurve[0];
-    
-    // Toujours ajouter le premier point
-    m_equityData.timestamps.push_back(dateToChartTimestamp(m_backtestData->at(0).date));
-    m_equityData.equity_values.push_back(lastValue);
-    
-    // Parcourir le reste des points
-    for (size_t i = 1; i < numPoints; ++i) {
-        double currentValue = equityCurve[i];
-        
-        // Si la valeur a changé ou si c'est le dernier point, l'ajouter
-        if (std::abs(currentValue - lastValue) > 1e-10 || i == numPoints - 1) {
-            m_equityData.timestamps.push_back(dateToChartTimestamp(m_backtestData->at(i).date));
-            m_equityData.equity_values.push_back(currentValue);
-            lastValue = currentValue;
-        }
     }
 }
 

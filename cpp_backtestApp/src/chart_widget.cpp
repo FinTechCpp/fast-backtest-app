@@ -64,7 +64,7 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
     }
 
     m_dataManager.setBacktestData(results->data);
-    m_dataManager.convertEquityCurve(results->stats.equityCurve);
+    m_dataManager.setEquityCurve(results->stats.equityCurve);
 
 
     m_trades = results->stats.trades;
@@ -435,12 +435,13 @@ int ChartWidget::addStochastic(int fastKPeriod, int slowKPeriod, int slowDPeriod
         // Ajouter directement le Stochastique au graphique existant
         // addStochasticToChart((FinanceChart*)m_chartViewer->getChart(), stochastic, startIndex, pointsToShow);
 
-        m_chartViewer->updateViewPort(false, false);
+        // m_chartViewer->updateViewPort(false, false);
+        
     }
     else if (m_dataManager.hasValidData()) {
         // Si pas de graphique mais des données valides, créer le graphique complet
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
     }
+    updateChartDisplay(ViewPortMode::USE_CURRENT);
 
     // Émettre le signal
     emit stochasticAdded(stochastic.id, stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);

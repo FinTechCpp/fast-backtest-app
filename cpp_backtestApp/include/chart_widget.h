@@ -38,7 +38,7 @@ public:
     void setBacktestResults(const BacktestResults* results);
 
     // Configuration et contrôle du graphique
-    void setChartType(ChartDataManager::ChartType chartType);
+    void setChartType(ChartDataManager::ChartType chartType); // remplacer par un slot
     ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
     const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
     const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
@@ -67,7 +67,7 @@ public:
     bool isResizing() const { return m_isResizing; }
     
     // Méthode pour activer/désactiver l'outil règle
-    void setRulerToolEnabled(bool enabled);
+    void setRulerToolEnabled(bool enabled); // remplacer par un slot
     
 signals:
     void chartCreated();
@@ -100,7 +100,7 @@ protected:
 private slots:
     void onViewPortChanged();
     void onMouseMovePlotArea(QMouseEvent* event);
-    void onMouseClickPlotArea(QMouseEvent* event); // Nouvelle méthode
+    void onMouseClickPlotArea(QMouseEvent* event);
     
 public slots:
     // Pour le RSI
@@ -127,12 +127,13 @@ public slots:
     // void onWindowResized(QSize newSize);
 
 private:
-    // ======== Structures de données internes ========
+    enum class ViewPortMode {
+        FULL_CHART,      // Afficher toutes les données
+        USE_CURRENT      // Utiliser le viewport actuel
+    };
 
     ChartDataManager m_dataManager;
     ChartRenderer m_renderer;
-
-
     ChartDataManager::AggregationInfo m_currentAggregation;
 
 
@@ -143,14 +144,8 @@ private:
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
     void updateIndicatorCache();
 
-    /**
-     * @brief Crée ou met à jour le graphique avec les données actuelles
-     * 
-     * @param useViewport Si true, utiliser le viewport actuel; sinon, afficher toutes les données
-     * @param preserveViewport Si true, préserver la position du viewport actuel après mise à jour
-     * @return True si le graphique a été créé/mis à jour avec succès
-     */
-    bool updateChartDisplay(bool useViewport = true, bool preserveViewport = true);
+
+    bool updateChartDisplay(ViewPortMode mode = ViewPortMode::FULL_CHART);
 
     
     // ======== Membres de données ========
@@ -189,7 +184,6 @@ private:
 
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;
-    // std::unique_ptr<FinanceChart> m_financeChart = nullptr;
     
 
     bool m_isResizing = false;  ///< Indique si le widget est en cours de redimensionnement

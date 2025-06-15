@@ -74,6 +74,51 @@ void ChartView::setupUI()
     m_chartTypeCombo->addItem("Line", "Close");
     m_chartTypeCombo->addItem("OHLC", "OHLC");
     leftPanelLayout->addWidget(m_chartTypeCombo);
+
+    QFrame* separator = new QFrame();
+    separator->setFrameShape(QFrame::HLine);
+    separator->setFrameShadow(QFrame::Sunken);
+    leftPanelLayout->addWidget(separator);
+    
+    // Ajouter le contrôle de seuil d'agrégation
+    QLabel* aggregationTitle = new QLabel("Seuil d'Agrégation");
+    aggregationTitle->setStyleSheet("font-weight: bold;");
+    leftPanelLayout->addWidget(aggregationTitle);
+    
+    // Layout pour le slider et l'étiquette de valeur
+    QHBoxLayout* sliderLayout = new QHBoxLayout();
+    
+    // Créer le slider
+    m_aggregationSlider = new QSlider(Qt::Horizontal);
+    m_aggregationSlider->setMinimum(1000);   // Minimum 1 000 points
+    m_aggregationSlider->setMaximum(100000); // Maximum 100 000 points
+    m_aggregationSlider->setValue(10000);    // Valeur par défaut 10 000
+    m_aggregationSlider->setTickInterval(10000);
+    m_aggregationSlider->setTickPosition(QSlider::TicksBelow);
+    
+    // Créer l'étiquette de valeur
+    m_aggregationLabel = new QLabel("10 000");
+    m_aggregationLabel->setMinimumWidth(50);
+    m_aggregationLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    
+    // Ajouter les widgets au layout
+    sliderLayout->addWidget(m_aggregationSlider);
+    sliderLayout->addWidget(m_aggregationLabel);
+    
+    // Ajouter le layout au panneau gauche
+    leftPanelLayout->addLayout(sliderLayout);
+    
+    // Ajouter une description
+    QLabel* aggregationDesc = new QLabel("Ajuste le nombre maximum de points à afficher avant agrégation");
+    aggregationDesc->setWordWrap(true);
+    aggregationDesc->setStyleSheet("font-size: 9px; color: #666;");
+    leftPanelLayout->addWidget(aggregationDesc);
+
+    connect(m_aggregationSlider, &QSlider::valueChanged, this, &ChartView::onAggregationSliderChanged);
+    if (m_chartWidget){
+        connect(m_chartWidget, &ChartWidget::maxDisplayPointsChanged,
+                this, &ChartView::onMaxDisplayPointsChanged);
+    }
     
     // Connecter le signal de changement à notre slot
     connect(m_chartTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -124,10 +169,10 @@ void ChartView::setupUI()
     leftPanelLayout->addStretch();
     
     // Créer un séparateur vertical
-    QFrame* separator = new QFrame();
-    separator->setFrameStyle(QFrame::VLine | QFrame::Plain);
-    separator->setStyleSheet("color: #CCCCCC;"); // Couleur de la ligne
-    
+    QFrame* verticalSeparator = new QFrame();
+    verticalSeparator->setFrameStyle(QFrame::VLine | QFrame::Plain);
+    verticalSeparator->setStyleSheet("color: #CCCCCC;"); // Couleur de la ligne
+
     // Créer le panneau droit qui contiendra le graphique
     m_rightPanel = new QWidget();
     m_rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -180,7 +225,7 @@ void ChartView::setupUI()
     
     // Ajouter les composants au layout horizontal
     horizontalLayout->addWidget(m_leftPanel);
-    horizontalLayout->addWidget(separator);
+    horizontalLayout->addWidget(verticalSeparator);
     horizontalLayout->addWidget(m_rightPanel);
     
     // Configurer le widget pour s'étendre
@@ -648,5 +693,26 @@ void ChartView::onRulerToolToggled(bool checked)
 {
     if (m_chartWidget) {
         m_chartWidget->setRulerToolEnabled(checked);
+    }
+}
+
+// Ajouter les méthodes de slots:
+void ChartView::onAggregationSliderChanged(int value)
+{
+    // Mettre à jour l'étiquette
+    m_aggregationLabel->setText(QString::number(value));
+    
+    // Mettre à jour le ChartWidget si disponible
+    if (m_chartWidget && m_chartWidget->hasValidData()) {
+        m_chartWidget->setMaxDisplayPoints(value);
+    }
+}
+
+void ChartView::onMaxDisplayPointsChanged(int value)
+{
+    // Mettre à jour le slider et l'étiquette si la valeur change depuis le ChartWidget
+    if (m_aggregationSlider->value() != value) {
+        m_aggregationSlider->setValue(value);
+        m_aggregationLabel->setText(QString::number(value));
     }
 }

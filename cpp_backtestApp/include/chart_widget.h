@@ -63,6 +63,9 @@ public:
     
     // Méthode pour activer/désactiver l'outil règle
     void setRulerToolEnabled(bool enabled); // remplacer par un slot
+
+    void setMaxDisplayPoints(int value);
+    int getMaxDisplayPoints() const;
     
 signals:
     void chartCreated();
@@ -88,6 +91,8 @@ signals:
     void atrAdded(int id, int period);
     void atrChanged(int id, int period);
     void atrRemoved(int id);
+
+    void maxDisplayPointsChanged(int value);
     
 protected:
     void resizeEvent(QResizeEvent* event) override;

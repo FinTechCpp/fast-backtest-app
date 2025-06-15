@@ -207,6 +207,9 @@ public:
     static ChartType stringToChartType(const std::string& typeStr);
     static DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
 
+    int getMaxDisplayPoints() const { return m_maxDisplayPoints; }
+    void setMaxDisplayPoints(int value);
+
     
 private:
 
@@ -241,7 +244,7 @@ private:
     ActiveIndicators m_activeIndicators;
     
     // Constantes
-    const int MAX_DISPLAY_POINTS = 10000;
+    int m_maxDisplayPoints = 30000;
 
     static const std::array<ChartTypeInfo, static_cast<size_t>(ChartDataManager::ChartType::Count)> s_chartTypeData;
 };

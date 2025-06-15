@@ -465,7 +465,8 @@ ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(co
     result.pointCount = timestamps.len;
     result.isValid = true;
 
-    if (timestamps.len <= MAX_DISPLAY_POINTS) return result;
+    // Utiliser m_maxDisplayPoints au lieu de MAX_DISPLAY_POINTS
+    if (timestamps.len <= m_maxDisplayPoints) return result;
 
     // Déterminer le niveau d'agrégation de départ en fonction de la période des données
     AggregationLevel startLevel = determineStartingAggregationLevel(timestamps);
@@ -513,7 +514,7 @@ ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(co
         int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? (aggEndIdx - aggStartIdx + 1) : 0;
 
         // Si l'agrégation est valide et réduit suffisamment les données
-        if (visibleAggPoints > 0 && visibleAggPoints <= MAX_DISPLAY_POINTS) {
+        if (visibleAggPoints > 0 && visibleAggPoints <= m_maxDisplayPoints) {
             result.level = level;
             result.startIndex = aggStartIdx;
             result.pointCount = visibleAggPoints;
@@ -531,6 +532,18 @@ ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(co
     }
 
     return result;
+}
+
+void ChartDataManager::setMaxDisplayPoints(int value) {
+    if (value < 100) value = 100; // Valeur minimale pour éviter les problèmes
+    if (value > 100000) value = 100000; // Limiter à la valeur maximale spécifiée
+    
+    if (m_maxDisplayPoints != value) {
+        m_maxDisplayPoints = value;
+        // Invalider les caches d'agrégation pour forcer leur recalcul
+        m_aggregatedOHLCVCache.clear();
+        m_aggregatedIndicatorsCache.clear();
+    }
 }
 
 void ChartDataManager::calculateIndicator(const IndicatorBase &config)

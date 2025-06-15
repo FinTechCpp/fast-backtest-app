@@ -21,6 +21,7 @@
 #include <QGroupBox>
 #include <QDialogButtonBox>
 #include <QListWidget>
+#include <QSlider>
 #include <vector>
 #include <memory>
 #include <map>
@@ -81,6 +82,8 @@ private slots:
     void onATRRemoved(int id);
     
     void refreshIndicatorsList();
+    void onAggregationSliderChanged(int value);
+    void onMaxDisplayPointsChanged(int value);
 
 private:
     // Cache des données
@@ -107,6 +110,9 @@ private:
 
     App* m_app;                   // Référence à l'application principale
     ChartWidget* m_chartWidget;   // Widget du graphique
+
+    QSlider* m_aggregationSlider;
+    QLabel* m_aggregationLabel;
     
     bool hasValidData() const;
     void showPlaceholder(const QString& message);

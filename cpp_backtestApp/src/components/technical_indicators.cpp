@@ -208,13 +208,14 @@ void TechnicalIndicators::calculateATR(
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     int period,
-    std::vector<double>& atrValues)
+    std::vector<double>& atrValues,
+    bool useLogScale)
 {
     size_t dataSize = closeData.size();
     atrValues.resize(dataSize);
     
     if (dataSize < static_cast<size_t>(period)) {
-        std::fill(atrValues.begin(), atrValues.end(), 0.0);  // Pas assez de données
+        std::fill(atrValues.begin(), atrValues.end(), 0.0);
         return;
     }
     
@@ -231,11 +232,24 @@ void TechnicalIndicators::calculateATR(
     double sum = 0.0;
     for (int i = 0; i < period; ++i) {
         sum += tr[i];
-        atrValues[i] = sum / period;  // Valeur initiale de l'ATR
+        double atrValue = sum / period;
+        
+        // Appliquer le logarithme immédiatement si nécessaire
+        atrValues[i] = useLogScale ? std::log(atrValue + 1) : atrValue;
     }
     
     // Calculer l'ATR pour les points restants (méthode Wilder)
     for (size_t i = period; i < dataSize; ++i) {
-        atrValues[i] = (atrValues[i - 1] * (period - 1) + tr[i - 1]) / period;
+        double atrValue = (atrValues[i - 1] * (period - 1) + tr[i - 1]) / period;
+        
+        // Si on utilise l'échelle logarithmique, on doit d'abord convertir la valeur précédente
+        // de log(atr+1) vers atr avant de l'utiliser dans le calcul
+        if (useLogScale) {
+            double prevATR = std::exp(atrValues[i - 1]) - 1;  // Récupérer la vraie valeur ATR
+            atrValue = (prevATR * (period - 1) + tr[i - 1]) / period;
+            atrValues[i] = std::log(atrValue + 1);  // Stocker en logarithme
+        } else {
+            atrValues[i] = atrValue;  // Stocker normalement
+        }
     }
 }

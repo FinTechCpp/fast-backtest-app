@@ -423,7 +423,7 @@ void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPer
     m_activeIndicators.stochasticValues[id] = std::make_pair(std::move(stochasticKValues), std::move(stochasticDValues));
 }
 
-void ChartDataManager::calculateATR(int id, int period)
+void ChartDataManager::calculateATR(int id, int period, bool useLogScale)
 {
     // Vérifier si les données nécessaires sont disponibles
     if (!hasValidData() || period < 2) return;
@@ -434,7 +434,7 @@ void ChartDataManager::calculateATR(int id, int period)
     const std::vector<double>& closePrices = m_backtestData->getClose();
 
     std::vector<double> atrValues;
-    TechnicalIndicators::calculateATR(highPrices, lowPrices, closePrices, period, atrValues);
+    TechnicalIndicators::calculateATR(highPrices, lowPrices, closePrices, period, atrValues, useLogScale);
 
     // Mettre à jour le cache des indicateurs actifs
     m_activeIndicators.atrValues[id] = std::move(atrValues);
@@ -568,7 +568,7 @@ void ChartDataManager::calculateIndicator(const IndicatorBase &config)
     }
     case IndicatorType::ATR: {
         const ATRInstance& atrConfig = static_cast<const ATRInstance&>(config);
-        calculateATR(atrConfig.id, atrConfig.period);
+        calculateATR(atrConfig.id, atrConfig.period, atrConfig.useLogScale);
 
         for (auto& [level, aggregated] : m_aggregatedIndicatorsCache) {
             aggregated.validAtrIds.erase(atrConfig.id);

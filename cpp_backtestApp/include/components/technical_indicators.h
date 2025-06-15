@@ -80,6 +80,7 @@ public:
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         int period,
-        std::vector<double>& atrValues
+        std::vector<double>& atrValues,
+        bool useLogScale = false
     );
 };

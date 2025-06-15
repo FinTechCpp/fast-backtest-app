@@ -384,7 +384,8 @@ bool ChartWidget::setATRConfig(const ATRInstance &config)
     ATRInstance* oldConfig = findIndicator(config.id, m_atrInstances);
     if (!oldConfig) return false;
 
-    bool needsRecalculation = (oldConfig->period != config.period);
+    bool needsRecalculation = (oldConfig->period != config.period || 
+                              oldConfig->useLogScale != config.useLogScale);
 
     if (!setIndicatorConfigImpl(config, m_atrInstances, needsRecalculation)) return false;
 

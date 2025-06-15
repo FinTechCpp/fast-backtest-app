@@ -33,6 +33,7 @@ private slots:
     void onCancel();
     void onPeriodChanged(int period);
     void onHeightChanged(int height);
+    void onLogScaleChanged(int state);  // Nouveau slot
     void onColorButtonClicked();
     
 private:
@@ -43,6 +44,7 @@ private:
     
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;
+    QCheckBox* m_useLogScaleCheckBox;  // Nouveau contrôle
     QPushButton* m_colorButton;
     QDialogButtonBox* m_buttonBox;
     

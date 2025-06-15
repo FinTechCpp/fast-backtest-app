@@ -83,6 +83,7 @@ struct ATRInstance : public IndicatorBase {
     int period;            // Période de l'ATR
     int height = 120;      // Hauteur du panneau
     int color = 0x006400;  // Couleur de la ligne (vert foncé par défaut)
+    bool useLogScale = false; // Indique si l'échelle logarithmique est utilisée
     
     bool operator==(const ATRInstance& other) const {
         return id == other.id;
@@ -222,7 +223,7 @@ private:
     void calculateRSI(int id, int period);
     void calculateEMA(int id, int period);
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void calculateATR(int id, int period);
+    void calculateATR(int id, int period, bool useLogScale = false);
     
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;

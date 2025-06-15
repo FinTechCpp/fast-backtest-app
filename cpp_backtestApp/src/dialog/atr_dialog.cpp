@@ -31,6 +31,11 @@ ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const
     m_heightSpinBox->setValue(atr.height);
     formLayout->addRow("Height:", m_heightSpinBox);
     
+    // Case à cocher pour l'échelle logarithmique
+    m_useLogScaleCheckBox = new QCheckBox();
+    m_useLogScaleCheckBox->setChecked(atr.useLogScale);
+    formLayout->addRow("Use Logarithmic Scale:", m_useLogScaleCheckBox);
+    
     // Couleur de la ligne
     m_colorButton = new QPushButton();
     updateColorButtonStyle(m_colorButton, atr.color);
@@ -46,6 +51,7 @@ ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const
     // Connecter les signaux
     connect(m_periodSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &ATRDialog::onPeriodChanged);
     connect(m_heightSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &ATRDialog::onHeightChanged);
+    connect(m_useLogScaleCheckBox, &QCheckBox::stateChanged, this, &ATRDialog::onLogScaleChanged);
     connect(m_colorButton, &QPushButton::clicked, this, &ATRDialog::onColorButtonClicked);
     
     connect(m_buttonBox, &QDialogButtonBox::accepted, this, &ATRDialog::onApply);
@@ -87,6 +93,12 @@ void ATRDialog::onHeightChanged(int height)
 {
     m_currentAtr.height = height;
     // updateATR();
+}
+
+void ATRDialog::onLogScaleChanged(int state)
+{
+    
+    m_currentAtr.useLogScale = (state == Qt::Checked);
 }
 
 void ATRDialog::onColorButtonClicked()

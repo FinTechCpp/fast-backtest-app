@@ -108,8 +108,9 @@ void ChartRenderer::createOrUpdateChart(
     // Ajouter le type de graphique approprié selon le type actuel
     if (config.chartType == ChartDataManager::ChartType::CandleStick || 
         config.chartType == ChartDataManager::ChartType::HeikinAshi) {
-        CandleStickLayer* candleLayer = m_financeChart->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
-        candleLayer->setBorderColor(Chart::Transparent); // ya un truc a faire ici pour enlever la bordure noire
+        CandleStickLayer* candleStickLayer = m_financeChart->addCandleStick(0x00CC00, 0xFF3333); // Vert/Rouge pour les bougies
+        candleStickLayer->setColors(0x00CC00, 0x00CC00, 0xFF3333, 0xFF3333);
+        //candleStickLayer->setDataWidth(8); // Largeur des bougies
     } else if (config.chartType == ChartDataManager::ChartType::OHLC) {
         m_financeChart->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
     } else if (config.chartType == ChartDataManager::ChartType::Close) {

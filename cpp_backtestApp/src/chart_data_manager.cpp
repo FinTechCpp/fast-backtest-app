@@ -280,6 +280,56 @@ void ChartDataManager::calculateRSI(int id, int period)
     m_activeIndicators.rsiValues[id] = std::move(rsiValues);
 }
 
+void ChartDataManager::calculateEMA(int id, int period)
+{
+    // Vérifier si les données nécessaires sont disponibles
+    if (!hasValidData() || period < 2) return;
+
+    // Obtenir les prix de clôture
+    const std::vector<double>& closePrices = m_backtestData->getClose();
+    
+    std::vector<double> emaValues;
+    TechnicalIndicators::calculateEMA(closePrices, period, emaValues);
+
+    // Mettre à jour le cache des indicateurs actifs
+    m_activeIndicators.emaValues[id] = std::move(emaValues);
+}
+
+void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
+{
+    // Vérifier si les données nécessaires sont disponibles
+    if (!hasValidData() || fastKPeriod < 2 || slowKPeriod < 2 || slowDPeriod < 2) return;
+
+    // Obtenir les prix
+    const std::vector<double>& highPrices = m_backtestData->getHigh();
+    const std::vector<double>& lowPrices = m_backtestData->getLow();
+    const std::vector<double>& closePrices = m_backtestData->getClose();
+
+    std::vector<double> stochasticKValues;
+    std::vector<double> stochasticDValues;
+    TechnicalIndicators::calculateStochastic(highPrices, lowPrices, closePrices, fastKPeriod, slowKPeriod, slowDPeriod, stochasticKValues, stochasticDValues);
+
+    // Mettre à jour le cache des indicateurs actifs
+    m_activeIndicators.stochasticValues[id] = std::make_pair(std::move(stochasticKValues), std::move(stochasticDValues));
+}
+
+void ChartDataManager::calculateATR(int id, int period)
+{
+    // Vérifier si les données nécessaires sont disponibles
+    if (!hasValidData() || period < 2) return;
+
+    // Obtenir les prix
+    const std::vector<double>& highPrices = m_backtestData->getHigh();
+    const std::vector<double>& lowPrices = m_backtestData->getLow();
+    const std::vector<double>& closePrices = m_backtestData->getClose();
+
+    std::vector<double> atrValues;
+    TechnicalIndicators::calculateATR(highPrices, lowPrices, closePrices, period, atrValues);
+
+    // Mettre à jour le cache des indicateurs actifs
+    m_activeIndicators.atrValues[id] = std::move(atrValues);
+}
+
 ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(const DoubleArray& timestamps) {
     AggregationInfo result;
     result.level = AggregationLevel::Raw;

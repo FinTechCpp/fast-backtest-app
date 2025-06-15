@@ -259,12 +259,18 @@ void ChartView::onAddIndicatorClicked()
         onEditEMA();
     }
     else if (indicatorType == "STOCH") {
+        StochasticInstance stochastic;
+        stochastic.fastKPeriod = 14; // Période par défaut pour %K
+        stochastic.slowKPeriod = 3;  // Période par défaut pour %K lissé
+        stochastic.slowDPeriod = 3;  // Période par défaut pour %D
         // Ajouter un Stochastique avec les paramètres par défaut
-        m_chartWidget->addStochastic(14, 3, 3);
+        m_chartWidget->addStochastic(stochastic);
     }
     else if (indicatorType == "ATR") {
+        ATRInstance atr;
+        atr.period = 14; // Période par défaut pour l'ATR
         // Ajouter un ATR avec la période par défaut (14)
-        m_chartWidget->addATR(14);
+        m_chartWidget->addATR(atr);
     }
     // Ajouter d'autres types d'indicateurs ici
 }

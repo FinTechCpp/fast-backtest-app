@@ -169,18 +169,23 @@ public:
         case IndicatorType::RSI: {
             const RSIInstance& rsiConfig = static_cast<const RSIInstance&>(config);
             calculateRSI(rsiConfig.id, rsiConfig.period);
-            // Calculer RSI
             break;
         }
-        // case IndicatorType::EMA:
-        //     // Calculer EMA
-        //     break;
-        // case IndicatorType::STOCHASTIC:
-        //     // Calculer Stochastic
-        //     break;
-        // case IndicatorType::ATR:
-        //     // Calculer ATR
-        //     break;
+        case IndicatorType::EMA: {
+            const EMAInstance& emaConfig = static_cast<const EMAInstance&>(config);
+            calculateEMA(emaConfig.id, emaConfig.period);
+            break;
+        }
+        case IndicatorType::STOCHASTIC: {
+            const StochasticInstance& stochasticConfig = static_cast<const StochasticInstance&>(config);
+            calculateStochastic(stochasticConfig.id, stochasticConfig.fastKPeriod, stochasticConfig.slowKPeriod, stochasticConfig.slowDPeriod);
+            break;
+        }
+        case IndicatorType::ATR: {
+            const ATRInstance& atrConfig = static_cast<const ATRInstance&>(config);
+            calculateATR(atrConfig.id, atrConfig.period);
+            break;
+        }
         // Ajouter d'autres types d'indicateurs ici
         default:
             // qWarning() << "Type d'indicateur non supporté:" << static_cast<int>(config.type);

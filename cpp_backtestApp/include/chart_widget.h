@@ -103,25 +103,28 @@ private slots:
     void onMouseClickPlotArea(QMouseEvent* event);
     
 public slots:
-// API a reduire, l'id dest deja dans l'instance, et pour l'ajout on pourrait passer l'instance directement
+// pour la validation on pourrait la rendre generique avec un lambda dans la 
+// struct qui definit la condition de validityé de l'indicateur
+// on pourrait aussi mettre la condition de recalcule pouir evité de la faire dans chaque
+// methode et passer un booléen pour savoir si on doit recalculer ou pas
     // Pour le RSI
     int addRSI(const RSIInstance& config);
     bool setRSIConfig(const RSIInstance& config);
     bool removeRSI(int id);
 
     // Pour l'EMA
-    int addEMA(int period = 20);
-    bool setEMAConfig(int id, const EMAInstance& config);
+    int addEMA(const EMAInstance& config);
+    bool setEMAConfig(const EMAInstance& config);
     bool removeEMA(int id);
 
     // Pour le Stochastique
-    int addStochastic(int fastKPeriod = 14, int slowKPeriod = 3, int slowDPeriod = 3);
-    bool setStochasticConfig(int id, const StochasticInstance& config);
+    int addStochastic(const StochasticInstance& config);
+    bool setStochasticConfig(const StochasticInstance& config);
     bool removeStochastic(int id);
 
     // Pour l'ATR
-    int addATR(int period = 14);
-    bool setATRConfig(int id, const ATRInstance& config);
+    int addATR(const ATRInstance& config);
+    bool setATRConfig(const ATRInstance& config);
     bool removeATR(int id);
 
     // Pour gérer le redimensionnement du graphique

@@ -118,13 +118,13 @@ void ATRDialog::updateATR()
 
 void ATRDialog::onApply()
 {
-    m_chartWidget->setATRConfig(m_atrId, m_currentAtr);
+    m_chartWidget->setATRConfig(m_currentAtr);
     accept();
 }
 
 void ATRDialog::onCancel()
 {
     // Restaurer les paramètres d'origine
-    m_chartWidget->setATRConfig(m_atrId, m_originalAtr);
+    m_chartWidget->setATRConfig(m_originalAtr);
     reject();
 }

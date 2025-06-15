@@ -259,9 +259,9 @@ bool ChartWidget::setRSIConfig(const RSIInstance &config)
     RSIInstance* oldConfig = findRSI(config.id);
     if (!oldConfig) return false;
 
-    bool periodChanged = (oldConfig->period != config.period);
+    bool needsRecalculation = (oldConfig->period != config.period);
 
-    if (!setIndicatorConfigImpl(config, m_rsiInstances, periodChanged)) return false;
+    if (!setIndicatorConfigImpl(config, m_rsiInstances, needsRecalculation)) return false;
 
     emit rsiChanged(config.id, config.period);
 
@@ -279,252 +279,117 @@ bool ChartWidget::removeRSI(int id)
     return true;
 }
 
-int ChartWidget::addEMA(int period)
+int ChartWidget::addEMA(const EMAInstance& config)
 {
-    if (period < 2) period = 2;  // Validation de base
-    
-    // Créer une nouvelle instance EMA
-    EMAInstance ema;
-    ema.id = m_nextIndicatorId++;
-    ema.period = period;
-    
-    // S'assurer que les données EMA sont en cache
-    ensureEMACached(period);
-    
-    // Ajouter aux instances actives
-    m_emaInstances.push_back(ema);
+    EMAInstance validatedConfig = config;
 
-    // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (m_dataManager.hasValidData() && m_chartViewer) {
-        // Déterminer l'index de début et le nombre de points visibles actuellement
-        int startIndex = m_chartViewer->getViewPortLeft();
-        int pointsToShow = m_chartViewer->getViewPortWidth();
+    if (validatedConfig.period < 2) validatedConfig.period = 2;  // Validation de base
 
-        // Ajouter directement le RSI au graphique existant
-        // addEMAToChart((FinanceChart*)m_chartViewer->getChart(), ema, startIndex, pointsToShow);
-        
-        m_chartViewer->updateViewPort(false, false);
-    }
-    else if (m_dataManager.hasValidData()) {
-        // Si pas de graphique mais des données valides, créer le graphique complet
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-    }
+    int id = addIndicatorImpl(validatedConfig, m_emaInstances);
 
-    // Émettre le signal
-    emit emaAdded(ema.id, ema.period);
-    
-    return ema.id;
+    emit emaAdded(id, validatedConfig.period);
+
+    return id;
 }
 
-bool ChartWidget::setEMAConfig(int id, const EMAInstance &config)
+bool ChartWidget::setEMAConfig(const EMAInstance &config)
 {
-    EMAInstance* ema = findEMA(id);
-    if (!ema) return false;
+    EMAInstance* oldConfig = findEMA(config.id);
+    if (!oldConfig) return false;
 
-    // Mettre à jour la configuration
-    *ema = config;
+    bool needsRecalculation = (oldConfig->period != config.period);
 
-    // S'assurer que les nouvelles données EMA sont en cache
-    ensureEMACached(config.period);
+    if (!setIndicatorConfigImpl(config, m_emaInstances, needsRecalculation)) return false;
 
-    // Émettre le signal
-    emit emaChanged(id, config.period);
-
-    // Mettre à jour le graphique
-    if (m_dataManager.hasValidData())
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
+    emit emaChanged(config.id, config.period);
 
     return true;
 }
 
 bool ChartWidget::removeEMA(int id)
 {
-    auto it = std::find_if(m_emaInstances.begin(), m_emaInstances.end(),
-                         [id](const EMAInstance& ema) { return ema.id == id; });
-    
-    if (it == m_emaInstances.end()) {
+    if (!removeIndicatorImpl<EMAInstance>(id, m_emaInstances))
         return false;
-    }
     
-    // Supprimer l'instance
-    m_emaInstances.erase(it);
-    
-    // Émettre le signal
     emit emaRemoved(id);
-    
-    // Mettre à jour le graphique
-    if (m_dataManager.hasValidData()) {
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-    }
     
     return true;
 }
 
-int ChartWidget::addStochastic(int fastKPeriod, int slowKPeriod, int slowDPeriod)
+int ChartWidget::addStochastic(const StochasticInstance& config)
 {
-    if (fastKPeriod < 2) fastKPeriod = 2;  // Validation de base
-    if (slowKPeriod < 2) slowKPeriod = 2;
-    if (slowDPeriod < 2) slowDPeriod = 2;
-    
-    // Créer une nouvelle instance Stochastique
-    StochasticInstance stochastic;
-    stochastic.id = m_nextIndicatorId++;
-    stochastic.fastKPeriod = fastKPeriod;
-    stochastic.slowKPeriod = slowKPeriod;
-    stochastic.slowDPeriod = slowDPeriod;
-    
-    // S'assurer que les données Stochastique sont en cache
-    ensureStochasticCached(fastKPeriod, slowKPeriod, slowDPeriod);
-    
-    // Ajouter aux instances actives
-    m_stochasticInstances.push_back(stochastic);
+    StochasticInstance validatedConfig = config;
 
+    if (validatedConfig.fastKPeriod < 2) validatedConfig.fastKPeriod = 2;
+    if (validatedConfig.slowKPeriod < 2) validatedConfig.slowKPeriod = 2;
+    if (validatedConfig.slowDPeriod < 2) validatedConfig.slowDPeriod = 2;
 
-    // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (m_dataManager.hasValidData() && m_chartViewer) {
-        // Déterminer l'index de début et le nombre de points visibles actuellement
-        int startIndex = m_chartViewer->getViewPortLeft();
-        int pointsToShow = m_chartViewer->getViewPortWidth();
+    int id = addIndicatorImpl(validatedConfig, m_stochasticInstances);
 
-        // Ajouter directement le Stochastique au graphique existant
-        // addStochasticToChart((FinanceChart*)m_chartViewer->getChart(), stochastic, startIndex, pointsToShow);
+    emit stochasticAdded(id, validatedConfig.fastKPeriod, validatedConfig.slowKPeriod, validatedConfig.slowDPeriod);
 
-        // m_chartViewer->updateViewPort(false, false);
-        
-    }
-    else if (m_dataManager.hasValidData()) {
-        // Si pas de graphique mais des données valides, créer le graphique complet
-    }
-    updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    // Émettre le signal
-    emit stochasticAdded(stochastic.id, stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
-    
-    return stochastic.id;
+    return id;
 }
 
-bool ChartWidget::setStochasticConfig(int id, const StochasticInstance& config)
+bool ChartWidget::setStochasticConfig(const StochasticInstance& config)
 {
-    StochasticInstance* stochastic = findStochastic(id);
-    if (!stochastic) return false;
+    StochasticInstance* oldConfig = findStochastic(config.id);
+    if (!oldConfig) return false;
 
-    // Mettre à jour la configuration
-    *stochastic = config;
 
-    // S'assurer que les nouvelles données Stochastiques sont en cache
-    ensureStochasticCached(config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
+    bool needsRecalculation = (oldConfig->fastKPeriod != config.fastKPeriod ||
+                          oldConfig->slowKPeriod != config.slowKPeriod ||
+                          oldConfig->slowDPeriod != config.slowDPeriod);
+    if (!setIndicatorConfigImpl(config, m_stochasticInstances, needsRecalculation)) return false;
 
-    // Émettre le signal
-    emit stochasticChanged(id, config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
-
-    // Mettre à jour le graphique
-    if (m_dataManager.hasValidData())
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
+    emit stochasticChanged(config.id, config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
 
     return true;
 }
 
 bool ChartWidget::removeStochastic(int id)
 {
-    auto it = std::find_if(m_stochasticInstances.begin(), m_stochasticInstances.end(),
-                         [id](const StochasticInstance& stochastic) { return stochastic.id == id; });
-    
-    if (it == m_stochasticInstances.end()) {
+    if (!removeIndicatorImpl<StochasticInstance>(id, m_stochasticInstances))
         return false;
-    }
     
-    // Supprimer l'instance
-    m_stochasticInstances.erase(it);
-    
-    // Émettre le signal
     emit stochasticRemoved(id);
-    
-    // Mettre à jour le graphique
-    if (m_dataManager.hasValidData()) {
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-    }
     
     return true;
 }
 
-int ChartWidget::addATR(int period)
+int ChartWidget::addATR(const ATRInstance& config)
 {
-    if (period < 2) period = 2;  // Validation de base
-    
-    // Créer une nouvelle instance ATR
-    ATRInstance atr;
-    atr.id = m_nextIndicatorId++;
-    atr.period = period;
-    
-    // S'assurer que les données ATR sont en cache
-    ensureATRCached(period);
-    
-    // Ajouter aux instances actives
-    m_atrInstances.push_back(atr);
-    
-    // Si nous avons déjà un graphique et des données valides, ajouter directement l'indicateur
-    if (m_dataManager.hasValidData() && m_chartViewer) {
-        // Déterminer l'index de début et le nombre de points visibles actuellement
-        int startIndex = m_chartViewer->getViewPortLeft();
-        int pointsToShow = m_chartViewer->getViewPortWidth();
+    ATRInstance validatedConfig = config;
 
-        // Ajouter directement le Stochastique au graphique existant
-        // m_renderer.addATRToChart(m_financeChart, atr, startIndex, pointsToShow);
-        // std::cout << "On va appeler updateViewPort" << std::endl;
+    if (validatedConfig.period < 2) validatedConfig.period = 2;  // Validation de base
 
-        m_chartViewer->updateViewPort(false, true);
-    }
-    else if (m_dataManager.hasValidData()) {
-        // Si pas de graphique mais des données valides, créer le graphique complet
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-    }
+    int id = addIndicatorImpl(validatedConfig, m_atrInstances);
 
-    // Émettre le signal
-    emit atrAdded(atr.id, atr.period);
-    
-    return atr.id;
+    emit atrAdded(id, validatedConfig.period);
+
+    return id;
 }
 
-bool ChartWidget::setATRConfig(int id, const ATRInstance &config)
+bool ChartWidget::setATRConfig(const ATRInstance &config)
 {
-    ATRInstance* atr = findATR(id);
-    if (!atr) return false;
+    ATRInstance* oldConfig = findATR(config.id);
+    if (!oldConfig) return false;
 
-    // Mettre à jour la configuration
-    *atr = config;
+    bool needsRecalculation = (oldConfig->period != config.period);
 
-    // S'assurer que les nouvelles données ATR sont en cache
-    ensureATRCached(config.period);
+    if (!setIndicatorConfigImpl(config, m_atrInstances, needsRecalculation)) return false;
 
-    // Émettre le signal
-    emit atrChanged(id, config.period);
-
-    // Mettre à jour le graphique
-    if (m_dataManager.hasValidData())
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
+    emit atrChanged(config.id, config.period);
 
     return true;
 }
 
 bool ChartWidget::removeATR(int id)
 {
-    auto it = std::find_if(m_atrInstances.begin(), m_atrInstances.end(),
-                         [id](const ATRInstance& atr) { return atr.id == id; });
-    
-    if (it == m_atrInstances.end()) {
+    if (!removeIndicatorImpl<ATRInstance>(id, m_atrInstances))
         return false;
-    }
     
-    // Supprimer l'instance
-    m_atrInstances.erase(it);
-    
-    // Émettre le signal
     emit atrRemoved(id);
-    
-    // Mettre à jour le graphique
-    if (m_dataManager.hasValidData()) {
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-    }
     
     return true;
 }

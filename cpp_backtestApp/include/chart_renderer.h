@@ -82,29 +82,25 @@ private:
     
     // Méthodes pour l'ajout d'indicateurs
     void addRSIToChart(FinanceChart* chart, 
-                      const RSIInstance& rsi, 
-                      const ChartDataManager& dataManager, 
-                      int startIndex, 
-                      int pointsToShow);
-    
+        const RSIInstance& rsi, 
+        const ChartDataManager& dataManager, 
+        const ChartDataManager::AggregationInfo& aggregationInfo);
+
     void addEMAToChart(FinanceChart* chart, 
-                      const EMAInstance& ema, 
-                      const ChartDataManager& dataManager, 
-                      int startIndex, 
-                      int pointsToShow);
-    
+        const EMAInstance& ema, 
+        const ChartDataManager& dataManager, 
+        const ChartDataManager::AggregationInfo& aggregationInfo);
+
     void addStochasticToChart(FinanceChart* chart, 
-                             const StochasticInstance& stochastic, 
-                             const ChartDataManager& dataManager, 
-                             int startIndex, 
-                             int pointsToShow);
-    
+        const StochasticInstance& stochastic, 
+        const ChartDataManager& dataManager, 
+        const ChartDataManager::AggregationInfo& aggregationInfo);
+
     void addATRToChart(FinanceChart* chart, 
-                      const ATRInstance& atr, 
-                      const ChartDataManager& dataManager, 
-                      int startIndex, 
-                      int pointsToShow);
-    
+        const ATRInstance& atr, 
+        const ChartDataManager& dataManager, 
+        const ChartDataManager::AggregationInfo& aggregationInfo);
+
     // Utilitaires
     void addMarkers(XYChart* chart, 
                    const std::vector<std::pair<double, double>>& markers, 

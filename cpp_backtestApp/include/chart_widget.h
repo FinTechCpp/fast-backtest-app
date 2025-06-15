@@ -47,14 +47,10 @@ public:
     EMAInstance* findEMA(int id);
     StochasticInstance* findStochastic(int id);
     ATRInstance* findATR(int id);
-    
-    // Actions sur le graphique
 
-    void clearChart();     ///< Efface le graphique et les données
-    void resetZoom();      ///< Réinitialise le zoom à l'état initial
     
     // État du graphique
-    bool hasValidData() const;
+    bool hasValidData() const; // ne devrait pas etre un probleme les class exterieur s'enfoutent de si les données sont valides
     bool isChartCreated() const;
     
     // Conversion de ChartType 
@@ -154,6 +150,9 @@ private:
     // 2. Gestion des indicateurs
     // ID unique global pour tous les types d'indicateurs
     int m_nextIndicatorId = 1;
+
+    template<typename T>
+    T* findIndicator(int id, std::vector<T>& instances);
 
     template<typename T, typename Container>
     int addIndicatorImpl(const T& config, Container& container);

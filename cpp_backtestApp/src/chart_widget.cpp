@@ -103,6 +103,26 @@ void ChartWidget::setChartType(ChartDataManager::ChartType chartType)
         updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
+RSIInstance *ChartWidget::findRSI(int id)
+{
+    return findIndicator<RSIInstance>(id, m_rsiInstances);
+}
+
+EMAInstance *ChartWidget::findEMA(int id)
+{
+    return findIndicator<EMAInstance>(id, m_emaInstances);
+}
+
+StochasticInstance *ChartWidget::findStochastic(int id)
+{
+    return findIndicator<StochasticInstance>(id, m_stochasticInstances);
+}
+
+ATRInstance *ChartWidget::findATR(int id)
+{
+    return findIndicator<ATRInstance>(id, m_atrInstances);
+}
+
 bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
     if (!m_dataManager.hasValidData() || !m_chartViewer) {
         return false;
@@ -131,7 +151,6 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
     m_currentAggregation = m_dataManager.getOptimalAggregationInfo(DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow));
     
     m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation, m_rsiInstances, m_emaInstances, m_stochasticInstances, m_atrInstances);
-
 
     if (mode == ViewPortMode::FULL_CHART) {
         m_chartViewer->setViewPortLeft(0);
@@ -246,7 +265,7 @@ int ChartWidget::addRSI(const RSIInstance &config)
 
 bool ChartWidget::setRSIConfig(const RSIInstance &config)
 {
-    RSIInstance* oldConfig = findRSI(config.id);
+    RSIInstance* oldConfig = findIndicator(config.id, m_rsiInstances);
     if (!oldConfig) return false;
 
     bool needsRecalculation = (oldConfig->period != config.period);
@@ -284,7 +303,7 @@ int ChartWidget::addEMA(const EMAInstance& config)
 
 bool ChartWidget::setEMAConfig(const EMAInstance &config)
 {
-    EMAInstance* oldConfig = findEMA(config.id);
+    EMAInstance* oldConfig = findIndicator(config.id, m_emaInstances);
     if (!oldConfig) return false;
 
     bool needsRecalculation = (oldConfig->period != config.period);
@@ -323,7 +342,7 @@ int ChartWidget::addStochastic(const StochasticInstance& config)
 
 bool ChartWidget::setStochasticConfig(const StochasticInstance& config)
 {
-    StochasticInstance* oldConfig = findStochastic(config.id);
+    StochasticInstance* oldConfig = findIndicator(config.id, m_stochasticInstances);
     if (!oldConfig) return false;
 
 
@@ -362,7 +381,7 @@ int ChartWidget::addATR(const ATRInstance& config)
 
 bool ChartWidget::setATRConfig(const ATRInstance &config)
 {
-    ATRInstance* oldConfig = findATR(config.id);
+    ATRInstance* oldConfig = findIndicator(config.id, m_atrInstances);
     if (!oldConfig) return false;
 
     bool needsRecalculation = (oldConfig->period != config.period);
@@ -384,56 +403,20 @@ bool ChartWidget::removeATR(int id)
     return true;
 }
 
-RSIInstance* ChartWidget::findRSI(int id)
+template <typename T>
+T *ChartWidget::findIndicator(int id, std::vector<T> &instances)
 {
-    auto it = std::find_if(m_rsiInstances.begin(), m_rsiInstances.end(),
-                         [id](const RSIInstance& rsi) { return rsi.id == id; });
-    
-    if (it == m_rsiInstances.end()) {
+    auto it = std::find_if(instances.begin(), instances.end(),
+                         [id](const T& instance) { return instance.id == id; });
+
+    if (it == instances.end())
         return nullptr;
-    }
-    
+
     return &(*it);
 }
 
-EMAInstance* ChartWidget::findEMA(int id)
-{
-    auto it = std::find_if(m_emaInstances.begin(), m_emaInstances.end(),
-                         [id](const EMAInstance& ema) { return ema.id == id; });
-    
-    if (it == m_emaInstances.end()) {
-        return nullptr;
-    }
-    
-    return &(*it);
-}
-
-StochasticInstance* ChartWidget::findStochastic(int id)
-{
-    auto it = std::find_if(m_stochasticInstances.begin(), m_stochasticInstances.end(),
-                         [id](const StochasticInstance& stochastic) { return stochastic.id == id; });
-    
-    if (it == m_stochasticInstances.end()) {
-        return nullptr;
-    }
-    
-    return &(*it);
-}
-
-ATRInstance* ChartWidget::findATR(int id)
-{
-    auto it = std::find_if(m_atrInstances.begin(), m_atrInstances.end(),
-                         [id](const ATRInstance& atr) { return atr.id == id; });
-    
-    if (it == m_atrInstances.end()) {
-        return nullptr;
-    }
-    
-    return &(*it);
-}
-
-template<typename T, typename Container>
-int ChartWidget::addIndicatorImpl(const T& configIn, Container& container)
+template <typename T, typename Container>
+int ChartWidget::addIndicatorImpl(const T &configIn, Container &container)
 {
     // Créer une copie pour pouvoir modifier l'ID
     T config = configIn;

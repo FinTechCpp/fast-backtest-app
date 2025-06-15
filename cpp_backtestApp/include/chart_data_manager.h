@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
+#include <set>
 #include <map>
 #include <algorithm>
 #include <cmath>
@@ -127,6 +128,28 @@ public:
         bool isValid = false;
     };
 
+    struct AggregatedIndicators {
+        // Pour chaque type d'indicateur, stocker les IDs qui ont été agrégés
+        std::set<int> validRsiIds;
+        std::set<int> validEmaIds;
+        std::set<int> validStochasticIds;
+        std::set<int> validAtrIds;
+
+        // Données des indicateurs
+        std::map<int, std::vector<double>> rsiValues;
+        std::map<int, std::vector<double>> emaValues;
+        std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
+        std::map<int, std::vector<double>> atrValues;
+
+        AggregationLevel level;
+        
+         // Méthodes utilitaires pour vérifier si un indicateur spécifique est valide
+        bool isRsiValid(int id) const { return validRsiIds.find(id) != validRsiIds.end(); }
+        bool isEmaValid(int id) const { return validEmaIds.find(id) != validEmaIds.end(); }
+        bool isStochasticValid(int id) const { return validStochasticIds.find(id) != validStochasticIds.end(); }
+        bool isAtrValid(int id) const { return validAtrIds.find(id) != validAtrIds.end(); }
+    };
+
     struct HeikinAshiCache {
         std::vector<double> open;
         std::vector<double> high;
@@ -168,12 +191,13 @@ public:
     
     // Accesseurs
     const std::vector<double>& getTimestamps() const { return m_timestampsCache; }
-    const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
     const HeikinAshiCache& getHeikinAshiCache() const { return m_heikinAshiCache; }
     const EquityData& getEquityData() const { return m_equityData; }
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
+    const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
     const std::vector<std::shared_ptr<be::Trade>>& getTrades() const { return m_trades; }
     const ActiveIndicators& getActiveIndicators() const { return m_activeIndicators; }
+    const AggregatedIndicators& getAggregatedIndicators(AggregationLevel level) const;
     bool hasValidData() const;
 
     // methode utilitaires peut etre a deplacer
@@ -191,7 +215,9 @@ private:
     };
 
     void prepareTimestampsCache();
-    void aggregateData(AggregationLevel level);
+    void aggregateOHLCV(AggregationLevel level);
+    void aggregateIndicators(AggregationLevel level);
+    DoubleArray aggregateVector(const std::vector<double>& data, AggregationLevel level, int aggregateMethod) const;
 
     void calculateRSI(int id, int period);
     void calculateEMA(int id, int period);
@@ -206,7 +232,8 @@ private:
     // Données
     std::shared_ptr<const be::Data> m_backtestData;
     std::vector<double> m_timestampsCache;
-    std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregationCache;
+    std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregatedOHLCVCache;
+    std::unordered_map<AggregationLevel, AggregatedIndicators> m_aggregatedIndicatorsCache;
     HeikinAshiCache m_heikinAshiCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
@@ -215,7 +242,5 @@ private:
     // Constantes
     const int MAX_DISPLAY_POINTS = 10000;
 
-
     static const std::array<ChartTypeInfo, static_cast<size_t>(ChartDataManager::ChartType::Count)> s_chartTypeData;
-
 };

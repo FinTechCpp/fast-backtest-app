@@ -166,19 +166,25 @@ public:
         // Implémentation spécifique pour chaque type d'indicateur
         // Par exemple, pour RSI, EMA, Stochastic, ATR, etc.
         switch (config.type) {
-        case IndicatorType::RSI:
+        case IndicatorType::RSI: {
+            const RSIInstance& rsiConfig = static_cast<const RSIInstance&>(config);
+            calculateRSI(rsiConfig.id, rsiConfig.period);
             // Calculer RSI
             break;
-        case IndicatorType::EMA:
-            // Calculer EMA
-            break;
-        case IndicatorType::STOCHASTIC:
-            // Calculer Stochastic
-            break;
-        case IndicatorType::ATR:
-            // Calculer ATR
-            break;
+        }
+        // case IndicatorType::EMA:
+        //     // Calculer EMA
+        //     break;
+        // case IndicatorType::STOCHASTIC:
+        //     // Calculer Stochastic
+        //     break;
+        // case IndicatorType::ATR:
+        //     // Calculer ATR
+        //     break;
         // Ajouter d'autres types d'indicateurs ici
+        default:
+            // qWarning() << "Type d'indicateur non supporté:" << static_cast<int>(config.type);
+            break;
         }
     }
     
@@ -188,6 +194,7 @@ public:
     const HeikinAshiCache& getHeikinAshiCache() const { return m_heikinAshiCache; }
     const EquityData& getEquityData() const { return m_equityData; }
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
+    const ActiveIndicators& getActiveIndicators() const { return m_activeIndicators; }
     bool hasValidData() const;
 
     // methode utilitaires peut etre a deplacer
@@ -207,7 +214,10 @@ private:
     void prepareTimestampsCache();
     void aggregateData(AggregationLevel level);
 
-
+    void calculateRSI(int id, int period);
+    void calculateEMA(int id, int period);
+    void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
+    void calculateATR(int id, int period);
     
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;
@@ -220,6 +230,7 @@ private:
     std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregationCache;
     HeikinAshiCache m_heikinAshiCache;
     EquityData m_equityData;
+    ActiveIndicators m_activeIndicators;
     
     // Constantes
     const int MAX_DISPLAY_POINTS = 10000;

@@ -52,8 +52,7 @@ public:
         const std::vector<RSIInstance>& rsiInstances,
         const std::vector<EMAInstance>& emaInstances,
         const std::vector<StochasticInstance>& stochasticInstances,
-        const std::vector<ATRInstance>& atrInstances,
-        const IndicatorCache& indicatorCache
+        const std::vector<ATRInstance>& atrInstances
     );
 
     void updateDynamicLayer(QChartViewer* viewer, 
@@ -85,25 +84,25 @@ private:
     // Méthodes pour l'ajout d'indicateurs
     void addRSIToChart(FinanceChart* chart, 
                       const RSIInstance& rsi, 
-                      const IndicatorCache& cache, 
+                      const ChartDataManager& dataManager, 
                       int startIndex, 
                       int pointsToShow);
     
     void addEMAToChart(FinanceChart* chart, 
                       const EMAInstance& ema, 
-                      const IndicatorCache& cache, 
+                      const ChartDataManager& dataManager, 
                       int startIndex, 
                       int pointsToShow);
     
     void addStochasticToChart(FinanceChart* chart, 
                              const StochasticInstance& stochastic, 
-                             const IndicatorCache& cache, 
+                             const ChartDataManager& dataManager, 
                              int startIndex, 
                              int pointsToShow);
     
     void addATRToChart(FinanceChart* chart, 
                       const ATRInstance& atr, 
-                      const IndicatorCache& cache, 
+                      const ChartDataManager& dataManager, 
                       int startIndex, 
                       int pointsToShow);
     

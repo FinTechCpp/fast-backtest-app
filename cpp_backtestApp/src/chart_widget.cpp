@@ -140,7 +140,7 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
 
     m_currentAggregation = m_dataManager.getOptimalAggregationInfo(DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow));
     
-    m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager,m_config, m_trades, m_currentAggregation, m_rsiInstances, m_emaInstances, m_stochasticInstances, m_atrInstances, m_indicatorCache);
+    m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_trades, m_currentAggregation, m_rsiInstances, m_emaInstances, m_stochasticInstances, m_atrInstances);
 
 
     if (mode == ViewPortMode::FULL_CHART) {

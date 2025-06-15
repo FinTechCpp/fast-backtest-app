@@ -20,12 +20,10 @@ void ChartRenderer::createOrUpdateChart(
     const std::vector<RSIInstance>& rsiInstances,
     const std::vector<EMAInstance>& emaInstances,
     const std::vector<StochasticInstance>& stochasticInstances,
-    const std::vector<ATRInstance>& atrInstances,
-    const IndicatorCache& indicatorCache)
+    const std::vector<ATRInstance>& atrInstances)
 {
     // Extraire les données selon le niveau d'agrégation
-    DoubleArray timestamps;
-    DoubleArray openData, highData, lowData, closeData, volumeData;
+    DoubleArray timestamps, openData, highData, lowData, closeData, volumeData;
     
     if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
         // Utiliser les données brutes directement
@@ -116,28 +114,28 @@ void ChartRenderer::createOrUpdateChart(
     // RSI
     for (const auto& rsi : rsiInstances) {
         if (rsi.visible) {
-            addRSIToChart(m_financeChart.get(), rsi, indicatorCache, startIndex, timestamps.len);
+            addRSIToChart(m_financeChart.get(), rsi, dataManager, startIndex, timestamps.len);
         }
     }
     
     // EMA
     for (const auto& ema : emaInstances) {
         if (ema.visible) {
-            addEMAToChart(m_financeChart.get(), ema, indicatorCache, startIndex, timestamps.len);
+            addEMAToChart(m_financeChart.get(), ema, dataManager, startIndex, timestamps.len);
         }
     }
     
     // Stochastique
     for (const auto& stochastic : stochasticInstances) {
         if (stochastic.visible) {
-            addStochasticToChart(m_financeChart.get(), stochastic, indicatorCache, startIndex, timestamps.len);
+            addStochasticToChart(m_financeChart.get(), stochastic, dataManager, startIndex, timestamps.len);
         }
     }
     
     // ATR
     for (const auto& atr : atrInstances) {
         if (atr.visible) {
-            addATRToChart(m_financeChart.get(), atr, indicatorCache, startIndex, timestamps.len);
+            addATRToChart(m_financeChart.get(), atr, dataManager, startIndex, timestamps.len);
         }
     }
     
@@ -553,17 +551,13 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
 
 void ChartRenderer::addRSIToChart(FinanceChart* chart, 
                                 const RSIInstance& rsi, 
-                                const IndicatorCache& cache, 
+                                const ChartDataManager& dataManager, 
                                 int startIndex, 
                                 int pointsToShow)
 {
-    if (!cache.isValid) return;
-
-    auto it = cache.rsi.find(rsi.period);
-    if (it == cache.rsi.end()) {
-        return; // Données RSI non disponibles
-    }
-
+    const auto& rsiMap = dataManager.getActiveIndicators().rsiValues;
+    auto it = rsiMap.find(rsi.id);
+    if (it == rsiMap.end()) return;
     const std::vector<double>& rsiData = it->second;
     
     if (startIndex >= (int)rsiData.size()) return;
@@ -595,32 +589,22 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
 
 void ChartRenderer::addEMAToChart(FinanceChart* chart, 
                                 const EMAInstance& ema, 
-                                const IndicatorCache& cache, 
+                                const ChartDataManager& dataManager, 
                                 int startIndex, 
                                 int pointsToShow)
 {
-    if (!cache.isValid || !chart || !chart->getChart(1)) {
-        return;
-    }
-
-    auto it = cache.ema.find(ema.period);
-    if (it == cache.ema.end()) {
-        return; // Données EMA non disponibles
-    }
-
+    const auto& emaMap = dataManager.getActiveIndicators().emaValues;
+    auto it = emaMap.find(ema.id);
+    if (it == emaMap.end()) return;
     const std::vector<double>& emaData = it->second;
     
-    if (startIndex >= (int)emaData.size()) {
-        return;
-    }
+    if (startIndex >= (int)emaData.size()) return;
 
     // Limiter le nombre de points à afficher
     int endIndex = std::min(startIndex + pointsToShow, (int)emaData.size());
     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) {
-        return;
-    }
+    if (actualPoints <= 0) return;
 
     // Extraire les données EMA visibles du cache
     DoubleArray emaArray(&emaData[startIndex], actualPoints);
@@ -634,34 +618,23 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
 
 void ChartRenderer::addStochasticToChart(FinanceChart* chart, 
                                        const StochasticInstance& stochastic, 
-                                       const IndicatorCache& cache, 
+                                       const ChartDataManager& dataManager, 
                                        int startIndex, 
                                        int pointsToShow)
 {
-    if (!cache.isValid) return;
-
-    // Clé pour retrouver les données en cache
-    std::tuple<int, int, int> key = std::make_tuple(stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
-    
-    auto it = cache.stochastic.find(key);
-    if (it == cache.stochastic.end()) {
-        return; // Données Stochastic non disponibles
-    }
-
+    const auto& stochasticMap = dataManager.getActiveIndicators().stochasticValues;
+    auto it = stochasticMap.find(stochastic.id);
+    if (it == stochasticMap.end()) return;
     const std::vector<double>& kValues = it->second.first;
     const std::vector<double>& dValues = it->second.second;
     
-    if (startIndex >= (int)kValues.size() || startIndex >= (int)dValues.size()) {
-        return;
-    }
+    if (startIndex >= (int)kValues.size() || startIndex >= (int)dValues.size()) return;
 
     // Limiter le nombre de points à afficher
     int endIndex = std::min(startIndex + pointsToShow, (int)kValues.size());
     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) {
-        return;
-    }
+    if (actualPoints <= 0) return;
 
     // Extraire les données Stochastic visibles du cache
     DoubleArray kArray(&kValues[startIndex], actualPoints);
@@ -697,17 +670,13 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
 
 void ChartRenderer::addATRToChart(FinanceChart* chart, 
                                 const ATRInstance& atr, 
-                                const IndicatorCache& cache, 
+                                const ChartDataManager& dataManager, 
                                 int startIndex, 
                                 int pointsToShow)
 {
-    if (!cache.isValid) return;
-
-    auto it = cache.atr.find(atr.period);
-    if (it == cache.atr.end()) {
-        return; // Données ATR non disponibles
-    }
-
+    const auto& atrMap = dataManager.getActiveIndicators().atrValues;
+    auto it = atrMap.find(atr.id);
+    if (it == atrMap.end()) return;
     const std::vector<double>& atrData = it->second;
     
     if (startIndex >= (int)atrData.size()) return;

@@ -23,8 +23,8 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
         prepareTimestampsCache();
         updateHeikinAshiCache();
         
-        // Invalider et recalculer tous les niveaux d'agrégation
         m_aggregationCache.clear();
+        m_activeIndicators.clear();
     }
 }
 
@@ -263,6 +263,21 @@ void ChartDataManager::aggregateData(AggregationLevel level) {
     
     aggregatedData.level = level;
     aggregatedData.isValid = true;
+}
+
+void ChartDataManager::calculateRSI(int id, int period)
+{
+    // Vérifier si les données nécessaires sont disponibles
+    if (!hasValidData() || period < 2) return;
+
+    // Obtenir les prix de clôture
+    const std::vector<double>& closePrices = m_backtestData->getClose();
+    
+    std::vector<double> rsiValues;
+    TechnicalIndicators::calculateRSI(closePrices, period, rsiValues);
+
+    // Mettre à jour le cache des indicateurs actifs
+    m_activeIndicators.rsiValues[id] = std::move(rsiValues);
 }
 
 ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(const DoubleArray& timestamps) {

@@ -15,17 +15,14 @@ void ChartRenderer::createOrUpdateChart(
     QChartViewer* viewer,
     const ChartDataManager& dataManager,
     const ChartConfiguration& config,
-    const std::vector<std::shared_ptr<be::Trade>>& trades,
     const ChartDataManager::AggregationInfo& aggregationInfo,
     const std::vector<RSIInstance>& rsiInstances,
     const std::vector<EMAInstance>& emaInstances,
     const std::vector<StochasticInstance>& stochasticInstances,
-    const std::vector<ATRInstance>& atrInstances,
-    const IndicatorCache& indicatorCache)
+    const std::vector<ATRInstance>& atrInstances)
 {
     // Extraire les données selon le niveau d'agrégation
-    DoubleArray timestamps;
-    DoubleArray openData, highData, lowData, closeData, volumeData;
+    DoubleArray timestamps, openData, highData, lowData, closeData, volumeData;
     
     if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
         // Utiliser les données brutes directement
@@ -116,28 +113,28 @@ void ChartRenderer::createOrUpdateChart(
     // RSI
     for (const auto& rsi : rsiInstances) {
         if (rsi.visible) {
-            addRSIToChart(m_financeChart.get(), rsi, indicatorCache, startIndex, timestamps.len);
+            addRSIToChart(m_financeChart.get(), rsi, dataManager, aggregationInfo);
         }
     }
     
     // EMA
     for (const auto& ema : emaInstances) {
         if (ema.visible) {
-            addEMAToChart(m_financeChart.get(), ema, indicatorCache, startIndex, timestamps.len);
+            addEMAToChart(m_financeChart.get(), ema, dataManager, aggregationInfo);
         }
     }
     
     // Stochastique
     for (const auto& stochastic : stochasticInstances) {
         if (stochastic.visible) {
-            addStochasticToChart(m_financeChart.get(), stochastic, indicatorCache, startIndex, timestamps.len);
+            addStochasticToChart(m_financeChart.get(), stochastic, dataManager, aggregationInfo);
         }
     }
     
     // ATR
     for (const auto& atr : atrInstances) {
         if (atr.visible) {
-            addATRToChart(m_financeChart.get(), atr, indicatorCache, startIndex, timestamps.len);
+            addATRToChart(m_financeChart.get(), atr, dataManager, aggregationInfo);
         }
     }
     
@@ -148,7 +145,7 @@ void ChartRenderer::createOrUpdateChart(
     
     // 5. Ajouter les trades si disponibles et demandés
     if (config.showTrades) {
-        addTradeMarkers(m_financeChart.get(), timestamps, startIndex, trades, dataManager, aggregationInfo);
+        addTradeMarkers(m_financeChart.get(), timestamps, startIndex, dataManager.getTrades(), dataManager, aggregationInfo);
     }
     
     // Mettre à jour le graphique dans le viewer
@@ -553,30 +550,53 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
 
 void ChartRenderer::addRSIToChart(FinanceChart* chart, 
                                 const RSIInstance& rsi, 
-                                const IndicatorCache& cache, 
-                                int startIndex, 
-                                int pointsToShow)
+                                const ChartDataManager& dataManager, 
+                                const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    if (!cache.isValid) return;
+    int startIndex = aggregationInfo.startIndex;
+    int pointsToShow = aggregationInfo.pointCount;
+    
+    const std::vector<double>* rsiData = nullptr;
 
-    auto it = cache.rsi.find(rsi.period);
-    if (it == cache.rsi.end()) {
-        return; // Données RSI non disponibles
+
+    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+        // Utiliser les données brutes
+        const auto& rsiMap = dataManager.getActiveIndicators().rsiValues;
+        auto it = rsiMap.find(rsi.id);
+        if (it == rsiMap.end()) return;
+        
+        rsiData = &(it->second);
+    } 
+    else {
+        // Utiliser les données agrégées
+        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
+        auto it = aggregated.rsiValues.find(rsi.id);
+        
+        // Vérifier si les données agrégées sont disponibles et valides
+        if (it != aggregated.rsiValues.end() && aggregated.isRsiValid(rsi.id)) {
+            rsiData = &(it->second);
+        }
+        else {
+            // Fallback aux données brutes si les données agrégées ne sont pas disponibles
+            const auto& rsiMap = dataManager.getActiveIndicators().rsiValues;
+            auto rawIt = rsiMap.find(rsi.id);
+            if (rawIt == rsiMap.end()) return;
+            
+            rsiData = &(rawIt->second);
+        }
     }
 
-    const std::vector<double>& rsiData = it->second;
-    
-    if (startIndex >= (int)rsiData.size()) return;
+    if (!rsiData || startIndex >= (int)rsiData->size()) return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)rsiData.size());
+    int endIndex = std::min(startIndex + pointsToShow, (int)rsiData->size());
     int actualPoints = endIndex - startIndex;
 
     if (actualPoints <= 0) return;
 
     // Extraire les données RSI visibles du cache
-    DoubleArray rsiArray(&rsiData[startIndex], actualPoints);
-    
+    DoubleArray rsiArray(&(*rsiData)[startIndex], actualPoints);
+
     // Ajouter le graphique d'indicateur
     XYChart* c = chart->addIndicator(rsi.height);
     
@@ -595,36 +615,52 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
 
 void ChartRenderer::addEMAToChart(FinanceChart* chart, 
                                 const EMAInstance& ema, 
-                                const IndicatorCache& cache, 
-                                int startIndex, 
-                                int pointsToShow)
+                                const ChartDataManager& dataManager, 
+                                const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    if (!cache.isValid || !chart || !chart->getChart(1)) {
-        return;
+    // Déterminer quelle source de données utiliser
+    const std::vector<double>* emaData = nullptr;
+    int startIndex = aggregationInfo.startIndex;
+    int pointsToShow = aggregationInfo.pointCount;
+
+    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+        // Utiliser les données brutes
+        const auto& emaMap = dataManager.getActiveIndicators().emaValues;
+        auto it = emaMap.find(ema.id);
+        if (it == emaMap.end()) return;
+        
+        emaData = &(it->second);
+    } 
+    else {
+        // Utiliser les données agrégées
+        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
+        auto it = aggregated.emaValues.find(ema.id);
+        
+        // Vérifier si les données agrégées sont disponibles et valides
+        if (it != aggregated.emaValues.end() && aggregated.isEmaValid(ema.id)) {
+            emaData = &(it->second);
+        }
+        else {
+            // Fallback aux données brutes
+            const auto& emaMap = dataManager.getActiveIndicators().emaValues;
+            auto rawIt = emaMap.find(ema.id);
+            if (rawIt == emaMap.end()) return;
+            
+            emaData = &(rawIt->second);
+        }
     }
 
-    auto it = cache.ema.find(ema.period);
-    if (it == cache.ema.end()) {
-        return; // Données EMA non disponibles
-    }
-
-    const std::vector<double>& emaData = it->second;
-    
-    if (startIndex >= (int)emaData.size()) {
-        return;
-    }
+    if (startIndex >= (int)emaData->size()) return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)emaData.size());
+    int endIndex = std::min(startIndex + pointsToShow, (int)emaData->size());
     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) {
-        return;
-    }
+    if (actualPoints <= 0) return;
 
     // Extraire les données EMA visibles du cache
-    DoubleArray emaArray(&emaData[startIndex], actualPoints);
-    
+    DoubleArray emaArray(&(*emaData)[startIndex], actualPoints);
+
     // Configurer et ajouter l'EMA directement sur le graphique principal
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "EMA (%d)", ema.period);
@@ -634,38 +670,56 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
 
 void ChartRenderer::addStochasticToChart(FinanceChart* chart, 
                                        const StochasticInstance& stochastic, 
-                                       const IndicatorCache& cache, 
-                                       int startIndex, 
-                                       int pointsToShow)
+                                       const ChartDataManager& dataManager, 
+                                       const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    if (!cache.isValid) return;
+    const std::vector<double>* kValues = nullptr;
+    const std::vector<double>* dValues = nullptr;
 
-    // Clé pour retrouver les données en cache
-    std::tuple<int, int, int> key = std::make_tuple(stochastic.fastKPeriod, stochastic.slowKPeriod, stochastic.slowDPeriod);
-    
-    auto it = cache.stochastic.find(key);
-    if (it == cache.stochastic.end()) {
-        return; // Données Stochastic non disponibles
+    int startIndex = aggregationInfo.startIndex;
+    int pointsToShow = aggregationInfo.pointCount;
+
+    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+        // Utiliser les données brutes
+        const auto& stochasticMap = dataManager.getActiveIndicators().stochasticValues;
+        auto it = stochasticMap.find(stochastic.id);
+        if (it == stochasticMap.end()) return;
+        
+        kValues = &(it->second.first);
+        dValues = &(it->second.second);
+    }
+    else {
+        // Utiliser les données agrégées
+        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
+        auto it = aggregated.stochasticValues.find(stochastic.id);
+        
+        // Vérifier si les données agrégées sont disponibles et valides
+        if (it != aggregated.stochasticValues.end() && aggregated.isStochasticValid(stochastic.id)) {
+            kValues = &(it->second.first);
+            dValues = &(it->second.second);
+        }
+        else {
+            // Fallback aux données brutes
+            const auto& stochasticMap = dataManager.getActiveIndicators().stochasticValues;
+            auto rawIt = stochasticMap.find(stochastic.id);
+            if (rawIt == stochasticMap.end()) return;
+            
+            kValues = &(rawIt->second.first);
+            dValues = &(rawIt->second.second);
+        }
     }
 
-    const std::vector<double>& kValues = it->second.first;
-    const std::vector<double>& dValues = it->second.second;
-    
-    if (startIndex >= (int)kValues.size() || startIndex >= (int)dValues.size()) {
-        return;
-    }
+    if (startIndex >= (int)kValues->size() || startIndex >= (int)dValues->size()) return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)kValues.size());
+    int endIndex = std::min(startIndex + pointsToShow, (int)kValues->size());
     int actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0) {
-        return;
-    }
+    if (actualPoints <= 0) return;
 
     // Extraire les données Stochastic visibles du cache
-    DoubleArray kArray(&kValues[startIndex], actualPoints);
-    DoubleArray dArray(&dValues[startIndex], actualPoints);
+    DoubleArray kArray(&(*kValues)[startIndex], actualPoints);
+    DoubleArray dArray(&(*dValues)[startIndex], actualPoints);
     
     // Ajouter le graphique d'indicateur
     XYChart* c = chart->addIndicator(stochastic.height);
@@ -697,30 +751,57 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
 
 void ChartRenderer::addATRToChart(FinanceChart* chart, 
                                 const ATRInstance& atr, 
-                                const IndicatorCache& cache, 
-                                int startIndex, 
-                                int pointsToShow)
+                                const ChartDataManager& dataManager, 
+                                const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    if (!cache.isValid) return;
+    const std::vector<double>* atrData = nullptr;
+    int startIndex = aggregationInfo.startIndex;
+    int pointsToShow = aggregationInfo.pointCount;
 
-    auto it = cache.atr.find(atr.period);
-    if (it == cache.atr.end()) {
-        return; // Données ATR non disponibles
+    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+        // Utiliser les données brutes
+        const auto& atrMap = dataManager.getActiveIndicators().atrValues;
+        auto it = atrMap.find(atr.id);
+        if (it == atrMap.end()) return;
+        
+        atrData = &(it->second);
+        startIndex = aggregationInfo.startIndex;
+        pointsToShow = aggregationInfo.pointCount;
+    } 
+    else {
+        // Utiliser les données agrégées
+        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
+        auto it = aggregated.atrValues.find(atr.id);
+        
+        // Vérifier si les données agrégées sont disponibles et valides
+        if (it != aggregated.atrValues.end() && aggregated.isAtrValid(atr.id)) {
+            atrData = &(it->second);
+            startIndex = aggregationInfo.startIndex;
+            pointsToShow = aggregationInfo.pointCount;
+        }
+        else {
+            // Fallback aux données brutes
+            const auto& atrMap = dataManager.getActiveIndicators().atrValues;
+            auto rawIt = atrMap.find(atr.id);
+            if (rawIt == atrMap.end()) return;
+            
+            atrData = &(rawIt->second);
+            startIndex = aggregationInfo.startIndex;
+            pointsToShow = aggregationInfo.pointCount;
+        }
     }
 
-    const std::vector<double>& atrData = it->second;
-    
-    if (startIndex >= (int)atrData.size()) return;
+    if (startIndex >= (int)atrData->size()) return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)atrData.size());
+    int endIndex = std::min(startIndex + pointsToShow, (int)atrData->size());
     int actualPoints = endIndex - startIndex;
 
     if (actualPoints <= 0) return;
 
     // Extraire les données ATR visibles du cache
-    DoubleArray atrArray(&atrData[startIndex], actualPoints);
-    
+    DoubleArray atrArray(&(*atrData)[startIndex], actualPoints);
+
     // Ajouter le graphique d'indicateur
     XYChart* c = chart->addIndicator(atr.height);
     
@@ -731,7 +812,7 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     layer->setFastLineMode(true);
 
     // Configurer l'échelle de l'axe Y
-    double maxATR = *std::max_element(atrData.begin() + startIndex, atrData.begin() + endIndex);
+    double maxATR = *std::max_element(atrData->begin() + startIndex, atrData->begin() + endIndex);
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
 }
 

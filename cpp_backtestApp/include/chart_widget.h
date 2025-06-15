@@ -9,7 +9,6 @@
 #include <iostream>
 
 #include "data.hpp"
-#include "trade.hpp"
 #include "components/technical_indicators.h"
 #include "components/backtest_results.h"
 #include "chart_data_manager.h"
@@ -48,14 +47,10 @@ public:
     EMAInstance* findEMA(int id);
     StochasticInstance* findStochastic(int id);
     ATRInstance* findATR(int id);
-    
-    // Actions sur le graphique
 
-    void clearChart();     ///< Efface le graphique et les données
-    void resetZoom();      ///< Réinitialise le zoom à l'état initial
     
     // État du graphique
-    bool hasValidData() const;
+    bool hasValidData() const; // ne devrait pas etre un probleme les class exterieur s'enfoutent de si les données sont valides
     bool isChartCreated() const;
     
     // Conversion de ChartType 
@@ -103,24 +98,28 @@ private slots:
     void onMouseClickPlotArea(QMouseEvent* event);
     
 public slots:
+// pour la validation on pourrait la rendre generique avec un lambda dans la 
+// struct qui definit la condition de validityé de l'indicateur
+// on pourrait aussi mettre la condition de recalcule pouir evité de la faire dans chaque
+// methode et passer un booléen pour savoir si on doit recalculer ou pas
     // Pour le RSI
-    int addRSI(int period = 14);
-    bool setRSIConfig(int id, const RSIInstance& config);
+    int addRSI(const RSIInstance& config);
+    bool setRSIConfig(const RSIInstance& config);
     bool removeRSI(int id);
 
     // Pour l'EMA
-    int addEMA(int period = 20);
-    bool setEMAConfig(int id, const EMAInstance& config);
+    int addEMA(const EMAInstance& config);
+    bool setEMAConfig(const EMAInstance& config);
     bool removeEMA(int id);
 
     // Pour le Stochastique
-    int addStochastic(int fastKPeriod = 14, int slowKPeriod = 3, int slowDPeriod = 3);
-    bool setStochasticConfig(int id, const StochasticInstance& config);
+    int addStochastic(const StochasticInstance& config);
+    bool setStochasticConfig(const StochasticInstance& config);
     bool removeStochastic(int id);
 
     // Pour l'ATR
-    int addATR(int period = 14);
-    bool setATRConfig(int id, const ATRInstance& config);
+    int addATR(const ATRInstance& config);
+    bool setATRConfig(const ATRInstance& config);
     bool removeATR(int id);
 
     // Pour gérer le redimensionnement du graphique
@@ -135,7 +134,7 @@ private:
     ChartDataManager m_dataManager;
     ChartRenderer m_renderer;
     ChartDataManager::AggregationInfo m_currentAggregation;
-
+    ChartConfiguration m_config;
 
     // ======== Méthodes privées ========
     // 1. Traitement et conversion des données
@@ -147,40 +146,29 @@ private:
 
     bool updateChartDisplay(ViewPortMode mode = ViewPortMode::FULL_CHART);
 
+
+    // 2. Gestion des indicateurs
+    // ID unique global pour tous les types d'indicateurs
+    int m_nextIndicatorId = 1;
+
+    template<typename T>
+    T* findIndicator(int id, std::vector<T>& instances);
+
+    template<typename T, typename Container>
+    int addIndicatorImpl(const T& config, Container& container);
     
-    // ======== Membres de données ========
-    // 1. Configuration
-    ChartConfiguration m_config;
+    template<typename T, typename Container>
+    bool setIndicatorConfigImpl(const T& config, Container& container, bool needsRecalculation = true);
     
-    // 2. Données
-    std::vector<std::shared_ptr<be::Trade>> m_trades;
-    
-    IndicatorCache m_indicatorCache;
+    template<typename T, typename Container>
+    bool removeIndicatorImpl(int id, Container& container);
+
+    // on devrait peut etre mettre les instances dans le data manager
+    // mais celle la pas sur c'est a etudier
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
     std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
     std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
     std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
-
-    int m_nextRSIId = 1;                     ///< Prochain ID disponible pour RSI
-    int m_nextEMAId = 1;                     ///< Prochain ID disponible pour EMA
-    int m_nextStochasticId = 1;              ///< Prochain ID disponible pour Stochastique
-    int m_nextATRId = 1;                      ///< Prochain ID disponible pour ATR
-
-    // Méthodes privées pour le RSI
-    // void addRSIToChart(FinanceChart* chart, const RSIInstance& rsi, int startIndex, int pointsToShow);
-    void ensureRSICached(int period);
-
-    // Méthodes privées pour l'EMA
-    // void addEMAToChart(FinanceChart* chart, const EMAInstance& ema, int startIndex, int pointsToShow);
-    void ensureEMACached(int period);
-
-    // Méthodes privées pour le Stochastic
-    // void addStochasticToChart(FinanceChart* chart, const StochasticInstance& stochastic, int startIndex, int pointsToShow);
-    void ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod);
-
-    // Méthodes privées pour l'ATR
-    // void addATRToChart(std::unique_ptr<FinanceChart>& chart, const ATRInstance& atr, int startIndex, int pointsToShow);
-    void ensureATRCached(int period);
 
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;

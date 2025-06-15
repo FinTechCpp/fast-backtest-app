@@ -177,14 +177,14 @@ void RSIDialog::updateRSI()
 
 void RSIDialog::onApply()
 {
-    m_chartWidget->setRSIConfig(m_rsiId, m_currentRsi);
+    m_chartWidget->setRSIConfig(m_currentRsi);
     accept();
 }
 
 void RSIDialog::onCancel()
 {
     // Restaurer les paramètres d'origine
-    m_chartWidget->setRSIConfig(m_rsiId, m_originalRsi);
+    m_chartWidget->setRSIConfig(m_originalRsi);
     reject();
 }
 

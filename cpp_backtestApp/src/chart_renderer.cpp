@@ -65,15 +65,15 @@ void ChartRenderer::createOrUpdateChart(
     // Configurer l'apparence du graphique
     m_financeChart->setPlotAreaStyle(0xE2F4FF, 0xCC999999, 0xCC999999, 0xCC999999, 0xCC999999);
     m_financeChart->setDateLabelFormat(
-        "{value|yyyy}", 
-        "{value|yyyy-mm-dd}", 
-        "{value|mm-dd}", 
-        "{value|yyyy-mm-dd}", 
-        "{value|mm-dd}", 
-        "{value|yyyy-mm-dd hh:nn:ss}", 
-        "{value|hh:nn:ss}"
+        "<*font=Arial Bold,size=12,color=800000*>{value|yyyy}<*/font*>",  // Années en gras et rouge
+        "<*font=Arial Bold,size=10*>{value|MMM yyyy}<*/font*>",  // Premier mois avec année
+        "<*font=Arial*>{value|MMM}<*/font*>",  // Autres mois
+        "<*font=Arial Bold*>{value|d MMM}<*/font*>",  // Premier jour avec mois
+        "{value|d}",  // Autres jours
+        "<*font=Arial Bold*>{value|d MMM hh:nn}<*/font*>",  // Première heure avec jour
+        "{value|hh:nn}"  // Autres heures
     );
-    m_financeChart->setDateLabelSpacing(50);
+    m_financeChart->setDateLabelSpacing(80);
     
     // Configurer les données
     m_financeChart->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
@@ -98,6 +98,12 @@ void ChartRenderer::createOrUpdateChart(
     
     // 2. Ajouter le graphique principal
     m_financeChart->addMainChart(config.chartHeight);
+    XYChart* mainChart = (XYChart*)m_financeChart->getChart(1);
+    
+    // Personnaliser l'affichage des grilles
+    mainChart->xAxis()->setWidth(2);  // Axe plus épais
+    mainChart->xAxis()->setTickLength(4, 2);  // Ticks plus visibles
+    mainChart->xAxis()->setLabelStyle("Arial Bold", 9);  // Étiquettes plus lisibles
     
     // Ajouter le type de graphique approprié selon le type actuel
     if (config.chartType == ChartDataManager::ChartType::CandleStick || 

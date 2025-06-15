@@ -47,7 +47,6 @@ public:
         QChartViewer* viewer,
         const ChartDataManager& dataManager,
         const ChartConfiguration& config,
-        const std::vector<std::shared_ptr<be::Trade>>& trades,
         const ChartDataManager::AggregationInfo& aggregationInfo,
         const std::vector<RSIInstance>& rsiInstances,
         const std::vector<EMAInstance>& emaInstances,

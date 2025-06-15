@@ -65,19 +65,9 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
 
     m_dataManager.setBacktestData(results->data);
     m_dataManager.setEquityCurve(results->stats.equityCurve);
+    m_dataManager.setTrades(results->stats.trades);
 
-
-    m_trades = results->stats.trades;
-
-
-    updateIndicatorCache();
-
-    
-
-    // Mettre à jour le graphique si nous avons des données valides
-    if (m_dataManager.hasValidData()) {
-        updateChartDisplay(ViewPortMode::FULL_CHART);
-    }
+    updateChartDisplay(ViewPortMode::FULL_CHART);
 }
 
 bool ChartWidget::hasValidData() const {
@@ -140,7 +130,7 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
 
     m_currentAggregation = m_dataManager.getOptimalAggregationInfo(DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow));
     
-    m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_trades, m_currentAggregation, m_rsiInstances, m_emaInstances, m_stochasticInstances, m_atrInstances);
+    m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation, m_rsiInstances, m_emaInstances, m_stochasticInstances, m_atrInstances);
 
 
     if (mode == ViewPortMode::FULL_CHART) {
@@ -505,140 +495,6 @@ bool ChartWidget::removeIndicatorImpl(int id, Container& container)
         updateChartDisplay(ViewPortMode::USE_CURRENT);
     
     return true;
-}
-
-void ChartWidget::ensureRSICached(int period)
-{
-    // Vérifier que la période RSI est en cache
-    if (m_indicatorCache.isValid && !m_dataManager.getBacktestData()->getClose().empty()) {
-        if (m_indicatorCache.rsi.find(period) == m_indicatorCache.rsi.end()) {
-            // Calculer le RSI pour cette période
-            std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
-            TechnicalIndicators::calculateRSI(m_dataManager.getBacktestData()->getClose(), period, rsiCache);
-            qDebug() << "Calculé RSI avec période" << period;
-        }
-    }
-}
-
-void ChartWidget::ensureEMACached(int period)
-{
-    // Vérifier que la période EMA est en cache
-    if (m_indicatorCache.isValid && !m_dataManager.getBacktestData()->getClose().empty()) {
-        if (m_indicatorCache.ema.find(period) == m_indicatorCache.ema.end()) {
-            // Calculer l'EMA pour cette période
-            std::vector<double>& emaCache = m_indicatorCache.ema[period];
-            TechnicalIndicators::calculateEMA(m_dataManager.getBacktestData()->getClose(), period, emaCache);
-            qDebug() << "Calculé EMA avec période" << period;
-        }
-    }
-}
-
-void ChartWidget::ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod)
-{
-    // Vérifier que les périodes Stochastic sont en cache
-    if (m_indicatorCache.isValid && !m_dataManager.getBacktestData()->getClose().empty() && !m_dataManager.getBacktestData()->getHigh().empty() && !m_dataManager.getBacktestData()->getLow().empty()) {
-        std::tuple<int, int, int> key = std::make_tuple(fastKPeriod, slowKPeriod, slowDPeriod);
-        
-        if (m_indicatorCache.stochastic.find(key) == m_indicatorCache.stochastic.end()) {
-            // Calculer le Stochastic pour cette combinaison de périodes
-            auto& cacheEntry = m_indicatorCache.stochastic[key];
-            std::vector<double>& kValues = cacheEntry.first;
-            std::vector<double>& dValues = cacheEntry.second;
-            
-            TechnicalIndicators::calculateStochastic(
-                m_dataManager.getBacktestData()->getHigh(), m_dataManager.getBacktestData()->getLow(), m_dataManager.getBacktestData()->getClose(),
-                fastKPeriod, slowKPeriod, slowDPeriod, kValues, dValues);
-        }
-    }
-}
-
-void ChartWidget::ensureATRCached(int period)
-{
-    // Vérifier que la période ATR est en cache
-    if (m_indicatorCache.isValid && !m_dataManager.getBacktestData()->getClose().empty() && !m_dataManager.getBacktestData()->getHigh().empty() && !m_dataManager.getBacktestData()->getLow().empty()) {
-        if (m_indicatorCache.atr.find(period) == m_indicatorCache.atr.end()) {
-            std::vector<double>& atrCache = m_indicatorCache.atr[period];
-            TechnicalIndicators::calculateATR(m_dataManager.getBacktestData()->getHigh(), m_dataManager.getBacktestData()->getLow(), m_dataManager.getBacktestData()->getClose(), period, atrCache);
-        }
-    }
-}
-
-void ChartWidget::updateIndicatorCache()
-{
-    if (!m_dataManager.hasValidData()) {
-        qWarning() << "Tentative de mise à jour du cache d'indicateurs avec des données invalides";
-        m_indicatorCache.isValid = false;
-        return;
-    }
-
-    // Vider le cache existant
-    m_indicatorCache.rsi.clear();
-    m_indicatorCache.ema.clear();
-    m_indicatorCache.stochastic.clear();
-    m_indicatorCache.atr.clear();
-
-    // Recueillir toutes les périodes RSI nécessaires
-    std::set<int> rsiPeriods;
-    std::set<int> emaPeriods;
-    std::set<std::tuple<int, int, int>> stochasticParams;
-    std::set<int> atrPeriods;
-
-    // Ajouter les périodes de toutes les instances RSI actives
-    for (const auto& rsi : m_rsiInstances) {
-        rsiPeriods.insert(rsi.period);
-    }
-
-    // Ajouter les périodes de toutes les instances EMA actives
-    for (const auto& ema : m_emaInstances) {
-        emaPeriods.insert(ema.period);
-    }
-
-    // Ajouter les paramètres de toutes les instances Stochastique actives
-    for (const auto& stoch : m_stochasticInstances) {
-        stochasticParams.insert(std::make_tuple(stoch.fastKPeriod, stoch.slowKPeriod, stoch.slowDPeriod));
-    }
-
-    // Ajouter les périodes de toutes les instances ATR actives
-    for (const auto& atr : m_atrInstances) {
-        atrPeriods.insert(atr.period);
-    }
-
-
-    // Calculer tous les RSI nécessaires
-    for (int period : rsiPeriods) {
-        std::vector<double>& rsiCache = m_indicatorCache.rsi[period];
-        TechnicalIndicators::calculateRSI(m_dataManager.getBacktestData()->getClose(), period, rsiCache);
-    }
-
-    // Calculer tous les EMA nécessaires
-    for (int period : emaPeriods) {
-        std::vector<double>& emaCache = m_indicatorCache.ema[period];
-        TechnicalIndicators::calculateEMA(m_dataManager.getBacktestData()->getClose(), period, emaCache);
-    }
-
-    // Calculer tous les Stochastiques nécessaires
-    for (const auto& params : stochasticParams) {
-        int fastKPeriod = std::get<0>(params);
-        int slowKPeriod = std::get<1>(params);
-        int slowDPeriod = std::get<2>(params);
-        
-        auto& stochCache = m_indicatorCache.stochastic[params];
-        std::vector<double>& kValues = stochCache.first;
-        std::vector<double>& dValues = stochCache.second;
-        
-        TechnicalIndicators::calculateStochastic(
-            m_dataManager.getBacktestData()->getHigh(), m_dataManager.getBacktestData()->getLow(), m_dataManager.getBacktestData()->getClose(),
-            fastKPeriod, slowKPeriod, slowDPeriod, kValues, dValues);
-    }
-
-    // Calculer tous les ATR nécessaires
-    for (int period : atrPeriods) {
-        std::vector<double>& atrCache = m_indicatorCache.atr[period];
-        TechnicalIndicators::calculateATR(m_dataManager.getBacktestData()->getHigh(), m_dataManager.getBacktestData()->getLow(), m_dataManager.getBacktestData()->getClose(), period, atrCache);
-    }
-
-    m_indicatorCache.isValid = true;
-    qDebug() << "Cache d'indicateurs mis à jour avec" << m_dataManager.getBacktestData()->getClose().size() << "points";
 }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {

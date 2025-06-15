@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include "data.hpp"
+#include "trade.hpp"
 #include "chartdir.h"
 
 
@@ -159,39 +160,11 @@ public:
 
     // Méthodes pour la gestion des données
     void setBacktestData(const std::shared_ptr<const be::Data>& data);
+    void setTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);
     void setEquityCurve(const std::vector<double>& equityCurve);
     void updateHeikinAshiCache();
     AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
-    void calculateIndicator(const IndicatorBase& config) {
-        // Implémentation spécifique pour chaque type d'indicateur
-        // Par exemple, pour RSI, EMA, Stochastic, ATR, etc.
-        switch (config.type) {
-        case IndicatorType::RSI: {
-            const RSIInstance& rsiConfig = static_cast<const RSIInstance&>(config);
-            calculateRSI(rsiConfig.id, rsiConfig.period);
-            break;
-        }
-        case IndicatorType::EMA: {
-            const EMAInstance& emaConfig = static_cast<const EMAInstance&>(config);
-            calculateEMA(emaConfig.id, emaConfig.period);
-            break;
-        }
-        case IndicatorType::STOCHASTIC: {
-            const StochasticInstance& stochasticConfig = static_cast<const StochasticInstance&>(config);
-            calculateStochastic(stochasticConfig.id, stochasticConfig.fastKPeriod, stochasticConfig.slowKPeriod, stochasticConfig.slowDPeriod);
-            break;
-        }
-        case IndicatorType::ATR: {
-            const ATRInstance& atrConfig = static_cast<const ATRInstance&>(config);
-            calculateATR(atrConfig.id, atrConfig.period);
-            break;
-        }
-        // Ajouter d'autres types d'indicateurs ici
-        default:
-            // qWarning() << "Type d'indicateur non supporté:" << static_cast<int>(config.type);
-            break;
-        }
-    }
+    void calculateIndicator(const IndicatorBase& config);
     
     // Accesseurs
     const std::vector<double>& getTimestamps() const { return m_timestampsCache; }
@@ -199,6 +172,7 @@ public:
     const HeikinAshiCache& getHeikinAshiCache() const { return m_heikinAshiCache; }
     const EquityData& getEquityData() const { return m_equityData; }
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
+    const std::vector<std::shared_ptr<be::Trade>>& getTrades() const { return m_trades; }
     const ActiveIndicators& getActiveIndicators() const { return m_activeIndicators; }
     bool hasValidData() const;
 
@@ -234,6 +208,7 @@ private:
     std::vector<double> m_timestampsCache;
     std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregationCache;
     HeikinAshiCache m_heikinAshiCache;
+    std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
     ActiveIndicators m_activeIndicators;
     

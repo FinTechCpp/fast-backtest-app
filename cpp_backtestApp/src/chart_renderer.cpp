@@ -15,7 +15,6 @@ void ChartRenderer::createOrUpdateChart(
     QChartViewer* viewer,
     const ChartDataManager& dataManager,
     const ChartConfiguration& config,
-    const std::vector<std::shared_ptr<be::Trade>>& trades,
     const ChartDataManager::AggregationInfo& aggregationInfo,
     const std::vector<RSIInstance>& rsiInstances,
     const std::vector<EMAInstance>& emaInstances,
@@ -146,7 +145,7 @@ void ChartRenderer::createOrUpdateChart(
     
     // 5. Ajouter les trades si disponibles et demandés
     if (config.showTrades) {
-        addTradeMarkers(m_financeChart.get(), timestamps, startIndex, trades, dataManager, aggregationInfo);
+        addTradeMarkers(m_financeChart.get(), timestamps, startIndex, dataManager.getTrades(), dataManager, aggregationInfo);
     }
     
     // Mettre à jour le graphique dans le viewer

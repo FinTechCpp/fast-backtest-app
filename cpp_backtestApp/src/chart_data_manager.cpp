@@ -28,6 +28,11 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
     }
 }
 
+void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>> &trades)
+{
+    m_trades = trades;
+}
+
 void ChartDataManager::setEquityCurve(const std::vector<double>& equityCurve) {
     if (equityCurve.empty() || !m_backtestData) {
         qWarning() << "Courbe d'équité vide ou données de prix invalides";
@@ -401,6 +406,38 @@ ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(co
     }
 
     return result;
+}
+
+void ChartDataManager::calculateIndicator(const IndicatorBase &config)
+ {
+    // Implémentation spécifique pour chaque type d'indicateur
+    // Par exemple, pour RSI, EMA, Stochastic, ATR, etc.
+    switch (config.type) {
+    case IndicatorType::RSI: {
+        const RSIInstance& rsiConfig = static_cast<const RSIInstance&>(config);
+        calculateRSI(rsiConfig.id, rsiConfig.period);
+        break;
+    }
+    case IndicatorType::EMA: {
+        const EMAInstance& emaConfig = static_cast<const EMAInstance&>(config);
+        calculateEMA(emaConfig.id, emaConfig.period);
+        break;
+    }
+    case IndicatorType::STOCHASTIC: {
+        const StochasticInstance& stochasticConfig = static_cast<const StochasticInstance&>(config);
+        calculateStochastic(stochasticConfig.id, stochasticConfig.fastKPeriod, stochasticConfig.slowKPeriod, stochasticConfig.slowDPeriod);
+        break;
+    }
+    case IndicatorType::ATR: {
+        const ATRInstance& atrConfig = static_cast<const ATRInstance&>(config);
+        calculateATR(atrConfig.id, atrConfig.period);
+        break;
+    }
+    // Ajouter d'autres types d'indicateurs ici
+    default:
+        // qWarning() << "Type d'indicateur non supporté:" << static_cast<int>(config.type);
+        break;
+    }
 }
 
 ChartDataManager::AggregationLevel ChartDataManager::determineStartingAggregationLevel(const DoubleArray& timestamps) const {

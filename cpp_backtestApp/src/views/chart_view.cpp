@@ -248,6 +248,7 @@ void ChartView::onAddIndicatorClicked()
     
     QString indicatorType = m_indicatorTypeCombo->currentData().toString();
     
+    // il serait bien d'ouvrir la fenetre de dialog directement plutot que mettre des valeurs par défaut
     if (indicatorType == "RSI") {
         // Ajouter un RSI avec la période par défaut (14)
         RSIInstance rsi;

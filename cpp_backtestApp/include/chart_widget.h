@@ -9,7 +9,6 @@
 #include <iostream>
 
 #include "data.hpp"
-#include "trade.hpp"
 #include "components/technical_indicators.h"
 #include "components/backtest_results.h"
 #include "chart_data_manager.h"
@@ -140,7 +139,6 @@ private:
     ChartRenderer m_renderer;
     ChartDataManager::AggregationInfo m_currentAggregation;
     ChartConfiguration m_config;
-    std::vector<std::shared_ptr<be::Trade>> m_trades;
 
     // ======== Méthodes privées ========
     // 1. Traitement et conversion des données
@@ -166,17 +164,12 @@ private:
     template<typename T, typename Container>
     bool removeIndicatorImpl(int id, Container& container);
 
-    
-    IndicatorCache m_indicatorCache;
+    // on devrait peut etre mettre les instances dans le data manager
+    // mais celle la pas sur c'est a etudier
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
     std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
     std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
     std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
-
-    void ensureRSICached(int period);
-    void ensureEMACached(int period);
-    void ensureStochasticCached(int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void ensureATRCached(int period);
 
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;

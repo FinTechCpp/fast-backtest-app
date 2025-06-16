@@ -73,6 +73,7 @@ void ChartRenderer::createOrUpdateChart(
         "<*font=Arial Bold*>{value|d MMM hh:nn}<*/font*>",  // Première heure avec jour
         "{value|hh:nn}"  // Autres heures
     );
+    m_financeChart->setMargins(0, 25, 40, 100);  // Pas de marges
     m_financeChart->setDateLabelSpacing(80);
     
     // Configurer les données
@@ -260,7 +261,6 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart,
     XYChart* equityChart = chart->addIndicator(equityHeight);
     
     // Configuration du titre et des libellés
-    equityChart->yAxis()->setTitle("Capital");
     equityChart->xAxis()->setColors(Chart::Transparent);
     
     // Définir les couleurs pour les segments

@@ -195,9 +195,8 @@ void Broker::processOrders() {
     for (const Order& order : ordersCopy) {
         // Vérifier si l'ordre existe encore (il pourrait avoir été supprimé)
         auto orderIt = std::find(_orders.begin(), _orders.end(), order);
-        if (orderIt == _orders.end()) {
+        if (orderIt == _orders.end())
             continue;
-        }
         
         
         // Vérifier si le stop est atteint
@@ -221,6 +220,19 @@ void Broker::processOrders() {
         double limitPrice = order.limit();
 
         if (limitPrice > 0.0) {
+            bool isTakeProfit = order.parentTrade() && 
+                    ((order.parentTrade()->isLong() && !order.isLong() && limitPrice > order.parentTrade()->entryPrice()) || 
+                     (!order.parentTrade()->isLong() && order.isLong() && limitPrice < order.parentTrade()->entryPrice()));
+
+            // bool isTakeProfit = order.parentTrade() && 
+            //         order.parentTrade()->tpOrder() &&
+            //         *order.parentTrade()->tpOrder() == order;
+
+            if (isTakeProfit) {
+                std::cout << "Processing Take Profit order: " << order.tag() << std::endl;
+            }
+
+            // Vérifier si le prix touche le TP normalement pendant la bougie
             bool isLimitHit = (order.isLong() && low <= limitPrice) || 
                                 (!order.isLong() && high >= limitPrice);
 
@@ -228,20 +240,22 @@ void Broker::processOrders() {
             bool isGap = false;
             
             // cette logique est bonne mais le fonctionne pas encore a corriger
-            // if (order.parentTrade())  // S'assurer que c'est un TP lié à un trade
-            //     if (order.isLong()) {
-            //         // Pour un TP long, un gap se produit si le prix d'ouverture est déjà > TP
-            //         isGap = open > limitPrice;
-            //     } else {
-            //         // Pour un TP short, un gap se produit si le prix d'ouverture est déjà < TP
-            //         isGap = open < limitPrice;
-            //     }
+            if (isTakeProfit) {
+                if (order.parentTrade()->isLong()) {
+                    // Pour un TP d'un trade LONG, un gap se produit si le prix d'ouverture est déjà > TP
+                    isGap = open > limitPrice;
+                } else {
+                    // Pour un TP d'un trade SHORT, un gap se produit si le prix d'ouverture est déjà < TP
+                    isGap = open < limitPrice;
+                }
+            }
 
             bool isLimitHitBeforeStop = isLimitHit && stopPrice > 0.0 && 
                 ((order.isLong() && limitPrice <= stopPrice) ||
-                    (!order.isLong() && limitPrice >= stopPrice));
+                (!order.isLong() && limitPrice >= stopPrice));
 
-            if (!isLimitHit || isLimitHitBeforeStop) {
+            // Si ni le TP n'est touché ni il n'y a de gap, ne pas exécuter
+            if ((!isLimitHit && !isGap) || isLimitHitBeforeStop) {
                 continue;
             }
             
@@ -249,10 +263,13 @@ void Broker::processOrders() {
             if (isGap) {
                 price = open; // Utiliser le prix d'ouverture en cas de gap
             }
-            else if (order.isLong()) {
-                price = stopPrice > 0.0 ? std::min(stopPrice, limitPrice) : limitPrice;
-            } else {
-                price = stopPrice > 0.0 ? std::max(stopPrice, limitPrice) : limitPrice;
+            else {
+                // Sans gap, utiliser le prix limite (TP) lui-même
+                if (order.isLong()) {
+                    price = stopPrice > 0.0 ? std::min(stopPrice, limitPrice) : limitPrice;
+                } else {
+                    price = stopPrice > 0.0 ? std::max(stopPrice, limitPrice) : limitPrice;
+                }
             }
         } else {
             // Ordre market ou market-if-touched

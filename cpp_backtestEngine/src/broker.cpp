@@ -168,248 +168,264 @@ double Broker::calculateCommission(double size, double price) const {
 
 // TODO : pourquoi on travaille avec une copie des ordres ?
 void Broker::processOrders() {
-    try {
-        // ATTENTION: Ne pas réitérer immédiatement pour vérifier les SL/TP
-        // Créer une copie des ordres à traiter
-        std::vector<Order> ordersCopy;
-        for (const auto& order : _orders) {
-            ordersCopy.push_back(order);
-        }
-        
-        // Accès aux données OHLC
-        Candle currentCandle = _data->current();
-        double open = currentCandle.open;
-        double high = currentCandle.high;
-        double low = currentCandle.low;
+    // ATTENTION: Ne pas réitérer immédiatement pour vérifier les SL/TP
+    // Créer une copie des ordres à traiter
+    std::vector<Order> ordersCopy;
+    for (const auto& order : _orders) {
+        ordersCopy.push_back(order);
+    }
+    
+    // Accès aux données OHLC
+    Candle currentCandle = _data->current();
+    double open = currentCandle.open;
+    double high = currentCandle.high;
+    double low = currentCandle.low;
 
-        // Trouver le prix de clôture de la barre précédente
-        double prevClose = 0.0;
-        if (_currentBar > 0) {
-            // Sauvegarde de la position actuelle
-            size_t currentPos = _data->position();
-            
-            try {
-                const Candle& prevCandle = _data->at(_currentBar - 1);
-                prevClose = prevCandle.close;
-            } catch (const std::exception&) {
-                // En cas d'erreur, utiliser le prix d'ouverture actuel
-                prevClose = open;
-            }
-        } else {
-            prevClose = open;
-        }
+    // Trouver le prix de clôture de la barre précédente
+    double prevClose = 0.0;
+    if (_currentBar > 0) {
+        // Sauvegarde de la position actuelle
+        size_t currentPos = _data->position();
+        const Candle& prevCandle = _data->at(_currentBar - 1);
+        prevClose = prevCandle.close;
+    } else
+        prevClose = open;
+    
+    // Traiter chaque ordre de la copie
+    for (const Order& order : ordersCopy) {
+        // Vérifier si l'ordre existe encore (il pourrait avoir été supprimé)
+        auto orderIt = std::find(_orders.begin(), _orders.end(), order);
+        if (orderIt == _orders.end())
+            continue;
         
-        // Traiter chaque ordre de la copie
-        for (const Order& order : ordersCopy) {
-            // Vérifier si l'ordre existe encore (il pourrait avoir été supprimé)
-            auto orderIt = std::find(_orders.begin(), _orders.end(), order);
-            if (orderIt == _orders.end()) {
+        
+        // Vérifier si le stop est atteint
+        double stopPrice = order.stop();
+        
+        if (stopPrice > 0.0) {
+            bool isStopHit = (order.isLong() && high >= stopPrice) || 
+                                (!order.isLong() && low <= stopPrice);
+            if (!isStopHit) {
                 continue;
             }
             
-            
-            // Vérifier si le stop est atteint
-            double stopPrice = order.stop();
-            
-            if (stopPrice > 0.0) {
-                bool isStopHit = (order.isLong() && high >= stopPrice) || 
-                                 (!order.isLong() && low <= stopPrice);
-                if (!isStopHit) {
-                    continue;
-                }
-                
-                // Le stop est atteint, convertir en ordre market/limit
-                orderIt->_replace("stopPrice", 0.0);
+            // Le stop est atteint, convertir en ordre market/limit
+            orderIt->_replace("stopPrice", 0.0);
+        }
+
+        // Déterminer le prix d'achat
+        double price = 0.0;
+        
+        // Gestion des ordres limit
+        double limitPrice = order.limit();
+
+        if (limitPrice > 0.0) {
+            bool isTakeProfit = order.parentTrade() && 
+                    ((order.parentTrade()->isLong() && !order.isLong() && limitPrice > order.parentTrade()->entryPrice()) || 
+                     (!order.parentTrade()->isLong() && order.isLong() && limitPrice < order.parentTrade()->entryPrice()));
+
+            // bool isTakeProfit = order.parentTrade() && 
+            //         order.parentTrade()->tpOrder() &&
+            //         *order.parentTrade()->tpOrder() == order;
+
+            if (isTakeProfit) {
+                std::cout << "Processing Take Profit order: " << order.tag() << std::endl;
             }
 
-            // Déterminer le prix d'achat
-            double price = 0.0;
+            // Vérifier si le prix touche le TP normalement pendant la bougie
+            bool isLimitHit = (order.isLong() && low <= limitPrice) || 
+                                (!order.isLong() && high >= limitPrice);
+
+            // Vérifier s'il y a un gap qui a "sauté" par-dessus le TP
+            bool isGap = false;
             
-            // Gestion des ordres limit
-            double limitPrice = order.limit();
-
-            if (limitPrice > 0.0) {
-                bool isLimitHit = (order.isLong() && low <= limitPrice) || 
-                                  (!order.isLong() && high >= limitPrice);
-
-                bool isLimitHitBeforeStop = isLimitHit && stopPrice > 0.0 && 
-                    ((order.isLong() && limitPrice <= stopPrice) ||
-                     (!order.isLong() && limitPrice >= stopPrice));
-
-                if (!isLimitHit || isLimitHitBeforeStop) {
-                    continue;
+            // cette logique est bonne mais le fonctionne pas encore a corriger
+            if (isTakeProfit) {
+                if (order.parentTrade()->isLong()) {
+                    // Pour un TP d'un trade LONG, un gap se produit si le prix d'ouverture est déjà > TP
+                    isGap = open > limitPrice;
+                } else {
+                    // Pour un TP d'un trade SHORT, un gap se produit si le prix d'ouverture est déjà < TP
+                    isGap = open < limitPrice;
                 }
-                
-                // Calculer le prix de remplissage
+            }
+
+            bool isLimitHitBeforeStop = isLimitHit && stopPrice > 0.0 && 
+                ((order.isLong() && limitPrice <= stopPrice) ||
+                (!order.isLong() && limitPrice >= stopPrice));
+
+            // Si ni le TP n'est touché ni il n'y a de gap, ne pas exécuter
+            if ((!isLimitHit && !isGap) || isLimitHitBeforeStop) {
+                continue;
+            }
+            
+            // Calculer le prix de remplissage
+            if (isGap) {
+                price = open; // Utiliser le prix d'ouverture en cas de gap
+            }
+            else {
+                // Sans gap, utiliser le prix limite (TP) lui-même
                 if (order.isLong()) {
                     price = stopPrice > 0.0 ? std::min(stopPrice, limitPrice) : limitPrice;
                 } else {
                     price = stopPrice > 0.0 ? std::max(stopPrice, limitPrice) : limitPrice;
                 }
-            } else {
-                // Ordre market ou market-if-touched
-                bool isContingentOrder = order.isContingent();
-
-                price = (_tradeOnClose && !isContingentOrder) ? prevClose : open;
-                
-                if (stopPrice > 0.0) {
-                    price = order.isLong() ? std::max(price, stopPrice) : std::min(price, stopPrice);
-                }
             }
-            
-            // Indice temporel d'entrée/sortie
-            bool isMarketOrder = limitPrice <= 0.0 && stopPrice <= 0.0;
-            size_t timeIndex = _currentBar;
-            if (isMarketOrder && _tradeOnClose && !order.isContingent()) {
-                if (_currentBar > 0) {
-                    timeIndex = _currentBar - 1;
-                }
-            }
-            
-            // Si l'ordre est un SL/TP, il doit fermer une position existante
-            if (order.parentTrade()) {
-                auto trade = order.parentTrade();
-                double prevSize = trade->size();
-                
-                // Calculer la taille réelle à fermer
-                double closeSize = std::copysign(
-                    std::min(std::abs(prevSize), std::abs(order.size())), 
-                    order.size()
-                );
-                
-                // Vérifier si le trade existe encore
-                auto tradeIt = std::find(_trades.begin(), _trades.end(), trade);
-                if (tradeIt != _trades.end()) {
-                    try {
-                        reduceTrade(trade, price, closeSize, timeIndex);
-                    } catch (const std::exception& e) {
-                        std::cerr << "ERROR in reduceTrade: " << e.what() << std::endl;
-                    }
-                }
-                
-                // Supprimer l'ordre
-                auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
-                if (orderToRemove != _orders.end()) {
-                    _orders.erase(orderToRemove);
-                }
-            } else {
-                // C'est un ordre autonome pour un nouveau trade
-                double adjustedP = adjustedPrice(order.size(), price);
-                double adjustedPriceWithCommission = adjustedP + calculateCommission(order.size(), price);
-                
-                // Traitement de la taille proportionnelle
-                double size = order.size();
-                if (std::abs(size) < 1.0) {
-                    size = std::copysign(
-                        std::floor((marginAvailable() * _leverage * std::abs(size)) / adjustedPriceWithCommission),
-                        size
-                    );
-                    
-                    if (size == 0) {
-                        // Pas assez de marge, annuler l'ordre
-                        auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
-                        if (orderToRemove != _orders.end()) {
-                            _orders.erase(orderToRemove);
-                        }
-                        continue;
-                    }
-                }
-                
-                int needSize = static_cast<int>(size);
-                
-                // Gestion des positions opposées si le hedging est désactivé
-                if (!_hedging) {
-                    for (auto trade : _trades) {
-                        // Ignorer les trades dans la même direction
-                        if ((trade->isLong() && order.isLong()) || 
-                            (!trade->isLong() && !order.isLong())) {
-                            continue;
-                        }
-                        
-                        // Ordre plus grand que la position existante
-                        if (std::abs(needSize) >= std::abs(trade->size())) {
-                            needSize += static_cast<int>(trade->size());
-                            try {
-                                closeTrade(trade, price, timeIndex);
-                            } catch (const std::exception& e) {
-                                std::cerr << "ERROR in closeTrade: " << e.what() << std::endl;
-                            }
-                            
-                            // Reprendre depuis le début car _trades a été modifié
-                            break;
-                        } else {
-                            // La position existante est plus grande que l'ordre
-                            try {
-                                reduceTrade(trade, price, needSize, timeIndex);
-                            } catch (const std::exception& e) {
-                                std::cerr << "ERROR in reduceTrade: " << e.what() << std::endl;
-                            }
-                            needSize = 0;
-                            break;
-                        }
-                    }
-                }
-                
-                // Vérifier si nous avons assez de marge disponible
-                if (std::abs(needSize) * adjustedPriceWithCommission > marginAvailable() * _leverage) {
-                     // Pas assez de marge, annuler l'ordre
-                     auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
-                     if (orderToRemove != _orders.end()) {
-                         _orders.erase(orderToRemove);
-                     }
-                    continue;
-                }
-                
-                // Ouvrir un nouveau trade si besoin
-                if (needSize != 0) {
-                    // Traiter les points SL/TP
-                    double slPrice = order.sl();
-                    double tpPrice = order.tp();
-                    
-                    // Calculate SL/TP prices using points if specified
-                    if (order.slPoints() > 0.0)
-                        slPrice = price - order.slPoints() * (order.isLong() ? 1 : -1);
+        } else {
+            // Ordre market ou market-if-touched
+            bool isContingentOrder = order.isContingent();
 
-                    if (order.tpPoints() > 0.0)
-                        tpPrice = price + order.tpPoints() * (order.isLong() ? 1 : -1);
-                    
-                    // Ouvrir le trade
-                    try {
-                        openTrade(price, needSize, slPrice, tpPrice, timeIndex, order.tag(), order);
-                        
-                        // MODIFICATION: Ne pas retraiter les ordres SL/TP dans la même barre
-                        // Supprimer ou commenter ces lignes:
-                        /*
-                        if (slPrice > 0.0 || tpPrice > 0.0) {
-                            if (isMarketOrder) {
-                                continueProcessing = true;
-                            } else if (stopPrice > 0.0 && order.limit() <= 0.0 && tpPrice > 0.0 && 
-                                     ((order.isLong() && tpPrice <= high && (slPrice <= 0.0 || slPrice > low)) ||
-                                     (!order.isLong() && tpPrice >= low && (slPrice <= 0.0 || slPrice < high)))) {
-                                continueProcessing = true;
-                            }
-                        }
-                        */
-                    } catch (const std::exception& e) {
-                        std::cerr << "ERROR in openTrade: " << e.what() << std::endl;
-                    }
-                }
-                
-                // Supprimer l'ordre traité
-                auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
-                if (orderToRemove != _orders.end()) {
-                    _orders.erase(orderToRemove);
-                }
+            price = (_tradeOnClose && !isContingentOrder) ? prevClose : open;
+            
+            if (stopPrice > 0.0) {
+                price = order.isLong() ? std::max(price, stopPrice) : std::min(price, stopPrice);
             }
         }
-    }
-    catch (const std::exception& e) {
-        std::cerr << "EXCEPTION in processOrders: " << e.what() << std::endl;
-        throw;
-    }
-    catch (...) {
-        std::cerr << "UNKNOWN EXCEPTION in processOrders" << std::endl;
-        throw;
+        
+        // Indice temporel d'entrée/sortie
+        bool isMarketOrder = limitPrice <= 0.0 && stopPrice <= 0.0;
+        size_t timeIndex = _currentBar;
+        if (isMarketOrder && _tradeOnClose && !order.isContingent()) {
+            if (_currentBar > 0) {
+                timeIndex = _currentBar - 1;
+            }
+        }
+        
+        // Si l'ordre est un SL/TP, il doit fermer une position existante
+        if (order.parentTrade()) {
+            auto trade = order.parentTrade();
+            double prevSize = trade->size();
+            
+            // Calculer la taille réelle à fermer
+            double closeSize = std::copysign(
+                std::min(std::abs(prevSize), std::abs(order.size())), 
+                order.size()
+            );
+            
+            // Vérifier si le trade existe encore
+            auto tradeIt = std::find(_trades.begin(), _trades.end(), trade);
+            if (tradeIt != _trades.end()) {
+                try {
+                    reduceTrade(trade, price, closeSize, timeIndex);
+                } catch (const std::exception& e) {
+                    std::cerr << "ERROR in reduceTrade: " << e.what() << std::endl;
+                }
+            }
+            
+            // Supprimer l'ordre
+            auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
+            if (orderToRemove != _orders.end()) {
+                _orders.erase(orderToRemove);
+            }
+        } else {
+            // C'est un ordre autonome pour un nouveau trade
+            double adjustedP = adjustedPrice(order.size(), price);
+            double adjustedPriceWithCommission = adjustedP + calculateCommission(order.size(), price);
+            
+            // Traitement de la taille proportionnelle
+            double size = order.size();
+            if (std::abs(size) < 1.0) {
+                size = std::copysign(
+                    std::floor((marginAvailable() * _leverage * std::abs(size)) / adjustedPriceWithCommission),
+                    size
+                );
+                
+                if (size == 0) {
+                    // Pas assez de marge, annuler l'ordre
+                    auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
+                    if (orderToRemove != _orders.end()) {
+                        _orders.erase(orderToRemove);
+                    }
+                    continue;
+                }
+            }
+            
+            int needSize = static_cast<int>(size);
+            
+            // Gestion des positions opposées si le hedging est désactivé
+            if (!_hedging) {
+                for (auto trade : _trades) {
+                    // Ignorer les trades dans la même direction
+                    if ((trade->isLong() && order.isLong()) || 
+                        (!trade->isLong() && !order.isLong())) {
+                        continue;
+                    }
+                    
+                    // Ordre plus grand que la position existante
+                    if (std::abs(needSize) >= std::abs(trade->size())) {
+                        needSize += static_cast<int>(trade->size());
+                        try {
+                            closeTrade(trade, price, timeIndex);
+                        } catch (const std::exception& e) {
+                            std::cerr << "ERROR in closeTrade: " << e.what() << std::endl;
+                        }
+                        
+                        // Reprendre depuis le début car _trades a été modifié
+                        break;
+                    } else {
+                        // La position existante est plus grande que l'ordre
+                        try {
+                            reduceTrade(trade, price, needSize, timeIndex);
+                        } catch (const std::exception& e) {
+                            std::cerr << "ERROR in reduceTrade: " << e.what() << std::endl;
+                        }
+                        needSize = 0;
+                        break;
+                    }
+                }
+            }
+            
+            // Vérifier si nous avons assez de marge disponible
+            if (std::abs(needSize) * adjustedPriceWithCommission > marginAvailable() * _leverage) {
+                    // Pas assez de marge, annuler l'ordre
+                    auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
+                    if (orderToRemove != _orders.end()) {
+                        _orders.erase(orderToRemove);
+                    }
+                continue;
+            }
+            
+            // Ouvrir un nouveau trade si besoin
+            if (needSize != 0) {
+                // Traiter les points SL/TP
+                double slPrice = order.sl();
+                double tpPrice = order.tp();
+                
+                // Calculate SL/TP prices using points if specified
+                if (order.slPoints() > 0.0)
+                    slPrice = price - order.slPoints() * (order.isLong() ? 1 : -1);
+
+                if (order.tpPoints() > 0.0)
+                    tpPrice = price + order.tpPoints() * (order.isLong() ? 1 : -1);
+                
+                // Ouvrir le trade
+                try {
+                    openTrade(price, needSize, slPrice, tpPrice, timeIndex, order.tag(), order);
+                    
+                    // MODIFICATION: Ne pas retraiter les ordres SL/TP dans la même barre
+                    // Supprimer ou commenter ces lignes:
+                    /*
+                    if (slPrice > 0.0 || tpPrice > 0.0) {
+                        if (isMarketOrder) {
+                            continueProcessing = true;
+                        } else if (stopPrice > 0.0 && order.limit() <= 0.0 && tpPrice > 0.0 && 
+                                    ((order.isLong() && tpPrice <= high && (slPrice <= 0.0 || slPrice > low)) ||
+                                    (!order.isLong() && tpPrice >= low && (slPrice <= 0.0 || slPrice < high)))) {
+                            continueProcessing = true;
+                        }
+                    }
+                    */
+                } catch (const std::exception& e) {
+                    std::cerr << "ERROR in openTrade: " << e.what() << std::endl;
+                }
+            }
+            
+            // Supprimer l'ordre traité
+            auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
+            if (orderToRemove != _orders.end()) {
+                _orders.erase(orderToRemove);
+            }
+        }
     }
 }
 

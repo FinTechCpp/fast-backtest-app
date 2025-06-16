@@ -221,7 +221,7 @@ private:
     void prepareTimestampsCache();
     void aggregateOHLCV(AggregationLevel level);
     void aggregateIndicators(AggregationLevel level);
-    DoubleArray aggregateVector(const std::vector<double>& data, AggregationLevel level, int aggregateMethod) const;
+    std::vector<double> aggregateVector(const std::vector<double>& data, AggregationLevel level, int aggregateMethod) const;
 
     void calculateRSI(int id, int period);
     void calculateEMA(int id, int period);

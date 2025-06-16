@@ -24,6 +24,7 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
         updateHeikinAshiCache();
         
         m_aggregatedOHLCVCache.clear();
+        m_aggregatedIndicatorsCache.clear();
         m_activeIndicators.clear();
     }
 }
@@ -292,9 +293,9 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     for (const auto& [id, values] : m_activeIndicators.rsiValues) {
         if (!aggregated.isRsiValid(id)) {
             // Agréger les RSI
-            DoubleArray rsiData = aggregateVector(values, level, Chart::AggregateLast);
-            if (rsiData.len > 0) {
-                aggregated.rsiValues[id] = std::vector<double>(rsiData.data, rsiData.data + rsiData.len);
+            std::vector<double> rsiData = aggregateVector(values, level, Chart::AggregateLast);
+            if (!rsiData.empty()) {
+                aggregated.rsiValues[id] = std::move(rsiData);
                 aggregated.validRsiIds.insert(id);
             }
         }
@@ -303,9 +304,9 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     for (const auto& [id, values] : m_activeIndicators.emaValues) {
         if (!aggregated.isEmaValid(id)) {
             // Agréger les EMA
-            DoubleArray emaData = aggregateVector(values, level, Chart::AggregateLast);
-            if (emaData.len > 0) {
-                aggregated.emaValues[id] = std::vector<double>(emaData.data, emaData.data + emaData.len);
+            std::vector<double> emaData = aggregateVector(values, level, Chart::AggregateLast);
+            if (!emaData.empty()) {
+                aggregated.emaValues[id] = std::move(emaData);
                 aggregated.validEmaIds.insert(id);
             }
         }
@@ -315,13 +316,13 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
         if (!aggregated.isStochasticValid(id)) {
             // Agréger les Stochastic
             const auto& [kValues, dValues] = values;
-            DoubleArray kData = aggregateVector(kValues, level, Chart::AggregateLast);
-            DoubleArray dData = aggregateVector(dValues, level, Chart::AggregateLast);
-            
-            if (kData.len > 0 && dData.len > 0 && kData.len == dData.len) {
+            std::vector<double> kData = aggregateVector(kValues, level, Chart::AggregateLast);
+            std::vector<double> dData = aggregateVector(dValues, level, Chart::AggregateLast);
+
+            if (!kData.empty() && !dData.empty() && kData.size() == dData.size()) {
                 aggregated.stochasticValues[id] = std::make_pair(
-                    std::vector<double>(kData.data, kData.data + kData.len),
-                    std::vector<double>(dData.data, dData.data + dData.len)
+                    std::move(kData),
+                    std::move(dData)
                 );
                 aggregated.validStochasticIds.insert(id);
             }
@@ -331,19 +332,19 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     for (const auto& [id, values] : m_activeIndicators.atrValues) {
         if (!aggregated.isAtrValid(id)) {
             // Agréger les ATR
-            DoubleArray atrData = aggregateVector(values, level, Chart::AggregateLast);
-            if (atrData.len > 0) {
-                aggregated.atrValues[id] = std::vector<double>(atrData.data, atrData.data + atrData.len);
+            std::vector<double> atrData = aggregateVector(values, level, Chart::AggregateLast);
+            if (!atrData.empty()) {
+                aggregated.atrValues[id] = std::move(atrData);
                 aggregated.validAtrIds.insert(id);
             }
         }
     }
 }
 
-DoubleArray ChartDataManager::aggregateVector(const std::vector<double> &data, AggregationLevel level, int aggregateMethod) const
+std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> &data, AggregationLevel level, int aggregateMethod) const
 {
     if (level == AggregationLevel::Raw)
-        return DoubleArray(data.data(), data.size());
+        return data;
 
     std::vector<double> timestamps = m_timestampsCache;
     std::vector<double> dataCopy = data;
@@ -361,18 +362,19 @@ DoubleArray ChartDataManager::aggregateVector(const std::vector<double> &data, A
             timestampsMath.selectStartOfDay();
             break;
         default:
-            return DoubleArray(); // Niveau d'agrégation non supporté
+            return std::vector<double>(); // Niveau d'agrégation non supporté
     }
 
     DoubleArray indices = timestampsMath.result();
     if (indices.len <= 0) {
         qDebug() << "Agrégation échouée - aucun point sélectionné";
-        return DoubleArray();
+        return std::vector<double>();
     }
 
-    return timestampsMath.aggregate(
+    DoubleArray result = timestampsMath.aggregate(
         DoubleArray(dataCopy.data(), dataCopy.size()), 
         aggregateMethod);
+    return std::vector<double>(result.data, result.data + result.len);
 }
 
 void ChartDataManager::calculateRSI(int id, int period)
@@ -465,7 +467,6 @@ ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(co
     result.pointCount = timestamps.len;
     result.isValid = true;
 
-    // Utiliser m_maxDisplayPoints au lieu de MAX_DISPLAY_POINTS
     if (timestamps.len <= m_maxDisplayPoints) return result;
 
     // Déterminer le niveau d'agrégation de départ en fonction de la période des données

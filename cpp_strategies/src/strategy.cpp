@@ -145,11 +145,9 @@ bool Strategy::check_time() {
     }
 
     // Vérifier les heures de trading à chaque bougie
-    bool after_start = (base_config.trading_from < current_time ||
-                        base_config.trading_from == current_time);
+    bool after_start = (base_config.trading_from < current_time);
 
-    bool before_end = (current_time < base_config.trading_to ||
-                       current_time == base_config.trading_to);
+    bool before_end = (current_time < base_config.trading_to);
 
     time_check = after_start && before_end;
 

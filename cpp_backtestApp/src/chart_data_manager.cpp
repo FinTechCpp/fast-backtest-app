@@ -24,6 +24,7 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
         updateHeikinAshiCache();
         
         m_aggregatedOHLCVCache.clear();
+        m_aggregatedIndicatorsCache.clear();
         m_activeIndicators.clear();
     }
 }

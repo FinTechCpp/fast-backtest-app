@@ -146,7 +146,6 @@ private:
     double dateToChartTimestamp(const be::Date& date);
     void prepareTimestampsCache();
     DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
-    void updateIndicatorCache();
 
 
     bool updateChartDisplay(ViewPortMode mode = ViewPortMode::FULL_CHART);

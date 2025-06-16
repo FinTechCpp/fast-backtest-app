@@ -40,8 +40,6 @@ struct BuyHeikinGreenConfig {
     }
 };
 
-
-
 class BuyHeikinGreen : public Strategy {
 private:
     BuyHeikinGreenConfig config;

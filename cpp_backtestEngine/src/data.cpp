@@ -23,6 +23,9 @@ Data::Data(const std::vector<Date>& dates,
     if (_volume.empty()) {
         _volume.resize(_dates.size(), 0.0);
     }
+    
+    // Initialize gap detection
+    _hasGapAfter.resize(_dates.size(), false);
 }
 
 Data::Data(std::vector<Date>&& dates,
@@ -45,6 +48,9 @@ Data::Data(std::vector<Date>&& dates,
     if (_volume.empty()) {
         _volume.resize(_dates.size(), 0.0);
     }
+    
+    // Initialize gap detection
+    _hasGapAfter.resize(_dates.size(), false);
 }
 
 void Data::addColumn(const std::string& name, const std::vector<double>& values) {
@@ -124,6 +130,30 @@ double Data::currentVolume() const {
     if (_position >= _volume.size())
         throw std::runtime_error("Position actuelle invalide");
     return _volume[_position];
+}
+
+void Data::setGapIndices(const std::vector<size_t>& gapIndices) {
+    // Initialize all to false first
+    _hasGapAfter.resize(_dates.size(), false);
+    
+    // Mark the specified indices as having gaps
+    for (size_t index : gapIndices) {
+        if (index < _dates.size()) {
+            _hasGapAfter[index] = true;
+        }
+    }
+}
+
+bool Data::hasGapAfterCurrent() const {
+    return hasGapAfterIndex(_position);
+}
+
+bool Data::hasGapAfterIndex(size_t index) const {
+    if (index >= _dates.size()) {
+        throw std::out_of_range("Index de bougie hors limites");
+    }
+    
+    return _hasGapAfter[index];
 }
 
 // std::vector<Candle> Data::lookback(size_t n) const

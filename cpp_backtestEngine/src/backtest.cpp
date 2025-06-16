@@ -119,6 +119,20 @@ Stats Backtest::run() {
             // Exécuter la logique de la stratégie pour la barre actuelle
             strategy->next();
             
+            // Vérifier s'il y a un trou après la bougie courante
+            if (_data->hasGapAfterCurrent() && !_broker->trades().empty()) {
+                std::cerr << "Gap detected after position " << _data->position() 
+                          << ". Closing all open positions.\n";
+                
+                // Fermer toutes les positions ouvertes
+                for (auto& trade : _broker->trades()) {
+                    trade->close();
+                }
+                
+                // Traiter les ordres pour s'assurer que les positions sont fermées correctement
+                _broker->next();
+            }
+            
             // Rapport de progression
             if (_progressCallback && (_data->position() % 100 == 0 || _data->position() == dataSize - 1)) { 
                 _progressCallback(_data->position() + 1, dataSize);

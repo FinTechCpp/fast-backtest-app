@@ -368,15 +368,29 @@ std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLC
         volume.push_back(bar.volume);
     }
     
-    // Vérifier la taille des vecteurs pour débogage
-    qDebug() << "Tailles des vecteurs de données:"
-             << "dates:" << dates.size()
-             << "open:" << open.size()
-             << "high:" << high.size()
-             << "low:" << low.size()
-             << "close:" << close.size();
+    // Detect gaps in the data (where the time between candles exceeds expected interval)
+    std::vector<size_t> gapIndices;
+    int expectedIntervalSecs = DataLoader::intervalToSeconds(m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString());
     
-    return std::make_shared<be::Data>(dates, open, high, low, close, volume);
+    // Use 1.5x the expected interval as the threshold for gap detection
+    int gapThreshold = expectedIntervalSecs * 1.5;
+    
+    for (size_t i = 0; i < bars.size() - 1; i++) {
+        QDateTime current = bars[i].timestamp;
+        QDateTime next = bars[i+1].timestamp;
+        int secondsDiff = current.secsTo(next);
+        
+        // If the difference is significantly more than the expected interval, mark as a gap
+        if (secondsDiff > gapThreshold) 
+            gapIndices.push_back(i);   
+    }
+    
+    // Create the Data object
+    auto data = std::make_shared<be::Data>(dates, open, high, low, close, volume);
+    
+    // Set the gap indices
+    data->setGapIndices(gapIndices);    
+    return data;
 }
 
 std::shared_ptr<be::Strategy> BacktestWorker::createStrategy(

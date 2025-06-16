@@ -91,6 +91,28 @@ public:
      */
     void addColumn(const std::string& name, const std::vector<double>& values);
     
+    /**
+     * @brief Ajoute l'information sur les trous de données
+     * 
+     * @param gapIndices Indices des bougies après lesquelles il y a un trou
+     */
+    void setGapIndices(const std::vector<size_t>& gapIndices);
+    
+    /**
+     * @brief Vérifie si la bougie courante est suivie d'un trou de données
+     * 
+     * @return true s'il y a un trou après la bougie courante
+     */
+    bool hasGapAfterCurrent() const;
+    
+    /**
+     * @brief Vérifie si une bougie est suivie d'un trou de données
+     * 
+     * @param index Index de la bougie à vérifier
+     * @return true s'il y a un trou après la bougie
+     */
+    bool hasGapAfterIndex(size_t index) const;
+
     //----- Méthodes d'accès pour l'affichage et l'analyse post-backtest -----
     
     /**
@@ -223,6 +245,7 @@ private:
 
     // std::vector<Candle> _candles;  // Stockage des bougies
     size_t _position = 0;          // Position courante pour l'itération
+    std::vector<bool> _hasGapAfter;  // Indique si un trou existe après chaque bougie
 };
 
 } // namespace be

@@ -224,17 +224,11 @@ private:
         double raw_position_size = std::min(risk_based_position_size, max_position_size);
         double final_position_size;
         
-        // If size >= 1, round to nearest integer
+        // If size >= 1, round to lower 0,5 
         if (raw_position_size >= 1.0) {
-            final_position_size = std::floor(raw_position_size);
-            if (logger) logger->log_position_sizing(raw_position_size, final_position_size, 
-                "arrondi à l'entier inférieur", LogLevel::INFO);
-        } else {
-            // Limit to minimum of 0.5
-            final_position_size = std::max(0.5, std::min(raw_position_size, 0.99));
-            if (logger) logger->log_position_sizing(raw_position_size, final_position_size, 
-                "limité entre 0.5 et 0.99", LogLevel::INFO);
-        }
+            final_position_size = std::floor(raw_position_size * 2.0) / 2.0;
+            if (logger) logger->log_position_sizing(raw_position_size, final_position_size, "arrondi au 0.5 inférieur", LogLevel::INFO);
+        } 
         
         return final_position_size;
     }

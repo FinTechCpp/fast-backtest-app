@@ -74,7 +74,6 @@ Order Broker::newOrder(double size, double limit, double stop, double sl, double
                       const std::string& tag, double slPoints, double tpPoints,
                       std::shared_ptr<Trade> trade) {
     // Validate size
-    size = static_cast<double>(std::round(size));
     if (size == 0) {
         throw std::invalid_argument("Order size cannot be zero");
     }
@@ -340,7 +339,7 @@ void Broker::processOrders() {
                 }
             }
             
-            int needSize = static_cast<int>(size);
+            double needSize = size; // Taille nécessaire à ouvrir/fermer
             
             // Gestion des positions opposées si le hedging est désactivé
             if (!_hedging) {
@@ -353,7 +352,7 @@ void Broker::processOrders() {
                     
                     // Ordre plus grand que la position existante
                     if (std::abs(needSize) >= std::abs(trade->size())) {
-                        needSize += static_cast<int>(trade->size());
+                        needSize += size;
                         try {
                             closeTrade(trade, price, timeIndex);
                         } catch (const std::exception& e) {

@@ -36,7 +36,7 @@ void Trade::close(double portion) {
     
     // Calculer la taille à fermer
     double closeSize = std::copysign(
-        std::max(1.0, std::round(std::abs(_size) * portion)),
+        std::abs(_size) * portion,
         -_size  // Signe opposé à la position actuelle
     );
     

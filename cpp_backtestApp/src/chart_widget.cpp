@@ -33,11 +33,10 @@ ChartWidget::ChartWidget(QWidget* parent)
     // Configurer le viewer
     m_chartViewer->setMouseUsage(Chart::MouseUsageScroll);
     m_chartViewer->setMouseTracking(true);
-    m_chartViewer->setMouseWheelZoomRatio(1.1);
+    m_chartViewer->setMouseWheelZoomRatio(1.4);
     m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
     m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
     m_chartViewer->setZoomInWidthLimit(0.00001); // Limite de zoom pour éviter les zooms trop fins
-    // m_chartViewer->set
     
     // Connecter les signaux
     connect(m_chartViewer, &QChartViewer::viewPortChanged, 

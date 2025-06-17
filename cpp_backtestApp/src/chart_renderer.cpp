@@ -111,9 +111,8 @@ void ChartRenderer::createOrUpdateChart(
         config.chartType == ChartDataManager::ChartType::HeikinAshi) {
         CandleStickLayer* candleStickLayer = m_financeChart->addCandleStick(0x0d9901, 0xF30000); // Vert/Rouge pour les bougies
         candleStickLayer->setColors(0x0d9901, 0x0d9901, 0xF30000, 0xF30000);
-        candleStickLayer->setDataWidth(15);
-        candleStickLayer->setDataGap(0.2); // Espace entre les bougies
-        //candleStickLayer->setDataWidth(8); // Largeur des bougies
+        candleStickLayer->setDataWidth(50);
+        candleStickLayer->setDataGap(0.1); // Espace entre les bougies
     } else if (config.chartType == ChartDataManager::ChartType::OHLC) {
         m_financeChart->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
     } else if (config.chartType == ChartDataManager::ChartType::Close) {

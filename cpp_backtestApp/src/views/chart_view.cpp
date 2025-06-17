@@ -89,17 +89,17 @@ void ChartView::setupUI()
     QHBoxLayout* sliderLayout = new QHBoxLayout();
     
     // Créer le slider
+    int aggregation_default_value = 30000; 
     m_aggregationSlider = new QSlider(Qt::Horizontal);
-    m_aggregationSlider->setMinimum(1000);   // Minimum 1 000 points
-    m_aggregationSlider->setMaximum(100000); // Maximum 100 000 points
-    m_aggregationSlider->setValue(10000);    // Valeur par défaut 10 000
+    m_aggregationSlider->setMinimum(1000);   // Minimum 
+    m_aggregationSlider->setMaximum(100000); // Maximum 
+    m_aggregationSlider->setValue(aggregation_default_value); // Valeur par défaut 
     m_aggregationSlider->setTickInterval(10000);
     m_aggregationSlider->setTickPosition(QSlider::TicksBelow);
     
     // Créer l'étiquette de valeur
-    m_aggregationLabel = new QLabel("10 000");
+    m_aggregationLabel = new QLabel(QString::number(aggregation_default_value));
     m_aggregationLabel->setMinimumWidth(50);
-    m_aggregationLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     
     // Ajouter les widgets au layout
     sliderLayout->addWidget(m_aggregationSlider);

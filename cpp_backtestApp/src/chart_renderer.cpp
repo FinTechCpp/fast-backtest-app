@@ -532,8 +532,8 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     // }
 
     // Ajouter les marqueurs carrés pour les entrées et sorties
-    addMarkers(mainChart, entryMarkers, "Entries", Chart::SquareSymbol, 7, 0x000000);
-    addMarkers(mainChart, exitMarkers, "Exits", Chart::SquareSymbol, 7, 0x000000);
+    addMarkers(mainChart, entryMarkers, "Entry", Chart::SquareSymbol, 7, 0x000000);
+    addMarkers(mainChart, exitMarkers, "Exit", Chart::SquareSymbol, 7, 0x000000);
     addTPSLSegments(mainChart, tpslSegments);
     
     // // En mode Raw uniquement, afficher les sorties et les segments TP/SL
@@ -545,15 +545,13 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     
     for (int i = 0; i < RESULT_COUNT; i++) {
         if (!entryArrows[i].empty()) {
-            std::string name = std::string(resultNames[i]) + " Entry";
             int symbolSize = (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) ? 15 : 10;
-            addMarkers(mainChart, entryArrows[i], name.c_str(), Chart::InvertedTriangleSymbol, symbolSize, COLORS[i]);
+            addMarkers(mainChart, entryArrows[i], "", Chart::InvertedTriangleSymbol, symbolSize, COLORS[i]);
         }
         
         // En mode Raw uniquement, afficher les flèches de sortie
         if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw && !exitArrows[i].empty()) {
-            std::string name = std::string(resultNames[i]) + " Exit";
-            addMarkers(mainChart, exitArrows[i], name.c_str(), Chart::TriangleSymbol, 15, COLORS[i]);
+            addMarkers(mainChart, exitArrows[i], "", Chart::TriangleSymbol, 15, COLORS[i]);
         }
     }
 }

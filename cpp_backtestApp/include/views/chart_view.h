@@ -119,4 +119,6 @@ private:
     void showChartWidget();
     void setupIndicatorControls();
     void createIndicatorWidgets(int id, const QString& name);
+    void configureStrategyIndicators(const std::vector<StrategyIndicator>& indicators);
+    
 };

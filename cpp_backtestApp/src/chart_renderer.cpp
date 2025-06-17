@@ -73,7 +73,7 @@ void ChartRenderer::createOrUpdateChart(
         "<*font=Arial Bold*>{value|d MMM hh:nn}<*/font*>",  // Première heure avec jour
         "{value|hh:nn}"  // Autres heures
     );
-    m_financeChart->setMargins(0, 25, 40, 100);  // Pas de marges
+    m_financeChart->setMargins(0, 20, 40, 100);  // Pas de marges
     m_financeChart->setDateLabelSpacing(80);
     
     // Configurer les données

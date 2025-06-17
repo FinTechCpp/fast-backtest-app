@@ -47,11 +47,11 @@ public:
     EMAInstance* findEMA(int id);
     StochasticInstance* findStochastic(int id);
     ATRInstance* findATR(int id);
-
-    
+   
     // État du graphique
     bool hasValidData() const; // ne devrait pas etre un probleme les class exterieur s'enfoutent de si les données sont valides
     bool isChartCreated() const;
+    void removeAllIndicators();
     
     // Conversion de ChartType 
     static QString chartTypeToString(ChartDataManager::ChartType type);

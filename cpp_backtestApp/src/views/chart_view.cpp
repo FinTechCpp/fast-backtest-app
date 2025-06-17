@@ -627,6 +627,11 @@ void ChartView::updateData(BacktestResults* results)
     
     // Rafraîchir la liste des indicateurs
     refreshIndicatorsList();
+
+    if(!results->indicators.empty()) {
+        // Configurer les indicateurs de la stratégie
+        configureStrategyIndicators(results->indicators);
+    }
     
     m_dataExtracted = true;
 
@@ -714,5 +719,64 @@ void ChartView::onMaxDisplayPointsChanged(int value)
     if (m_aggregationSlider->value() != value) {
         m_aggregationSlider->setValue(value);
         m_aggregationLabel->setText(QString::number(value));
+    }
+}
+
+void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>& indicators) {
+    // Supprimer les indicateurs existants
+    if (m_chartWidget) {
+        m_chartWidget->removeAllIndicators();
+
+        // Pour chaque indicateur de la stratégie
+        for (const auto& indicator : indicators) {
+            switch (indicator.type) {
+                case StrategyIndicator::RSI: {
+                    RSIInstance rsi;
+                    rsi.period = static_cast<int>(indicator.params.at("period"));
+                    rsi.height = 90;  // Hauteur standard
+                    rsi.color = 0x800080;  // Couleur par défaut (violet)
+                    m_chartWidget->addRSI(rsi);
+                    break;
+                }
+                case StrategyIndicator::EMA: {
+                    EMAInstance ema;
+                    ema.period = static_cast<int>(indicator.params.at("period"));
+                    ema.visible = true;
+                    
+                    // Attribuer une couleur différente selon la période
+                    if (ema.period < 50) 
+                        ema.color = 0x0000FF;  // Bleu pour EMA courte
+                    else if (ema.period < 100)
+                        ema.color = 0xFF0000;  // Rouge pour EMA moyenne
+                    else
+                        ema.color = 0x008000;  // Vert pour EMA longue
+                        
+                    m_chartWidget->addEMA(ema);
+                    break;
+                }
+                case StrategyIndicator::STOCHASTIC: {
+                    StochasticInstance stoch;
+                    stoch.fastKPeriod = static_cast<int>(indicator.params.at("fastKPeriod"));
+                    stoch.slowKPeriod = static_cast<int>(indicator.params.at("slowKPeriod"));
+                    stoch.slowDPeriod = static_cast<int>(indicator.params.at("slowDPeriod"));
+                    stoch.overboughtLevel = static_cast<int>(indicator.params.at("overboughtLevel"));
+                    stoch.oversoldLevel = static_cast<int>(indicator.params.at("oversoldLevel"));
+                    stoch.height = 90;  // Hauteur standard
+                    stoch.kColor = 0x0000FF;  // Bleu pour K
+                    stoch.dColor = 0xFF0000;  // Rouge pour D
+                    m_chartWidget->addStochastic(stoch);
+                    break;
+                }
+                case StrategyIndicator::ATR: {
+                    ATRInstance atr;
+                    atr.period = static_cast<int>(indicator.params.at("period"));
+                    atr.useLogScale = indicator.params.at("useLogScale") > 0.5;
+                    atr.height = 90;  // Hauteur standard
+                    atr.color = 0x008800;  // Vert
+                    m_chartWidget->addATR(atr);
+                    break;
+                }
+            }
+        }
     }
 }

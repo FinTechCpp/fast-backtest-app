@@ -553,3 +553,30 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
         }
     }
 }
+
+void ChartWidget::removeAllIndicators() {
+    // Copier les listes pour éviter les problèmes lors de la suppression
+    std::vector<int> rsiIds, emaIds, stochIds, atrIds;
+    
+    for (const auto& rsi : m_rsiInstances) {
+        rsiIds.push_back(rsi.id);
+    }
+    
+    for (const auto& ema : m_emaInstances) {
+        emaIds.push_back(ema.id);
+    }
+    
+    for (const auto& stoch : m_stochasticInstances) {
+        stochIds.push_back(stoch.id);
+    }
+    
+    for (const auto& atr : m_atrInstances) {
+        atrIds.push_back(atr.id);
+    }
+    
+    // Supprimer tous les indicateurs
+    for (int id : rsiIds) removeRSI(id);
+    for (int id : emaIds) removeEMA(id);
+    for (int id : stochIds) removeStochastic(id);
+    for (int id : atrIds) removeATR(id);
+}

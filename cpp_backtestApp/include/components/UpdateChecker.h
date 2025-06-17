@@ -7,6 +7,9 @@
 #include <QNetworkRequest>
 #include <QVersionNumber>
 #include <QSemaphore>
+#include <QJsonObject>
+#include <QProgressDialog>
+#include <QDir>
 
 class UpdateChecker : public QObject
 {
@@ -16,26 +19,50 @@ public:
     explicit UpdateChecker(QObject* parent = nullptr);
     ~UpdateChecker();
 
-    // Vérifie les mises à jour disponibles
+    // Structure pour les chemins de l'application
+    struct AppPaths {
+        QString applicationDir;     // Dossier de l'exécutable
+        QString userDataDir;       // Dossier des données utilisateur
+        QString configDir;         // Dossier de configuration
+        QString tempUpdateDir;     // Dossier temporaire pour les mises à jour
+        QString backupDir;         // Dossier de sauvegarde
+    };
+
+    // Configuration de mise à jour étendue
+    struct UpdateConfig {
+        QString currentVersion;
+        QString newVersion;
+        QString downloadUrl;
+        QString checksum;          // Vérification d'intégrité
+        qint64 downloadSize;
+        
+        UpdateConfig() : downloadSize(0) {}
+    };
+
+    // Méthodes existantes
     void checkForUpdates();
-    
-    // Télécharge et installe la mise à jour
     void downloadAndInstallUpdate();
-    
-    // Version actuelle de l'application
     static QString currentVersion();
-    
-    // Attend la fin de la vérification (pour usage synchrone si nécessaire)
     bool waitForUpdateCheck(int timeout = 30000);
 
+    // Nouvelles méthodes pour la mise à jour avancée
+    void downloadAndInstallUpdateAdvanced(const UpdateConfig& config);
+    bool rollbackUpdate();
+    const AppPaths& getPaths() const { return m_paths; }
+
 signals:
-    // Signaux émis pendant le processus de mise à jour
+    // Signaux existants
     void updateAvailable(const QString& version, const QString& downloadUrl);
     void noUpdateAvailable();
     void updateCheckFailed(const QString& error);
     void downloadProgress(int percentage);
     void updateCompleted();
     void updateFailed(const QString& error);
+    
+    // Nouveaux signaux pour la mise à jour avancée
+    void updateAvailableAdvanced(const UpdateConfig& config);
+    void extractionProgress(const QString& message);
+    void rollbackCompleted();
 
 private slots:
     void onVersionCheckFinished();
@@ -43,11 +70,33 @@ private slots:
     void onDownloadFinished();
 
 private:
+    // Méthodes existantes
     void parseReleaseInfo(const QByteArray& data);
     void parseReleaseObject(const QJsonObject& releaseObj);
     bool isNewerVersion(const QString& latestVersion);
     void installUpdate(const QString& filePath);
 
+    // Nouvelles méthodes pour la gestion avancée
+    void initializePaths();
+    void createDirectoryStructure();
+    
+    // Sauvegarde et restauration
+    bool backupUserData();
+    bool restoreUserData();
+    bool mergeUserData(const QString& newAppDir);
+    
+    // Installation avancée
+    bool extractUpdate(const QString& zipPath, const QString& extractDir);
+    bool validateUpdate(const QString& updateDir, const QString& expectedChecksum);
+    bool installUpdateAdvanced(const QString& updateDir);
+    QString createUpdateScript(const QString& newAppDir);
+    
+    // Utilitaires
+    QString calculateChecksum(const QString& filePath);
+    bool copyDirectoryRecursively(const QString& source, const QString& destination, bool overwrite = true);
+    QStringList getUserDataFiles();
+
+    // Variables existantes
     QNetworkAccessManager* m_networkManager;
     QString m_latestVersion;
     QString m_downloadUrl;
@@ -55,4 +104,12 @@ private:
     bool m_updateAvailable;
     bool m_checkCompleted;
     QString m_errorMessage;
+    
+    // Nouvelles variables
+    AppPaths m_paths;
+    UpdateConfig m_currentUpdate;
+    QNetworkReply* m_downloadReply;
+    QProgressDialog* m_progressDialog;
+    QString m_tempUpdatePath;
+    bool m_advancedModeEnabled;
 };

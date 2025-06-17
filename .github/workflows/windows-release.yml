@@ -28,7 +28,7 @@ jobs:
         submodules: recursive
         fetch-depth: 0  # Nécessaire pour l'historique complet
 
-    - name: Calculate version
+    - name: Calculate version and checksum
       id: version
       run: |
         # Obtenir le dernier tag existant
@@ -59,6 +59,16 @@ jobs:
         
         echo "Dernier tag: $lastTag"
         echo "Nouvelle version: $version"
+
+        # Calculer le checksum du fichier ZIP
+        $checksum = Get-FileHash $env:ARCHIVE_NAME -Algorithm SHA256
+        echo "CHECKSUM=$($checksum.Hash)" >> $env:GITHUB_ENV
+        echo "checksum=$($checksum.Hash)" >> $env:GITHUB_OUTPUT
+        
+        # Calculer la taille du fichier
+        $size = (Get-Item $env:ARCHIVE_NAME).Length
+        echo "DOWNLOAD_SIZE=$size" >> $env:GITHUB_ENV
+        echo "download_size=$size" >> $env:GITHUB_OUTPUT
 
     - name: Set up MSVC
       uses: microsoft/setup-msbuild@v2
@@ -165,9 +175,9 @@ jobs:
           
           **Informations de build:**
           - Version: ${{ env.VERSION }}
-          - Version de base: ${{ env.BASE_VERSION }}
+          - Checksum SHA256: `${{ env.CHECKSUM }}`
+          - Taille: ${{ env.DOWNLOAD_SIZE }} octets
           - Commit: ${{ env.SHORT_SHA }}
-          - Message: ${{ env.COMMIT_MSG }}
           - Qt Version: ${{ env.QT_VERSION }}
           - Build Type: ${{ env.BUILD_TYPE }}
           - Date: ${{ github.event.head_commit.timestamp }}
@@ -182,9 +192,7 @@ jobs:
           1. Téléchargez le fichier ZIP
           2. Extrayez-le dans un dossier de votre choix
           3. Lancez `backtestapp.exe`
-          
-          ---
-          *Build automatique généré par GitHub Actions*
+  
         draft: false
         prerelease: false
         files: ${{ env.ARCHIVE_NAME }}

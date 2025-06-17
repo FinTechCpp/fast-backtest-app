@@ -135,12 +135,12 @@ void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString&
     
     qInfo() << "Mise à jour disponible:" << version;
     
-    // Afficher la boîte de dialogue de mise à jour
+    // Afficher la boîte de dialogue de mise à jour avec plus d'informations
     QMessageBox msgBox(qobject_cast<QWidget*>(parent()));
     msgBox.setIcon(QMessageBox::Information);
     msgBox.setWindowTitle(tr("Mise à jour disponible"));
     msgBox.setText(tr("Une nouvelle version est disponible !"));
-    msgBox.setInformativeText(tr("Version actuelle: %1\nNouvelle version: %2\n\nVoulez-vous télécharger et installer la mise à jour maintenant ?")
+    msgBox.setInformativeText(tr("Version actuelle: %1\nNouvelle version: %2\n\nVoulez-vous télécharger et installer la mise à jour maintenant ?\n\n⚠️ L'application redémarrera automatiquement après l'installation.\n✅ Vos configurations seront préservées.")
                              .arg(UpdateChecker::currentVersion())
                              .arg(version));
     
@@ -155,13 +155,12 @@ void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString&
     QAbstractButton* clickedBtn = msgBox.clickedButton();
 
     if (clickedBtn == static_cast<QAbstractButton*>(downloadButton)) {
-        // Télécharger et installer
+        // Télécharger et installer avec le nouveau système
         m_updateChecker->downloadAndInstallUpdate();
     } else if (clickedBtn == static_cast<QAbstractButton*>(viewButton)) {
         // Ouvrir la page de release sur GitHub
         QString releaseUrl = QString("https://github.com/hugoMiCode/ig-trading-bot/releases/tag/v%1").arg(version);
         
-        // Commande multiplateforme pour ouvrir l'URL
         #ifdef Q_OS_WIN
         QProcess::startDetached("cmd", {"/c", "start", releaseUrl});
         #elif defined(Q_OS_MAC)

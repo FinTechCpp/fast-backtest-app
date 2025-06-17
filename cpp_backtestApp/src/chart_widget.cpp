@@ -179,7 +179,8 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
         m_rulerToolEnabled,
         m_rulerFirstPointSelected,
         m_rulerStartX, m_rulerStartY,
-        m_dataManager
+        m_dataManager,
+        m_currentAggregation
     );
 
     // Récupérer les informations sur le point

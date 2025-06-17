@@ -58,11 +58,14 @@ public:
                         bool rulerEnabled, 
                         bool rulerFirstPointSelected,
                         int rulerStartX, int rulerStartY, 
-                        const ChartDataManager& dataManager);
+                        const ChartDataManager& dataManager,
+                        const ChartDataManager::AggregationInfo& aggregationInfo);
     
 private:
     // Méthode pour dessiner la règle
-    void drawRuler(MultiChart* m, int startX, int startY, int endX, int endY, DrawArea* d);
+    void drawRuler(MultiChart* m, int startX, int startY, int endX, int endY, DrawArea* d,
+                   const ChartDataManager& dataManager,
+                   const ChartDataManager::AggregationInfo& aggregationInfo);
     
     // Méthode pour le tracking de la souris
     void trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea* d);

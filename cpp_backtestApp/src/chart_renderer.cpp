@@ -164,7 +164,9 @@ void ChartRenderer::createOrUpdateChart(
     }
 }
 
-void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, bool rulerFirstPointSelected, int rulerStartX, int rulerStartY, const ChartDataManager &dataManager)
+void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 
+    bool rulerFirstPointSelected, int rulerStartX, int rulerStartY, 
+    const ChartDataManager &dataManager, const ChartDataManager::AggregationInfo &aggregationInfo)
 {
     int mouseX = viewer->getPlotAreaMouseX();
     int mouseY = viewer->getPlotAreaMouseY();
@@ -183,7 +185,8 @@ void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 
         int rulerEndX = viewer->getPlotAreaMouseX();
         int rulerEndY = viewer->getPlotAreaMouseY();
 
-        drawRuler(chart, rulerStartX, rulerStartY, rulerEndX, rulerEndY, d);
+        drawRuler(chart, rulerStartX, rulerStartY, rulerEndX, rulerEndY, d, 
+                 dataManager, aggregationInfo);
     }
 }
 
@@ -906,7 +909,9 @@ void ChartRenderer::addTPSLSegments(XYChart* chart, const std::vector<TPSLSegmen
     }
 }
 
-void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, int endY, DrawArea* d)
+void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, int endY, DrawArea* d, 
+                             const ChartDataManager& dataManager, 
+                             const ChartDataManager::AggregationInfo& aggregationInfo)
 {
     // Vérifier que le chart est valide et qu'il y a au moins un graphique
     if (!m || m->getChartCount() == 0) return;
@@ -916,16 +921,60 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
     if (!c) return;
 
     // Obtenir les indices correspondant aux positions du curseur
-    double xValueStart = c->getNearestXValue(startX);
-    double xValueEnd = c->getNearestXValue(endX);
+    double xIndexStart = c->getNearestXValue(startX);
+    double xIndexEnd = c->getNearestXValue(endX);
     double yValueStart = c->getYValue(startY);
     double yValueEnd = c->getYValue(endY);
 
-    // Récupérer les timestamps formattés pour l'affichage
-    const char* startTimeStr = c->xAxis()->getFormattedLabel(xValueStart, "yyyy-mm-dd hh:nn:ss");
-    const char* endTimeStr = c->xAxis()->getFormattedLabel(xValueEnd, "yyyy-mm-dd hh:nn:ss");
+    // Récupérer les timestamps réels depuis le ChartDataManager
+    double xValueStart, xValueEnd;
+    
+    // Récupérer les timestamps selon le niveau d'agrégation actuel
+    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+        // En mode Raw, utiliser directement l'indice pour accéder aux timestamps
+        const auto& timestamps = dataManager.getTimestamps();
+        int startIndex = aggregationInfo.startIndex;
+        
+        // Convertir les indices relatifs en indices absolus
+        int absIndexStart = startIndex + static_cast<int>(xIndexStart);
+        int absIndexEnd = startIndex + static_cast<int>(xIndexEnd);
+        
+        // Vérifier que les indices sont valides
+        if (absIndexStart >= 0 && absIndexStart < static_cast<int>(timestamps.size()) &&
+            absIndexEnd >= 0 && absIndexEnd < static_cast<int>(timestamps.size())) {
+            xValueStart = timestamps[absIndexStart];
+            xValueEnd = timestamps[absIndexEnd];
+        } else {
+            // Indices invalides, utiliser les valeurs par défaut
+            xValueStart = xIndexStart;
+            xValueEnd = xIndexEnd;
+        }
+    } else {
+        // En mode agrégé, utiliser les données agrégées
+        const auto& aggregatedData = dataManager.getAggregatedData(aggregationInfo.level);
+        int startIndex = aggregationInfo.startIndex;
+        
+        // Convertir les indices relatifs en indices absolus
+        int absIndexStart = startIndex + static_cast<int>(xIndexStart);
+        int absIndexEnd = startIndex + static_cast<int>(xIndexEnd);
+        
+        // Vérifier que les indices sont valides
+        if (absIndexStart >= 0 && absIndexStart < static_cast<int>(aggregatedData.timestamps.size()) &&
+            absIndexEnd >= 0 && absIndexEnd < static_cast<int>(aggregatedData.timestamps.size())) {
+            xValueStart = aggregatedData.timestamps[absIndexStart];
+            xValueEnd = aggregatedData.timestamps[absIndexEnd];
+        } else {
+            // Indices invalides, utiliser les valeurs par défaut
+            xValueStart = xIndexStart;
+            xValueEnd = xIndexEnd;
+        }
+    }
 
-    // Calculer la différence de temps en secondes
+    // Récupérer les timestamps formattés pour l'affichage
+    const char* startTimeStr = c->xAxis()->getFormattedLabel(xIndexStart, "yyyy-mm-dd hh:nn:ss");
+    const char* endTimeStr = c->xAxis()->getFormattedLabel(xIndexEnd, "yyyy-mm-dd hh:nn:ss");
+
+    // Calculer la différence de temps en secondes (des vrais timestamps)
     double deltaX = fabs(xValueEnd - xValueStart);
     double deltaY = yValueEnd - yValueStart;
 

@@ -28,7 +28,7 @@ jobs:
         submodules: recursive
         fetch-depth: 0  # Nécessaire pour l'historique complet
 
-    - name: Calculate version and checksum
+    - name: Calculate version
       id: version
       run: |
         # Obtenir le dernier tag existant
@@ -59,16 +59,6 @@ jobs:
         
         echo "Dernier tag: $lastTag"
         echo "Nouvelle version: $version"
-
-        # Calculer le checksum du fichier ZIP
-        $checksum = Get-FileHash $env:ARCHIVE_NAME -Algorithm SHA256
-        echo "CHECKSUM=$($checksum.Hash)" >> $env:GITHUB_ENV
-        echo "checksum=$($checksum.Hash)" >> $env:GITHUB_OUTPUT
-        
-        # Calculer la taille du fichier
-        $size = (Get-Item $env:ARCHIVE_NAME).Length
-        echo "DOWNLOAD_SIZE=$size" >> $env:GITHUB_ENV
-        echo "download_size=$size" >> $env:GITHUB_OUTPUT
 
     - name: Set up MSVC
       uses: microsoft/setup-msbuild@v2
@@ -149,6 +139,18 @@ jobs:
         $archiveName = "ig-trading-bot-windows-v${{ env.VERSION }}.zip"
         Compress-Archive -Path "ig-trading-bot-windows/*" -DestinationPath $archiveName
         echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
+
+    - name: Calculate checksum and size
+      run: |
+        # Calculer le checksum du fichier ZIP
+        $checksum = Get-FileHash $env:ARCHIVE_NAME -Algorithm SHA256
+        echo "CHECKSUM=$($checksum.Hash)" >> $env:GITHUB_ENV
+        echo "checksum=$($checksum.Hash)" >> $env:GITHUB_OUTPUT
+        
+        # Calculer la taille du fichier
+        $size = (Get-Item $env:ARCHIVE_NAME).Length
+        echo "DOWNLOAD_SIZE=$size" >> $env:GITHUB_ENV
+        echo "download_size=$size" >> $env:GITHUB_OUTPUT
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

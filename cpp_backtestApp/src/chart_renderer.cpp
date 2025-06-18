@@ -81,7 +81,8 @@ void ChartRenderer::createOrUpdateChart(
     
     // Cacher la légende par défaut en la rendant transparente
     m_financeChart->setLegendStyle("normal", 8, Chart::Transparent, Chart::Transparent);
-    
+    m_financeChart->setPlotAreaBorder(Chart::Transparent, 0);
+
     // Ajouter le titre du graphique
     std::string chartTypeStr = dataManager.chartTypeToString(config.chartType);
     std::string aggregationStr = dataManager.aggregationLevelToString(aggregationInfo.level);
@@ -105,7 +106,8 @@ void ChartRenderer::createOrUpdateChart(
     mainChart->xAxis()->setWidth(2);  // Axe plus épais
     mainChart->xAxis()->setTickLength(4, 2);  // Ticks plus visibles
     mainChart->xAxis()->setLabelStyle("Arial Bold", 9);  // Étiquettes plus lisibles
-    
+    mainChart->yAxis()->setAutoScale(0.01, 0.01, 0);
+ 
     // Ajouter le type de graphique approprié selon le type actuel
     if (config.chartType == ChartDataManager::ChartType::CandleStick || 
         config.chartType == ChartDataManager::ChartType::HeikinAshi) {

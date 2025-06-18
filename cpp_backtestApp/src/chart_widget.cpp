@@ -535,20 +535,28 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
     QWidget::resizeEvent(event);
     QSize newSize = event->size();
     
-    // Don't update chart while resizing - wait until the resize is finished
+    // Ne pas mettre à jour pendant un redimensionnement en cours
     if (m_isResizing) {
-        // Just store the new size for later
         m_pendingResize = newSize;
         return;
     }
     
-    // Update chart width if it's significant
-    if (newSize.width() > 10 && std::abs(newSize.width() - m_config.chartWidth) > 50) {
-        m_config.chartWidth = newSize.width() - 10;
+    // Mettre à jour la largeur du graphique en fonction de la largeur du widget
+    if (newSize.width() > 10) {
+        m_config.chartWidth = newSize.width();
         
-        // Update only if we have valid data and the chart exists
+        // Mettre à jour le graphique seulement si nécessaire
         if (m_dataManager.hasValidData() && m_chartViewer) {
-            m_chartViewer->updateViewPort(false, false);
+            // Sauvegarder l'état actuel du viewport
+            double currentLeft = m_chartViewer->getViewPortLeft();
+            double currentWidth = m_chartViewer->getViewPortWidth();
+            
+            // Redessiner le graphique
+            updateChartDisplay(ViewPortMode::USE_CURRENT);
+            
+            // Restaurer l'état du viewport
+            m_chartViewer->setViewPortLeft(currentLeft);
+            m_chartViewer->setViewPortWidth(currentWidth);
         }
     }
 }

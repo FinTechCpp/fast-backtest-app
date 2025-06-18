@@ -20,7 +20,7 @@ class ChartDataManager;
 struct ChartConfiguration {
     ChartDataManager::ChartType chartType = ChartDataManager::ChartType::CandleStick;
     int chartWidth = 1200; // il faut que ce soit adaptatif
-    int chartHeight = 600;
+    int chartHeight = 500;
     int equityHeight = 150; // inclue dans la taille du graphique principal
     // int volumeHeight = 100;
     bool showTrades = true;

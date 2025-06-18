@@ -23,7 +23,7 @@ target_include_directories(backtestapp
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/cpp_backtestEngine/include
         ${CMAKE_SOURCE_DIR}/cpp_strategies/include
-        ${CMAKE_SOURCE_DIR}/cpp_adaptator/include
+        ${CMAKE_SOURCE_DIR}/backtestAdapter/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/qtdemo/helloworld
 )

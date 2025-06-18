@@ -131,7 +131,7 @@ add_subdirectory(cpp_backtestEngine)
 add_subdirectory(cpp_strategies)
 add_subdirectory(backtestAdapter)
 add_subdirectory(ChartDirector)
-add_subdirectory(cpp_backtestApp)
+add_subdirectory(backtestApp)
 
 # Afficher un résumé de la configuration
 message(STATUS "=========================================")

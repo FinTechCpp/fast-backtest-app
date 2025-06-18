@@ -79,7 +79,7 @@ make -j$(nproc) || { show_error "Échec de la compilation"; exit 1; }
 show_success "Compilation terminée!"
 
 # Créer le chemin vers l'exécutable
-APP_PATH="./cpp_backtestApp/backtestapp"
+APP_PATH="./backtestApp/backtestapp"
 
 # Afficher un message sur comment lancer l'application
 echo -e "${YELLOW}${BOLD}[INFO]${NC} Chemin de l'application: ${BOLD}./build${APP_PATH:1}${NC}"

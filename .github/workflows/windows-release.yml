@@ -98,19 +98,19 @@ jobs:
 
     - name: Verify executable exists
       run: |
-        if (Test-Path "build/cpp_backtestApp/${{ env.BUILD_TYPE }}/backtestapp.exe") {
+        if (Test-Path "build/backtestApp/${{ env.BUILD_TYPE }}/backtestapp.exe") {
           echo "✅ Executable found"
-          Get-ChildItem "build/cpp_backtestApp/${{ env.BUILD_TYPE }}/"
+          Get-ChildItem "build/backtestApp/${{ env.BUILD_TYPE }}/"
         } else {
           echo "❌ Executable not found"
-          Get-ChildItem "build/cpp_backtestApp/" -Recurse
+          Get-ChildItem "build/backtestApp/" -Recurse
           exit 1
         }
 
     - name: Create distribution folder
       run: |
         $distDir = "ig-trading-bot-windows"
-        $sourceDir = "build/cpp_backtestApp/${{ env.BUILD_TYPE }}"
+        $sourceDir = "build/backtestApp/${{ env.BUILD_TYPE }}"
         
         # Créer le dossier de distribution
         New-Item -ItemType Directory -Path $distDir -Force

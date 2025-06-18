@@ -7,7 +7,7 @@ add_executable(main ${SOURCES})
 # Lier avec les bibliothèques requises
 target_link_libraries(main
     PRIVATE
-        cpp_backtestEngine
+        backtestEngine
         cpp_strategies
 )
 
@@ -15,7 +15,7 @@ target_link_libraries(main
 target_include_directories(main
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/cpp_backtestEngine/include
+        ${CMAKE_SOURCE_DIR}/backtestEngine/include
         ${CMAKE_SOURCE_DIR}/cpp_strategies/include
 )
 

@@ -21,7 +21,7 @@ add_executable(backtestapp
 target_include_directories(backtestapp
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_SOURCE_DIR}/cpp_backtestEngine/include
+        ${CMAKE_SOURCE_DIR}/backtestEngine/include
         ${CMAKE_SOURCE_DIR}/cpp_strategies/include
         ${CMAKE_SOURCE_DIR}/backtestAdapter/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
@@ -52,7 +52,7 @@ target_link_libraries(backtestapp
         Qt6::Widgets
         Qt6::Charts
         Qt::Network
-        cpp_backtestEngine
+        backtestEngine
         cpp_strategies
         chartdirector
 )

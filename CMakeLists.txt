@@ -127,7 +127,7 @@ endif()
 find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 
 # Ajouter les sous-projets (bibliothèques)
-add_subdirectory(cpp_backtestEngine)
+add_subdirectory(backtestEngine)
 add_subdirectory(cpp_strategies)
 add_subdirectory(backtestAdapter)
 add_subdirectory(ChartDirector)

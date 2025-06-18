@@ -146,7 +146,6 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
         pointsToShow = endIndex - startIndex + 1;
     }
 
-
     m_currentAggregation = m_dataManager.getOptimalAggregationInfo(DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow));
     
     m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation, m_rsiInstances, m_emaInstances, m_stochasticInstances, m_atrInstances);

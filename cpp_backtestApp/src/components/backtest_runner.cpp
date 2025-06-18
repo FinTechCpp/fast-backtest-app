@@ -293,8 +293,7 @@ void BacktestWorker::run()
     std::shared_ptr<be::Data> data = convertToBeData(rawData);
     
     // Extraire les indicateurs de la stratégie
-    QMap<QString, QVariant> allParams = m_mainWindow->getStrategyConfig();
-    std::vector<StrategyIndicator> strategyIndicators = extractIndicatorsFromConfig(allParams);
+    std::vector<StrategyIndicator> strategyIndicators = m_mainWindow->getIndicatorConfig();
     
     // Créer un objet BacktestResults pour stocker les résultats
     m_results = std::make_unique<BacktestResults>();
@@ -397,73 +396,6 @@ std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLC
     // Set the gap indices
     data->setGapIndices(gapIndices);    
     return data;
-}
-
-std::vector<StrategyIndicator> BacktestWorker::extractIndicatorsFromConfig(const QMap<QString, QVariant>& params) {
-    std::vector<StrategyIndicator> indicators;
-    
-    // Extraire ATR si utilisé pour SL ou TP
-    bool use_atr_for_sl = params.value("use_atr_for_sl", false).toBool();
-    bool use_atr_for_tp = params.value("use_atr_for_tp", false).toBool();
-    
-    if (use_atr_for_sl || use_atr_for_tp) {
-        StrategyIndicator atr;
-        atr.type = StrategyIndicator::ATR;
-        atr.params["period"] = params.value("atr_period", 14).toDouble();
-        atr.params["useLogScale"] = 1.0;  // true par défaut
-        indicators.push_back(atr);
-    }
-    
-    // Extraire les indicateurs spécifiques à la stratégie
-    QString strategyName = params.value("strategy", "").toString();
-    
-    if (strategyName.contains("BuyHeikinGreen", Qt::CaseInsensitive)) {
-        // EMA court terme
-        bool use_ema_short = params.value("use_ema_short_filter", false).toBool();
-        if (use_ema_short) {
-            StrategyIndicator ema;
-            ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = params.value("ema_short_period", 150).toDouble();
-            indicators.push_back(ema);
-        }
-        
-        // EMA long terme
-        bool use_ema_long = params.value("use_ema_long_filter", false).toBool();
-        if (use_ema_long) {
-            StrategyIndicator ema;
-            ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = params.value("ema_long_period", 198).toDouble();
-            indicators.push_back(ema);
-        }
-        
-        // RSI
-        bool use_rsi = params.value("use_rsi_filter", false).toBool();
-        if (use_rsi) {
-            StrategyIndicator rsi;
-            rsi.type = StrategyIndicator::RSI;
-            rsi.params["period"] = params.value("rsi_period", 14).toDouble();
-            rsi.params["overboughtLevel"] = 70.0;  // Valeur par défaut
-            rsi.params["oversoldLevel"] = params.value("rsi_threshold", 30).toDouble();
-            indicators.push_back(rsi);
-        }
-        
-        // Stochastique
-        bool use_stoch = params.value("use_stoch_filter", false).toBool();
-        if (use_stoch) {
-            StrategyIndicator stoch;
-            stoch.type = StrategyIndicator::STOCHASTIC;
-            stoch.params["fastKPeriod"] = params.value("stoch_fastk", 10).toDouble();
-            stoch.params["slowKPeriod"] = params.value("stoch_slowk", 7).toDouble();
-            stoch.params["slowDPeriod"] = params.value("stoch_slowd", 3).toDouble();
-            stoch.params["overboughtLevel"] = 80.0;  // Valeur par défaut
-            stoch.params["oversoldLevel"] = params.value("stoch_threshold", 20).toDouble();
-            indicators.push_back(stoch);
-        }
-    }
-    
-    // Pour SellHeikinRed ou d'autres stratégies, ajouter d'autres conditions ici
-    
-    return indicators;
 }
 
 std::shared_ptr<be::Strategy> BacktestWorker::createStrategy(

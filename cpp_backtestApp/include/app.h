@@ -52,7 +52,7 @@ public:
     
     // Getters pour les configurations
     QMap<QString, QVariant> getStrategyConfig() const;
-    QMap<QString, QVariant> getIndicatorConfig() const;
+    std::vector<StrategyIndicator> getIndicatorConfig() const;
     
     // Mise à jour des vues de résultats
     void updateResultViews(BacktestResults* results);

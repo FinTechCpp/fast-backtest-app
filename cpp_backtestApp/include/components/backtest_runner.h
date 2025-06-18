@@ -103,7 +103,6 @@ private:
                                                const QMap<QString, QVariant>& params);
     // Convertir les données OHLCBar en format be::Data
     std::shared_ptr<be::Data> convertToBeData(const std::vector<OHLCBar>& bars);
-    std::vector<StrategyIndicator> extractIndicatorsFromConfig(const QMap<QString, QVariant>& params);
 
     
     // Maintenir les résultats en vie pendant l'exécution

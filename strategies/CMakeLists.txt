@@ -2,11 +2,11 @@
 file(GLOB SOURCES "src/*.cpp")
 
 # Créer la bibliothèque
-add_library(cpp_strategies STATIC ${SOURCES})
+add_library(strategies STATIC ${SOURCES})
 
 # Configurer les chemins d'include
-target_include_directories(cpp_strategies 
-    PUBLIC 
+target_include_directories(strategies
+    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/include/Strategies
 )

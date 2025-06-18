@@ -5,9 +5,9 @@ import os
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(project_root)
 
-# Add the cpp_strategies directory specifically
-cpp_strategies_dir = os.path.join(project_root, 'cpp_strategies')
-sys.path.append(cpp_strategies_dir)
+# Add the strategies directory specifically
+strategies_dir = os.path.join(project_root, 'strategies')
+sys.path.append(strategies_dir)
 
 import logging
 import datetime
@@ -31,7 +31,7 @@ logging.basicConfig(
     ]
 )
 
-from cpp_strategies import LogLevel
+from strategies import LogLevel
 # Configurer le callback pour les logs C++
 def cpp_log_callback(message, level):
     """Fonction de callback pour les logs provenant du code C++"""
@@ -50,7 +50,7 @@ def cpp_log_callback(message, level):
 from igtrader.WrapperIGAPI.TickBroker import TickBroker, PriceSource
 from igtrader.Strategies.Strategy import BaseCandle
 # Importer les classes C++ à la place des classes Python
-from cpp_strategies import (
+from strategies import (
     CppStrategyBaseConfig, 
     CppBuyHeikinGreenConfig, 
     CppBuyHeikinGreen, 
@@ -226,7 +226,7 @@ def main():
 
     # Instancier la stratégie C++
     strategy = CppBuyHeikinGreen(cpp_base_config, cpp_strategy_config)
-    from cpp_strategies import set_log_callback
+    from strategies import set_log_callback
     set_log_callback(cpp_log_callback)  # Configurer le callback de log C++
 
     # Création des instances avec le nouveau TickBroker

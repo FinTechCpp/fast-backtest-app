@@ -8,7 +8,7 @@ add_executable(main ${SOURCES})
 target_link_libraries(main
     PRIVATE
         backtestEngine
-        cpp_strategies
+        strategies
 )
 
 # Configurer les chemins d'inclusion
@@ -16,7 +16,7 @@ target_include_directories(main
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/backtestEngine/include
-        ${CMAKE_SOURCE_DIR}/cpp_strategies/include
+        ${CMAKE_SOURCE_DIR}/strategies/include
 )
 
 # Copier les fichiers de données s'ils existent

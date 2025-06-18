@@ -47,7 +47,7 @@ def cpp_log_callback(message, level):
         logging.info(f"C++: {message}")
 
 
-from igtrader.WrapperIGAPI.TickBroker import TickBroker, PriceSource
+from igtrader.TickBroker import TickBroker, PriceSource
 from igtrader.Strategies.Strategy import BaseCandle
 # Importer les classes C++ à la place des classes Python
 from strategies import (

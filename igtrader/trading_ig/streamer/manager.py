@@ -5,7 +5,7 @@ import time
 
 from lightstreamer.client import SubscriptionListener, ItemUpdate
 
-from igtrader.WrapperIGAPI.trading_ig.stream import IGStreamService
+from igtrader.trading_ig.stream import IGStreamService
 from .ticker import Ticker
 from .ticker import TickerSubscription
 from .candler import CandleSubscription, CandleData

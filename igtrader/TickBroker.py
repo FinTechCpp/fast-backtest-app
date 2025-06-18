@@ -1,8 +1,8 @@
-from igtrader.WrapperIGAPI.trading_ig.rest import IGService
-from igtrader.WrapperIGAPI.trading_ig.config import config
-from igtrader.WrapperIGAPI.trading_ig.stream import IGStreamService
-from igtrader.WrapperIGAPI.trading_ig.streamer.manager import StreamingManager
-from igtrader.WrapperIGAPI.trading_ig.streamer.candler import CandleSubscription
+from igtrader.trading_ig.rest import IGService
+from igtrader.trading_ig.config import config
+from igtrader.trading_ig.stream import IGStreamService
+from igtrader.trading_ig.streamer.manager import StreamingManager
+from igtrader.trading_ig.streamer.candler import CandleSubscription
 import pandas as pd
 import numpy as np
 import datetime

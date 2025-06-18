@@ -8,11 +8,11 @@ import json
 import os
 from typing import List, Dict, Any
 
-from igtrader.WrapperIGAPI.trading_ig.rest import IGService
-from igtrader.WrapperIGAPI.trading_ig.config import config
-from igtrader.WrapperIGAPI.trading_ig.stream import IGStreamService
-from igtrader.WrapperIGAPI.trading_ig.streamer.manager import StreamingManager
-from igtrader.WrapperIGAPI.TickBroker import PriceSource, BaseCandle
+from igtrader.trading_ig.rest import IGService
+from igtrader.trading_ig.config import config
+from igtrader.trading_ig.stream import IGStreamService
+from igtrader.trading_ig.streamer.manager import StreamingManager
+from igtrader.TickBroker import PriceSource, BaseCandle
 
 class IGCandleService:
     """Service pour collecter les ticks IG et générer des bougies en temps réel"""

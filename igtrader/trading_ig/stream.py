@@ -8,7 +8,7 @@ import traceback
 import logging
 
 from lightstreamer.client import LightstreamerClient, Subscription
-from igtrader.WrapperIGAPI.trading_ig.rest import IGService # Belek circular import
+from igtrader.trading_ig.rest import IGService # Belek circular import
 
 logger = logging.getLogger(__name__)
 

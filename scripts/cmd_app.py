@@ -1,4 +1,4 @@
-import igtrader.WrapperIGAPI.cmd_app.utils as utils
+import igtrader.cmd_app.utils as utils
 import sys
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

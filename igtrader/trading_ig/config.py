@@ -49,8 +49,8 @@ class ConfigEnvVar(object):
 
 try:
     # Tenter d'importer le module directement
-    from igtrader.WrapperIGAPI.trading_ig_config import config
-    logger.info(f"Import config from igtrader.WrapperIGAPI.trading_ig_config")
+    from igtrader.trading_ig_config import config
+    logger.info(f"Import config from igtrader.trading_ig_config")
 except ImportError:
     try:
         # Alternative: essayer d'importer directement depuis le chemin parent

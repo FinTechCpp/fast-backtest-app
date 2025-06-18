@@ -18,8 +18,8 @@ Modules requis:
 import logging 
 import sys
 sys.path.insert(0, '..')
-from igtrader.WrapperIGAPI.trading_ig import IGService
-from igtrader.WrapperIGAPI.trading_ig_config import config
+from igtrader.trading_ig import IGService
+from igtrader.trading_ig_config import config
 import readchar
 import readline
 from pick import pick
@@ -27,15 +27,15 @@ import pandas as pd
 import traceback
 import time
 from datetime import datetime, timezone
-from igtrader.WrapperIGAPI.cmd_app.markets import epics_dict
+from igtrader.cmd_app.markets import epics_dict
 from pprint import pprint
 import curses
 from curses import wrapper
 import plotext as plt
 import numpy as np
 import talib 
-from igtrader.WrapperIGAPI.trading_ig.stream import IGStreamService
-from igtrader.WrapperIGAPI.trading_ig.streamer.manager import StreamingManager
+from igtrader.trading_ig.stream import IGStreamService
+from igtrader.trading_ig.streamer.manager import StreamingManager
 import os
 os.environ['PYWEBVIEW_GUI'] = 'qt'
 from lightweight_charts_esistjosh import Chart

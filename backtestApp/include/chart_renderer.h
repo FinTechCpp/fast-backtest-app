@@ -47,12 +47,7 @@ public:
         QChartViewer* viewer,
         const ChartDataManager& dataManager,
         const ChartConfiguration& config,
-        const ChartDataManager::AggregationInfo& aggregationInfo,
-        const std::vector<RSIInstance>& rsiInstances,
-        const std::vector<EMAInstance>& emaInstances,
-        const std::vector<SuperTrendInstance>& superTrendInstances,
-        const std::vector<StochasticInstance>& stochasticInstances,
-        const std::vector<ATRInstance>& atrInstances
+        const ChartDataManager::AggregationInfo& aggregationInfo
     );
 
     void updateDynamicLayer(QChartViewer* viewer, 

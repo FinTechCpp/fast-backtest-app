@@ -101,7 +101,6 @@ public:
         HeikinAshi,   ///< Chandeliers Heikin Ashi (moyenne)
         OHLC,         ///< Barres OHLC (Open-High-Low-Close)
         Close,        ///< Ligne de prix de clôture uniquement
-        
         Count         ///< Nombre total de types de graphiques
     };
 
@@ -130,6 +129,23 @@ public:
         std::vector<double> volume;
         AggregationLevel level;
         bool isValid = false;
+    };
+    
+    // Structure pour stocker les indicateurs actifs
+    struct ActiveIndicators {
+        std::map<int, std::vector<double>> rsiValues;
+        std::map<int, std::vector<double>> emaValues;
+        std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
+        std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
+        std::map<int, std::vector<double>> atrValues;
+        
+        void clear() {
+            rsiValues.clear();
+            emaValues.clear();
+            supertrendValues.clear();
+            stochasticValues.clear();
+            atrValues.clear();
+        }
     };
 
     struct AggregatedIndicators {
@@ -170,23 +186,6 @@ public:
         std::vector<double> equity_values;
     };
 
-    // Structure pour stocker les indicateurs actifs
-    struct ActiveIndicators {
-        std::map<int, std::vector<double>> rsiValues;
-        std::map<int, std::vector<double>> emaValues;
-        std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
-        std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
-        std::map<int, std::vector<double>> atrValues;
-        
-        void clear() {
-            rsiValues.clear();
-            emaValues.clear();
-            supertrendValues.clear();
-            stochasticValues.clear();
-            atrValues.clear();
-        }
-    };
-
     ChartDataManager();
     ~ChartDataManager();
 
@@ -218,9 +217,44 @@ public:
     int getMaxDisplayPoints() const { return m_maxDisplayPoints; }
     void setMaxDisplayPoints(int value);
 
+
+    // Méthodes d'accès aux collections
+    const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
+    const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
+    const std::vector<SuperTrendInstance>& getSuperTrendInstances() const { return m_superTrendInstances; }
+    const std::vector<StochasticInstance>& getStochasticInstances() const { return m_stochasticInstances; }
+    const std::vector<ATRInstance>& getATRInstances() const { return m_atrInstances; }
+
+    
+    void removeAllIndicators();
+    
+    int addRSI(const RSIInstance& config);
+    RSIInstance* findRSI(int id);
+    bool updateRSI(const RSIInstance& config);
+    bool removeRSI(int id);
+    
+    int addEMA(const EMAInstance& config);
+    EMAInstance* findEMA(int id);
+    bool updateEMA(const EMAInstance& config);
+    bool removeEMA(int id);
+    
+    int addSuperTrend(const SuperTrendInstance& config);
+    SuperTrendInstance* findSuperTrend(int id);
+    bool updateSuperTrend(const SuperTrendInstance& config);
+    bool removeSuperTrend(int id);
+    
+    int addStochastic(const StochasticInstance& config);
+    StochasticInstance* findStochastic(int id);
+    bool updateStochastic(const StochasticInstance& config);
+    bool removeStochastic(int id);
+    
+    int addATR(const ATRInstance& config);
+    ATRInstance* findATR(int id);
+    bool updateATR(const ATRInstance& config);
+    bool removeATR(int id);
+
     
 private:
-
     struct ChartTypeInfo {
         ChartDataManager::ChartType type;
         const char* name;
@@ -236,6 +270,19 @@ private:
     void calculateSupertrend(int id, int period, double multiplier);
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void calculateATR(int id, int period, bool useLogScale = false);
+
+
+    template<typename T>
+    T* findIndicator(int id, std::vector<T>& instances);
+
+    template<typename T, typename Container>
+    int addIndicatorImpl(const T& config, Container& container);
+
+    template<typename T, typename Container>
+    bool setIndicatorConfigImpl(const T& config, Container& container, bool needsRecalculation = true);
+
+    template<typename T, typename Container>
+    bool removeIndicatorImpl(int id, Container& container);
     
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;
@@ -251,6 +298,14 @@ private:
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
     ActiveIndicators m_activeIndicators;
+
+    // ID unique global pour tous les types d'indicateurs
+    int m_nextIndicatorId = 1;
+    std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
+    std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
+    std::vector<SuperTrendInstance> m_superTrendInstances; ///< Instances de SuperTrend actives
+    std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
+    std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
     
     // Constantes
     int m_maxDisplayPoints = 30000;

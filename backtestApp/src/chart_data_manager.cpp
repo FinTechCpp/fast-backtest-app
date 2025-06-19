@@ -761,3 +761,193 @@ const ChartDataManager::AggregatedOHLCV& ChartDataManager::getAggregatedData(Agg
     }
     return emptyOHLCV; // Retourner une référence à une structure vide si non trouvée
 }
+
+
+template <typename T, typename Container>
+int ChartDataManager::addIndicatorImpl(const T& configIn, Container& container) {
+    T config = configIn;
+    config.id = m_nextIndicatorId++;
+    
+    container.push_back(config);
+    calculateIndicator(config);
+    
+    return config.id;
+}
+
+template <typename T>
+T *ChartDataManager::findIndicator(int id, std::vector<T> &instances) {
+    auto it = std::find_if(instances.begin(), instances.end(),
+                         [id](const T& instance) { return instance.id == id; });
+
+    if (it == instances.end())
+        return nullptr;
+
+    return &(*it);
+}
+
+template<typename T, typename Container>
+bool ChartDataManager::setIndicatorConfigImpl(const T& config, Container& container, bool needsRecalculation) {
+    auto it = std::find_if(container.begin(), container.end(),
+                         [config](const T& item) { return item.id == config.id; });
+
+    if (it == container.end()) return false;
+    
+    // Mettre à jour la configuration mais préserver l'ID
+    *it = config;
+
+    if (needsRecalculation)
+        calculateIndicator(config);
+    
+    return true;
+}
+
+template<typename T, typename Container>
+bool ChartDataManager::removeIndicatorImpl(int id, Container& container) {
+    auto it = std::find_if(container.begin(), container.end(),
+                         [id](const T& item) { return item.id == id; });
+    
+    if (it == container.end()) return false;
+    
+    // Supprimer l'instance
+    container.erase(it);
+    
+    return true;
+}
+
+int ChartDataManager::addRSI(const RSIInstance& config) {
+    RSIInstance validatedConfig = config;
+
+    if (validatedConfig.period < 2) validatedConfig.period = 2;
+
+    return addIndicatorImpl(validatedConfig, m_rsiInstances);
+}
+
+RSIInstance* ChartDataManager::findRSI(int id) {
+    return findIndicator(id, m_rsiInstances);
+}
+
+bool ChartDataManager::updateRSI(const RSIInstance &config) {
+    RSIInstance* oldConfig = findRSI(config.id);
+    if (!oldConfig) return false;
+
+    bool needsRecalculation = (oldConfig->period != config.period);
+
+    return setIndicatorConfigImpl(config, m_rsiInstances, needsRecalculation);
+}
+
+bool ChartDataManager::removeRSI(int id) {
+    return removeIndicatorImpl<RSIInstance>(id, m_rsiInstances);
+}
+
+int ChartDataManager::addEMA(const EMAInstance& config) {
+    EMAInstance validatedConfig = config;
+
+    if (validatedConfig.period < 2) validatedConfig.period = 2;
+
+    return addIndicatorImpl(validatedConfig, m_emaInstances);
+}
+
+EMAInstance* ChartDataManager::findEMA(int id) {
+    return findIndicator(id, m_emaInstances);
+}
+
+bool ChartDataManager::updateEMA(const EMAInstance &config) {
+    EMAInstance* oldConfig = findEMA(config.id);
+    if (!oldConfig) return false;
+
+    bool needsRecalculation = (oldConfig->period != config.period);
+
+    return setIndicatorConfigImpl(config, m_emaInstances, needsRecalculation);
+}
+
+bool ChartDataManager::removeEMA(int id) {
+    return removeIndicatorImpl<EMAInstance>(id, m_emaInstances);
+}
+
+int ChartDataManager::addSuperTrend(const SuperTrendInstance& config) {
+    SuperTrendInstance validatedConfig = config;
+
+    if (validatedConfig.period < 2) validatedConfig.period = 2;
+    if (validatedConfig.multiplier <= 0) validatedConfig.multiplier = 3.0;
+
+    return addIndicatorImpl(validatedConfig, m_superTrendInstances);
+}
+
+SuperTrendInstance* ChartDataManager::findSuperTrend(int id) {
+    return findIndicator(id, m_superTrendInstances);
+}
+
+bool ChartDataManager::updateSuperTrend(const SuperTrendInstance &config) {
+    SuperTrendInstance* oldConfig = findSuperTrend(config.id);
+    if (!oldConfig) return false;
+
+    bool needsRecalculation = (oldConfig->period != config.period || oldConfig->multiplier != config.multiplier);
+
+    return setIndicatorConfigImpl(config, m_superTrendInstances, needsRecalculation);
+}
+
+bool ChartDataManager::removeSuperTrend(int id) {
+    return removeIndicatorImpl<SuperTrendInstance>(id, m_superTrendInstances);
+}
+
+int ChartDataManager::addStochastic(const StochasticInstance& config) {
+    StochasticInstance validatedConfig = config;
+
+    if (validatedConfig.fastKPeriod < 2) validatedConfig.fastKPeriod = 2;
+    if (validatedConfig.slowKPeriod < 2) validatedConfig.slowKPeriod = 2;
+    if (validatedConfig.slowDPeriod < 2) validatedConfig.slowDPeriod = 2;
+
+    return addIndicatorImpl(validatedConfig, m_stochasticInstances);
+}
+
+StochasticInstance* ChartDataManager::findStochastic(int id) {
+    return findIndicator(id, m_stochasticInstances);
+}
+
+bool ChartDataManager::updateStochastic(const StochasticInstance &config) {
+    StochasticInstance* oldConfig = findStochastic(config.id);
+    if (!oldConfig) return false;
+
+    bool needsRecalculation = (oldConfig->fastKPeriod != config.fastKPeriod ||
+                               oldConfig->slowKPeriod != config.slowKPeriod ||
+                               oldConfig->slowDPeriod != config.slowDPeriod);
+
+    return setIndicatorConfigImpl(config, m_stochasticInstances, needsRecalculation);
+}
+
+bool ChartDataManager::removeStochastic(int id) {
+    return removeIndicatorImpl<StochasticInstance>(id, m_stochasticInstances);
+}
+
+int ChartDataManager::addATR(const ATRInstance& config) {
+    ATRInstance validatedConfig = config;
+
+    if (validatedConfig.period < 2) validatedConfig.period = 2;
+
+    return addIndicatorImpl(validatedConfig, m_atrInstances);
+}
+
+ATRInstance* ChartDataManager::findATR(int id) {
+    return findIndicator(id, m_atrInstances);
+}
+
+bool ChartDataManager::updateATR(const ATRInstance &config) {
+    ATRInstance* oldConfig = findATR(config.id);
+    if (!oldConfig) return false;
+
+    bool needsRecalculation = (oldConfig->period != config.period || oldConfig->useLogScale != config.useLogScale);
+
+    return setIndicatorConfigImpl(config, m_atrInstances, needsRecalculation);
+}
+
+bool ChartDataManager::removeATR(int id) {
+    return removeIndicatorImpl<ATRInstance>(id, m_atrInstances);
+}
+
+void ChartDataManager::removeAllIndicators() {
+    m_rsiInstances.clear();
+    m_emaInstances.clear();
+    m_superTrendInstances.clear();
+    m_stochasticInstances.clear();
+    m_atrInstances.clear();
+}

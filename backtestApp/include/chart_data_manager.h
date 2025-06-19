@@ -309,15 +309,18 @@ private:
     template<typename T>
     T* findIndicator(int id, std::vector<T>& instances);
 
-    template<typename T, typename Container>
-    int addIndicatorImpl(const T& config, Container& container);
+    // template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
+    // int addIndicatorImpl(const T& config);
 
-    template<typename T, typename Container>
-    bool setIndicatorConfigImpl(const T& config, Container& container);
+    template<typename T>
+    int addIndicatorImpl(const T& config, std::vector<T>& container);
 
-    template<typename T, typename Container>
-    bool removeIndicatorImpl(int id, Container& container);
-    
+    template<typename T>
+    bool setIndicatorConfigImpl(const T& config, std::vector<T>& container);
+
+    template<typename T>
+    bool removeIndicatorImpl(int id, std::vector<T>& container);
+
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;
     size_t findClosestIndex(const std::vector<double>& values, double target, bool searchForward = false) const;
@@ -340,7 +343,10 @@ private:
     std::vector<SuperTrendInstance> m_superTrendInstances; ///< Instances de SuperTrend actives
     std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
     std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
-    
+
+
+    std::vector<std::unique_ptr<IndicatorBase>> m_indicators; ///< Toutes les instances d'indicateurs actives
+
     // Constantes
     int m_maxDisplayPoints = 30000;
 

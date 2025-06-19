@@ -763,8 +763,19 @@ const ChartDataManager::AggregatedOHLCV& ChartDataManager::getAggregatedData(Agg
 }
 
 
-template <typename T, typename Container>
-int ChartDataManager::addIndicatorImpl(const T& configIn, Container& container) {
+// template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
+// int ChartDataManager::addIndicatorImpl(const T& config) {
+//     std::unique_ptr<T> newIndicator = std::make_unique<T>(config);
+//     newIndicator->id = m_nextIndicatorId++;
+//     int id = newIndicator->id;
+
+//     m_indicators.push_back(std::move(newIndicator));
+//     calculateIndicator(config);
+//     return id;
+// }
+
+template <typename T>
+int ChartDataManager::addIndicatorImpl(const T& configIn, std::vector<T>& container) {
     T config = configIn;
     config.id = m_nextIndicatorId++;
     
@@ -785,8 +796,8 @@ T *ChartDataManager::findIndicator(int id, std::vector<T> &instances) {
     return &(*it);
 }
 
-template<typename T, typename Container>
-bool ChartDataManager::setIndicatorConfigImpl(const T& config, Container& container) {
+template<typename T>
+bool ChartDataManager::setIndicatorConfigImpl(const T& config, std::vector<T>& container) {
     auto it = std::find_if(container.begin(), container.end(),
                          [config](const T& item) { return item.id == config.id; });
 
@@ -803,8 +814,8 @@ bool ChartDataManager::setIndicatorConfigImpl(const T& config, Container& contai
     return true;
 }
 
-template<typename T, typename Container>
-bool ChartDataManager::removeIndicatorImpl(int id, Container& container) {
+template<typename T>
+bool ChartDataManager::removeIndicatorImpl(int id, std::vector<T>& container) {
     auto it = std::find_if(container.begin(), container.end(),
                          [id](const T& item) { return item.id == id; });
     

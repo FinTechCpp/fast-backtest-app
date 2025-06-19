@@ -816,11 +816,7 @@ bool ChartDataManager::removeIndicatorImpl(int id, Container& container) {
 }
 
 int ChartDataManager::addRSI(const RSIInstance& config) {
-    RSIInstance validatedConfig = config;
-
-    if (validatedConfig.period < 2) validatedConfig.period = 2;
-
-    return addIndicatorImpl(validatedConfig, m_rsiInstances);
+    return addIndicatorImpl(config, m_rsiInstances);
 }
 
 RSIInstance* ChartDataManager::findRSI(int id) {
@@ -836,11 +832,7 @@ bool ChartDataManager::removeRSI(int id) {
 }
 
 int ChartDataManager::addEMA(const EMAInstance& config) {
-    EMAInstance validatedConfig = config;
-
-    if (validatedConfig.period < 2) validatedConfig.period = 2;
-
-    return addIndicatorImpl(validatedConfig, m_emaInstances);
+    return addIndicatorImpl(config, m_emaInstances);
 }
 
 EMAInstance* ChartDataManager::findEMA(int id) {
@@ -856,12 +848,7 @@ bool ChartDataManager::removeEMA(int id) {
 }
 
 int ChartDataManager::addSuperTrend(const SuperTrendInstance& config) {
-    SuperTrendInstance validatedConfig = config;
-
-    if (validatedConfig.period < 2) validatedConfig.period = 2;
-    if (validatedConfig.multiplier <= 0) validatedConfig.multiplier = 3.0;
-
-    return addIndicatorImpl(validatedConfig, m_superTrendInstances);
+    return addIndicatorImpl(config, m_superTrendInstances);
 }
 
 SuperTrendInstance* ChartDataManager::findSuperTrend(int id) {
@@ -877,13 +864,7 @@ bool ChartDataManager::removeSuperTrend(int id) {
 }
 
 int ChartDataManager::addStochastic(const StochasticInstance& config) {
-    StochasticInstance validatedConfig = config;
-
-    if (validatedConfig.fastKPeriod < 2) validatedConfig.fastKPeriod = 2;
-    if (validatedConfig.slowKPeriod < 2) validatedConfig.slowKPeriod = 2;
-    if (validatedConfig.slowDPeriod < 2) validatedConfig.slowDPeriod = 2;
-
-    return addIndicatorImpl(validatedConfig, m_stochasticInstances);
+    return addIndicatorImpl(config, m_stochasticInstances);
 }
 
 StochasticInstance* ChartDataManager::findStochastic(int id) {
@@ -899,11 +880,7 @@ bool ChartDataManager::removeStochastic(int id) {
 }
 
 int ChartDataManager::addATR(const ATRInstance& config) {
-    ATRInstance validatedConfig = config;
-
-    if (validatedConfig.period < 2) validatedConfig.period = 2;
-
-    return addIndicatorImpl(validatedConfig, m_atrInstances);
+    return addIndicatorImpl(config, m_atrInstances);
 }
 
 ATRInstance* ChartDataManager::findATR(int id) {

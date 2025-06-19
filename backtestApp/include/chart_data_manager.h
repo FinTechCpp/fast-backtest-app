@@ -33,10 +33,23 @@ enum class IndicatorType {
 };
 
 struct IndicatorBase {
-    IndicatorBase(IndicatorType type) : type(type) {}
+    IndicatorBase(IndicatorType type) : type_(type) {}
     int id = -1; // Identifiant unique de l'indicateur
-    IndicatorType type; // Type d'indicateur
+    IndicatorType type_; // Type d'indicateur
     bool visible = true; // Si l'indicateur est visible
+
+    // IndicatorBase& operator=(const IndicatorBase& other) {
+    //     if (this != &other) {
+    //         // Assurez-vous que les types correspondent
+    //         if (type_ != other.type_) {
+    //             throw std::runtime_error("Cannot assign indicators of different types");
+    //         }
+    //         // Copier uniquement les membres non-const
+    //         id = other.id;
+    //         visible = other.visible;
+    //     }
+    //     return *this;
+    // }
 };
 
 // Structures pour les indicateurs techniques (importées depuis ChartWidget)

@@ -19,14 +19,14 @@ ChartDataManager::~ChartDataManager() {
 void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& data) {
     m_backtestData = data;
     
-    if (data) {
-        prepareTimestampsCache();
-        updateHeikinAshiCache();
-        
-        m_aggregatedOHLCVCache.clear();
-        m_aggregatedIndicatorsCache.clear();
-        m_activeIndicators.clear();
-    }
+    if (!data) return;
+
+    prepareTimestampsCache();
+    updateHeikinAshiCache();
+    
+    m_aggregatedOHLCVCache.clear();
+    m_aggregatedIndicatorsCache.clear();
+    m_activeIndicators.clear();
 }
 
 void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>> &trades)
@@ -590,11 +590,10 @@ void ChartDataManager::setMaxDisplayPoints(int value) {
     }
 }
 
-void ChartDataManager::calculateIndicator(const IndicatorBase &config)
-{
+void ChartDataManager::calculateIndicator(const IndicatorBase &config) {
     // Implémentation spécifique pour chaque type d'indicateur
     // Par exemple, pour RSI, EMA, Stochastic, ATR, etc.
-    switch (config.type) {
+    switch (config.type_) {
     case IndicatorType::RSI: {
         const RSIInstance& rsiConfig = static_cast<const RSIInstance&>(config);
         calculateRSI(rsiConfig.id, rsiConfig.period);

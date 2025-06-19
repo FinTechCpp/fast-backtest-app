@@ -227,9 +227,6 @@ void Broker::processOrders() {
             //         order.parentTrade()->tpOrder() &&
             //         *order.parentTrade()->tpOrder() == order;
 
-            if (isTakeProfit) {
-                std::cout << "Processing Take Profit order: " << order.tag() << std::endl;
-            }
 
             // Vérifier si le prix touche le TP normalement pendant la bougie
             bool isLimitHit = (order.isLong() && low <= limitPrice) || 

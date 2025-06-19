@@ -172,6 +172,13 @@ void ChartWidget::onViewPortChanged()
 
     // Émettre un signal pour indiquer que le viewport a changé
     // emit viewPortChanged();
+
+    // std::cout << "Viewport changed: "
+    //           << "Left: " << m_chartViewer->getViewPortLeft()
+    //           << ", Width: " << m_chartViewer->getViewPortWidth() << std::endl;
+
+    // std::cout << "Top: " << m_chartViewer->getViewPortTop()
+    //           << ", Height: " << m_chartViewer->getViewPortHeight() << std::endl;
 }
 
 void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)

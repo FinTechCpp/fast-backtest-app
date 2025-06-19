@@ -581,45 +581,45 @@ void ChartView::refreshIndicatorsList()
     m_removeButtons.clear();
     
     // Pour chaque RSI actif, recréer les widgets
-    const std::vector<RSIInstance>& rsiInstances = m_chartWidget->getRSIInstances();
-    for (const auto& rsi : rsiInstances) {
-        QString name = QString("RSI (%1)").arg(rsi.period);
-        createIndicatorWidgets(rsi.id, name);
+    std::vector<const RSIInstance*> rsiInstances = m_chartWidget->getRSIInstances();
+    for (const RSIInstance* rsi : rsiInstances) {
+        QString name = QString("RSI (%1)").arg(rsi->period);
+        createIndicatorWidgets(rsi->id, name);
     }
 
     // Pour chaque EMA actif, recréer les widgets
-    const std::vector<EMAInstance>& emaInstances = m_chartWidget->getEMAInstances();
-    for (const auto& ema : emaInstances) {
-        if (ema.visible) {
-            QString name = QString("EMA (%1)").arg(ema.period);
-            createIndicatorWidgets(ema.id, name);
+    const std::vector<const EMAInstance*> emaInstances = m_chartWidget->getEMAInstances();
+    for (const EMAInstance* ema : emaInstances) {
+        if (ema->visible) {
+            QString name = QString("EMA (%1)").arg(ema->period);
+            createIndicatorWidgets(ema->id, name);
         }
     }
 
     // Pour chaque Supertrend actif, recréer les widgets
-    const std::vector<SuperTrendInstance>& supertrendInstances = m_chartWidget->getSuperTrendInstances();
-    for (const auto& supertrend : supertrendInstances) {
-        if (supertrend.visible) {
-            QString name = QString("Supertrend (%1, %2)").arg(supertrend.period).arg(supertrend.multiplier, 0, 'f', 1);
-            createIndicatorWidgets(supertrend.id, name);
+    const std::vector<const SuperTrendInstance*> supertrendInstances = m_chartWidget->getSuperTrendInstances();
+    for (const SuperTrendInstance* supertrend : supertrendInstances) {
+        if (supertrend->visible) {
+            QString name = QString("Supertrend (%1, %2)").arg(supertrend->period).arg(supertrend->multiplier, 0, 'f', 1);
+            createIndicatorWidgets(supertrend->id, name);
         }
     }
 
     // Pour chaque Stochastic actif, recréer les widgets
-    const std::vector<StochasticInstance>& stochInstances = m_chartWidget->getStochasticInstances();
-    for (const auto& stoch : stochInstances) {
-        if (stoch.visible) {
-            QString name = QString("Stochastic (%1,%2,%3)").arg(stoch.fastKPeriod).arg(stoch.slowKPeriod).arg(stoch.slowDPeriod);
-            createIndicatorWidgets(stoch.id, name);
+    const std::vector<const StochasticInstance*> stochInstances = m_chartWidget->getStochasticInstances();
+    for (const StochasticInstance* stoch : stochInstances) {
+        if (stoch->visible) {
+            QString name = QString("Stochastic (%1,%2,%3)").arg(stoch->fastKPeriod).arg(stoch->slowKPeriod).arg(stoch->slowDPeriod);
+            createIndicatorWidgets(stoch->id, name);
         }
     }
 
     // Pour chaque ATR actif, recréer les widgets
-    const std::vector<ATRInstance>& atrInstances = m_chartWidget->getATRInstances();
-    for (const auto& atr : atrInstances) {
-        if (atr.visible) {
-            QString name = QString("ATR (%1)").arg(atr.period);
-            createIndicatorWidgets(atr.id, name);
+    const std::vector<const ATRInstance*> atrInstances = m_chartWidget->getATRInstances();
+    for (const ATRInstance* atr : atrInstances) {
+        if (atr->visible) {
+            QString name = QString("ATR (%1)").arg(atr->period);
+            createIndicatorWidgets(atr->id, name);
         }
     }
     

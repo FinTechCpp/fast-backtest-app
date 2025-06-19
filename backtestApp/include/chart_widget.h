@@ -39,11 +39,11 @@ public:
     // Configuration et contrôle du graphique
     void setChartType(ChartDataManager::ChartType chartType); // remplacer par un slot
     ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
-    const std::vector<RSIInstance>& getRSIInstances() const { return m_dataManager.getRSIInstances(); }
-    const std::vector<EMAInstance>& getEMAInstances() const { return m_dataManager.getEMAInstances(); }
-    const std::vector<SuperTrendInstance>& getSuperTrendInstances() const { return m_dataManager.getSuperTrendInstances(); }
-    const std::vector<StochasticInstance>& getStochasticInstances() const { return m_dataManager.getStochasticInstances(); }
-    const std::vector<ATRInstance>& getATRInstances() const { return m_dataManager.getATRInstances(); }
+    std::vector<const RSIInstance*> getRSIInstances() const { return m_dataManager.getIndicatorsOfType<RSIInstance>(); }
+    std::vector<const EMAInstance*> getEMAInstances() const { return m_dataManager.getIndicatorsOfType<EMAInstance>(); }
+    std::vector<const SuperTrendInstance*> getSuperTrendInstances() const { return m_dataManager.getIndicatorsOfType<SuperTrendInstance>(); }
+    std::vector<const StochasticInstance*> getStochasticInstances() const { return m_dataManager.getIndicatorsOfType<StochasticInstance>(); }
+    std::vector<const ATRInstance*> getATRInstances() const { return m_dataManager.getIndicatorsOfType<ATRInstance>(); }
     RSIInstance* findRSI(int id);
     EMAInstance* findEMA(int id);
     SuperTrendInstance* findSuperTrend(int id);

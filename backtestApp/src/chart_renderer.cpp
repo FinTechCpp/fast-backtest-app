@@ -119,37 +119,37 @@ void ChartRenderer::createOrUpdateChart(
     
     // 3. Ajouter tous les indicateurs actifs
     // RSI
-    for (const auto& rsi : dataManager.getRSIInstances()) {
-        if (rsi.visible) {
-            addRSIToChart(m_financeChart.get(), rsi, dataManager, aggregationInfo);
+    for (const RSIInstance* rsi : dataManager.getIndicatorsOfType<RSIInstance>()) {
+        if (rsi->visible) {
+            addRSIToChart(m_financeChart.get(), *rsi, dataManager, aggregationInfo);
         }
     }
     
     // EMA
-    for (const auto& ema : dataManager.getEMAInstances()) {
-        if (ema.visible) {
-            addEMAToChart(m_financeChart.get(), ema, dataManager, aggregationInfo);
+    for (const EMAInstance* ema : dataManager.getIndicatorsOfType<EMAInstance>()) {
+        if (ema->visible) {
+            addEMAToChart(m_financeChart.get(), *ema, dataManager, aggregationInfo);
         }
     }
     
     // Supertrend
-    for (const auto& supertrend : dataManager.getSuperTrendInstances()) {
-        if (supertrend.visible) {
-            addSupertrendToChart(m_financeChart.get(), supertrend, dataManager, aggregationInfo);
+    for (const SuperTrendInstance* supertrend : dataManager.getIndicatorsOfType<SuperTrendInstance>()) {
+        if (supertrend->visible) {
+            addSupertrendToChart(m_financeChart.get(), *supertrend, dataManager, aggregationInfo);
         }
     }
     
     // Stochastique
-    for (const auto& stochastic : dataManager.getStochasticInstances()) {
-        if (stochastic.visible) {
-            addStochasticToChart(m_financeChart.get(), stochastic, dataManager, aggregationInfo);
+    for (const StochasticInstance* stochastic : dataManager.getIndicatorsOfType<StochasticInstance>()) {
+        if (stochastic->visible) {
+            addStochasticToChart(m_financeChart.get(), *stochastic, dataManager, aggregationInfo);
         }
     }
     
     // ATR
-    for (const auto& atr : dataManager.getATRInstances()) {
-        if (atr.visible) {
-            addATRToChart(m_financeChart.get(), atr, dataManager, aggregationInfo);
+    for (const ATRInstance* atr : dataManager.getIndicatorsOfType<ATRInstance>()) {
+        if (atr->visible) {
+            addATRToChart(m_financeChart.get(), *atr, dataManager, aggregationInfo);
         }
     }
     

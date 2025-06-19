@@ -64,7 +64,7 @@ EMADialog::EMADialog(QWidget* parent, ChartWidget* chartWidget)
     mainLayout->addWidget(scrollArea);
     
     // Récupérer les instances EMA existantes
-    const std::vector<EMAInstance>& emaInstances = m_chartWidget->getEMAInstances();
+    std::vector<const EMAInstance*> emaInstances = m_chartWidget->getEMAInstances();
     m_originalEMAs = emaInstances;
     
     // Initialiser les 5 EMA fixés
@@ -90,14 +90,14 @@ EMADialog::EMADialog(QWidget* parent, ChartWidget* chartWidget)
     }
     
     // Mettre à jour avec les EMA existants
-    for (const auto& existingEma : emaInstances) {
+    for (const EMAInstance* existingEma : emaInstances) {
         // Trouver un emplacement libre (index < 5)
         for (size_t i = 0; i < m_currentEMAs.size() && i < 5; i++) {
             if (!m_currentEMAs[i].visible) {
                 // Utiliser cet emplacement pour l'EMA existant
-                m_currentEMAs[i].period = existingEma.period;
-                m_currentEMAs[i].visible = existingEma.visible;
-                m_currentEMAs[i].color = existingEma.color;
+                m_currentEMAs[i].period = existingEma->period;
+                m_currentEMAs[i].visible = existingEma->visible;
+                m_currentEMAs[i].color = existingEma->color;
                 break;
             }
         }
@@ -337,8 +337,8 @@ void EMADialog::onAddEMA()
 void EMADialog::onApply()
 {
     // 1. Supprimer tous les EMA existants
-    for (const auto& ema : m_originalEMAs) {
-        m_chartWidget->removeEMA(ema.id);
+    for (const EMAInstance* ema : m_originalEMAs) {
+        m_chartWidget->removeEMA(ema->id);
     }
     
     // 2. Ajouter uniquement les EMA activés de la liste courante
@@ -365,8 +365,8 @@ void EMADialog::onCancel()
     }
     
     // 2. Restaurer les EMA d'origine
-    for (const auto& ema : m_originalEMAs) {
-        int id = m_chartWidget->addEMA(ema);
+    for (const EMAInstance* ema : m_originalEMAs) {
+        int id = m_chartWidget->addEMA(*ema);
         // m_chartWidget->setEMAConfig(id, ema);
         // m_chartWidget->setEMAVisible(id, ema.visible);
         // m_chartWidget->setEMAColor(id, ema.color);

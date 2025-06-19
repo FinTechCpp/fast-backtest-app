@@ -103,27 +103,27 @@ void ChartWidget::setChartType(ChartDataManager::ChartType chartType)
 
 RSIInstance *ChartWidget::findRSI(int id)
 {
-    return m_dataManager.findRSI(id);
+    return m_dataManager.findIndicator<RSIInstance>(id);
 }
 
 EMAInstance *ChartWidget::findEMA(int id)
 {
-    return m_dataManager.findEMA(id);
+    return m_dataManager.findIndicator<EMAInstance>(id);
 }
 
 SuperTrendInstance *ChartWidget::findSuperTrend(int id)
 {
-    return m_dataManager.findSuperTrend(id);
+    return m_dataManager.findIndicator<SuperTrendInstance>(id);
 }
 
 StochasticInstance *ChartWidget::findStochastic(int id)
 {
-    return m_dataManager.findStochastic(id);
+    return m_dataManager.findIndicator<StochasticInstance>(id);
 }
 
 ATRInstance *ChartWidget::findATR(int id)
 {
-    return m_dataManager.findATR(id);
+    return m_dataManager.findIndicator<ATRInstance>(id);
 }
 
 bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
@@ -279,7 +279,8 @@ void ChartWidget::setRulerToolEnabled(bool enabled)
 
 //-----Indicators Implementation-----
 int ChartWidget::addRSI(const RSIInstance &config) {
-    int id = m_dataManager.addRSI(config);
+    // int id = m_dataManager.addRSI(config);
+    int id = m_dataManager.addIndicator(config);
 
     emit rsiAdded(id, config.period);
 
@@ -290,7 +291,7 @@ int ChartWidget::addRSI(const RSIInstance &config) {
 }
 
 bool ChartWidget::setRSIConfig(const RSIInstance &config) {
-    if (m_dataManager.updateRSI(config)) {
+    if (m_dataManager.updateIndicator(config)) {
         emit rsiChanged(config.id, config.period);
 
         if (m_dataManager.hasValidData() && m_chartViewer)
@@ -303,7 +304,7 @@ bool ChartWidget::setRSIConfig(const RSIInstance &config) {
 }
 
 bool ChartWidget::removeRSI(int id) {
-    if (!m_dataManager.removeRSI(id)) return false;
+    if (!m_dataManager.removeIndicator<RSIInstance>(id)) return false;
 
     emit rsiRemoved(id);
 
@@ -314,7 +315,7 @@ bool ChartWidget::removeRSI(int id) {
 }
 
 int ChartWidget::addEMA(const EMAInstance& config) {
-    int id = m_dataManager.addEMA(config);
+    int id = m_dataManager.addIndicator(config);
 
     emit emaAdded(id, config.period);
 
@@ -325,7 +326,7 @@ int ChartWidget::addEMA(const EMAInstance& config) {
 }
 
 bool ChartWidget::setEMAConfig(const EMAInstance &config) {
-    if (!m_dataManager.updateEMA(config)) return false;
+    if (!m_dataManager.updateIndicator(config)) return false;
 
     emit emaChanged(config.id, config.period);
 
@@ -336,8 +337,8 @@ bool ChartWidget::setEMAConfig(const EMAInstance &config) {
 }
 
 bool ChartWidget::removeEMA(int id) {
-    if (!m_dataManager.removeEMA(id)) return false;
-    
+    if (!m_dataManager.removeIndicator<EMAInstance>(id)) return false;
+
     emit emaRemoved(id);
 
     if (m_dataManager.hasValidData())
@@ -347,7 +348,7 @@ bool ChartWidget::removeEMA(int id) {
 }
 
 int ChartWidget::addSuperTrend(const SuperTrendInstance &config) {
-    int id = m_dataManager.addSuperTrend(config);
+    int id = m_dataManager.addIndicator(config);
 
     emit superTrendAdded(id, config.period, config.multiplier);
 
@@ -358,7 +359,7 @@ int ChartWidget::addSuperTrend(const SuperTrendInstance &config) {
 }
 
 bool ChartWidget::setSuperTrendConfig(const SuperTrendInstance &config) {
-    if (!m_dataManager.updateSuperTrend(config)) return false;
+    if (!m_dataManager.updateIndicator(config)) return false;
 
     emit superTrendChanged(config.id, config.period, config.multiplier);
 
@@ -369,7 +370,7 @@ bool ChartWidget::setSuperTrendConfig(const SuperTrendInstance &config) {
 }
 
 bool ChartWidget::removeSuperTrend(int id) {
-    if (!m_dataManager.removeSuperTrend(id)) return false;
+    if (!m_dataManager.removeIndicator<SuperTrendInstance>(id)) return false;
 
     emit superTrendRemoved(id);
     
@@ -377,7 +378,7 @@ bool ChartWidget::removeSuperTrend(int id) {
 }
 
 int ChartWidget::addStochastic(const StochasticInstance& config) {
-    int id = m_dataManager.addStochastic(config);
+    int id = m_dataManager.addIndicator(config);
 
     emit stochasticAdded(id, config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
 
@@ -388,7 +389,7 @@ int ChartWidget::addStochastic(const StochasticInstance& config) {
 }
 
 bool ChartWidget::setStochasticConfig(const StochasticInstance& config) {
-    if (!m_dataManager.updateStochastic(config)) return false;
+    if (!m_dataManager.updateIndicator(config)) return false;
 
     emit stochasticChanged(config.id, config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
 
@@ -399,7 +400,7 @@ bool ChartWidget::setStochasticConfig(const StochasticInstance& config) {
 }
 
 bool ChartWidget::removeStochastic(int id) {
-    if (!m_dataManager.removeStochastic(id)) return false;
+    if (!m_dataManager.removeIndicator<StochasticInstance>(id)) return false;
 
     emit stochasticRemoved(id);
 
@@ -410,7 +411,7 @@ bool ChartWidget::removeStochastic(int id) {
 }
 
 int ChartWidget::addATR(const ATRInstance& config) {
-    int id = m_dataManager.addATR(config);
+    int id = m_dataManager.addIndicator(config);
 
     emit atrAdded(id, config.period);
 
@@ -421,7 +422,7 @@ int ChartWidget::addATR(const ATRInstance& config) {
 }
 
 bool ChartWidget::setATRConfig(const ATRInstance &config) {
-    if (!m_dataManager.updateATR(config)) return false;
+    if (!m_dataManager.updateIndicator(config)) return false;
 
     emit atrChanged(config.id, config.period);
 
@@ -432,7 +433,7 @@ bool ChartWidget::setATRConfig(const ATRInstance &config) {
 }
 
 bool ChartWidget::removeATR(int id) {
-    if (!m_dataManager.removeATR(id)) return false;
+    if (!m_dataManager.removeIndicator<ATRInstance>(id)) return false;
 
     emit atrRemoved(id);
 

@@ -12,6 +12,11 @@
 #include "trade.hpp"
 #include "chartdir.h"
 
+// je sais aps trop mais a voir avec claude
+// template<> inline IndicatorType RSIInstance::getStaticType() { return IndicatorType::RSI; }
+// template<> inline IndicatorType EMAInstance::getStaticType() { return IndicatorType::EMA; }
+// // etc.
+
 
 struct IndicatorCache {
     std::map<int, std::vector<double>> rsi;  // Clé: période, Valeur: données RSI
@@ -251,42 +256,71 @@ public:
     int getMaxDisplayPoints() const { return m_maxDisplayPoints; }
     void setMaxDisplayPoints(int value);
 
-
-    // Méthodes d'accès aux collections
-    const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
-    const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
-    const std::vector<SuperTrendInstance>& getSuperTrendInstances() const { return m_superTrendInstances; }
-    const std::vector<StochasticInstance>& getStochasticInstances() const { return m_stochasticInstances; }
-    const std::vector<ATRInstance>& getATRInstances() const { return m_atrInstances; }
-
     
     void removeAllIndicators();
 
-    int addRSI(const RSIInstance& config);
-    RSIInstance* findRSI(int id);
-    bool updateRSI(const RSIInstance& config);
-    bool removeRSI(int id);
-    
-    int addEMA(const EMAInstance& config);
-    EMAInstance* findEMA(int id);
-    bool updateEMA(const EMAInstance& config);
-    bool removeEMA(int id);
-    
-    int addSuperTrend(const SuperTrendInstance& config);
-    SuperTrendInstance* findSuperTrend(int id);
-    bool updateSuperTrend(const SuperTrendInstance& config);
-    bool removeSuperTrend(int id);
-    
-    int addStochastic(const StochasticInstance& config);
-    StochasticInstance* findStochastic(int id);
-    bool updateStochastic(const StochasticInstance& config);
-    bool removeStochastic(int id);
-    
-    int addATR(const ATRInstance& config);
-    ATRInstance* findATR(int id);
-    bool updateATR(const ATRInstance& config);
-    bool removeATR(int id);
 
+    // nouvelle API : 
+    template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
+    int addIndicator(const T &config) {
+        std::unique_ptr<IndicatorBase> indicator = std::make_unique<T>(config);
+        indicator->id = m_nextIndicatorId++;
+
+        int id = indicator->id;
+        m_indicators.push_back(std::move(indicator));
+
+        calculateIndicator(*m_indicators.back());
+
+        return id;
+    }
+
+    template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
+    T* findIndicator(int id) {
+        for (auto& indicator : m_indicators) {
+            if (indicator->id == id && indicator->type_ == T().type_)
+                return static_cast<T*>(indicator.get());
+        }
+        return nullptr;
+    }
+
+    template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
+    bool updateIndicator(const T& config) {
+        T* indicator = findIndicator<T>(config.id);
+
+        if (!indicator) return false;
+
+        bool needsRecalculation = indicator->needsRecalculation(config);
+
+        *indicator = config; // Met à jour la configuration de l'indicateur
+
+        if (needsRecalculation)
+            calculateIndicator(config);
+
+        return true;
+    }
+
+    template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
+    bool removeIndicator(int id) {
+        auto it = std::find_if(m_indicators.begin(), m_indicators.end(),
+                         [id](const std::unique_ptr<IndicatorBase>& item) { return item->id == id && item->type_ == T().type_; });
+
+        if (it == m_indicators.end()) return false;
+
+        m_indicators.erase(it);
+
+        return true;
+    }
+
+    template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
+    std::vector<const T*> getIndicatorsOfType() const {
+        std::vector<const T*> result;
+        for (const auto& indicator : m_indicators) {
+            if (indicator->type_ == T().type_) {
+                result.push_back(static_cast<const T*>(indicator.get()));
+            }
+        }
+        return result;
+    }
     
 private:
     struct ChartTypeInfo {
@@ -306,20 +340,18 @@ private:
     void calculateATR(int id, int period, bool useLogScale = false);
 
 
-    template<typename T>
-    T* findIndicator(int id, std::vector<T>& instances);
+    
+    // template<typename T>
+    // int addIndicatorImpl(const T& config, std::vector<T>& container);
 
-    // template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
-    // int addIndicatorImpl(const T& config);
-
-    template<typename T>
-    int addIndicatorImpl(const T& config, std::vector<T>& container);
-
-    template<typename T>
-    bool setIndicatorConfigImpl(const T& config, std::vector<T>& container);
-
-    template<typename T>
-    bool removeIndicatorImpl(int id, std::vector<T>& container);
+    // template<typename T>
+    // T* findIndicator(int id, std::vector<T>& instances);
+    
+    // template<typename T>
+    // bool setIndicatorConfigImpl(const T& config, std::vector<T>& container);
+    
+    // template<typename T>
+    // bool removeIndicatorImpl(int id, std::vector<T>& container);
 
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;
@@ -338,11 +370,11 @@ private:
 
     // ID unique global pour tous les types d'indicateurs
     int m_nextIndicatorId = 1;
-    std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
-    std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
-    std::vector<SuperTrendInstance> m_superTrendInstances; ///< Instances de SuperTrend actives
-    std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
-    std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
+    // std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
+    // std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
+    // std::vector<SuperTrendInstance> m_superTrendInstances; ///< Instances de SuperTrend actives
+    // std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
+    // std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
 
 
     std::vector<std::unique_ptr<IndicatorBase>> m_indicators; ///< Toutes les instances d'indicateurs actives

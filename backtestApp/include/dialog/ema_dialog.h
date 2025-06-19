@@ -36,7 +36,7 @@ private slots:
     
 private:
     ChartWidget* m_chartWidget;
-    std::vector<EMAInstance> m_originalEMAs;  // Pour restaurer en cas d'annulation
+    std::vector<const EMAInstance*> m_originalEMAs;  // Pour restaurer en cas d'annulation
     std::vector<EMAInstance> m_currentEMAs;   // Pour les modifications en cours
     std::map<int, int> m_rowToEMAId;        // Mappage de la ligne de l'UI à l'ID de l'EMA
     

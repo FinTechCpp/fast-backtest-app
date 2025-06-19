@@ -786,12 +786,14 @@ T *ChartDataManager::findIndicator(int id, std::vector<T> &instances) {
 }
 
 template<typename T, typename Container>
-bool ChartDataManager::setIndicatorConfigImpl(const T& config, Container& container, bool needsRecalculation) {
+bool ChartDataManager::setIndicatorConfigImpl(const T& config, Container& container) {
     auto it = std::find_if(container.begin(), container.end(),
                          [config](const T& item) { return item.id == config.id; });
 
     if (it == container.end()) return false;
-    
+
+    bool needsRecalculation = it->needsRecalculation(config);
+
     // Mettre à jour la configuration mais préserver l'ID
     *it = config;
 
@@ -808,7 +810,6 @@ bool ChartDataManager::removeIndicatorImpl(int id, Container& container) {
     
     if (it == container.end()) return false;
     
-    // Supprimer l'instance
     container.erase(it);
     
     return true;
@@ -827,12 +828,7 @@ RSIInstance* ChartDataManager::findRSI(int id) {
 }
 
 bool ChartDataManager::updateRSI(const RSIInstance &config) {
-    RSIInstance* oldConfig = findRSI(config.id);
-    if (!oldConfig) return false;
-
-    bool needsRecalculation = (oldConfig->period != config.period);
-
-    return setIndicatorConfigImpl(config, m_rsiInstances, needsRecalculation);
+    return setIndicatorConfigImpl(config, m_rsiInstances);
 }
 
 bool ChartDataManager::removeRSI(int id) {
@@ -852,12 +848,7 @@ EMAInstance* ChartDataManager::findEMA(int id) {
 }
 
 bool ChartDataManager::updateEMA(const EMAInstance &config) {
-    EMAInstance* oldConfig = findEMA(config.id);
-    if (!oldConfig) return false;
-
-    bool needsRecalculation = (oldConfig->period != config.period);
-
-    return setIndicatorConfigImpl(config, m_emaInstances, needsRecalculation);
+    return setIndicatorConfigImpl(config, m_emaInstances);
 }
 
 bool ChartDataManager::removeEMA(int id) {
@@ -878,12 +869,7 @@ SuperTrendInstance* ChartDataManager::findSuperTrend(int id) {
 }
 
 bool ChartDataManager::updateSuperTrend(const SuperTrendInstance &config) {
-    SuperTrendInstance* oldConfig = findSuperTrend(config.id);
-    if (!oldConfig) return false;
-
-    bool needsRecalculation = (oldConfig->period != config.period || oldConfig->multiplier != config.multiplier);
-
-    return setIndicatorConfigImpl(config, m_superTrendInstances, needsRecalculation);
+    return setIndicatorConfigImpl(config, m_superTrendInstances);
 }
 
 bool ChartDataManager::removeSuperTrend(int id) {
@@ -905,14 +891,7 @@ StochasticInstance* ChartDataManager::findStochastic(int id) {
 }
 
 bool ChartDataManager::updateStochastic(const StochasticInstance &config) {
-    StochasticInstance* oldConfig = findStochastic(config.id);
-    if (!oldConfig) return false;
-
-    bool needsRecalculation = (oldConfig->fastKPeriod != config.fastKPeriod ||
-                               oldConfig->slowKPeriod != config.slowKPeriod ||
-                               oldConfig->slowDPeriod != config.slowDPeriod);
-
-    return setIndicatorConfigImpl(config, m_stochasticInstances, needsRecalculation);
+    return setIndicatorConfigImpl(config, m_stochasticInstances);
 }
 
 bool ChartDataManager::removeStochastic(int id) {
@@ -932,12 +911,7 @@ ATRInstance* ChartDataManager::findATR(int id) {
 }
 
 bool ChartDataManager::updateATR(const ATRInstance &config) {
-    ATRInstance* oldConfig = findATR(config.id);
-    if (!oldConfig) return false;
-
-    bool needsRecalculation = (oldConfig->period != config.period || oldConfig->useLogScale != config.useLogScale);
-
-    return setIndicatorConfigImpl(config, m_atrInstances, needsRecalculation);
+    return setIndicatorConfigImpl(config, m_atrInstances);
 }
 
 bool ChartDataManager::removeATR(int id) {

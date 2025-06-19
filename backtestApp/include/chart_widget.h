@@ -162,27 +162,6 @@ private:
 
     bool updateChartDisplay(ViewPortMode mode = ViewPortMode::FULL_CHART);
 
-
-    // template<typename T>
-    // T* findIndicator(int id, std::vector<T>& instances);
-
-    // template<typename T, typename Container>
-    // int addIndicatorImpl(const T& config, Container& container);
-    
-    // template<typename T, typename Container>
-    // bool setIndicatorConfigImpl(const T& config, Container& container, bool needsRecalculation = true);
-    
-    // template<typename T, typename Container>
-    // bool removeIndicatorImpl(int id, Container& container);
-
-    // on devrait peut etre mettre les instances dans le data manager
-    // mais celle la pas sur c'est a etudier
-    // std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
-    // std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
-    // std::vector<SuperTrendInstance> m_superTrendInstances; ///< Instances de SuperTrend actives
-    // std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
-    // std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
-
     // 3. Composants d'interface
     QChartViewer* m_chartViewer = nullptr;
     

@@ -38,18 +38,13 @@ struct IndicatorBase {
     IndicatorType type_; // Type d'indicateur
     bool visible = true; // Si l'indicateur est visible
 
-    // IndicatorBase& operator=(const IndicatorBase& other) {
-    //     if (this != &other) {
-    //         // Assurez-vous que les types correspondent
-    //         if (type_ != other.type_) {
-    //             throw std::runtime_error("Cannot assign indicators of different types");
-    //         }
-    //         // Copier uniquement les membres non-const
-    //         id = other.id;
-    //         visible = other.visible;
-    //     }
-    //     return *this;
-    // }
+    bool operator==(const IndicatorBase& other) const {
+        return id == other.id && type_ == other.type_;
+    }
+
+    bool operator!=(const IndicatorBase& other) const {
+        return !(*this == other);
+    }
 };
 
 // Structures pour les indicateurs techniques (importées depuis ChartWidget)
@@ -61,20 +56,12 @@ struct RSIInstance : public IndicatorBase {
     double range = 20;      // Plage pour les niveaux de survente/surachat (70/30)
     int upperColor = 0xff6666; // Couleur pour la zone de surachat
     int lowerColor = 0x6666ff; // Couleur pour la zone de survente
-    
-    bool operator==(const RSIInstance& other) const {
-        return id == other.id;
-    }
 };
 
 struct EMAInstance : public IndicatorBase {
     EMAInstance() : IndicatorBase(IndicatorType::EMA) {}
     int period;            // Période de l'EMA
     int color = 0x0000FF;  // Couleur de la ligne (bleu par défaut)
-    
-    bool operator==(const EMAInstance& other) const {
-        return id == other.id;
-    }
 };
 
 struct SuperTrendInstance : public IndicatorBase {
@@ -83,10 +70,6 @@ struct SuperTrendInstance : public IndicatorBase {
     double multiplier;     // Multiplicateur pour le SuperTrend
     int upColor = 0x00AA00;  // Couleur de la ligne (vert par défaut)
     int downColor = 0xFF0000; // Couleur de la ligne (rouge par défaut)
-
-    bool operator==(const SuperTrendInstance& other) const {
-        return id == other.id;
-    }
 };
 
 struct StochasticInstance : public IndicatorBase {
@@ -99,10 +82,6 @@ struct StochasticInstance : public IndicatorBase {
     int dColor = 0xFF0000;  // Couleur de la ligne %D (rouge par défaut)
     int overboughtLevel = 80; // Niveau de surachat
     int oversoldLevel = 20;   // Niveau de survente
-    
-    bool operator==(const StochasticInstance& other) const {
-        return id == other.id;
-    }
 };
 
 struct ATRInstance : public IndicatorBase {
@@ -111,11 +90,8 @@ struct ATRInstance : public IndicatorBase {
     int height = 120;      // Hauteur du panneau
     int color = 0x006400;  // Couleur de la ligne (vert foncé par défaut)
     bool useLogScale = false; // Indique si l'échelle logarithmique est utilisée
-    
-    bool operator==(const ATRInstance& other) const {
-        return id == other.id;
-    }
 };
+
 
 class ChartDataManager {
 public:
@@ -173,7 +149,7 @@ public:
 
         AggregationLevel level;
         
-         // Méthodes utilitaires pour vérifier si un indicateur spécifique est valide
+        // Méthodes utilitaires pour vérifier si un indicateur spécifique est valide
         bool isRsiValid(int id) const { return validRsiIds.find(id) != validRsiIds.end(); }
         bool isEmaValid(int id) const { return validEmaIds.find(id) != validEmaIds.end(); }
         bool isSupertrendValid(int id) const { return validSupertrendIds.find(id) != validSupertrendIds.end(); }

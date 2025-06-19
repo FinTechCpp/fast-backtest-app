@@ -29,8 +29,7 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
     m_activeIndicators.clear();
 }
 
-void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>> &trades)
-{
+void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>> &trades) {
     m_trades = trades;
 }
 
@@ -366,8 +365,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 }
 
-std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> &data, AggregationLevel level, int aggregateMethod) const
-{
+std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> &data, AggregationLevel level, int aggregateMethod) const {
     if (level == AggregationLevel::Raw)
         return data;
 
@@ -417,8 +415,7 @@ void ChartDataManager::calculateRSI(int id, int period)
     m_activeIndicators.rsiValues[id] = std::move(rsiValues);
 }
 
-void ChartDataManager::calculateEMA(int id, int period)
-{
+void ChartDataManager::calculateEMA(int id, int period) {
     // Vérifier si les données nécessaires sont disponibles
     if (!hasValidData() || period < 2) return;
 
@@ -432,8 +429,7 @@ void ChartDataManager::calculateEMA(int id, int period)
     m_activeIndicators.emaValues[id] = std::move(emaValues);
 }
 
-void ChartDataManager::calculateSupertrend(int id, int period, double multiplier)
-{
+void ChartDataManager::calculateSupertrend(int id, int period, double multiplier) {
     // Vérifier si les données nécessaires sont disponibles
     if (!hasValidData() || period < 2) return;
 
@@ -450,8 +446,7 @@ void ChartDataManager::calculateSupertrend(int id, int period, double multiplier
     m_activeIndicators.supertrendValues[id] = std::make_pair(std::move(supertrendValues), std::move(trendDirections));
 }
 
-void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
-{
+void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod) {
     // Vérifier si les données nécessaires sont disponibles
     if (!hasValidData() || fastKPeriod < 2 || slowKPeriod < 2 || slowDPeriod < 2) return;
 
@@ -468,8 +463,7 @@ void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPer
     m_activeIndicators.stochasticValues[id] = std::make_pair(std::move(stochasticKValues), std::move(stochasticDValues));
 }
 
-void ChartDataManager::calculateATR(int id, int period, bool useLogScale)
-{
+void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
     // Vérifier si les données nécessaires sont disponibles
     if (!hasValidData() || period < 2) return;
 

@@ -115,27 +115,32 @@ public slots:
 // on pourrait aussi mettre la condition de recalcule pouir evité de la faire dans chaque
 // methode et passer un booléen pour savoir si on doit recalculer ou pas
     // Pour le RSI
-    int addRSI(const RSIInstance& config);
+    int addRSI(RSIInstance&& config);
+    int addRSI(const RSIInstance& config) { return addRSI(std::move(RSIInstance(config))); }
     bool setRSIConfig(const RSIInstance& config);
     bool removeRSI(int id);
 
     // Pour l'EMA
-    int addEMA(const EMAInstance& config);
+    int addEMA(EMAInstance&& config);
+    int addEMA(const EMAInstance& config) { return addEMA(std::move(EMAInstance(config))); }
     bool setEMAConfig(const EMAInstance& config);
     bool removeEMA(int id);
 
     // Pour le SuperTrend
-    int addSuperTrend(const SuperTrendInstance& config);
+    int addSuperTrend(SuperTrendInstance&& config);
+    int addSuperTrend(const SuperTrendInstance& config) { return addSuperTrend(std::move(SuperTrendInstance(config))); }
     bool setSuperTrendConfig(const SuperTrendInstance& config);
     bool removeSuperTrend(int id);
 
     // Pour le Stochastique
-    int addStochastic(const StochasticInstance& config);
+    int addStochastic(StochasticInstance&& config);
+    int addStochastic(const StochasticInstance& config) { return addStochastic(std::move(StochasticInstance(config))); }
     bool setStochasticConfig(const StochasticInstance& config);
     bool removeStochastic(int id);
 
     // Pour l'ATR
-    int addATR(const ATRInstance& config);
+    int addATR(ATRInstance&& config);
+    int addATR(const ATRInstance& config) { return addATR(std::move(ATRInstance(config))); }
     bool setATRConfig(const ATRInstance& config);
     bool removeATR(int id);
 

@@ -253,10 +253,11 @@ void ChartWidget::setRulerToolEnabled(bool enabled)
 
 
 //-----Indicators Implementation-----
-int ChartWidget::addRSI(const RSIInstance &config) {
-    int id = m_dataManager.addIndicator(config);
+int ChartWidget::addRSI(RSIInstance&& config) {
+    int period = config.period;
+    int id = m_dataManager.addIndicator(std::move(config));
 
-    emit rsiAdded(id, config.period);
+    emit rsiAdded(id, period);
 
     if (m_dataManager.hasValidData() && m_chartViewer)
         updateChartDisplay(ViewPortMode::USE_CURRENT);
@@ -286,10 +287,11 @@ bool ChartWidget::removeRSI(int id) {
     return true;
 }
 
-int ChartWidget::addEMA(const EMAInstance& config) {
-    int id = m_dataManager.addIndicator(config);
+int ChartWidget::addEMA(EMAInstance&& config) {
+    int period = config.period;
+    int id = m_dataManager.addIndicator(std::move(config));
 
-    emit emaAdded(id, config.period);
+    emit emaAdded(id, period);
 
     if (m_dataManager.hasValidData() && m_chartViewer)
         updateChartDisplay(ViewPortMode::USE_CURRENT);
@@ -319,10 +321,12 @@ bool ChartWidget::removeEMA(int id) {
     return true;
 }
 
-int ChartWidget::addSuperTrend(const SuperTrendInstance &config) {
-    int id = m_dataManager.addIndicator(config);
+int ChartWidget::addSuperTrend(SuperTrendInstance &&config) {
+    int period = config.period;
+    int multiplier = config.multiplier;
+    int id = m_dataManager.addIndicator(std::move(config));
 
-    emit superTrendAdded(id, config.period, config.multiplier);
+    emit superTrendAdded(id, period, multiplier);
 
     if (m_dataManager.hasValidData() && m_chartViewer)
         updateChartDisplay(ViewPortMode::USE_CURRENT);
@@ -349,10 +353,13 @@ bool ChartWidget::removeSuperTrend(int id) {
     return true;
 }
 
-int ChartWidget::addStochastic(const StochasticInstance& config) {
-    int id = m_dataManager.addIndicator(config);
+int ChartWidget::addStochastic(StochasticInstance&& config) {
+    int fastKPeriod = config.fastKPeriod;
+    int slowKPeriod = config.slowKPeriod;
+    int slowDPeriod = config.slowDPeriod;
+    int id = m_dataManager.addIndicator(std::move(config));
 
-    emit stochasticAdded(id, config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
+    emit stochasticAdded(id, fastKPeriod, slowKPeriod, slowDPeriod);
 
     if (m_dataManager.hasValidData() && m_chartViewer)
         updateChartDisplay(ViewPortMode::USE_CURRENT);
@@ -382,10 +389,11 @@ bool ChartWidget::removeStochastic(int id) {
     return true;
 }
 
-int ChartWidget::addATR(const ATRInstance& config) {
-    int id = m_dataManager.addIndicator(config);
+int ChartWidget::addATR(ATRInstance&& config) {
+    int period = config.period;
+    int id = m_dataManager.addIndicator(std::move(config));
 
-    emit atrAdded(id, config.period);
+    emit atrAdded(id, period);
 
     if (m_dataManager.hasValidData() && m_chartViewer)
         updateChartDisplay(ViewPortMode::USE_CURRENT);

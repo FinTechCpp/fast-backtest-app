@@ -304,7 +304,7 @@ void ChartView::onAddIndicatorClicked()
         // Ajouter un RSI avec la période par défaut (14)
         RSIInstance rsi;
         rsi.period = 14;
-        m_chartWidget->addRSI(rsi);
+        m_chartWidget->addRSI(std::move(rsi));
     }
     else if (indicatorType == "EMA") {
         // Pour EMA, ouvrir le dialogue de configuration directement
@@ -315,7 +315,7 @@ void ChartView::onAddIndicatorClicked()
         supertrend.period = 10; // Période par défaut pour le SuperTrend
         supertrend.multiplier = 3.0; // Multiplicateur par défaut pour le SuperTrend
         // Ajouter un SuperTrend avec les paramètres par défaut
-        m_chartWidget->addSuperTrend(supertrend);
+        m_chartWidget->addSuperTrend(std::move(supertrend));
     }
     else if (indicatorType == "STOCH") {
         StochasticInstance stochastic;
@@ -323,13 +323,13 @@ void ChartView::onAddIndicatorClicked()
         stochastic.slowKPeriod = 3;  // Période par défaut pour %K lissé
         stochastic.slowDPeriod = 3;  // Période par défaut pour %D
         // Ajouter un Stochastique avec les paramètres par défaut
-        m_chartWidget->addStochastic(stochastic);
+        m_chartWidget->addStochastic(std::move(stochastic));
     }
     else if (indicatorType == "ATR") {
         ATRInstance atr;
         atr.period = 14; // Période par défaut pour l'ATR
         // Ajouter un ATR avec la période par défaut (14)
-        m_chartWidget->addATR(atr);
+        m_chartWidget->addATR(std::move(atr));
     }
     // Ajouter d'autres types d'indicateurs ici
 }
@@ -789,7 +789,7 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     rsi.period = static_cast<int>(indicator.params.at("period"));
                     rsi.height = 90;  // Hauteur standard
                     rsi.color = 0x800080;  // Couleur par défaut (violet)
-                    m_chartWidget->addRSI(rsi);
+                    m_chartWidget->addRSI(std::move(rsi));
                     break;
                 }
                 case StrategyIndicator::EMA: {
@@ -804,8 +804,8 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                         ema.color = 0xFF0000;  // Rouge pour EMA moyenne
                     else
                         ema.color = 0x008000;  // Vert pour EMA longue
-                        
-                    m_chartWidget->addEMA(ema);
+
+                    m_chartWidget->addEMA(std::move(ema));
                     break;
                 }
                 case StrategyIndicator::STOCHASTIC: {
@@ -818,7 +818,7 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     stoch.height = 90;  // Hauteur standard
                     stoch.kColor = 0x0000FF;  // Bleu pour K
                     stoch.dColor = 0xFF0000;  // Rouge pour D
-                    m_chartWidget->addStochastic(stoch);
+                    m_chartWidget->addStochastic(std::move(stoch));
                     break;
                 }
                 case StrategyIndicator::ATR: {
@@ -827,7 +827,7 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     atr.useLogScale = indicator.params.at("useLogScale") > 0.5;
                     atr.height = 90;  // Hauteur standard
                     atr.color = 0x008800;  // Vert
-                    m_chartWidget->addATR(atr);
+                    m_chartWidget->addATR(std::move(atr));
                     break;
                 }
             }

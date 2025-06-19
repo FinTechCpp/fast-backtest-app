@@ -41,10 +41,12 @@ public:
     ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
     const std::vector<RSIInstance>& getRSIInstances() const { return m_rsiInstances; }
     const std::vector<EMAInstance>& getEMAInstances() const { return m_emaInstances; }
+    const std::vector<SuperTrendInstance>& getSuperTrendInstances() const { return m_superTrendInstances; }
     const std::vector<StochasticInstance>& getStochasticInstances() const { return m_stochasticInstances; }
     const std::vector<ATRInstance>& getATRInstances() const { return m_atrInstances; }
     RSIInstance* findRSI(int id);
     EMAInstance* findEMA(int id);
+    SuperTrendInstance* findSuperTrend(int id);
     StochasticInstance* findStochastic(int id);
     ATRInstance* findATR(int id);
    
@@ -82,6 +84,11 @@ signals:
     void emaChanged(int id, int period);
     void emaRemoved(int id);
 
+    // Signaux pour le SuperTrend
+    void superTrendAdded(int id, int period, double multiplier);
+    void superTrendChanged(int id, int period, double multiplier);
+    void superTrendRemoved(int id);
+
     // Signaux pour le Stochastique
     void stochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void stochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
@@ -116,6 +123,11 @@ public slots:
     int addEMA(const EMAInstance& config);
     bool setEMAConfig(const EMAInstance& config);
     bool removeEMA(int id);
+
+    // Pour le SuperTrend
+    int addSuperTrend(const SuperTrendInstance& config);
+    bool setSuperTrendConfig(const SuperTrendInstance& config);
+    bool removeSuperTrend(int id);
 
     // Pour le Stochastique
     int addStochastic(const StochasticInstance& config);
@@ -171,6 +183,7 @@ private:
     // mais celle la pas sur c'est a etudier
     std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
     std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
+    std::vector<SuperTrendInstance> m_superTrendInstances; ///< Instances de SuperTrend actives
     std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
     std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
 

@@ -50,7 +50,7 @@ void ChartView::setupUI()
     m_leftPanel = new QWidget();
     m_leftPanel->setObjectName("leftPanel");
     m_leftPanel->setStyleSheet("#leftPanel { background-color: #BADDFF; }");
-    m_leftPanel->setFixedWidth(170); // Augmenter la largeur pour les contrôles d'indicateurs
+    m_leftPanel->setFixedWidth(230); // Augmenter la largeur pour les contrôles d'indicateurs
     
     // Ajouter un layout vertical au panneau gauche
     QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_leftPanel);
@@ -209,6 +209,11 @@ void ChartView::setupUI()
     connect(m_chartWidget, &ChartWidget::emaChanged, this, &ChartView::onEMAChanged);
     connect(m_chartWidget, &ChartWidget::emaRemoved, this, &ChartView::onEMARemoved);
 
+    // Connecter les signaux SuperTrend
+    connect(m_chartWidget, &ChartWidget::superTrendAdded, this, &ChartView::onSupertrendAdded);
+    connect(m_chartWidget, &ChartWidget::superTrendChanged, this, &ChartView::onSupertrendChanged);
+    connect(m_chartWidget, &ChartWidget::superTrendRemoved, this, &ChartView::onSupertrendRemoved);
+
     // Connecter les signaux Stochastic
     connect(m_chartWidget, &ChartWidget::stochasticAdded, this, &ChartView::onStochasticAdded);
     connect(m_chartWidget, &ChartWidget::stochasticChanged, this, &ChartView::onStochasticChanged);
@@ -262,6 +267,7 @@ void ChartView::setupIndicatorControls()
     m_indicatorTypeCombo = new QComboBox();
     m_indicatorTypeCombo->addItem("RSI", "RSI");
     m_indicatorTypeCombo->addItem("EMA", "EMA");
+    m_indicatorTypeCombo->addItem("Supertrend", "SUPERTREND");
     m_indicatorTypeCombo->addItem("Stochastic", "STOCH");  
     m_indicatorTypeCombo->addItem("ATR", "ATR"); 
     // Ajouter d'autres types d'indicateurs ici au besoin
@@ -303,6 +309,13 @@ void ChartView::onAddIndicatorClicked()
     else if (indicatorType == "EMA") {
         // Pour EMA, ouvrir le dialogue de configuration directement
         onEditEMA();
+    }
+    else if (indicatorType == "SUPERTREND") {
+        SuperTrendInstance supertrend;
+        supertrend.period = 10; // Période par défaut pour le SuperTrend
+        supertrend.multiplier = 3.0; // Multiplicateur par défaut pour le SuperTrend
+        // Ajouter un SuperTrend avec les paramètres par défaut
+        m_chartWidget->addSuperTrend(supertrend);
     }
     else if (indicatorType == "STOCH") {
         StochasticInstance stochastic;
@@ -374,6 +387,27 @@ void ChartView::onEditEMA()
     delete dialog;
     
     // Rafraîchir la liste des indicateurs
+    refreshIndicatorsList();
+}
+
+void ChartView::onSupertrendAdded(int id, int period, double multiplier)
+{    
+    // Créer les widgets pour ce Supertrend
+    QString name = QString("Supertrend (%1, %2)").arg(period).arg(multiplier, 0, 'f', 1);
+    createIndicatorWidgets(id, name);
+}
+
+void ChartView::onSupertrendChanged(int id, int period, double multiplier)
+{
+    // Mettre à jour le libellé
+    if (m_indicatorLabels.contains(id)) {
+        QString name = QString("Supertrend (%1, %2)").arg(period).arg(multiplier, 0, 'f', 1);
+        m_indicatorLabels[id]->setText(name);
+    }
+}
+
+void ChartView::onSupertrendRemoved(int id)
+{
     refreshIndicatorsList();
 }
 
@@ -475,6 +509,16 @@ void ChartView::onEditIndicator(int id)
         return;
     }
 
+    // Rechercher si c'est un Supertrend
+    SuperTrendInstance* supertrend = m_chartWidget->findSuperTrend(id);
+    if (supertrend) {
+        // Créer et afficher le dialogue d'édition pour Supertrend
+        SupertrendDialog* dialog = new SupertrendDialog(this, m_chartWidget, id, *supertrend);
+        dialog->exec();
+        delete dialog;
+        return;
+    }
+
     // Rechercher si c'est un Stochastique
     StochasticInstance* stochastic = m_chartWidget->findStochastic(id);
     if (stochastic) {
@@ -502,15 +546,16 @@ void ChartView::onEditIndicator(int id)
 void ChartView::onRemoveIndicator(int id)
 {
     // Essayer de supprimer comme RSI
-    if (m_chartWidget->removeRSI(id)) {
+    if (m_chartWidget->removeRSI(id)) 
         return;
-    }
     
     // Essayer de supprimer comme EMA
-    if (m_chartWidget->removeEMA(id)) {
+    if (m_chartWidget->removeEMA(id)) 
         return;
-    }
     
+    if(m_chartWidget->removeSuperTrend(id)) 
+        return;
+
     // Essayer de supprimer comme Stochastique
     m_chartWidget->removeStochastic(id);
 
@@ -548,6 +593,15 @@ void ChartView::refreshIndicatorsList()
         if (ema.visible) {
             QString name = QString("EMA (%1)").arg(ema.period);
             createIndicatorWidgets(ema.id, name);
+        }
+    }
+
+    // Pour chaque Supertrend actif, recréer les widgets
+    const std::vector<SuperTrendInstance>& supertrendInstances = m_chartWidget->getSuperTrendInstances();
+    for (const auto& supertrend : supertrendInstances) {
+        if (supertrend.visible) {
+            QString name = QString("Supertrend (%1, %2)").arg(supertrend.period).arg(supertrend.multiplier, 0, 'f', 1);
+            createIndicatorWidgets(supertrend.id, name);
         }
     }
 

@@ -18,6 +18,7 @@ void ChartRenderer::createOrUpdateChart(
     const ChartDataManager::AggregationInfo& aggregationInfo,
     const std::vector<RSIInstance>& rsiInstances,
     const std::vector<EMAInstance>& emaInstances,
+    const std::vector<SuperTrendInstance>& superTrendInstances,
     const std::vector<StochasticInstance>& stochasticInstances,
     const std::vector<ATRInstance>& atrInstances)
 {
@@ -133,6 +134,13 @@ void ChartRenderer::createOrUpdateChart(
     for (const auto& ema : emaInstances) {
         if (ema.visible) {
             addEMAToChart(m_financeChart.get(), ema, dataManager, aggregationInfo);
+        }
+    }
+    
+    // Supertrend
+    for (const auto& supertrend : superTrendInstances) {
+        if (supertrend.visible) {
+            addSupertrendToChart(m_financeChart.get(), supertrend, dataManager, aggregationInfo);
         }
     }
     
@@ -679,6 +687,78 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
     LineLayer* layer = chart->addLineIndicator2((XYChart*)chart->getChart(1), emaArray, ema.color, buffer);
     layer->setFastLineMode(true);
 }
+
+void ChartRenderer::addSupertrendToChart(FinanceChart* chart, 
+                                      const SuperTrendInstance& supertrend, 
+                                      const ChartDataManager& dataManager, 
+                                      const ChartDataManager::AggregationInfo& aggregationInfo)
+{
+    const std::vector<double>* supertrendValues = nullptr;
+    const std::vector<int>* trendDirections = nullptr;
+    int startIndex = aggregationInfo.startIndex;
+    int pointsToShow = aggregationInfo.pointCount;
+
+    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+        auto it = dataManager.getActiveIndicators().supertrendValues.find(supertrend.id);
+        if (it != dataManager.getActiveIndicators().supertrendValues.end()) {
+            supertrendValues = &it->second.first;
+            trendDirections = &it->second.second;
+        }
+    } else {
+        const auto& aggregatedIndicators = dataManager.getAggregatedIndicators(aggregationInfo.level);
+        if (aggregatedIndicators.isSupertrendValid(supertrend.id)) {
+            auto it = aggregatedIndicators.supertrendValues.find(supertrend.id);
+            if (it != aggregatedIndicators.supertrendValues.end()) {
+                supertrendValues = &it->second.first;
+                trendDirections = &it->second.second;
+            }
+        }
+    }
+
+    if (!supertrendValues || !trendDirections || startIndex >= (int)supertrendValues->size())
+        return;
+
+    // Limiter le nombre de points à afficher
+    int endIndex = std::min(startIndex + pointsToShow, (int)supertrendValues->size());
+    int actualPoints = endIndex - startIndex;
+
+    if (actualPoints <= 0)
+        return;
+
+    // Extraire les données visibles du cache
+    std::vector<double> upValues(actualPoints, Chart::NoValue);
+    std::vector<double> downValues(actualPoints, Chart::NoValue);
+
+    for (int i = 0; i < actualPoints; ++i) {
+        int index = startIndex + i;
+        if ((*trendDirections)[index] == 1) {
+            upValues[i] = (*supertrendValues)[index];
+        } else if ((*trendDirections)[index] == -1) {
+            downValues[i] = (*supertrendValues)[index];
+        }
+    }
+
+    // Convertir en DoubleArray
+    DoubleArray upArray = ChartDataManager::vectorToDoubleArray(upValues);
+    DoubleArray downArray = ChartDataManager::vectorToDoubleArray(downValues);
+
+    // Ajouter directement sur le graphique principal
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "Supertrend (%d, %.1f)", supertrend.period, supertrend.multiplier);
+    
+    XYChart* mainChart = (XYChart*)chart->getChart(1);
+    
+    // Lignes haussières (en vert)
+    LineLayer* upLayer = chart->addLineIndicator2(mainChart, upArray, supertrend.upColor, 
+                                               buffer);
+    upLayer->setLineWidth(1);
+    
+    // Lignes baissières (en rouge)
+    LineLayer* downLayer = chart->addLineIndicator2(mainChart, downArray, supertrend.downColor, 
+                                                 "");
+    downLayer->setLineWidth(1);
+}
+
 
 void ChartRenderer::addStochasticToChart(FinanceChart* chart, 
                                        const StochasticInstance& stochastic, 

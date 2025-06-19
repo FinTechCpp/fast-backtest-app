@@ -6,8 +6,6 @@
 #include <cmath>
 #include <set>
 
-
-
 ChartWidget::ChartWidget(QWidget* parent)
     : QWidget(parent)
     , m_chartViewer(nullptr)
@@ -112,6 +110,11 @@ EMAInstance *ChartWidget::findEMA(int id)
     return findIndicator<EMAInstance>(id, m_emaInstances);
 }
 
+SuperTrendInstance *ChartWidget::findSuperTrend(int id)
+{
+    return findIndicator<SuperTrendInstance>(id, m_superTrendInstances);
+}
+
 StochasticInstance *ChartWidget::findStochastic(int id)
 {
     return findIndicator<StochasticInstance>(id, m_stochasticInstances);
@@ -148,7 +151,10 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
 
     m_currentAggregation = m_dataManager.getOptimalAggregationInfo(DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow));
     
-    m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation, m_rsiInstances, m_emaInstances, m_stochasticInstances, m_atrInstances);
+    // Corriger l'appel avec tous les paramètres requis
+    m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation, 
+                                   m_rsiInstances, m_emaInstances, m_superTrendInstances, 
+                                   m_stochasticInstances, m_atrInstances);
 
     if (mode == ViewPortMode::FULL_CHART) {
         m_chartViewer->setViewPortLeft(0);
@@ -337,6 +343,45 @@ bool ChartWidget::removeEMA(int id)
         return false;
     
     emit emaRemoved(id);
+    
+    return true;
+}
+
+int ChartWidget::addSuperTrend(const SuperTrendInstance &config)
+{
+    SuperTrendInstance validatedConfig = config;
+
+    if (validatedConfig.period < 2) validatedConfig.period = 2;
+    if (validatedConfig.multiplier <= 0) validatedConfig.multiplier = 3.0;
+
+    int id = addIndicatorImpl(validatedConfig, m_superTrendInstances);
+
+    emit superTrendAdded(id, validatedConfig.period, validatedConfig.multiplier);
+
+    return id;
+}
+
+bool ChartWidget::setSuperTrendConfig(const SuperTrendInstance &config)
+{
+    SuperTrendInstance* oldConfig = findIndicator(config.id, m_superTrendInstances);
+    if (!oldConfig) return false;
+
+    bool needsRecalculation = (oldConfig->period != config.period || 
+                               oldConfig->multiplier != config.multiplier);
+
+    if (!setIndicatorConfigImpl(config, m_superTrendInstances, needsRecalculation)) return false;
+
+    emit superTrendChanged(config.id, config.period, config.multiplier);
+
+    return true;
+}
+
+bool ChartWidget::removeSuperTrend(int id)
+{
+    if (!removeIndicatorImpl<SuperTrendInstance>(id, m_superTrendInstances))
+        return false;
+    
+    emit superTrendRemoved(id);
     
     return true;
 }

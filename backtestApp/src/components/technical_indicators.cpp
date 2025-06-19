@@ -119,6 +119,111 @@ void TechnicalIndicators::calculateEMA(const std::vector<double>& closeData, int
     }
 }
 
+void TechnicalIndicators::calculateSupertrend(
+    const std::vector<double>& highData,
+    const std::vector<double>& lowData,
+    const std::vector<double>& closeData,
+    int period,
+    double multiplier,
+    std::vector<double>& supertrendValues,
+    std::vector<int>& trendDirections)
+{
+    size_t dataSize = closeData.size();
+    supertrendValues.resize(dataSize);
+    trendDirections.resize(dataSize, 0);
+    
+    if (dataSize <= period) {
+        std::fill(supertrendValues.begin(), supertrendValues.end(), 0.0);
+        return;
+    }
+    
+    // Calculer l'ATR
+    std::vector<double> atrValues;
+    calculateATR(highData, lowData, closeData, period, atrValues, false);
+    
+    // Calculer les bandes de base (HL2 +/- multiplier * ATR)
+    std::vector<double> basicUpperBand(dataSize);
+    std::vector<double> basicLowerBand(dataSize);
+    std::vector<double> finalUpperBand(dataSize);
+    std::vector<double> finalLowerBand(dataSize);
+    
+    for (size_t i = 0; i < dataSize; ++i) {
+        if (i < period) {
+            basicUpperBand[i] = 0.0;
+            basicLowerBand[i] = 0.0;
+            finalUpperBand[i] = 0.0;
+            finalLowerBand[i] = 0.0;
+            supertrendValues[i] = 0.0;
+            trendDirections[i] = 0;
+            continue;
+        }
+        
+        double hl2 = (highData[i] + lowData[i]) / 2.0;
+        double atr = atrValues[i];
+        
+        // Calculer les bandes de base
+        basicUpperBand[i] = hl2 + (multiplier * atr);
+        basicLowerBand[i] = hl2 - (multiplier * atr);
+        
+        // Calculer les bandes finales (avec logique de maintien)
+        if (i == period) {
+            // Première valeur
+            finalUpperBand[i] = basicUpperBand[i];
+            finalLowerBand[i] = basicLowerBand[i];
+        } else {
+            // Bande supérieure finale : ne descend que si le prix de clôture précédent était au-dessus
+            finalUpperBand[i] = (basicUpperBand[i] < finalUpperBand[i-1] || closeData[i-1] > finalUpperBand[i-1]) 
+                               ? basicUpperBand[i] 
+                               : finalUpperBand[i-1];
+            
+            // Bande inférieure finale : ne monte que si le prix de clôture précédent était en-dessous
+            finalLowerBand[i] = (basicLowerBand[i] > finalLowerBand[i-1] || closeData[i-1] < finalLowerBand[i-1]) 
+                               ? basicLowerBand[i] 
+                               : finalLowerBand[i-1];
+        }
+    }
+    
+    // Calculer le Supertrend final et la direction
+    for (size_t i = period; i < dataSize; ++i) {
+        if (i == period) {
+            // Première valeur - déterminer la tendance initiale
+            if (closeData[i] <= finalUpperBand[i]) {
+                supertrendValues[i] = finalUpperBand[i];
+                trendDirections[i] = -1; // Tendance baissière
+            } else {
+                supertrendValues[i] = finalLowerBand[i];
+                trendDirections[i] = 1;  // Tendance haussière
+            }
+        } else {
+            // Logique de changement de tendance
+            int prevTrend = trendDirections[i-1];
+            double prevSupertrend = supertrendValues[i-1];
+            
+            if (prevTrend == 1) { // Tendance haussière précédente
+                if (closeData[i] < finalLowerBand[i]) {
+                    // Changement vers tendance baissière
+                    supertrendValues[i] = finalUpperBand[i];
+                    trendDirections[i] = -1;
+                } else {
+                    // Maintien tendance haussière
+                    supertrendValues[i] = finalLowerBand[i];
+                    trendDirections[i] = 1;
+                }
+            } else { // Tendance baissière précédente
+                if (closeData[i] > finalUpperBand[i]) {
+                    // Changement vers tendance haussière
+                    supertrendValues[i] = finalLowerBand[i];
+                    trendDirections[i] = 1;
+                } else {
+                    // Maintien tendance baissière
+                    supertrendValues[i] = finalUpperBand[i];
+                    trendDirections[i] = -1;
+                }
+            }
+        }
+    }
+}
+
 void TechnicalIndicators::calculateStochastic(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,

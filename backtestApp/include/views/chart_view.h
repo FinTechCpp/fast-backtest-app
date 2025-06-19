@@ -31,6 +31,7 @@
 
 #include "dialog/rsi_dialog.h"
 #include "dialog/ema_dialog.h"
+#include "dialog/supertrend_dialog.h"
 #include "dialog/stochastic_dialog.h"
 #include "dialog/atr_dialog.h"
 
@@ -70,6 +71,10 @@ private slots:
     void onEMAChanged(int id, int period);
     void onEMARemoved(int id);
     void onEditEMA();
+
+    void onSupertrendAdded(int id, int period, double multiplier);
+    void onSupertrendChanged(int id, int period, double multiplier);
+    void onSupertrendRemoved(int id);
 
     // Slots pour le Stochastique
     void onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);

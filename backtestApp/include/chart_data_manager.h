@@ -16,6 +16,7 @@
 struct IndicatorCache {
     std::map<int, std::vector<double>> rsi;  // Clé: période, Valeur: données RSI
     std::map<int, std::vector<double>> ema;  // Clé: période, Valeur: données EMA
+    std::map<int, std::vector<double>> supertrend; // Clé: période, Valeur: données SuperTrend
     std::map<std::tuple<int,int,int>, std::pair<std::vector<double>, std::vector<double>>> stochastic;
     std::map<int, std::vector<double>> atr;  // Clé: période, Valeur: données ATR
     bool isValid = false;
@@ -27,6 +28,7 @@ enum class IndicatorType {
     EMA,
     STOCHASTIC,
     ATR,
+    SUPERTREND,
     // autres types futurs
 };
 
@@ -58,6 +60,18 @@ struct EMAInstance : public IndicatorBase {
     int color = 0x0000FF;  // Couleur de la ligne (bleu par défaut)
     
     bool operator==(const EMAInstance& other) const {
+        return id == other.id;
+    }
+};
+
+struct SuperTrendInstance : public IndicatorBase {
+    SuperTrendInstance() : IndicatorBase(IndicatorType::SUPERTREND) {}
+    int period;            // Période pour le SuperTrend
+    double multiplier;     // Multiplicateur pour le SuperTrend
+    int upColor = 0x00AA00;  // Couleur de la ligne (vert par défaut)
+    int downColor = 0xFF0000; // Couleur de la ligne (rouge par défaut)
+
+    bool operator==(const SuperTrendInstance& other) const {
         return id == other.id;
     }
 };
@@ -133,12 +147,14 @@ public:
         // Pour chaque type d'indicateur, stocker les IDs qui ont été agrégés
         std::set<int> validRsiIds;
         std::set<int> validEmaIds;
+        std::set<int> validSupertrendIds;
         std::set<int> validStochasticIds;
         std::set<int> validAtrIds;
 
         // Données des indicateurs
         std::map<int, std::vector<double>> rsiValues;
         std::map<int, std::vector<double>> emaValues;
+        std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
 
@@ -147,6 +163,7 @@ public:
          // Méthodes utilitaires pour vérifier si un indicateur spécifique est valide
         bool isRsiValid(int id) const { return validRsiIds.find(id) != validRsiIds.end(); }
         bool isEmaValid(int id) const { return validEmaIds.find(id) != validEmaIds.end(); }
+        bool isSupertrendValid(int id) const { return validSupertrendIds.find(id) != validSupertrendIds.end(); }
         bool isStochasticValid(int id) const { return validStochasticIds.find(id) != validStochasticIds.end(); }
         bool isAtrValid(int id) const { return validAtrIds.find(id) != validAtrIds.end(); }
     };
@@ -168,12 +185,14 @@ public:
     struct ActiveIndicators {
         std::map<int, std::vector<double>> rsiValues;
         std::map<int, std::vector<double>> emaValues;
+        std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
         
         void clear() {
             rsiValues.clear();
             emaValues.clear();
+            supertrendValues.clear();
             stochasticValues.clear();
             atrValues.clear();
         }
@@ -225,6 +244,7 @@ private:
 
     void calculateRSI(int id, int period);
     void calculateEMA(int id, int period);
+    void calculateSupertrend(int id, int period, double multiplier);
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void calculateATR(int id, int period, bool useLogScale = false);
     

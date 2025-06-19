@@ -301,9 +301,9 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
         }
     }
 
+    // EMA
     for (const auto& [id, values] : m_activeIndicators.emaValues) {
         if (!aggregated.isEmaValid(id)) {
-            // Agréger les EMA
             std::vector<double> emaData = aggregateVector(values, level, Chart::AggregateLast);
             if (!emaData.empty()) {
                 aggregated.emaValues[id] = std::move(emaData);
@@ -312,9 +312,34 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
         }
     }
 
+    // Supertrend
+    for (const auto& [id, valuesPair] : m_activeIndicators.supertrendValues) {
+        if (!aggregated.isSupertrendValid(id)) {
+            const auto& [supertrendValues, trendDirections] = valuesPair;
+            
+            std::vector<double> supertrendData = aggregateVector(supertrendValues, level, Chart::AggregateLast);
+            
+            // Pour les directions, on utilise la dernière valeur (Chart::AggregateLast)
+            // mais on doit d'abord convertir std::vector<int> en std::vector<double>
+            std::vector<double> directionsAsDouble(trendDirections.begin(), trendDirections.end());
+            std::vector<double> directionsData = aggregateVector(directionsAsDouble, level, Chart::AggregateLast);
+            
+            // Reconvertir en std::vector<int>
+            std::vector<int> directionsInt(directionsData.begin(), directionsData.end());
+
+            if (!supertrendData.empty() && !directionsInt.empty() && supertrendData.size() == directionsInt.size()) {
+                aggregated.supertrendValues[id] = std::make_pair(
+                    std::move(supertrendData),
+                    std::move(directionsInt)
+                );
+                aggregated.validSupertrendIds.insert(id);
+            }
+        }
+    }
+
+    // Stochastic
     for (const auto& [id, values] : m_activeIndicators.stochasticValues) {
         if (!aggregated.isStochasticValid(id)) {
-            // Agréger les Stochastic
             const auto& [kValues, dValues] = values;
             std::vector<double> kData = aggregateVector(kValues, level, Chart::AggregateLast);
             std::vector<double> dData = aggregateVector(dValues, level, Chart::AggregateLast);
@@ -329,9 +354,9 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
         }
     }
 
+    // ATR
     for (const auto& [id, values] : m_activeIndicators.atrValues) {
         if (!aggregated.isAtrValid(id)) {
-            // Agréger les ATR
             std::vector<double> atrData = aggregateVector(values, level, Chart::AggregateLast);
             if (!atrData.empty()) {
                 aggregated.atrValues[id] = std::move(atrData);
@@ -405,6 +430,24 @@ void ChartDataManager::calculateEMA(int id, int period)
 
     // Mettre à jour le cache des indicateurs actifs
     m_activeIndicators.emaValues[id] = std::move(emaValues);
+}
+
+void ChartDataManager::calculateSupertrend(int id, int period, double multiplier)
+{
+    // Vérifier si les données nécessaires sont disponibles
+    if (!hasValidData() || period < 2) return;
+
+    // Obtenir les prix
+    const std::vector<double>& highPrices = m_backtestData->getHigh();
+    const std::vector<double>& lowPrices = m_backtestData->getLow();
+    const std::vector<double>& closePrices = m_backtestData->getClose();
+
+    std::vector<double> supertrendValues;
+    std::vector<int> trendDirections;
+    TechnicalIndicators::calculateSupertrend(highPrices, lowPrices, closePrices, period, multiplier, supertrendValues, trendDirections);
+
+    // Mettre à jour le cache des indicateurs actifs
+    m_activeIndicators.supertrendValues[id] = std::make_pair(std::move(supertrendValues), std::move(trendDirections));
 }
 
 void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
@@ -548,7 +591,7 @@ void ChartDataManager::setMaxDisplayPoints(int value) {
 }
 
 void ChartDataManager::calculateIndicator(const IndicatorBase &config)
- {
+{
     // Implémentation spécifique pour chaque type d'indicateur
     // Par exemple, pour RSI, EMA, Stochastic, ATR, etc.
     switch (config.type) {
@@ -568,6 +611,15 @@ void ChartDataManager::calculateIndicator(const IndicatorBase &config)
 
         for (auto& [level, aggregated] : m_aggregatedIndicatorsCache) {
             aggregated.validEmaIds.erase(emaConfig.id);
+        }
+        break;
+    }
+    case IndicatorType::SUPERTREND: {
+        const SuperTrendInstance& supertrendConfig = static_cast<const SuperTrendInstance&>(config);
+        calculateSupertrend(supertrendConfig.id, supertrendConfig.period, supertrendConfig.multiplier);
+
+        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache) {
+            aggregated.validSupertrendIds.erase(supertrendConfig.id);
         }
         break;
     }

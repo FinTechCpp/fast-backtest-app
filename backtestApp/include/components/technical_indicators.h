@@ -52,7 +52,28 @@ public:
      * @param emaValues Vecteur de sortie qui contiendra les valeurs EMA calculées
      */
     static void calculateEMA(const std::vector<double>& closeData, int period, std::vector<double>& emaValues);
-    
+
+    /**
+     * @brief Calcule l'indicateur SuperTrend
+     * 
+     * @param highData Les prix les plus hauts
+     * @param lowData Les prix les plus bas
+     * @param closeData Les prix de clôture
+     * @param period La période pour le calcul du SuperTrend
+     * @param multiplier Le multiplicateur pour le SuperTrend
+     * @param supertrendValues Vecteur de sortie qui contiendra les valeurs SuperTrend calculées
+     * @param trendDirections Vecteur de sortie qui contiendra les directions de tendance (1 pour tendance haussière, -1 pour tendance baissière)
+     */
+    static void calculateSupertrend(
+        const std::vector<double>& highData,
+        const std::vector<double>& lowData,
+        const std::vector<double>& closeData,
+        int period,
+        double multiplier,
+        std::vector<double>& supertrendValues,
+        std::vector<int>& trendDirections
+    );
+
     /**
      * @brief Calcule l'indicateur Stochastique
      * 
@@ -75,6 +96,17 @@ public:
         std::vector<double>& kValues,
         std::vector<double>& dValues);
 
+    /**
+     * @brief Calcule l'Average True Range (ATR)
+     * 
+     * @param highData Les prix les plus hauts
+     * @param lowData Les prix les plus bas
+     * @param closeData Les prix de clôture
+     * @param period La période pour le calcul de l'ATR
+     * @param atrValues Vecteur de sortie qui contiendra les valeurs ATR calculées
+     * @param useLogScale Indique si l'échelle logarithmique doit être utilisée pour l'ATR
+     */
+
     static void calculateATR(
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
@@ -83,4 +115,6 @@ public:
         std::vector<double>& atrValues,
         bool useLogScale = false
     );
+
+
 };

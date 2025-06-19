@@ -50,6 +50,7 @@ public:
         const ChartDataManager::AggregationInfo& aggregationInfo,
         const std::vector<RSIInstance>& rsiInstances,
         const std::vector<EMAInstance>& emaInstances,
+        const std::vector<SuperTrendInstance>& superTrendInstances,
         const std::vector<StochasticInstance>& stochasticInstances,
         const std::vector<ATRInstance>& atrInstances
     );
@@ -91,6 +92,12 @@ private:
 
     void addEMAToChart(FinanceChart* chart, 
         const EMAInstance& ema, 
+        const ChartDataManager& dataManager, 
+        const ChartDataManager::AggregationInfo& aggregationInfo);
+
+        // Ajouter dans la classe ChartRenderer:
+    void addSupertrendToChart(FinanceChart* chart, 
+        const SuperTrendInstance& supertrend, 
         const ChartDataManager& dataManager, 
         const ChartDataManager::AggregationInfo& aggregationInfo);
 

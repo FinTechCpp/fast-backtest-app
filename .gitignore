@@ -5,7 +5,8 @@
 # C++ build files
 *.o
 dist/
-*build/
+*build*/
+
 
 # Debug and development files
 docs/

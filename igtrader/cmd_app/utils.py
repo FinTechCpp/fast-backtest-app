@@ -9,7 +9,6 @@ Modules requis:
 - trading_ig
 - pandas
 - pick
-- readchar
 - readline
 - traceback
 - sys
@@ -20,7 +19,6 @@ import sys
 sys.path.insert(0, '..')
 from igtrader.trading_ig import IGService
 from igtrader.trading_ig_config import config
-import readchar
 import readline
 from pick import pick
 import pandas as pd
@@ -28,17 +26,14 @@ import traceback
 import time
 from datetime import datetime, timezone
 from igtrader.cmd_app.markets import epics_dict
-from pprint import pprint
 import curses
 from curses import wrapper
 import plotext as plt
 import numpy as np
-import talib 
 from igtrader.trading_ig.stream import IGStreamService
 from igtrader.trading_ig.streamer.manager import StreamingManager
 import os
 os.environ['PYWEBVIEW_GUI'] = 'qt'
-from lightweight_charts_esistjosh import Chart
 
 # Liste des options de direction pour les positions
 direction_options = ["BUY", "SELL"]
@@ -767,184 +762,6 @@ def create_position(ig_service):
             curses.endwin()
         except:
             pass
-        
-# ------------Indicateurs techniques----------------
-
-def calculate_atr(data, period=14):
-    """
-    Calcule l'Average True Range (ATR) pour une série de données OHLC.
-    
-    Args:
-        data (pd.DataFrame): Les données avec colonnes High, Low, Close
-        period (int): La période pour le calcul de l'ATR
-        
-    Returns:
-        pd.Series: La série ATR calculée
-    """
-    # Identifier les colonnes requises
-    if ('High' in data.columns and 'Low' in data.columns and 'Close' in data.columns):
-        high = data['High'].values
-        low = data['Low'].values
-        close = data['Close'].values
-    elif ('close', '') in data.columns:  # Si seule la colonne 'close' est disponible
-        close = data[('close', '')].values
-        high = close  # Approximation : utilisez 'close' comme 'high'
-        low = close   # Approximation : utilisez 'close' comme 'low'
-    else:
-        raise KeyError("Les colonnes 'High', 'Low', et 'Close' ou leurs équivalents ne sont pas disponibles dans les données.")
-    
-    # Utiliser TA-Lib directement si disponible
-    try:
-        import talib
-        atr = talib.ATR(high, low, close, timeperiod=period)
-        return pd.Series(atr, index=data.index)
-    except ImportError:
-        # Implémentation manuelle si TA-Lib n'est pas disponible
-        import numpy as np
-        
-        # Calcul du True Range manuellement
-        true_range = np.zeros(len(close))
-        
-        for i in range(1, len(close)):
-            high_low = high[i] - low[i]
-            high_close = abs(high[i] - close[i-1])
-            low_close = abs(low[i] - close[i-1])
-            true_range[i] = max(high_low, high_close, low_close)
-        
-        # Calculer l'ATR comme moyenne mobile simple
-        atr = np.zeros_like(true_range)
-        for i in range(period, len(true_range)):
-            atr[i] = np.mean(true_range[i-period+1:i+1])
-        
-        # Marquer les premières valeurs comme NaN
-        atr[:period] = np.nan
-        
-        return pd.Series(atr, index=data.index)
-
-def calculate_stochastic(data, k_period=10, smoothing_period=3, d_period=7):
-    if not {'High', 'Low', 'Close'}.issubset(data.columns):
-        raise KeyError("Les colonnes 'High', 'Low', et 'Close' sont requises dans les données.")
-
-    # Vérifier si les données sont suffisantes pour calculer les indicateurs
-    if len(data) < max(k_period, smoothing_period, d_period):
-        #print("Pas assez de données pour calculer le stochastique.")
-        return pd.DataFrame(columns=['%K', '%D'])
-
-    # Calcul du plus haut et du plus bas sur la période k_period
-    low_min = data['Low'].rolling(window=k_period).min()
-    high_max = data['High'].rolling(window=k_period).max()
-
-    # Calcul de %K
-    data['%K'] = 100 * ((data['Close'] - low_min) / (high_max - low_min))
-
-    # Lissage de %K
-    data['%K'] = data['%K'].rolling(window=smoothing_period).mean()
-
-    # Calcul de %D (moyenne mobile de %K)
-    data['%D'] = data['%K'].rolling(window=d_period).mean()
-
-    # Supprimer les lignes avec des NaN
-    data = data.dropna(subset=['%K', '%D'])
-
-    return data[['%K', '%D']]
-
-def calculate_supertrend(data, atr_period=50, multiplier=100):
-    """
-    Calcule l'indicateur technique Supertrend.
-    
-    Args:
-        data (pd.DataFrame): DataFrame contenant les données OHLC
-        atr_period (int): Période pour le calcul de l'ATR. Par défaut 14.
-        multiplier (float): Multiplicateur pour les bandes. Par défaut 3.
-    
-    Returns:
-        pd.DataFrame: DataFrame contenant les valeurs du Supertrend
-    """
-    # Extraire les colonnes high, low, close selon la structure du DataFrame
-    high, low, close = None, None, None
-    
-    # Vérifier différentes structures possibles de DataFrame
-    if {'High', 'Low', 'Close'}.issubset(data.columns):
-        high = data['High']
-        low = data['Low']
-        close = data['Close']
-    elif {('bid', 'High'), ('bid', 'Low'), ('bid', 'Close')}.issubset(data.columns):
-        high = data[('bid', 'High')]
-        low = data[('bid', 'Low')]
-        close = data[('bid', 'Close')]
-    else:
-        # Si on a uniquement le prix de clôture, on l'utilise comme approximation
-        if 'close' in data.columns:
-            close = data['close']
-            high = close
-            low = close
-        elif ('close', '') in data.columns:
-            close = data[('close', '')]
-            high = close
-            low = close
-        else:
-            raise KeyError("Les colonnes High, Low, Close ou une colonne close sont requises.")
-    
-    # Calcul de l'ATR
-    atr = calculate_atr(data, period=atr_period)
-    
-    # Calcul des bandes
-    hl2 = (high + low) / 2
-    upper_band = hl2 + (multiplier * atr)
-    lower_band = hl2 - (multiplier * atr)
-    
-    # Initialisation du DataFrame résultat
-    st = pd.DataFrame(index=data.index)
-    st['UpperBand'] = upper_band
-    st['LowerBand'] = lower_band
-    st['SuperTrend'] = np.nan
-    st['Direction'] = np.nan
-    
-    # Trouver l'index de départ (premier point non-NaN)
-    start_idx = 0
-    for i in range(len(data)):
-        if not np.isnan(atr.iloc[i]):
-            start_idx = i
-            break
-    
-    if np.isnan(atr).all():
-        return pd.DataFrame(index=data.index, columns=['UpperBand','LowerBand','SuperTrend', 'Direction'], data=np.nan)
-    
-    # Premier calcul
-    st.iloc[start_idx, 2] = lower_band.iloc[start_idx]  # Supertrend initial
-    st.iloc[start_idx, 3] = 1  # Direction initiale haussière
-    
-    # Calcul du Supertrend pour chaque point suivant
-    for i in range(start_idx + 1, len(data)):
-        prev_supertrend = st.iloc[i-1, 2]
-        prev_direction = st.iloc[i-1, 3]
-        
-        # Si la tendance précédente était haussière
-        if prev_direction == 1:
-            curr_lower_band = max(lower_band.iloc[i], prev_supertrend)
-            
-            if close.iloc[i] < curr_lower_band:
-                # Changement vers tendance baissière
-                st.iloc[i, 2] = upper_band.iloc[i]
-                st.iloc[i, 3] = -1
-            else:
-                # Maintien tendance haussière
-                st.iloc[i, 2] = curr_lower_band
-                st.iloc[i, 3] = 1
-        
-        # Si la tendance précédente était baissière
-        else:
-            curr_upper_band = min(upper_band.iloc[i], prev_supertrend)
-            
-            if close.iloc[i] > curr_upper_band:
-                # Changement vers tendance haussière
-                st.iloc[i, 2] = lower_band.iloc[i]
-                st.iloc[i, 3] = 1
-            else:
-                # Maintien tendance baissière
-                st.iloc[i, 2] = curr_upper_band
-                st.iloc[i, 3] = -1 
-    return st
 
 # ------------Menu principal----------------
 def display_menu():

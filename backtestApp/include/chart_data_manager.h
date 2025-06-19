@@ -169,23 +169,6 @@ public:
         AggregationLevel level;
         bool isValid = false;
     };
-    
-    // Structure pour stocker les indicateurs actifs
-    struct ActiveIndicators {
-        std::map<int, std::vector<double>> rsiValues;
-        std::map<int, std::vector<double>> emaValues;
-        std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
-        std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
-        std::map<int, std::vector<double>> atrValues;
-        
-        void clear() {
-            rsiValues.clear();
-            emaValues.clear();
-            supertrendValues.clear();
-            stochasticValues.clear();
-            atrValues.clear();
-        }
-    };
 
     struct AggregatedIndicators {
         // Pour chaque type d'indicateur, stocker les IDs qui ont été agrégés
@@ -243,7 +226,7 @@ public:
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
     const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
     const std::vector<std::shared_ptr<be::Trade>>& getTrades() const { return m_trades; }
-    const ActiveIndicators& getActiveIndicators() const { return m_activeIndicators; }
+    const AggregatedIndicators& getActiveIndicators() const { return getAggregatedIndicators(AggregationLevel::Raw); }
     const AggregatedIndicators& getAggregatedIndicators(AggregationLevel level) const;
     bool hasValidData() const;
 
@@ -339,20 +322,6 @@ private:
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void calculateATR(int id, int period, bool useLogScale = false);
 
-
-    
-    // template<typename T>
-    // int addIndicatorImpl(const T& config, std::vector<T>& container);
-
-    // template<typename T>
-    // T* findIndicator(int id, std::vector<T>& instances);
-    
-    // template<typename T>
-    // bool setIndicatorConfigImpl(const T& config, std::vector<T>& container);
-    
-    // template<typename T>
-    // bool removeIndicatorImpl(int id, std::vector<T>& container);
-
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;
     size_t findClosestIndex(const std::vector<double>& values, double target, bool searchForward = false) const;
@@ -366,17 +335,9 @@ private:
     HeikinAshiCache m_heikinAshiCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;
-    ActiveIndicators m_activeIndicators;
 
     // ID unique global pour tous les types d'indicateurs
     int m_nextIndicatorId = 1;
-    // std::vector<RSIInstance> m_rsiInstances;  ///< Instances de RSI actives
-    // std::vector<EMAInstance> m_emaInstances;  ///< Instances d'EMA actives
-    // std::vector<SuperTrendInstance> m_superTrendInstances; ///< Instances de SuperTrend actives
-    // std::vector<StochasticInstance> m_stochasticInstances; ///< Instances de Stochastique actives
-    // std::vector<ATRInstance> m_atrInstances;  ///< Instances d'ATR actives
-
-
     std::vector<std::unique_ptr<IndicatorBase>> m_indicators; ///< Toutes les instances d'indicateurs actives
 
     // Constantes

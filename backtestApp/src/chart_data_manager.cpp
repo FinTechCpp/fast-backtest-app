@@ -26,18 +26,14 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
     
     m_aggregatedOHLCVCache.clear();
     m_aggregatedIndicatorsCache.clear();
-    m_activeIndicators.clear();
 }
 
-void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>> &trades) {
+void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
     m_trades = trades;
 }
 
 void ChartDataManager::setEquityCurve(const std::vector<double>& equityCurve) {
-    if (equityCurve.empty() || !m_backtestData) {
-        qWarning() << "Courbe d'équité vide ou données de prix invalides";
-        return;
-    }
+    if (equityCurve.empty() || !m_backtestData) return;
     
     size_t numPoints = equityCurve.size();
     size_t numBars = m_backtestData->size();
@@ -46,10 +42,7 @@ void ChartDataManager::setEquityCurve(const std::vector<double>& equityCurve) {
     m_equityData = EquityData();
     
     // Valider les tailles
-    if (numPoints != numBars) {
-        qWarning() << "Tailles incompatibles: equityCurve:" << numPoints << "data:" << numBars;
-        return;
-    }
+    if (numPoints != numBars) return;
     
     // Préallouer pour le pire cas
     m_equityData.timestamps.reserve(numPoints);
@@ -289,7 +282,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     // pour l'instant on ne gère que le niveau Raw
 
 
-    for (const auto& [id, values] : m_activeIndicators.rsiValues) {
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].rsiValues) {
         if (!aggregated.isRsiValid(id)) {
             // Agréger les RSI
             std::vector<double> rsiData = aggregateVector(values, level, Chart::AggregateLast);
@@ -301,7 +294,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 
     // EMA
-    for (const auto& [id, values] : m_activeIndicators.emaValues) {
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].emaValues) {
         if (!aggregated.isEmaValid(id)) {
             std::vector<double> emaData = aggregateVector(values, level, Chart::AggregateLast);
             if (!emaData.empty()) {
@@ -312,7 +305,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 
     // Supertrend
-    for (const auto& [id, valuesPair] : m_activeIndicators.supertrendValues) {
+    for (const auto& [id, valuesPair] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].supertrendValues) {
         if (!aggregated.isSupertrendValid(id)) {
             const auto& [supertrendValues, trendDirections] = valuesPair;
             
@@ -337,7 +330,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 
     // Stochastic
-    for (const auto& [id, values] : m_activeIndicators.stochasticValues) {
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].stochasticValues) {
         if (!aggregated.isStochasticValid(id)) {
             const auto& [kValues, dValues] = values;
             std::vector<double> kData = aggregateVector(kValues, level, Chart::AggregateLast);
@@ -354,7 +347,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 
     // ATR
-    for (const auto& [id, values] : m_activeIndicators.atrValues) {
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].atrValues) {
         if (!aggregated.isAtrValid(id)) {
             std::vector<double> atrData = aggregateVector(values, level, Chart::AggregateLast);
             if (!atrData.empty()) {
@@ -412,7 +405,7 @@ void ChartDataManager::calculateRSI(int id, int period)
     TechnicalIndicators::calculateRSI(closePrices, period, rsiValues);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_activeIndicators.rsiValues[id] = std::move(rsiValues);
+    m_aggregatedIndicatorsCache[AggregationLevel::Raw].rsiValues[id] = std::move(rsiValues);
 }
 
 void ChartDataManager::calculateEMA(int id, int period) {
@@ -426,7 +419,7 @@ void ChartDataManager::calculateEMA(int id, int period) {
     TechnicalIndicators::calculateEMA(closePrices, period, emaValues);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_activeIndicators.emaValues[id] = std::move(emaValues);
+    m_aggregatedIndicatorsCache[AggregationLevel::Raw].emaValues[id] = std::move(emaValues);
 }
 
 void ChartDataManager::calculateSupertrend(int id, int period, double multiplier) {
@@ -443,7 +436,7 @@ void ChartDataManager::calculateSupertrend(int id, int period, double multiplier
     TechnicalIndicators::calculateSupertrend(highPrices, lowPrices, closePrices, period, multiplier, supertrendValues, trendDirections);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_activeIndicators.supertrendValues[id] = std::make_pair(std::move(supertrendValues), std::move(trendDirections));
+    m_aggregatedIndicatorsCache[AggregationLevel::Raw].supertrendValues[id] = std::make_pair(std::move(supertrendValues), std::move(trendDirections));
 }
 
 void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod) {
@@ -460,7 +453,7 @@ void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPer
     TechnicalIndicators::calculateStochastic(highPrices, lowPrices, closePrices, fastKPeriod, slowKPeriod, slowDPeriod, stochasticKValues, stochasticDValues);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_activeIndicators.stochasticValues[id] = std::make_pair(std::move(stochasticKValues), std::move(stochasticDValues));
+    m_aggregatedIndicatorsCache[AggregationLevel::Raw].stochasticValues[id] = std::make_pair(std::move(stochasticKValues), std::move(stochasticDValues));
 }
 
 void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
@@ -476,7 +469,7 @@ void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
     TechnicalIndicators::calculateATR(highPrices, lowPrices, closePrices, period, atrValues, useLogScale);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_activeIndicators.atrValues[id] = std::move(atrValues);
+    m_aggregatedIndicatorsCache[AggregationLevel::Raw].atrValues[id] = std::move(atrValues);
 }
 
 // // Méthode utilitaire pour configurer le sélecteur d'agrégation

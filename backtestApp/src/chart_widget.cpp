@@ -101,31 +101,6 @@ void ChartWidget::setChartType(ChartDataManager::ChartType chartType)
         updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
-RSIInstance *ChartWidget::findRSI(int id)
-{
-    return m_dataManager.findIndicator<RSIInstance>(id);
-}
-
-EMAInstance *ChartWidget::findEMA(int id)
-{
-    return m_dataManager.findIndicator<EMAInstance>(id);
-}
-
-SuperTrendInstance *ChartWidget::findSuperTrend(int id)
-{
-    return m_dataManager.findIndicator<SuperTrendInstance>(id);
-}
-
-StochasticInstance *ChartWidget::findStochastic(int id)
-{
-    return m_dataManager.findIndicator<StochasticInstance>(id);
-}
-
-ATRInstance *ChartWidget::findATR(int id)
-{
-    return m_dataManager.findIndicator<ATRInstance>(id);
-}
-
 bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
     if (!m_dataManager.hasValidData() || !m_chartViewer) {
         return false;
@@ -279,7 +254,6 @@ void ChartWidget::setRulerToolEnabled(bool enabled)
 
 //-----Indicators Implementation-----
 int ChartWidget::addRSI(const RSIInstance &config) {
-    // int id = m_dataManager.addRSI(config);
     int id = m_dataManager.addIndicator(config);
 
     emit rsiAdded(id, config.period);
@@ -291,16 +265,14 @@ int ChartWidget::addRSI(const RSIInstance &config) {
 }
 
 bool ChartWidget::setRSIConfig(const RSIInstance &config) {
-    if (m_dataManager.updateIndicator(config)) {
-        emit rsiChanged(config.id, config.period);
+    if (!m_dataManager.updateIndicator(config)) return false;
 
-        if (m_dataManager.hasValidData() && m_chartViewer)
-            updateChartDisplay(ViewPortMode::USE_CURRENT);
+    emit rsiChanged(config.id, config.period);
 
-        return true;
-    }
+    if (m_dataManager.hasValidData() && m_chartViewer)
+        updateChartDisplay(ViewPortMode::USE_CURRENT);
 
-    return false;
+    return true;
 }
 
 bool ChartWidget::removeRSI(int id) {
@@ -442,83 +414,6 @@ bool ChartWidget::removeATR(int id) {
 
     return true;
 }
-
-// template <typename T>
-// T *ChartWidget::findIndicator(int id, std::vector<T> &instances)
-// {
-//     auto it = std::find_if(instances.begin(), instances.end(),
-//                          [id](const T& instance) { return instance.id == id; });
-
-//     if (it == instances.end())
-//         return nullptr;
-
-//     return &(*it);
-// }
-
-// template <typename T, typename Container>
-// int ChartWidget::addIndicatorImpl(const T &configIn, Container &container)
-// {
-//     // Créer une copie pour pouvoir modifier l'ID
-//     T config = configIn;
-//     config.id = m_nextIndicatorId++;
-    
-//     // Ajouter aux instances
-//     container.push_back(config);
-
-//     // Methode a implementer dans ChartDataManager
-//     m_dataManager.calculateIndicator(config);
-    
-//     // Mettre à jour le graphique si nécessaire
-//     if (m_dataManager.hasValidData() && m_chartViewer)
-//         updateChartDisplay(ViewPortMode::USE_CURRENT);
-    
-//     return config.id;
-// }
-
-// template<typename T, typename Container>
-// bool ChartWidget::setIndicatorConfigImpl(const T& config, Container& container, bool needsRecalculation)
-// {
-//     auto it = std::find_if(container.begin(), container.end(),
-//                          [config](const T& item) { return item.id == config.id; });
-
-//     if (it == container.end()) {
-//         return false;
-//     }
-    
-//     // Mettre à jour la configuration mais préserver l'ID
-//     *it = config;
-
-//     if (needsRecalculation) {
-//         // S'assurer que les données sont recalculées
-//         m_dataManager.calculateIndicator(config);
-//     }
-
-//     // Mettre à jour le graphique
-//     if (m_dataManager.hasValidData())
-//         updateChartDisplay(ViewPortMode::USE_CURRENT);
-    
-//     return true;
-// }
-
-// template<typename T, typename Container>
-// bool ChartWidget::removeIndicatorImpl(int id, Container& container)
-// {
-//     auto it = std::find_if(container.begin(), container.end(),
-//                          [id](const T& item) { return item.id == id; });
-    
-//     if (it == container.end()) {
-//         return false;
-//     }
-    
-//     // Supprimer l'instance
-//     container.erase(it);
-    
-//     // Mettre à jour le graphique
-//     if (m_dataManager.hasValidData())
-//         updateChartDisplay(ViewPortMode::USE_CURRENT);
-    
-//     return true;
-// }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {
     return Chart::chartTime(date.getYear(), date.getMonth(), date.getDay(), date.getHour(), date.getMinute(), date.getSecond());

@@ -170,7 +170,7 @@ public:
         bool isValid = false;
     };
 
-    struct AggregatedIndicators {
+    struct IndicatorData {
         // Pour chaque type d'indicateur, stocker les IDs qui ont été agrégés
         std::set<int> validRsiIds;
         std::set<int> validEmaIds;
@@ -226,8 +226,8 @@ public:
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
     const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
     const std::vector<std::shared_ptr<be::Trade>>& getTrades() const { return m_trades; }
-    const AggregatedIndicators& getActiveIndicators() const { return getAggregatedIndicators(AggregationLevel::Raw); }
-    const AggregatedIndicators& getAggregatedIndicators(AggregationLevel level) const;
+    const IndicatorData& getActiveIndicators() const { return getAggregatedIndicators(AggregationLevel::Raw); }
+    const IndicatorData& getAggregatedIndicators(AggregationLevel level) const;
     bool hasValidData() const;
 
     // methode utilitaires peut etre a deplacer
@@ -243,7 +243,7 @@ public:
     void removeAllIndicators();
 
 
-    // nouvelle API : 
+    // Ici il faut implementer le vole de données avec move
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
     int addIndicator(const T &config) {
         std::unique_ptr<IndicatorBase> indicator = std::make_unique<T>(config);
@@ -258,11 +258,10 @@ public:
     }
 
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
-    T* findIndicator(int id) {
-        for (auto& indicator : m_indicators) {
+    T* findIndicator(int id) const {
+        for (auto& indicator : m_indicators)
             if (indicator->id == id && indicator->type_ == T().type_)
                 return static_cast<T*>(indicator.get());
-        }
         return nullptr;
     }
 
@@ -297,11 +296,9 @@ public:
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
     std::vector<const T*> getIndicatorsOfType() const {
         std::vector<const T*> result;
-        for (const auto& indicator : m_indicators) {
-            if (indicator->type_ == T().type_) {
+        for (const auto& indicator : m_indicators)
+            if (indicator->type_ == T().type_)
                 result.push_back(static_cast<const T*>(indicator.get()));
-            }
-        }
         return result;
     }
     
@@ -331,7 +328,7 @@ private:
     std::shared_ptr<const be::Data> m_backtestData;
     std::vector<double> m_timestampsCache;
     std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregatedOHLCVCache;
-    std::unordered_map<AggregationLevel, AggregatedIndicators> m_aggregatedIndicatorsCache;
+    std::unordered_map<AggregationLevel, IndicatorData> m_aggregatedIndicatorsCache;
     HeikinAshiCache m_heikinAshiCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;

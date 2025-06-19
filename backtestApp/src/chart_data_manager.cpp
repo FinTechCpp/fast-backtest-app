@@ -276,7 +276,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     if (m_aggregatedIndicatorsCache.find(level) == m_aggregatedIndicatorsCache.end())
         m_aggregatedIndicatorsCache[level].level = level;
     
-    AggregatedIndicators& aggregated = m_aggregatedIndicatorsCache[level];
+    IndicatorData& aggregated = m_aggregatedIndicatorsCache[level];
 
     // il faut trouvé le niveau d'agrégation source comme pour les OHLCV
     // pour l'instant on ne gère que le niveau Raw
@@ -683,8 +683,8 @@ size_t ChartDataManager::findClosestIndex(const std::vector<double>& values, dou
     }
 }
 
-const ChartDataManager::AggregatedIndicators &ChartDataManager::getAggregatedIndicators(AggregationLevel level) const {
-    static AggregatedIndicators emptyIndicators;
+const ChartDataManager::IndicatorData &ChartDataManager::getAggregatedIndicators(AggregationLevel level) const {
+    static IndicatorData emptyIndicators;
     auto it = m_aggregatedIndicatorsCache.find(level);
     if (it != m_aggregatedIndicatorsCache.end())
         return it->second;

@@ -44,12 +44,12 @@ public:
     std::vector<const SuperTrendInstance*> getSuperTrendInstances() const { return m_dataManager.getIndicatorsOfType<SuperTrendInstance>(); }
     std::vector<const StochasticInstance*> getStochasticInstances() const { return m_dataManager.getIndicatorsOfType<StochasticInstance>(); }
     std::vector<const ATRInstance*> getATRInstances() const { return m_dataManager.getIndicatorsOfType<ATRInstance>(); }
-    RSIInstance* findRSI(int id);
-    EMAInstance* findEMA(int id);
-    SuperTrendInstance* findSuperTrend(int id);
-    StochasticInstance* findStochastic(int id);
-    ATRInstance* findATR(int id);
-   
+    RSIInstance* findRSI(int id) const { return m_dataManager.findIndicator<RSIInstance>(id); }
+    EMAInstance* findEMA(int id) const { return m_dataManager.findIndicator<EMAInstance>(id); }
+    SuperTrendInstance* findSuperTrend(int id) const { return m_dataManager.findIndicator<SuperTrendInstance>(id); }
+    StochasticInstance* findStochastic(int id) const { return m_dataManager.findIndicator<StochasticInstance>(id); }
+    ATRInstance* findATR(int id) const { return m_dataManager.findIndicator<ATRInstance>(id); }
+
     // État du graphique
     bool hasValidData() const; // ne devrait pas etre un probleme les class exterieur s'enfoutent de si les données sont valides
     bool isChartCreated() const;

@@ -16,6 +16,7 @@ cd "$SCRIPT_DIR"
 DEBUG=0
 CLEAN=0
 RUN_APP=1
+APP_NAME="backtestapp"  # Application par défaut
 
 for arg in "$@"
 do
@@ -31,6 +32,32 @@ do
         --no-run)
         RUN_APP=0
         shift
+        ;;
+        --cmd-app)
+        APP_NAME="ig_cmd_app"
+        shift
+        ;;
+        --backtest-app)
+        APP_NAME="backtestapp"
+        shift
+        ;;
+        --help|-h)
+        echo "Usage: $0 [OPTIONS]"
+        echo ""
+        echo "Options:"
+        echo "  --debug         Compiler en mode debug"
+        echo "  --clean         Nettoyer le dossier build avant compilation"
+        echo "  --no-run        Ne pas exécuter l'application après compilation"
+        echo "  --cmd-app       Compiler et exécuter l'application en ligne de commande IG"
+        echo "  --backtest-app  Compiler et exécuter l'application de backtest (défaut)"
+        echo "  --help, -h      Afficher cette aide"
+        echo ""
+        echo "Exemples:"
+        echo "  $0                     # Compile et lance l'app de backtest"
+        echo "  $0 --cmd-app          # Compile et lance l'app IG en ligne de commande"
+        echo "  $0 --debug --cmd-app  # Compile en debug et lance l'app IG"
+        echo "  $0 --clean --no-run   # Nettoie et compile sans lancer"
+        exit 0
         ;;
     esac
 done
@@ -78,21 +105,31 @@ make -j$(nproc) || { show_error "Échec de la compilation"; exit 1; }
 
 show_success "Compilation terminée!"
 
-# Créer le chemin vers l'exécutable
-APP_PATH="./backtestApp/backtestapp"
+# Créer le chemin vers l'exécutable selon l'application choisie
+if [ "$APP_NAME" = "ig_cmd_app" ]; then
+    APP_PATH="./bin/ig_cmd_app"
+    APP_DISPLAY_NAME="IG Command Line App"
+else
+    APP_PATH="./backtestApp/backtestapp"
+    APP_DISPLAY_NAME="Backtest App"
+fi
 
 # Afficher un message sur comment lancer l'application
 echo -e "${YELLOW}${BOLD}[INFO]${NC} Chemin de l'application: ${BOLD}./build${APP_PATH:1}${NC}"
+echo -e "${YELLOW}${BOLD}[INFO]${NC} Application sélectionnée: ${BOLD}$APP_DISPLAY_NAME${NC}"
 
 # Lancer l'application si demandé
 if [ $RUN_APP -eq 1 ]; then
-    show_step "Lancement de l'application..."
+    show_step "Lancement de $APP_DISPLAY_NAME..."
     if [ -f "$APP_PATH" ]; then
         echo -e "${GREEN}${BOLD}[EXÉCUTION]${NC} $APP_PATH"
         $APP_PATH
     else
         show_error "L'exécutable n'existe pas: $APP_PATH"
         echo "Vérifiez que le chemin est correct et que la compilation a réussi."
+        echo "Applications disponibles:"
+        echo "  - Backtest App: ./build/backtestApp/backtestapp"
+        echo "  - IG Command App: ./build/bin/ig_cmd_app"
         exit 1
     fi
 fi

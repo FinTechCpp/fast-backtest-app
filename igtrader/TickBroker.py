@@ -2,9 +2,6 @@ from igtrader.trading_ig.rest import IGService
 from igtrader.trading_ig.config import config
 from igtrader.trading_ig.stream import IGStreamService
 from igtrader.trading_ig.streamer.manager import StreamingManager
-from igtrader.trading_ig.streamer.candler import CandleSubscription
-import pandas as pd
-import numpy as np
 import datetime
 import logging
 import threading
@@ -13,9 +10,8 @@ import math
 from collections import deque
 import traceback
 from enum import Enum
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass
 from pandas import Timestamp
-from typing import Optional, Dict, Any, List
 # Ajouter ces imports
 import time
 from functools import wraps

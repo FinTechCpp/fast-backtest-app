@@ -314,8 +314,8 @@ def get_historical_prices(ig_service):
     Args:
         ig_service (IGService): Le service IG initialisé.
     """
-    selected_epic, selected_data = select_from_dict(epics_dict)
-    selected_resolution, selected_resolution_data = select_from_dict(resolution_dict)
+    selected_epic, _ = select_from_dict(epics_dict)
+    selected_resolution, _ = select_from_dict(resolution_dict)
     num_points_default = "50"
     num_points = prefill_input(f"Nombre de points (1-1000): ", num_points_default) 
     print(f"Récupération des prix historiques pour '{selected_epic}'...")

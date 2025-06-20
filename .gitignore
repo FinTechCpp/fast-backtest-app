@@ -11,6 +11,7 @@ dist/
 # Debug and development files
 docs/
 *.pyc
+*.egg-info*
 *.log
 perf.data
 

@@ -132,6 +132,8 @@ add_subdirectory(strategies)
 add_subdirectory(backtestAdapter)
 add_subdirectory(ChartDirector)
 add_subdirectory(backtestApp)
+add_subdirectory(igtrader)
+add_subdirectory(igApp)
 
 # Afficher un résumé de la configuration
 message(STATUS "=========================================")

@@ -115,11 +115,22 @@ public:
     cpr::Response req(const std::string& action, const std::string& endpoint, 
                      const std::string& params, const std::string& version);
 
+    /**
+     *  @brief Get current session headers
+     *  @return Current session headers
+     */
+    const std::unordered_map<std::string, std::string>& GetHeaders() const {
+        return current_headers_;
+    }
+    
+public: // Make public
+    std::unordered_map<std::string, std::string> current_headers_; // Make public
+    
 private:
     std::string base_url_;
     std::string api_key_;
     std::shared_ptr<cpr::Session> session_;
-
+    
     /**
      * @brief Construct full URL from endpoint
      * @param endpoint API endpoint
@@ -127,6 +138,7 @@ private:
      */
     std::string buildUrl(const std::string& endpoint) const;
 };
+
 
 /**
  * @brief Main IG API service class
@@ -160,18 +172,15 @@ public:
     
     /**
      * @brief Create a new session
-     * @param encryption Whether to encrypt password
-     * @param version API version
      * @return Session details
      */
-    nlohmann::json create_session(bool encryption = false, const std::string& version = "2");
+    nlohmann::json create_session();
     
     /**
      * @brief Refresh the current session
-     * @param version API version
      * @return HTTP status code
      */
-    int refresh_session(const std::string& version = "1");
+    int refresh_session();
     
     /**
      * @brief Switch to a different account
@@ -193,7 +202,7 @@ public:
      * @param fetch_session_tokens Whether to fetch session tokens
      * @return Session details
      */
-    nlohmann::json read_session(const std::string& fetch_session_tokens = "false");
+    nlohmann::json read_session();
     
     /**
      * @brief Log out of the current session
@@ -288,10 +297,9 @@ public:
     
     /**
      * @brief Get all open positions
-     * @param version API version
      * @return Open positions
      */
-    nlohmann::json fetch_open_positions(const std::string& version = "2");
+    nlohmann::json fetch_open_positions();
     
     /**
      * @brief Close an open position
@@ -424,6 +432,8 @@ private:
     std::unique_ptr<std::thread> token_bucket_trading_thread_;
     std::unique_ptr<std::thread> token_bucket_non_trading_thread_;
     
+    std::string authorization_header_;
+
     /**
      * @brief Setup rate limiter
      */
@@ -503,5 +513,8 @@ private:
                           const std::string& params, const std::string& version = "1",
                           bool check = true);
 };
+
+// Convert user-friendly resolution format to IG API format
+std::string conv_resol(const std::string& resolution);
 
 } // namespace ig

@@ -2,10 +2,7 @@
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
-#include <cryptopp/rsa.h>
-#include <cryptopp/base64.h>
-#include <cryptopp/osrng.h>
-#include <cryptopp/pssr.h>
+#include <algorithm>
 #include <chrono>
 #include <thread>
 #include <queue>
@@ -50,8 +47,45 @@ bool api_limit_hit(const std::string& response_text) {
 }
 
 bool token_invalid(const std::string& response_text) {
-    return response_text.find("oauth-token-invalid") != std::string::npos ||
-           response_text.find("client-token-invalid") != std::string::npos;
+    return response_text.find("oauth-token-invalid") != std::string::npos;
+}
+
+// Convert user-friendly resolution format to IG API format
+std::string conv_resol(const std::string& resolution) {
+    static const std::unordered_map<std::string, std::string> resolution_map = {
+        {"1s", "SECOND"},
+        {"1Min", "MINUTE"},
+        {"2Min", "MINUTE_2"},
+        {"3Min", "MINUTE_3"},
+        {"5Min", "MINUTE_5"},
+        {"10Min", "MINUTE_10"},
+        {"15Min", "MINUTE_15"},
+        {"30Min", "MINUTE_30"},
+        {"1h", "HOUR"},
+        {"1H", "HOUR"},
+        {"2h", "HOUR_2"},
+        {"2H", "HOUR_2"},
+        {"3h", "HOUR_3"},
+        {"3H", "HOUR_3"},
+        {"4h", "HOUR_4"},
+        {"4H", "HOUR_4"},
+        {"D", "DAY"},
+        {"W", "WEEK"},
+        {"M", "MONTH"}
+    };
+    
+    auto it = resolution_map.find(resolution);
+    if (it != resolution_map.end()) {
+        return it->second;
+    } 
+    
+    // Try some common alternatives
+    if (resolution == "15M") return "MINUTE_15";
+    if (resolution == "30M") return "MINUTE_30";
+    if (resolution == "1d" || resolution == "1D") return "DAY";
+    
+    spdlog::warn("Resolution '{}' not recognized, using as-is", resolution);
+    return resolution;
 }
 
 // IGSessionCRUD implementation
@@ -59,10 +93,17 @@ IGSessionCRUD::IGSessionCRUD(const std::string& base_url, const std::string& api
                              std::shared_ptr<cpr::Session> session)
     : base_url_(base_url), api_key_(api_key), session_(session) {
     
-    // Set default headers
-    session_->SetHeader(cpr::Header{{"X-IG-API-KEY", api_key_},
-                                   {"Content-Type", "application/json"},
-                                   {"Accept", "application/json; charset=UTF-8"}});
+    // Set default headers and track them
+    current_headers_["X-IG-API-KEY"] = api_key_;
+    current_headers_["Content-Type"] = "application/json";
+    current_headers_["Accept"] = "application/json; charset=UTF-8";
+    
+    // Set in the session
+    session_->SetHeader(cpr::Header{
+        {"X-IG-API-KEY", api_key_},
+        {"Content-Type", "application/json"},
+        {"Accept", "application/json; charset=UTF-8"}
+    });
 }
 
 std::string IGSessionCRUD::buildUrl(const std::string& endpoint) const {
@@ -72,7 +113,39 @@ std::string IGSessionCRUD::buildUrl(const std::string& endpoint) const {
 cpr::Response IGSessionCRUD::create(const std::string& endpoint, const std::string& params, 
                                   const std::string& version) {
     std::string url = buildUrl(endpoint);
-    session_->SetHeader(cpr::Header{{"VERSION", version}});
+    
+    spdlog::info("Making POST request to: {}", url);
+    
+    // Create header map with all required headers
+    cpr::Header headers = {
+        {"X-IG-API-KEY", api_key_},
+        {"VERSION", version},
+        {"Content-Type", "application/json"},
+        {"Accept", "application/json; charset=UTF-8"}
+    };
+    
+    // Add Authorization header if it exists in our tracked headers
+    if (current_headers_.find("Authorization") != current_headers_.end()) {
+        spdlog::info("Including Authorization header in request");
+        headers["Authorization"] = current_headers_["Authorization"];
+    } else {
+        spdlog::warn("No Authorization header found for request");
+    }
+
+    // Add IG-ACCOUNT-ID header if it exists in our tracked headers
+    if (current_headers_.find("IG-ACCOUNT-ID") != current_headers_.end()) {
+        spdlog::info("Including IG-ACCOUNT-ID header: {}", current_headers_["IG-ACCOUNT-ID"]);
+        headers["IG-ACCOUNT-ID"] = current_headers_["IG-ACCOUNT-ID"];
+    } else {
+        spdlog::warn("No IG-ACCOUNT-ID header found for request");
+    }
+    
+    // Update our tracked headers
+    current_headers_["VERSION"] = version;
+    
+    // Set all headers at once
+    session_->SetHeader(headers);
+    
     session_->SetUrl(cpr::Url{url});
     session_->SetBody(cpr::Body{params});
     auto response = session_->Post();
@@ -90,11 +163,47 @@ cpr::Response IGSessionCRUD::create(const std::string& endpoint, const std::stri
 cpr::Response IGSessionCRUD::read(const std::string& endpoint, const std::string& params, 
                                 const std::string& version) {
     std::string url = buildUrl(endpoint);
-    session_->SetHeader(cpr::Header{{"VERSION", version}});
+    
+    spdlog::info("Making GET request to: {}", url);
+    
+    // Create header map with all required headers
+    cpr::Header headers = {
+        {"X-IG-API-KEY", api_key_},
+        {"VERSION", version},
+        {"Content-Type", "application/json"},
+        {"Accept", "application/json; charset=UTF-8"}
+    };
+    
+    // Add Authorization header if it exists in our tracked headers
+    if (current_headers_.find("Authorization") != current_headers_.end()) {
+        spdlog::info("Including Authorization header in request");
+        headers["Authorization"] = current_headers_["Authorization"];
+    } else {
+        spdlog::warn("No Authorization header found for request");
+    }
+
+    // Add IG-ACCOUNT-ID header if it exists in our tracked headers
+    if (current_headers_.find("IG-ACCOUNT-ID") != current_headers_.end()) {
+        spdlog::info("Including IG-ACCOUNT-ID header: {}", current_headers_["IG-ACCOUNT-ID"]);
+        headers["IG-ACCOUNT-ID"] = current_headers_["IG-ACCOUNT-ID"];
+    } else {
+        spdlog::warn("No IG-ACCOUNT-ID header found for request");
+    }
+    
+    // Update our tracked headers
+    current_headers_["VERSION"] = version;
+    
+    // Set all headers at once
+    session_->SetHeader(headers);
+    
+    // Log headers for debugging
+    spdlog::info("Headers - API Key: {}..., Version: {}", api_key_.substr(0, 8), version);
+    
     session_->SetUrl(cpr::Url{url});
     
     // For GET requests, params should be URL parameters, not body
     if (!params.empty()) {
+        spdlog::info("Request params: {}", params);
         json jsonParams = json::parse(params);
         cpr::Parameters parameters;
         for (auto& [key, value] : jsonParams.items()) {
@@ -105,18 +214,12 @@ cpr::Response IGSessionCRUD::read(const std::string& endpoint, const std::string
             }
         }
         session_->SetParameters(parameters);
+    } else {
+        session_->SetParameters(cpr::Parameters{});  // Clear any existing parameters
     }
     
-    auto response = session_->Get();
-    spdlog::info("GET '{}', resp {}", endpoint, response.status_code);
-    
-    // Handle session tokens if present
-    if (response.header.find("CST") != response.header.end()) {
-        session_->SetHeader(cpr::Header{{"CST", response.header["CST"]}});
-    }
-    if (response.header.find("X-SECURITY-TOKEN") != response.header.end()) {
-        session_->SetHeader(cpr::Header{{"X-SECURITY-TOKEN", response.header["X-SECURITY-TOKEN"]}});
-    }
+    cpr::Response response = session_->Get();
+    spdlog::info("GET '{}', resp {}, text: {}", endpoint, response.status_code, response.text.substr(0, 200));
     
     return response;
 }
@@ -124,25 +227,88 @@ cpr::Response IGSessionCRUD::read(const std::string& endpoint, const std::string
 cpr::Response IGSessionCRUD::update(const std::string& endpoint, const std::string& params, 
                                   const std::string& version) {
     std::string url = buildUrl(endpoint);
-    session_->SetHeader(cpr::Header{{"VERSION", version}});
+    
+    spdlog::info("Making PUT request to: {}", url);
+    
+    // Create header map with all required headers
+    cpr::Header headers = {
+        {"X-IG-API-KEY", api_key_},
+        {"VERSION", version},
+        {"Content-Type", "application/json"},
+        {"Accept", "application/json; charset=UTF-8"}
+    };
+    
+    // Add Authorization header if it exists in our tracked headers
+    if (current_headers_.find("Authorization") != current_headers_.end()) {
+        spdlog::info("Including Authorization header in request");
+        headers["Authorization"] = current_headers_["Authorization"];
+    } else {
+        spdlog::warn("No Authorization header found for request");
+    }
+
+    // Add IG-ACCOUNT-ID header if it exists in our tracked headers
+    if (current_headers_.find("IG-ACCOUNT-ID") != current_headers_.end()) {
+        spdlog::info("Including IG-ACCOUNT-ID header: {}", current_headers_["IG-ACCOUNT-ID"]);
+        headers["IG-ACCOUNT-ID"] = current_headers_["IG-ACCOUNT-ID"];
+    } else {
+        spdlog::warn("No IG-ACCOUNT-ID header found for request");
+    }
+    
+    // Update our tracked headers
+    current_headers_["VERSION"] = version;
+    
+    // Set all headers at once
+    session_->SetHeader(headers);
+    
     session_->SetUrl(cpr::Url{url});
     session_->SetBody(cpr::Body{params});
     auto response = session_->Put();
     spdlog::info("PUT '{}', resp {}", endpoint, response.status_code);
+    
     return response;
 }
 
 cpr::Response IGSessionCRUD::delete_req(const std::string& endpoint, const std::string& params, 
                                       const std::string& version) {
     std::string url = buildUrl(endpoint);
-    session_->SetHeader(cpr::Header{{"VERSION", version}, {"_method", "DELETE"}});
+    
+    spdlog::info("Making DELETE request to: {}", url);
+    
+    // Create header map with all required headers
+    cpr::Header headers = {
+        {"X-IG-API-KEY", api_key_},
+        {"VERSION", version},
+        {"_method", "DELETE"},
+        {"Content-Type", "application/json"},
+        {"Accept", "application/json; charset=UTF-8"}
+    };
+    
+    // Add Authorization header if it exists in our tracked headers
+    if (current_headers_.find("Authorization") != current_headers_.end()) {
+        spdlog::info("Including Authorization header in request");
+        headers["Authorization"] = current_headers_["Authorization"];
+    } else {
+        spdlog::warn("No Authorization header found for request");
+    }
+
+    // Add IG-ACCOUNT-ID header if it exists in our tracked headers
+    if (current_headers_.find("IG-ACCOUNT-ID") != current_headers_.end()) {
+        spdlog::info("Including IG-ACCOUNT-ID header: {}", current_headers_["IG-ACCOUNT-ID"]);
+        headers["IG-ACCOUNT-ID"] = current_headers_["IG-ACCOUNT-ID"];
+    } else {
+        spdlog::warn("No IG-ACCOUNT-ID header found for request");
+    }
+    
+    // Update our tracked headers
+    current_headers_["VERSION"] = version;
+    
+    // Set all headers at once
+    session_->SetHeader(headers);
+    
     session_->SetUrl(cpr::Url{url});
     session_->SetBody(cpr::Body{params});
     auto response = session_->Post();
     spdlog::info("DELETE (POST) '{}', resp {}", endpoint, response.status_code);
-    
-    // Remove _method header after use
-    session_->UpdateHeader(cpr::Header{{"_method", ""}});
     
     return response;
 }
@@ -173,14 +339,15 @@ IGService::IGService(const std::string& username, const std::string& password,
       use_rate_limiter_(use_rate_limiter),
       bucket_threads_run_(false) {
     
-    try {
-        auto it = D_BASE_URL.find(acc_type);
-        if (it != D_BASE_URL.end()) {
-            base_url_ = it->second;
-        } else {
-            throw IGException("Invalid account type '" + acc_type + "', please provide LIVE or DEMO");
-        }
-    } catch (const std::exception& e) {
+    // Convert account type to lowercase for case-insensitive comparison
+    std::string acc_type_lower = acc_type;
+    std::transform(acc_type_lower.begin(), acc_type_lower.end(), acc_type_lower.begin(),
+                  [](unsigned char c){ return std::tolower(c); });
+    
+    auto it = D_BASE_URL.find(acc_type_lower);
+    if (it != D_BASE_URL.end()) {
+        base_url_ = it->second;
+    } else {
         throw IGException("Invalid account type '" + acc_type + "', please provide LIVE or DEMO");
     }
     
@@ -355,11 +522,15 @@ void IGService::exit_bucket_threads() {
 
 cpr::Response IGService::request(const std::string& action, const std::string& endpoint,
                                const std::string& params, const std::string& version, bool check) {
+    spdlog::info("Making {} request to {}", action, endpoint); // Ajouté
+    
     if (check) {
         check_session();
     }
     
     auto response = crud_session_->req(action, endpoint, params, version);
+    
+    spdlog::info("Response status: {}, text: {}", response.status_code, response.text.substr(0, 200)); // Ajouté
     
     if (response.status_code >= 500) {
         throw IGException("Server problem: status code: " + std::to_string(response.status_code) + 
@@ -380,34 +551,47 @@ cpr::Response IGService::request(const std::string& action, const std::string& e
 }
 
 json IGService::parse_response(const std::string& response_text) {
-    json response = json::parse(response_text);
-    if (response.contains("errorCode")) {
-        throw IGException(response["errorCode"].get<std::string>());
+    try {
+        json response = json::parse(response_text);
+        if (response.contains("errorCode")) {
+            throw IGException(response["errorCode"].get<std::string>());
+        }
+        return response;
+    } catch (const json::exception& e) {
+        spdlog::error("JSON parsing error: {}", e.what());
+        spdlog::error("Response text (partial): {:.100}...", response_text);
+        throw;
     }
-    return response;
 }
 
-nlohmann::json IGService::create_session(bool encryption, const std::string& version) {
-    if (version == "3" && acc_number_.empty()) {
+nlohmann::json IGService::create_session() {
+    if (acc_number_.empty()) {
         throw IGException("Account number must be set for v3 sessions");
     }
     
-    spdlog::info("Creating new v{} session for user '{}' at '{}'", version, username_, base_url_);
-    
-    std::string password_str = encryption ? encrypted_password() : password_;
+    spdlog::info("Creating new v3 session for user '{}' at '{}'", username_, base_url_);
     
     json params = {
         {"identifier", username_},
-        {"password", password_str}
+        {"password", password_}
     };
     
-    if (encryption) {
-        params["encryptedPassword"] = true;
+    const std::string version = "3";
+    auto response = request("create", "/session", params.dump(), version, false);
+    
+    // Set the account ID header for v3 authentication
+    session_->SetHeader(cpr::Header{{"IG-ACCOUNT-ID", acc_number_}});
+    
+    // Track the account ID header in crud_session_
+    if (crud_session_) {
+        crud_session_->current_headers_["IG-ACCOUNT-ID"] = acc_number_;
     }
     
-    auto response = request("create", "/session", params.dump(), version, false);
-    manage_headers(response);
+    // Handle OAuth token response
     json data = parse_response(response.text);
+    if (data.contains("oauthToken")) {
+        handle_oauth(data["oauthToken"]);
+    }
     
     if (use_rate_limiter_) {
         setup_rate_limiter();
@@ -416,133 +600,86 @@ nlohmann::json IGService::create_session(bool encryption, const std::string& ver
     return data;
 }
 
-void IGService::manage_headers(const cpr::Response& response) {
-    // Handle v1 and v2 logins
-    if (response.header.find("CST") != response.header.end()) {
-        session_->SetHeader(cpr::Header{{"CST", response.header.at("CST")}});
-    }
-    
-    if (response.header.find("X-SECURITY-TOKEN") != response.header.end()) {
-        session_->SetHeader(cpr::Header{{"X-SECURITY-TOKEN", response.header.at("X-SECURITY-TOKEN")}});
-    }
-    
-    // Handle v3 logins
-    if (!response.text.empty()) {
-        session_->SetHeader(cpr::Header{{"IG-ACCOUNT-ID", acc_number_}});
-        json payload = json::parse(response.text);
-        if (payload.contains("oauthToken")) {
-            handle_oauth(payload["oauthToken"]);
-        }
-    }
-}
-
 void IGService::handle_oauth(const nlohmann::json& oauth) {
     std::string access_token = oauth["access_token"];
     std::string token_type = oauth["token_type"];
-    session_->SetHeader(cpr::Header{{"Authorization", token_type + " " + access_token}});
+    
+    // Store the complete authorization header string
+    authorization_header_ = token_type + " " + access_token;
+    
+    // Set the header in the session
+    session_->SetHeader(cpr::Header{{"Authorization", authorization_header_}});
+    
+    // Also update the tracked headers in the crud_session_
+    if (crud_session_) {
+        crud_session_->current_headers_["Authorization"] = authorization_header_;
+    }
+    
     refresh_token_ = oauth["refresh_token"];
-    int validity = oauth["expires_in"];
+    
+    // Handle expires_in which might be a string or a number
+    int validity;
+    if (oauth["expires_in"].is_string()) {
+        validity = std::stoi(oauth["expires_in"].get<std::string>());
+    } else {
+        validity = oauth["expires_in"].get<int>();
+    }
+    
     valid_until_ = std::chrono::system_clock::now() + std::chrono::seconds(validity);
+    
+    spdlog::info("OAuth token received. Valid for {} seconds", validity);
 }
 
-int IGService::refresh_session(const std::string& version) {
+int IGService::refresh_session() {
     spdlog::info("Refreshing session '{}'", username_);
     
     json params = {
         {"refresh_token", refresh_token_}
     };
     
+    const std::string version = "1";
     auto response = request("create", "/session/refresh-token", params.dump(), version, false);
+    
+    // Ensure we keep the IG-ACCOUNT-ID header set after refresh
+    session_->SetHeader(cpr::Header{{"IG-ACCOUNT-ID", acc_number_}});
+    
+    // Make sure it's tracked in crud_session_ too
+    if (crud_session_) {
+        crud_session_->current_headers_["IG-ACCOUNT-ID"] = acc_number_;
+    }
+    
     handle_oauth(json::parse(response.text));
     
     return response.status_code;
 }
 
 void IGService::check_session() {
-    spdlog::debug("Checking session status...");
+    spdlog::info("Checking session status..."); // Changé de debug à info
     
     // Check if token will expire soon or has already expired
     if (valid_until_ != std::chrono::system_clock::time_point{}) {
         auto time_until_expiry = std::chrono::duration_cast<std::chrono::seconds>(
             valid_until_ - std::chrono::system_clock::now()).count();
         
+        spdlog::info("Session expires in {} seconds", time_until_expiry); // Ajouté
+        
         if (time_until_expiry < 10) {  // Token expires in less than 10 seconds
             if (!refresh_token_.empty()) {
-                try {
-                    spdlog::info("Proactively refreshing session (expires in {:.1f} seconds)", time_until_expiry);
-                    refresh_session();
-                } catch (const IGException&) {
-                    spdlog::info("Proactive refresh failed, logging in again...");
-                    refresh_token_.clear();
-                    valid_until_ = std::chrono::system_clock::time_point{};
-                    session_->UpdateHeader(cpr::Header{{"Authorization", ""}});
-                    create_session(false, "3");
-                }
-            }
-        }
-    } else if (std::chrono::system_clock::now() > valid_until_) {
-        if (!refresh_token_.empty()) {
-            try {
-                spdlog::info("Current session has expired, refreshing...");
+                spdlog::info("Proactively refreshing session (expires in {} seconds)", time_until_expiry);
                 refresh_session();
-            } catch (const IGException&) {
-                spdlog::info("Refresh failed, logging in again...");
-                refresh_token_.clear();
-                valid_until_ = std::chrono::system_clock::time_point{};
-                session_->UpdateHeader(cpr::Header{{"Authorization", ""}});
-                create_session(false, "3");
+            } else {
+                spdlog::info("No refresh token available, creating new session...");
+                create_session();
             }
         }
+    } else {
+        spdlog::info("No valid session found, creating new session...");
+        create_session();
     }
-}
-
-std::pair<std::string, std::string> IGService::get_encryption_key() {
-    session_->SetUrl(cpr::Url{base_url_ + "/session/encryptionKey"});
-    auto response = session_->Get();
-
-    if (response.status_code != 200) {
-        throw IGException("Could not get encryption key for login.");
-    }
-    
-    json data = json::parse(response.text);
-    return {data["encryptionKey"], data["timeStamp"]};
-}
-
-std::string IGService::encrypted_password() {
-    auto [key, timestamp] = get_encryption_key();
-    
-    // Use CryptoPP for RSA encryption
-    CryptoPP::Base64Decoder decoder;
-    decoder.Put((CryptoPP::byte*)key.data(), key.size());
-    decoder.MessageEnd();
-    
-    CryptoPP::ByteQueue bytes;
-    decoder.CopyTo(bytes);
-    bytes.MessageEnd();
-    
-    CryptoPP::RSA::PublicKey publicKey;
-    publicKey.Load(bytes);
-    
-    std::string message = password_ + "|" + timestamp;
-    
-    // Encrypt the message
-    CryptoPP::RSAES_PKCS1v15_Encryptor encryptor(publicKey);
-    
-    CryptoPP::AutoSeededRandomPool rng;
-    std::string encrypted;
-    CryptoPP::StringSource(message, true,
-        new CryptoPP::PK_EncryptorFilter(rng, encryptor,
-            new CryptoPP::Base64Encoder(
-                new CryptoPP::StringSink(encrypted)
-            )
-        )
-    );
-    
-    return encrypted;
 }
 
 void IGService::logout() {
-    std::string version = "1";
+    const std::string version = "1";
     json params = json::object();
     std::string endpoint = "/session";
     
@@ -551,7 +688,7 @@ void IGService::logout() {
 }
 
 nlohmann::json IGService::switch_account(const std::string& account_id, bool default_account) {
-    std::string version = "1";
+    const std::string version = "1";
     json params = {
         {"accountId", account_id},
         {"defaultAccount", default_account}
@@ -559,15 +696,16 @@ nlohmann::json IGService::switch_account(const std::string& account_id, bool def
     std::string endpoint = "/session";
     
     auto response = request("update", endpoint, params.dump(), version);
-    manage_headers(response);
+    
+    // Update the account ID header
+    session_->SetHeader(cpr::Header{{"IG-ACCOUNT-ID", account_id}});
+    
     return parse_response(response.text);
 }
 
-nlohmann::json IGService::read_session(const std::string& fetch_session_tokens) {
-    std::string version = "1";
-    json params = {
-        {"fetchSessionTokens", fetch_session_tokens}
-    };
+nlohmann::json IGService::read_session() {
+    const std::string version = "1";
+    json params = json::object();
     std::string endpoint = "/session";
     
     auto response = request("read", endpoint, params.dump(), version);
@@ -581,7 +719,7 @@ nlohmann::json IGService::read_session(const std::string& fetch_session_tokens) 
 
 nlohmann::json IGService::fetch_accounts() {
     non_trading_rate_limit_pause_or_pass();
-    std::string version = "1";
+    const std::string version = "1";
     json params = json::object();
     std::string endpoint = "/accounts";
     
@@ -591,7 +729,7 @@ nlohmann::json IGService::fetch_accounts() {
 
 nlohmann::json IGService::fetch_account_preferences() {
     non_trading_rate_limit_pause_or_pass();
-    std::string version = "1";
+    const std::string version = "1";
     json params = json::object();
     std::string endpoint = "/accounts/preferences";
     
@@ -601,7 +739,7 @@ nlohmann::json IGService::fetch_account_preferences() {
 
 std::string IGService::update_account_preferences(bool trailing_stops_enabled) {
     non_trading_rate_limit_pause_or_pass();
-    std::string version = "1";
+    const std::string version = "1";
     json params = {
         {"trailingStopsEnabled", trailing_stops_enabled ? "true" : "false"}
     };
@@ -610,93 +748,6 @@ std::string IGService::update_account_preferences(bool trailing_stops_enabled) {
     auto response = request("update", endpoint, params.dump(), version);
     auto update_status = parse_response(response.text);
     return update_status["status"];
-}
-
-nlohmann::json IGService::fetch_account_activity_by_period(int64_t milliseconds) {
-    non_trading_rate_limit_pause_or_pass();
-    std::string version = "1";
-    json params = json::object();
-    std::string endpoint = "/history/activity/" + std::to_string(milliseconds);
-    
-    auto response = request("read", endpoint, params.dump(), version);
-    return parse_response(response.text);
-}
-
-nlohmann::json IGService::fetch_account_activity_by_date(
-    const std::chrono::system_clock::time_point& from_date,
-    const std::chrono::system_clock::time_point& to_date) {
-    
-    non_trading_rate_limit_pause_or_pass();
-    std::string version = "1";
-    
-    if (from_date > to_date) {
-        throw IGException("from_date must be before to_date");
-    }
-    
-    json params = json::object();
-    std::string from_date_str = format_date(from_date);
-    std::string to_date_str = format_date(to_date);
-    std::string endpoint = "/history/activity/" + from_date_str + "/" + to_date_str;
-    
-    auto response = request("read", endpoint, params.dump(), version);
-    return parse_response(response.text);
-}
-
-nlohmann::json IGService::fetch_account_activity_v2(
-    std::optional<std::chrono::system_clock::time_point> from_date,
-    std::optional<std::chrono::system_clock::time_point> to_date,
-    std::optional<int> max_span_seconds,
-    int page_size) {
-    
-    non_trading_rate_limit_pause_or_pass();
-    std::string version = "2";
-    json params = json::object();
-    
-    if (from_date) {
-        params["from"] = format_datetime(*from_date);
-    }
-    
-    if (to_date) {
-        params["to"] = format_datetime(*to_date);
-    }
-    
-    if (max_span_seconds) {
-        params["maxSpanSeconds"] = *max_span_seconds;
-    }
-    
-    params["pageSize"] = page_size;
-    std::string endpoint = "/history/activity/";
-    
-    // Variables to handle pagination
-    json result;
-    std::vector<json> activities;
-    int page_number = 1;
-    bool more_results = true;
-    
-    while (more_results) {
-        params["pageNumber"] = page_number;
-        auto response = request("read", endpoint, params.dump(), version);
-        json data = parse_response(response.text);
-        
-        // Extract activities from this page
-        for (const auto& activity : data["activities"]) {
-            activities.push_back(activity);
-        }
-        
-        // Check if there are more pages
-        json page_data = data["metadata"]["pageData"];
-        if (page_data["totalPages"] == 0 || page_data["pageNumber"] == page_data["totalPages"]) {
-            more_results = false;
-        } else {
-            page_number++;
-        }
-    }
-    
-    // Construct final result
-    result = json::object();
-    result["activities"] = activities;
-    
-    return result;
 }
 
 nlohmann::json IGService::fetch_account_activity(
@@ -708,7 +759,7 @@ nlohmann::json IGService::fetch_account_activity(
     int page_size) {
     
     non_trading_rate_limit_pause_or_pass();
-    std::string version = "3";
+    const std::string version = "3";
     json params = json::object();
     
     if (from_date) {
@@ -806,7 +857,7 @@ nlohmann::json IGService::fetch_account_activity(
 
 nlohmann::json IGService::fetch_deal_by_deal_reference(const std::string& deal_reference) {
     non_trading_rate_limit_pause_or_pass();
-    std::string version = "1";
+    const std::string version = "1";
     json params = json::object();
     std::string endpoint = "/confirms/" + deal_reference;
     
@@ -827,7 +878,7 @@ nlohmann::json IGService::fetch_deal_by_deal_reference(const std::string& deal_r
 
 nlohmann::json IGService::fetch_open_position_by_deal_id(const std::string& deal_id) {
     non_trading_rate_limit_pause_or_pass();
-    std::string version = "2";
+    const std::string version = "2";
     json params = json::object();
     std::string endpoint = "/positions/" + deal_id;
     
@@ -846,8 +897,9 @@ nlohmann::json IGService::fetch_open_position_by_deal_id(const std::string& deal
     return parse_response(response.text);
 }
 
-nlohmann::json IGService::fetch_open_positions(const std::string& version) {
+nlohmann::json IGService::fetch_open_positions() {
     non_trading_rate_limit_pause_or_pass();
+    const std::string version = "2";
     json params = json::object();
     std::string endpoint = "/positions";
     
@@ -878,7 +930,7 @@ nlohmann::json IGService::close_open_position(
     const std::string& time_in_force) {
     
     trading_rate_limit_pause_or_pass();
-    std::string version = "1";
+    const std::string version = "1";
     
     json params = {
         {"dealId", deal_id},
@@ -928,26 +980,50 @@ nlohmann::json IGService::create_open_position(
     const std::string& time_in_force) {
     
     trading_rate_limit_pause_or_pass();
-    std::string version = "2";
+    const std::string version = "2";
     
-    json params = {
+json params = {
         {"currencyCode", currency_code},
         {"direction", direction},
         {"epic", epic},
         {"expiry", expiry},
         {"forceOpen", force_open},
         {"guaranteedStop", guaranteed_stop},
-        {"level", level},
-        {"limitDistance", limit_distance},
-        {"limitLevel", limit_level},
         {"orderType", order_type},
-        {"quoteId", quote_id},
         {"size", size},
-        {"stopDistance", stop_distance},
-        {"stopLevel", stop_level},
-        {"trailingStop", trailing_stop},
-        {"trailingStopIncrement", trailing_stop_increment}
+        {"trailingStop", trailing_stop}
     };
+    
+    // Only include level for non-MARKET orders
+    if (order_type != "MARKET" && level != 0.0) {
+        params["level"] = level;
+    }
+    
+    // Only include quoteId for QUOTE orders
+    if (order_type == "QUOTE" && !quote_id.empty()) {
+        params["quoteId"] = quote_id;
+    }
+    
+    // Only include limit parameters if they're non-zero
+    if (limit_distance > 0.0) {
+        params["limitDistance"] = limit_distance;
+    }
+    if (limit_level > 0.0) {
+        params["limitLevel"] = limit_level;
+    }
+    
+    // Only include stop parameters if they're non-zero
+    if (stop_distance > 0.0) {
+        params["stopDistance"] = stop_distance;
+    }
+    if (stop_level > 0.0) {
+        params["stopLevel"] = stop_level;
+    }
+    
+    // Only include trailing stop increment if trailing stop is enabled
+    if (trailing_stop && trailing_stop_increment > 0.0) {
+        params["trailingStopIncrement"] = trailing_stop_increment;
+    }
     
     if (!time_in_force.empty()) {
         params["timeInForce"] = time_in_force;
@@ -968,7 +1044,7 @@ nlohmann::json IGService::create_open_position(
 
 nlohmann::json IGService::fetch_market_by_epic(const std::string& epic) {
     non_trading_rate_limit_pause_or_pass();
-    std::string version = "3";
+    const std::string version = "3";
     json params = json::object();
     std::string endpoint = "/markets/" + epic;
     
@@ -978,7 +1054,7 @@ nlohmann::json IGService::fetch_market_by_epic(const std::string& epic) {
 
 nlohmann::json IGService::search_markets(const std::string& search_term) {
     non_trading_rate_limit_pause_or_pass();
-    std::string version = "1";
+    const std::string version = "1";
     json params = {
         {"searchTerm", search_term}
     };
@@ -997,11 +1073,12 @@ nlohmann::json IGService::fetch_historical_prices_by_epic(
     int pagesize,
     int wait) {
     
-    std::string version = "3";
+    const std::string version = "3";
     json params = json::object();
     
     if (!resolution.empty()) {
-        params["resolution"] = resolution;
+        // Convert the resolution to the format expected by the API
+        params["resolution"] = conv_resol(resolution);
     }
     
     if (!start_date.empty()) {
@@ -1050,6 +1127,7 @@ nlohmann::json IGService::fetch_historical_prices_by_epic(
     // Construct final result
     json result = json::object();
     result["prices"] = prices;
+    result["metadata"] = final_data["metadata"];
     
     // Log allowance if we have metadata
     if (final_data.contains("metadata") && final_data["metadata"].contains("allowance")) {
@@ -1069,7 +1147,7 @@ nlohmann::json IGService::fetch_historical_prices_by_epic(
 }
 
 nlohmann::json IGService::get_client_apps() {
-    std::string version = "1";
+    const std::string version = "1";
     json params = json::object();
     std::string endpoint = "/operations/application";
     

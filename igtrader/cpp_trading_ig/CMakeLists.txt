@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.14)
 # Définir la bibliothèque
 add_library(cpp_trading_ig
     src/rest.cpp
+    src/lightstreamer.cpp
+    src/stream.cpp
 )
 
 # Headers publics

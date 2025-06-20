@@ -202,7 +202,7 @@ public:
      * @param fetch_session_tokens Whether to fetch session tokens
      * @return Session details
      */
-    nlohmann::json read_session();
+    nlohmann::json read_session(bool fetch_session_tokens = false);
     
     /**
      * @brief Log out of the current session
@@ -401,6 +401,14 @@ public:
         int pagesize = 20,
         int wait = 1);
 
+    /**
+     * @brief Get account number
+     * @return Account number
+     */
+    const std::string& getAccountNumber() const {
+        return acc_number_;
+    }
+
 private:
     // Base URLs for API environments
     static const std::unordered_map<std::string, std::string> D_BASE_URL;
@@ -512,6 +520,15 @@ private:
     cpr::Response request(const std::string& action, const std::string& endpoint,
                           const std::string& params, const std::string& version = "1",
                           bool check = true);
+    
+public:
+    /**
+     * @brief Get current HTTP headers
+     * @return Reference to the current headers map
+     */
+    const std::unordered_map<std::string, std::string>& GetHeaders() const {
+        return crud_session_->GetHeaders();
+    }
 };
 
 // Convert user-friendly resolution format to IG API format

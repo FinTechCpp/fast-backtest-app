@@ -1,4 +1,4 @@
-#include "../include/rest.h"
+#include "rest.h"
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
@@ -178,16 +178,12 @@ cpr::Response IGSessionCRUD::read(const std::string& endpoint, const std::string
     if (current_headers_.find("Authorization") != current_headers_.end()) {
         spdlog::info("Including Authorization header in request");
         headers["Authorization"] = current_headers_["Authorization"];
-    } else {
-        spdlog::warn("No Authorization header found for request");
     }
 
     // Add IG-ACCOUNT-ID header if it exists in our tracked headers
     if (current_headers_.find("IG-ACCOUNT-ID") != current_headers_.end()) {
         spdlog::info("Including IG-ACCOUNT-ID header: {}", current_headers_["IG-ACCOUNT-ID"]);
         headers["IG-ACCOUNT-ID"] = current_headers_["IG-ACCOUNT-ID"];
-    } else {
-        spdlog::warn("No IG-ACCOUNT-ID header found for request");
     }
     
     // Update our tracked headers
@@ -195,9 +191,6 @@ cpr::Response IGSessionCRUD::read(const std::string& endpoint, const std::string
     
     // Set all headers at once
     session_->SetHeader(headers);
-    
-    // Log headers for debugging
-    spdlog::info("Headers - API Key: {}..., Version: {}", api_key_.substr(0, 8), version);
     
     session_->SetUrl(cpr::Url{url});
     
@@ -220,6 +213,14 @@ cpr::Response IGSessionCRUD::read(const std::string& endpoint, const std::string
     
     cpr::Response response = session_->Get();
     spdlog::info("GET '{}', resp {}, text: {}", endpoint, response.status_code, response.text.substr(0, 200));
+    
+    // Log response headers pour debugging
+    if (endpoint.find("fetchSessionTokens=true") != std::string::npos) {
+        spdlog::info("Response headers for fetchSessionTokens request:");
+        for (const auto& header : response.header) {
+            spdlog::info("  {}: {}", header.first, header.second);
+        }
+    }
     
     return response;
 }
@@ -703,10 +704,15 @@ nlohmann::json IGService::switch_account(const std::string& account_id, bool def
     return parse_response(response.text);
 }
 
-nlohmann::json IGService::read_session() {
+nlohmann::json IGService::read_session(bool fetch_session_tokens) {
     const std::string version = "1";
     json params = json::object();
     std::string endpoint = "/session";
+    
+    // Ajouter le paramètre fetchSessionTokens si nécessaire
+    if (fetch_session_tokens) {
+        endpoint += "?fetchSessionTokens=true";
+    }
     
     auto response = request("read", endpoint, params.dump(), version);
 
@@ -714,7 +720,23 @@ nlohmann::json IGService::read_session() {
         throw IGException("Error in read_session() " + std::to_string(response.status_code));
     }
     
-    return parse_response(response.text);
+    auto result = parse_response(response.text);
+    
+    // Si fetchSessionTokens est true, extraire les tokens des headers de la réponse
+    if (fetch_session_tokens) {
+        // Les tokens CST et X-SECURITY-TOKEN sont dans les headers de réponse
+        for (const auto& header : response.header) {
+            if (header.first == "CST") {
+                result["cst"] = header.second;
+            } else if (header.first == "X-SECURITY-TOKEN") {
+                result["securityToken"] = header.second;
+            }
+        }
+        
+        spdlog::info("Retrieved session tokens: CST and X-SECURITY-TOKEN");
+    }
+    
+    return result;
 }
 
 nlohmann::json IGService::fetch_accounts() {

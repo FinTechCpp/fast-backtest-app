@@ -310,7 +310,6 @@ void ChartView::onAddIndicatorClicked()
         // Créer un EMA avec des valeurs par défaut
         EMAInstance ema;
         ema.period = 20;
-        ema.visible = true;
         ema.color = 0x0000FF; // Bleu par défaut
         m_chartWidget->addEMA(std::move(ema));
     }
@@ -377,22 +376,6 @@ void ChartView::onEMARemoved(int id)
 {
     refreshIndicatorsList();
 }
-
-// void ChartView::onEditEMA()
-// {
-//     if (!m_chartWidget->hasValidData()) {
-//         qDebug() << "Pas de données valides pour éditer un EMA";
-//         return;
-//     }
-    
-//     // Créer et afficher le dialogue d'édition pour tous les EMA
-//     EMADialog* dialog = new EMADialog(this, m_chartWidget);
-//     dialog->exec();
-//     delete dialog;
-    
-//     // Rafraîchir la liste des indicateurs
-//     refreshIndicatorsList();
-// }
 
 void ChartView::onSupertrendAdded(int id, int period, double multiplier)
 {    
@@ -549,8 +532,7 @@ void ChartView::onEditIndicator(int id)
 }
 
 //Remove tous les indicateurs individuellement par leur ID
-void ChartView::onRemoveIndicator(int id)
-{
+void ChartView::onRemoveIndicator(int id) {
     // Essayer de supprimer comme RSI
     if (m_chartWidget->removeRSI(id)) 
         return;
@@ -562,11 +544,12 @@ void ChartView::onRemoveIndicator(int id)
     if(m_chartWidget->removeSuperTrend(id)) 
         return;
 
-    // Essayer de supprimer comme Stochastique
-    m_chartWidget->removeStochastic(id);
+    if (m_chartWidget->removeStochastic(id)) 
+        return;
 
     // Essayer de supprimer comme ATR
-    m_chartWidget->removeATR(id);
+    if (m_chartWidget->removeATR(id)) 
+        return;
 }
 
 
@@ -628,31 +611,6 @@ void ChartView::refreshIndicatorsList()
             createIndicatorWidgets(atr->id, name);
         }
     }
-    
-    // Ajouter un widget spécial pour configurer tous les EMA ensemble
-    // if (!emaInstances.empty()) {
-    //     QWidget* emaConfigWidget = new QWidget();
-    //     QHBoxLayout* layout = new QHBoxLayout(emaConfigWidget);
-    //     layout->setContentsMargins(0, 2, 0, 2);
-        
-    //     QLabel* nameLabel = new QLabel("Configure all EMAs");
-    //     nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        
-    //     QPushButton* editButton = new QPushButton("Edit");
-    //     editButton->setFixedWidth(40);
-    //     connect(editButton, &QPushButton::clicked, this, &ChartView::onEditEMA);
-        
-    //     layout->addWidget(nameLabel);
-    //     layout->addWidget(editButton);
-        
-    //     m_indicatorsLayout->addWidget(emaConfigWidget);
-    // }
-
-    // todo a supprimer c'est le chart qui doit etre autonome
-    // if (m_chartWidget->hasValidData()) {
-    //     // Mettre à jour le graphique après avoir rafraîchi la liste des indicateurs
-    //     m_chartWidget->updateChartDisplay();
-    // }
 }
 
 void ChartView::updateData(BacktestResults* results)

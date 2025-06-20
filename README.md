@@ -201,6 +201,128 @@ Ce guide explique comment compiler, exécuter et déboguer le projet ig-trading-
 - VS Code (pour le débogage)
 - Extensions VS Code: C/C++, CMake Tools
 
+## 🔧 Installation des prérequis (Linux)
+
+### Étape 1: Installation des outils de compilation
+
+Installez les outils de développement essentiels :
+
+```bash
+# Mise à jour des paquets
+sudo apt update
+
+# Installation des outils de compilation
+sudo apt install -y build-essential git curl wget
+
+# Installation des bibliothèques graphiques nécessaires pour Qt
+sudo apt install -y libgl1-mesa-dev libglu1-mesa-dev
+```
+
+### Étape 2: Installation de CMake 4.0.3
+
+Téléchargez et installez CMake manuellement pour avoir une version récente :
+
+```bash
+# Télécharger CMake 4.0.3
+cd ~
+wget https://github.com/Kitware/CMake/releases/download/v4.0.3/cmake-4.0.3-linux-x86_64.tar.gz
+
+# Extraire l'archive
+tar -xzf cmake-4.0.3-linux-x86_64.tar.gz
+
+# Ajouter CMake au PATH (temporaire)
+export PATH=$HOME/cmake-4.0.3-linux-x86_64/bin:$PATH
+
+# Vérifier l'installation
+cmake --version
+```
+
+### Étape 3: Installation de Qt 6.8.3
+
+Téléchargez et installez Qt depuis le site officiel :
+
+```bash
+# Télécharger Qt Online Installer
+cd ~
+wget https://d13lb3tujbc8s0.cloudfront.net/onlineinstallers/qt-unified-linux-x64-4.6.1-online.run
+
+# Rendre l'installeur exécutable
+chmod +x qt-unified-linux-x64-4.6.1-online.run
+
+# Lancer l'installeur
+./qt-unified-linux-x64-4.6.1-online.run
+```
+
+**Instructions pour l'installeur Qt :**
+1. Créez un compte Qt (gratuit pour usage personnel)
+2. Sélectionnez **Qt 6.8.3** 
+3. Cochez **Desktop gcc 64-bit**
+4. Installez dans le répertoire par défaut : `~/Qt/`
+
+### Étape 4: Configuration permanente du PATH
+
+Ajoutez CMake et Qt à votre PATH de manière permanente :
+
+```bash
+# Ajouter au fichier .bashrc
+echo '# Ajouter cmake et Qt au PATH' >> ~/.bashrc
+echo 'export PATH=$HOME/cmake-4.0.3-linux-x86_64/bin:$PATH' >> ~/.bashrc
+echo 'export PATH=$HOME/Qt/6.8.3/gcc_64/bin:$PATH' >> ~/.bashrc
+echo 'export CMAKE_PREFIX_PATH=$HOME/Qt/6.8.3/gcc_64:$CMAKE_PREFIX_PATH' >> ~/.bashrc
+
+# Recharger la configuration
+source ~/.bashrc
+```
+
+### Étape 5: Vérification de l'installation
+
+Vérifiez que tous les outils sont correctement installés :
+
+```bash
+# Vérifier CMake
+cmake --version
+
+# Vérifier Qt
+qmake --version
+
+# Vérifier les compilateurs
+gcc --version
+g++ --version
+```
+
+**Résultats attendus :**
+- CMake version 4.0.3
+- Qt version 6.8.3
+- GCC/G++ version 13.x ou supérieure
+
+### Étape 6: Test de compilation
+
+Testez la compilation du projet :
+
+```bash
+# Se placer dans le projet
+cd ~/ig-trading-bot
+
+# Créer le dossier de build
+mkdir -p build && cd build
+
+# Configurer avec CMake
+cmake ..
+
+# Compiler
+make -j$(nproc)
+```
+
+Si tout fonctionne correctement, vous devriez voir :
+```
+-- Qt6 détecté automatiquement: /home/username/Qt/6.8.3/gcc_64
+-- Configuration terminée avec succès
+-- Build files have been written to: /path/to/build
+[100%] Built target backtestapp
+```
+
+---
+
 ## Méthode 1: Compilation manuelle avec CMake
 
 Cette méthode est la plus basique et fonctionne sur tout système compatible:
@@ -298,11 +420,9 @@ Voici un résumé des différentes façons de compiler et exécuter le projet:
 
 ### Contributeurs
 
-Merci à tous ceux qui ont contribué à ce projet :
-
-- **[hugoMiCode](https://github.com/hugoMiCode)** - Co-créateur et mainteneur principal
-- **[maks7d](https://github.com/maks7d)** - Co-créateur 
-
+- **[hugoMiCode](https://github.com/hugoMiCode)** - Co-créateur et mainteneur principal / spé&cialiste architecture du code
+- **[maks7d](https://github.com/maks7d)** - Co-créateur / branleur
+- **[alexandre5-0](https://github.com/alexandre5-0/alexandre5-0)** - Bêta testeur / expert trading et concepteur stratégie
 #### Comment contribuer
 
 1. Forkez le projet

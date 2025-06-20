@@ -121,9 +121,6 @@ Stats Backtest::run() {
             
             // Vérifier s'il y a un trou après la bougie courante
             if (_data->hasGapAfterCurrent() && !_broker->trades().empty()) {
-                std::cerr << "Gap detected after position " << _data->position() 
-                          << ". Closing all open positions.\n";
-                
                 // Fermer toutes les positions ouvertes
                 for (auto& trade : _broker->trades()) {
                     trade->close();

@@ -63,6 +63,7 @@ private slots:
     void onEditIndicator(int id);
     void onRemoveIndicator(int id);
     void onRulerToolToggled(bool checked); 
+    
     void onRSIAdded(int id, int period);
     void onRSIChanged(int id, int period);
     void onRSIRemoved(int id);
@@ -70,7 +71,6 @@ private slots:
     void onEMAAdded(int id, int period);
     void onEMAChanged(int id, int period);
     void onEMARemoved(int id);
-    void onEditEMA();
 
     void onSupertrendAdded(int id, int period, double multiplier);
     void onSupertrendChanged(int id, int period, double multiplier);

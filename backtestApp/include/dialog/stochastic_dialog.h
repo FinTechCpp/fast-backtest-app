@@ -1,35 +1,21 @@
 #pragma once
 
-#include <QDialog>
-#include <QVBoxLayout>
-#include <QPushButton>
-#include <QCheckBox>
+#include "dialog/indicator_dialog.h"
 #include <QSpinBox>
-#include <QLabel>
-#include <QScrollArea>
-#include <QColorDialog>
-#include <QDialogButtonBox>
-#include <QHBoxLayout>
-#include <QFrame>
-#include <QFormLayout>
-
-#include "chart_widget.h"
 
 /**
  * @brief Dialogue modal pour modifier les paramètres d'un indicateur Stochastique
  */
-class StochasticDialog : public QDialog
+class StochasticDialog : public IndicatorDialog
 {
     Q_OBJECT
     
 public:
     // Construction pour Stochastic
     StochasticDialog(QWidget* parent, ChartWidget* chartWidget, int stochasticId, const StochasticInstance& stochastic);
-    ~StochasticDialog();
+    ~StochasticDialog() override;
     
 private slots:
-    void onApply();
-    void onCancel();
     void onFastKPeriodChanged(int period);
     void onSlowKPeriodChanged(int period);
     void onSlowDPeriodChanged(int period);
@@ -38,9 +24,14 @@ private slots:
     void onDColorButtonClicked();
     void onOverboughtLevelChanged(int level); // Nouveau slot
     void onOversoldLevelChanged(int level);   // Nouveau slot
-    
+
+protected:
+    void setupUI() override;
+    void connectSignals() override;
+    void applyChanges() override;
+    void cancelChanges() override;
+
 private:
-    ChartWidget* m_chartWidget;
     int m_stochasticId;
     StochasticInstance m_originalStochastic;  // Pour restaurer en cas d'annulation
     StochasticInstance m_currentStochastic;   // Pour les modifications en cours
@@ -53,7 +44,4 @@ private:
     QSpinBox* m_oversoldLevelSpinBox;   // Nouveau contrôle
     QPushButton* m_kColorButton;
     QPushButton* m_dColorButton;
-    QDialogButtonBox* m_buttonBox;
-    
-    void updateColorButtonStyle(QPushButton* button, int color);
 };

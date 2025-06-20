@@ -307,8 +307,12 @@ void ChartView::onAddIndicatorClicked()
         m_chartWidget->addRSI(std::move(rsi));
     }
     else if (indicatorType == "EMA") {
-        // Pour EMA, ouvrir le dialogue de configuration directement
-        onEditEMA();
+        // Créer un EMA avec des valeurs par défaut
+        EMAInstance ema;
+        ema.period = 20;
+        ema.visible = true;
+        ema.color = 0x0000FF; // Bleu par défaut
+        m_chartWidget->addEMA(std::move(ema));
     }
     else if (indicatorType == "SUPERTREND") {
         SuperTrendInstance supertrend;
@@ -374,21 +378,21 @@ void ChartView::onEMARemoved(int id)
     refreshIndicatorsList();
 }
 
-void ChartView::onEditEMA()
-{
-    if (!m_chartWidget->hasValidData()) {
-        qDebug() << "Pas de données valides pour éditer un EMA";
-        return;
-    }
+// void ChartView::onEditEMA()
+// {
+//     if (!m_chartWidget->hasValidData()) {
+//         qDebug() << "Pas de données valides pour éditer un EMA";
+//         return;
+//     }
     
-    // Créer et afficher le dialogue d'édition pour tous les EMA
-    EMADialog* dialog = new EMADialog(this, m_chartWidget);
-    dialog->exec();
-    delete dialog;
+//     // Créer et afficher le dialogue d'édition pour tous les EMA
+//     EMADialog* dialog = new EMADialog(this, m_chartWidget);
+//     dialog->exec();
+//     delete dialog;
     
-    // Rafraîchir la liste des indicateurs
-    refreshIndicatorsList();
-}
+//     // Rafraîchir la liste des indicateurs
+//     refreshIndicatorsList();
+// }
 
 void ChartView::onSupertrendAdded(int id, int period, double multiplier)
 {    
@@ -504,8 +508,10 @@ void ChartView::onEditIndicator(int id)
     // Rechercher si c'est un EMA
     EMAInstance* ema = m_chartWidget->findEMA(id);
     if (ema) {
-        // Pour les EMA, on ouvre le dialogue général des EMA
-        onEditEMA();
+        // Créer et afficher le dialogue d'édition pour EMA (individuellement)
+        EMADialog* dialog = new EMADialog(this, m_chartWidget, id, *ema);
+        dialog->exec();
+        delete dialog;
         return;
     }
 
@@ -624,23 +630,23 @@ void ChartView::refreshIndicatorsList()
     }
     
     // Ajouter un widget spécial pour configurer tous les EMA ensemble
-    if (!emaInstances.empty()) {
-        QWidget* emaConfigWidget = new QWidget();
-        QHBoxLayout* layout = new QHBoxLayout(emaConfigWidget);
-        layout->setContentsMargins(0, 2, 0, 2);
+    // if (!emaInstances.empty()) {
+    //     QWidget* emaConfigWidget = new QWidget();
+    //     QHBoxLayout* layout = new QHBoxLayout(emaConfigWidget);
+    //     layout->setContentsMargins(0, 2, 0, 2);
         
-        QLabel* nameLabel = new QLabel("Configure all EMAs");
-        nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    //     QLabel* nameLabel = new QLabel("Configure all EMAs");
+    //     nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         
-        QPushButton* editButton = new QPushButton("Edit");
-        editButton->setFixedWidth(40);
-        connect(editButton, &QPushButton::clicked, this, &ChartView::onEditEMA);
+    //     QPushButton* editButton = new QPushButton("Edit");
+    //     editButton->setFixedWidth(40);
+    //     connect(editButton, &QPushButton::clicked, this, &ChartView::onEditEMA);
         
-        layout->addWidget(nameLabel);
-        layout->addWidget(editButton);
+    //     layout->addWidget(nameLabel);
+    //     layout->addWidget(editButton);
         
-        m_indicatorsLayout->addWidget(emaConfigWidget);
-    }
+    //     m_indicatorsLayout->addWidget(emaConfigWidget);
+    // }
 
     // todo a supprimer c'est le chart qui doit etre autonome
     // if (m_chartWidget->hasValidData()) {

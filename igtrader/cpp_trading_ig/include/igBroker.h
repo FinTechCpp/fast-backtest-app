@@ -31,7 +31,15 @@ public:
      * @return true if at least one position is open, false otherwise
      */
     bool hasOpenPosition();
-    
+
+    /**
+     * @brief Move the stop loss of an open position
+     * @param dealId The ID of the open position to modify
+     * @param stopLevel The new stop level to set
+     * @return true if the operation was successful, false otherwise
+     */
+    bool moveStopLoss(const std::string& dealId, double stopLevel);
+
 private:
     IGService& service_;
 };

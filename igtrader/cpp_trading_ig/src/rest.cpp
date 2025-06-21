@@ -919,7 +919,7 @@ nlohmann::json IGService::fetch_open_position_by_deal_id(const std::string& deal
     return parse_response(response.text);
 }
 
-nlohmann::json IGService::fetch_open_positions() {
+ig::Position IGService::fetch_open_positions() {
     non_trading_rate_limit_pause_or_pass();
     const std::string version = "2";
     json params = json::object();
@@ -937,44 +937,48 @@ nlohmann::json IGService::fetch_open_positions() {
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     
-    return parse_response(response.text);
+    nlohmann::json json_result = parse_response(response.text);
+
+    ig::Position result = json_result.get<ig::Position>();
+    return result;
 }
 
-nlohmann::json IGService::close_open_position(
-    const std::string& deal_id,
-    const std::string& direction,
-    const std::string& epic,
-    const std::string& expiry,
-    double level,
-    const std::string& order_type,
-    const std::string& quote_id,
-    double size,
-    const std::string& time_in_force) {
-    
+
+nlohmann::json IGService::close_open_position(const PositionCloseParams& params) {
     trading_rate_limit_pause_or_pass();
     const std::string version = "1";
     
-    json params = {
-        {"dealId", deal_id},
-        {"direction", direction},
-        {"epic", epic},
-        {"expiry", expiry},
-        {"level", level},
-        {"orderType", order_type},
-        {"quoteId", quote_id},
-        {"size", size}
-    };
+    // Valider les paramètres
+    params.validate();
     
-    if (!time_in_force.empty()) {
-        params["timeInForce"] = time_in_force;
+    // Convertir en JSON
+    nlohmann::json json_params = params.toJson();
+    
+    // Faire l'appel API
+    std::string endpoint = "/positions/otc";
+    auto response = request("delete", endpoint, json_params.dump(), version);
+    
+    // Gérer la réponse
+    if (response.status_code == 200) {
+        nlohmann::json result = nlohmann::json::parse(response.text);
+        std::string deal_reference = result["dealReference"];
+        return fetch_deal_by_deal_reference(deal_reference);
+    } else {
+        throw IGException("Failed to close position: " + response.text);
     }
+}
+
+nlohmann::json IGService::create_open_position(const PositionCreateParams& params) {
+    trading_rate_limit_pause_or_pass();
+    const std::string version = "2";
     
+    nlohmann::json json_params = params.toJson();
     std::string endpoint = "/positions/otc";
     
-    auto response = request("delete", endpoint, params.dump(), version);
+    auto response = request("create", endpoint, json_params.dump(), version);
     
     if (response.status_code == 200) {
-        json result = json::parse(response.text);
+        nlohmann::json result = nlohmann::json::parse(response.text);
         std::string deal_reference = result["dealReference"];
         return fetch_deal_by_deal_reference(deal_reference);
     } else {
@@ -982,85 +986,28 @@ nlohmann::json IGService::close_open_position(
     }
 }
 
-nlohmann::json IGService::create_open_position(
-    const std::string& currency_code,
-    const std::string& direction,
-    const std::string& epic,
-    const std::string& expiry,
-    bool force_open,
-    bool guaranteed_stop,
-    double level,
-    double limit_distance,
-    double limit_level,
-    const std::string& order_type,
-    const std::string& quote_id,
-    double size,
-    double stop_distance,
-    double stop_level,
-    bool trailing_stop,
-    double trailing_stop_increment,
-    const std::string& time_in_force) {
-    
+
+nlohmann::json IGService::update_open_position(const PositionUpdateParams& params) {
     trading_rate_limit_pause_or_pass();
     const std::string version = "2";
     
-json params = {
-        {"currencyCode", currency_code},
-        {"direction", direction},
-        {"epic", epic},
-        {"expiry", expiry},
-        {"forceOpen", force_open},
-        {"guaranteedStop", guaranteed_stop},
-        {"orderType", order_type},
-        {"size", size},
-        {"trailingStop", trailing_stop}
-    };
+    // Valider les paramètres
+    params.validate();
     
-    // Only include level for non-MARKET orders
-    if (order_type != "MARKET" && level != 0.0) {
-        params["level"] = level;
-    }
+    // Convertir en JSON
+    nlohmann::json json_params = params.toJson();
     
-    // Only include quoteId for QUOTE orders
-    if (order_type == "QUOTE" && !quote_id.empty()) {
-        params["quoteId"] = quote_id;
-    }
+    // Construire l'URL
+    std::string endpoint = "/positions/otc/" + params.dealId;
     
-    // Only include limit parameters if they're non-zero
-    if (limit_distance > 0.0) {
-        params["limitDistance"] = limit_distance;
-    }
-    if (limit_level > 0.0) {
-        params["limitLevel"] = limit_level;
-    }
+    // Faire l'appel API
+    auto response = request("update", endpoint, json_params.dump(), version);
     
-    // Only include stop parameters if they're non-zero
-    if (stop_distance > 0.0) {
-        params["stopDistance"] = stop_distance;
-    }
-    if (stop_level > 0.0) {
-        params["stopLevel"] = stop_level;
-    }
-    
-    // Only include trailing stop increment if trailing stop is enabled
-    if (trailing_stop && trailing_stop_increment > 0.0) {
-        params["trailingStopIncrement"] = trailing_stop_increment;
-    }
-    
-    if (!time_in_force.empty()) {
-        params["timeInForce"] = time_in_force;
-    }
-    
-    std::string endpoint = "/positions/otc";
-    
-    auto response = request("create", endpoint, params.dump(), version);
-    
+    // Gérer la réponse
     if (response.status_code == 200) {
-        json result = json::parse(response.text);
-        std::string deal_reference = result["dealReference"];
-        return fetch_deal_by_deal_reference(deal_reference);
+        return parse_response(response.text);
     } else {
-        throw IGException(response.text);
+        throw IGException("Failed to update position: " + response.text);
     }
 }
 

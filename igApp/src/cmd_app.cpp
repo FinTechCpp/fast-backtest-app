@@ -254,25 +254,28 @@ int main() {
                     break;
                 case 2: {
                     spdlog::info("Ouverture d'une position...");
-                    nlohmann::json result = igService.create_open_position(
-                        "EUR", // Type de position
-                        "BUY", // Direction de la position
-                        EPIC, // epic du symbole
-                        "-", // expiry
-                        true, // force_open
-                        false, //guaranteed_stop
-                        0.0, // Level (not applicable for MARKET orders)
-                        0.0, // limit_distance
-                        0.0, // limit level                        
-                        "MARKET", // Type d'ordre
-                        "", // quote_id (string parameter)
-                        1.0,
-                        0.0,
-                        0.0,
-                        false,
-                        0.0,
-                        "" // time_in_force parameter
-                    );
+                    // Créer et initialiser une structure PositionCreateParams
+                    ig::PositionCreateParams params;
+                    params.currencyCode = "EUR";
+                    params.direction = "BUY";
+                    params.epic = EPIC;
+                    params.expiry = "-";
+                    params.forceOpen = true;
+                    params.guaranteedStop = false;
+                    params.level = 0.0;
+                    params.limitDistance = 0.0;
+                    params.limitLevel = 0.0;
+                    params.orderType = "MARKET";
+                    params.quoteId = "";
+                    params.size = 1.0;
+                    params.stopDistance = 0.0;
+                    params.stopLevel = 0.0;
+                    params.trailingStop = false;
+                    params.trailingStopIncrement = 0.0;
+                    params.timeInForce = "";
+                    
+                    // Appeler la fonction avec la structure
+                    nlohmann::json result = igService.create_open_position(params);
                     // Display result
                     if (result.contains("dealId")) {
                         spdlog::info("Position ouverte avec succès! Deal ID: {}", result["dealId"].get<std::string>());

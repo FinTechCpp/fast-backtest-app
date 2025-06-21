@@ -6,6 +6,7 @@ add_library(cpp_trading_ig
     src/rest.cpp
     src/lightstreamer.cpp
     src/stream.cpp
+    src/igBroker.cpp
 )
 
 # Headers publics

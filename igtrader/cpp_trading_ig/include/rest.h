@@ -13,6 +13,7 @@
 #include <atomic>
 #include <ctime>
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 // Forward declarations
 namespace cpr {
@@ -20,7 +21,228 @@ namespace cpr {
     class Response;
 }
 
+namespace nlohmann {
+    
+    // Add serialization support for std::optional
+    template <typename T>
+    void to_json(nlohmann::json& j, const std::optional<T>& opt) {
+        if (opt.has_value()) {
+            j = opt.value();
+        } else {
+            j = nullptr;
+        }
+    }
+    
+    template <typename T>
+    void from_json(const nlohmann::json& j, std::optional<T>& opt) {
+        if (j.is_null()) {
+            opt = std::nullopt;
+        } else {
+            opt = j.get<T>();
+        }
+    }
+
+}
+
 namespace ig {
+
+struct PositionCreateParams {
+    std::string currencyCode;
+    std::string direction;
+    std::string epic;
+    std::string expiry;
+    bool forceOpen;
+    bool guaranteedStop;
+    double level;
+    double limitDistance;
+    double limitLevel;
+    std::string orderType;
+    std::string quoteId;
+    double size;
+    double stopDistance;
+    double stopLevel;
+    bool trailingStop;
+    double trailingStopIncrement;
+    std::string timeInForce;
+    
+    // Conversion en JSON
+    nlohmann::json toJson() const {
+        nlohmann::json params = {
+            {"currencyCode", currencyCode},
+            {"direction", direction},
+            {"epic", epic},
+            {"expiry", expiry},
+            {"forceOpen", forceOpen},
+            {"guaranteedStop", guaranteedStop},
+            {"orderType", orderType},
+            {"size", size},
+            {"trailingStop", trailingStop}
+        };
+        
+        // Ajouter uniquement les paramètres non vides/par défaut
+        if (orderType != "MARKET" && level != 0.0) {
+            params["level"] = level;
+        }
+        
+        if (orderType == "QUOTE" && !quoteId.empty()) {
+            params["quoteId"] = quoteId;
+        }
+        
+        if (limitDistance > 0.0) {
+            params["limitDistance"] = limitDistance;
+        }
+        
+        if (limitLevel > 0.0) {
+            params["limitLevel"] = limitLevel;
+        }
+        
+        if (stopDistance > 0.0) {
+            params["stopDistance"] = stopDistance;
+        }
+        
+        if (stopLevel > 0.0) {
+            params["stopLevel"] = stopLevel;
+        }
+        
+        if (trailingStop && trailingStopIncrement > 0.0) {
+            params["trailingStopIncrement"] = trailingStopIncrement;
+        }
+        
+        if (!timeInForce.empty()) {
+            params["timeInForce"] = timeInForce;
+        }
+        
+        return params;
+    }
+};
+
+struct PositionCloseParams {
+    std::string dealId;           // ID de la position à fermer
+    std::string direction;        // Direction (BUY ou SELL)
+    std::string epic;             // Code du marché
+    std::string expiry;           // Date d'expiration
+    double level = 0.0;           // Niveau de prix
+    std::string orderType;        // Type d'ordre (MARKET, LIMIT, etc.)
+    std::string quoteId;          // ID de cotation (pour les ordres QUOTE)
+    double size = 0.0;            // Taille de la position
+    std::string timeInForce;      // Durée de validité
+    
+    // Conversion en JSON
+    nlohmann::json toJson() const {
+        nlohmann::json params = {
+            {"dealId", dealId},
+            {"direction", direction},
+            {"epic", epic},
+            {"expiry", expiry},
+            {"level", level},
+            {"orderType", orderType},
+            {"size", size}
+        };
+        
+        // Ajouter les paramètres optionnels seulement s'ils sont renseignés
+        if (!quoteId.empty()) {
+            params["quoteId"] = quoteId;
+        }
+        
+        if (!timeInForce.empty()) {
+            params["timeInForce"] = timeInForce;
+        }
+        
+        return params;
+    }
+    
+    // Validation des paramètres
+    void validate() const {
+        if (dealId.empty()) {
+            spdlog::error("Deal ID is required for closing a position");
+        }
+        
+        if (direction.empty() || (direction != "BUY" && direction != "SELL")) {
+            spdlog::error("Direction must be 'BUY' or 'SELL'");
+        }
+        
+        if (epic.empty()) {
+            spdlog::error("Epic is required for closing a position");
+        }
+        
+        if (size <= 0.0) {
+            spdlog::error("Size must be greater than zero");
+        }
+        
+        if (orderType.empty()) {
+            spdlog::error("Order type is required for closing a position");
+        }
+    }
+};
+
+struct PositionUpdateParams {
+    std::string dealId;                      // ID de la position à modifier
+    std::optional<double> limitLevel;        // Niveau de prix pour le take profit
+    std::optional<double> stopLevel;         // Niveau de prix pour le stop loss
+    bool guaranteedStop = false;             // Utiliser un stop garanti
+    bool trailingStop = false;               // Utiliser un stop suiveur
+    double trailingStopDistance = 0.0;       // Distance pour le stop suiveur
+    double trailingStopIncrement = 0.0;      // Incrément pour le stop suiveur
+    
+    // Conversion en JSON
+    nlohmann::json toJson() const {
+        nlohmann::json params = nlohmann::json::object();
+        
+        // Ajouter uniquement les paramètres non nuls
+        if (limitLevel.has_value()) {
+            params["limitLevel"] = limitLevel.value();
+        }
+        
+        if (stopLevel.has_value()) {
+            params["stopLevel"] = stopLevel.value();
+        }
+        
+        params["guaranteedStop"] = guaranteedStop;
+        params["trailingStop"] = trailingStop;
+        
+        if (trailingStop) {
+            if (trailingStopDistance > 0.0) {
+                params["trailingStopDistance"] = trailingStopDistance;
+            }
+            
+            if (trailingStopIncrement > 0.0) {
+                params["trailingStopIncrement"] = trailingStopIncrement;
+            }
+        }
+        
+        return params;
+    }
+    
+    // Validation des paramètres
+    void validate() const {
+        if (dealId.empty()) {
+            spdlog::error("Deal ID is required for position update");
+        }
+        
+        if (guaranteedStop && trailingStop) {
+            spdlog::error("Cannot set both guaranteedStop and trailingStop to true");
+        }
+        
+        if (trailingStop && (trailingStopDistance <= 0.0 || trailingStopIncrement <= 0.0)) {
+            spdlog::error("When trailingStop is true, both trailingStopDistance and trailingStopIncrement must be provided with positive values");
+        }
+    }
+};
+
+struct Position {
+    std::string deal_id;
+    std::string direction;
+    std::string epic;
+    double size;
+    double level;
+    std::optional<double> stopLevel;
+    std::optional<double> limitLevel;
+    bool trailingStop;
+    bool guaranteedStop;
+
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(Position, deal_id, direction, 
+        epic, size, level, stopLevel, limitLevel, trailingStop, guaranteedStop);
+};
 
 /**
  * @brief Exception thrown when API request limit is reached
@@ -299,31 +521,14 @@ public:
      * @brief Get all open positions
      * @return Open positions
      */
-    nlohmann::json fetch_open_positions();
+    ig::Position fetch_open_positions();
     
     /**
      * @brief Close an open position
-     * @param deal_id Deal ID
-     * @param direction Trade direction
-     * @param epic Market epic
-     * @param expiry Expiry date
-     * @param level Price level
-     * @param order_type Order type
-     * @param quote_id Quote ID
-     * @param size Position size
-     * @param time_in_force Time in force
+    * @param params Parameters for closing the position
      * @return Deal confirmation
      */
-    nlohmann::json close_open_position(
-        const std::string& deal_id,
-        const std::string& direction,
-        const std::string& epic,
-        const std::string& expiry,
-        double level,
-        const std::string& order_type,
-        const std::string& quote_id,
-        double size,
-        const std::string& time_in_force = "");
+    nlohmann::json close_open_position(const PositionCloseParams& params);
     
     /**
      * @brief Create an open position
@@ -346,24 +551,19 @@ public:
      * @param time_in_force string - Time in force (e.g., "")
      * @return Deal confirmation - bool
      */
-    nlohmann::json create_open_position(
-        const std::string& currency_code,
-        const std::string& direction,
-        const std::string& epic,
-        const std::string& expiry,
-        bool force_open,
-        bool guaranteed_stop,
-        double level,
-        double limit_distance,
-        double limit_level,
-        const std::string& order_type,
-        const std::string& quote_id,
-        double size,
-        double stop_distance,
-        double stop_level,
-        bool trailing_stop,
-        double trailing_stop_increment,
-        const std::string& time_in_force = "");
+    nlohmann::json create_open_position(const PositionCreateParams& params);
+    
+
+    /**
+     * @brief Update an open position
+     * 
+     * Updates the parameters of an existing open position such as 
+     * stop levels, limit levels, trailing stops, etc.
+     * 
+     * @param params Structure containing all the update parameters
+     * @return JSON response containing the update result
+     */
+    nlohmann::json update_open_position(const PositionUpdateParams& params);
 
     // -------- MARKET METHODS --------
     

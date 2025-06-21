@@ -4,14 +4,15 @@ cmake_minimum_required(VERSION 3.14)
 # Créer l'exécutable
 add_executable(ig_cmd_app
     src/cmd_app.cpp
+    src/liveIG.cpp
 )
 
 # Headers
 target_include_directories(ig_cmd_app
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../igtrader/cpp_trading_ig/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../igtrader
+        ${CMAKE_CURRENT_SOURCE_DIR}/../strategies/include
 )
 
 find_package(fmt REQUIRED)

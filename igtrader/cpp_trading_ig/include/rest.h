@@ -327,24 +327,24 @@ public:
     
     /**
      * @brief Create an open position
-     * @param currency_code Currency code
-     * @param direction Trade direction
-     * @param epic Market epic
-     * @param expiry Expiry date
-     * @param force_open Force open flag
-     * @param guaranteed_stop Use guaranteed stop
-     * @param level Price level
-     * @param limit_distance Limit distance
-     * @param limit_level Limit level
-     * @param order_type Order type
-     * @param quote_id Quote ID
-     * @param size Position size
-     * @param stop_distance Stop distance
-     * @param stop_level Stop level
-     * @param trailing_stop Use trailing stop
-     * @param trailing_stop_increment Trailing stop increment
-     * @param time_in_force Time in force
-     * @return Deal confirmation
+     * @param currency_code string - Currency code (e.g., "EUR")
+     * @param direction string - Trade direction (e.g., "BUY")
+     * @param epic string - Market epic (e.g., "IX.D.FTSE.DAILY.IP")
+     * @param expiry string - Expiry date (e.g., "-" for no expiry)
+     * @param force_open bool - Force open flag (e.g., true)
+     * @param guaranteed_stop bool - Use guaranteed stop (e.g., false)
+     * @param level double - Price level (e.g., 0.0 for MARKET orders)
+     * @param limit_distance double - Limit distance (e.g., 0.0)
+     * @param limit_level double - Limit level (e.g., 0.0)
+     * @param order_type string - Order type (e.g., "MARKET")
+     * @param quote_id string - Quote ID (e.g., "")
+     * @param size double - Position size (e.g., 1.0)
+     * @param stop_distance double - Stop distance (e.g., 0.0)
+     * @param stop_level double - Stop level (e.g., 0.0)
+     * @param trailing_stop bool - Use trailing stop (e.g., false)
+     * @param trailing_stop_increment double - Trailing stop increment (e.g., 0.0)
+     * @param time_in_force string - Time in force (e.g., "")
+     * @return Deal confirmation - bool
      */
     nlohmann::json create_open_position(
         const std::string& currency_code,

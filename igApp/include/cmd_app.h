@@ -5,8 +5,8 @@
 #include <string>
 #include <limits>
 #include <chrono>
-#include "../../igtrader/trading_ig_config.hpp"
-#include "../../igtrader/cpp_trading_ig/include/rest.h"
+#include "trading_ig_config.hpp"
+#include "rest.h"
 
 /**
  * Efface le buffer d'entrée pour éviter les problèmes lors de la saisie

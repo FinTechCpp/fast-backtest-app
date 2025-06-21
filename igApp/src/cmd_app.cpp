@@ -10,6 +10,13 @@
 #include "lightstreamer.h"
 #include "stream.h"
 
+const std::string EPIC = "IX.D.NASDAQ.IFE.IP";
+const std::string RESOLUTION = "D";
+const std::string START_DATE = "100";
+const std::string END_DATE = "";
+const int NUM_POINTS = std::stoi("100");
+const int PAGE_SIZE = std::stoi("20");
+
 // Fonction pour effacer l'entrée du buffer
 void clearInputBuffer() {
     std::cin.clear();
@@ -17,37 +24,22 @@ void clearInputBuffer() {
 }
 
 void setup_logging() {
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+    std::shared_ptr<spdlog::sinks::stdout_color_sink_mt> console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(spdlog::level::debug);
     console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
     
-    auto logger = std::make_shared<spdlog::logger>("ig_trader", console_sink);
+    std::shared_ptr<spdlog::logger> logger = std::make_shared<spdlog::logger>("ig_trader", console_sink);
     logger->set_level(spdlog::level::debug);
     spdlog::set_default_logger(logger);
 }
 
 // Fonction pour récupérer les prix historiques
 void fetchHistoricalPrices(ig::IGService& service) {
-    std::string epic;
-    std::string resolution;
-    std::string start_date;
-    std::string end_date;
-    int numpoints = 0;
-    int pagesize = 20;
 
     spdlog::info("Récupération des prix historiques...");
 
-    epic = "IX.D.NASDAQ.IFE.IP";
-    spdlog::info("Épic : {}", epic);
-
-    resolution = "D";
-    spdlog::info("Résolution : {}", resolution);
-    
-    start_date = "100";
-    spdlog::info("Nombre de points à récupérer : {}", start_date);
-
-    pagesize = std::stoi("20");
-    spdlog::info("Taille de page : {}", pagesize);
+    spdlog::info("Using epic: {}, resolution: {}, start_date: {}, pagesize: {}", 
+                 EPIC, RESOLUTION, START_DATE, PAGE_SIZE);
 
     spdlog::info("Récupération des données...");
 
@@ -78,8 +70,8 @@ void fetchHistoricalPrices(ig::IGService& service) {
     
     // Récupération des prix historiques
     nlohmann::json result = service.fetch_historical_prices_by_epic(
-        epic, resolution, start_date, end_date, numpoints, pagesize);
-    
+        EPIC, RESOLUTION, START_DATE, END_DATE, NUM_POINTS, PAGE_SIZE);
+
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     
@@ -152,36 +144,40 @@ void streamTicks(ig::IGService& service) {
     ig::IGStreamService streamService(service);
     
     // Se connecter au service
-    spdlog::info("Connexion au service de streaming...");
-    streamService.connect();
-    
-    // Vérifier la connexion
-    if (!streamService.isConnected()) {
-        spdlog::error("Échec de la connexion au service de streaming");
-        return;
-    }
-    
-    // Créer un listener
-    auto listener = std::make_shared<SimpleTickerListener>();
-    
-    // Souscrire aux ticks
-    std::string epic = "IX.D.NASDAQ.IFE.IP";
-    spdlog::info("Souscription aux ticks pour {}", epic);
-    
     try {
+        spdlog::info("Connexion au service de streaming...");
+        streamService.connect();
+        
+        // Vérifier la connexion
+        if (!streamService.isConnected()) {
+            spdlog::error("Échec de la connexion au service de streaming");
+            return;
+        }
+        
+        spdlog::info("Connexion au service de streaming établie avec succès");
+        
+        // Créer un listener
+        auto listener = std::make_shared<SimpleTickerListener>();
+        
+        // Souscrire aux ticks
+        std::string epic = "IX.D.NASDAQ.IFE.IP";
+        spdlog::info("Souscription aux ticks pour {}", epic);
+        
         auto subscription = streamService.subscribeToTicks(epic, listener);
+        
+        spdlog::info("Souscription aux ticks établie, en attente de données...");
         
         // Attendre que l'utilisateur appuie sur une touche pour arrêter
         std::cout << "Réception des ticks en cours... Appuyez sur Entrée pour arrêter" << std::endl;
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         
+        // Se désabonner et se déconnecter
+        spdlog::info("Déconnexion du service de streaming...");
+        streamService.disconnect();
+        
     } catch (const std::exception& e) {
-        spdlog::error("Erreur lors de la souscription aux ticks: {}", e.what());
+        spdlog::error("Erreur lors du streaming de ticks: {}", e.what());
     }
-    
-    // Se désabonner et se déconnecter
-    spdlog::info("Déconnexion du service de streaming...");
-    streamService.disconnect();
 }
 
 // Menu principal
@@ -200,6 +196,7 @@ int main() {
 
     // Add near the beginning of main():
     spdlog::info("=== Test de l'API IG Trading en C++ ===\n");
+    spdlog::debug("Test du logging debug avec spdlog\n");
 
     // Charger la configuration
     Config config;
@@ -260,9 +257,9 @@ int main() {
                     nlohmann::json result = igService.create_open_position(
                         "EUR", // Type de position
                         "BUY", // Direction de la position
-                        "IX.D.NASDAQ.IFE.IP", // Exemple d'épic
-                        "-",
-                        true, //force_open
+                        EPIC, // epic du symbole
+                        "-", // expiry
+                        true, // force_open
                         false, //guaranteed_stop
                         0.0, // Level (not applicable for MARKET orders)
                         0.0, // limit_distance

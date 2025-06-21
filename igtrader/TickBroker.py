@@ -13,7 +13,6 @@ from enum import Enum
 from dataclasses import dataclass
 from pandas import Timestamp
 # Ajouter ces imports
-import time
 from functools import wraps
 
 # Ajouter cette classe au début du fichier

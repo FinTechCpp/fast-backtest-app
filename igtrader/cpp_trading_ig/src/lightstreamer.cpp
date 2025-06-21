@@ -165,16 +165,31 @@ void LightstreamerClient::connect() {
     stop_requested_ = false;
     try {
         createSession();
-        connected_ = true;
         
-        // Start streaming thread
+        // Attend que la connexion soit établie
+        auto timeout = std::chrono::system_clock::now() + std::chrono::seconds(10);
+        spdlog::info("Waiting for Lightstreamer connection to be established...");
+        
+        // Démarrer le thread de streaming
         stream_thread_ = std::make_unique<std::thread>(&LightstreamerClient::streamThread, this);
         
+        // Attendre que la connexion soit établie ou que le timeout soit atteint
+        while (!connected_ && std::chrono::system_clock::now() < timeout) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        
+        if (!connected_) {
+            spdlog::error("Timeout waiting for Lightstreamer connection");
+            throw std::runtime_error("Timeout connecting to Lightstreamer");
+        }
+        
+        spdlog::info("Lightstreamer connection established successfully");
         notifyStatusChange("CONNECTED");
     } catch (const std::exception& e) {
         spdlog::error("Failed to connect to Lightstreamer: {}", e.what());
         connected_ = false;
         notifyStatusChange("DISCONNECTED");
+        throw;
     }
 }
 
@@ -532,7 +547,7 @@ void LightstreamerClient::streamThread() {
             }
             
             // Send request
-            auto session = cpr::Session();
+            cpr::Session session = cpr::Session();
             session.SetUrl(cpr::Url{url});
             
             // Set POST data
@@ -630,6 +645,8 @@ void LightstreamerClient::streamThread() {
 }
 
 void LightstreamerClient::processMessage(const std::string& message) {
+    spdlog::info("Processing message: {}", message);
+    
     if (message == PROBE_CMD) {
         // Heartbeat, ignore
         return;
@@ -688,10 +705,14 @@ void LightstreamerClient::processMessage(const std::string& message) {
                 auto it = subscriptions_.find(table);
                 if (it != subscriptions_.end()) {
                     subscription = it->second;
+                    spdlog::info("Found subscription for table {}: {}", table, it->second->getItems()[0]);
+                } else {
+                    spdlog::warn("No subscription found for table {}", table);
                 }
             }
             
             if (subscription) {
+                spdlog::info("Notifying update for item {} with {} fields", item_position, fields.size());
                 subscription->notifyUpdate(item_position, fields);
             }
         } catch (const std::exception& e) {
@@ -717,7 +738,7 @@ void LightstreamerClient::notifyStatusChange(const std::string& status) {
 }
 
 std::string LightstreamerClient::httpRequest(const std::string& url, const std::unordered_map<std::string, std::string>& params) {
-    auto session = cpr::Session();
+    cpr::Session session = cpr::Session();
     session.SetUrl(cpr::Url{url});
     
     // Set POST data

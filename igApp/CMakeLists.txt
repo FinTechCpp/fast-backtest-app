@@ -1,29 +1,34 @@
 # Application IG Command Line
 cmake_minimum_required(VERSION 3.14)
 
-# Créer l'exécutable
-add_executable(ig_cmd_app
-    src/cmd_app.cpp
-    src/liveIG.cpp
-)
-
-# Headers
-target_include_directories(ig_cmd_app
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../igtrader
-        ${CMAKE_CURRENT_SOURCE_DIR}/../strategies/include
-)
-
+# Trouver les packages requis
 find_package(fmt REQUIRED)
 
-# Lier avec la bibliothèque IG trading
-target_link_libraries(ig_cmd_app PRIVATE cpp_trading_ig fmt::fmt)
+# Fonction pour configurer un exécutable IG
+function(configure_ig_executable name source_file)
+    # Créer l'exécutable
+    add_executable(${name} ${source_file})
+    
+    # Configurer les headers
+    target_include_directories(${name}
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../igtrader
+            ${CMAKE_CURRENT_SOURCE_DIR}/../strategies/include
+    )
+    
+    # Lier avec les bibliothèques (arguments supplémentaires optionnels)
+    target_link_libraries(${name} PRIVATE cpp_trading_ig fmt::fmt ${ARGN})
+    
+    # Standard C++17
+    target_compile_features(${name} PRIVATE cxx_std_17)
+    
+    # Répertoire de sortie
+    set_target_properties(${name} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+    )
+endfunction()
 
-# Standard C++17
-target_compile_features(ig_cmd_app PRIVATE cxx_std_17)
-
-# Copier dans le dossier de build pour faciliter l'exécution
-set_target_properties(ig_cmd_app PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
-)
+# Configurer les exécutables
+configure_ig_executable(ig_cmd_app src/cmd_app.cpp)
+configure_ig_executable(ig_live_app src/liveIG.cpp strategies)

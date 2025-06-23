@@ -136,9 +136,9 @@ void StochasticDialog::onDColorButtonClicked() {
 }
 
 void StochasticDialog::applyChanges() {
-    m_chartWidget->setStochasticConfig(m_currentStochastic);
+    m_chartWidget->updateIndicator(m_currentStochastic);
 }
 
 void StochasticDialog::cancelChanges() {
-    m_chartWidget->setStochasticConfig(m_originalStochastic);
+    m_chartWidget->updateIndicator(m_originalStochastic);
 }

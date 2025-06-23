@@ -70,8 +70,7 @@ void IndicatorDialog::getRGBComponents(int color, int& r, int& g, int& b)
     b = color & 0xFF;
 }
 
-void IndicatorDialog::onApply()
-{
+void IndicatorDialog::onApply() {
     applyChanges();
     accept();
 }

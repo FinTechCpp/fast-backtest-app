@@ -170,12 +170,13 @@ public:
         return true;
     }
 
-    template<typename T, typename = std::enable_if_t<std::is_base_of_v<IndicatorBase, T>>>
     bool removeIndicator(int id) {
-        auto it = std::find_if(m_indicators.begin(), m_indicators.end(),
-                         [id](const std::unique_ptr<IndicatorBase>& item) { return item->id == id && item->type_ == T().type_; });
+        auto it = std::find_if(m_indicators.begin(), m_indicators.end(), [id](const std::unique_ptr<IndicatorBase>& item) {  
+            return item->id == id; 
+        });
 
-        if (it == m_indicators.end()) return false;
+        if (it == m_indicators.end()) 
+            return false;
 
         m_indicators.erase(it);
 

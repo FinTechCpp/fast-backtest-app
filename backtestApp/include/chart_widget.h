@@ -40,11 +40,6 @@ public:
     void setChartType(ChartDataManager::ChartType chartType); // remplacer par un slot
     ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
-    std::vector<const RSIInstance*> getRSIInstances() const { return m_dataManager.getIndicatorsOfType<RSIInstance>(); }
-    std::vector<const EMAInstance*> getEMAInstances() const { return m_dataManager.getIndicatorsOfType<EMAInstance>(); }
-    std::vector<const SuperTrendInstance*> getSuperTrendInstances() const { return m_dataManager.getIndicatorsOfType<SuperTrendInstance>(); }
-    std::vector<const StochasticInstance*> getStochasticInstances() const { return m_dataManager.getIndicatorsOfType<StochasticInstance>(); }
-    std::vector<const ATRInstance*> getATRInstances() const { return m_dataManager.getIndicatorsOfType<ATRInstance>(); }
     RSIInstance* findRSI(int id) const { return m_dataManager.findIndicator<RSIInstance>(id); }
     EMAInstance* findEMA(int id) const { return m_dataManager.findIndicator<EMAInstance>(id); }
     SuperTrendInstance* findSuperTrend(int id) const { return m_dataManager.findIndicator<SuperTrendInstance>(id); }
@@ -69,6 +64,34 @@ public:
 
     void setMaxDisplayPoints(int value);
     int getMaxDisplayPoints() const;
+
+    template<typename T>
+    int addIndicator(T&& config) {
+        QString displayName = config.getDisplayName();
+        int id = m_dataManager.addIndicator(std::move(config));
+
+        emit indicatorAdded(id, displayName);
+
+        if (m_dataManager.hasValidData() && m_chartViewer)
+            updateChartDisplay(ViewPortMode::USE_CURRENT);
+
+        return id;
+    }
+
+    template<typename T>
+    bool updateIndicator(const T& config) {
+        if (!m_dataManager.updateIndicator(config)) 
+            return false;
+
+        emit indicatorChanged(config.id, config.getDisplayName());
+
+        if (m_dataManager.hasValidData() && m_chartViewer)
+            updateChartDisplay(ViewPortMode::USE_CURRENT);
+
+        return true;
+    }
+
+    bool removeIndicator(int id);
     
 signals:
     void chartCreated();
@@ -88,44 +111,6 @@ private slots:
     void onViewPortChanged();
     void onMouseMovePlotArea(QMouseEvent* event);
     void onMouseClickPlotArea(QMouseEvent* event);
-    
-public slots:
-// pour la validation on pourrait la rendre generique avec un lambda dans la 
-// struct qui definit la condition de validityé de l'indicateur
-// on pourrait aussi mettre la condition de recalcule pouir evité de la faire dans chaque
-// methode et passer un booléen pour savoir si on doit recalculer ou pas
-    // Pour le RSI
-    int addRSI(RSIInstance&& config);
-    int addRSI(const RSIInstance& config) { return addRSI(std::move(RSIInstance(config))); }
-    bool setRSIConfig(const RSIInstance& config);
-    bool removeRSI(int id);
-
-    // Pour l'EMA
-    int addEMA(EMAInstance&& config);
-    int addEMA(const EMAInstance& config) { return addEMA(std::move(EMAInstance(config))); }
-    bool setEMAConfig(const EMAInstance& config);
-    bool removeEMA(int id);
-
-    // Pour le SuperTrend
-    int addSuperTrend(SuperTrendInstance&& config);
-    int addSuperTrend(const SuperTrendInstance& config) { return addSuperTrend(std::move(SuperTrendInstance(config))); }
-    bool setSuperTrendConfig(const SuperTrendInstance& config);
-    bool removeSuperTrend(int id);
-
-    // Pour le Stochastique
-    int addStochastic(StochasticInstance&& config);
-    int addStochastic(const StochasticInstance& config) { return addStochastic(std::move(StochasticInstance(config))); }
-    bool setStochasticConfig(const StochasticInstance& config);
-    bool removeStochastic(int id);
-
-    // Pour l'ATR
-    int addATR(ATRInstance&& config);
-    int addATR(const ATRInstance& config) { return addATR(std::move(ATRInstance(config))); }
-    bool setATRConfig(const ATRInstance& config);
-    bool removeATR(int id);
-
-    // Pour gérer le redimensionnement du graphique
-    // void onWindowResized(QSize newSize);
 
 private:
     enum class ViewPortMode {

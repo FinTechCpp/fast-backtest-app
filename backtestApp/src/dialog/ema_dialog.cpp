@@ -51,12 +51,10 @@ void EMADialog::onColorButtonClicked()
     }
 }
 
-void EMADialog::applyChanges()
-{
-    m_chartWidget->setEMAConfig(m_currentEma);
+void EMADialog::applyChanges() {
+    m_chartWidget->updateIndicator(m_currentEma);
 }
 
-void EMADialog::cancelChanges()
-{
-    m_chartWidget->setEMAConfig(m_originalEma);
+void EMADialog::cancelChanges() {
+    m_chartWidget->updateIndicator(m_originalEma);
 }

@@ -117,9 +117,9 @@ void RSIDialog::onLowerColorButtonClicked() {
 }
 
 void RSIDialog::applyChanges() {
-    m_chartWidget->setRSIConfig(m_currentRsi);
+    m_chartWidget->updateIndicator(m_currentRsi);
 }
 
 void RSIDialog::cancelChanges() {
-    m_chartWidget->setRSIConfig(m_originalRsi);
+    m_chartWidget->updateIndicator(m_originalRsi);
 }

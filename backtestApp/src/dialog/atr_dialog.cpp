@@ -72,9 +72,9 @@ void ATRDialog::onColorButtonClicked() {
 }
 
 void ATRDialog::applyChanges() {
-    m_chartWidget->setATRConfig(m_currentAtr);
+    m_chartWidget->updateIndicator(m_currentAtr);
 }
 
 void ATRDialog::cancelChanges() {
-    m_chartWidget->setATRConfig(m_originalAtr);
+    m_chartWidget->updateIndicator(m_originalAtr);
 }

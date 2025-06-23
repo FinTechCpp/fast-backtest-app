@@ -80,9 +80,9 @@ void SupertrendDialog::onDownColorButtonClicked() {
 }
 
 void SupertrendDialog::applyChanges() {
-    m_chartWidget->setSuperTrendConfig(m_currentSupertrend);
+    m_chartWidget->updateIndicator(m_currentSupertrend);
 }
 
 void SupertrendDialog::cancelChanges() {
-    m_chartWidget->setSuperTrendConfig(m_originalSupertrend);
+    m_chartWidget->updateIndicator(m_originalSupertrend);
 }

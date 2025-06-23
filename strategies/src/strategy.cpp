@@ -448,9 +448,7 @@ Signal* Strategy::update_candle(const Candle& candle) {
     }
     
     // Execute strategy
-    logger->log_execution_start();
     execute();
-    logger->log_execution_end();
 
     logger->finalize_and_send_logs();
     

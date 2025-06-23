@@ -95,21 +95,21 @@ public:
         chrono_running = true;
     }
     
-    double stop_chrono_and_log() {
+    int64_t stop_chrono_and_log() {
         if (!chrono_running) {
             log_general("Tentative d'arrêt du chronomètre alors qu'il n'est pas démarré", LogLevel::WARNING);
-            return 0.0;
+            return 0;
         }
 
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-        double duration_ms = duration.count() / 1000.0;
+        int64_t duration_us = duration.count();
         
         // Logger le temps d'exécution
-        log_execution_time(duration_ms);
+        log_execution_time(duration_us);
         
         chrono_running = false;
-        return duration_ms;
+        return duration_us;
     }
     
     // Nouvelle méthode pour finaliser les logs et les envoyer
@@ -185,18 +185,10 @@ public:
     }
     
     // Logs d'exécution
-    void log_execution_start(int level = LogLevel::INFO) {
-        add_log(LogCategory::EXECUTION, "Exécution de la stratégie démarrée", level);
-    }
-    
-    void log_execution_end(int level = LogLevel::INFO) {
-        add_log(LogCategory::EXECUTION, "Exécution de la stratégie terminée", level);
-    }
-    
     void log_execution_step(const std::string& step, 
                           bool success, int level = LogLevel::INFO) {
         std::string status = success ? "succès" : "échec";
-        std::string msg = indent(1) + "Étape '" + step + "': " + status;
+        std::string msg = "Étape '" + step + "': " + status;
         add_log(LogCategory::EXECUTION, msg, level);
     }
     
@@ -224,14 +216,14 @@ public:
     }
 
     // Logs de performance
-    void log_execution_time(double duration_ms, int level = LogLevel::DEBUG) {
-        std::string msg = "Temps d'exécution: " + format_value(duration_ms, 2) + " ms";
+    void log_execution_time(int64_t duration_us, int level = LogLevel::DEBUG) {
+        std::string msg = "Temps d'exécution: " + std::to_string(duration_us) + " us";
         
         // Changer le niveau si le traitement prend trop de temps
-        if (duration_ms > 1.0) {  // Plus de 100ms
+        if (duration_us > 1000) {  // Plus de 1ms
             level = LogLevel::WARNING;
             msg += " (LENT)";
-        } else if (duration_ms > 0.1) {  // Plus de 50ms
+        } else if (duration_us > 500) {  // Plus de 0.5ms
             level = LogLevel::INFO;
             msg += " (Modéré)";
         }

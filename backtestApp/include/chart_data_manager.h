@@ -15,17 +15,7 @@
 // je sais aps trop mais a voir avec claude
 // template<> inline IndicatorType RSIInstance::getStaticType() { return IndicatorType::RSI; }
 // template<> inline IndicatorType EMAInstance::getStaticType() { return IndicatorType::EMA; }
-// // etc.
-
-
-struct IndicatorCache {
-    std::map<int, std::vector<double>> rsi;  // Clé: période, Valeur: données RSI
-    std::map<int, std::vector<double>> ema;  // Clé: période, Valeur: données EMA
-    std::map<int, std::vector<double>> supertrend; // Clé: période, Valeur: données SuperTrend
-    std::map<std::tuple<int,int,int>, std::pair<std::vector<double>, std::vector<double>>> stochastic;
-    std::map<int, std::vector<double>> atr;  // Clé: période, Valeur: données ATR
-    bool isValid = false;
-};
+// etc.
 
 // ces declaration devrait peut etre etre dans un fichier de declaration
 enum class IndicatorType {
@@ -60,7 +50,8 @@ struct RSIInstance : public IndicatorBase {
     int period;             // Période du RSI
     int height = 120;       // Hauteur du panneau
     int color = 0x800080;   // Couleur de la ligne principale (violet par défaut)
-    double range = 20;      // Plage pour les niveaux de survente/surachat (70/30)
+    int overboughtLevel = 80; // Niveau de surachat
+    int oversoldLevel = 20;   // Niveau de survente
     int upperColor = 0xff6666; // Couleur pour la zone de surachat
     int lowerColor = 0x6666ff; // Couleur pour la zone de survente
 

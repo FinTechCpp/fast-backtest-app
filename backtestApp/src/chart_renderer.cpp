@@ -622,8 +622,8 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
     layer->setFastLineMode(true);
 
     // Ajouter les seuils
-    chart->addThreshold(c, layer, 50 + rsi.range, rsi.upperColor, 50 - rsi.range, rsi.lowerColor);
-    
+    chart->addThreshold(c, layer, rsi.overboughtLevel, rsi.upperColor, rsi.oversoldLevel, rsi.lowerColor);
+
     // Configurer l'échelle de l'axe Y
     c->yAxis()->setLinearScale(0, 100);
 }
@@ -903,12 +903,8 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
 }
 
-void ChartRenderer::addMarkers(XYChart* chart, 
-                              const std::vector<std::pair<double, double>>& markers, 
-                              const char* name, 
-                              int symbolType, 
-                              int symbolSize, 
-                              int color)
+void ChartRenderer::addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& markers, 
+                              const char* name, int symbolType, int symbolSize, int color)
 {
     if (markers.empty()) return;
 

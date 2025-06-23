@@ -25,12 +25,17 @@ void RSIDialog::setupUI() {
     m_heightSpinBox->setValue(m_currentRsi.height);
     m_formLayout->addRow("Height:", m_heightSpinBox);
     
-    // Range
-    m_rangeSpinBox = new QDoubleSpinBox();
-    m_rangeSpinBox->setRange(5, 40);
-    m_rangeSpinBox->setSingleStep(1);
-    m_rangeSpinBox->setValue(m_currentRsi.range);
-    m_formLayout->addRow("Range:", m_rangeSpinBox);
+    // Niveau de surachat
+    m_overboughtLevelSpinBox = new QSpinBox();
+    m_overboughtLevelSpinBox->setRange(50, 100);
+    m_overboughtLevelSpinBox->setValue(m_currentRsi.overboughtLevel);
+    m_formLayout->addRow("Overbought Level:", m_overboughtLevelSpinBox);
+    
+    // Niveau de survente
+    m_oversoldLevelSpinBox = new QSpinBox();
+    m_oversoldLevelSpinBox->setRange(0, 50);
+    m_oversoldLevelSpinBox->setValue(m_currentRsi.oversoldLevel);
+    m_formLayout->addRow("Oversold Level:", m_oversoldLevelSpinBox);
     
     // Couleur principale
     m_colorButton = new QPushButton();
@@ -51,7 +56,8 @@ void RSIDialog::setupUI() {
 void RSIDialog::connectSignals() {
     connect(m_periodSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &RSIDialog::onPeriodChanged);
     connect(m_heightSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &RSIDialog::onHeightChanged);
-    connect(m_rangeSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &RSIDialog::onRangeChanged);
+    connect(m_overboughtLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &RSIDialog::onOverboughtLevelChanged);
+    connect(m_oversoldLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &RSIDialog::onOversoldLevelChanged);
     connect(m_colorButton, &QPushButton::clicked, this, &RSIDialog::onColorButtonClicked);
     connect(m_upperColorButton, &QPushButton::clicked, this, &RSIDialog::onUpperColorButtonClicked);
     connect(m_lowerColorButton, &QPushButton::clicked, this, &RSIDialog::onLowerColorButtonClicked);
@@ -71,8 +77,13 @@ void RSIDialog::onHeightChanged(int height) {
     applyChanges();
 }
 
-void RSIDialog::onRangeChanged(double range) {
-    m_currentRsi.range = range;
+void RSIDialog::onOverboughtLevelChanged(int level) {
+    m_currentRsi.overboughtLevel = level;
+    applyChanges();
+}
+
+void RSIDialog::onOversoldLevelChanged(int level) {
+    m_currentRsi.oversoldLevel = level;
     applyChanges();
 }
 

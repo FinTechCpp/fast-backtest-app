@@ -24,7 +24,9 @@ public:
 private slots:
     void onPeriodChanged(int period);
     void onHeightChanged(int height);
-    void onRangeChanged(double range);
+    // void onRangeChanged(double range);
+    void onOverboughtLevelChanged(int level);
+    void onOversoldLevelChanged(int level);
     void onColorButtonClicked();
     void onUpperColorButtonClicked();
     void onLowerColorButtonClicked();
@@ -42,7 +44,8 @@ private:
     
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;
-    QDoubleSpinBox* m_rangeSpinBox;
+    QSpinBox* m_overboughtLevelSpinBox;
+    QSpinBox* m_oversoldLevelSpinBox;
     QPushButton* m_colorButton;
     QPushButton* m_upperColorButton;
     QPushButton* m_lowerColorButton;

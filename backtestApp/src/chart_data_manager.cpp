@@ -676,10 +676,10 @@ bool ChartDataManager::hasValidData() const
     if (!m_backtestData)
         return false;
 
-    const auto& open = m_backtestData->getOpen();
-    const auto& high = m_backtestData->getHigh();
-    const auto& low = m_backtestData->getLow();
-    const auto& close = m_backtestData->getClose();
+    const std::vector<double>& open = m_backtestData->getOpen();
+    const std::vector<double>& high = m_backtestData->getHigh();
+    const std::vector<double>& low = m_backtestData->getLow();
+    const std::vector<double>& close = m_backtestData->getClose();
 
     size_t size = open.size();
     return size > 0 &&

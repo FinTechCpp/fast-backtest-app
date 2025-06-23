@@ -296,7 +296,6 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     for (const auto& [id, valuesPair] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].supertrendValues) {
         if (!aggregated.isSupertrendValid(id)) {
             const auto& [supertrendValues, trendDirections] = valuesPair;
-            
             std::vector<double> supertrendData = aggregateVector(supertrendValues, level, Chart::AggregateLast);
             std::vector<int> directionsData = aggregateVector(trendDirections, level, Chart::AggregateLast);
 
@@ -370,8 +369,7 @@ std::vector<int> ChartDataManager::aggregateVector(const std::vector<int>& data,
 }
 
 
-void ChartDataManager::calculateRSI(int id, int period)
-{
+void ChartDataManager::calculateRSI(int id, int period) {
     // Vérifier si les données nécessaires sont disponibles
     if (!hasValidData() || period < 2) return;
 

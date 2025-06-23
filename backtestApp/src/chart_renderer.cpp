@@ -400,152 +400,88 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     std::vector<TPSLSegment> tpslSegments;
     tpslSegments.reserve(estimatedMarkers * 2);
 
-    // En mode agrégé, on utilise une approche différente
-    // if (aggregationInfo.level != ChartDataManager::AggregationLevel::Raw) {
-    //     // Obtenir les données du niveau d'agrégation actuel
-    //     const auto& aggregatedData = dataManager.getAggregatedData(aggregationInfo.level);
-    //     if (!aggregatedData.isValid) return;
+    // Mode Raw (affichage détaillé)
+    for (const auto& trade : trades) {
+        // Déterminer la catégorie du résultat
+        int resultIndex = NEUTRAL; // Par défaut
+        
+        if (trade->isClosed()) {
+            double pnl = trade->pl();
+            if (pnl > 0) 
+                resultIndex = WINNING;
+            else if (pnl < 0) 
+                resultIndex = LOSING;
+        }
 
-    //     // Pour chaque trade, trouver son équivalent dans les données agrégées
-    //     for (const auto& trade : trades) {
-    //         // Déterminer la catégorie du résultat
-    //         int resultIndex = NEUTRAL; // Par défaut
+        // Traiter le point d'entrée
+        size_t entryBarIndex = trade->entryBar();
+        if (entryBarIndex >= static_cast<size_t>(startIndex) && 
+            entryBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+            double relativeIndex = static_cast<double>(entryBarIndex - startIndex);
             
-    //         if (trade->isClosed()) {
-    //             double pnl = trade->pl();
-    //             if (pnl > 0) 
-    //                 resultIndex = WINNING;
-    //             else if (pnl < 0) 
-    //                 resultIndex = LOSING;
-    //         }
-
-    //         // Obtenir l'horodatage du trade dans les données brutes
-    //         size_t entryBarIndex = trade->entryBar();
-    //         // if (entryBarIndex >= dataManager.getTimestamps().size()) continue;
+            // Marqueur carré pour la position d'entrée
+            entryMarkers.push_back({relativeIndex, trade->entryPrice()});
             
-    //         double entryTimestamp = dataManager.getTimestamps()[entryBarIndex];
-            
-    //         // Trouver l'indice le plus proche dans les données agrégées
-    //         size_t aggregatedIndex = 0;
-    //         double minDiff = std::numeric_limits<double>::max();
-            
-    //         for (size_t i = 0; i < aggregatedData.timestamps.size(); i++) {
-    //             double diff = std::abs(aggregatedData.timestamps[i] - entryTimestamp);
-    //             if (diff < minDiff) {
-    //                 minDiff = diff;
-    //                 aggregatedIndex = i;
-    //             }
-    //         }
-            
-    //         // Vérifier si ce point est visible dans la fenêtre actuelle
-    //         if (aggregatedIndex >= aggregationInfo.startIndex && 
-    //             aggregatedIndex < aggregationInfo.startIndex + aggregationInfo.pointCount) {
-                
-    //             // Convertir en indice relatif pour l'affichage
-    //             double relativeIndex = static_cast<double>(aggregatedIndex - aggregationInfo.startIndex);
-                
-    //             // Afficher uniquement une flèche de couleur au point d'entrée
-    //             double price = trade->entryPrice();
-                
-    //             // Ajuster légèrement la hauteur pour une meilleure visibilité
-    //             double arrowY = aggregatedData.high[aggregatedIndex] * 1.0005; // Légèrement au-dessus
-                
-    //             // Ajouter le marqueur
-    //             entryArrows[resultIndex].push_back({relativeIndex, arrowY});
-                
-    //             // Optionnellement, afficher également un marqueur carré au prix exact
-    //             entryMarkers.push_back({relativeIndex, price});
-    //         }
-    //     }
-    // }
-    // else { 
-        // Mode Raw (affichage détaillé) - Code existant pour les données brutes
-        for (const auto& trade : trades) {
-            // Déterminer la catégorie du résultat
-            int resultIndex = NEUTRAL; // Par défaut
-            
-            if (trade->isClosed()) {
-                double pnl = trade->pl();
-                if (pnl > 0) 
-                    resultIndex = WINNING;
-                else if (pnl < 0) 
-                    resultIndex = LOSING;
+            // Flèche d'entrée
+            if (entryBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
+                const be::Candle& entryCandle = dataManager.getBacktestData()->at(entryBarIndex);
+                double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
+                entryArrows[resultIndex].push_back({relativeIndex, arrowY});
             }
 
-            // Traiter le point d'entrée
-            size_t entryBarIndex = trade->entryBar();
-            if (entryBarIndex >= static_cast<size_t>(startIndex) && 
-                entryBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
-                double relativeIndex = static_cast<double>(entryBarIndex - startIndex);
-                
-                // Marqueur carré pour la position d'entrée
-                entryMarkers.push_back({relativeIndex, trade->entryPrice()});
-                
-                // Flèche d'entrée
-                if (entryBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
-                    const be::Candle& entryCandle = dataManager.getBacktestData()->at(entryBarIndex);
-                    double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
-                    entryArrows[resultIndex].push_back({relativeIndex, arrowY});
-                }
-
-                // Si le trade est fermé, on peut ajouter les segments TP/SL
-                if (trade->isClosed()) {
-                    size_t exitBarIndex = trade->exitBar();
-                    if (exitBarIndex >= static_cast<size_t>(startIndex) && 
-                        exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
-                        double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
-                        
-                        // Récupérer les valeurs de TP et SL si elles existent
-                        double tpValue = trade->tp();
-                        if (tpValue > 0) {
-                            tpslSegments.push_back({
-                                relativeIndex, relativeExitIndex, 
-                                tpValue, true, // true = TP
-                                COLORS[resultIndex]
-                            });
-                        }
-                        
-                        double slValue = trade->sl();
-                        if (slValue > 0) {
-                            tpslSegments.push_back({
-                                relativeIndex, relativeExitIndex,
-                                slValue, false, // false = SL
-                                COLORS[resultIndex]
-                            });
-                        }
-                    }
-                }
-            }
-            
-            // Traiter le point de sortie (seulement pour les trades fermés)
+            // Si le trade est fermé, on peut ajouter les segments TP/SL
             if (trade->isClosed()) {
                 size_t exitBarIndex = trade->exitBar();
                 if (exitBarIndex >= static_cast<size_t>(startIndex) && 
                     exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
                     double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
                     
-                    // Marqueur carré pour la position de sortie
-                    exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
+                    // Récupérer les valeurs de TP et SL si elles existent
+                    double tpValue = trade->tp();
+                    if (tpValue > 0) {
+                        tpslSegments.push_back({
+                            relativeIndex, relativeExitIndex, 
+                            tpValue, true, // true = TP
+                            COLORS[resultIndex]
+                        });
+                    }
                     
-                    // Flèche de sortie
-                    if (exitBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
-                        const be::Candle& exitCandle = dataManager.getBacktestData()->at(exitBarIndex);
-                        double arrowY = exitCandle.low * 0.9995; // Légèrement en-dessous du low
-                        exitArrows[resultIndex].push_back({relativeExitIndex, arrowY});
+                    double slValue = trade->sl();
+                    if (slValue > 0) {
+                        tpslSegments.push_back({
+                            relativeIndex, relativeExitIndex,
+                            slValue, false, // false = SL
+                            COLORS[resultIndex]
+                        });
                     }
                 }
             }
         }
-    // }
+        
+        // Traiter le point de sortie (seulement pour les trades fermés)
+        if (trade->isClosed()) {
+            size_t exitBarIndex = trade->exitBar();
+            if (exitBarIndex >= static_cast<size_t>(startIndex) && 
+                exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+                double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
+                
+                // Marqueur carré pour la position de sortie
+                exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
+                
+                // Flèche de sortie
+                if (exitBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
+                    const be::Candle& exitCandle = dataManager.getBacktestData()->at(exitBarIndex);
+                    double arrowY = exitCandle.low * 0.9995; // Légèrement en-dessous du low
+                    exitArrows[resultIndex].push_back({relativeExitIndex, arrowY});
+                }
+            }
+        }
+    }
 
     // Ajouter les marqueurs carrés pour les entrées et sorties
     addMarkers(mainChart, entryMarkers, "Entry", Chart::SquareSymbol, 7, 0x000000);
     addMarkers(mainChart, exitMarkers, "Exit", Chart::SquareSymbol, 7, 0x000000);
     addTPSLSegments(mainChart, tpslSegments);
-    
-    // // En mode Raw uniquement, afficher les sorties et les segments TP/SL
-    // if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
-    // }
     
     // Ajouter les flèches
     const char* resultNames[RESULT_COUNT] = { "Win", "Loss", "Flat" };

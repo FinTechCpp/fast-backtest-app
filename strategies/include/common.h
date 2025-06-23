@@ -1,6 +1,8 @@
 #pragma once
 #include <string>
 #include <sstream>
+#include <charconv>
+#include <array>
 #include <functional>
 
 struct Time {
@@ -117,6 +119,13 @@ extern std::function<void(const std::string&, int)> g_py_log_callback;
 
 void cpp_log(const std::string& message, int level = LogLevel::INFO);
 
+
+inline std::string fast_double_to_string(double value, int precision = 4) {
+    std::array<char, 32> buffer;
+    auto [ptr, ec] = std::to_chars(buffer.data(), buffer.data() + buffer.size(), value, 
+                                  std::chars_format::fixed, precision);
+    return std::string(buffer.data(), ptr - buffer.data());
+}
 
 struct StrategyBaseConfig {
     // Time settings

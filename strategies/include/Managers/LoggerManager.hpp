@@ -21,6 +21,9 @@ private:
     bool enabled = true;
     LogLevel verbosity_level = LogLevel::DEBUG;
     DateTime current_candle_date;
+    mutable char buffer[64];
+    mutable std::string msgBuffer;
+    mutable char numBuffer[64];  // Pour les conversions numériques
 
     // Variables pour le chronomètre
     std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
@@ -42,10 +45,13 @@ private:
     
     // Formatage d'une valeur numérique avec précision
     std::string format_value(double value, int precision = 4) const {
-        std::ostringstream ss;
-        ss.precision(precision);
-        ss << std::fixed << value;
-        return ss.str();
+        int len = snprintf(numBuffer, sizeof(numBuffer), "%.*f", precision, value);
+        return std::string(numBuffer, len);
+    }
+
+    void append_value(std::string& str, double value, int precision = 4) const {
+        int len = snprintf(numBuffer, sizeof(numBuffer), "%.*f", precision, value);
+        str.append(numBuffer, len);
     }
     
     // Ajout d'un log à la catégorie appropriée
@@ -54,25 +60,43 @@ private:
             return;
         }
         
-        std::string formatted = "[" + current_candle_date.to_string() + "] " + message;
-        // std::string formatted = indent(2) + message;
+        // Réutiliser msgBuffer pour éviter une allocation
+        msgBuffer.clear();
+        msgBuffer = "[";
+        msgBuffer += current_candle_date.to_string();
+        msgBuffer += "] ";
+        msgBuffer += message;
         
+        std::vector<std::string>* target_logs;
+        
+        // Utiliser un pointeur direct au vecteur approprié au lieu d'un switch
         switch (category) {
-            case LogCategory::GENERAL:   general_logs.push_back(formatted); break;
-            case LogCategory::INDICATOR: indicator_logs.push_back(formatted); break;
-            case LogCategory::FILTER:    filter_logs.push_back(formatted); break;
-            case LogCategory::SIGNAL:    signal_logs.push_back(formatted); break;
-            case LogCategory::EXECUTION: execution_logs.push_back(formatted); break;
-            case LogCategory::RISK:      risk_logs.push_back(formatted); break;
-            case LogCategory::TIME:      time_logs.push_back(formatted); break;
+            case LogCategory::GENERAL:   target_logs = &general_logs; break;
+            case LogCategory::INDICATOR: target_logs = &indicator_logs; break;
+            case LogCategory::FILTER:    target_logs = &filter_logs; break;
+            case LogCategory::SIGNAL:    target_logs = &signal_logs; break;
+            case LogCategory::EXECUTION: target_logs = &execution_logs; break;
+            case LogCategory::RISK:      target_logs = &risk_logs; break;
+            case LogCategory::TIME:      target_logs = &time_logs; break;
         }
         
-        // Toujours envoyer au système de log standard
-        // cpp_log(message, level);
+        target_logs->push_back(std::move(msgBuffer));  // Utiliser move pour éviter une copie
     }
 
 public:
-    LoggerManager() = default;
+    LoggerManager() {
+        // Préallouer la mémoire pour le buffer de message
+        msgBuffer.reserve(256);
+        
+        // Préallouer la mémoire pour les vecteurs de logs (évite les réallocations)
+        general_logs.reserve(50);
+        indicator_logs.reserve(50);
+        filter_logs.reserve(50);
+        signal_logs.reserve(20);
+        execution_logs.reserve(20);
+        risk_logs.reserve(20);
+        time_logs.reserve(10);
+    }
     
     // Configuration du logger
     void set_enabled(bool state) { enabled = state; }
@@ -130,8 +154,17 @@ public:
     
     // Logs d'indicateurs
     void log_indicator_value(const std::string& name, double value, int level = LogLevel::DEBUG) {
-        std::string msg = "Indicateur " + name + " = " + format_value(value);
-        add_log(LogCategory::INDICATOR, msg, level);
+        if (!enabled || level < verbosity_level) {
+            return;  // Éviter tout travail si le log ne sera pas affiché
+        }
+        
+        msgBuffer.clear();
+        msgBuffer = "Indicateur ";
+        msgBuffer += name;
+        msgBuffer += " = ";
+        append_value(msgBuffer, value);
+
+        add_log(LogCategory::INDICATOR, msgBuffer, level);
     }
     
     void log_indicator_comparison(const std::string& name, double value, 
@@ -169,12 +202,19 @@ public:
     }
     
     // Logs de signaux
-    void log_signal(const std::string& action, double price, 
-                   double quantity, int level = LogLevel::INFO) {
-        std::string msg = "Signal " + action + " généré: Prix=" + 
-                         format_value(price) + ", Quantité=" + 
-                         format_value(quantity);
-        add_log(LogCategory::SIGNAL, msg, level);
+    void log_signal(const std::string& action, double price, double quantity, int level = LogLevel::INFO) {
+        if (!enabled || level < verbosity_level)
+            return;
+        
+        msgBuffer.clear();
+        msgBuffer = "Signal ";
+        msgBuffer += action;
+        msgBuffer += " généré: Prix=";
+        append_value(msgBuffer, price);
+        msgBuffer += ", Quantité=";
+        append_value(msgBuffer, quantity);
+        
+        add_log(LogCategory::SIGNAL, msgBuffer, level);
     }
     
     void log_sl_tp(double sl_distance, double tp_distance, 

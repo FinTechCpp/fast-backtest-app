@@ -165,9 +165,9 @@ private:
         } 
         else {
             logger->log_filter_detail("RSI", 
-                                "Actuel: " + std::to_string(current_rsi) + 
-                                ", Précédent: " + std::to_string(previous_rsi) + 
-                                ", Antérieur: " + std::to_string(previous_2_rsi) + 
+                                "Actuel: " + fast_double_to_string(current_rsi) + 
+                                ", Précédent: " + fast_double_to_string(previous_rsi) + 
+                                ", Antérieur: " + fast_double_to_string(previous_2_rsi) + 
                                 " - Tous au-dessus du seuil " + std::to_string(threshold));
         }
         
@@ -202,8 +202,8 @@ private:
             logger->log_filter_result("Bougie HA précédente", is_red);
             logger->log_filter_detail("Bougie HA précédente", 
                                   "Bougie précédente " + std::string(is_red ? "ROUGE" : "VERTE") + 
-                                  " (open=" + std::to_string(prev_ha.open) + 
-                                  ", close=" + std::to_string(prev_ha.close) + ")");
+                                  " (open=" + fast_double_to_string(prev_ha.open) + 
+                                  ", close=" + fast_double_to_string(prev_ha.close) + ")");
             
             return is_red;
         } catch (const std::exception& e) {
@@ -459,8 +459,8 @@ public:
         BasicCandle ha_current = candle_manager.get_latest_heikin_ashi();
         bool is_green = candle_manager.is_candle_green(ha_current);
         
-        logger->log_general("Bougie HA courante calculée: Open=" + std::to_string(ha_current.open) + 
-                        ", Close=" + std::to_string(ha_current.close) + 
+        logger->log_general("Bougie HA courante calculée: Open=" + fast_double_to_string(ha_current.open) + 
+                        ", Close=" + fast_double_to_string(ha_current.close) + 
                         ", Green=" + std::to_string(is_green));
     }
     

@@ -105,7 +105,6 @@ public:
     void setEquityCurve(const std::vector<double>& equityCurve);
     void updateHeikinAshiCache();
     AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
-    void calculateIndicator(const IndicatorBase& config);
     
     // Accesseurs
     const std::vector<double>& getTimestamps() const { return m_timestampsCache; }
@@ -204,6 +203,7 @@ private:
     std::vector<double> aggregateVector(const std::vector<double>& data, AggregationLevel level, int aggregateMethod) const;
     std::vector<int> aggregateVector(const std::vector<int>& data, AggregationLevel level, int aggregateMethod) const;
 
+    void calculateIndicator(const IndicatorBase& config);
     void calculateRSI(int id, int period);
     void calculateEMA(int id, int period);
     void calculateSupertrend(int id, int period, double multiplier);

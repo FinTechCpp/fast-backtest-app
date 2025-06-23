@@ -310,19 +310,12 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
             const auto& [supertrendValues, trendDirections] = valuesPair;
             
             std::vector<double> supertrendData = aggregateVector(supertrendValues, level, Chart::AggregateLast);
-            
-            // Pour les directions, on utilise la dernière valeur (Chart::AggregateLast)
-            // mais on doit d'abord convertir std::vector<int> en std::vector<double>
-            std::vector<double> directionsAsDouble(trendDirections.begin(), trendDirections.end());
-            std::vector<double> directionsData = aggregateVector(directionsAsDouble, level, Chart::AggregateLast);
-            
-            // Reconvertir en std::vector<int>
-            std::vector<int> directionsInt(directionsData.begin(), directionsData.end());
+            std::vector<int> directionsData = aggregateVector(trendDirections, level, Chart::AggregateLast);
 
-            if (!supertrendData.empty() && !directionsInt.empty() && supertrendData.size() == directionsInt.size()) {
+            if (!supertrendData.empty() && !directionsData.empty() && supertrendData.size() == directionsData.size()) {
                 aggregated.supertrendValues[id] = std::make_pair(
                     std::move(supertrendData),
-                    std::move(directionsInt)
+                    std::move(directionsData)
                 );
                 aggregated.validSupertrendIds.insert(id);
             }
@@ -392,6 +385,13 @@ std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> 
         aggregateMethod);
     return std::vector<double>(result.data, result.data + result.len);
 }
+
+std::vector<int> ChartDataManager::aggregateVector(const std::vector<int>& data, AggregationLevel level, int aggregateMethod) const {
+    std::vector<double> dataCopy(data.begin(), data.end());
+    std::vector<double> dataAggregated = aggregateVector(dataCopy, level, aggregateMethod);
+    return std::vector<int>(dataAggregated.begin(), dataAggregated.end());
+}
+
 
 void ChartDataManager::calculateRSI(int id, int period)
 {

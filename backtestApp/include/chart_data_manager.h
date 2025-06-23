@@ -313,6 +313,7 @@ private:
     void aggregateOHLCV(AggregationLevel level);
     void aggregateIndicators(AggregationLevel level);
     std::vector<double> aggregateVector(const std::vector<double>& data, AggregationLevel level, int aggregateMethod) const;
+    std::vector<int> aggregateVector(const std::vector<int>& data, AggregationLevel level, int aggregateMethod) const;
 
     void calculateRSI(int id, int period);
     void calculateEMA(int id, int period);

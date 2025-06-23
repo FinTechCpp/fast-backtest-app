@@ -259,7 +259,29 @@ chmod +x qt-unified-linux-x64-4.6.1-online.run
 3. Cochez **Desktop gcc 64-bit**
 4. Installez dans le répertoire par défaut : `~/Qt/`
 
-### Étape 4: Configuration permanente du PATH
+### Étape 4: Installation de spdlog v1.15.3
+
+Installez la dernière version de spdlog depuis les sources GitHub :
+
+```bash
+# Télécharger et extraire spdlog v1.15.3
+cd /tmp
+wget https://github.com/gabime/spdlog/archive/refs/tags/v1.15.3.tar.gz
+tar -xzf v1.15.3.tar.gz
+cd spdlog-1.15.3
+
+# Compiler et installer spdlog
+mkdir build && cd build
+cmake .. -DSPDLOG_BUILD_PIC=ON -DBUILD_SHARED_LIBS=ON
+make -j$(nproc)
+sudo make install
+sudo ldconfig
+
+# Nettoyer les fichiers temporaires
+cd /tmp && rm -rf spdlog-1.15.3 v1.15.3.tar.gz
+```
+
+### Étape 5: Configuration permanente du PATH
 
 Ajoutez CMake et Qt à votre PATH de manière permanente :
 
@@ -274,7 +296,7 @@ echo 'export CMAKE_PREFIX_PATH=$HOME/Qt/6.8.3/gcc_64:$CMAKE_PREFIX_PATH' >> ~/.b
 source ~/.bashrc
 ```
 
-### Étape 5: Vérification de l'installation
+### Étape 6: Vérification de l'installation
 
 Vérifiez que tous les outils sont correctement installés :
 
@@ -285,6 +307,9 @@ cmake --version
 # Vérifier Qt
 qmake --version
 
+# Vérifier spdlog
+pkg-config --modversion spdlog
+
 # Vérifier les compilateurs
 gcc --version
 g++ --version
@@ -293,9 +318,10 @@ g++ --version
 **Résultats attendus :**
 - CMake version 4.0.3
 - Qt version 6.8.3
+- spdlog version 1.15.3
 - GCC/G++ version 13.x ou supérieure
 
-### Étape 6: Test de compilation
+### Étape 7: Test de compilation
 
 Testez la compilation du projet :
 

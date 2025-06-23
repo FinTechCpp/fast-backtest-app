@@ -186,22 +186,10 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
     
     // Créer l'ArrayMath pour l'agrégation
     ArrayMath timestampsMath(DoubleArray(timestampsCopy.data(), timestampsCopy.size()));
-    
-    // Appliquer le sélecteur approprié selon le niveau d'agrégation demandé
-    switch (level) {
-        case AggregationLevel::OneMinute:
-            timestampsMath.selectStartOfMinute();
-            break;
-        case AggregationLevel::OneHour:
-            timestampsMath.selectStartOfHour();
-            break;
-        case AggregationLevel::OneDay:
-            timestampsMath.selectStartOfDay();
-            break;
-        default:
-            // Ne devrait pas arriver car Raw est géré plus haut
-            aggregatedData.isValid = false;
-            return;
+
+    if (!configureAggregationSelector(timestampsMath, level)) {
+        aggregatedData.isValid = false;
+        return;
     }
     
     // Obtenir les indices après sélection
@@ -360,19 +348,8 @@ std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> 
 
     ArrayMath timestampsMath(DoubleArray(timestamps.data(), timestamps.size()));
 
-    switch (level) {
-        case AggregationLevel::OneMinute:
-            timestampsMath.selectStartOfMinute();
-            break;
-        case AggregationLevel::OneHour:
-            timestampsMath.selectStartOfHour();
-            break;
-        case AggregationLevel::OneDay:
-            timestampsMath.selectStartOfDay();
-            break;
-        default:
-            return std::vector<double>(); // Niveau d'agrégation non supporté
-    }
+    if (!configureAggregationSelector(timestampsMath, level))
+        return std::vector<double>();
 
     DoubleArray indices = timestampsMath.result();
     if (indices.len <= 0) {
@@ -472,23 +449,25 @@ void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
     m_aggregatedIndicatorsCache[AggregationLevel::Raw].atrValues[id] = std::move(atrValues);
 }
 
-// // Méthode utilitaire pour configurer le sélecteur d'agrégation
-// void ChartDataManager::configureAggregationSelector(ArrayMath& math, AggregationLevel level) {
-//     switch (level) {
-//     case AggregationLevel::OneMinute:
-//         math.selectStartOfMinute();
-//         break;
-//     case AggregationLevel::OneHour:
-//         math.selectStartOfHour();
-//         break;
-//     case AggregationLevel::OneDay:
-//         math.selectStartOfDay();
-//         break;
-//     default:
-//         // Ne rien faire pour Raw
-//         break;
-//     }
-// }
+// Méthode utilitaire pour configurer le sélecteur d'agrégation
+bool ChartDataManager::configureAggregationSelector(ArrayMath& math, AggregationLevel level) const {
+    switch (level) {
+    case AggregationLevel::OneMinute:
+        math.selectStartOfMinute();
+        break;
+    case AggregationLevel::OneHour:
+        math.selectStartOfHour();
+        break;
+    case AggregationLevel::OneDay:
+        math.selectStartOfDay();
+        break;
+    default:
+        // Ne rien faire pour Raw
+        return false;
+        break;
+    }
+    return true;
+}
 
 ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(const DoubleArray& timestamps) {
     AggregationInfo result;

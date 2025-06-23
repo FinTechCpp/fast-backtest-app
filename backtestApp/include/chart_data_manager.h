@@ -310,6 +310,7 @@ private:
     };
 
     void prepareTimestampsCache();
+    bool configureAggregationSelector(ArrayMath& math, AggregationLevel level) const;
     void aggregateOHLCV(AggregationLevel level);
     void aggregateIndicators(AggregationLevel level);
     std::vector<double> aggregateVector(const std::vector<double>& data, AggregationLevel level, int aggregateMethod) const;

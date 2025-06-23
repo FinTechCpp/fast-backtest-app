@@ -113,6 +113,7 @@ public:
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
     const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
     const std::vector<std::shared_ptr<be::Trade>>& getTrades() const { return m_trades; }
+    const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_indicators; }
     const IndicatorData& getActiveIndicators() const { return getAggregatedIndicators(AggregationLevel::Raw); }
     const IndicatorData& getAggregatedIndicators(AggregationLevel level) const;
     bool hasValidData() const;

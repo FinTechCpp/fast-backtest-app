@@ -63,28 +63,10 @@ private slots:
     void onEditIndicator(int id);
     void onRemoveIndicator(int id);
     void onRulerToolToggled(bool checked); 
-    
-    void onRSIAdded(int id, int period);
-    void onRSIChanged(int id, int period);
-    void onRSIRemoved(int id);
 
-    void onEMAAdded(int id, int period);
-    void onEMAChanged(int id, int period);
-    void onEMARemoved(int id);
-
-    void onSupertrendAdded(int id, int period, double multiplier);
-    void onSupertrendChanged(int id, int period, double multiplier);
-    void onSupertrendRemoved(int id);
-
-    // Slots pour le Stochastique
-    void onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void onStochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void onStochasticRemoved(int id);
-
-    // Slots pour l'ATR
-    void onATRAdded(int id, int period);
-    void onATRChanged(int id, int period);
-    void onATRRemoved(int id);
+    void onIndicatorAdded(int id, const QString& name);
+    void onIndicatorChanged(int id, const QString& name);
+    void onIndicatorRemoved(int id);
     
     void refreshIndicatorsList();
     void onAggregationSliderChanged(int value);

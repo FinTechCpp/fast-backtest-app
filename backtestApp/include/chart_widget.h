@@ -39,6 +39,7 @@ public:
     // Configuration et contrôle du graphique
     void setChartType(ChartDataManager::ChartType chartType); // remplacer par un slot
     ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
+    const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
     std::vector<const RSIInstance*> getRSIInstances() const { return m_dataManager.getIndicatorsOfType<RSIInstance>(); }
     std::vector<const EMAInstance*> getEMAInstances() const { return m_dataManager.getIndicatorsOfType<EMAInstance>(); }
     std::vector<const SuperTrendInstance*> getSuperTrendInstances() const { return m_dataManager.getIndicatorsOfType<SuperTrendInstance>(); }
@@ -74,30 +75,9 @@ signals:
     void viewPortChanged();
     void mouseOverPoint(double timestamp, double price);
 
-    // Signaux pour le RSI
-    void rsiAdded(int id, int period);
-    void rsiChanged(int id, int period);
-    void rsiRemoved(int id);
-
-    // Signaux pour l'EMA
-    void emaAdded(int id, int period);
-    void emaChanged(int id, int period);
-    void emaRemoved(int id);
-
-    // Signaux pour le SuperTrend
-    void superTrendAdded(int id, int period, double multiplier);
-    void superTrendChanged(int id, int period, double multiplier);
-    void superTrendRemoved(int id);
-
-    // Signaux pour le Stochastique
-    void stochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void stochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void stochasticRemoved(int id);
-
-    // Signaux pour l'ATR
-    void atrAdded(int id, int period);
-    void atrChanged(int id, int period);
-    void atrRemoved(int id);
+    void indicatorAdded(int id, const QString& displayName);
+    void indicatorChanged(int id, const QString& displayName);
+    void indicatorRemoved(int id);
 
     void maxDisplayPointsChanged(int value);
     

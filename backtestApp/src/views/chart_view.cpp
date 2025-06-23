@@ -6,6 +6,7 @@
 #include <QFrame>
 #include <QResizeEvent>
 #include <QToolButton>
+#include "views/chart_view.h"
 
 ChartView::ChartView(QWidget* parent)
     : BaseView(parent)
@@ -198,32 +199,10 @@ void ChartView::setupUI()
     // Créer le widget de graphique
     m_chartWidget = new ChartWidget();
     m_chartWidget->setVisible(false); // Cacher initialement
-    
-    // Connecter les signaux du ChartWidget
-    connect(m_chartWidget, &ChartWidget::rsiAdded, this, &ChartView::onRSIAdded);
-    connect(m_chartWidget, &ChartWidget::rsiChanged, this, &ChartView::onRSIChanged);
-    connect(m_chartWidget, &ChartWidget::rsiRemoved, this, &ChartView::onRSIRemoved);
 
-    // Connecter les signaux EMA
-    connect(m_chartWidget, &ChartWidget::emaAdded, this, &ChartView::onEMAAdded);
-    connect(m_chartWidget, &ChartWidget::emaChanged, this, &ChartView::onEMAChanged);
-    connect(m_chartWidget, &ChartWidget::emaRemoved, this, &ChartView::onEMARemoved);
-
-    // Connecter les signaux SuperTrend
-    connect(m_chartWidget, &ChartWidget::superTrendAdded, this, &ChartView::onSupertrendAdded);
-    connect(m_chartWidget, &ChartWidget::superTrendChanged, this, &ChartView::onSupertrendChanged);
-    connect(m_chartWidget, &ChartWidget::superTrendRemoved, this, &ChartView::onSupertrendRemoved);
-
-    // Connecter les signaux Stochastic
-    connect(m_chartWidget, &ChartWidget::stochasticAdded, this, &ChartView::onStochasticAdded);
-    connect(m_chartWidget, &ChartWidget::stochasticChanged, this, &ChartView::onStochasticChanged);
-    connect(m_chartWidget, &ChartWidget::stochasticRemoved, this, &ChartView::onStochasticRemoved);
-
-    // Connecter les signaux pour l'Average True Range (ATR)
-    connect(m_chartWidget, &ChartWidget::atrAdded, this, &ChartView::onATRAdded);
-    connect(m_chartWidget, &ChartWidget::atrChanged, this, &ChartView::onATRChanged);
-    connect(m_chartWidget, &ChartWidget::atrRemoved, this, &ChartView::onATRRemoved);
-    
+    connect(m_chartWidget, &ChartWidget::indicatorAdded, this, &ChartView::onIndicatorAdded);
+    connect(m_chartWidget, &ChartWidget::indicatorChanged, this, &ChartView::onIndicatorChanged);
+    connect(m_chartWidget, &ChartWidget::indicatorRemoved, this, &ChartView::onIndicatorRemoved);
     // Ajouter les widgets au layout du panneau droit
     rightPanelLayout->addWidget(m_chartPlaceholder);
     rightPanelLayout->addWidget(m_chartWidget);
@@ -335,106 +314,6 @@ void ChartView::onAddIndicatorClicked()
         m_chartWidget->addATR(std::move(atr));
     }
     // Ajouter d'autres types d'indicateurs ici
-}
-
-void ChartView::onRSIAdded(int id, int period)
-{    
-    // Créer les widgets pour ce RSI
-    QString name = QString("RSI (%1)").arg(period);
-    createIndicatorWidgets(id, name);
-}
-
-void ChartView::onRSIChanged(int id, int period)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        m_indicatorLabels[id]->setText(QString("RSI (%1)").arg(period));
-    }
-}
-
-void ChartView::onRSIRemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::onEMAAdded(int id, int period)
-{
-    // Créer les widgets pour cet EMA
-    QString name = QString("EMA (%1)").arg(period);
-    createIndicatorWidgets(id, name);
-}
-
-void ChartView::onEMAChanged(int id, int period)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        m_indicatorLabels[id]->setText(QString("EMA (%1)").arg(period));
-    }
-}
-
-void ChartView::onEMARemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::onSupertrendAdded(int id, int period, double multiplier)
-{    
-    // Créer les widgets pour ce Supertrend
-    QString name = QString("Supertrend (%1, %2)").arg(period).arg(multiplier, 0, 'f', 1);
-    createIndicatorWidgets(id, name);
-}
-
-void ChartView::onSupertrendChanged(int id, int period, double multiplier)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        QString name = QString("Supertrend (%1, %2)").arg(period).arg(multiplier, 0, 'f', 1);
-        m_indicatorLabels[id]->setText(name);
-    }
-}
-
-void ChartView::onSupertrendRemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
-{    
-    // Créer les widgets pour ce Stochastique
-    QString name = QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
-    createIndicatorWidgets(id, name);
-}
-
-void ChartView::onStochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        QString name = QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
-        m_indicatorLabels[id]->setText(name);
-    }
-}
-
-void ChartView::onStochasticRemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::onATRAdded(int id, int period)
-{
-    // Créer les widgets pour cet ATR
-    QString name = QString("ATR (%1)").arg(period);
-    createIndicatorWidgets(id, name);
-}
-void ChartView::onATRChanged(int id, int period)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        m_indicatorLabels[id]->setText(QString("ATR (%1)").arg(period));
-    }
-}
-void ChartView::onATRRemoved(int id)
-{
-    refreshIndicatorsList();
 }
 
 void ChartView::createIndicatorWidgets(int id, const QString &name)
@@ -558,9 +437,8 @@ void ChartView::refreshIndicatorsList()
     // Supprimer tous les widgets d'indicateurs existants
     QLayoutItem* child;
     while ((child = m_indicatorsLayout->takeAt(0)) != nullptr) {
-        if (child->widget()) {
+        if (child->widget())
             delete child->widget();
-        }
         delete child;
     }
     
@@ -569,46 +447,11 @@ void ChartView::refreshIndicatorsList()
     m_editButtons.clear();
     m_removeButtons.clear();
     
-    // Pour chaque RSI actif, recréer les widgets
-    std::vector<const RSIInstance*> rsiInstances = m_chartWidget->getRSIInstances();
-    for (const RSIInstance* rsi : rsiInstances) {
-        QString name = QString("RSI (%1)").arg(rsi->period);
-        createIndicatorWidgets(rsi->id, name);
-    }
-
-    // Pour chaque EMA actif, recréer les widgets
-    const std::vector<const EMAInstance*> emaInstances = m_chartWidget->getEMAInstances();
-    for (const EMAInstance* ema : emaInstances) {
-        if (ema->visible) {
-            QString name = QString("EMA (%1)").arg(ema->period);
-            createIndicatorWidgets(ema->id, name);
-        }
-    }
-
-    // Pour chaque Supertrend actif, recréer les widgets
-    const std::vector<const SuperTrendInstance*> supertrendInstances = m_chartWidget->getSuperTrendInstances();
-    for (const SuperTrendInstance* supertrend : supertrendInstances) {
-        if (supertrend->visible) {
-            QString name = QString("Supertrend (%1, %2)").arg(supertrend->period).arg(supertrend->multiplier, 0, 'f', 1);
-            createIndicatorWidgets(supertrend->id, name);
-        }
-    }
-
-    // Pour chaque Stochastic actif, recréer les widgets
-    const std::vector<const StochasticInstance*> stochInstances = m_chartWidget->getStochasticInstances();
-    for (const StochasticInstance* stoch : stochInstances) {
-        if (stoch->visible) {
-            QString name = QString("Stochastic (%1,%2,%3)").arg(stoch->fastKPeriod).arg(stoch->slowKPeriod).arg(stoch->slowDPeriod);
-            createIndicatorWidgets(stoch->id, name);
-        }
-    }
-
-    // Pour chaque ATR actif, recréer les widgets
-    const std::vector<const ATRInstance*> atrInstances = m_chartWidget->getATRInstances();
-    for (const ATRInstance* atr : atrInstances) {
-        if (atr->visible) {
-            QString name = QString("ATR (%1)").arg(atr->period);
-            createIndicatorWidgets(atr->id, name);
+    // Approche générique pour tous les indicateurs
+    const std::vector<std::unique_ptr<IndicatorBase>>& allIndicators = m_chartWidget->getIndicators();
+    for (const auto& indicator : allIndicators) {
+        if (indicator->visible) {
+            createIndicatorWidgets(indicator->id, indicator->getDisplayName());
         }
     }
 }
@@ -719,7 +562,26 @@ void ChartView::onRulerToolToggled(bool checked)
     }
 }
 
-// Ajouter les méthodes de slots:
+void ChartView::onIndicatorAdded(int id, const QString &name) {
+    createIndicatorWidgets(id, name);
+}
+
+void ChartView::onIndicatorChanged(int id, const QString &name) {
+    if (m_indicatorLabels.contains(id)) {
+        m_indicatorLabels[id]->setText(name);
+    }
+}
+
+void ChartView::onIndicatorRemoved(int id) {
+    refreshIndicatorsList(); // methode de merde lourde
+    // Il faudrait plutot supprimer l'indicateur directement
+    // et supprimer les widgets associés
+    // if (m_indicatorLabels.contains(id)) {
+    //     delete m_indicatorLabels[id];
+    //     m_indicatorLabels.remove(id);
+    // }
+}
+
 void ChartView::onAggregationSliderChanged(int value)
 {
     // Mettre à jour l'étiquette

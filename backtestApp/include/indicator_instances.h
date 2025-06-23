@@ -1,5 +1,8 @@
 #pragma once
 
+#include <QString>
+#include <vector>
+#include <memory>
 
 enum class IndicatorType {
     RSI,
@@ -17,6 +20,9 @@ struct IndicatorBase {
     bool visible = true; // Si l'indicateur est visible
 
     virtual bool needsRecalculation(const IndicatorBase& other) const = 0;
+    
+    // Nouvelle méthode pour obtenir le nom d'affichage de l'indicateur
+    virtual QString getDisplayName() const = 0;
 
     bool operator==(const IndicatorBase& other) const {
         return id == other.id && type_ == other.type_;
@@ -42,6 +48,10 @@ struct RSIInstance : public IndicatorBase {
         if (!otherRSI) return true;
         return period != otherRSI->period;
     }
+    
+    QString getDisplayName() const override {
+        return QString("RSI (%1)").arg(period);
+    }
 };
 
 struct EMAInstance : public IndicatorBase {
@@ -53,6 +63,10 @@ struct EMAInstance : public IndicatorBase {
         const EMAInstance* otherEMA = dynamic_cast<const EMAInstance*>(&other);
         if (!otherEMA) return true;
         return period != otherEMA->period;
+    }
+    
+    QString getDisplayName() const override {
+        return QString("EMA (%1)").arg(period);
     }
 };
 
@@ -67,6 +81,10 @@ struct SuperTrendInstance : public IndicatorBase {
         const SuperTrendInstance* otherST = dynamic_cast<const SuperTrendInstance*>(&other);
         if (!otherST) return true;
         return period != otherST->period || multiplier != otherST->multiplier;
+    }
+    
+    QString getDisplayName() const override {
+        return QString("Supertrend (%1, %2)").arg(period).arg(multiplier, 0, 'f', 1);
     }
 };
 
@@ -88,6 +106,10 @@ struct StochasticInstance : public IndicatorBase {
                slowKPeriod != otherStochastic->slowKPeriod ||
                slowDPeriod != otherStochastic->slowDPeriod;
     }
+    
+    QString getDisplayName() const override {
+        return QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
+    }
 };
 
 struct ATRInstance : public IndicatorBase {
@@ -101,5 +123,9 @@ struct ATRInstance : public IndicatorBase {
         const ATRInstance* otherATR = dynamic_cast<const ATRInstance*>(&other);
         if (!otherATR) return true;
         return period != otherATR->period || useLogScale != otherATR->useLogScale;
+    }
+    
+    QString getDisplayName() const override {
+        return QString("ATR (%1)").arg(period);
     }
 };

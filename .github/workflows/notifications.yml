@@ -16,7 +16,8 @@ jobs:
           COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
           AUTHOR="${{ github.actor }}"
           BRANCH="${GITHUB_REF#refs/heads/}"
-          MESSAGE=":bell: Nouveau commit sur **${BRANCH}** par **${AUTHOR}**\n[Voir le commit](${COMMIT_URL})\nMessage: ${{ github.event.head_commit.message }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          MESSAGE=":bell: Nouveau commit sur **${BRANCH}** par **${AUTHOR}**\nHorodatage : ${TIMESTAMP}\n[Voir le commit](${COMMIT_URL})\nMessage: ${{ github.event.head_commit.message }}"
           curl -H "Content-Type: application/json" \
                -X POST \
                -d "{\"content\": \"$MESSAGE\"}" \

@@ -40,15 +40,7 @@ public:
     void setChartType(ChartDataManager::ChartType chartType); // remplacer par un slot
     ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
-    RSIInstance* findRSI(int id) const { return m_dataManager.findIndicator<RSIInstance>(id); }
-    EMAInstance* findEMA(int id) const { return m_dataManager.findIndicator<EMAInstance>(id); }
-    SuperTrendInstance* findSuperTrend(int id) const { return m_dataManager.findIndicator<SuperTrendInstance>(id); }
-    StochasticInstance* findStochastic(int id) const { return m_dataManager.findIndicator<StochasticInstance>(id); }
-    ATRInstance* findATR(int id) const { return m_dataManager.findIndicator<ATRInstance>(id); }
 
-    // État du graphique
-    bool hasValidData() const; // ne devrait pas etre un probleme les class exterieur s'enfoutent de si les données sont valides
-    bool isChartCreated() const;
     void removeAllIndicators();
     
     // Conversion de ChartType 
@@ -67,6 +59,8 @@ public:
 
     template<typename T>
     int addIndicator(T&& config) {
+        if (!m_dataManager.hasValidData()) return -1; 
+
         QString displayName = config.getDisplayName();
         int id = m_dataManager.addIndicator(std::move(config));
 
@@ -76,6 +70,11 @@ public:
             updateChartDisplay(ViewPortMode::USE_CURRENT);
 
         return id;
+    }
+
+    template<typename T>
+    T* findIndicator(int id) const {
+        return m_dataManager.findIndicator<T>(id);
     }
 
     template<typename T>

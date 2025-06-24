@@ -24,16 +24,18 @@ BacktestRunner::BacktestRunner(QObject* parent)
     createUIComponents();
 }
 
-BacktestRunner::~BacktestRunner()
-{
-    if (m_worker && m_worker->isRunning()) {
-        m_worker->quit();
-        m_worker->wait();
+BacktestRunner::~BacktestRunner() {
+    if (m_worker) {
+        if (m_worker->isRunning()) {
+            m_worker->quit();
+            m_worker->wait();
+        }
+        delete m_worker;  // Suppression explicite
+        m_worker = nullptr;
     }
 }
 
-void BacktestRunner::createUIComponents()
-{
+void BacktestRunner::createUIComponents() {
     m_buttonLayout = new QHBoxLayout();
     
     m_runButton = new QPushButton("Lancer le backtest");
@@ -82,8 +84,7 @@ void BacktestRunner::createUIComponents()
     m_buttonLayout->addWidget(m_loadingIndicator);
 }
 
-void BacktestRunner::runBacktest()
-{
+void BacktestRunner::runBacktest() {
     if (m_isRunning) {
         return;
     }
@@ -116,7 +117,7 @@ void BacktestRunner::runBacktest()
     connect(m_worker, &BacktestWorker::finished, this, &BacktestRunner::onBacktestFinished);
     connect(m_worker, &BacktestWorker::error, this, &BacktestRunner::onBacktestError);
     connect(m_worker, &BacktestWorker::progressUpdated, this, &BacktestRunner::onProgressUpdated); 
-    connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
+    // connect(m_worker, &QThread::finished, m_worker, &QObject::deleteLater);
     m_worker->start();
 }
 

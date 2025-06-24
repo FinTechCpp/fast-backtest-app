@@ -116,10 +116,6 @@ void ChartView::setupUI()
     leftPanelLayout->addWidget(aggregationDesc);
 
     connect(m_aggregationSlider, &QSlider::valueChanged, this, &ChartView::onAggregationSliderChanged);
-    if (m_chartWidget){
-        connect(m_chartWidget, &ChartWidget::maxDisplayPointsChanged,
-                this, &ChartView::onMaxDisplayPointsChanged);
-    }
     
     // Connecter le signal de changement à notre slot
     connect(m_chartTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -203,6 +199,8 @@ void ChartView::setupUI()
     connect(m_chartWidget, &ChartWidget::indicatorAdded, this, &ChartView::onIndicatorAdded);
     connect(m_chartWidget, &ChartWidget::indicatorChanged, this, &ChartView::onIndicatorChanged);
     connect(m_chartWidget, &ChartWidget::indicatorRemoved, this, &ChartView::onIndicatorRemoved);
+    connect(m_chartWidget, &ChartWidget::maxDisplayPointsChanged, this, &ChartView::onMaxDisplayPointsChanged);
+
     // Ajouter les widgets au layout du panneau droit
     rightPanelLayout->addWidget(m_chartPlaceholder);
     rightPanelLayout->addWidget(m_chartWidget);
@@ -269,55 +267,43 @@ void ChartView::onIndicatorTypeSelected(int index)
     Q_UNUSED(index);
 }
 
-void ChartView::onAddIndicatorClicked()
-{
-    if (!m_chartWidget->hasValidData()) {
-        qDebug() << "Pas de données valides pour ajouter un indicateur";
-        return;
-    }
-    
+void ChartView::onAddIndicatorClicked() {    
     QString indicatorType = m_indicatorTypeCombo->currentData().toString();
     
     // il serait bien d'ouvrir la fenetre de dialog directement plutot que mettre des valeurs par défaut
     if (indicatorType == "RSI") {
-        // Ajouter un RSI avec la période par défaut (14)
         RSIInstance rsi;
         rsi.period = 14;
         m_chartWidget->addIndicator(std::move(rsi));
     }
     else if (indicatorType == "EMA") {
-        // Créer un EMA avec des valeurs par défaut
         EMAInstance ema;
         ema.period = 20;
-        ema.color = 0x0000FF; // Bleu par défaut
+        ema.color = 0x0000FF;
         m_chartWidget->addIndicator(std::move(ema));
     }
     else if (indicatorType == "SUPERTREND") {
         SuperTrendInstance supertrend;
-        supertrend.period = 10; // Période par défaut pour le SuperTrend
-        supertrend.multiplier = 3.0; // Multiplicateur par défaut pour le SuperTrend
-        // Ajouter un SuperTrend avec les paramètres par défaut
+        supertrend.period = 10;
+        supertrend.multiplier = 3.0;
         m_chartWidget->addIndicator(std::move(supertrend));
     }
     else if (indicatorType == "STOCH") {
         StochasticInstance stochastic;
-        stochastic.fastKPeriod = 14; // Période par défaut pour %K
-        stochastic.slowKPeriod = 3;  // Période par défaut pour %K lissé
-        stochastic.slowDPeriod = 3;  // Période par défaut pour %D
-        // Ajouter un Stochastique avec les paramètres par défaut
+        stochastic.fastKPeriod = 14;
+        stochastic.slowKPeriod = 3;
+        stochastic.slowDPeriod = 3;
         m_chartWidget->addIndicator(std::move(stochastic));
     }
     else if (indicatorType == "ATR") {
         ATRInstance atr;
-        atr.period = 14; // Période par défaut pour l'ATR
-        // Ajouter un ATR avec la période par défaut (14)
+        atr.period = 14;
         m_chartWidget->addIndicator(std::move(atr));
     }
     // Ajouter d'autres types d'indicateurs ici
 }
 
-void ChartView::createIndicatorWidgets(int id, const QString &name)
-{
+void ChartView::createIndicatorWidgets(int id, const QString &name) {
     // Créer un widget horizontal pour cet indicateur
     QWidget* indicatorWidget = new QWidget();
     QHBoxLayout* layout = new QHBoxLayout(indicatorWidget);
@@ -354,60 +340,12 @@ void ChartView::createIndicatorWidgets(int id, const QString &name)
     m_indicatorsLayout->addWidget(indicatorWidget);
 }
 
-// oula cela ne va pas du tout il faut mutualiser les id des indicateur ou je ne sias pas mais la c'est pas propre
-void ChartView::onEditIndicator(int id)
-{
-    // Rechercher l'instance RSI avec cet ID
-    RSIInstance* rsi = m_chartWidget->findRSI(id);
-    if (rsi) {
-        // Créer et afficher le dialogue d'édition pour RSI
-        RSIDialog* dialog = new RSIDialog(this, m_chartWidget, id, *rsi);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-    
-    // Rechercher si c'est un EMA
-    EMAInstance* ema = m_chartWidget->findEMA(id);
-    if (ema) {
-        // Créer et afficher le dialogue d'édition pour EMA (individuellement)
-        EMADialog* dialog = new EMADialog(this, m_chartWidget, id, *ema);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-
-    // Rechercher si c'est un Supertrend
-    SuperTrendInstance* supertrend = m_chartWidget->findSuperTrend(id);
-    if (supertrend) {
-        // Créer et afficher le dialogue d'édition pour Supertrend
-        SupertrendDialog* dialog = new SupertrendDialog(this, m_chartWidget, id, *supertrend);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-
-    // Rechercher si c'est un Stochastique
-    StochasticInstance* stochastic = m_chartWidget->findStochastic(id);
-    if (stochastic) {
-        // Créer et afficher le dialogue d'édition pour Stochastique
-        StochasticDialog* dialog = new StochasticDialog(this, m_chartWidget, id, *stochastic);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-
-    // Rechercher si c'est un ATR
-    ATRInstance* atr = m_chartWidget->findATR(id);
-    if (atr) {
-        // Créer et afficher le dialogue d'édition pour ATR
-        ATRDialog* dialog = new ATRDialog(this, m_chartWidget, id, *atr);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-    
-    qDebug() << "Indicateur introuvable:" << id;
+void ChartView::onEditIndicator(int id) {
+    if (tryOpenDialog<RSIInstance, RSIDialog>(id)) return;
+    if (tryOpenDialog<EMAInstance, EMADialog>(id)) return;
+    if (tryOpenDialog<SuperTrendInstance, SupertrendDialog>(id)) return;
+    if (tryOpenDialog<StochasticInstance, StochasticDialog>(id)) return;
+    if (tryOpenDialog<ATRInstance, ATRDialog>(id)) return;
 }
 
 //Remove tous les indicateurs individuellement par leur ID
@@ -572,7 +510,7 @@ void ChartView::onAggregationSliderChanged(int value)
     m_aggregationLabel->setText(QString::number(value));
     
     // Mettre à jour le ChartWidget si disponible
-    if (m_chartWidget && m_chartWidget->hasValidData()) {
+    if (m_chartWidget) {
         m_chartWidget->setMaxDisplayPoints(value);
     }
 }

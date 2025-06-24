@@ -108,4 +108,15 @@ private:
     void createIndicatorWidgets(int id, const QString& name);
     void configureStrategyIndicators(const std::vector<StrategyIndicator>& indicators);
     
+    template<typename IndicatorType, typename DialogType>
+    bool tryOpenDialog(int id) {
+        IndicatorType* indicator = m_chartWidget->findIndicator<IndicatorType>(id);
+        if (indicator) {
+            DialogType* dialog = new DialogType(this, m_chartWidget, id, *indicator);
+            dialog->exec();
+            delete dialog;
+            return true;
+        }
+        return false;
+    }
 };

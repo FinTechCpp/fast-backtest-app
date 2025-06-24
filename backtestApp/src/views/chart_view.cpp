@@ -225,8 +225,7 @@ void ChartView::setupUI()
     }
 }
 
-void ChartView::setupIndicatorControls()
-{
+void ChartView::setupIndicatorControls() {
     // Créer le groupe pour les contrôles d'indicateurs
     m_indicatorsGroup = new QGroupBox("Active Indicators");
     QVBoxLayout* groupLayout = new QVBoxLayout(m_indicatorsGroup);
@@ -260,8 +259,7 @@ void ChartView::setupIndicatorControls()
             this, &ChartView::onIndicatorTypeSelected);
 }
 
-void ChartView::onIndicatorTypeSelected(int index)
-{
+void ChartView::onIndicatorTypeSelected(int index) {
     // Cette méthode peut être utilisée pour ajouter un comportement spécifique
     // lorsque le type d'indicateur est modifié dans la liste déroulante
     Q_UNUSED(index);
@@ -354,8 +352,7 @@ void ChartView::onRemoveIndicator(int id) {
 }
 
 
-void ChartView::refreshIndicatorsList()
-{
+void ChartView::refreshIndicatorsList() {
     // Supprimer tous les widgets d'indicateurs existants
     QLayoutItem* child;
     while ((child = m_indicatorsLayout->takeAt(0)) != nullptr) {
@@ -378,8 +375,7 @@ void ChartView::refreshIndicatorsList()
     }
 }
 
-void ChartView::updateData(BacktestResults* results)
-{
+void ChartView::updateData(BacktestResults* results) {
     QTime start = QTime::currentTime();
             
     // Récupérer les résultats depuis l'App
@@ -421,8 +417,7 @@ void ChartView::updateData(BacktestResults* results)
     int elapsed = start.msecsTo(QTime::currentTime());
 }
 
-void ChartView::onChartTypeChanged(int index)
-{
+void ChartView::onChartTypeChanged(int index) {
     if (!m_chartTypeCombo || !m_chartWidget) {
         return;
     }
@@ -436,8 +431,7 @@ void ChartView::onChartTypeChanged(int index)
     }
 }
 
-void ChartView::showChartWidget()
-{
+void ChartView::showChartWidget() {
     if (m_chartPlaceholder) {
         m_chartPlaceholder->setVisible(false);
     }
@@ -447,8 +441,7 @@ void ChartView::showChartWidget()
     }
 }
 
-void ChartView::showPlaceholder(const QString& message)
-{
+void ChartView::showPlaceholder(const QString& message) {
     if (m_chartWidget) {
         m_chartWidget->setVisible(false);
     }
@@ -459,8 +452,7 @@ void ChartView::showPlaceholder(const QString& message)
     }
 }
 
-void ChartView::clear()
-{    
+void ChartView::clear() {
     m_currentResults = nullptr;
     m_cachedResults = nullptr;
     m_dataExtracted = false;
@@ -477,8 +469,7 @@ void ChartView::clear()
     showPlaceholder("Exécutez un backtest pour afficher les graphiques");
 }
 
-void ChartView::onRulerToolToggled(bool checked)
-{
+void ChartView::onRulerToolToggled(bool checked) {
     if (m_chartWidget) {
         m_chartWidget->setRulerToolEnabled(checked);
     }
@@ -504,8 +495,7 @@ void ChartView::onIndicatorRemoved(int id) {
     // }
 }
 
-void ChartView::onAggregationSliderChanged(int value)
-{
+void ChartView::onAggregationSliderChanged(int value) {
     // Mettre à jour l'étiquette
     m_aggregationLabel->setText(QString::number(value));
     
@@ -515,8 +505,7 @@ void ChartView::onAggregationSliderChanged(int value)
     }
 }
 
-void ChartView::onMaxDisplayPointsChanged(int value)
-{
+void ChartView::onMaxDisplayPointsChanged(int value) {
     // Mettre à jour le slider et l'étiquette si la valeur change depuis le ChartWidget
     if (m_aggregationSlider->value() != value) {
         m_aggregationSlider->setValue(value);

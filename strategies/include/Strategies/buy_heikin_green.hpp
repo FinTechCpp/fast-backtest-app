@@ -464,7 +464,6 @@ private:
         );
         
         buy_price = price();
-        logger->log_sl_tp(stop_loss_distance, take_profit_distance);
     }
     
     void go_short() override {

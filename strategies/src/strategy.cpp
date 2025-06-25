@@ -368,9 +368,9 @@ void Strategy::execute() {
     bool should_short_val = should_long_val ? false : should_short();
     
     if (should_long_val) {
-        logger->log_execution_step("should_long()", true);
+        logger->log_execution_step("Conditions de long", true);
     } else if (should_short_val) {
-        logger->log_execution_step("should_short()", true);
+        logger->log_execution_step("Conditions de short", true);
     } else {
         logger->log_execution_step("Conditions d entrée", false);
         reset();
@@ -415,16 +415,16 @@ Signal* Strategy::update_candle(const Candle& candle) {
     logger->set_current_candle(candle);
     logger->clear();  // Vider les logs précédents
     
-    logger->log_general("Traitement bougie: " + candle.ohlc.date.to_string() + 
-            " OHLC: " + fast_double_to_string(candle.ohlc.open) + "/" + 
-            fast_double_to_string(candle.ohlc.high) + "/" + 
-            fast_double_to_string(candle.ohlc.low) + "/" + 
-            fast_double_to_string(candle.ohlc.close), LogLevel::INFO);
+    logger->log_general("OHLC: " + 
+        fast_double_to_string(candle.ohlc.open) + "/" + 
+        fast_double_to_string(candle.ohlc.high) + "/" + 
+        fast_double_to_string(candle.ohlc.low) + "/" + 
+        fast_double_to_string(candle.ohlc.close));
 
     // Store the last trade P&L si fourni dans candle
     if (position_info.closed_trade_pnl != 0.0) {
         last_trade_pnl = position_info.closed_trade_pnl;
-        logger->log_general("PnL du trade fermé: " + fast_double_to_string(last_trade_pnl), LogLevel::INFO);
+        logger->log_general("PnL du trade fermé: " + fast_double_to_string(last_trade_pnl));
     }
 
     if (position_info.in_position) {

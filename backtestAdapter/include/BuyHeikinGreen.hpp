@@ -7,6 +7,9 @@
 #include "buy_heikin_green.hpp"
 #include <memory>
 #include <iostream>
+#include "spdlog/spdlog.h"
+#include "spdlog/async.h"
+#include "spdlog/sinks/basic_file_sink.h"
 
 /**
  * @brief Adaptateur permettant d'utiliser la stratégie BuyHeikinGreen avec le moteur de backtest C++
@@ -48,25 +51,33 @@ public:
     ) : be::Strategy(broker, data), strategy_config(bhg_config) {
         // Créer l'instance de la stratégie
         strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
-        strategy->set_log_level(LogLevel::WARNING);
+        strategy->set_log_level(LogLevel::DEBUG);
+        static auto async_file = spdlog::basic_logger_mt<spdlog::async_factory>("async_file_logger", "logs/async_log.log");
+        async_file->set_level(spdlog::level::debug);
 
         auto log_callback = [](const std::string& message, int level) {
             LogLevel logLevel = static_cast<LogLevel>(level);
+
+            spdlog::level::level_enum spdlog_level{};
+            switch (level) {
+                case static_cast<int>(LogLevel::DEBUG):
+                    spdlog_level = spdlog::level::debug;
+                    break;
+                case static_cast<int>(LogLevel::INFO):
+                    spdlog_level = spdlog::level::info;
+                    break;
+                case static_cast<int>(LogLevel::WARNING):
+                    spdlog_level = spdlog::level::warn;
+                    break;
+                case static_cast<int>(LogLevel::FATAL):
+                    spdlog_level = spdlog::level::err;
+                    break;
+                default:
+                    spdlog_level = spdlog::level::info;
+                    break;
+            }
             
-            // Obtenir le timestamp actuel avec précision milliseconde
-            auto now = std::chrono::system_clock::now();
-            auto time_t_now = std::chrono::system_clock::to_time_t(now);
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                now.time_since_epoch()) % 1000;
-            
-            // Formater le timestamp
-            std::stringstream ss;
-            ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
-            ss << "," << std::setw(3) << std::setfill('0') << ms.count();
-            
-            
-            // Afficher le log avec le timestamp
-            std::cout << ss.str() << " [" << logLevel << "]: " << message << std::endl;
+            async_file->log(spdlog_level, "{}", message);
         };
 
         g_py_log_callback = log_callback;

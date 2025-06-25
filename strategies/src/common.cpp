@@ -55,10 +55,10 @@ bool DateTime::operator>=(const DateTime &other) const
 }
 
 std::string DateTime::to_string() const {
-    char buffer[20];
-    snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d", 
+    static thread_local char buffer[20];
+    int len = snprintf(buffer, sizeof(buffer), "%04d-%02d-%02dT%02d:%02d:%02d",
             year, month, day, time.hour, time.minute, time.second);
-    return std::string(buffer);
+    return std::string(buffer, len);
 }
 
 void cpp_log(const std::string& message, int level) {

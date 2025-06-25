@@ -29,11 +29,13 @@ find_package(spdlog REQUIRED)
 target_link_libraries(cpp_trading_ig PRIVATE spdlog::spdlog)
 
 # Crypto++ pour le chiffrement
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(CRYPTOPP REQUIRED libcrypto++)
-target_link_libraries(cpp_trading_ig PRIVATE ${CRYPTOPP_LIBRARIES})
-target_include_directories(cpp_trading_ig PRIVATE ${CRYPTOPP_INCLUDE_DIRS})
-target_compile_options(cpp_trading_ig PRIVATE ${CRYPTOPP_CFLAGS_OTHER})
+find_path(CRYPTOPP_INCLUDE_DIR cryptopp/cryptlib.h)
+find_library(CRYPTOPP_LIBRARY NAMES cryptopp libcryptopp)
+if(NOT CRYPTOPP_INCLUDE_DIR OR NOT CRYPTOPP_LIBRARY)
+    message(FATAL_ERROR "Crypto++ library not found. Please install cryptopp.")
+endif()
+target_include_directories(cpp_trading_ig PRIVATE ${CRYPTOPP_INCLUDE_DIR})
+target_link_libraries(cpp_trading_ig PRIVATE ${CRYPTOPP_LIBRARY})
 
 # CPR pour les requêtes HTTP - Installation automatique si non trouvé
 find_package(cpr QUIET)

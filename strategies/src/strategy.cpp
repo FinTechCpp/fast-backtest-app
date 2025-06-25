@@ -400,8 +400,8 @@ void Strategy::execute() {
 
 Strategy::Strategy(const StrategyBaseConfig& config) 
     : base_config(config), 
-    signal(std::make_unique<Signal>()),
-    logger(std::make_unique<LoggerManager>()) {
+    signal(std::make_unique<Signal>()) {
+    // logger(std::make_unique<LoggerManager>())
 
 }
 

@@ -3,6 +3,7 @@
 #include "Managers/CandleManager.hpp"
 #include "Managers/PositionManager.hpp"
 #include "Managers/LoggerManager.hpp"
+#include "log_config.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -50,8 +51,8 @@ public:
 protected:
     StrategyBaseConfig base_config;
     CandleManager candle_manager;
-    std::unique_ptr<LoggerManager> logger;
-    // Candle current_candle; // TODO : a supprimer faut trouver un moyen de stocker ce qui est important dans le candle autrelment
+    // std::unique_ptr<LoggerManager> logger;
+    Logger logger;
     PositionInfo position_info;
 
     // Signal components

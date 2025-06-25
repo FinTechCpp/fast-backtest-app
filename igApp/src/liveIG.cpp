@@ -6,7 +6,7 @@
 #include "igBroker.h"
 #include "trading_ig_config.hpp"
 
-int main(){
+int main() {
     spdlog::set_level(spdlog::level::debug); // Set global log level to debug
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
     spdlog::info("Starting IG Trading Application...");
@@ -15,6 +15,13 @@ int main(){
     Config config;
     spdlog::info("Configuration loaded successfully for {} {}", config.username.empty() ? "[NON DÉFINI]" : config.username); 
 
+    ig::IGService ig_service(config.username, 
+                        config.password, 
+                        config.api_key, 
+                        config.acc_type, 
+                        config.acc_number);
+
+    ig::IGBroker broker(ig_service);
 
     StrategyBaseConfig base_config;
 
@@ -75,13 +82,7 @@ int main(){
 
     BuyHeikinGreen Strategy(base_config, buy_heikin_green_config);
 
-    ig::IGService ig_service(config.username, 
-                              config.password, 
-                              config.api_key, 
-                              config.acc_type, 
-                              config.acc_number);
 
-    ig::IGBroker broker(ig_service);
     spdlog::info("IG Broker initialized successfully");
 
     return 0;

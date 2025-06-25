@@ -408,52 +408,6 @@ private:
         return true;
     }
 
-public:
-    BuyHeikinGreen(const StrategyBaseConfig& base_cfg, const BuyHeikinGreenConfig& bhg_cfg) 
-        : Strategy(base_cfg), config(bhg_cfg) {
-        
-        // Initialize indicator calculators
-        ema_short_calculator = std::make_unique<EMA>(config.ema_short_period);
-        ema_long_calculator = std::make_unique<EMA>(config.ema_long_period);
-        stochastic_calculator = std::make_unique<STOCH>(
-            config.stoch_fastk,
-            config.stoch_slowk,
-            config.stoch_slowd
-        );
-        rsi_calculator = std::make_unique<RSI>(config.rsi_period);
-        atrlog_calculator = std::make_unique<ATRLOG>(base_cfg.atr_period);
-        
-        // Initialize indicator names
-        ema_short_name = "EMA_" + std::to_string(config.ema_short_period);
-        ema_long_name = "EMA_" + std::to_string(config.ema_long_period);
-        stoch_k_name = "STOCH_K_" + std::to_string(config.stoch_fastk) + "_" +
-                      std::to_string(config.stoch_slowk) + "_" +
-                      std::to_string(config.stoch_slowd);
-        stoch_d_name = "STOCH_D_" + std::to_string(config.stoch_fastk) + "_" +
-                      std::to_string(config.stoch_slowk) + "_" +
-                      std::to_string(config.stoch_slowd);
-        rsi_name = "RSI_" + std::to_string(config.rsi_period);
-        atrlog_name = "ATRLOG_" + std::to_string(base_cfg.atr_period);
-        
-        // Setup active filters
-        if (config.use_ema_short_filter) {
-            active_filters.push_back([this]() { return this->ema_short_filter(); });
-        }
-        if (config.use_ema_long_filter) {
-            active_filters.push_back([this]() { return this->ema_long_filter(); });
-        }
-        if (config.use_stoch_filter) {
-            active_filters.push_back([this]() { return this->stoch_inf_threshold_filter(); });
-        }
-        if (config.use_rsi_filter) {
-            active_filters.push_back([this]() { return this->rsi_inf_threshold_filter(); });
-        }
-        if (config.use_previous_ha_candle_red_filter) {
-            active_filters.push_back([this]() { return this->previous_ha_candle_red_filter(); });
-        }
-    }
-
-    // peut etre plus besoin de la methode before
     void before() override {        
         // Obtenir la dernière bougie HA pour journalisation
         BasicCandle ha_current = candle_manager.get_latest_heikin_ashi();
@@ -519,5 +473,50 @@ public:
     
     std::vector<std::function<bool()>> filters() override {
         return active_filters;
+    }
+
+public:
+    BuyHeikinGreen(const StrategyBaseConfig& base_cfg, const BuyHeikinGreenConfig& bhg_cfg) 
+        : Strategy(base_cfg), config(bhg_cfg) {
+        
+        // Initialize indicator calculators
+        ema_short_calculator = std::make_unique<EMA>(config.ema_short_period);
+        ema_long_calculator = std::make_unique<EMA>(config.ema_long_period);
+        stochastic_calculator = std::make_unique<STOCH>(
+            config.stoch_fastk,
+            config.stoch_slowk,
+            config.stoch_slowd
+        );
+        rsi_calculator = std::make_unique<RSI>(config.rsi_period);
+        atrlog_calculator = std::make_unique<ATRLOG>(base_cfg.atr_period);
+        
+        // Initialize indicator names
+        ema_short_name = "EMA_" + std::to_string(config.ema_short_period);
+        ema_long_name = "EMA_" + std::to_string(config.ema_long_period);
+        stoch_k_name = "STOCH_K_" + std::to_string(config.stoch_fastk) + "_" +
+                      std::to_string(config.stoch_slowk) + "_" +
+                      std::to_string(config.stoch_slowd);
+        stoch_d_name = "STOCH_D_" + std::to_string(config.stoch_fastk) + "_" +
+                      std::to_string(config.stoch_slowk) + "_" +
+                      std::to_string(config.stoch_slowd);
+        rsi_name = "RSI_" + std::to_string(config.rsi_period);
+        atrlog_name = "ATRLOG_" + std::to_string(base_cfg.atr_period);
+        
+        // Setup active filters
+        if (config.use_ema_short_filter) {
+            active_filters.push_back([this]() { return this->ema_short_filter(); });
+        }
+        if (config.use_ema_long_filter) {
+            active_filters.push_back([this]() { return this->ema_long_filter(); });
+        }
+        if (config.use_stoch_filter) {
+            active_filters.push_back([this]() { return this->stoch_inf_threshold_filter(); });
+        }
+        if (config.use_rsi_filter) {
+            active_filters.push_back([this]() { return this->rsi_inf_threshold_filter(); });
+        }
+        if (config.use_previous_ha_candle_red_filter) {
+            active_filters.push_back([this]() { return this->previous_ha_candle_red_filter(); });
+        }
     }
 };

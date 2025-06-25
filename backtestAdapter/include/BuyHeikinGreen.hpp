@@ -9,7 +9,9 @@
 #include <iostream>
 #include "spdlog/spdlog.h"
 #include "spdlog/async.h"
-#include "spdlog/sinks/basic_file_sink.h"
+// #include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/rotating_file_sink.h"
+
 
 /**
  * @brief Adaptateur permettant d'utiliser la stratégie BuyHeikinGreen avec le moteur de backtest C++
@@ -54,9 +56,14 @@ public:
         strategy->set_log_level(LogLevel::DEBUG);
 
         auto log_callback = [](const std::string& message, int level) {
-            static thread_local auto async_file = spdlog::basic_logger_mt<spdlog::async_factory>("async_file_logger", "logs/async_log.log");
+            static thread_local auto async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
+                "async_file_logger",       // Nom du logger
+                "logs/async_log.log",      // Chemin du fichier
+                50 * 1024 * 1024,         // Taille maximale par fichier (50 Mo)
+                1                          // Nombre maximal de fichiers à conserver
+            );
+
             static bool initialized = false;
-            
             if (!initialized) {
                 async_file->set_level(spdlog::level::debug);
                 initialized = true;
@@ -70,7 +77,7 @@ public:
                 case static_cast<int>(LogLevel::FATAL):   spdlog_level = spdlog::level::err; break;
             }
             
-            // async_file->log(spdlog_level, "{}", message);
+            async_file->log(spdlog_level, "{}", message);
         };
 
         g_py_log_callback = log_callback;

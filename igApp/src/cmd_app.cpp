@@ -116,70 +116,6 @@ void fetchHistoricalPrices(ig::IGService& service) {
 
 }
 
-// Un écouteur simple pour les ticks qui affiche les données en console
-class SimpleTickerListener : public ig::TickerListener {
-public:
-    void onTicker(const ig::Ticker& ticker) override {
-        std::cout << "Tick: " << ticker.epic << " - " 
-                  << "Bid: " << ticker.bid << " - " 
-                  << "Offer: " << ticker.offer << " - "
-                  << "Last: " << ticker.last_traded_price 
-                  << " - Time: " << ticker.timestamp << std::endl;
-    }
-};
-
-// Fonction pour streamer les ticks d'un marché en temps réel
-void streamTicks(ig::IGService& service) {
-    spdlog::info("Démarrage du streaming de ticks...");
-    
-    // Vérifier/rafraîchir la session
-    try {
-        service.refresh_session();
-    } catch (const ig::TokenInvalidException& e) {
-        spdlog::warn("Token invalide, recréation de la session...");
-        service.create_session();
-    }
-    
-    // Créer le service de streaming
-    ig::IGStreamService streamService(service);
-    
-    // Se connecter au service
-    try {
-        spdlog::info("Connexion au service de streaming...");
-        streamService.connect();
-        
-        // Vérifier la connexion
-        if (!streamService.isConnected()) {
-            spdlog::error("Échec de la connexion au service de streaming");
-            return;
-        }
-        
-        spdlog::info("Connexion au service de streaming établie avec succès");
-        
-        // Créer un listener
-        auto listener = std::make_shared<SimpleTickerListener>();
-        
-        // Souscrire aux ticks
-        std::string epic = "IX.D.NASDAQ.IFE.IP";
-        spdlog::info("Souscription aux ticks pour {}", epic);
-        
-        auto subscription = streamService.subscribeToTicks(epic, listener);
-        
-        spdlog::info("Souscription aux ticks établie, en attente de données...");
-        
-        // Attendre que l'utilisateur appuie sur une touche pour arrêter
-        std::cout << "Réception des ticks en cours... Appuyez sur Entrée pour arrêter" << std::endl;
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        
-        // Se désabonner et se déconnecter
-        spdlog::info("Déconnexion du service de streaming...");
-        streamService.disconnect();
-        
-    } catch (const std::exception& e) {
-        spdlog::error("Erreur lors du streaming de ticks: {}", e.what());
-    }
-}
-
 // Menu principal
 void displayMenu() {
     std::cout << "\n=== Menu IG Trading API Test ===\n";
@@ -288,7 +224,7 @@ int main() {
                     spdlog::info("Non implémenté, veuillez réessayer plus tard.");
                     break;
                 case 4:
-                    streamTicks(igService);
+                    spdlog::info("Non implémenté, veuillez réessayer plus tard.");
                     break;
                 case 0:
                     spdlog::info("Au revoir!");

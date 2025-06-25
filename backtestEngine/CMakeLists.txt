@@ -9,3 +9,7 @@ target_include_directories(backtestEngine
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+# Ajouter spdlog pour les headers qui l'utilisent
+find_package(spdlog REQUIRED)
+target_link_libraries(backtestEngine PUBLIC spdlog::spdlog)

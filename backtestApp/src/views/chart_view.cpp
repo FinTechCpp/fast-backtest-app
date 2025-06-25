@@ -6,6 +6,7 @@
 #include <QFrame>
 #include <QResizeEvent>
 #include <QToolButton>
+#include "views/chart_view.h"
 
 ChartView::ChartView(QWidget* parent)
     : BaseView(parent)
@@ -115,10 +116,6 @@ void ChartView::setupUI()
     leftPanelLayout->addWidget(aggregationDesc);
 
     connect(m_aggregationSlider, &QSlider::valueChanged, this, &ChartView::onAggregationSliderChanged);
-    if (m_chartWidget){
-        connect(m_chartWidget, &ChartWidget::maxDisplayPointsChanged,
-                this, &ChartView::onMaxDisplayPointsChanged);
-    }
     
     // Connecter le signal de changement à notre slot
     connect(m_chartTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -198,32 +195,12 @@ void ChartView::setupUI()
     // Créer le widget de graphique
     m_chartWidget = new ChartWidget();
     m_chartWidget->setVisible(false); // Cacher initialement
-    
-    // Connecter les signaux du ChartWidget
-    connect(m_chartWidget, &ChartWidget::rsiAdded, this, &ChartView::onRSIAdded);
-    connect(m_chartWidget, &ChartWidget::rsiChanged, this, &ChartView::onRSIChanged);
-    connect(m_chartWidget, &ChartWidget::rsiRemoved, this, &ChartView::onRSIRemoved);
 
-    // Connecter les signaux EMA
-    connect(m_chartWidget, &ChartWidget::emaAdded, this, &ChartView::onEMAAdded);
-    connect(m_chartWidget, &ChartWidget::emaChanged, this, &ChartView::onEMAChanged);
-    connect(m_chartWidget, &ChartWidget::emaRemoved, this, &ChartView::onEMARemoved);
+    connect(m_chartWidget, &ChartWidget::indicatorAdded, this, &ChartView::onIndicatorAdded);
+    connect(m_chartWidget, &ChartWidget::indicatorChanged, this, &ChartView::onIndicatorChanged);
+    connect(m_chartWidget, &ChartWidget::indicatorRemoved, this, &ChartView::onIndicatorRemoved);
+    connect(m_chartWidget, &ChartWidget::maxDisplayPointsChanged, this, &ChartView::onMaxDisplayPointsChanged);
 
-    // Connecter les signaux SuperTrend
-    connect(m_chartWidget, &ChartWidget::superTrendAdded, this, &ChartView::onSupertrendAdded);
-    connect(m_chartWidget, &ChartWidget::superTrendChanged, this, &ChartView::onSupertrendChanged);
-    connect(m_chartWidget, &ChartWidget::superTrendRemoved, this, &ChartView::onSupertrendRemoved);
-
-    // Connecter les signaux Stochastic
-    connect(m_chartWidget, &ChartWidget::stochasticAdded, this, &ChartView::onStochasticAdded);
-    connect(m_chartWidget, &ChartWidget::stochasticChanged, this, &ChartView::onStochasticChanged);
-    connect(m_chartWidget, &ChartWidget::stochasticRemoved, this, &ChartView::onStochasticRemoved);
-
-    // Connecter les signaux pour l'Average True Range (ATR)
-    connect(m_chartWidget, &ChartWidget::atrAdded, this, &ChartView::onATRAdded);
-    connect(m_chartWidget, &ChartWidget::atrChanged, this, &ChartView::onATRChanged);
-    connect(m_chartWidget, &ChartWidget::atrRemoved, this, &ChartView::onATRRemoved);
-    
     // Ajouter les widgets au layout du panneau droit
     rightPanelLayout->addWidget(m_chartPlaceholder);
     rightPanelLayout->addWidget(m_chartWidget);
@@ -248,8 +225,7 @@ void ChartView::setupUI()
     }
 }
 
-void ChartView::setupIndicatorControls()
-{
+void ChartView::setupIndicatorControls() {
     // Créer le groupe pour les contrôles d'indicateurs
     m_indicatorsGroup = new QGroupBox("Active Indicators");
     QVBoxLayout* groupLayout = new QVBoxLayout(m_indicatorsGroup);
@@ -283,175 +259,49 @@ void ChartView::setupIndicatorControls()
             this, &ChartView::onIndicatorTypeSelected);
 }
 
-void ChartView::onIndicatorTypeSelected(int index)
-{
+void ChartView::onIndicatorTypeSelected(int index) {
     // Cette méthode peut être utilisée pour ajouter un comportement spécifique
     // lorsque le type d'indicateur est modifié dans la liste déroulante
     Q_UNUSED(index);
 }
 
-void ChartView::onAddIndicatorClicked()
-{
-    if (!m_chartWidget->hasValidData()) {
-        qDebug() << "Pas de données valides pour ajouter un indicateur";
-        return;
-    }
-    
+void ChartView::onAddIndicatorClicked() {    
     QString indicatorType = m_indicatorTypeCombo->currentData().toString();
     
     // il serait bien d'ouvrir la fenetre de dialog directement plutot que mettre des valeurs par défaut
     if (indicatorType == "RSI") {
-        // Ajouter un RSI avec la période par défaut (14)
         RSIInstance rsi;
         rsi.period = 14;
-        m_chartWidget->addRSI(std::move(rsi));
+        m_chartWidget->addIndicator(std::move(rsi));
     }
     else if (indicatorType == "EMA") {
-        // Pour EMA, ouvrir le dialogue de configuration directement
-        onEditEMA();
+        EMAInstance ema;
+        ema.period = 20;
+        ema.color = 0x0000FF;
+        m_chartWidget->addIndicator(std::move(ema));
     }
     else if (indicatorType == "SUPERTREND") {
         SuperTrendInstance supertrend;
-        supertrend.period = 10; // Période par défaut pour le SuperTrend
-        supertrend.multiplier = 3.0; // Multiplicateur par défaut pour le SuperTrend
-        // Ajouter un SuperTrend avec les paramètres par défaut
-        m_chartWidget->addSuperTrend(std::move(supertrend));
+        supertrend.period = 10;
+        supertrend.multiplier = 3.0;
+        m_chartWidget->addIndicator(std::move(supertrend));
     }
     else if (indicatorType == "STOCH") {
         StochasticInstance stochastic;
-        stochastic.fastKPeriod = 14; // Période par défaut pour %K
-        stochastic.slowKPeriod = 3;  // Période par défaut pour %K lissé
-        stochastic.slowDPeriod = 3;  // Période par défaut pour %D
-        // Ajouter un Stochastique avec les paramètres par défaut
-        m_chartWidget->addStochastic(std::move(stochastic));
+        stochastic.fastKPeriod = 14;
+        stochastic.slowKPeriod = 3;
+        stochastic.slowDPeriod = 3;
+        m_chartWidget->addIndicator(std::move(stochastic));
     }
     else if (indicatorType == "ATR") {
         ATRInstance atr;
-        atr.period = 14; // Période par défaut pour l'ATR
-        // Ajouter un ATR avec la période par défaut (14)
-        m_chartWidget->addATR(std::move(atr));
+        atr.period = 14;
+        m_chartWidget->addIndicator(std::move(atr));
     }
     // Ajouter d'autres types d'indicateurs ici
 }
 
-void ChartView::onRSIAdded(int id, int period)
-{    
-    // Créer les widgets pour ce RSI
-    QString name = QString("RSI (%1)").arg(period);
-    createIndicatorWidgets(id, name);
-}
-
-void ChartView::onRSIChanged(int id, int period)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        m_indicatorLabels[id]->setText(QString("RSI (%1)").arg(period));
-    }
-}
-
-void ChartView::onRSIRemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::onEMAAdded(int id, int period)
-{
-    // Créer les widgets pour cet EMA
-    QString name = QString("EMA (%1)").arg(period);
-    createIndicatorWidgets(id, name);
-}
-
-void ChartView::onEMAChanged(int id, int period)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        m_indicatorLabels[id]->setText(QString("EMA (%1)").arg(period));
-    }
-}
-
-void ChartView::onEMARemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::onEditEMA()
-{
-    if (!m_chartWidget->hasValidData()) {
-        qDebug() << "Pas de données valides pour éditer un EMA";
-        return;
-    }
-    
-    // Créer et afficher le dialogue d'édition pour tous les EMA
-    EMADialog* dialog = new EMADialog(this, m_chartWidget);
-    dialog->exec();
-    delete dialog;
-    
-    // Rafraîchir la liste des indicateurs
-    refreshIndicatorsList();
-}
-
-void ChartView::onSupertrendAdded(int id, int period, double multiplier)
-{    
-    // Créer les widgets pour ce Supertrend
-    QString name = QString("Supertrend (%1, %2)").arg(period).arg(multiplier, 0, 'f', 1);
-    createIndicatorWidgets(id, name);
-}
-
-void ChartView::onSupertrendChanged(int id, int period, double multiplier)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        QString name = QString("Supertrend (%1, %2)").arg(period).arg(multiplier, 0, 'f', 1);
-        m_indicatorLabels[id]->setText(name);
-    }
-}
-
-void ChartView::onSupertrendRemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::onStochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
-{    
-    // Créer les widgets pour ce Stochastique
-    QString name = QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
-    createIndicatorWidgets(id, name);
-}
-
-void ChartView::onStochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        QString name = QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
-        m_indicatorLabels[id]->setText(name);
-    }
-}
-
-void ChartView::onStochasticRemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::onATRAdded(int id, int period)
-{
-    // Créer les widgets pour cet ATR
-    QString name = QString("ATR (%1)").arg(period);
-    createIndicatorWidgets(id, name);
-}
-void ChartView::onATRChanged(int id, int period)
-{
-    // Mettre à jour le libellé
-    if (m_indicatorLabels.contains(id)) {
-        m_indicatorLabels[id]->setText(QString("ATR (%1)").arg(period));
-    }
-}
-void ChartView::onATRRemoved(int id)
-{
-    refreshIndicatorsList();
-}
-
-void ChartView::createIndicatorWidgets(int id, const QString &name)
-{
+void ChartView::createIndicatorWidgets(int id, const QString &name) {
     // Créer un widget horizontal pour cet indicateur
     QWidget* indicatorWidget = new QWidget();
     QHBoxLayout* layout = new QHBoxLayout(indicatorWidget);
@@ -488,90 +338,26 @@ void ChartView::createIndicatorWidgets(int id, const QString &name)
     m_indicatorsLayout->addWidget(indicatorWidget);
 }
 
-// oula cela ne va pas du tout il faut mutualiser les id des indicateur ou je ne sias pas mais la c'est pas propre
-void ChartView::onEditIndicator(int id)
-{
-    // Rechercher l'instance RSI avec cet ID
-    RSIInstance* rsi = m_chartWidget->findRSI(id);
-    if (rsi) {
-        // Créer et afficher le dialogue d'édition pour RSI
-        RSIDialog* dialog = new RSIDialog(this, m_chartWidget, id, *rsi);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-    
-    // Rechercher si c'est un EMA
-    EMAInstance* ema = m_chartWidget->findEMA(id);
-    if (ema) {
-        // Pour les EMA, on ouvre le dialogue général des EMA
-        onEditEMA();
-        return;
-    }
-
-    // Rechercher si c'est un Supertrend
-    SuperTrendInstance* supertrend = m_chartWidget->findSuperTrend(id);
-    if (supertrend) {
-        // Créer et afficher le dialogue d'édition pour Supertrend
-        SupertrendDialog* dialog = new SupertrendDialog(this, m_chartWidget, id, *supertrend);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-
-    // Rechercher si c'est un Stochastique
-    StochasticInstance* stochastic = m_chartWidget->findStochastic(id);
-    if (stochastic) {
-        // Créer et afficher le dialogue d'édition pour Stochastique
-        StochasticDialog* dialog = new StochasticDialog(this, m_chartWidget, id, *stochastic);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-
-    // Rechercher si c'est un ATR
-    ATRInstance* atr = m_chartWidget->findATR(id);
-    if (atr) {
-        // Créer et afficher le dialogue d'édition pour ATR
-        ATRDialog* dialog = new ATRDialog(this, m_chartWidget, id, *atr);
-        dialog->exec();
-        delete dialog;
-        return;
-    }
-    
-    qDebug() << "Indicateur introuvable:" << id;
+void ChartView::onEditIndicator(int id) {
+    if (tryOpenDialog<RSIInstance, RSIDialog>(id)) return;
+    if (tryOpenDialog<EMAInstance, EMADialog>(id)) return;
+    if (tryOpenDialog<SuperTrendInstance, SupertrendDialog>(id)) return;
+    if (tryOpenDialog<StochasticInstance, StochasticDialog>(id)) return;
+    if (tryOpenDialog<ATRInstance, ATRDialog>(id)) return;
 }
 
 //Remove tous les indicateurs individuellement par leur ID
-void ChartView::onRemoveIndicator(int id)
-{
-    // Essayer de supprimer comme RSI
-    if (m_chartWidget->removeRSI(id)) 
-        return;
-    
-    // Essayer de supprimer comme EMA
-    if (m_chartWidget->removeEMA(id)) 
-        return;
-    
-    if(m_chartWidget->removeSuperTrend(id)) 
-        return;
-
-    // Essayer de supprimer comme Stochastique
-    m_chartWidget->removeStochastic(id);
-
-    // Essayer de supprimer comme ATR
-    m_chartWidget->removeATR(id);
+void ChartView::onRemoveIndicator(int id) {
+    m_chartWidget->removeIndicator(id);
 }
 
 
-void ChartView::refreshIndicatorsList()
-{
+void ChartView::refreshIndicatorsList() {
     // Supprimer tous les widgets d'indicateurs existants
     QLayoutItem* child;
     while ((child = m_indicatorsLayout->takeAt(0)) != nullptr) {
-        if (child->widget()) {
+        if (child->widget())
             delete child->widget();
-        }
         delete child;
     }
     
@@ -580,77 +366,16 @@ void ChartView::refreshIndicatorsList()
     m_editButtons.clear();
     m_removeButtons.clear();
     
-    // Pour chaque RSI actif, recréer les widgets
-    std::vector<const RSIInstance*> rsiInstances = m_chartWidget->getRSIInstances();
-    for (const RSIInstance* rsi : rsiInstances) {
-        QString name = QString("RSI (%1)").arg(rsi->period);
-        createIndicatorWidgets(rsi->id, name);
-    }
-
-    // Pour chaque EMA actif, recréer les widgets
-    const std::vector<const EMAInstance*> emaInstances = m_chartWidget->getEMAInstances();
-    for (const EMAInstance* ema : emaInstances) {
-        if (ema->visible) {
-            QString name = QString("EMA (%1)").arg(ema->period);
-            createIndicatorWidgets(ema->id, name);
+    // Approche générique pour tous les indicateurs
+    const std::vector<std::unique_ptr<IndicatorBase>>& allIndicators = m_chartWidget->getIndicators();
+    for (const auto& indicator : allIndicators) {
+        if (indicator->visible) {
+            createIndicatorWidgets(indicator->id, indicator->getDisplayName());
         }
     }
-
-    // Pour chaque Supertrend actif, recréer les widgets
-    const std::vector<const SuperTrendInstance*> supertrendInstances = m_chartWidget->getSuperTrendInstances();
-    for (const SuperTrendInstance* supertrend : supertrendInstances) {
-        if (supertrend->visible) {
-            QString name = QString("Supertrend (%1, %2)").arg(supertrend->period).arg(supertrend->multiplier, 0, 'f', 1);
-            createIndicatorWidgets(supertrend->id, name);
-        }
-    }
-
-    // Pour chaque Stochastic actif, recréer les widgets
-    const std::vector<const StochasticInstance*> stochInstances = m_chartWidget->getStochasticInstances();
-    for (const StochasticInstance* stoch : stochInstances) {
-        if (stoch->visible) {
-            QString name = QString("Stochastic (%1,%2,%3)").arg(stoch->fastKPeriod).arg(stoch->slowKPeriod).arg(stoch->slowDPeriod);
-            createIndicatorWidgets(stoch->id, name);
-        }
-    }
-
-    // Pour chaque ATR actif, recréer les widgets
-    const std::vector<const ATRInstance*> atrInstances = m_chartWidget->getATRInstances();
-    for (const ATRInstance* atr : atrInstances) {
-        if (atr->visible) {
-            QString name = QString("ATR (%1)").arg(atr->period);
-            createIndicatorWidgets(atr->id, name);
-        }
-    }
-    
-    // Ajouter un widget spécial pour configurer tous les EMA ensemble
-    if (!emaInstances.empty()) {
-        QWidget* emaConfigWidget = new QWidget();
-        QHBoxLayout* layout = new QHBoxLayout(emaConfigWidget);
-        layout->setContentsMargins(0, 2, 0, 2);
-        
-        QLabel* nameLabel = new QLabel("Configure all EMAs");
-        nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-        
-        QPushButton* editButton = new QPushButton("Edit");
-        editButton->setFixedWidth(40);
-        connect(editButton, &QPushButton::clicked, this, &ChartView::onEditEMA);
-        
-        layout->addWidget(nameLabel);
-        layout->addWidget(editButton);
-        
-        m_indicatorsLayout->addWidget(emaConfigWidget);
-    }
-
-    // todo a supprimer c'est le chart qui doit etre autonome
-    // if (m_chartWidget->hasValidData()) {
-    //     // Mettre à jour le graphique après avoir rafraîchi la liste des indicateurs
-    //     m_chartWidget->updateChartDisplay();
-    // }
 }
 
-void ChartView::updateData(BacktestResults* results)
-{
+void ChartView::updateData(BacktestResults* results) {
     QTime start = QTime::currentTime();
             
     // Récupérer les résultats depuis l'App
@@ -692,8 +417,7 @@ void ChartView::updateData(BacktestResults* results)
     int elapsed = start.msecsTo(QTime::currentTime());
 }
 
-void ChartView::onChartTypeChanged(int index)
-{
+void ChartView::onChartTypeChanged(int index) {
     if (!m_chartTypeCombo || !m_chartWidget) {
         return;
     }
@@ -707,8 +431,7 @@ void ChartView::onChartTypeChanged(int index)
     }
 }
 
-void ChartView::showChartWidget()
-{
+void ChartView::showChartWidget() {
     if (m_chartPlaceholder) {
         m_chartPlaceholder->setVisible(false);
     }
@@ -718,8 +441,7 @@ void ChartView::showChartWidget()
     }
 }
 
-void ChartView::showPlaceholder(const QString& message)
-{
+void ChartView::showPlaceholder(const QString& message) {
     if (m_chartWidget) {
         m_chartWidget->setVisible(false);
     }
@@ -730,8 +452,7 @@ void ChartView::showPlaceholder(const QString& message)
     }
 }
 
-void ChartView::clear()
-{    
+void ChartView::clear() {
     m_currentResults = nullptr;
     m_cachedResults = nullptr;
     m_dataExtracted = false;
@@ -748,27 +469,43 @@ void ChartView::clear()
     showPlaceholder("Exécutez un backtest pour afficher les graphiques");
 }
 
-void ChartView::onRulerToolToggled(bool checked)
-{
+void ChartView::onRulerToolToggled(bool checked) {
     if (m_chartWidget) {
         m_chartWidget->setRulerToolEnabled(checked);
     }
 }
 
-// Ajouter les méthodes de slots:
-void ChartView::onAggregationSliderChanged(int value)
-{
+void ChartView::onIndicatorAdded(int id, const QString &name) {
+    createIndicatorWidgets(id, name);
+}
+
+void ChartView::onIndicatorChanged(int id, const QString &name) {
+    if (m_indicatorLabels.contains(id)) {
+        m_indicatorLabels[id]->setText(name);
+    }
+}
+
+void ChartView::onIndicatorRemoved(int id) {
+    refreshIndicatorsList(); // methode de merde lourde
+    // Il faudrait plutot supprimer l'indicateur directement
+    // et supprimer les widgets associés
+    // if (m_indicatorLabels.contains(id)) {
+    //     delete m_indicatorLabels[id];
+    //     m_indicatorLabels.remove(id);
+    // }
+}
+
+void ChartView::onAggregationSliderChanged(int value) {
     // Mettre à jour l'étiquette
     m_aggregationLabel->setText(QString::number(value));
     
     // Mettre à jour le ChartWidget si disponible
-    if (m_chartWidget && m_chartWidget->hasValidData()) {
+    if (m_chartWidget) {
         m_chartWidget->setMaxDisplayPoints(value);
     }
 }
 
-void ChartView::onMaxDisplayPointsChanged(int value)
-{
+void ChartView::onMaxDisplayPointsChanged(int value) {
     // Mettre à jour le slider et l'étiquette si la valeur change depuis le ChartWidget
     if (m_aggregationSlider->value() != value) {
         m_aggregationSlider->setValue(value);
@@ -789,7 +526,7 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     rsi.period = static_cast<int>(indicator.params.at("period"));
                     rsi.height = 90;  // Hauteur standard
                     rsi.color = 0x800080;  // Couleur par défaut (violet)
-                    m_chartWidget->addRSI(std::move(rsi));
+                    m_chartWidget->addIndicator(std::move(rsi));
                     break;
                 }
                 case StrategyIndicator::EMA: {
@@ -805,7 +542,7 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     else
                         ema.color = 0x008000;  // Vert pour EMA longue
 
-                    m_chartWidget->addEMA(std::move(ema));
+                    m_chartWidget->addIndicator(std::move(ema));
                     break;
                 }
                 case StrategyIndicator::STOCHASTIC: {
@@ -818,7 +555,7 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     stoch.height = 90;  // Hauteur standard
                     stoch.kColor = 0x0000FF;  // Bleu pour K
                     stoch.dColor = 0xFF0000;  // Rouge pour D
-                    m_chartWidget->addStochastic(std::move(stoch));
+                    m_chartWidget->addIndicator(std::move(stoch));
                     break;
                 }
                 case StrategyIndicator::ATR: {
@@ -827,7 +564,7 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     atr.useLogScale = indicator.params.at("useLogScale") > 0.5;
                     atr.height = 90;  // Hauteur standard
                     atr.color = 0x008800;  // Vert
-                    m_chartWidget->addATR(std::move(atr));
+                    m_chartWidget->addIndicator(std::move(atr));
                     break;
                 }
             }

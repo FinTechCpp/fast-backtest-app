@@ -1,0 +1,24 @@
+name: Discord Notification
+
+on:
+  push:
+    branches:
+      - '**'   # Toutes les branches
+
+jobs:
+  notify-discord:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          AUTHOR="${{ github.actor }}"
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          MESSAGE=":bell: Nouveau commit sur **${BRANCH}** par **${AUTHOR}**\nHorodatage : ${TIMESTAMP}\n[Voir le commit](${COMMIT_URL})\nMessage: ${{ github.event.head_commit.message }}"
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"$MESSAGE\"}" \
+               "$DISCORD_WEBHOOK_URL"

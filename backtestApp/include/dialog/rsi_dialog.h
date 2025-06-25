@@ -1,57 +1,53 @@
 #pragma once
 
-#include <QDialog>
-#include <QVBoxLayout>
-#include <QPushButton>
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QLabel>
 #include <QScrollArea>
-#include <QColorDialog>
-#include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QFrame>
-#include <QFormLayout>
 
-#include "chart_widget.h"
+#include "dialog/indicator_dialog.h"
 
 /**
  * @brief Dialogue modal pour modifier les paramètres d'un indicateur technique
  */
-class RSIDialog : public QDialog
+class RSIDialog : public IndicatorDialog
 {
     Q_OBJECT
     
 public:
     // Construction pour RSI
     RSIDialog(QWidget* parent, ChartWidget* chartWidget, int rsiId, const RSIInstance& rsi);
-    ~RSIDialog();
+    ~RSIDialog() override;
     
 private slots:
-    void onApply();
-    void onCancel();
     void onPeriodChanged(int period);
     void onHeightChanged(int height);
-    void onRangeChanged(double range);
+    // void onRangeChanged(double range);
+    void onOverboughtLevelChanged(int level);
+    void onOversoldLevelChanged(int level);
     void onColorButtonClicked();
     void onUpperColorButtonClicked();
     void onLowerColorButtonClicked();
+
+protected:
+    void setupUI() override;
+    void connectSignals() override;
+    void applyChanges() override;
+    void cancelChanges() override;
     
 private:
-    ChartWidget* m_chartWidget;
     int m_rsiId;
     RSIInstance m_originalRsi;  // Pour restaurer en cas d'annulation
     RSIInstance m_currentRsi;   // Pour les modifications en cours
     
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;
-    QDoubleSpinBox* m_rangeSpinBox;
+    QSpinBox* m_overboughtLevelSpinBox;
+    QSpinBox* m_oversoldLevelSpinBox;
     QPushButton* m_colorButton;
     QPushButton* m_upperColorButton;
     QPushButton* m_lowerColorButton;
-    QDialogButtonBox* m_buttonBox;
-    
-    void updateColorButtonStyle(QPushButton* button, int color);
-    void updateRSI();
 };
 

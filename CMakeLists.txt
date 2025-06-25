@@ -26,6 +26,7 @@ else()
         add_compile_options(/O2)
     else()
         add_compile_options(-O3)
+        # add_compile_options(-march=native)
     endif()
 endif()
 

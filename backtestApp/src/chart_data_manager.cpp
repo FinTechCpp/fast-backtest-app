@@ -186,22 +186,10 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
     
     // Créer l'ArrayMath pour l'agrégation
     ArrayMath timestampsMath(DoubleArray(timestampsCopy.data(), timestampsCopy.size()));
-    
-    // Appliquer le sélecteur approprié selon le niveau d'agrégation demandé
-    switch (level) {
-        case AggregationLevel::OneMinute:
-            timestampsMath.selectStartOfMinute();
-            break;
-        case AggregationLevel::OneHour:
-            timestampsMath.selectStartOfHour();
-            break;
-        case AggregationLevel::OneDay:
-            timestampsMath.selectStartOfDay();
-            break;
-        default:
-            // Ne devrait pas arriver car Raw est géré plus haut
-            aggregatedData.isValid = false;
-            return;
+
+    if (!configureAggregationSelector(timestampsMath, level)) {
+        aggregatedData.isValid = false;
+        return;
     }
     
     // Obtenir les indices après sélection
@@ -308,21 +296,13 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     for (const auto& [id, valuesPair] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].supertrendValues) {
         if (!aggregated.isSupertrendValid(id)) {
             const auto& [supertrendValues, trendDirections] = valuesPair;
-            
             std::vector<double> supertrendData = aggregateVector(supertrendValues, level, Chart::AggregateLast);
-            
-            // Pour les directions, on utilise la dernière valeur (Chart::AggregateLast)
-            // mais on doit d'abord convertir std::vector<int> en std::vector<double>
-            std::vector<double> directionsAsDouble(trendDirections.begin(), trendDirections.end());
-            std::vector<double> directionsData = aggregateVector(directionsAsDouble, level, Chart::AggregateLast);
-            
-            // Reconvertir en std::vector<int>
-            std::vector<int> directionsInt(directionsData.begin(), directionsData.end());
+            std::vector<int> directionsData = aggregateVector(trendDirections, level, Chart::AggregateLast);
 
-            if (!supertrendData.empty() && !directionsInt.empty() && supertrendData.size() == directionsInt.size()) {
+            if (!supertrendData.empty() && !directionsData.empty() && supertrendData.size() == directionsData.size()) {
                 aggregated.supertrendValues[id] = std::make_pair(
                     std::move(supertrendData),
-                    std::move(directionsInt)
+                    std::move(directionsData)
                 );
                 aggregated.validSupertrendIds.insert(id);
             }
@@ -367,19 +347,8 @@ std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> 
 
     ArrayMath timestampsMath(DoubleArray(timestamps.data(), timestamps.size()));
 
-    switch (level) {
-        case AggregationLevel::OneMinute:
-            timestampsMath.selectStartOfMinute();
-            break;
-        case AggregationLevel::OneHour:
-            timestampsMath.selectStartOfHour();
-            break;
-        case AggregationLevel::OneDay:
-            timestampsMath.selectStartOfDay();
-            break;
-        default:
-            return std::vector<double>(); // Niveau d'agrégation non supporté
-    }
+    if (!configureAggregationSelector(timestampsMath, level))
+        return std::vector<double>();
 
     DoubleArray indices = timestampsMath.result();
     if (indices.len <= 0) {
@@ -393,8 +362,14 @@ std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> 
     return std::vector<double>(result.data, result.data + result.len);
 }
 
-void ChartDataManager::calculateRSI(int id, int period)
-{
+std::vector<int> ChartDataManager::aggregateVector(const std::vector<int>& data, AggregationLevel level, int aggregateMethod) const {
+    std::vector<double> dataCopy(data.begin(), data.end());
+    std::vector<double> dataAggregated = aggregateVector(dataCopy, level, aggregateMethod);
+    return std::vector<int>(dataAggregated.begin(), dataAggregated.end());
+}
+
+
+void ChartDataManager::calculateRSI(int id, int period) {
     // Vérifier si les données nécessaires sont disponibles
     if (!hasValidData() || period < 2) return;
 
@@ -472,23 +447,25 @@ void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
     m_aggregatedIndicatorsCache[AggregationLevel::Raw].atrValues[id] = std::move(atrValues);
 }
 
-// // Méthode utilitaire pour configurer le sélecteur d'agrégation
-// void ChartDataManager::configureAggregationSelector(ArrayMath& math, AggregationLevel level) {
-//     switch (level) {
-//     case AggregationLevel::OneMinute:
-//         math.selectStartOfMinute();
-//         break;
-//     case AggregationLevel::OneHour:
-//         math.selectStartOfHour();
-//         break;
-//     case AggregationLevel::OneDay:
-//         math.selectStartOfDay();
-//         break;
-//     default:
-//         // Ne rien faire pour Raw
-//         break;
-//     }
-// }
+// Méthode utilitaire pour configurer le sélecteur d'agrégation
+bool ChartDataManager::configureAggregationSelector(ArrayMath& math, AggregationLevel level) const {
+    switch (level) {
+    case AggregationLevel::OneMinute:
+        math.selectStartOfMinute();
+        break;
+    case AggregationLevel::OneHour:
+        math.selectStartOfHour();
+        break;
+    case AggregationLevel::OneDay:
+        math.selectStartOfDay();
+        break;
+    default:
+        // Ne rien faire pour Raw
+        return false;
+        break;
+    }
+    return true;
+}
 
 ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(const DoubleArray& timestamps) {
     AggregationInfo result;
@@ -697,10 +674,10 @@ bool ChartDataManager::hasValidData() const
     if (!m_backtestData)
         return false;
 
-    const auto& open = m_backtestData->getOpen();
-    const auto& high = m_backtestData->getHigh();
-    const auto& low = m_backtestData->getLow();
-    const auto& close = m_backtestData->getClose();
+    const std::vector<double>& open = m_backtestData->getOpen();
+    const std::vector<double>& high = m_backtestData->getHigh();
+    const std::vector<double>& low = m_backtestData->getLow();
+    const std::vector<double>& close = m_backtestData->getClose();
 
     size_t size = open.size();
     return size > 0 &&

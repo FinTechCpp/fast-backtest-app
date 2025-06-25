@@ -1,52 +1,36 @@
 #pragma once
 
-#include <QDialog>
-#include <QVBoxLayout>
-#include <QPushButton>
-#include <QCheckBox>
+#include "dialog/indicator_dialog.h"
 #include <QSpinBox>
-#include <QLabel>
-#include <QScrollArea>
-#include <QColorDialog>
-#include <QDialogButtonBox>
 
-#include "chart_widget.h"
-
-// TODO: Il faudrait faire une classs mere pour avoir les deux boutons "Appliquer" et "Annuler"
-// Il faut aussi ajouter un bouton reset pour revenir aux valeurs par defaut
 /**
- * @brief Dialogue modal pour configurer plusieurs EMA
+ * @brief Dialogue modal pour modifier les paramètres d'un EMA (Exponential Moving Average)
  */
-class EMADialog : public QDialog
+class EMADialog : public IndicatorDialog
 {
     Q_OBJECT
     
 public:
-    // Construction pour EMA
-    EMADialog(QWidget* parent, ChartWidget* chartWidget);
-    ~EMADialog();
+    // Construction pour un seul EMA
+    EMADialog(QWidget* parent, ChartWidget* chartWidget, int emaId, const EMAInstance& ema);
+    ~EMADialog() override;
     
 private slots:
-    void onApply();
-    void onCancel();
-    void onAddEMA();
-    void onColorButtonClicked(int row);
-    void onEnabledStateChanged(int row, bool enabled);
-    void onPeriodChanged(int row, int period);
+    void onPeriodChanged(int period);
+    void onColorButtonClicked();
+    
+protected:
+    // Méthodes virtuelles de IndicatorDialog
+    void setupUI() override;
+    void connectSignals() override;
+    void applyChanges() override;
+    void cancelChanges() override;
     
 private:
-    ChartWidget* m_chartWidget;
-    std::vector<EMAInstance> m_originalEMAs;  // Pour restaurer en cas d'annulation
-    std::vector<EMAInstance> m_currentEMAs;   // Pour les modifications en cours
-    std::map<int, int> m_rowToEMAId;        // Mappage de la ligne de l'UI à l'ID de l'EMA
+    int m_emaId;
+    EMAInstance m_originalEma;  // Pour restaurer en cas d'annulation
+    EMAInstance m_currentEma;   // Pour les modifications en cours
     
-    QVBoxLayout* m_emaListLayout;
-    QPushButton* m_addEMAButton;
-    QDialogButtonBox* m_buttonBox;
-    
-    int m_nextRowId = 0;
-    
-    void updateColorButtonStyle(QPushButton* button, int color);
-    QWidget* createEMARow(const EMAInstance& ema, int row);
-    void refreshEMAList();
+    QSpinBox* m_periodSpinBox;
+    QPushButton* m_colorButton;
 };

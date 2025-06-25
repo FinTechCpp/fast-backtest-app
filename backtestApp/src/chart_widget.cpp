@@ -68,9 +68,9 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
     updateChartDisplay(ViewPortMode::FULL_CHART);
 }
 
-bool ChartWidget::hasValidData() const {
-    return m_dataManager.hasValidData();
-}
+// bool ChartWidget::hasValidData() const {
+//     return m_dataManager.hasValidData();
+// }
 
 
 // mouais vrm pas terrible on pourrait directement utiliser les méthodes de ChartDataManager
@@ -251,171 +251,10 @@ void ChartWidget::setRulerToolEnabled(bool enabled)
     }
 }
 
+bool ChartWidget::removeIndicator(int id) {
+    if (!m_dataManager.removeIndicator(id)) return false;
 
-//-----Indicators Implementation-----
-int ChartWidget::addRSI(RSIInstance&& config) {
-    int period = config.period;
-    int id = m_dataManager.addIndicator(std::move(config));
-
-    emit rsiAdded(id, period);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return id;
-}
-
-bool ChartWidget::setRSIConfig(const RSIInstance &config) {
-    if (!m_dataManager.updateIndicator(config)) return false;
-
-    emit rsiChanged(config.id, config.period);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return true;
-}
-
-bool ChartWidget::removeRSI(int id) {
-    if (!m_dataManager.removeIndicator<RSIInstance>(id)) return false;
-
-    emit rsiRemoved(id);
-
-    if (m_dataManager.hasValidData())
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-    
-    return true;
-}
-
-int ChartWidget::addEMA(EMAInstance&& config) {
-    int period = config.period;
-    int id = m_dataManager.addIndicator(std::move(config));
-
-    emit emaAdded(id, period);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return id;
-}
-
-bool ChartWidget::setEMAConfig(const EMAInstance &config) {
-    if (!m_dataManager.updateIndicator(config)) return false;
-
-    emit emaChanged(config.id, config.period);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return true;
-}
-
-bool ChartWidget::removeEMA(int id) {
-    if (!m_dataManager.removeIndicator<EMAInstance>(id)) return false;
-
-    emit emaRemoved(id);
-
-    if (m_dataManager.hasValidData())
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-    
-    return true;
-}
-
-int ChartWidget::addSuperTrend(SuperTrendInstance &&config) {
-    int period = config.period;
-    int multiplier = config.multiplier;
-    int id = m_dataManager.addIndicator(std::move(config));
-
-    emit superTrendAdded(id, period, multiplier);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return id;
-}
-
-bool ChartWidget::setSuperTrendConfig(const SuperTrendInstance &config) {
-    if (!m_dataManager.updateIndicator(config)) return false;
-
-    emit superTrendChanged(config.id, config.period, config.multiplier);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return true;
-}
-
-bool ChartWidget::removeSuperTrend(int id) {
-    if (!m_dataManager.removeIndicator<SuperTrendInstance>(id)) return false;
-
-    emit superTrendRemoved(id);
-    
-    return true;
-}
-
-int ChartWidget::addStochastic(StochasticInstance&& config) {
-    int fastKPeriod = config.fastKPeriod;
-    int slowKPeriod = config.slowKPeriod;
-    int slowDPeriod = config.slowDPeriod;
-    int id = m_dataManager.addIndicator(std::move(config));
-
-    emit stochasticAdded(id, fastKPeriod, slowKPeriod, slowDPeriod);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return id;
-}
-
-bool ChartWidget::setStochasticConfig(const StochasticInstance& config) {
-    if (!m_dataManager.updateIndicator(config)) return false;
-
-    emit stochasticChanged(config.id, config.fastKPeriod, config.slowKPeriod, config.slowDPeriod);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return true;
-}
-
-bool ChartWidget::removeStochastic(int id) {
-    if (!m_dataManager.removeIndicator<StochasticInstance>(id)) return false;
-
-    emit stochasticRemoved(id);
-
-    if (m_dataManager.hasValidData())
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-    
-    return true;
-}
-
-int ChartWidget::addATR(ATRInstance&& config) {
-    int period = config.period;
-    int id = m_dataManager.addIndicator(std::move(config));
-
-    emit atrAdded(id, period);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return id;
-}
-
-bool ChartWidget::setATRConfig(const ATRInstance &config) {
-    if (!m_dataManager.updateIndicator(config)) return false;
-
-    emit atrChanged(config.id, config.period);
-
-    if (m_dataManager.hasValidData() && m_chartViewer)
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
-
-    return true;
-}
-
-bool ChartWidget::removeATR(int id) {
-    if (!m_dataManager.removeIndicator<ATRInstance>(id)) return false;
-
-    emit atrRemoved(id);
+    emit indicatorRemoved(id);
 
     if (m_dataManager.hasValidData())
         updateChartDisplay(ViewPortMode::USE_CURRENT);

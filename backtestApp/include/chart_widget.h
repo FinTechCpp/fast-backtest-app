@@ -39,20 +39,8 @@ public:
     // Configuration et contrôle du graphique
     void setChartType(ChartDataManager::ChartType chartType); // remplacer par un slot
     ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
-    std::vector<const RSIInstance*> getRSIInstances() const { return m_dataManager.getIndicatorsOfType<RSIInstance>(); }
-    std::vector<const EMAInstance*> getEMAInstances() const { return m_dataManager.getIndicatorsOfType<EMAInstance>(); }
-    std::vector<const SuperTrendInstance*> getSuperTrendInstances() const { return m_dataManager.getIndicatorsOfType<SuperTrendInstance>(); }
-    std::vector<const StochasticInstance*> getStochasticInstances() const { return m_dataManager.getIndicatorsOfType<StochasticInstance>(); }
-    std::vector<const ATRInstance*> getATRInstances() const { return m_dataManager.getIndicatorsOfType<ATRInstance>(); }
-    RSIInstance* findRSI(int id) const { return m_dataManager.findIndicator<RSIInstance>(id); }
-    EMAInstance* findEMA(int id) const { return m_dataManager.findIndicator<EMAInstance>(id); }
-    SuperTrendInstance* findSuperTrend(int id) const { return m_dataManager.findIndicator<SuperTrendInstance>(id); }
-    StochasticInstance* findStochastic(int id) const { return m_dataManager.findIndicator<StochasticInstance>(id); }
-    ATRInstance* findATR(int id) const { return m_dataManager.findIndicator<ATRInstance>(id); }
+    const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
 
-    // État du graphique
-    bool hasValidData() const; // ne devrait pas etre un probleme les class exterieur s'enfoutent de si les données sont valides
-    bool isChartCreated() const;
     void removeAllIndicators();
     
     // Conversion de ChartType 
@@ -68,36 +56,50 @@ public:
 
     void setMaxDisplayPoints(int value);
     int getMaxDisplayPoints() const;
+
+    template<typename T>
+    int addIndicator(T&& config) {
+        if (!m_dataManager.hasValidData()) return -1; 
+
+        QString displayName = config.getDisplayName();
+        int id = m_dataManager.addIndicator(std::move(config));
+
+        emit indicatorAdded(id, displayName);
+
+        if (m_dataManager.hasValidData() && m_chartViewer)
+            updateChartDisplay(ViewPortMode::USE_CURRENT);
+
+        return id;
+    }
+
+    template<typename T>
+    T* findIndicator(int id) const {
+        return m_dataManager.findIndicator<T>(id);
+    }
+
+    template<typename T>
+    bool updateIndicator(const T& config) {
+        if (!m_dataManager.updateIndicator(config)) 
+            return false;
+
+        emit indicatorChanged(config.id, config.getDisplayName());
+
+        if (m_dataManager.hasValidData() && m_chartViewer)
+            updateChartDisplay(ViewPortMode::USE_CURRENT);
+
+        return true;
+    }
+
+    bool removeIndicator(int id);
     
 signals:
     void chartCreated();
     void viewPortChanged();
     void mouseOverPoint(double timestamp, double price);
 
-    // Signaux pour le RSI
-    void rsiAdded(int id, int period);
-    void rsiChanged(int id, int period);
-    void rsiRemoved(int id);
-
-    // Signaux pour l'EMA
-    void emaAdded(int id, int period);
-    void emaChanged(int id, int period);
-    void emaRemoved(int id);
-
-    // Signaux pour le SuperTrend
-    void superTrendAdded(int id, int period, double multiplier);
-    void superTrendChanged(int id, int period, double multiplier);
-    void superTrendRemoved(int id);
-
-    // Signaux pour le Stochastique
-    void stochasticAdded(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void stochasticChanged(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void stochasticRemoved(int id);
-
-    // Signaux pour l'ATR
-    void atrAdded(int id, int period);
-    void atrChanged(int id, int period);
-    void atrRemoved(int id);
+    void indicatorAdded(int id, const QString& displayName);
+    void indicatorChanged(int id, const QString& displayName);
+    void indicatorRemoved(int id);
 
     void maxDisplayPointsChanged(int value);
     
@@ -108,44 +110,6 @@ private slots:
     void onViewPortChanged();
     void onMouseMovePlotArea(QMouseEvent* event);
     void onMouseClickPlotArea(QMouseEvent* event);
-    
-public slots:
-// pour la validation on pourrait la rendre generique avec un lambda dans la 
-// struct qui definit la condition de validityé de l'indicateur
-// on pourrait aussi mettre la condition de recalcule pouir evité de la faire dans chaque
-// methode et passer un booléen pour savoir si on doit recalculer ou pas
-    // Pour le RSI
-    int addRSI(RSIInstance&& config);
-    int addRSI(const RSIInstance& config) { return addRSI(std::move(RSIInstance(config))); }
-    bool setRSIConfig(const RSIInstance& config);
-    bool removeRSI(int id);
-
-    // Pour l'EMA
-    int addEMA(EMAInstance&& config);
-    int addEMA(const EMAInstance& config) { return addEMA(std::move(EMAInstance(config))); }
-    bool setEMAConfig(const EMAInstance& config);
-    bool removeEMA(int id);
-
-    // Pour le SuperTrend
-    int addSuperTrend(SuperTrendInstance&& config);
-    int addSuperTrend(const SuperTrendInstance& config) { return addSuperTrend(std::move(SuperTrendInstance(config))); }
-    bool setSuperTrendConfig(const SuperTrendInstance& config);
-    bool removeSuperTrend(int id);
-
-    // Pour le Stochastique
-    int addStochastic(StochasticInstance&& config);
-    int addStochastic(const StochasticInstance& config) { return addStochastic(std::move(StochasticInstance(config))); }
-    bool setStochasticConfig(const StochasticInstance& config);
-    bool removeStochastic(int id);
-
-    // Pour l'ATR
-    int addATR(ATRInstance&& config);
-    int addATR(const ATRInstance& config) { return addATR(std::move(ATRInstance(config))); }
-    bool setATRConfig(const ATRInstance& config);
-    bool removeATR(int id);
-
-    // Pour gérer le redimensionnement du graphique
-    // void onWindowResized(QSize newSize);
 
 private:
     enum class ViewPortMode {

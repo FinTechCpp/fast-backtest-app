@@ -48,7 +48,7 @@ public:
     ) : be::Strategy(broker, data), strategy_config(bhg_config) {
         // Créer l'instance de la stratégie
         strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
-        strategy->set_log_level(LogLevel::WARN);
+        strategy->set_log_level(LogLevel::WARNING);
 
         auto log_callback = [](const std::string& message, int level) {
             LogLevel logLevel = static_cast<LogLevel>(level);

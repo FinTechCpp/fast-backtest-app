@@ -115,10 +115,6 @@ struct Candle {
     const DateTime& date() const { return ohlc.date; }
 };
 
-extern std::function<void(const std::string&, int)> g_py_log_callback;
-
-void cpp_log(const std::string& message, int level = LogLevel::INFO);
-
 
 template<typename T>
 inline std::string fast_double_to_string(T value, int precision = 4) {

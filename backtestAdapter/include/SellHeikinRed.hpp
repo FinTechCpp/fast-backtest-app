@@ -70,7 +70,7 @@ public:
             std::cout << ss.str() << " [" << logLevel << "]: " << message << std::endl;
         };
 
-        g_py_log_callback = log_callback;
+        strategy->set_log_callback(log_callback);
     }
     
     /**

@@ -20,6 +20,7 @@ class LoggerManager {
 private:
     bool enabled = true;
     LogLevel verbosity_level = LogLevel::DEBUG;
+    std::function<void(const std::string&, int)> callback;
     DateTime current_candle_date;
     mutable char buffer[64];
     mutable std::string msgBuffer;
@@ -79,13 +80,10 @@ public:
         time_logs.reserve(10);
     }
 
-    // Formatage d'une valeur numérique avec précision
-    // template<typename T>
-    // std::string format_value(T value, int precision = 4) const {
-    //     char buffer[64];
-    //     auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::fixed, precision);
-    //     return std::string(buffer, ptr - buffer);
-    // }
+    void set_log_callback(std::function<void(const std::string&, int)> callback) {
+        // Enregistrer le callback pour les logs
+        this->callback = std::move(callback);
+    }
     
     // Configuration du logger
     void set_enabled(bool state) { enabled = state; }
@@ -132,7 +130,10 @@ public:
             stop_chrono_and_log();
         
         // Envoyer tous les logs
-        cpp_log(get_all_logs(), get_verbosity());
+        std::string message(get_all_logs());
+        if (message.empty() || !callback) return;
+
+        callback(message, get_verbosity());
     }
     
     // Logs généraux
@@ -211,10 +212,10 @@ public:
         std::string msg = "Temps d'exécution: " + fast_double_to_string(duration_us) + " us";
 
         // Changer le niveau si le traitement prend trop de temps
-        if (duration_us > 1000) {  // Plus de 1ms
+        if (duration_us > 20) {  // Plus de 20 us
             level = LogLevel::WARNING;
             msg += " (LENT)";
-        } else if (duration_us > 500) {  // Plus de 0.5ms
+        } else if (duration_us > 10) {  // Plus de 10 us
             level = LogLevel::INFO;
             msg += " (Modéré)";
         }

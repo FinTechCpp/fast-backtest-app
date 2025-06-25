@@ -1,8 +1,6 @@
 #include "common.h"
 #include <iostream>
 
-std::function<void(const std::string&, int)> g_py_log_callback;
-
 // Implementation of Time struct methods
 bool Time::operator<(const Time& other) const {
     return std::tie(hour, minute, second) < std::tie(other.hour, other.minute, other.second);
@@ -61,8 +59,3 @@ std::string DateTime::to_string() const {
     return std::string(buffer, len);
 }
 
-void cpp_log(const std::string& message, int level) {
-    if (g_py_log_callback && !message.empty()) {
-        g_py_log_callback(message, level);
-    }
-}

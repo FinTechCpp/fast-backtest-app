@@ -55,20 +55,16 @@ public:
         strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
         strategy->set_log_level(LogLevel::DEBUG);
 
-        auto log_callback = [](const std::string& message, int level) {
-            static thread_local auto async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
-                "async_file_logger",       // Nom du logger
-                "logs/async_log.log",      // Chemin du fichier
-                50 * 1024 * 1024,         // Taille maximale par fichier (50 Mo)
-                1                          // Nombre maximal de fichiers à conserver
-            );
+        spdlog::drop("async_file_logger"); // Supprimer le logger précédent s'il existe
+        auto async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
+            "async_file_logger",       // Nom du logger
+            "logs/async_log.log",      // Chemin du fichier
+            50 * 1024 * 1024,          // Taille maximale par fichier (50 Mo)
+            1                          // Nombre maximal de fichiers à conserver
+        );
+        async_file->set_level(spdlog::level::debug);
 
-            static bool initialized = false;
-            if (!initialized) {
-                async_file->set_level(spdlog::level::debug);
-                initialized = true;
-            }
-
+        auto log_callback = [async_file](const std::string& message, int level) {
             spdlog::level::level_enum spdlog_level = spdlog::level::info;
             switch (level) {
                 case static_cast<int>(LogLevel::DEBUG):   spdlog_level = spdlog::level::debug; break;
@@ -80,7 +76,7 @@ public:
             async_file->log(spdlog_level, "{}", message);
         };
 
-        g_py_log_callback = log_callback;
+        strategy->set_log_callback(log_callback);
     }
     
     /**

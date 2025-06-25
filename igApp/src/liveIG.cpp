@@ -5,6 +5,10 @@
 #include "strategy.h"
 #include "igBroker.h"
 #include "trading_ig_config.hpp"
+#include "spdlog/spdlog.h"
+#include "spdlog/async.h"
+// #include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/rotating_file_sink.h"
 
 int main() {
     spdlog::set_level(spdlog::level::debug); // Set global log level to debug
@@ -81,6 +85,28 @@ int main() {
     buy_heikin_green_config.use_previous_ha_candle_red_filter = true;
 
     BuyHeikinGreen Strategy(base_config, buy_heikin_green_config);
+    Strategy.set_log_level(LogLevel::DEBUG);
+    auto strategy_logger = spdlog::rotating_logger_mt<spdlog::async_factory>(
+        "strategy_logger",       // Logger name
+        "logs/strategy_log.log", // Log file path
+        50 * 1024 * 1024,       // Max file size (50 MB)
+        1                        // Max number of files to keep
+    );
+    strategy_logger->set_level(spdlog::level::debug);
+
+    auto log_callback = [strategy_logger](const std::string& message, int level) {
+        spdlog::level::level_enum spdlog_level = spdlog::level::info;
+        switch (level) {
+            case static_cast<int>(LogLevel::DEBUG):   spdlog_level = spdlog::level::debug; break;
+            case static_cast<int>(LogLevel::INFO):    spdlog_level = spdlog::level::info; break;
+            case static_cast<int>(LogLevel::WARNING): spdlog_level = spdlog::level::warn; break;
+            case static_cast<int>(LogLevel::FATAL):   spdlog_level = spdlog::level::err; break;
+        }
+
+        strategy_logger->log(spdlog_level, "{}", message);
+    };
+
+    Strategy.set_log_callback(log_callback);
 
 
     spdlog::info("IG Broker initialized successfully");

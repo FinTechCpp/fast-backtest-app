@@ -41,6 +41,10 @@ public:
     void set_log_level(int level) {
         logger->set_verbosity(level);
     }
+
+    void set_log_callback(std::function<void(const std::string&, int)> callback) {
+        logger->set_log_callback(callback);
+    }
     
 
 protected:

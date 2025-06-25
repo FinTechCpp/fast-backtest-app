@@ -14,6 +14,7 @@ docs/
 *.egg-info*
 *.log
 perf.data
+perf.data.old
 
 # OHLC files
 live_interface/candles_history.json

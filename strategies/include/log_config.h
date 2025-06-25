@@ -2,10 +2,7 @@
 
 #include "Managers/LoggerManager.hpp"
 
-// Définir ENABLE_LOGGING à 0 pour désactiver tous les logs
-#ifndef ENABLE_LOGGING
-#define ENABLE_LOGGING 1
-#endif
+
 
 // Logger conditionnel basé sur templates
 template<bool Enabled>

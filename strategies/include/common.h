@@ -5,6 +5,11 @@
 #include <array>
 #include <functional>
 
+// Définir ENABLE_LOGGING à 0 pour désactiver tous les logs
+#ifndef ENABLE_LOGGING
+#define ENABLE_LOGGING 0
+#endif
+
 struct Time {
     int hour = 0;
     int minute = 0;
@@ -118,6 +123,7 @@ struct Candle {
 
 template<typename T>
 inline std::string fast_double_to_string(T value, int precision = 4) {
+    #if ENABLE_LOGGING 
     char buffer[64];
     
     if constexpr (std::is_floating_point_v<T>) {
@@ -128,6 +134,9 @@ inline std::string fast_double_to_string(T value, int precision = 4) {
         auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value);
         return std::string(buffer, ptr - buffer);
     }
+    #endif
+
+    return "";
 }
 
 struct StrategyBaseConfig {

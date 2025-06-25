@@ -120,11 +120,18 @@ extern std::function<void(const std::string&, int)> g_py_log_callback;
 void cpp_log(const std::string& message, int level = LogLevel::INFO);
 
 
-inline std::string fast_double_to_string(double value, int precision = 4) {
-    std::array<char, 32> buffer;
-    auto [ptr, ec] = std::to_chars(buffer.data(), buffer.data() + buffer.size(), value, 
-                                  std::chars_format::fixed, precision);
-    return std::string(buffer.data(), ptr - buffer.data());
+template<typename T>
+inline std::string fast_double_to_string(T value, int precision = 4) {
+    char buffer[64];
+    
+    if constexpr (std::is_floating_point_v<T>) {
+        auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value, 
+                                      std::chars_format::fixed, precision);
+        return std::string(buffer, ptr - buffer);
+    } else {
+        auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value);
+        return std::string(buffer, ptr - buffer);
+    }
 }
 
 struct StrategyBaseConfig {

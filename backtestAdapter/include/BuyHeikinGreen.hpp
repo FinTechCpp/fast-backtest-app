@@ -52,32 +52,25 @@ public:
         // Créer l'instance de la stratégie
         strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
         strategy->set_log_level(LogLevel::DEBUG);
-        static auto async_file = spdlog::basic_logger_mt<spdlog::async_factory>("async_file_logger", "logs/async_log.log");
-        async_file->set_level(spdlog::level::debug);
 
         auto log_callback = [](const std::string& message, int level) {
-            LogLevel logLevel = static_cast<LogLevel>(level);
+            static thread_local auto async_file = spdlog::basic_logger_mt<spdlog::async_factory>("async_file_logger", "logs/async_log.log");
+            static bool initialized = false;
+            
+            if (!initialized) {
+                async_file->set_level(spdlog::level::debug);
+                initialized = true;
+            }
 
-            spdlog::level::level_enum spdlog_level{};
+            spdlog::level::level_enum spdlog_level = spdlog::level::info;
             switch (level) {
-                case static_cast<int>(LogLevel::DEBUG):
-                    spdlog_level = spdlog::level::debug;
-                    break;
-                case static_cast<int>(LogLevel::INFO):
-                    spdlog_level = spdlog::level::info;
-                    break;
-                case static_cast<int>(LogLevel::WARNING):
-                    spdlog_level = spdlog::level::warn;
-                    break;
-                case static_cast<int>(LogLevel::FATAL):
-                    spdlog_level = spdlog::level::err;
-                    break;
-                default:
-                    spdlog_level = spdlog::level::info;
-                    break;
+                case static_cast<int>(LogLevel::DEBUG):   spdlog_level = spdlog::level::debug; break;
+                case static_cast<int>(LogLevel::INFO):    spdlog_level = spdlog::level::info; break;
+                case static_cast<int>(LogLevel::WARNING): spdlog_level = spdlog::level::warn; break;
+                case static_cast<int>(LogLevel::FATAL):   spdlog_level = spdlog::level::err; break;
             }
             
-            async_file->log(spdlog_level, "{}", message);
+            // async_file->log(spdlog_level, "{}", message);
         };
 
         g_py_log_callback = log_callback;

@@ -43,17 +43,6 @@ private:
         return std::string(level * 2, ' ');
     }
     
-    // Formatage d'une valeur numérique avec précision
-    std::string format_value(double value, int precision = 4) const {
-        int len = snprintf(numBuffer, sizeof(numBuffer), "%.*f", precision, value);
-        return std::string(numBuffer, len);
-    }
-
-    void append_value(std::string& str, double value, int precision = 4) const {
-        int len = snprintf(numBuffer, sizeof(numBuffer), "%.*f", precision, value);
-        str.append(numBuffer, len);
-    }
-    
     // Ajout d'un log à la catégorie appropriée
     void add_log(LogCategory category, std::string&& message, int level = LogLevel::INFO) {
         if (!enabled || level < verbosity_level)
@@ -89,6 +78,14 @@ public:
         risk_logs.reserve(20);
         time_logs.reserve(10);
     }
+
+    // Formatage d'une valeur numérique avec précision
+    // template<typename T>
+    // std::string format_value(T value, int precision = 4) const {
+    //     char buffer[64];
+    //     auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::fixed, precision);
+    //     return std::string(buffer, ptr - buffer);
+    // }
     
     // Configuration du logger
     void set_enabled(bool state) { enabled = state; }
@@ -145,13 +142,13 @@ public:
     
     // Logs d'indicateurs
     void log_indicator_value(const std::string& name, double value, int level = LogLevel::DEBUG) {
-        std::string msg = "Indicateur " + name + " = " + format_value(value);
+        std::string msg = "Indicateur " + name + " = " + fast_double_to_string(value);
         add_log(LogCategory::INDICATOR, std::move(msg), level);
     }
     
     void log_indicator_comparison(const std::string& name, double value, double threshold, const std::string& comparison_op, bool result, int level = LogLevel::DEBUG) {
         std::string status = result ? "VALIDÉ" : "REJETÉ";
-        std::string msg = "Indicateur " + name + " " + status + ": " + format_value(value) + " " + comparison_op + " " + format_value(threshold);
+        std::string msg = "Indicateur " + name + " " + status + ": " + fast_double_to_string(value) + " " + comparison_op + " " + fast_double_to_string(threshold);
         add_log(LogCategory::INDICATOR, std::move(msg), level);
     }
     
@@ -169,18 +166,18 @@ public:
 
     void log_filter_comparison(const std::string& name, double value, double threshold, const std::string& comparison_op, bool result, int level = LogLevel::DEBUG) {
         std::string status = result ? "PASSÉ" : "REJETÉ";
-        std::string msg = indent(1) + "Filtre " + name + " " + status + ": " + format_value(value) + " " + comparison_op + " " + format_value(threshold);
+        std::string msg = indent(1) + "Filtre " + name + " " + status + ": " + fast_double_to_string(value) + " " + comparison_op + " " + fast_double_to_string(threshold);
         add_log(LogCategory::FILTER, std::move(msg), level);
     }
     
     // Logs de signaux
     void log_signal(const std::string& action, double price, double quantity, int level = LogLevel::INFO) {
-        std::string msg = "Signal " + action + " généré: Prix=" + format_value(price) + ", Quantité=" + format_value(quantity);
+        std::string msg = "Signal " + action + " généré: Prix=" + fast_double_to_string(price) + ", Quantité=" + fast_double_to_string(quantity);
         add_log(LogCategory::SIGNAL, std::move(msg), level);
     }
     
     void log_sl_tp(double sl_distance, double tp_distance, int level = LogLevel::INFO) {
-        std::string msg = indent(1) + "SL=" + format_value(sl_distance) + ", TP=" + format_value(tp_distance);
+        std::string msg = indent(1) + "SL=" + fast_double_to_string(sl_distance) + ", TP=" + fast_double_to_string(tp_distance);
         add_log(LogCategory::SIGNAL, std::move(msg), level);
     }
     
@@ -193,12 +190,12 @@ public:
     
     // Logs de risque
     void log_risk_calculation(double risk_amount, double risk_percentage, int level = LogLevel::INFO) {
-        std::string msg = "Risque calculé: " + format_value(risk_amount) + " (" + format_value(risk_percentage) + "% du capital)";
+        std::string msg = "Risque calculé: " + fast_double_to_string(risk_amount) + " (" + fast_double_to_string(risk_percentage) + "% du capital)";
         add_log(LogCategory::RISK, std::move(msg), level);
     }
 
     void log_position_sizing(double raw_size, double adjusted_size, const std::string& reason, int level = LogLevel::INFO) {
-        std::string msg = "Position sizing: " + format_value(raw_size) + " -> " + format_value(adjusted_size) + " (" + reason + ")";
+        std::string msg = "Position sizing: " + fast_double_to_string(raw_size) + " -> " + fast_double_to_string(adjusted_size) + " (" + reason + ")";
         add_log(LogCategory::RISK, std::move(msg), level);
     }
     
@@ -211,8 +208,8 @@ public:
 
     // Logs de performance
     void log_execution_time(int64_t duration_us, int level = LogLevel::DEBUG) {
-        std::string msg = "Temps d'exécution: " + std::to_string(duration_us) + " us";
-        
+        std::string msg = "Temps d'exécution: " + fast_double_to_string(duration_us) + " us";
+
         // Changer le niveau si le traitement prend trop de temps
         if (duration_us > 1000) {  // Plus de 1ms
             level = LogLevel::WARNING;

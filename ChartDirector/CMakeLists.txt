@@ -34,21 +34,14 @@ elseif(WIN32)
     # Sur Windows, on a aussi besoin de la DLL à l'exécution
     set(CHARTDIR_DLL "${CMAKE_CURRENT_SOURCE_DIR}/lib/chartdir70.dll")
 else()
-    # Essayer différents noms de bibliothèques Linux
-    set(CHARTDIR_LIB_CANDIDATES
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so"
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so.7.0"
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so.7.0.0"
-    )
-    
-    # Trouver la première bibliothèque qui existe
-    foreach(LIB_PATH ${CHARTDIR_LIB_CANDIDATES})
-        if(EXISTS "${LIB_PATH}")
-            set(CHARTDIR_LIB "${LIB_PATH}")
-            break()
-        endif()
-    endforeach()
-    
+    set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so.7.0")
+    set(CHARTDIR_REAL_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so.7.0.0")
+    # If the symlink does not exist but the real file does, create the symlink
+    if(NOT EXISTS "${CHARTDIR_LIB}" AND EXISTS "${CHARTDIR_REAL_LIB}")
+        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+            "${CHARTDIR_REAL_LIB}" "${CHARTDIR_LIB}")
+        message(STATUS "Created symlink: ${CHARTDIR_LIB} -> ${CHARTDIR_REAL_LIB}")
+    endif()
     set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/libchartdir.so")
 endif()
 

@@ -111,6 +111,12 @@ template<>
 StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QString, QVariant>& values)
 {
     StrategyBaseConfig config;
+
+    // Ajoutez cette ligne au début de la fonction
+    if (values.contains("enable_logging"))
+        config.enable_logging = values["enable_logging"].toBool();
+    else
+        config.enable_logging = true; // valeur par défaut
     
     // Time settings
     if (values.contains("trading_from"))

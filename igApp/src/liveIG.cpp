@@ -29,6 +29,9 @@ int main() {
 
     StrategyBaseConfig base_config;
 
+    base_config.enable_logging = true; // Enable logging
+    base_config.logLevel = LogLevel::DEBUG; // Set log level to DEBUG
+
     // Time settings
     base_config.trading_from = {7, 0, 0};   // 7:00 AM
     base_config.trading_to = {23, 0, 0};    // 11:00 PM
@@ -85,7 +88,7 @@ int main() {
     buy_heikin_green_config.use_previous_ha_candle_red_filter = true;
 
     BuyHeikinGreen Strategy(base_config, buy_heikin_green_config);
-    Strategy.set_log_level(LogLevel::DEBUG);
+    // Strategy.set_log_level(LogLevel::DEBUG);
     auto strategy_logger = spdlog::rotating_logger_mt<spdlog::async_factory>(
         "strategy_logger",       // Logger name
         "logs/strategy_log.log", // Log file path

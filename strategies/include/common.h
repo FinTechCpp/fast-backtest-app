@@ -5,10 +5,6 @@
 #include <array>
 #include <functional>
 
-// Définir ENABLE_LOGGING à 0 pour désactiver tous les logs
-#ifndef ENABLE_LOGGING
-#define ENABLE_LOGGING 0
-#endif
 
 struct Time {
     int hour = 0;
@@ -120,26 +116,10 @@ struct Candle {
     const DateTime& date() const { return ohlc.date; }
 };
 
-
-template<typename T>
-inline std::string fast_double_to_string(T value, int precision = 4) {
-    #if ENABLE_LOGGING 
-    char buffer[64];
-    
-    if constexpr (std::is_floating_point_v<T>) {
-        auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value, 
-                                      std::chars_format::fixed, precision);
-        return std::string(buffer, ptr - buffer);
-    } else {
-        auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value);
-        return std::string(buffer, ptr - buffer);
-    }
-    #endif
-
-    return "";
-}
-
 struct StrategyBaseConfig {
+    LogLevel logLevel = LogLevel::DEBUG;
+    bool enable_logging = true; // Enable or disable logging
+
     // Time settings
     Time trading_from = {7, 0, 0};   // 7:00 AM
     Time trading_to = {23, 0, 0};    // 11:00 PM
@@ -183,6 +163,10 @@ struct StrategyBaseConfig {
 // Surcharge de l'opérateur de flux pour StrategyBaseConfig
 inline std::ostream& operator<<(std::ostream& os, const StrategyBaseConfig& config) {
     os << "StrategyBaseConfig {\n";
+
+    // Log level
+    os << "  Log level: " << config.logLevel << "\n";
+    os << "  Enable logging: " << (config.enable_logging ? "Yes" : "No") << "\n";
     
     // Time settings
     os << "  Trading hours: " << config.trading_from.hour << ":" << config.trading_from.minute 

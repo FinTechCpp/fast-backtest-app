@@ -65,6 +65,9 @@ public:
     
     // Obtention de tous les logs pour la bougie actuelle
     virtual std::string get_all_logs() const = 0;
+
+    virtual std::string fast_double_to_string(double value, int precision = 4) = 0;
+    virtual std::string fast_int_to_string(int value) = 0;
 };
 
 class LoggerManager : public ILogger {
@@ -75,7 +78,7 @@ private:
     DateTime current_candle_date;
     mutable char buffer[64];
     mutable std::string msgBuffer;
-    mutable char numBuffer[64];
+    // mutable char numBuffer[64];
 
     // Variables pour le chronomètre
     std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
@@ -129,6 +132,18 @@ public:
         execution_logs.reserve(20);
         risk_logs.reserve(20);
         time_logs.reserve(10);
+    }
+
+    std::string fast_double_to_string(double value, int precision = 4) override {
+        char buffer[64];
+        auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value, std::chars_format::fixed, precision);
+        return std::string(buffer, ptr - buffer);
+    }
+
+    std::string fast_int_to_string(int value) override {
+        char buffer[64];
+        auto [ptr, ec] = std::to_chars(buffer, buffer + sizeof(buffer), value);
+        return std::string(buffer, ptr - buffer);
     }
 
     void set_log_callback(std::function<void(const std::string&, int)> callback)  override{
@@ -365,4 +380,8 @@ public:
     void log_position_sizing(double, double, const std::string&, int) override {}
     void log_time_check(bool, const std::string&, int) override {}
     std::string get_all_logs() const override { return ""; }
+
+    std::string fast_double_to_string(double value, int precision = 4) override { return ""; }
+    std::string fast_int_to_string(int value) override { return ""; }
 };
+

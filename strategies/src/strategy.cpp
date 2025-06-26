@@ -101,15 +101,15 @@ void Strategy::update_daily_pnl_tracking() {
         double max_loss_amount = base_config.cash * base_config.daily_max_loss_percentage / 100.0;
         
         logger->log_general("Nouveau jour de trading: " + current_trading_day.to_string() + 
-                          " - Perte max autorisée: " + fast_double_to_string(max_loss_amount) + 
-                          " (" + fast_double_to_string(base_config.daily_max_loss_percentage) + "%)", LogLevel::INFO);
+                          " - Perte max autorisée: " + logger->fast_double_to_string(max_loss_amount) + 
+                          " (" + logger->fast_double_to_string(base_config.daily_max_loss_percentage) + "%)", LogLevel::INFO);
     }
     
     if (last_trade_pnl != 0.0) {
         daily_pnl += last_trade_pnl;
 
-        logger->log_general("P&L du trade: " + fast_double_to_string(last_trade_pnl) + 
-                          " - P&L journalier cumulé: " + fast_double_to_string(daily_pnl), LogLevel::INFO);
+        logger->log_general("P&L du trade: " + logger->fast_double_to_string(last_trade_pnl) + 
+                          " - P&L journalier cumulé: " + logger->fast_double_to_string(daily_pnl), LogLevel::INFO);
 
         last_trade_pnl = 0.0;
     }
@@ -205,10 +205,10 @@ std::unique_ptr<Signal> Strategy::check_break_even() {
     if (threshold_reached) {
         logger->log_general("Activation break-even: " + 
                           std::string(position_sign > 0 ? "High" : "Low") + "=" + 
-                          fast_double_to_string(reference_price) + 
+                          logger->fast_double_to_string(reference_price) + 
                           " " + std::string(position_sign > 0 ? ">=" : "<=") + 
-                          " seuil (" + fast_double_to_string(break_even_price) + 
-                          "), " + fast_double_to_string(base_config.break_even_threshold * 100) + 
+                          " seuil (" + logger->fast_double_to_string(break_even_price) + 
+                          "), " + logger->fast_double_to_string(base_config.break_even_threshold * 100) + 
                           "% du chemin vers TP", LogLevel::INFO);
 
         auto be_signal = std::make_unique<Signal>();
@@ -274,9 +274,9 @@ void Strategy::execute_long() {
         
         logger->log_general("Trade LONG rejeté: risque excessif", LogLevel::WARNING);
         logger->log_filter_detail("Limite de risque", 
-                              "Risque calculé: " + fast_double_to_string(risk) + 
-                              ", PnL journalier: " + fast_double_to_string(daily_pnl) + 
-                              ", Limite max: " + fast_double_to_string(-max_loss_amount), 
+                              "Risque calculé: " + logger->fast_double_to_string(risk) + 
+                              ", PnL journalier: " + logger->fast_double_to_string(daily_pnl) + 
+                              ", Limite max: " + logger->fast_double_to_string(-max_loss_amount), 
                               LogLevel::INFO);
         reset();
         return;
@@ -306,9 +306,9 @@ void Strategy::execute_short() {
         
         logger->log_general("Trade SHORT rejeté: risque excessif", LogLevel::WARNING);
         logger->log_filter_detail("Limite de risque", 
-                              "Risque calculé: " + fast_double_to_string(risk) + 
-                              ", PnL journalier: " + fast_double_to_string(daily_pnl) + 
-                              ", Limite max: " + fast_double_to_string(-max_loss_amount), 
+                              "Risque calculé: " + logger->fast_double_to_string(risk) + 
+                              ", PnL journalier: " + logger->fast_double_to_string(daily_pnl) + 
+                              ", Limite max: " + logger->fast_double_to_string(-max_loss_amount), 
                               LogLevel::INFO);
         reset();
         return;
@@ -400,9 +400,10 @@ void Strategy::execute() {
 
 Strategy::Strategy(const StrategyBaseConfig& config) 
     : base_config(config), 
-    signal(std::make_unique<Signal>()) {
-    // logger(std::make_unique<LoggerManager>())
-
+    signal(std::make_unique<Signal>()),
+    logger(LoggerFactory::createLogger()) {
+    set_log_level(static_cast<int>(base_config.logLevel));
+    set_log_enabled(base_config.enable_logging);
 }
 
 // Main update method
@@ -416,19 +417,19 @@ Signal* Strategy::update_candle(const Candle& candle) {
     logger->clear();  // Vider les logs précédents
     
     logger->log_general("OHLC: " + 
-        fast_double_to_string(candle.ohlc.open) + "/" + 
-        fast_double_to_string(candle.ohlc.high) + "/" + 
-        fast_double_to_string(candle.ohlc.low) + "/" + 
-        fast_double_to_string(candle.ohlc.close));
+        logger->fast_double_to_string(candle.ohlc.open) + "/" + 
+        logger->fast_double_to_string(candle.ohlc.high) + "/" + 
+        logger->fast_double_to_string(candle.ohlc.low) + "/" + 
+        logger->fast_double_to_string(candle.ohlc.close));
 
     // Store the last trade P&L si fourni dans candle
     if (position_info.closed_trade_pnl != 0.0) {
         last_trade_pnl = position_info.closed_trade_pnl;
-        logger->log_general("PnL du trade fermé: " + fast_double_to_string(last_trade_pnl));
+        logger->log_general("PnL du trade fermé: " + logger->fast_double_to_string(last_trade_pnl));
     }
 
     if (position_info.in_position) {
-        logger->log_general("En position: Prix d'entrée=" + fast_double_to_string(position_info.entry_price));
+        logger->log_general("En position: Prix d'entrée=" + logger->fast_double_to_string(position_info.entry_price));
     }
 
     // Add to buffer for historical calculations
@@ -439,7 +440,7 @@ Signal* Strategy::update_candle(const Candle& candle) {
     auto be_signal = check_break_even();
     if (be_signal) {
         logger->log_general("Signal de break-even généré: " + 
-                          fast_double_to_string(be_signal->new_sl));
+                          logger->fast_double_to_string(be_signal->new_sl));
         signal = std::move(be_signal);
 
         logger->finalize_and_send_logs();

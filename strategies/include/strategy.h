@@ -2,8 +2,7 @@
 #include "common.h"
 #include "Managers/CandleManager.hpp"
 #include "Managers/PositionManager.hpp"
-#include "Managers/LoggerManager.hpp"
-#include "log_config.h"
+#include "LoggerFactory.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -39,20 +38,16 @@ public:
     // Main update method
     Signal* update_candle(const Candle& candle);
 
-    void set_log_level(int level) {
-        logger->set_verbosity(level);
-    }
-
     void set_log_callback(std::function<void(const std::string&, int)> callback) {
         logger->set_log_callback(callback);
-    }
-    
+    }    
 
 protected:
     StrategyBaseConfig base_config;
     CandleManager candle_manager;
     // std::unique_ptr<LoggerManager> logger;
-    Logger logger;
+    // Logger logger;
+    std::unique_ptr<ILogger> logger;
     PositionInfo position_info;
 
     // Signal components
@@ -80,7 +75,22 @@ protected:
     // Cache pour le dernier trade
     double last_trade_pnl = 0.0;
 
+    // Core strategy methods to implement in derived classes
+    virtual bool update_indicators() { return true; };
+    virtual void before() {}
+    virtual void after() {}
+    virtual bool should_long() = 0;
+    virtual bool should_short() { return false; }
+    virtual void go_long() = 0;
+    virtual void go_short() {
+        throw std::runtime_error("Short not implemented");
+    }
+    virtual std::vector<std::function<bool()>> filters() {
+        return {};
+    }
 
+
+// private:
     double calculate_trade_risk(bool is_long);
     bool is_trade_risk_acceptable(double risk);
     bool is_new_trading_day();
@@ -100,20 +110,18 @@ protected:
     bool execute_filters();
     void execute();
 
-    // Core strategy methods to implement in derived classes
-    virtual bool update_indicators() { return true; };
-    virtual void before() {}
-    virtual void after() {}
-    virtual bool should_long() = 0;
-    virtual bool should_short() { return false; }
-    virtual void go_long() = 0;
-    virtual void go_short() {
-        throw std::runtime_error("Short not implemented");
-    }
-    virtual std::vector<std::function<bool()>> filters() {
-        return {};
+    double price() const;
+
+private:
+    void set_log_level(int level) {
+        logger->set_verbosity(level);
     }
 
-    // Properties
-    double price() const;
+    void set_log_enabled(bool enabled) {
+        // Remplacer le logger si nécessaire
+        if (LoggerFactory::isLoggingEnabled() != enabled) {
+            LoggerFactory::setLoggingEnabled(enabled);
+            logger = LoggerFactory::createLogger();
+        }
+    }
 };

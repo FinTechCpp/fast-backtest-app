@@ -418,6 +418,8 @@ std::shared_ptr<be::Strategy> BacktestWorker::createStrategy(
     baseConfig.stop_loss_atr_multiplier = params.value("sl_atr_multiple", 2.0).toDouble();
     baseConfig.take_profit_atr_multiplier = params.value("tp_atr_multiple", 3.0).toDouble();
     baseConfig.risk_percentage = params.value("risk_per_trade_pct", 1.0).toDouble();
+    baseConfig.enable_logging = params.value("enable_logging", true).toBool();
+
     
     // Si c'est BuyHeikinGreen, créer un adaptateur spécifique
     // if (strategyName.contains("BuyHeikinGreen", Qt::CaseInsensitive)) {

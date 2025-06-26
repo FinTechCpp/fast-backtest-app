@@ -53,7 +53,6 @@ public:
     ) : be::Strategy(broker, data), strategy_config(bhg_config) {
         // Créer l'instance de la stratégie
         strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
-        strategy->set_log_level(LogLevel::DEBUG);
 
         spdlog::drop("async_file_logger"); // Supprimer le logger précédent s'il existe
         auto async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(

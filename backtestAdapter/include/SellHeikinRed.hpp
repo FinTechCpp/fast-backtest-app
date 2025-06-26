@@ -48,7 +48,7 @@ public:
     ) : be::Strategy(broker, data), strategy_config(shr_config) {
         // Créer l'instance de la stratégie
         strategy = std::make_unique<SellHeikinRed>(base_config, shr_config);
-        strategy->set_log_level(LogLevel::DEBUG);
+        // strategy->set_log_level(LogLevel::DEBUG);
 
         auto log_callback = [](const std::string& message, int level) {
             LogLevel logLevel = static_cast<LogLevel>(level);

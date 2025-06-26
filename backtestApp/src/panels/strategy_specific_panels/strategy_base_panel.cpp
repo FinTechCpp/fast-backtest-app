@@ -11,6 +11,12 @@ void StrategyBasePanel::initialize()
     // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
     QVBoxLayout* baseLayout = new QVBoxLayout(this);
 
+    // Section Paramètres avancés
+    // Option pour activer/désactiver les logs
+    m_widgets["enable_logging"] = new QCheckBox("Activer la journalisation (logs)");
+    static_cast<QCheckBox*>(m_widgets["enable_logging"])->setChecked(true); // Activé par défaut
+    baseLayout->addWidget(m_widgets["enable_logging"]);
+
     // Section SL/TP
     QGroupBox* slTpGroup = new QGroupBox("Stop Loss et Take Profit", this);
     QVBoxLayout* slTpLayout = new QVBoxLayout();    

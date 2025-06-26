@@ -165,10 +165,10 @@ private:
         } 
         else {
             logger->log_filter_detail("RSI", 
-                                "Actuel: " + fast_double_to_string(current_rsi) + 
-                                ", Précédent: " + fast_double_to_string(previous_rsi) + 
-                                ", Antérieur: " + fast_double_to_string(previous_2_rsi) + 
-                                " - Tous au-dessus du seuil " + std::to_string(threshold));
+                                "Actuel: " + logger->fast_double_to_string(current_rsi) + 
+                                ", Précédent: " + logger->fast_double_to_string(previous_rsi) + 
+                                ", Antérieur: " + logger->fast_double_to_string(previous_2_rsi) + 
+                                " - Tous au-dessus du seuil " + logger->fast_int_to_string(threshold));
         }
         
         // Mettre à jour les valeurs historiques
@@ -202,8 +202,8 @@ private:
             logger->log_filter_result("Bougie HA précédente", is_red);
             logger->log_filter_detail("Bougie HA précédente", 
                                   "Bougie précédente " + std::string(is_red ? "ROUGE" : "VERTE") + 
-                                  " (open=" + fast_double_to_string(prev_ha.open) + 
-                                  ", close=" + fast_double_to_string(prev_ha.close) + ")");
+                                  " (open=" + logger->fast_double_to_string(prev_ha.open) + 
+                                  ", close=" + logger->fast_double_to_string(prev_ha.close) + ")");
             
             return is_red;
         } catch (const std::exception& e) {
@@ -234,21 +234,21 @@ private:
 
         // Log du début de l'initialisation
         logger->log_general("Tentative d'initialisation des indicateurs - Période maximale requise: " + 
-            std::to_string(max_period) + " bougies", LogLevel::DEBUG);
-    
+            logger->fast_int_to_string(max_period) + " bougies", LogLevel::DEBUG);
+
         // Vérifier si nous avons assez de bougies
         size_t available_candles = candle_manager.size();
         if (available_candles < static_cast<size_t>(max_period)) {
             int remaining = max_period - static_cast<int>(available_candles);
-            logger->log_general("Historique insuffisant: " + std::to_string(available_candles) + 
-                            "/" + std::to_string(max_period) + " bougies (manque " + 
-                            std::to_string(remaining) + " bougies)");
+            logger->log_general("Historique insuffisant: " + logger->fast_int_to_string(available_candles) + 
+                            "/" + logger->fast_int_to_string(max_period) + " bougies (manque " + 
+                            logger->fast_int_to_string(remaining) + " bougies)");
             return false;
         }
 
         // Récupérer toutes les bougies disponibles
         auto candles = candle_manager.get_last_candles(candle_manager.size());
-        logger->log_general("Initialisation avec " + std::to_string(candles.size()) + " bougies");
+        logger->log_general("Initialisation avec " + logger->fast_int_to_string(candles.size()) + " bougies");
 
         // Initialiser chaque indicateur seulement si nécessaire
         bool all_required_initialized = true;
@@ -256,7 +256,7 @@ private:
         // Initialize EMAs
         if (config.use_ema_short_filter) {
             logger->log_general("Initialisation de " + ema_short_name + " (période: " + 
-                std::to_string(config.ema_short_period) + ")");
+                logger->fast_int_to_string(config.ema_short_period) + ")");
                 
             current_ema_short = ema_short_calculator->initialize_with_history(candles);
             bool success = (current_ema_short > 0.0);
@@ -273,7 +273,7 @@ private:
         
         if (config.use_ema_long_filter) {
             logger->log_general("Initialisation de " + ema_long_name + " (période: " + 
-                std::to_string(config.ema_long_period) + ")");
+                logger->fast_int_to_string(config.ema_long_period) + ")");
                 
             current_ema_long = ema_long_calculator->initialize_with_history(candles);
             bool success = (current_ema_long > 0.0);
@@ -290,9 +290,9 @@ private:
         
         // Initialize Stochastic
         if (config.use_stoch_filter) {
-            logger->log_general("Initialisation de Stochastique (K: " + std::to_string(config.stoch_fastk) + 
-            ", K-lent: " + std::to_string(config.stoch_slowk) + 
-            ", D: " + std::to_string(config.stoch_slowd) + ")");
+            logger->log_general("Initialisation de Stochastique (K: " + logger->fast_int_to_string(config.stoch_fastk) + 
+            ", K-lent: " + logger->fast_int_to_string(config.stoch_slowk) + 
+            ", D: " + logger->fast_int_to_string(config.stoch_slowd) + ")");
 
             std::pair<double, double> stoch_values = stochastic_calculator->initialize_with_history(candles);
             current_stoch_k = stoch_values.first;
@@ -313,7 +313,7 @@ private:
         // Initialize RSI
         if (config.use_rsi_filter) {
             logger->log_general("Initialisation du RSI (période: " + 
-                std::to_string(config.rsi_period) + ")");
+                logger->fast_int_to_string(config.rsi_period) + ")");
 
             current_rsi = rsi_calculator->initialize_with_history(candles);
             bool success = (current_rsi > 0.0);
@@ -331,7 +331,7 @@ private:
         // Initialize ATRLOG
         if (base_config.use_atr_for_sl || base_config.use_atr_for_tp) {
             logger->log_general("Initialisation de l'ATRLOG (période: " + 
-                std::to_string(base_config.atr_period) + ")");
+                logger->fast_int_to_string(base_config.atr_period) + ")");
             
             current_atrlog = atrlog_calculator->initialize_with_history(candles);
             bool success = (current_atrlog > 0.0);
@@ -413,9 +413,9 @@ private:
         BasicCandle ha_current = candle_manager.get_latest_heikin_ashi();
         bool is_green = candle_manager.is_candle_green(ha_current);
         
-        logger->log_general("Bougie HA courante calculée: Open=" + fast_double_to_string(ha_current.open) + 
-                        ", Close=" + fast_double_to_string(ha_current.close) + 
-                        ", Green=" + std::to_string(is_green));
+        logger->log_general("Bougie HA courante calculée: Open=" + logger->fast_double_to_string(ha_current.open) + 
+                        ", Close=" + logger->fast_double_to_string(ha_current.close) + 
+                        ", Green=" + std::string(is_green ? "Oui" : "Non"));
     }
     
     bool should_long() override {
@@ -490,17 +490,17 @@ public:
         atrlog_calculator = std::make_unique<ATRLOG>(base_cfg.atr_period);
         
         // Initialize indicator names
-        ema_short_name = "EMA_" + std::to_string(config.ema_short_period);
-        ema_long_name = "EMA_" + std::to_string(config.ema_long_period);
-        stoch_k_name = "STOCH_K_" + std::to_string(config.stoch_fastk) + "_" +
-                      std::to_string(config.stoch_slowk) + "_" +
-                      std::to_string(config.stoch_slowd);
-        stoch_d_name = "STOCH_D_" + std::to_string(config.stoch_fastk) + "_" +
-                      std::to_string(config.stoch_slowk) + "_" +
-                      std::to_string(config.stoch_slowd);
-        rsi_name = "RSI_" + std::to_string(config.rsi_period);
-        atrlog_name = "ATRLOG_" + std::to_string(base_cfg.atr_period);
-        
+        ema_short_name = "EMA_" + logger->fast_int_to_string(config.ema_short_period);
+        ema_long_name = "EMA_" + logger->fast_int_to_string(config.ema_long_period);
+        stoch_k_name = "STOCH_K_" + logger->fast_int_to_string(config.stoch_fastk) + "_" +
+                      logger->fast_int_to_string(config.stoch_slowk) + "_" +
+                      logger->fast_int_to_string(config.stoch_slowd);
+        stoch_d_name = "STOCH_D_" + logger->fast_int_to_string(config.stoch_fastk) + "_" +
+                      logger->fast_int_to_string(config.stoch_slowk) + "_" +
+                      logger->fast_int_to_string(config.stoch_slowd);
+        rsi_name = "RSI_" + logger->fast_int_to_string(config.rsi_period);
+        atrlog_name = "ATRLOG_" + logger->fast_int_to_string(base_cfg.atr_period);
+
         // Setup active filters
         if (config.use_ema_short_filter) {
             active_filters.push_back([this]() { return this->ema_short_filter(); });

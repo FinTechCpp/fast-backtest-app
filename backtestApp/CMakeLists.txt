@@ -25,7 +25,7 @@ target_include_directories(backtestapp
         ${CMAKE_SOURCE_DIR}/strategies/include
         ${CMAKE_SOURCE_DIR}/backtestAdapter/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
-        ${CMAKE_SOURCE_DIR}/ChartDirector/qtdemo/helloworld
+        ${CMAKE_SOURCE_DIR}/ChartDirector/qtdemo
 )
 
 # Lire la version depuis le fichier VERSION ou variable d'environnement

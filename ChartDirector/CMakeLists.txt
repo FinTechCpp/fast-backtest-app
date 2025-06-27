@@ -8,11 +8,11 @@ message(STATUS "Configuration de ChartDirector...")
 # Sur les autres plateformes, on peut utiliser SHARED
 if(WIN32)
     add_library(chartdirector STATIC 
-        "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/helloworld/qchartviewer.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/qchartviewer.cpp"
     )
 else()
     add_library(chartdirector SHARED 
-        "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/helloworld/qchartviewer.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/qchartviewer.cpp"
     )
 endif()
 
@@ -20,41 +20,23 @@ endif()
 target_include_directories(chartdirector 
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/qtdemo
-    ${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/helloworld
+    ${CMAKE_CURRENT_SOURCE_DIR}/qtdemo
 )
 
 # Détection adaptative selon le système d'exploitation
 if(APPLE)
     set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.7.dylib")
-    set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/libchartdir.dylib")
 elseif(WIN32)
     set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/chartdir70.lib")
-    set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/chartdir70.lib")
     # Sur Windows, on a aussi besoin de la DLL à l'exécution
     set(CHARTDIR_DLL "${CMAKE_CURRENT_SOURCE_DIR}/lib/chartdir70.dll")
 else()
     set(CHARTDIR_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so.7.0")
-    set(CHARTDIR_REAL_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libchartdir.so.7.0.0")
-    # If the symlink does not exist but the real file does, create the symlink
-    if(NOT EXISTS "${CHARTDIR_LIB}" AND EXISTS "${CHARTDIR_REAL_LIB}")
-        execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
-            "${CHARTDIR_REAL_LIB}" "${CHARTDIR_LIB}")
-        message(STATUS "Created symlink: ${CHARTDIR_LIB} -> ${CHARTDIR_REAL_LIB}")
-    endif()
-    set(CHARTDIR_QTDEMO_LIB "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/libchartdir.so")
 endif()
 
 # Vérifier que la bibliothèque principale existe
 if(NOT EXISTS "${CHARTDIR_LIB}")
-    message(WARNING "Bibliothèque principale non trouvée à ${CHARTDIR_LIB}, tentative avec l'alternative")
-    
-    if(EXISTS "${CHARTDIR_QTDEMO_LIB}")
-        set(CHARTDIR_LIB "${CHARTDIR_QTDEMO_LIB}")
-        message(STATUS "Utilisation de la bibliothèque alternative: ${CHARTDIR_LIB}")
-    else()
-        message(FATAL_ERROR "Aucune bibliothèque ChartDirector trouvée!")
-    endif()
+    message(WARNING "Bibliothèque ChartDirector non trouvée à ${CHARTDIR_LIB}")
 else()
     message(STATUS "Bibliothèque ChartDirector trouvée: ${CHARTDIR_LIB}")
 endif()

@@ -115,17 +115,13 @@ private:
         logger->log_filter_result("Stochastique", result);
 
         if (current_below) {
-            logger->log_filter_comparison("Stochastique K", current_stoch_k, threshold, 
-                                         "<", true);
+            logger->log_filter_comparison("Stochastique K", current_stoch_k, threshold, "<", true);
         } 
         else if (previous_below) {
-            logger->log_filter_comparison("Stochastique K précédent", k_previous, threshold, 
-                                         "<", true);
+            logger->log_filter_comparison("Stochastique K précédent", k_previous, threshold, "<", true);
         } 
         else {
-            logger->log_filter_detail("Stochastique", 
-                                    "K actuel et précédent au-dessus du seuil " + 
-                                    std::to_string(threshold));
+            logger->log_filter_detail("Stochastique", "K actuel et précédent au-dessus du seuil " + std::to_string(threshold));
         }
 
         // Update previous values

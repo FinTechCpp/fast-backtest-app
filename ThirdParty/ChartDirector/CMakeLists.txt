@@ -8,11 +8,13 @@ message(STATUS "Configuration de ChartDirector...")
 # Sur les autres plateformes, on peut utiliser SHARED
 if(WIN32)
     add_library(chartdirector STATIC 
-        "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/qchartviewer.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/qchartviewer.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/qchartviewer.h"
     )
 else()
     add_library(chartdirector SHARED 
-        "${CMAKE_CURRENT_SOURCE_DIR}/qtdemo/qchartviewer.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/qchartviewer.cpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/qchartviewer.h"
     )
 endif()
 
@@ -20,7 +22,7 @@ endif()
 target_include_directories(chartdirector 
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/qtdemo
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 # Détection adaptative selon le système d'exploitation

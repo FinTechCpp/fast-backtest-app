@@ -3,6 +3,7 @@
 #include <string>
 #include <limits>
 #include <chrono>
+#include <thread>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include "trading_ig_config.hpp"
@@ -223,9 +224,64 @@ int main() {
                 case 3: 
                     spdlog::info("Non implémenté, veuillez réessayer plus tard.");
                     break;
-                case 4:
-                    spdlog::info("Non implémenté, veuillez réessayer plus tard.");
+                case 4: {
+                    spdlog::info("Démarrage du streaming de ticks...");
+                    
+                    try {
+                        // Utiliser directement le service IG existant pour le streaming
+                        auto stream_service = std::make_shared<ig::IGStreamService>(
+                            std::shared_ptr<ig::IGService>(&igService, [](ig::IGService*){}));
+                        
+                        // Créer la session de streaming
+                        stream_service->create_session();
+                        
+                        // Créer le gestionnaire de streaming
+                        auto streaming_manager = std::make_shared<ig::StreamingManager>(stream_service);
+                        
+                        // Démarrer la subscription de ticks pour l'epic par défaut
+                        streaming_manager->start_tick_subscription(EPIC);
+                        
+                        spdlog::info("Streaming démarré pour l'epic: {}", EPIC);
+                        spdlog::info("Appuyez sur Entrée pour arrêter le streaming...");
+                        
+                        // Afficher les données en temps réel pendant 30 secondes ou jusqu'à ce que l'utilisateur appuie sur Entrée
+                        auto start_time = std::chrono::steady_clock::now();
+                        auto timeout = std::chrono::seconds(30);
+                        
+                        while (std::chrono::steady_clock::now() - start_time < timeout) {
+                            // Vérifier si l'utilisateur a appuyé sur Entrée
+                            if (std::cin.peek() != EOF) {
+                                std::string dummy;
+                                std::getline(std::cin, dummy);
+                                break;
+                            }
+                            
+                            // Obtenir et afficher les données de tick
+                            try {
+                                auto ticker = streaming_manager->get_ticker(EPIC, 1);
+                                if (!ticker.last_update_time.empty()) {
+                                    spdlog::info("Tick {} - BID: {:.5f}, OFR: {:.5f}, LTP: {:.5f}, Volume: {}, Time: {}",
+                                                EPIC, ticker.bid, ticker.offer, ticker.last_traded_price,
+                                                ticker.total_traded_volume, ticker.last_update_time);
+                                }
+                            } catch (const std::exception& e) {
+                                spdlog::debug("Pas encore de données de tick: {}", e.what());
+                            }
+                            
+                            std::this_thread::sleep_for(std::chrono::seconds(2));
+                        }
+                        
+                        // Arrêter le streaming
+                        streaming_manager->stop_all_subscriptions();
+                        stream_service->disconnect();
+                        
+                        spdlog::info("Streaming arrêté.");
+                        
+                    } catch (const std::exception& e) {
+                        spdlog::error("Erreur lors du streaming: {}", e.what());
+                    }
                     break;
+                }
                 case 0:
                     spdlog::info("Au revoir!");
                     break;

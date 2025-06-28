@@ -178,7 +178,7 @@ def select_from_dict(data_dict: Dict[str, Any]) -> Tuple[str, Any]:
             except ValueError:
                 print("⚠️ Veuillez entrer un numéro valide.")
 
-def search_market(ig_service):
+def search_market(ig_service : IGService):
     """
     Recherche un marché spécifique en utilisant une sélection interactive.
 

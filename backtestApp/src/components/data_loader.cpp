@@ -234,7 +234,7 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
 QString DataLoader::findMarketDataDirectory()
 {
     // 1. PREMIÈRE ÉTAPE: Vérifier si un chemin personnalisé est défini dans QSettings
-    QSettings settings("IG-Trading-Bot", "BacktestApp");
+    QSettings settings("fast-backtest-app", "BacktestApp");
     QString customPath = settings.value("marketDataPath").toString();
     if (!customPath.isEmpty() && QDir(customPath).exists()) {
         qDebug() << "Utilisation du répertoire personnalisé:" << customPath;
@@ -245,20 +245,20 @@ QString DataLoader::findMarketDataDirectory()
     QString exeDir = QCoreApplication::applicationDirPath();
     QDir currentDir(exeDir);
 
-    // Remonte dans l'arborescence pour trouver le dossier ig-trading-bot
+    // Remonte dans l'arborescence pour trouver le dossier fast-backtest-app
     do {
         QString currentPath = currentDir.absolutePath();
 
-        // Vérifie si c'est le dossier ig-trading-bot
-        if (currentDir.dirName() == "ig-trading-bot") {
+        // Vérifie si c'est le dossier fast-backtest-app
+        if (currentDir.dirName() == "fast-backtest-app") {
             QString marketDataPath = currentDir.absoluteFilePath("marketData");
             if (QFileInfo(marketDataPath).isDir()) {
                 return marketDataPath;
             }
         }
 
-        // Cherche un sous-dossier ig-trading-bot
-        QString igTradingBotPath = currentDir.absoluteFilePath("ig-trading-bot");
+        // Cherche un sous-dossier fast-backtest-app
+        QString igTradingBotPath = currentDir.absoluteFilePath("fast-backtest-app");
         if (QFileInfo(igTradingBotPath).isDir()) {
             QString marketDataPath = QDir(igTradingBotPath).absoluteFilePath("marketData");
             if (QFileInfo(marketDataPath).isDir()) {
@@ -290,7 +290,7 @@ bool DataLoader::setCustomMarketDataDirectory(const QString& path)
     }
     
     // Sauvegarder le chemin dans les paramètres
-    QSettings settings("IG-Trading-Bot", "BacktestApp");
+    QSettings settings("fast-backtest-app", "BacktestApp");
     settings.setValue("marketDataPath", path);
     qInfo() << "Répertoire personnalisé défini:" << path;
     

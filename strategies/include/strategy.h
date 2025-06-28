@@ -45,8 +45,6 @@ public:
 protected:
     StrategyBaseConfig base_config;
     CandleManager candle_manager;
-    // std::unique_ptr<LoggerManager> logger;
-    // Logger logger;
     std::unique_ptr<ILogger> logger;
     PositionInfo position_info;
 
@@ -88,9 +86,10 @@ protected:
     virtual std::vector<std::function<bool()>> filters() {
         return {};
     }
+    
+    double price() const;
 
-
-// private:
+private:
     double calculate_trade_risk(bool is_long);
     bool is_trade_risk_acceptable(double risk);
     bool is_new_trading_day();
@@ -110,9 +109,6 @@ protected:
     bool execute_filters();
     void execute();
 
-    double price() const;
-
-private:
     void set_log_level(int level) {
         logger->set_verbosity(level);
     }

@@ -8,7 +8,6 @@ from lightstreamer.client import SubscriptionListener, ItemUpdate
 from igtrader.trading_ig.stream import IGStreamService
 from .ticker import Ticker
 from .ticker import TickerSubscription
-from .candler import CandleSubscription, CandleData
 
 logger = logging.getLogger(__name__)
 
@@ -78,15 +77,6 @@ class StreamingManager:
         if self._consumer_thread:
             self._consumer_thread.join(timeout=5)
             self._consumer_thread = None
-
-    def start_candle_subscription(self, epic, resolution="SECOND") -> CandleSubscription:
-        """Subscribe to candle data for the given epic and resolution"""
-        sub_key = f"{epic}:{resolution}"
-        candle_sub = CandleSubscription(epic, resolution)
-        candle_sub.addListener(CandleListener(self._queue))
-        self.service.subscribe(candle_sub)
-        self._subs[sub_key] = candle_sub
-        return candle_sub
 
     def stop_candle_subscription(self, epic, resolution="SECOND"):
         """Unsubscribe from candle data for the given epic and resolution"""

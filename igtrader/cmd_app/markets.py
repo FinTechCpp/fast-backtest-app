@@ -4,8 +4,10 @@ Ce fichier contient les détails des marchés disponibles pour le trading.
 Le dictionnaire epics_dict contient les détails des marchés, y compris le nom du marché,
 le type de marché, le pays, la taille de transaction minimale, et les heures d'ouvertures.
 """
+from typing import Dict, Any
+
 # Dictionnaire contenant les détails des marchés
-epics_dict = {
+epics_dict: Dict[str, Dict[str, Any]] = {
     "CS.D.EURUSD.MINI.IP": {
         "name": "EUR/USD Mini",
         "market": "Forex",

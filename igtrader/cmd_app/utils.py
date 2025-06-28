@@ -14,8 +14,16 @@ Modules requis:
 - sys
 - time
 """
+
 import logging 
 import sys
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 sys.path.insert(0, '..')
 from igtrader.trading_ig import IGService
 from igtrader.trading_ig_config import config
@@ -25,11 +33,12 @@ import pandas as pd
 import traceback
 import time
 from datetime import datetime, timezone
-from igtrader.cmd_app.markets import epics_dict
 import curses
+from typing import Dict, List, Tuple, Any
 from curses import wrapper
 import plotext as plt
 import numpy as np
+from igtrader.cmd_app.markets import epics_dict
 from igtrader.trading_ig.stream import IGStreamService
 from igtrader.trading_ig.streamer.manager import StreamingManager
 import os
@@ -61,7 +70,8 @@ resolution_dict = {
     # "M": "Month"
 }
 
-def is_market_open(trading_hours):
+
+def is_market_open(trading_hours: Dict[str, List[Tuple[str, str]]]) -> bool:
     """
     Vérifie si le marché est actuellement ouvert.
 
@@ -84,7 +94,7 @@ def is_market_open(trading_hours):
 
     return False
 
-def prefill_input(prompt, text):
+def prefill_input(prompt:str, text:str) -> str:
     """
     Pré-remplit une entrée utilisateur avec un texte par défaut.
 
@@ -111,17 +121,19 @@ def initialize_service():
         IGService: Une instance du service IG connectée.
     """
     logging.info("Connexion au service IG...")
+    acc_type = config.acc_type if config.acc_type is not None else "DEMO"  # or your default account type
     ig_service = IGService(
         config.username, 
         config.password, 
         config.api_key, 
-        config.acc_type,
+        acc_type,
         acc_number=config.acc_number)
     ig_service.create_session(version='3')
     logging.info(f"✅ Connexion réussie avec le compte de {config.username}")
     return ig_service
 
-def select_from_dict(data_dict):
+
+def select_from_dict(data_dict: Dict[str, Any]) -> Tuple[str, Any]:
     """
     Permet de sélectionner un élément depuis un dictionnaire imbriqué ou simple avec navigation par flèches.
 
@@ -132,7 +144,7 @@ def select_from_dict(data_dict):
         tuple: La clé sélectionnée et sa valeur associée.
     """
     try:
-        options = []
+        options: List[str] = []
         keys = list(data_dict.keys())
         
         # Construire les options en fonction du type des valeurs
@@ -143,12 +155,13 @@ def select_from_dict(data_dict):
                 options.append(f"{key}: {value}")
         
         title = "Sélectionnez une option avec les flèches ↑↓ puis Entrée pour confirmer:"
-        selected_option, index = pick(options, title)
+        _, index = pick(options, title)
         return keys[index], data_dict[keys[index]]
     except ImportError:
         logging.warning("📦 Le module 'pick' n'est pas installé. Utilisation du mode de sélection basique.")
         logging.warning("Pour une meilleure expérience, installez-le avec: pip install pick")
         print("\nOptions disponibles:")
+        keys = list(data_dict.keys())
         for i, (key, value) in enumerate(data_dict.items(), 1):
             if isinstance(value, dict):
                 print(f"{i}. {value.get('name', key)} ({key})")
@@ -158,10 +171,10 @@ def select_from_dict(data_dict):
             try:
                 choice = int(input("\nEntrez le numéro de l'option: "))
                 if 1 <= choice <= len(data_dict):
-                    selected_key = keys[choice - 1]
+                    selected_key = str(keys[choice - 1])
                     return selected_key, data_dict[selected_key]
                 else:
-                    ("⚠️ Numéro invalide. Veuillez réessayer.")
+                    print("⚠️ Numéro invalide. Veuillez réessayer.")
             except ValueError:
                 print("⚠️ Veuillez entrer un numéro valide.")
 
@@ -178,7 +191,7 @@ def search_market(ig_service):
         print("\nRésultats de la recherche:")
         if isinstance(result, pd.DataFrame) and not result.empty:
             print(f"Trouvé {len(result)} marchés:")
-            for index, row in result.iterrows():
+            for _ , row in result.iterrows():
                 print(f"- {row['epic']}: {row['instrumentName']}")
         elif isinstance(result, dict) and 'markets' in result:
             for item in result['markets']:
@@ -201,7 +214,7 @@ def search_market(ig_service):
         print(f"\n⚠️ Erreur lors de la recherche: {e}")
     input("\nAppuyez sur Entrée pour continuer...")
 
-def get_market_info(ig_service):
+def get_market_info(ig_service : IGService):
     """
     Obtient des informations détaillées sur un marché.
 
@@ -218,8 +231,8 @@ def get_market_info(ig_service):
             print("🟢 OUVERT")
         else:
             print("🔴 FERMÉ")
-        bid = market['snapshot']['bid']
-        ask = market['snapshot']['offer']
+        bid: float = market['snapshot']['bid']  # type: ignore
+        ask: float = market['snapshot']['offer']  # type: ignore
         spread = round((ask - bid) * 10000, 1)
         print(f"Bid: {bid}")
         print(f"Ask: {ask}")
@@ -235,7 +248,7 @@ def get_market_info(ig_service):
         traceback.print_exc()
     input("\nAppuyez sur Entrée pour continuer...")
     
-def plot_prices(prices_df):
+def plot_prices(prices_df : pd.DataFrame):
     """
     Affiche un graphe des prix historiques dans le terminal.
 
@@ -283,7 +296,7 @@ def plot_prices(prices_df):
     except Exception as e:
         print(f"⚠️ Une erreur s'est produite lors de l'affichage du graphe : {e}")
 
-def fetch_prices(ig_service, epic, resolution='1Min', num_points=50):
+def fetch_prices(ig_service: IGService, epic: str, resolution: str = '1Min', num_points: int = 50) -> pd.DataFrame:
     prices = ig_service.fetch_historical_prices_by_epic(epic, resolution=resolution, numpoints=num_points)
     
     # Debug: Print the structure of the returned data
@@ -307,7 +320,7 @@ def fetch_prices(ig_service, epic, resolution='1Min', num_points=50):
     
     return df[['close']]
 
-def get_historical_prices(ig_service):
+def get_historical_prices(ig_service : IGService):
     """
     Récupère les prix historiques d'un marché.
 
@@ -336,7 +349,7 @@ def get_historical_prices(ig_service):
         traceback.print_exc()
     input("\nAppuyez sur Entrée pour continuer...")
 
-def track_realtime_prices(ig_service):
+def track_realtime_prices(ig_service: IGService):
     """
     Suit les prix d'un marché en temps réel via le streaming Lightstreamer et les affiche sur un graphique.
 
@@ -344,6 +357,7 @@ def track_realtime_prices(ig_service):
         ig_service (IGService): Le service IG initialisé.
     """
 
+    streaming_manager = None  # Ensure streaming_manager is always defined
     
     # Sélectionner l'epic et les paramètres
     selected_epic, selected_data = select_from_dict(epics_dict)
@@ -387,7 +401,7 @@ def track_realtime_prices(ig_service):
                 use_chart = False
             
             # Créer un DataFrame pour stocker les ticks
-            ticks_data = pd.DataFrame(columns=['time', 'price'])
+            _ = pd.DataFrame(columns=['time', 'price'])
             
             # Initialiser le streaming
             stream_service = IGStreamService(ig_service)
@@ -488,7 +502,7 @@ def track_realtime_prices(ig_service):
     
     logging.info("✅ Fin de la récupération des prix.")
 
-def create_position(ig_service):
+def create_position(ig_service : IGService):
     """
     Crée une position d'achat ou de vente avec une interface interactive
     pour la configuration de tous les paramètres.
@@ -496,7 +510,7 @@ def create_position(ig_service):
     Args:
         ig_service (IGService): Le service IG initialisé.
     """
-    def position_interface(stdscr):
+    def position_interface(stdscr: curses.window):
         # Configuration initiale de curses
         curses.curs_set(0)  # Masquer le curseur
         stdscr.clear()
@@ -508,7 +522,7 @@ def create_position(ig_service):
         curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)  # Sélection
         
         # Paramètres de la position avec valeurs par défaut
-        position_params = {
+        position_params: Dict[str, Dict[str, Any]] = {
             "epic": {"value": "", "required":True, "editable":False, "desc": "Identifiant du marché"},
             "direction": {"value": "BUY", "options": ["BUY", "SELL"], "required":True, "editable":True, "desc": "Direction de la position"},
             "size": {"value": "1.0", "required":True, "editable":True, "desc": "Taille de la position"},
@@ -718,19 +732,17 @@ def create_position(ig_service):
                                 # Sortir de curses pour afficher les résultats
                                 curses.endwin()
                                 # Debug: Afficher les paramètres avant l'appel à l'API
-                                print("DEBUG: Paramètres envoyés à l'API:", params)
+                                logging.debug("DEBUG: Paramètres envoyés à l'API:", params)
                                 # Appel de l'API pour créer la position
                                 result = ig_service.create_open_position(**params)
-                                print(result)
-                                
-                                position_output(result)
-                                                               
+                                logging.info("INFO: Résultat de l'API:", result)
+
                                 input("\nAppuyez sur Entrée pour continuer...")
                                 return  # Sortir de la fonction
                                 
                             except Exception as e:
                                 curses.endwin()
-                                print(f"\n⚠️ Erreur lors de la création de la position: {e}")
+                                logging.error(f"\n⚠️ Erreur lors de la création de la position: {e}")
                                 traceback.print_exc()
                                 input("\nAppuyez sur Entrée pour continuer...")
                                 return

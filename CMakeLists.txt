@@ -127,11 +127,14 @@ endif()
 # Vérifier que Qt est disponible (obligatoire)
 find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 
+# git submodules 
+add_subdirectory(ThirdParty/spdlog)
+
 # Ajouter les sous-projets (bibliothèques)
+add_subdirectory(ThirdParty/ChartDirector)
 add_subdirectory(backtestEngine)
 add_subdirectory(strategies)
 add_subdirectory(backtestAdapter)
-add_subdirectory(ThirdParty/ChartDirector)
 add_subdirectory(backtestApp)
 
 # Afficher un résumé de la configuration

@@ -1,9 +1,6 @@
 # Sources pour l'adaptateur
 file(GLOB SOURCES "src/*.cpp")
 
-# Trouver spdlog
-find_package(spdlog REQUIRED)
-
 # Créer l'exécutable principal
 add_executable(main ${SOURCES})
 

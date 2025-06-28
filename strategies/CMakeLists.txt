@@ -12,5 +12,4 @@ target_include_directories(strategies
 )
 
 # Ajouter spdlog pour les headers qui l'utilisent
-find_package(spdlog REQUIRED)
 target_link_libraries(strategies PUBLIC spdlog::spdlog)

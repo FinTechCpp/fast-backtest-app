@@ -11,5 +11,4 @@ target_include_directories(backtestEngine
 )
 
 # Ajouter spdlog pour les headers qui l'utilisent
-find_package(spdlog REQUIRED)
 target_link_libraries(backtestEngine PUBLIC spdlog::spdlog)

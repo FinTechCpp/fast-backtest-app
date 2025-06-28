@@ -97,8 +97,8 @@ if(WIN32 OR CMAKE_CROSSCOMPILING)
         endif()
     endif()
     
-    # Copier la DLL ChartDirector si elle existe
-    set(CHARTDIR_DLL "${CMAKE_SOURCE_DIR}/ChartDirector/lib/chartdir70.dll")
+    # Copier la DLL ChartDirector si elle existe (corrigé pour le bon chemin)
+    set(CHARTDIR_DLL "${CMAKE_SOURCE_DIR}/ThirdParty/ChartDirector/lib/chartdir70.dll")
     if(EXISTS "${CHARTDIR_DLL}")
         add_custom_command(TARGET backtestapp POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different

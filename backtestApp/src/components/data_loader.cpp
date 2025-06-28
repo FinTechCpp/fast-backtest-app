@@ -11,6 +11,9 @@
 #include <algorithm>
 #include <cmath>
 
+// Déclaration de la variable statique pour le cache
+std::map<QString, std::vector<OHLCBar>> DataLoader::s_dataCache;
+
 DataLoader::DataLoader() {}
 DataLoader::~DataLoader() {}
 
@@ -420,29 +423,33 @@ std::vector<OHLCBar> DataLoader::loadData(
     const QString& period,
     const QDateTime& endDate)
 {
-    try {
-        qDebug() << "DataLoader::loadData called with symbol:" << symbol 
-                 << "interval:" << interval << "period:" << period;
-        qDebug() << "End date:" << endDate.toString("dd/MM/yyyy");
-        
-        QString dataFile = findDataFile(symbol, interval);
-        if (dataFile.isEmpty()) {
-            qWarning() << "Aucun fichier de données trouvé pour" << symbol << interval;
-            return std::vector<OHLCBar>();
-        }
+    QString cacheKey = makeCacheKey(symbol, interval, period, endDate);
+    auto it = s_dataCache.find(cacheKey);
+    if (it != s_dataCache.end()) {
+        qDebug() << "Données chargées à partir du cache pour la clé:" << cacheKey;
+        return it->second;
+    }
 
-        qDebug() << "Fichier de données trouvé:" << dataFile;
-        
-        QDateTime actualEndDate = endDate.isValid() ? endDate : QDateTime::currentDateTime();
-        QString endDateString = actualEndDate.toString("dd/MM/yyyy");
-
-        std::vector<OHLCBar> result = loadFromCSV(dataFile, period, endDateString);
-        
-        return result;
-    } catch (const std::exception& e) {
-        qCritical() << "Exception in loadData:" << e.what();
+    qDebug() << "DataLoader::loadData called with symbol:" << symbol
+                << "interval:" << interval << "period:" << period;
+    qDebug() << "End date:" << endDate.toString("dd/MM/yyyy");
+    
+    QString dataFile = findDataFile(symbol, interval);
+    if (dataFile.isEmpty()) {
+        qWarning() << "Aucun fichier de données trouvé pour" << symbol << interval;
         return std::vector<OHLCBar>();
     }
+
+    qDebug() << "Fichier de données trouvé:" << dataFile;
+    
+    QDateTime actualEndDate = endDate.isValid() ? endDate : QDateTime::currentDateTime();
+    QString endDateString = actualEndDate.toString("dd/MM/yyyy");
+
+    std::vector<OHLCBar> result = loadFromCSV(dataFile, period, endDateString);
+    
+    // Stocker dans le cache
+    s_dataCache[cacheKey] = result;
+    return result;
 }
 
 QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString& period)
@@ -559,6 +566,10 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
              << "en" << chronoDuration << "ms";
     
     return data;
+}
+
+QString DataLoader::makeCacheKey(const QString& symbol, const QString& interval, const QString& period, const QDateTime& endDate) {
+    return symbol + "|" + interval + "|" + period + "|" + endDate.toString(Qt::ISODate);
 }
 
 std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)

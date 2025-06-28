@@ -103,7 +103,6 @@ QMap<QString, QVariant> GeneralParamsPanel::getValues()
             QDate date = dateEdit->date();
             QString dateString = date.toString("dd/MM/yyyy");
             values[key] = dateString;
-            qDebug() << "Date extraite du widget:" << key << "=" << dateString;
         }
         else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
             values[key] = lineEdit->text();
@@ -116,7 +115,6 @@ QMap<QString, QVariant> GeneralParamsPanel::getValues()
         if (dateEdit) {
             QDate date = dateEdit->date();
             values["end_date"] = date;
-            qDebug() << "Date extraite du widget end_date:" << date.toString("dd/MM/yyyy");
         }
     }
     

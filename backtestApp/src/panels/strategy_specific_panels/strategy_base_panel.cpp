@@ -14,7 +14,7 @@ void StrategyBasePanel::initialize()
     // Section Paramètres avancés
     // Option pour activer/désactiver les logs
     m_widgets["enable_logging"] = new QCheckBox("Activer la journalisation (logs)");
-    static_cast<QCheckBox*>(m_widgets["enable_logging"])->setChecked(true); // Activé par défaut
+    static_cast<QCheckBox*>(m_widgets["enable_logging"])->setChecked(false); // Désactivé par défaut
     baseLayout->addWidget(m_widgets["enable_logging"]);
 
     // Section SL/TP

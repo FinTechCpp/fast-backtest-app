@@ -190,6 +190,8 @@ public:
 
 private:
     static QStringList getMarketDataPaths();
+    static std::map<QString, std::vector<OHLCBar>> s_dataCache; // Cache pour les données chargées
+    static QString makeCacheKey(const QString& symbol, const QString& interval, const QString& period, const QDateTime& endDate);
     
     // Ajout de la méthode helper pour la conversion en double
     static inline double parseDouble(const QChar* begin, const QChar* end);

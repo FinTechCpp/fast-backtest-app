@@ -109,7 +109,7 @@ jobs:
 
     - name: Create distribution folder
       run: |
-        $distDir = "ig-trading-bot-windows"
+        $distDir = "fast-backtest-app-windows"
         $sourceDir = "build/backtestApp/${{ env.BUILD_TYPE }}"
         
         # Créer le dossier de distribution
@@ -136,8 +136,8 @@ jobs:
 
     - name: Create ZIP archive
       run: |
-        $archiveName = "ig-trading-bot-windows-v${{ env.VERSION }}.zip"
-        Compress-Archive -Path "ig-trading-bot-windows/*" -DestinationPath $archiveName
+        $archiveName = "fast-backtest-app-windows-v${{ env.VERSION }}.zip"
+        Compress-Archive -Path "fast-backtest-app-windows/*" -DestinationPath $archiveName
         echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
 
     - name: Calculate checksum and size
@@ -155,8 +155,8 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ig-trading-bot-windows
-        path: ig-trading-bot-windows/
+        name: fast-backtest-app-windows
+        path: fast-backtest-app-windows/
         retention-days: 30
 
     - name: Get commit info
@@ -171,7 +171,7 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ env.VERSION }}
-        name: IG-Trading-Bot v${{ env.VERSION }}
+        name: fast-backtest-app v${{ env.VERSION }}
         body: |
           🚀 **Nouvelle release v${{ env.VERSION }}**
           
@@ -204,7 +204,7 @@ jobs:
       run: |
         echo "## ✅ Build Successful" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Release Created:** [v${{ env.VERSION }}](https://github.com/hugoMiCode/ig-trading-bot/releases/tag/v${{ env.VERSION }})" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Release Created:** [v${{ env.VERSION }}](https://github.com/hugoMiCode/fast-backtest-app/releases/tag/v${{ env.VERSION }})" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**Build Details:**" >> $env:GITHUB_STEP_SUMMARY
         echo "- Version: ${{ env.VERSION }}" >> $env:GITHUB_STEP_SUMMARY

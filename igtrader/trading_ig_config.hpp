@@ -27,7 +27,7 @@ private:
             filename,                                  // Current directory
             "../" + filename,                          // Parent directory
             "../../" + filename,                       // Project root (from build/cpp_apps)
-            "/Users/macmax/repos/ig-trading-bot/.env"  // Absolute path as fallback
+            "/Users/macmax/repos/fast-backtest-app/.env"  // Absolute path as fallback
         };
         
         bool found = false;

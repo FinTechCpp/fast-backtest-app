@@ -105,9 +105,9 @@ void DataMenuManager::onImportCSV()
         // Créer le répertoire s'il n'existe pas
         QString projectRoot = QCoreApplication::applicationDirPath();
         QDir currentDir(projectRoot);
-        while (currentDir.cdUp() && currentDir.dirName() != "ig-trading-bot") {}
+        while (currentDir.cdUp() && currentDir.dirName() != "fast-backtest-app") {}
         
-        if (currentDir.dirName() == "ig-trading-bot") {
+        if (currentDir.dirName() == "fast-backtest-app") {
             marketDataDir = currentDir.absoluteFilePath("marketData");
             QDir().mkpath(marketDataDir);
         } else {
@@ -455,7 +455,7 @@ void DataMenuManager::onSetCustomDirectory()
     }
     
     if (DataLoader::setCustomMarketDataDirectory(dir)) {
-        QSettings settings("IG-Trading-Bot", "BacktestApp");
+        QSettings settings("fast-backtest-app", "BacktestApp");
         QString savedPath = settings.value("marketDataPath").toString();
         qDebug() << "Chemin sauvegardé dans QSettings:" << savedPath;
         QString actualPath = DataLoader::findMarketDataDirectory();
@@ -530,9 +530,9 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         // Créer le répertoire s'il n'existe pas
         QString projectRoot = QCoreApplication::applicationDirPath();
         QDir currentDir(projectRoot);
-        while (currentDir.cdUp() && currentDir.dirName() != "ig-trading-bot") {}
+        while (currentDir.cdUp() && currentDir.dirName() != "fast-backtest-app") {}
         
-        if (currentDir.dirName() == "ig-trading-bot") {
+        if (currentDir.dirName() == "fast-backtest-app") {
             marketDataDir = currentDir.absoluteFilePath("marketData");
             QDir().mkpath(marketDataDir);
         } else {

@@ -38,19 +38,19 @@ QString ConfigManager::getConfigFilePath() const
     QString exeDir = QCoreApplication::applicationDirPath();
     QDir currentDir(exeDir);
     
-    // Remonte dans l'arborescence pour trouver le dossier ig-trading-bot
+    // Remonte dans l'arborescence pour trouver le dossier fast-backtest-app
     QString projectRoot;
     do {
         QString currentPath = currentDir.absolutePath();
         
-        // Vérifie si c'est le dossier ig-trading-bot
-        if (currentDir.dirName() == "ig-trading-bot") {
+        // Vérifie si c'est le dossier fast-backtest-app
+        if (currentDir.dirName() == "fast-backtest-app") {
             projectRoot = currentPath;
             break;
         }
         
-        // Cherche un sous-dossier ig-trading-bot
-        QString igTradingBotPath = currentDir.absoluteFilePath("ig-trading-bot");
+        // Cherche un sous-dossier fast-backtest-app
+        QString igTradingBotPath = currentDir.absoluteFilePath("fast-backtest-app");
         if (QFileInfo(igTradingBotPath).isDir()) {
             projectRoot = igTradingBotPath;
             break;
@@ -63,7 +63,7 @@ QString ConfigManager::getConfigFilePath() const
         configDir = QDir(projectRoot).absoluteFilePath("backtestApp");
     } else {
         // Fallback vers le répertoire home
-        configDir = QDir::homePath() + "/ig-trading-bot-config/backtestApp";
+        configDir = QDir::homePath() + "/fast-backtest-app-config/backtestApp";
     }
     
     // Créer le répertoire de configuration s'il n'existe pas

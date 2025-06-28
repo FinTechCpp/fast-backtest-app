@@ -72,8 +72,8 @@ Cette approche garantit à la fois la rapidité d'exécution pour les backtests 
 Clonez le dépôt et placez-vous à la racine du projet :
 
 ```bash
-git clone https://github.com/hugoMiCode/ig-trading-bot
-cd ig-trading-bot
+git clone https://github.com/hugoMiCode/fast-backtest-app
+cd fast-backtest-app
 ```
 
 ### 2. Installer les dépendances
@@ -101,7 +101,7 @@ Ouvrez ensuite `.env` dans votre éditeur et ajoutez vos informations.
 ## Structure du projet
 
 ```
-ig-trading-bot/
+fast-backtest-app/
 ├── build_and_run.sh*
 ├── ChartDirector/
 │   ├── CMakeLists.txt
@@ -189,9 +189,9 @@ Pour exécuter le bot en mode live :
 python scripts/liveIG.py
 ```
 
-# Guide de compilation et d'exécution du projet ig-trading-bot
+# Guide de compilation et d'exécution du projet fast-backtest-app
 
-Ce guide explique comment compiler, exécuter et déboguer le projet ig-trading-bot de manière progressive, en partant des méthodes manuelles jusqu'aux configurations plus avancées.
+Ce guide explique comment compiler, exécuter et déboguer le projet fast-backtest-app de manière progressive, en partant des méthodes manuelles jusqu'aux configurations plus avancées.
 
 ## Prérequis
 
@@ -327,7 +327,7 @@ Testez la compilation du projet :
 
 ```bash
 # Se placer dans le projet
-cd ~/ig-trading-bot
+cd ~/fast-backtest-app
 
 # Créer le dossier de build
 mkdir -p build && cd build

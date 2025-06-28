@@ -17,7 +17,7 @@
 #include "version.h"  
 
 QString GITHUB_TOKEN = "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";
-QUrl GITHUB_API_URL = QUrl("https://api.github.com/repos/hugoMiCode/ig-trading-bot/releases/latest");
+QUrl GITHUB_API_URL = QUrl("https://api.github.com/repos/hugoMiCode/fast-backtest-app/releases/latest");
 
 UpdateChecker::UpdateChecker(QObject* parent)
     : QObject(parent),
@@ -300,7 +300,7 @@ void UpdateChecker::downloadAndInstallUpdateAdvanced(const UpdateConfig& config)
     
     // Lancer le téléchargement
     QNetworkRequest request(config.downloadUrl);
-    request.setRawHeader("User-Agent", "IG-Trading-Bot-Updater/1.0");
+    request.setRawHeader("User-Agent", "fast-backtest-app-Updater/1.0");
     
     m_downloadReply = m_networkManager->get(request);
     

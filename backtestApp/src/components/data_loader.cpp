@@ -605,7 +605,7 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
         return nullptr;
     }
     
-    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), Qt::UTC);
+    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), QTimeZone::utc());
     
     // Optimisation: trouver toutes les virgules en un seul passage
     const QChar* ptr = line.constData();

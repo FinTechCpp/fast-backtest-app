@@ -4,9 +4,9 @@ name: Windows Release Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, releases ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, releases ]
 
 env:
   BUILD_TYPE: Release
@@ -168,6 +168,7 @@ jobs:
         echo "COMMIT_MSG=$commitMsg" >> $env:GITHUB_ENV
 
     - name: Create Release
+      if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ env.VERSION }}

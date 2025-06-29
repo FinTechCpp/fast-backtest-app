@@ -81,7 +81,6 @@ public:
     void init() override {
         // Initialize the strategy
     }
-    }
     
     /**
      * @brief Main method called on each new candle

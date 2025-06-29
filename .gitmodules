@@ -1,3 +1,6 @@
 [submodule "ThirdParty/spdlog"]
 	path = ThirdParty/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "ThirdParty/Strategies"]
+	path = ThirdParty/Strategies
+	url = https://github.com/FinTechCpp/Strategies.git

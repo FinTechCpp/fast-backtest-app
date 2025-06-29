@@ -27,6 +27,7 @@ jobs:
       with:
         submodules: recursive
         fetch-depth: 0  # Necessary to get all tags
+        token: ${{ secrets.SUBMODULE_PAT }}
 
     - name: Calculate version
       id: version

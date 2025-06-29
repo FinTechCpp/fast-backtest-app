@@ -159,7 +159,7 @@ void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString&
         m_updateChecker->downloadAndInstallUpdate();
     } else if (clickedBtn == static_cast<QAbstractButton*>(viewButton)) {
         // Ouvrir la page de release sur GitHub
-        QString releaseUrl = QString("https://github.com/hugoMiCode/fast-backtest-app/releases/tag/v%1").arg(version);
+        QString releaseUrl = QString("https://github.com/FinTechCpp/fast-backtest-app/releases/tag/v%1").arg(version);
         
         #ifdef Q_OS_WIN
         QProcess::startDetached("cmd", {"/c", "start", releaseUrl});

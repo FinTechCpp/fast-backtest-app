@@ -17,7 +17,7 @@
 #include "version.h"  
 
 QString GITHUB_TOKEN = "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";
-QUrl GITHUB_API_URL = QUrl("https://api.github.com/repos/hugoMiCode/fast-backtest-app/releases/latest");
+QUrl GITHUB_API_URL = QUrl("https://api.github.com/repos/FinTechCpp/fast-backtest-app/releases/latest");
 
 UpdateChecker::UpdateChecker(QObject* parent)
     : QObject(parent),

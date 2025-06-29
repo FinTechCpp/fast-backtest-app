@@ -1,14 +1,8 @@
 import pandas as pd
 import re
-from datetime import datetime, timedelta, time
-import pytz
-from collections import defaultdict
-import json
-from pathlib import Path
 import matplotlib.pyplot as plt
 import seaborn as sns
-from typing import Dict, List, Tuple, Optional
-from collections import Counter
+from typing import Dict, Tuple, Optional
 import numpy as np
 import holidays
 import matplotlib.dates as mdates

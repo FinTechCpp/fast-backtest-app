@@ -1,0 +1,6 @@
+pandas
+ib_async
+matplotlib
+numpy
+holidays
+seaborn

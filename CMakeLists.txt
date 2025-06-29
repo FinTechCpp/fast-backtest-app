@@ -131,9 +131,9 @@ find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 # git submodules 
 add_subdirectory(ThirdParty/spdlog)
 add_subdirectory(ThirdParty/strategies)
+add_subdirectory(ThirdParty/ChartDirector)
 
 # Add sub-projects (libraries)
-add_subdirectory(ThirdParty/ChartDirector)
 add_subdirectory(backtestEngine)
 add_subdirectory(backtestAdapter)
 add_subdirectory(backtestApp)

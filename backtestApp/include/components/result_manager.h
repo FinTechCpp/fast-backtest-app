@@ -16,7 +16,7 @@ class QTimer;
 struct BacktestResults;  
 
 /**
- * @brief Gestionnaire principal des résultats - GÈRE les vues, n'EST PAS une vue
+ * @brief Main results manager - MANAGES the views, is NOT a view itself
  */
 class ResultManager : public QWidget  
 {
@@ -25,8 +25,7 @@ class ResultManager : public QWidget
 public:
     explicit ResultManager(QWidget* parent = nullptr);
     
-    // Méthodes de gestion (pas d'interface BaseView)
-    // Signature mise à jour pour utiliser BacktestResults*
+    // Management methods (not part of BaseView interface)
     void updateAllViews(BacktestResults* results);
     void clearAllViews();
     void setCurrentTab(int index);
@@ -40,24 +39,24 @@ private slots:
     void onTabChanged(int index);
 
 private:
-    // Layout principal
+    // Main layout
     QVBoxLayout* m_mainLayout;
     
-    // Widget principal des onglets
+    // Main tab widget
     QTabWidget* m_tabWidget;
     
-    // Les vues (qui sont des widgets)
+    // Views (which are widgets)
     StatsView* m_statsView;
     ChartView* m_chartView;
     HistogramView* m_histogramView;
     
-    // Map pour accès facile aux vues
+    // Map for easy access to views
     QMap<QString, BaseView*> m_views;
     
-    // Timer pour les redimensionnements
+    // Timer for resizing
     QTimer* m_resizeTimer;
-    
-    // Méthodes privées d'initialisation
+
+    // Private initialization methods
     void setupUI();
     void setupViews();
     void setupConnections();

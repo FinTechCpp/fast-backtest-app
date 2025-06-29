@@ -5,7 +5,7 @@
 #include <QDoubleSpinBox>
 
 /**
- * @brief Dialogue modal pour modifier les paramètres d'un indicateur Supertrend
+ * @brief Modal dialog to edit the parameters of a Supertrend indicator
  */
 class SupertrendDialog : public IndicatorDialog
 {
@@ -22,7 +22,7 @@ private slots:
     void onDownColorButtonClicked();
     
 protected:
-    // Méthodes virtuelles de IndicatorDialog
+    // Virtual methods from IndicatorDialog
     void setupUI() override;
     void connectSignals() override;
     void applyChanges() override;
@@ -30,9 +30,9 @@ protected:
 
 private:
     int m_supertrendId;
-    SuperTrendInstance m_originalSupertrend;  // Pour restaurer en cas d'annulation
-    SuperTrendInstance m_currentSupertrend;   // Pour les modifications en cours
-    
+    SuperTrendInstance m_originalSupertrend;  // To restore in case of cancellation
+    SuperTrendInstance m_currentSupertrend;   // For ongoing modifications
+
     QSpinBox* m_periodSpinBox;
     QDoubleSpinBox* m_multiplierSpinBox;
     QPushButton* m_upColorButton;

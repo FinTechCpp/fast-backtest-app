@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Couleurs pour les messages
+# Colors for output
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
@@ -8,15 +8,15 @@ YELLOW='\033[0;33m'
 BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-# Obtenir le répertoire du script
+# Get the script directory
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 cd "$SCRIPT_DIR"
 
-# Traitement des arguments
+# Process command line arguments
 DEBUG=0
 CLEAN=0
 RUN_APP=1
-APP_NAME="backtestapp"  # Application par défaut
+APP_NAME="backtestapp"  # Default application
 
 for arg in "$@"
 do
@@ -62,35 +62,35 @@ do
     esac
 done
 
-# Fonction pour afficher les messages d'étape
+# Function to display step messages
 show_step() {
     echo -e "${BLUE}${BOLD}[ÉTAPE]${NC} $1"
 }
 
-# Fonction pour afficher les messages de succès
+# Function to display success messages
 show_success() {
     echo -e "${GREEN}${BOLD}[SUCCÈS]${NC} $1"
 }
 
-# Fonction pour afficher les erreurs
+# Function to display error messages
 show_error() {
     echo -e "${RED}${BOLD}[ERREUR]${NC} $1"
 }
 
-# Nettoyer le dossier de build si demandé
+# Clean the build directory if requested
 if [ $CLEAN -eq 1 ] && [ -d "build" ]; then
-    show_step "Nettoyage du dossier de build..."
+    show_step "Cleaning build directory..."
     rm -rf build
-    show_success "Dossier de build nettoyé."
+    show_success "Build directory cleaned."
 fi
 
-# Créer le dossier build
-show_step "Création du dossier build..."
+# Create the build directory
+show_step "Creating build directory..."
 mkdir -p build
 cd build
 
-# Configurer le projet avec CMake
-show_step "Configuration du projet avec CMake..."
+# Configure the project with CMake
+show_step "Configuring project with CMake..."
 CMAKE_ARGS="-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 
 if [ $DEBUG -eq 1 ]; then
@@ -99,13 +99,13 @@ fi
 
 cmake $CMAKE_ARGS .. || { show_error "Échec de la configuration CMake"; exit 1; }
 
-# Compiler le projet
-show_step "Compilation du projet avec tous les cœurs disponibles..."
-make -j$(nproc) || { show_error "Échec de la compilation"; exit 1; }
+# Compile the project
+show_step "Compiling project with all available cores..."
+make -j$(nproc) || { show_error "Compilation failed"; exit 1; }
 
-show_success "Compilation terminée!"
+show_success "Compilation completed successfully!"
 
-# Créer le chemin vers l'exécutable selon l'application choisie
+# Create the path to the executable based on the selected application
 if [ "$APP_NAME" = "ig_cmd_app" ]; then
     APP_PATH="./bin/ig_cmd_app"
     APP_DISPLAY_NAME="IG Command Line App"
@@ -114,25 +114,25 @@ else
     APP_DISPLAY_NAME="Backtest App"
 fi
 
-# Afficher un message sur comment lancer l'application
-echo -e "${YELLOW}${BOLD}[INFO]${NC} Chemin de l'application: ${BOLD}./build${APP_PATH:1}${NC}"
-echo -e "${YELLOW}${BOLD}[INFO]${NC} Application sélectionnée: ${BOLD}$APP_DISPLAY_NAME${NC}"
+# Display a message on how to launch the application
+echo -e "${YELLOW}${BOLD}[INFO]${NC} Application path: ${BOLD}./build${APP_PATH:1}${NC}"
+echo -e "${YELLOW}${BOLD}[INFO]${NC} Selected application: ${BOLD}$APP_DISPLAY_NAME${NC}"
 
-# Lancer l'application si demandé
+# Launch the application if requested
 if [ $RUN_APP -eq 1 ]; then
-    show_step "Lancement de $APP_DISPLAY_NAME..."
+    show_step "Launching $APP_DISPLAY_NAME..."
     if [ -f "$APP_PATH" ]; then
-        echo -e "${GREEN}${BOLD}[EXÉCUTION]${NC} $APP_PATH"
+        echo -e "${GREEN}${BOLD}[EXECUTION]${NC} $APP_PATH"
         $APP_PATH
     else
-        show_error "L'exécutable n'existe pas: $APP_PATH"
-        echo "Vérifiez que le chemin est correct et que la compilation a réussi."
-        echo "Applications disponibles:"
+        show_error "Executable not found: $APP_PATH"
+        echo "Check that the path is correct and that the compilation was successful."
+        echo "vailable applications:"
         echo "  - Backtest App: ./build/backtestApp/backtestapp"
         echo "  - IG Command App: ./build/bin/ig_cmd_app"
         exit 1
     fi
 fi
 
-# Retour au répertoire initial
+# Back to the initial directory
 cd ..

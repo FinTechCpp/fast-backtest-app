@@ -10,14 +10,15 @@
 #include "dialog/indicator_dialog.h"
 
 /**
- * @brief Dialogue modal pour modifier les paramètres d'un indicateur technique
+ * @brief Modal dialog to modify the parameters of a technical indicator
  */
 class RSIDialog : public IndicatorDialog
 {
     Q_OBJECT
     
 public:
-    // Construction pour RSI
+    // Constructor for RSI
+
     RSIDialog(QWidget* parent, ChartWidget* chartWidget, int rsiId, const RSIInstance& rsi);
     ~RSIDialog() override;
     
@@ -39,8 +40,8 @@ protected:
     
 private:
     int m_rsiId;
-    RSIInstance m_originalRsi;  // Pour restaurer en cas d'annulation
-    RSIInstance m_currentRsi;   // Pour les modifications en cours
+    RSIInstance m_originalRsi;  // To restore in case of cancellation
+    RSIInstance m_currentRsi;   // For ongoing modifications
     
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;

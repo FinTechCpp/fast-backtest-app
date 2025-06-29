@@ -3,7 +3,7 @@ name: Discord Notification
 on:
   push:
     branches:
-      - '**'   # Toutes les branches
+      - '**'   # Every branch
 
 jobs:
   notify-discord:

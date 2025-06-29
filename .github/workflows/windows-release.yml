@@ -26,39 +26,39 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
-        fetch-depth: 0  # Nécessaire pour l'historique complet
+        fetch-depth: 0  # Necessary to get all tags
 
     - name: Calculate version
       id: version
       run: |
-        # Obtenir le dernier tag existant
+        # Get the latest existing tag
         $lastTag = git describe --tags --abbrev=0 2>$null
         
         if (-not $lastTag) {
-          # Si aucun tag n'existe, utiliser la version de base du fichier VERSION
+          # If no tag exists, use the base version from the VERSION file
           $baseVersion = Get-Content "VERSION" -Raw
           $baseVersion = $baseVersion.Trim()
-          $version = "$baseVersion.1"  # Commencer avec .1
+          $version = "$baseVersion.1"  # Start with .1
         } else {
-          # Extraire la version du dernier tag (sans le 'v' au début)
+          # Extract the version from the last tag (without the 'v' prefix)
           $lastVersion = $lastTag -replace '^v', ''
           
-          # Diviser la version en parties
+          # Split the version into parts
           $versionParts = $lastVersion.Split('.')
           
-          # Incrémenter le dernier numéro
+          # Increment the last number
           $lastPart = [int]$versionParts[-1] + 1
           $versionParts[-1] = $lastPart
           
-          # Reconstruire la version complète
+          # Rebuild the full version
           $version = $versionParts -join '.'
         }
         
         echo "VERSION=$version" >> $env:GITHUB_ENV
         echo "version=$version" >> $env:GITHUB_OUTPUT
-        
-        echo "Dernier tag: $lastTag"
-        echo "Nouvelle version: $version"
+
+        echo "Last tag: $lastTag"
+        echo "New version: $version"
 
     - name: Set up MSVC
       uses: microsoft/setup-msbuild@v2
@@ -112,25 +112,25 @@ jobs:
         $distDir = "fast-backtest-app-windows"
         $sourceDir = "build/backtestApp/${{ env.BUILD_TYPE }}"
         
-        # Créer le dossier de distribution
+        # Create the distribution directory if it doesn't exist
         New-Item -ItemType Directory -Path $distDir -Force
         
-        # Copier l'exécutable et toutes les DLL
+        # Copy the executable and all DLLs
         Copy-Item "$sourceDir/*" $distDir -Recurse -Force
-        
-        # Copier les dossiers de données si ils existent
+
+        # Copy the data folders if they exist
         if (Test-Path "data") {
           Copy-Item "data" "$distDir/data" -Recurse -Force
         }
-        
-        # Copier les fichiers README/LICENSE si ils existent
+
+        # Copy the README/LICENSE files if they exist
         @("README.md", "LICENSE", "CHANGELOG.md") | ForEach-Object {
           if (Test-Path $_) {
             Copy-Item $_ $distDir -Force
           }
         }
         
-        # Afficher le contenu du dossier de distribution
+        # Display the contents of the distribution folder
         echo "Distribution folder contents:"
         Get-ChildItem $distDir -Recurse
 
@@ -142,12 +142,12 @@ jobs:
 
     - name: Calculate checksum and size
       run: |
-        # Calculer le checksum du fichier ZIP
+        # Calculate the checksum of the ZIP file
         $checksum = Get-FileHash $env:ARCHIVE_NAME -Algorithm SHA256
         echo "CHECKSUM=$($checksum.Hash)" >> $env:GITHUB_ENV
         echo "checksum=$($checksum.Hash)" >> $env:GITHUB_OUTPUT
-        
-        # Calculer la taille du fichier
+
+        # Calculate the size of the file
         $size = (Get-Item $env:ARCHIVE_NAME).Length
         echo "DOWNLOAD_SIZE=$size" >> $env:GITHUB_ENV
         echo "download_size=$size" >> $env:GITHUB_OUTPUT
@@ -174,28 +174,28 @@ jobs:
         tag_name: v${{ env.VERSION }}
         name: fast-backtest-app v${{ env.VERSION }}
         body: |
-          🚀 **Nouvelle release v${{ env.VERSION }}**
-          
-          **Informations de build:**
+          🚀 **New release v${{ env.VERSION }}**
+
+          **Build Information:**
           - Version: ${{ env.VERSION }}
           - Checksum SHA256: `${{ env.CHECKSUM }}`
-          - Taille: ${{ env.DOWNLOAD_SIZE }} octets
+          - Size: ${{ env.DOWNLOAD_SIZE }} bytes
           - Commit: ${{ env.SHORT_SHA }}
           - Qt Version: ${{ env.QT_VERSION }}
           - Build Type: ${{ env.BUILD_TYPE }}
           - Date: ${{ github.event.head_commit.timestamp }}
-          
-          **Contenu:**
-          - Exécutable Windows 64-bit (`backtestapp.exe`)
-          - Toutes les DLL Qt nécessaires
+
+          **Contents:**
+          - Windows 64-bit executable (`backtestapp.exe`)
+          - All necessary Qt DLLs
           - ChartDirector DLL
-          - Fichiers de données (si présents)
-          
+          - Data files (if present)
+
           **Installation:**
-          1. Téléchargez le fichier ZIP
-          2. Extrayez-le dans un dossier de votre choix
-          3. Lancez `backtestapp.exe`
-  
+          1. Download the ZIP file
+          2. Extract it to a folder of your choice
+          3. Run `backtestapp.exe`
+
         draft: false
         prerelease: false
         files: ${{ env.ARCHIVE_NAME }}

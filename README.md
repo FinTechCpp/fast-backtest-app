@@ -337,14 +337,14 @@ fast-backtest-app/
 #### C++ Components
 - **`backtestEngine/`**: High-performance backtest engine
 - **`backtestApp/`**: Qt GUI for backtests
-- **`Strategies/`**: Trading strategies in C++
+- **`Strategies/`**: Trading strategies 
 - **`backtestAdapter/`**: Specific connections to use strategies in backtest mode
 - **`marketData/`**: Historical market data files for backtesting
 - **`Notebooks/`**: Jupyter Notebooks for data fetching, processing, and analysis
 
 #### External Dependencies
 - **`ChartDirector/`**: Charting library (commercial license)
-- **`spdlog/`**: Logging library for ultra-fast and modern logging
+- **`spdlog/`**: C++ Logging library for ultra-fast and modern logging
 
 ---
 

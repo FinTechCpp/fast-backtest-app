@@ -15,7 +15,7 @@
 #include <limits>
 
 /**
- * @brief Structure pour stocker une barre OHLC
+ * @brief Structure to store an OHLC (Open-High-Low-Close) bar
  */
 struct OHLCBar {
     QDateTime timestamp;
@@ -34,7 +34,7 @@ Q_DECLARE_METATYPE(OHLCBar)
 Q_DECLARE_METATYPE(std::vector<OHLCBar>)
 
 /**
- * @brief Structure pour stocker les informations de validation d'un fichier de données
+ * @brief Structure to store validation information for a data file
  */
 struct DataFileInfo {
     // Basic file info
@@ -77,7 +77,7 @@ struct DataFileInfo {
 Q_DECLARE_METATYPE(DataFileInfo)
 
 /**
- * @brief Classe pour charger et traiter les données de marché
+ * @brief Class for loading and processing market data
  */
 class DataLoader
 {
@@ -86,18 +86,18 @@ public:
     ~DataLoader();
     
     /**
-     * @brief Trouve le répertoire marketData
-     * @return Chemin vers le répertoire marketData, QString vide si non trouvé
+     * @brief Find the marketData directory in the user's home directory
+     * @return Path to the marketData directory, empty QString if not found
      */
     static QString findMarketDataDirectory();
     
     /**
-     * @brief Charge les données OHLC depuis un fichier CSV
-     * @param symbol Symbole du marché (ex: "NDX")
-     * @param interval Intervalle des données (ex: "20secs")
-     * @param period Période de données à charger (ex: "10d", "1m", "6m", "1y")
-     * @param endDate Date de fin au format QDateTime
-     * @return Vecteur de barres OHLC filtrées
+     * @brief Load OHLC data from a CSV file
+     * @param symbol Market symbol (e.g., "NDX")
+     * @param interval Data interval (e.g., "20secs")
+     * @param period Data period to load (e.g., "10d", "1m", "6m", "1y")
+     * @param endDate End date in QDateTime format
+     * @return Vector of filtered OHLC bars
      */
     static std::vector<OHLCBar> loadData(
         const QString& symbol = "NDX",
@@ -107,27 +107,27 @@ public:
     );
     
     /**
-     * @brief Trouve le fichier CSV correspondant au symbole et intervalle
-     * @param symbol Symbole à rechercher
-     * @param interval Intervalle à rechercher
-     * @return Chemin vers le fichier trouvé, QString vide si non trouvé
+     * @brief Find the CSV file corresponding to the symbol and interval
+     * @param symbol Symbol to search for
+     * @param interval Interval to search for
+     * @return Path to the found file, empty QString if not found
      */
     static QString findDataFile(const QString& symbol, const QString& interval);
     
     /**
-     * @brief Parse une ligne CSV en barre OHLC
-     * @param line Ligne CSV à parser
-     * @param hasHeader Indique si c'est la ligne d'en-tête
-     * @return Barre OHLC parsée, nullptr si erreur
+     * @brief Parse a CSV line into an OHLC bar
+     * @param line CSV line to parse
+     * @param hasHeader Indicates if this is the header line
+     * @return Parsed OHLC bar, nullptr if error
      */
     static std::unique_ptr<OHLCBar> parseCSVLine(const QString& line);
     
     /**
-     * @brief Charge les données depuis un fichier CSV
-     * @param filePath Chemin vers le fichier CSV
-     * @param period Période à charger
-     * @param endDate Date de fin
-     * @return Vecteur de barres OHLC
+     * @brief Load data from a CSV file
+     * @param filePath Path to the CSV file
+     * @param period PPeriod to load
+     * @param endDate End date
+     * @return Vector of OHLC bars
      */
     static std::vector<OHLCBar> loadFromCSV(
         const QString& filePath,
@@ -136,11 +136,11 @@ public:
     );
     
     /**
-     * @brief Filtre les données par période
-     * @param data Données à filtrer
-     * @param startDate Date de début
-     * @param endDate Date de fin
-     * @return Données filtrées
+     * @brief Filter data by period
+     * @param data Data to filter
+     * @param startDate Start date
+     * @param endDate End date
+     * @return Filtered data
      */
     static std::vector<OHLCBar> filterByPeriod(
         const std::vector<OHLCBar>& data,
@@ -149,10 +149,10 @@ public:
     );
     
     /**
-     * @brief Resample les données à un intervalle différent
-     * @param data Données source
-     * @param targetInterval Intervalle cible (ex: "1min", "5min")
-     * @return Données resampleées
+     * @brief Resample data to a target interval
+     * @param data Source data
+     * @param targetInterval Target interval (e.g., "1min", "5min")
+     * @return Resampled data
      */
     static std::vector<OHLCBar> resampleData(
         const std::vector<OHLCBar>& data,
@@ -160,40 +160,40 @@ public:
     );
     
     /**
-     * @brief Calcule la date de début à partir de la période
-     * @param endDate Date de fin
-     * @param period Période (ex: "10d", "1m", "6m", "1y")
-     * @return Date de début calculée
+     * @brief Calculate the start date from the period
+     * @param endDate End date
+     * @param period Period (e.g., "10d", "1m", "6m", "1y")
+     * @return Calculated start date
      */
     static QDateTime calculateStartDate(const QDateTime& endDate, const QString& period);
     
     /**
-     * @brief Convertit un intervalle en secondes
-     * @param interval Intervalle (ex: "10secs", "1min", "1h")
-     * @return Nombre de secondes
+     * @brief Convert an interval to seconds
+     * @param interval Interval (e.g., "10secs", "1min", "1h")
+     * @return Number of seconds
      */
     static int intervalToSeconds(const QString& interval);
     
     /**
-     * @brief Définit un répertoire personnalisé pour les données de marché
-     * @param path Chemin vers le répertoire à utiliser
-     * @return true si le répertoire est valide et a été défini, false sinon
+     * @brief Set a custom directory for market data
+     * @param path Path to the directory to use
+     * @return true if the directory is valid and has been set, false otherwise
      */
     static bool setCustomMarketDataDirectory(const QString& path);
     
     /**
-     * @brief Vérifie l'intégrité des données d'un fichier CSV OHLC
-     * @param filePath Chemin vers le fichier à vérifier
-     * @return Structure contenant les informations sur le fichier et son intégrité
+     * @brief Check the integrity of OHLC CSV data
+     * @param filePath Path to the file to check
+     * @return Structure containing information about the file and its integrity
      */
     static DataFileInfo checkDataFile(const QString& filePath);
 
 private:
     static QStringList getMarketDataPaths();
-    static std::map<QString, std::vector<OHLCBar>> s_dataCache; // Cache pour les données chargées
+    static std::map<QString, std::vector<OHLCBar>> s_dataCache; // Cache for loaded data
     static QString makeCacheKey(const QString& symbol, const QString& interval, const QString& period, const QDateTime& endDate);
-    
-    // Ajout de la méthode helper pour la conversion en double
+
+    // Helper method for double conversion
     static inline double parseDouble(const QChar* begin, const QChar* end);
 };
 

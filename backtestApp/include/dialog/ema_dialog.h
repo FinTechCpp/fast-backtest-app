@@ -4,14 +4,14 @@
 #include <QSpinBox>
 
 /**
- * @brief Dialogue modal pour modifier les paramètres d'un EMA (Exponential Moving Average)
+ * @brief Modal dialog to edit the parameters of an EMA (Exponential Moving Average)
  */
 class EMADialog : public IndicatorDialog
 {
     Q_OBJECT
     
 public:
-    // Construction pour un seul EMA
+    // Constructor for one EMA
     EMADialog(QWidget* parent, ChartWidget* chartWidget, int emaId, const EMAInstance& ema);
     ~EMADialog() override;
     
@@ -20,7 +20,7 @@ private slots:
     void onColorButtonClicked();
     
 protected:
-    // Méthodes virtuelles de IndicatorDialog
+    // Virtual methods from IndicatorDialog
     void setupUI() override;
     void connectSignals() override;
     void applyChanges() override;
@@ -28,9 +28,9 @@ protected:
     
 private:
     int m_emaId;
-    EMAInstance m_originalEma;  // Pour restaurer en cas d'annulation
-    EMAInstance m_currentEma;   // Pour les modifications en cours
-    
+    EMAInstance m_originalEma;  // For restoring in case of cancellation
+    EMAInstance m_currentEma;   // For ongoing modifications
+
     QSpinBox* m_periodSpinBox;
     QPushButton* m_colorButton;
 };

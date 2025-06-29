@@ -1,10 +1,10 @@
-# Sources pour l'adaptateur
+# Sources for adapter
 file(GLOB SOURCES "src/*.cpp")
 
-# Créer l'exécutable principal
+# Create the main executable
 add_executable(main ${SOURCES})
 
-# Lier avec les bibliothèques requises
+# Link with the required libraries
 target_link_libraries(main
     PRIVATE
         backtestEngine
@@ -12,7 +12,7 @@ target_link_libraries(main
         spdlog::spdlog
 )
 
-# Configurer les chemins d'inclusion
+# Configure include paths
 target_include_directories(main
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -20,7 +20,7 @@ target_include_directories(main
         ${CMAKE_SOURCE_DIR}/strategies/include
 )
 
-# Copier les fichiers de données s'ils existent
+# Copy data files if they exist
 if(EXISTS ${CMAKE_SOURCE_DIR}/data)
     file(COPY ${CMAKE_SOURCE_DIR}/data
          DESTINATION ${CMAKE_CURRENT_BINARY_DIR}

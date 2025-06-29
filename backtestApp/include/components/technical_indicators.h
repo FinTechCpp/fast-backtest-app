@@ -5,33 +5,33 @@
 #include <algorithm>
 
 /**
- * @brief Classe utilitaire pour le calcul d'indicateurs techniques
+ * @brief Utility class for calculating technical indicators
  * 
- * Cette classe fournit des méthodes statiques pour calculer divers indicateurs
- * techniques utilisés en analyse financière.
+ * This class provides static methods to calculate various technical indicators
+ * used in financial analysis.
  */
 class TechnicalIndicators {
 public:
     /**
-     * @brief Calcule l'indicateur RSI (Relative Strength Index)
+     * @brief Calculates the RSI (Relative Strength Index) indicator
      * 
-     * @param closeData Les prix de clôture
-     * @param period La période pour le calcul du RSI
-     * @param rsiValues Vecteur de sortie qui contiendra les valeurs RSI calculées
+     * @param closeData The closing prices
+     * @param period The period for RSI calculation
+     * @param rsiValues Output vector that will contain the calculated RSI values
      */
     static void calculateRSI(const std::vector<double>& closeData, int period, std::vector<double>& rsiValues);
 
     /**
-     * @brief Calcule les bougies Heikin-Ashi
+     * @brief Calculates Heikin-Ashi candles
      * 
-     * @param open Prix d'ouverture
-     * @param high Plus hauts
-     * @param low Plus bas
-     * @param close Prix de clôture
-     * @param ha_open Prix d'ouverture Heikin-Ashi (sortie)
-     * @param ha_high Plus hauts Heikin-Ashi (sortie)
-     * @param ha_low Plus bas Heikin-Ashi (sortie)
-     * @param ha_close Prix de clôture Heikin-Ashi (sortie)
+     * @param open Opening prices
+     * @param high High prices
+     * @param low Low prices
+     * @param close Closing prices
+     * @param ha_open Heikin-Ashi opening prices (output)
+     * @param ha_high Heikin-Ashi high prices (output)
+     * @param ha_low Heikin-Ashi low prices (output)
+     * @param ha_close Heikin-Ashi closing prices (output)
      */
     static void calculateHeikinAshi(
         const std::vector<double>& open,
@@ -45,24 +45,24 @@ public:
     );
 
     /**
-     * @brief Calcule la moyenne mobile exponentielle (EMA)
+     * @brief Calculates the Exponential Moving Average (EMA)
      * 
-     * @param closeData Les prix de clôture
-     * @param period La période pour le calcul de l'EMA
-     * @param emaValues Vecteur de sortie qui contiendra les valeurs EMA calculées
+     * @param closeData The closing prices
+     * @param period The period for EMA calculation
+     * @param emaValues Output vector that will contain the calculated EMA values
      */
     static void calculateEMA(const std::vector<double>& closeData, int period, std::vector<double>& emaValues);
 
     /**
-     * @brief Calcule l'indicateur SuperTrend
+     * @brief Calculates the SuperTrend indicator
      * 
-     * @param highData Les prix les plus hauts
-     * @param lowData Les prix les plus bas
-     * @param closeData Les prix de clôture
-     * @param period La période pour le calcul du SuperTrend
-     * @param multiplier Le multiplicateur pour le SuperTrend
-     * @param supertrendValues Vecteur de sortie qui contiendra les valeurs SuperTrend calculées
-     * @param trendDirections Vecteur de sortie qui contiendra les directions de tendance (1 pour tendance haussière, -1 pour tendance baissière)
+     * @param highData The high prices
+     * @param lowData The low prices
+     * @param closeData The closing prices
+     * @param period The period for SuperTrend calculation
+     * @param multiplier The multiplier for SuperTrend
+     * @param supertrendValues Output vector that will contain the calculated SuperTrend values
+     * @param trendDirections Output vector that will contain the trend directions (1 for bullish trend, -1 for bearish trend)
      */
     static void calculateSupertrend(
         const std::vector<double>& highData,
@@ -75,16 +75,16 @@ public:
     );
 
     /**
-     * @brief Calcule l'indicateur Stochastique
+     * @brief Calculates the Stochastic indicator
      * 
-     * @param highData Les prix les plus hauts
-     * @param lowData Les prix les plus bas
-     * @param closeData Les prix de clôture
-     * @param fastKPeriod La période pour calculer %K brut
-     * @param slowKPeriod La période de lissage pour %K
-     * @param slowDPeriod La période pour calculer %D
-     * @param kValues Vecteur de sortie qui contiendra les valeurs %K lissées
-     * @param dValues Vecteur de sortie qui contiendra les valeurs %D
+     * @param highData The high prices
+     * @param lowData The low prices
+     * @param closeData The closing prices
+     * @param fastKPeriod The period for calculating raw %K
+     * @param slowKPeriod The smoothing period for %K
+     * @param slowDPeriod The period for calculating %D
+     * @param kValues Output vector that will contain the smoothed %K values
+     * @param dValues Output vector that will contain the %D values
      */
     static void calculateStochastic(
         const std::vector<double>& highData,
@@ -97,14 +97,14 @@ public:
         std::vector<double>& dValues);
 
     /**
-     * @brief Calcule l'Average True Range (ATR)
-     * 
-     * @param highData Les prix les plus hauts
-     * @param lowData Les prix les plus bas
-     * @param closeData Les prix de clôture
-     * @param period La période pour le calcul de l'ATR
-     * @param atrValues Vecteur de sortie qui contiendra les valeurs ATR calculées
-     * @param useLogScale Indique si l'échelle logarithmique doit être utilisée pour l'ATR
+     * @brief Calculates the Average True Range (ATR)
+     *
+     * @param highData The high prices
+     * @param lowData The low prices
+     * @param closeData The closing prices
+     * @param period The period for ATR calculation
+     * @param atrValues Output vector that will contain the calculated ATR values
+     * @param useLogScale Indicates whether to use logarithmic scale for ATR
      */
 
     static void calculateATR(

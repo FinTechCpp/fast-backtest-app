@@ -18,7 +18,7 @@
 #include "components/backtest_results.h"
 #include "strategies/strategy_registry.h"
 
-// Inclusions des fichiers d'en-tête du moteur de backtest C++
+// Include necessary headers for the backtest components
 #include "backtest.hpp"
 #include "broker.hpp"
 #include "data.hpp"
@@ -54,7 +54,7 @@ private slots:
     void onProgressUpdated(int current, int total, const QString& chrono);
 
 private:
-    // Membres dans l'ordre d'initialisation du constructeur
+    // Members sorted by order of initialization in the constructor
     App* m_mainWindow;
     QHBoxLayout* m_buttonLayout;
     QPushButton* m_runButton;
@@ -63,7 +63,7 @@ private:
     class BacktestWorker* m_worker;
     bool m_isRunning;
     
-    // Variables pour capturer les dernières statistiques
+    // Variables to store latest stats while backtest execution
     int m_lastTotalCandles;
     QString m_lastChrono;
     
@@ -89,7 +89,7 @@ signals:
     void progressUpdated(int current, int total, const QString& chrono);
 
 public:
-    // Méthode pour transférer la propriété des résultats
+    // Method to transfer ownership of the results
     std::unique_ptr<BacktestResults> takeResults() {
         return std::move(m_results);
     }
@@ -97,15 +97,15 @@ public:
 private:
     App* m_mainWindow;
     
-    // Méthodes d'aide pour le backtest C++
+    // Helper methods for C++ backtesting
     std::shared_ptr<be::Strategy> createStrategy(std::shared_ptr<be::Broker> broker, 
                                                std::shared_ptr<be::Data> data,
                                                const QMap<QString, QVariant>& params);
-    // Convertir les données OHLCBar en format be::Data
+    // Convert OHLCBar data to be::Data format
     std::shared_ptr<be::Data> convertToBeData(const std::vector<OHLCBar>& bars);
 
-    
-    // Maintenir les résultats en vie pendant l'exécution
+
+    // Keep the results alive during execution
     std::unique_ptr<BacktestResults> m_results;
 };
 

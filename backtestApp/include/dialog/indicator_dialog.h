@@ -9,7 +9,7 @@
 #include "chart_widget.h"
 
 /**
- * @brief Classe de base pour tous les dialogues d'indicateurs techniques
+ * @brief Base class for all indicator configuration dialogs
  */
 class IndicatorDialog : public QDialog
 {
@@ -25,13 +25,13 @@ protected:
     QFormLayout* m_formLayout;
     QDialogButtonBox* m_buttonBox;
     
-    // Méthodes utilitaires communes
+    // Common utility methods
     void updateColorButtonStyle(QPushButton* button, int color);
     QColor openColorDialog(int currentColor, const QString& title);
     int colorFromRGB(int r, int g, int b);
     void getRGBComponents(int color, int& r, int& g, int& b);
     
-    // Méthodes virtuelles pour les classes dérivées
+    // Virtual methods for derived classes
     virtual void setupUI() = 0;
     virtual void connectSignals() = 0;
     virtual void applyChanges() = 0;

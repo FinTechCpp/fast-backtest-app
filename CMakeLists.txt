@@ -1,18 +1,18 @@
 cmake_minimum_required(VERSION 3.14)
 project(ig_trading_bot VERSION 1.0)
 
-# Configuration globale
+# Global configuration
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Options de build
-option(BUILD_WITH_DEBUG "Compiler avec les symboles de débogage" OFF)
+# Build options
+option(BUILD_WITH_DEBUG "Compiling with debug symbols" OFF)
 
 if(BUILD_WITH_DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
     
-    # Utiliser les flags appropriés selon le compilateur
+    # Use appropriate flags based on the compiler
     if(MSVC)
         add_compile_options(/Od /Zi)
     else()
@@ -21,7 +21,7 @@ if(BUILD_WITH_DEBUG)
 else()
     set(CMAKE_BUILD_TYPE Release)
     
-    # Utiliser les flags appropriés selon le compilateur
+    # Use appropriate flags based on the compiler
     if(MSVC)
         add_compile_options(/O2)
     else()
@@ -30,119 +30,120 @@ else()
     endif()
 endif()
 
-# Détection de compilation croisée MXE
+# Cross-compilation detection for MXE
 if(CMAKE_CROSSCOMPILING)
-    message(STATUS "Compilation croisée détectée")
-    message(STATUS "Système cible: ${CMAKE_SYSTEM_NAME}")
-    message(STATUS "Architecture cible: ${CMAKE_SYSTEM_PROCESSOR}")
-    
-    # Pour MXE, Qt6 est automatiquement trouvé
+    message(STATUS "ross-compilation detected")
+    message(STATUS "Target system: ${CMAKE_SYSTEM_NAME}")
+    message(STATUS "Target architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+
+    # For MXE, Qt6 is automatically found
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-        message(STATUS "Configuration MXE pour Windows détectée")
+        message(STATUS "MXE configuration detected for Windows")
     endif()
 else()
-    # Configuration normale pour développement local
-    # Configurer le chemin Qt6 selon le système d'exploitation
+    # Normal configuration for local builds
+    # Configure Qt6 path based on the operating system
     if(APPLE)
-        # Essayer de trouver Qt automatiquement dans les emplacements standards
+        # Try to find Qt automatically in standard locations
         set(QT_SEARCH_PATHS
-            "$ENV{HOME}/Qt/*/macos"           # Installation utilisateur standard
-            "/opt/Qt/*/macos"                 # Installation système alternative
+            "$ENV{HOME}/Qt/*/macos"           # Standard user installation
+            "/opt/Qt/*/macos"                 # Alternative system installation
             "/usr/local/opt/qt@6"             # Homebrew Qt6
-            "/opt/homebrew/opt/qt@6"          # Homebrew sur Apple Silicon
+            "/opt/homebrew/opt/qt@6"          # Homebrew on Apple Silicon
         )
         
-        # Chercher la version la plus récente de Qt6
+        # Look for the most recent version of Qt6
         file(GLOB QT_CANDIDATES ${QT_SEARCH_PATHS})
         if(QT_CANDIDATES)
-            # Trier pour avoir la version la plus récente en premier
+            # Sort to have the most recent version first
             list(SORT QT_CANDIDATES)
             list(REVERSE QT_CANDIDATES)
             list(GET QT_CANDIDATES 0 QT_PATH)
             list(APPEND CMAKE_PREFIX_PATH "${QT_PATH}")
-            message(STATUS "Qt6 détecté automatiquement: ${QT_PATH}")
+            message(STATUS "Qt6 detected: ${QT_PATH}")
         else()
-            message(WARNING "Qt6 non trouvé automatiquement. Utilisez -DCMAKE_PREFIX_PATH=<chemin_vers_qt> ou installez Qt via Homebrew: brew install qt@6")
+            message(WARNING "Qt6 not found automatically. Use -DCMAKE_PREFIX_PATH=<path_to_qt> or install Qt via Homebrew: brew install qt@6")
         endif()
     elseif(WIN32)
-        # Configuration pour Windows - chercher Qt dans les emplacements standards
+        # Windows configuration - try to find Qt automatically in standard locations
+        # TODO : Improve search methods for Qt6 on Windows
         set(QT_SEARCH_PATHS
-            "C:/Qt/*/msvc2022_64"             # Installation Qt standard avec MSVC 2022
-            "C:/Qt/*/msvc2019_64"             # Installation Qt standard avec MSVC 2019
-            "$ENV{USERPROFILE}/Qt/*/msvc2022_64"  # Installation utilisateur
-            "$ENV{QTDIR}"                     # Variable d'environnement QTDIR
-            "$ENV{QT_ROOT_DIR}"               # Variable utilisée par GitHub Actions
-            "D:/a/*/Qt/*/msvc2022_64"         # Chemin GitHub Actions
+            "C:/Qt/*/msvc2022_64"             # Standard Qt installation with MSVC 2022
+            "C:/Qt/*/msvc2019_64"             # Standard Qt installation with MSVC 2019
+            "$ENV{USERPROFILE}/Qt/*/msvc2022_64"  # User installation
+            "$ENV{QTDIR}"                     # QTDIR environment variable
+            "$ENV{QT_ROOT_DIR}"               # Variable used by GitHub Actions
+            "D:/a/*/Qt/*/msvc2022_64"         # GitHub Actions path
         )
-          # Chercher la version la plus récente de Qt6
+        # Look for the most recent version of Qt6
         file(GLOB QT_CANDIDATES ${QT_SEARCH_PATHS})
         if(QT_CANDIDATES)
-            # Trier pour avoir la version la plus récente en premier
+            # Sort to have the most recent version first
             list(SORT QT_CANDIDATES)
             list(REVERSE QT_CANDIDATES)
             list(GET QT_CANDIDATES 0 QT_PATH)
             list(APPEND CMAKE_PREFIX_PATH "${QT_PATH}")
-            message(STATUS "Qt6 détecté automatiquement: ${QT_PATH}")
+            message(STATUS "Qt6 detected: ${QT_PATH}")
         else()
             # After the QT_CANDIDATES check, replace the existing warning with:
             if(DEFINED ENV{Qt6_DIR})
                 list(APPEND CMAKE_PREFIX_PATH "$ENV{Qt6_DIR}")
-                message(STATUS "Utilisation de Qt6_DIR depuis l'environnement: $ENV{Qt6_DIR}")
+                message(STATUS "Using Qt6_DIR from environment: $ENV{Qt6_DIR}")
             elseif(DEFINED ENV{QT_ROOT_DIR})
                 list(APPEND CMAKE_PREFIX_PATH "$ENV{QT_ROOT_DIR}")
-                message(STATUS "Utilisation de QT_ROOT_DIR depuis l'environnement: $ENV{QT_ROOT_DIR}")
+                message(STATUS "Using QT_ROOT_DIR from environment: $ENV{QT_ROOT_DIR}")
             else()
-                message(WARNING "Qt6 non trouvé automatiquement. Assurez-vous que Qt6 est installé dans C:/Qt/ ou définissez CMAKE_PREFIX_PATH")
+                message(WARNING "Qt6 not found automatically. Ensure Qt6 is installed in C:/Qt/ or set CMAKE_PREFIX_PATH")
             endif()
         endif()
     elseif(UNIX AND NOT APPLE)
-        # Configuration pour Linux
+        # Linux configuration - try to find Qt automatically in standard locations
         set(QT_SEARCH_PATHS
-            "$ENV{HOME}/Qt/*/gcc_64"          # Installation utilisateur
-            "/usr/lib/qt6"                    # Installation système
-            # "/usr/lib/x86_64-linux-gnu/qt6"   # Autre emplacement système
+            "$ENV{HOME}/Qt/*/gcc_64"          # User installation
+            "/usr/lib/qt6"                    # System installation
+            # "/usr/lib/x86_64-linux-gnu/qt6"   # Other system location
         )
-        
-        # Chercher la version la plus récente de Qt6
+
+        # Look for the most recent version of Qt6
         file(GLOB QT_CANDIDATES ${QT_SEARCH_PATHS})
         if(QT_CANDIDATES)
-            # Trier pour avoir la version la plus récente en premier
+            # Sort to have the most recent version first
             list(SORT QT_CANDIDATES)
             list(REVERSE QT_CANDIDATES)
             list(GET QT_CANDIDATES 0 QT_PATH)
             list(APPEND CMAKE_PREFIX_PATH "${QT_PATH}")
-            message(STATUS "Qt6 détecté automatiquement: ${QT_PATH}")
+            message(STATUS "Qt6 detected: ${QT_PATH}")
         else()
-            # Essayer de récupérer depuis la variable d'environnement
+            # Try to retrieve from the environment variable
             if(DEFINED ENV{CMAKE_PREFIX_PATH})
                 list(APPEND CMAKE_PREFIX_PATH "$ENV{CMAKE_PREFIX_PATH}")
-                message(STATUS "Utilisation de CMAKE_PREFIX_PATH depuis l'environnement: $ENV{CMAKE_PREFIX_PATH}")
+                message(STATUS "Using CMAKE_PREFIX_PATH from environment: $ENV{CMAKE_PREFIX_PATH}")
             else()
-                message(WARNING "Qt6 non trouvé automatiquement. Utilisez -DCMAKE_PREFIX_PATH=~/Qt/6.8.3/gcc_64")
+                message(WARNING "Qt6 not found automatically. Use -DCMAKE_PREFIX_PATH=~/Qt/6.8.3/gcc_64")
             endif()
         endif()
     endif()
 endif()
 
-# Vérifier que Qt est disponible (obligatoire)
+# Check if Qt6 is found (Mandatory)
 find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 
 # git submodules 
 add_subdirectory(ThirdParty/spdlog)
+add_subdirectory(ThirdParty/strategies)
 
-# Ajouter les sous-projets (bibliothèques)
+# Add sub-projects (libraries)
 add_subdirectory(ThirdParty/ChartDirector)
 add_subdirectory(backtestEngine)
-add_subdirectory(strategies)
 add_subdirectory(backtestAdapter)
 add_subdirectory(backtestApp)
 
-# Afficher un résumé de la configuration
+# Show a summary of the configuration
 message(STATUS "=========================================")
-message(STATUS "Configuration pour ${PROJECT_NAME} v${PROJECT_VERSION}")
-message(STATUS "Mode de build: ${CMAKE_BUILD_TYPE}")
-message(STATUS "Standard C++: ${CMAKE_CXX_STANDARD}")
-message(STATUS "Symboles de débogage: ${BUILD_WITH_DEBUG}")
+message(STATUS "Configuration for ${PROJECT_NAME} v${PROJECT_VERSION}")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "C++ standard: ${CMAKE_CXX_STANDARD}")
+message(STATUS "Debug symbols: ${BUILD_WITH_DEBUG}")
 if(CMAKE_CROSSCOMPILING)
     message(STATUS "Target: ${CMAKE_SYSTEM_NAME} ${CMAKE_SYSTEM_PROCESSOR}")
 endif()

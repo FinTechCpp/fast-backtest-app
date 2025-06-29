@@ -9,36 +9,36 @@
 #include <iostream>
 
 /**
- * @brief Adaptateur permettant d'utiliser la stratégie SellHeikinRed avec le moteur de backtest C++
+ * @brief Adapter enabling the use of the SellHeikinRed strategy with the C++ backtesting engine
  * 
- * Cette classe sert d'interface entre la stratégie SellHeikinRed (qui utilise sa propre structure)
- * et le moteur de backtest C++ qui attend une classe dérivée de Strategy.
+ * This class serves as an interface between the SellHeikinRed strategy (which uses its own structure)
+ * and the C++ backtesting engine, which expects a class derived from Strategy.
  */
 class SellHeikinRedAdapter : public be::Strategy {
 private:
-    // Configuration spécifique à la stratégie
+    // Specific configuration for the SellHeikinRed strategy
     SellHeikinRedConfig strategy_config;
 
-    // Instance de la stratégie SellHeikinRed
+    // Instance of the SellHeikinRed strategy
     std::unique_ptr<SellHeikinRed> strategy;
 
-    // Cache pour les signaux de trading
+    // Cache for trading signals
     bool should_enter_long = false;
     bool should_enter_short = false;
-    
-    // Pour suivre les trades fermés
+
+    // To track closed trades
     int last_closed_trade_count = 0;
     bool last_trade_closed = false;
     double last_trade_pnl = 0.0;
     
 public:
     /**
-     * @brief Constructeur de l'adaptateur
+     * @brief Constructor for the adapter
      * 
-     * @param broker Broker utilisé par le backtest
-     * @param data Données historiques utilisées par le backtest
-     * @param base_config Configuration de base commune à toutes les stratégies
-     * @param shr_config Configuration spécifique à SellHeikinRed
+     * @param broker Broker used by the backtest
+     * @param data Historical data used by the backtest
+     * @param base_config Base configuration common to all strategies
+     * @param shr_config Configuration specific to SellHeikinRed
      */
     SellHeikinRedAdapter(
         std::shared_ptr<be::Broker> broker, 
@@ -46,27 +46,26 @@ public:
         const StrategyBaseConfig& base_config,
         const SellHeikinRedConfig& shr_config
     ) : be::Strategy(broker, data), strategy_config(shr_config) {
-        // Créer l'instance de la stratégie
+        // Create Strategy instance with the provided configurations
         strategy = std::make_unique<SellHeikinRed>(base_config, shr_config);
         // strategy->set_log_level(LogLevel::DEBUG);
 
         auto log_callback = [](const std::string& message, int level) {
             LogLevel logLevel = static_cast<LogLevel>(level);
             
-            // Obtenir le timestamp actuel avec précision milliseconde
+            // Get the current timestamp with millisecond precision
             auto now = std::chrono::system_clock::now();
             auto time_t_now = std::chrono::system_clock::to_time_t(now);
             auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 now.time_since_epoch()) % 1000;
             
-            // Formater le timestamp
-            // Formater le timestamp
+            // Format the timestamp
             std::stringstream ss;
             ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
             ss << "," << std::setw(3) << std::setfill('0') << ms.count();
             
             
-            // Afficher le log avec le timestamp
+            // Display the log message with the timestamp and log level
             std::cout << ss.str() << " [" << logLevel << "]: " << message << std::endl;
         };
 
@@ -74,46 +73,45 @@ public:
     }
     
     /**
-     * @brief Initialisation de la stratégie
+     * @brief Initialization method for the strategy
      * 
-     * Cette méthode est appelée une fois au début du backtest pour permettre
-     * à la stratégie de s'initialiser avec les données historiques.
+     * This method is called once at the beginning of the backtest to allow
+     * the strategy to initialize itself with historical data.
      */
     void init() override {
-        // Initialiser la stratégie
-
-        
+        // Initialize the strategy
+    }
     }
     
     /**
-     * @brief Méthode principale appelée à chaque nouvelle bougie
+     * @brief Main method called on each new candle
      * 
-     * Cette méthode convertit les données de marché en format attendu par la stratégie,
-     * met à jour la stratégie et traite les signaux générés.
+     * This method converts market data into the format expected by the strategy,
+     * updates the strategy, and processes any generated signals.
      */
     void next() override {
-        // TODO: C'est une cata on fait plein de getData() qui return l'ensemble des données du backtest c'esttres lent
-        // surtout que on a besoin seulement de la derniere candle
-        // Vérifier si une position a été fermée depuis la dernière bougie
+        // TODO: for the moment, too much use of getData() which returns all backtest data is very slow
+        // especially since we only need the latest candle
+        // Check if a position has been closed since the last candle
         // const std::vector<be::Trade> closedTrades = getClosedTrades();
         // if (closedTrades.size() > last_closed_trade_count) {
         //     be::Trade last_trade = closedTrades.back();
-            
-        //     // Vérifier si le trade a été fermé à la dernière bougie
+
+        //     // Check if the trade was closed at the last candle
         //     if (last_trade.exitDate() == getData()->getDate(-1)) {
         //         last_trade_closed = true;
         //         last_trade_pnl = last_trade.pl(); 
         //     }
             
-        //     // Mettre à jour le compteur
+        //     // Update the counter
         //     last_closed_trade_count = closedTrades.size();
         // }
 
-        // Créer un objet Candle à partir des données actuelles
+        // Create a Candle object from the current data
         Candle candle;
         
-        // Remplir la structure DateTime à partir de la bougie courante
-        // Utilisation de la nouvelle interface
+        // Fill the DateTime structure from the current candle
+        // Using the new interface
         const be::Candle& currentCandle = getData()->current();
         be::Date current_date = currentCandle.date;
         
@@ -124,20 +122,20 @@ public:
         candle.ohlc.date.time.minute = current_date.getMinute();
         candle.ohlc.date.time.second = current_date.getSecond();
         
-        // Remplir les valeurs OHLC avec la nouvelle interface
+        // Fill the OHLC values using the new interface
         candle.ohlc.open = currentCandle.open;
         candle.ohlc.high = currentCandle.high;
         candle.ohlc.low = currentCandle.low;
         candle.ohlc.close = currentCandle.close;
 
-        // Remplir les informations de position
+        // Fill the position information
         // be::Position position = getPosition();
         // candle.position.in_position = position ? true : false;
         // candle.position.position_pl_pct = position ? position.plPercent() : 0.0;
         // // candle.position.entry_price = position ? position.entryPrice() : 0.0;
         // candle.position.position_size = position ? position.size() : 0.0;
 
-        // Ajouter le P&L du dernier trade fermé s'il y en a un
+        // Add the P&L of the last closed trade if there is one
         candle.position.closed_trade_pnl = 0.0;
         if (last_trade_closed) {
             candle.position.closed_trade_pnl = last_trade_pnl;
@@ -145,15 +143,15 @@ public:
             last_trade_pnl = 0.0;
         }
         
-        // Mettre à jour la stratégie et obtenir le signal
+        // Update the strategy signal with the new latest candle by executing strategy logic
         Signal* signal = strategy->update_candle(candle);
 
 
         if (!signal) {
-            return; // Pas de signal à traiter
+            return; // No signal to process
         }
         
-        // // Traiter le signal s'il y en a un
+        // // Process the signal if there is one
         // if (signal->action == "LIQUIDATE") {
         //     if (position) {
         //         position.close();

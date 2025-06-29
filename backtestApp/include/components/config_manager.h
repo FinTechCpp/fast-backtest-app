@@ -25,7 +25,7 @@
 class App;
 
 /**
- * @brief Gestionnaire de configuration avec support des profils
+ * @brief Configuration manager for handling and storind backtest parameters
  */
 class ConfigManager : public QObject
 {
@@ -35,37 +35,37 @@ public:
     ConfigManager(QObject* parent = nullptr);
     ~ConfigManager();
     
-    // Méthodes publiques
+    // Public methods
     QString getConfigFilePath() const;
     void initializeConfig();
     void loadConfig();
     void saveConfig();
     
-    // Getter pour le profil actuel
+    // Getter for the current profile
     QString getCurrentProfile() const { return m_currentProfile; }
     
-    // Gestion des profils
+    // Profile management
     QStringList listProfiles() const;
     bool profileExists(const QString& profileName) const;
     QMap<QString, QVariant> getProfile(const QString& profileName) const;
     bool saveProfile(const QString& profileName, const QMap<QString, QVariant>& profileData);
     bool deleteProfile(const QString& profileName);
     
-    // Interface avec l'UI
+    // Interface with the UI
     QVariant extractWidgetValue(QWidget* widget) const;
     bool setWidgetValue(QWidget* widget, const QVariant& value) const;
     QMap<QString, QWidget*> getWidgetMapping() const;
     QMap<QString, QVariant> getProfileFromUI() const;
     bool applyProfileToUI(const QString& profileName);
-    
-    // Actions utilisateur
+
+    // User actions
     bool saveCurrentProfile(QWidget* parentWidget = nullptr);
     bool promptCreateNewProfile(QWidget* parentWidget = nullptr);
     bool deleteCurrentProfile(QWidget* parentWidget = nullptr);
     bool importConfigFromFile(QWidget* parentWidget = nullptr);
     bool exportConfigToFile(QWidget* parentWidget = nullptr, const QString& profileName = "");
     
-    // Méthodes publiques pour les slots
+    // Public methods for slots
     void updateProfileUI(const QString& selectedProfile);
     void onProfileChanged(const QString& profileName);
 

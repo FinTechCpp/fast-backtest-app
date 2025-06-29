@@ -1,15 +1,15 @@
 {
     "cmake.sourceDirectory": "${workspaceFolder}",
     
-    // Configuration de CMake
+    // CMake configuration
     "cmake.configureOnOpen": true,
     "cmake.buildDirectory": "${workspaceFolder}/build",
     "cmake.exportCompileCommandsFile": true,
     "cmake.ignoreCMakeListsMissing": true,
     
-    // Configuration C/C++ pour IntelliSense
+    // IntelliSense and C++ settings
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.intelliSenseEngine": "Tag Parser",
     "C_Cpp.autoAddFileAssociations": false,
     "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
     "C_Cpp.default.includePath": [

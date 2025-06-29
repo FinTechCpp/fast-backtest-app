@@ -1,14 +1,14 @@
-# Ajouter les sources de la bibliothèque
+# Add src files to the library
 file(GLOB SOURCES "src/*.cpp")
 
-# Créer la bibliothèque
+# Create the library
 add_library(backtestEngine STATIC ${SOURCES})
 
-# Configurer les chemins d'include
+# Configure the include paths
 target_include_directories(backtestEngine 
     PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# Ajouter spdlog pour les headers qui l'utilisent
+# Add spdlog for headers that use it
 target_link_libraries(backtestEngine PUBLIC spdlog::spdlog)

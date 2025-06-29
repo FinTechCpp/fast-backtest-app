@@ -6,14 +6,14 @@
 #include "dialog/indicator_dialog.h"
 
 /**
- * @brief Dialogue modal pour modifier les paramètres d'un indicateur ATR (Average True Range)
+ * @brief Modal dialog to modify the parameters of an ATR (Average True Range) indicator
  */
 class ATRDialog : public IndicatorDialog
 {
     Q_OBJECT
     
 public:
-    // Construction pour ATR
+    // Constructor for ATR
     ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const ATRInstance& atr);
     ~ATRDialog() override;
     
@@ -24,7 +24,7 @@ private slots:
     void onColorButtonClicked();
     
 protected:
-    // Méthodes virtuelles de IndicatorDialog
+    //Virtual methods from IndicatorDialog
     void setupUI() override;
     void connectSignals() override;
     void applyChanges() override;
@@ -32,11 +32,11 @@ protected:
 
 private:
     int m_atrId;
-    ATRInstance m_originalAtr;  // Pour restaurer en cas d'annulation
-    ATRInstance m_currentAtr;   // Pour les modifications en cours
-    
+    ATRInstance m_originalAtr;  // For restoring in case of cancellation
+    ATRInstance m_currentAtr;   // For ongoing modifications
+
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;
-    QCheckBox* m_useLogScaleCheckBox;  // Nouveau contrôle
+    QCheckBox* m_useLogScaleCheckBox;  // New control
     QPushButton* m_colorButton;
 };

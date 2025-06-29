@@ -1,461 +1,368 @@
-# IG Trading Bot
+# Fast Backtest App
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.12+-green.svg)](https://python.org)
 [![C++](https://img.shields.io/badge/c++-17-blue.svg)](https://isocpp.org)
 [![Qt](https://img.shields.io/badge/qt-6.8.3-41CD52.svg)](https://qt.io)
 [![CMake](https://img.shields.io/badge/cmake-3.14+-064F8C.svg)](https://cmake.org)
 
-## 🚀 Présentation
+## Overview
 
-**IG Trading Bot** est une plateforme complète de trading algorithmique conçue pour l'écosystème IG Markets. Ce projet hybride combine la flexibilité du Python pour le trading en temps réel avec la puissance du C++ pour les backtests haute performance.
+**Fast Backtest App** is a Qt-based trading backtesting application designed to be as fast as possible while providing a rich backtesting results analysis experience. For that, it leverages a multi-threaded C++ engine for computations and a user-friendly Qt interface for visualizations. Thanks to Qt, this application is cross-platform and can run on Windows, macOS, and Linux.
 
-### ✨ Points forts du projet
+### ✨ Project Highlights
 
-- **🔄 Architecture hybride** : Python pour l'API trading, C++ pour le calcul intensif
-- **📊 Interface graphique avancée** : Application Qt native avec visualisations ChartDirector
-- **⚡ Performance optimisée** : Moteur de backtest C++ multi-threadé
-- **🎯 Stratégies modulaires** : Framework extensible pour développer vos propres algorithmes
-- **📈 Analyse complète** : Métriques avancées, graphiques interactifs et historiques détaillés
-- **🛡️ Gestion des risques** : Contrôles intégrés et modes démo/live
+- **Optimized performance**: Multi-threaded C++ backtest engine
+- **Advanced GUI**: Native Qt application with ChartDirector visualizations
+- **Modular strategies**: Extensible framework to develop your own algorithms
+- **Comprehensive analysis**: Advanced metrics, interactive charts, and detailed histories
 
-### 🎯 Fonctionnalités principales
+### 🎯 Main Features
 
-#### Trading automatisé
-- ✅ Connexion native à l'API IG Markets
-- ✅ Exécution en temps réel avec gestion des ordres
-- ✅ Surveillance continue des positions
-- ✅ Mode démo pour tests sécurisés
+#### High-performance backtesting
+- C++ engine optimized for speed
+- Qt GUI with advanced visualizations
+- Complete metrics (Sharpe, Sortino, drawdown, etc.)
+- Trade analysis and equity curves
 
-#### Backtesting haute performance
-- ✅ Moteur C++ optimisé pour la vitesse
-- ✅ Interface graphique Qt avec visualisations avancées
-- ✅ Métriques complètes (Sharpe, Sortino, drawdown, etc.)
-- ✅ Analyse des trades et courbes d'équité
+#### Monitoring and analysis
+- Detailed logging and histories
+- Jupyter Notebooks for data fetching, processing, and analysis
+- Export results and reports
 
-#### Stratégies et indicateurs
-- ✅ Stratégies de suivi de tendance prêtes à l'emploi
-- ✅ Indicateurs techniques : RSI, EMA, Stochastique
-- ✅ Framework extensible pour stratégies personnalisées
-- ✅ Pont Python-C++ pour maximum de flexibilité
+### 🏗️ Technical Architecture
 
-#### Monitoring et analyse
-- ✅ Interface web pour surveillance en temps réel
-- ✅ Logging détaillé et historiques
-- ✅ Notebooks Jupyter pour analyse de données
-- ✅ Export des résultats et rapports
+The project adopts a modular architecture for better code organization and performance:
 
-### 🏗️ Architecture technique
+- **Frontend**: Native Qt6 interface for a smooth user experience
+- **Computation engine**: C++17 for backtests and intensive calculations
+- **Visualization**: ChartDirector for professional and huge data quantity charts
+- **Build system**: Cross-platform CMake with automation scripts
 
-Le projet adopte une architecture modulaire permettant d'exploiter les forces de chaque langage :
+This approach ensures both fast execution for backtests and flexibility for strategy development.
 
-- **Frontend** : Interface Qt6 native pour une expérience utilisateur fluide
-- **Backend Trading** : Python avec intégration API IG Markets
-- **Moteur de calcul** : C++17 pour les backtests et calculs intensifs
-- **Visualisation** : ChartDirector pour des graphiques professionnels
-- **Build system** : CMake cross-platform avec scripts d'automatisation
+### 📸 Interface Preview
 
-Cette approche garantit à la fois la rapidité d'exécution pour les backtests et la flexibilité pour le développement de stratégies.
+![Application interface](images/app_example.png)
 
-### 📸 Aperçu de l'interface
-
-![Interface de l'application](images/app_example.png)
-
-*Interface graphique Qt de l'application de backtesting avec visualisations ChartDirector*
+*Qt graphical interface of the backtesting application with ChartDirector visualizations*
 
 ---
 
 ## Installation
 
-### 1. Cloner le dépôt
+### 1. Clone the repository
 
-Clonez le dépôt et placez-vous à la racine du projet :
+Clone the repository and go to the project root:
 
 ```bash
 git clone https://github.com/hugoMiCode/fast-backtest-app
 cd fast-backtest-app
+# initialize submodules
+git submodule init
+git submodule update
 ```
 
-### 2. Installer les dépendances
+## Usage
 
-Installez les dépendances nécessaires à partir du fichier `requirements.txt` :
+# Build and Run Guide for fast-backtest-app
 
-```bash
-pip install -r requirements.txt
-```
+This guide explains how to build, run, and debug the fast-backtest-app project step by step, from manual methods to more advanced configurations.
 
-L’installation en mode développement vous permet de modifier le code source et de voir immédiatement les modifications sans avoir à réinstaller le package.
+## Prerequisites
 
-### 3. Configurer vos identifiants IG
-
-Copiez le fichier `.env-example` en `.env` et renseignez-y vos identifiants et configurations :
-
-```bash
-cp .env-example .env
-```
-
-Ouvrez ensuite `.env` dans votre éditeur et ajoutez vos informations.
-
----
-
-## Structure du projet
-
-```
-fast-backtest-app/
-├── build_and_run.sh*
-├── ChartDirector/
-│   ├── CMakeLists.txt
-│   ├── cppdemo/
-│   ├── include/
-│   ├── lib/
-│   ├── LICENSE.TXT
-│   ├── qtdemo/
-│   └── README.TXT
-├── CMakeLists.txt
-├── cpp_adaptator/
-│   ├── CMakeLists.txt
-│   ├── include/
-│   └── src/
-├── cpp_backtestApp/
-│   ├── backtest_config.ini
-│   ├── CMakeLists.txt
-│   ├── icons/
-│   ├── include/
-│   ├── qresources.qrc
-│   └── src/
-├── cpp_backtestEngine/
-│   ├── CMakeLists.txt
-│   ├── include/
-│   └── src/
-├── cpp_strategies/
-│   ├── CMakeLists.txt
-│   ├── include/
-│   ├── pyproject.toml
-│   ├── setup.py
-│   └── src/
-├── Doxyfile
-├── igtrader/
-│   └── WrapperIGAPI/
-├── live_interface/
-│   ├── api_server.py
-│   ├── ig_candle_service.py
-│   └── static/
-├── logs/
-│   └── backtest/
-├── marketData/
-├── Notebooks/
-│   ├── Backtest.ipynb
-│   ├── Helpers.py
-│   ├── IBKR_API.ipynb
-│   ├── PolygonAPI.ipynb
-│   └── __pycache__/
-├── pyproject.toml
-├── README.md
-├── requirements.txt
-├── scripts/
-│   ├── cmd_app.py
-│   ├── live_Display_IG.py
-│   └── liveIG.py
-├── setup.py
-└── VERSION
-```
-
-### Description des composants
-
-#### Composants Python
-- **`igtrader/`** : Interface avec l'API IG Markets
-- **`live_interface/`** : Serveur API et services de données en temps réel
-- **`scripts/`** : Points d'entrée pour différents modes d'exécution
-- **`Notebooks/`** : Analyse et développement de stratégies
-
-#### Composants C++
-- **`cpp_backtestEngine/`** : Moteur de backtest haute performance
-- **`cpp_backtestApp/`** : Interface graphique Qt pour les backtests
-- **`cpp_strategies/`** : Stratégies de trading en C++
-- **`cpp_adaptator/`** : Pont entre Python et C++
-
-#### Dépendances externes
-- **`ChartDirector/`** : Bibliothèque de graphiques (licence commerciale)
-
----
-
-## Utilisation
-
-### En mode live
-
-Pour exécuter le bot en mode live :
-
-```bash
-python scripts/liveIG.py
-```
-
-# Guide de compilation et d'exécution du projet fast-backtest-app
-
-Ce guide explique comment compiler, exécuter et déboguer le projet fast-backtest-app de manière progressive, en partant des méthodes manuelles jusqu'aux configurations plus avancées.
-
-## Prérequis
-
-- CMake 3.14 ou supérieur
-- GCC/G++ avec support C++17
+- CMake 3.14 or higher
+- GCC/G++ with C++17 support
 - Qt6.8.3 (Core, Widgets, Charts, Network)
-- VS Code (pour le débogage)
-- Extensions VS Code: C/C++, CMake Tools
+- VS Code (for debugging)
+- VS Code Extensions: C/C++, CMake Tools
 
-## 🔧 Installation des prérequis (Linux)
+## 🔧 Prerequisite Installation (Linux)
 
-### Étape 1: Installation des outils de compilation
+### Step 1: Install build tools
 
-Installez les outils de développement essentiels :
+Install essential development tools:
 
 ```bash
-# Mise à jour des paquets
+# Update packages
 sudo apt update
 
-# Installation des outils de compilation
+# Install build tools
 sudo apt install -y build-essential git curl wget
 
-# Installation des bibliothèques graphiques nécessaires pour Qt
+# Install required graphics libraries for Qt
 sudo apt install -y libgl1-mesa-dev libglu1-mesa-dev
 ```
 
-### Étape 2: Installation de CMake 4.0.3
+### Step 2: Install CMake 4.0.3
 
-Téléchargez et installez CMake manuellement pour avoir une version récente :
+Download and install CMake manually to get a recent version:
 
 ```bash
-# Télécharger CMake 4.0.3
+# Download CMake 4.0.3
 cd ~
 wget https://github.com/Kitware/CMake/releases/download/v4.0.3/cmake-4.0.3-linux-x86_64.tar.gz
 
-# Extraire l'archive
+# Extract the archive
 tar -xzf cmake-4.0.3-linux-x86_64.tar.gz
 
-# Ajouter CMake au PATH (temporaire)
+# Add CMake to PATH (temporary)
 export PATH=$HOME/cmake-4.0.3-linux-x86_64/bin:$PATH
 
-# Vérifier l'installation
+# Check installation
 cmake --version
 ```
 
-### Étape 3: Installation de Qt 6.8.3
+### Step 3: Install Qt 6.8.3
 
-Téléchargez et installez Qt depuis le site officiel :
+Download and install Qt from the official website:
 
 ```bash
-# Télécharger Qt Online Installer
+# Download Qt Online Installer
 cd ~
 wget https://d13lb3tujbc8s0.cloudfront.net/onlineinstallers/qt-unified-linux-x64-4.6.1-online.run
 
-# Rendre l'installeur exécutable
+# Make the installer executable
 chmod +x qt-unified-linux-x64-4.6.1-online.run
 
-# Lancer l'installeur
+# Run the installer
 ./qt-unified-linux-x64-4.6.1-online.run
 ```
 
-**Instructions pour l'installeur Qt :**
-1. Créez un compte Qt (gratuit pour usage personnel)
-2. Sélectionnez **Qt 6.8.3** 
-3. Cochez **Desktop gcc 64-bit**
-4. Installez dans le répertoire par défaut : `~/Qt/`
+**Qt installer instructions:**
+1. Create a Qt account (free for personal use)
+2. Select **Qt 6.8.3**
+3. Check **Desktop gcc 64-bit**
+4. Install in the default directory: `~/Qt/`
 
-### Étape 4: Installation de spdlog v1.15.3
+### Step 5: Permanent PATH configuration
 
-Installez la dernière version de spdlog depuis les sources GitHub :
-
-```bash
-# Télécharger et extraire spdlog v1.15.3
-cd /tmp
-wget https://github.com/gabime/spdlog/archive/refs/tags/v1.15.3.tar.gz
-tar -xzf v1.15.3.tar.gz
-cd spdlog-1.15.3
-
-# Compiler et installer spdlog
-mkdir build && cd build
-cmake .. -DSPDLOG_BUILD_PIC=ON -DBUILD_SHARED_LIBS=ON
-make -j$(nproc)
-sudo make install
-sudo ldconfig
-
-# Nettoyer les fichiers temporaires
-cd /tmp && rm -rf spdlog-1.15.3 v1.15.3.tar.gz
-```
-
-### Étape 5: Configuration permanente du PATH
-
-Ajoutez CMake et Qt à votre PATH de manière permanente :
+Add CMake and Qt to your PATH permanently:
 
 ```bash
-# Ajouter au fichier .bashrc
-echo '# Ajouter cmake et Qt au PATH' >> ~/.bashrc
+# Add to .bashrc
+echo '# Add cmake and Qt to PATH' >> ~/.bashrc
 echo 'export PATH=$HOME/cmake-4.0.3-linux-x86_64/bin:$PATH' >> ~/.bashrc
 echo 'export PATH=$HOME/Qt/6.8.3/gcc_64/bin:$PATH' >> ~/.bashrc
 echo 'export CMAKE_PREFIX_PATH=$HOME/Qt/6.8.3/gcc_64:$CMAKE_PREFIX_PATH' >> ~/.bashrc
 
-# Recharger la configuration
+# Reload configuration
 source ~/.bashrc
 ```
 
-### Étape 6: Vérification de l'installation
+### Step 6: Verify installation
 
-Vérifiez que tous les outils sont correctement installés :
+Check that all tools are correctly installed:
 
 ```bash
-# Vérifier CMake
+# Check CMake
 cmake --version
 
-# Vérifier Qt
+# Check Qt
 qmake --version
 
-# Vérifier spdlog
-pkg-config --modversion spdlog
-
-# Vérifier les compilateurs
+# Check compilers
 gcc --version
 g++ --version
 ```
 
-**Résultats attendus :**
+**Expected results:**
 - CMake version 4.0.3
 - Qt version 6.8.3
-- spdlog version 1.15.3
-- GCC/G++ version 13.x ou supérieure
+- GCC/G++ version 13.x or higher
 
-### Étape 7: Test de compilation
+### Step 7: Test build
 
-Testez la compilation du projet :
+Test building the project:
 
 ```bash
-# Se placer dans le projet
+# Go to the project directory
 cd ~/fast-backtest-app
 
-# Créer le dossier de build
+# Create build directory
 mkdir -p build && cd build
 
-# Configurer avec CMake
+# Configure with CMake
 cmake ..
 
-# Compiler
+# Build
 make -j$(nproc)
 ```
 
-Si tout fonctionne correctement, vous devriez voir :
+If everything works, you should see:
 ```
--- Qt6 détecté automatiquement: /home/username/Qt/6.8.3/gcc_64
--- Configuration terminée avec succès
+-- Qt6 automatically detected: /home/username/Qt/6.8.3/gcc_64
+-- Configuration completed successfully
 -- Build files have been written to: /path/to/build
 [100%] Built target backtestapp
 ```
 
 ---
 
-## Méthode 1: Compilation manuelle avec CMake
+## Building and Running the Project
 
-Cette méthode est la plus basique et fonctionne sur tout système compatible:
+### Method 1: Manual build with CMake
+
+This is the most basic method and works on any compatible system:
 
 ```bash
-# Créer le dossier de build
+# Create build directory
 mkdir -p build
 cd build
 
-# Configurer le projet - mode Release (par défaut)
+# Configure project - Release mode (default)
 cmake ..
 
-# Compiler le projet
-make -j$(nproc)  # Utilise tous les cœurs disponibles
+# Build project
+make -j$(nproc)  # Uses all available cores
 
-# Exécuter l'application
+# Run the application
 ./cpp_backtestApp/backtestapp
 ```
 
-### Compilation en mode Debug
+#### Debug build
 
 ```bash
-# Dans le dossier build
+# In the build directory
 cmake -DBUILD_WITH_DEBUG=ON ..
 make -j$(nproc)
 ```
 
-## Méthode 2: Utilisation du script **build_and_run.sh**
+### Method 2: Using the **build_and_run.sh** script
 
-Le script automatise le processus de compilation et d'exécution:
+The script automates the build and run process:
 
 ```bash
-# Compilation standard et exécution
+# Standard build and run
 ./build_and_run.sh
 
-# Compilation en mode debug et exécution
+# Debug build and run
 ./build_and_run.sh --debug
 
-# Nettoyage du dossier build avant compilation
+# Clean build directory before build
 ./build_and_run.sh --clean
 
-# Compilation sans exécution
+# Build without running
 ./build_and_run.sh --no-run
 ```
 
-## Méthode 3: Configuration VS Code pour le débogage
+### Method 3: VS Code configuration for debugging
 
-Utiliser les fichiers `./vscode/launch.json` et `./vscode/tasks.json` 
+Use the files `./vscode/launch.json` and `./vscode/tasks.json`
 
-Choisir son système d'exploitation et le mode (Debug/Release) dans l'onglet run/debug de VSCode
+Choose your OS and mode (Debug/Release) in the VSCode run/debug tab
 
-### Comment utiliser le débogueur
+#### How to use the debugger
 
-1. Placez des points d'arrêt en cliquant dans la marge à gauche des numéros de ligne
-2. Appuyez sur F5 pour lancer le débogueur
-3. Utilisez les contrôles de débogage:
-   - F10: Pas à pas principal (step over)
-   - F11: Pas à pas détaillé (step into)
-   - Shift+F11: Sortir de la fonction (step out)
-   - F5: Continuer l'exécution
+1. Set breakpoints by clicking in the margin to the left of the line numbers
+2. Press F5 to start the debugger
+3. Use the debug controls:
+   - F10: Step over
+   - F11: Step into
+   - Shift+F11: Step out
+   - F5: Continue execution
 
-## Points d'entrée du projet
+### Project entry points
 
-Voici un résumé des différentes façons de compiler et exécuter le projet:
-1. **Compilation et exécution manuelles**:
+Here is a summary of the different ways to build and run the project:
+1. **Manual build and run**:
    
-   **Linux / macOS :**
+   **Linux / macOS:**
    ```bash
    cmake ..
    make -j$(nproc)
    ./cpp_backtestApp/backtestapp
    ```
    
-   **Windows :**
+   **Windows:**
    ```bash
    cmake ..
    cmake --build . --config Release --parallel
    .\cpp_backtestApp\backtestapp.exe
    ```
 
-2. **Script automatisé** (Linux/macOS uniquement):
+2. **Automated script** (Linux/macOS only):
    ```bash
    ./build_and_run.sh
    ```
 
-3. **Compilation avec VS Code**:
-   - Ctrl+Shift+B: Lance la tâche de compilation par défaut (build-debug)
-   - Terminal > Run Task > build-release: Pour une version optimisée
+3. **Build with VS Code**:
+   - Ctrl+Shift+B: Launches the default build task (build-debug)
+   - Terminal > Run Task > build-release: For an optimized version
 
-4. **Débogage avec VS Code**:
-   - F5: Lance le débogueur avec les points d'arrêt définis
+4. **Debug with VS Code**:
+   - F5: Launches the debugger with defined breakpoints
 
-## Remarques importantes
+## Project Structure
+
+```
+fast-backtest-app/
+├── backtestAdapter/
+│   ├── CMakeLists.txt
+│   ├── include/
+│   └── src/
+├── backtestApp/
+│   ├── CMakeLists.txt
+│   ├── icons/
+│   ├── include/
+│   ├── qresources.qrc
+│   └── src/
+├── backtestEngine/
+│   ├── CMakeLists.txt
+│   ├── include/
+│   └── src/
+├── build_and_run.sh*
+├── CMakeLists.txt
+├── Doxyfile
+├── images/
+├── marketData/
+├── Notebooks/
+│   ├── Backtest.ipynb
+│   ├── Helpers.py
+│   ├── IBKR_API.ipynb
+│   └── PolygonAPI.ipynb
+├── profile_app.sh*
+├── README.md
+├── ThirdParty/
+│   ├── ChartDirector/
+│   ├── spdlog/
+│   └── Strategies/
+└── VERSION
+```
+
+### Component Description
+
+#### Python Components
+- **`Notebooks/`**: Strategy analysis and development
+
+#### C++ Components
+- **`backtestEngine/`**: High-performance backtest engine
+- **`backtestApp/`**: Qt GUI for backtests
+- **`Strategies/`**: Trading strategies in C++
+- **`backtestAdapter/`**: Specific connections to use strategies in backtest mode
+- **`marketData/`**: Historical market data files for backtesting
+- **`Notebooks/`**: Jupyter Notebooks for data fetching, processing, and analysis
+
+#### External Dependencies
+- **`ChartDirector/`**: Charting library (commercial license)
+- **`spdlog/`**: Logging library for ultra-fast and modern logging
+
+---
+
+## Important notes
 
 
-### Contributeurs
+### Contributors
 
-- **[hugoMiCode](https://github.com/hugoMiCode)** - Co-créateur et mainteneur principal / spé&cialiste architecture du code
-- **[maks7d](https://github.com/maks7d)** - Co-créateur / branleur
-- **[alexandre5-0](https://github.com/alexandre5-0/alexandre5-0)** - Bêta testeur / expert trading et concepteur stratégie
-#### Comment contribuer
+- **[hugoMiCode](https://github.com/hugoMiCode)** - Co-creator and main maintainer / code architecture specialist
+- **[maks7d](https://github.com/maks7d)** - Co-creator / Developer 
+- **[alexandre5-0](https://github.com/alexandre5-0/alexandre5-0)** - Beta tester / trading expert and strategy designer
+#### How to contribute
 
-1. Forkez le projet
-2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`)
-3. Commitez vos changements (`git commit -m 'Add some AmazingFeature'`)
-4. Poussez vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrez une Pull Request
+1. Fork the project
+2. Create a branch for your feature (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-Les contributions de tous types sont les bienvenues : corrections de bugs, nouvelles fonctionnalités, amélioration de la documentation, tests, etc.
+All types of contributions are welcome: bug fixes, new features, documentation improvements, tests, etc.
 

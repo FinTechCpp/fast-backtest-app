@@ -4,3 +4,4 @@
 [submodule "ThirdParty/Strategies"]
 	path = ThirdParty/Strategies
 	url = https://github.com/FinTechCpp/Strategies.git
+	branch = main

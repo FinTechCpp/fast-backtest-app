@@ -419,6 +419,14 @@ std::shared_ptr<be::Strategy> BacktestWorker::createStrategy(
     baseConfig.take_profit_atr_multiplier = params.value("tp_atr_multiple", 3.0).toDouble();
     baseConfig.risk_percentage = params.value("risk_per_trade_pct", 1.0).toDouble();
     baseConfig.enable_logging = params.value("enable_logging", true).toBool();
+    
+    // Daily max loss parameters
+    baseConfig.use_daily_max_loss = params.value("use_daily_max_loss", false).toBool();
+    baseConfig.daily_max_loss_percentage = params.value("daily_max_loss_percentage", 2.0).toDouble();
+    
+    // Daily max profit parameters
+    baseConfig.use_daily_max_profit = params.value("use_daily_max_profit", false).toBool();
+    baseConfig.daily_max_profit_percentage = params.value("daily_max_profit_percentage", 5.0).toDouble();
 
     
     // Si c'est BuyHeikinGreen, créer un adaptateur spécifique

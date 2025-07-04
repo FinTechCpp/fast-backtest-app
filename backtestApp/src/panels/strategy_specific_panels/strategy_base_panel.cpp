@@ -192,6 +192,20 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setEnabled(false);
     riskLayout->addRow(new QLabel("Perte max journalière:"), m_widgets["daily_max_loss_percentage"]);
     
+    m_widgets["use_daily_max_profit"] = new QCheckBox("Profit max journalier");
+    QObject::connect(static_cast<QCheckBox*>(m_widgets["use_daily_max_profit"]), 
+                     &QCheckBox::toggled,
+                     this, &StrategyBasePanel::_toggleDailyMaxProfitControls);
+    riskLayout->addRow(m_widgets["use_daily_max_profit"]);
+    
+    m_widgets["daily_max_profit_percentage"] = new QDoubleSpinBox();
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setDecimals(2);
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setRange(0.1, 100.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setValue(5.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setSuffix("%");
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setEnabled(false);
+    riskLayout->addRow(new QLabel("Profit max journalier:"), m_widgets["daily_max_profit_percentage"]);
+    
     m_widgets["use_break_even"] = new QCheckBox("Activer Break Even");
     QObject::connect(static_cast<QCheckBox*>(m_widgets["use_break_even"]), 
                     &QCheckBox::toggled, 
@@ -387,6 +401,13 @@ void StrategyBasePanel::_toggleDailyMaxLossControls(bool checked)
 {
     if (m_widgets.contains("daily_max_loss_percentage")) {
         m_widgets["daily_max_loss_percentage"]->setEnabled(checked);
+    }
+}
+
+void StrategyBasePanel::_toggleDailyMaxProfitControls(bool checked)
+{
+    if (m_widgets.contains("daily_max_profit_percentage")) {
+        m_widgets["daily_max_profit_percentage"]->setEnabled(checked);
     }
 }
 

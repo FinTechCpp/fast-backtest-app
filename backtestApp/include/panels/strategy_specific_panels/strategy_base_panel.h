@@ -65,6 +65,7 @@ private slots:
     void _toggleRiskControls(bool checked);
     void _toggleBreakEvenControls(bool checked);
     void _toggleDailyMaxLossControls(bool checked);
+    void _toggleDailyMaxProfitControls(bool checked);
     void _toggleSlMethod(int index);
     void _toggleTpMethod(int index);
     void _updateAtrPeriodStatus();

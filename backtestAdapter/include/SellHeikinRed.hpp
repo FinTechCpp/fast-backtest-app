@@ -128,11 +128,17 @@ public:
         candle.ohlc.close = currentCandle.close;
 
         // Fill the position information
-        // be::Position position = getPosition();
-        // candle.position.in_position = position ? true : false;
-        // candle.position.position_pl_pct = position ? position.plPercent() : 0.0;
-        // // candle.position.entry_price = position ? position.entryPrice() : 0.0;
-        // candle.position.position_size = position ? position.size() : 0.0;
+        const std::vector<std::shared_ptr<be::Trade>>& trades = _broker->trades();
+        std::shared_ptr<be::Trade> current_trade = trades.empty() ? nullptr : trades.back();
+        
+        // Populate position info for break-even functionality
+        if (current_trade) {
+            candle.position.entry_price = current_trade->entryPrice();
+            // Calculate take profit price from the trade's TP order
+            if (current_trade->tpOrder()) {
+                candle.position.take_profit_price = current_trade->tpOrder()->limit();
+            }
+        }
 
         // Add the P&L of the last closed trade if there is one
         candle.position.closed_trade_pnl = 0.0;

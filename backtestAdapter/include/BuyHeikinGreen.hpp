@@ -115,7 +115,16 @@ public:
 
         // Fill the position information
         const std::vector<std::shared_ptr<be::Trade>>& trades = _broker->trades();
-        std::shared_ptr<be::Trade> last_trade = trades.empty() ? nullptr : trades.back();
+        std::shared_ptr<be::Trade> current_trade = trades.empty() ? nullptr : trades.back();
+        
+        // Populate position info for break-even functionality
+        if (current_trade) {
+            candle.position.entry_price = current_trade->entryPrice();
+            // Calculate take profit price from the trade's TP order
+            if (current_trade->tpOrder()) {
+                candle.position.take_profit_price = current_trade->tpOrder()->limit();
+            }
+        }
 
         // Get a reference to closedTrades instead of a copy
         const auto& closedTrades = _broker->closedTrades();
@@ -142,7 +151,7 @@ public:
             }
         }
         else if (signal->action == "MOVE_SL") {
-            last_trade->sl(signal->new_sl);
+            current_trade->sl(signal->new_sl);
         }
         else if (trades.empty() && signal->action == "BUY") {
             // Process a buy signal

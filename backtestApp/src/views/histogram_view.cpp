@@ -69,7 +69,6 @@ void InteractiveChartView::mouseMoveEvent(QMouseEvent* event)
 {
     QChartView::mouseMoveEvent(event);
     
-    // CORRECTION Qt 6: S'assurer que les éléments crosshair existent
     if (!m_horizontalLine) {
         setupCrosshairElements();
     }
@@ -331,7 +330,6 @@ void HistogramView::updateData(BacktestResults* results)
 void HistogramView::clear()
 {
     if (m_chart) {
-        // CORRECTION Qt 6: Nettoyage sécurisé
         const auto allSeries = m_chart->series();
         for (auto series : allSeries) {
             m_chart->removeSeries(series);
@@ -366,7 +364,8 @@ void HistogramView::updateHistogram()
     
     // Récupérer l'unité de temps sélectionnée
     QString timeUnit = m_timeUnitCombo->currentText();
-    
+    qDebug() << "Mise à jour de l'histogramme avec l'unité de temps sélectionnée:" << timeUnit;
+
     // Regrouper les données par unité de temps
     GroupedData groupedData = groupDataByTimeUnit(trades, timeUnit);
     

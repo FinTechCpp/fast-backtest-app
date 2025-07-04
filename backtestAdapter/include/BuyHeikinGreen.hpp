@@ -117,12 +117,6 @@ public:
         const std::vector<std::shared_ptr<be::Trade>>& trades = _broker->trades();
         std::shared_ptr<be::Trade> last_trade = trades.empty() ? nullptr : trades.back();
 
-        candle.position.in_position = last_trade ? true : false;
-        if (candle.position.in_position) {
-            candle.position.entry_price = last_trade->entryPrice();
-            candle.position.take_profit_price = last_trade->tp();
-        }
-
         // Get a reference to closedTrades instead of a copy
         const auto& closedTrades = _broker->closedTrades();
         size_t currentTradeCount = closedTrades.size();

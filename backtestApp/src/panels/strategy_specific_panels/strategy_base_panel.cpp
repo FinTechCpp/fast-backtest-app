@@ -26,6 +26,7 @@ void StrategyBasePanel::initialize()
     static_cast<QSpinBox*>(m_widgets["atr_period"])->setRange(1, 1000);
     static_cast<QSpinBox*>(m_widgets["atr_period"])->setValue(14);
     static_cast<QSpinBox*>(m_widgets["atr_period"])->setEnabled(false);
+    m_widgets["atr_period"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
     atrLayout->addRow(new QLabel("Période ATR:"), m_widgets["atr_period"]);
     slTpLayout->addLayout(atrLayout);
     
@@ -59,6 +60,7 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setSingleStep(0.1);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setValue(2.0);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setEnabled(false);
+    m_widgets["sl_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     slLayout->addRow(new QLabel("Multiplicateur ATR SL:"), m_widgets["sl_atr_multiplier"]);
     
     // Paramètres Min/Max SL
@@ -66,6 +68,7 @@ void StrategyBasePanel::initialize()
     static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setRange(1, 1000);
     static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setValue(5);
     static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setEnabled(false);
+    m_widgets["sl_minmax_periods"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
     slLayout->addRow(new QLabel("Périodes Min/Max:"), m_widgets["sl_minmax_periods"]);
     
     m_widgets["sl_minmax_delta"] = new QDoubleSpinBox();
@@ -73,6 +76,7 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setRange(0.1, 1000.0);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setValue(5.0);
     static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setEnabled(false);
+    m_widgets["sl_minmax_delta"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     slLayout->addRow(new QLabel("Delta Min/Max:"), m_widgets["sl_minmax_delta"]);
     
     // SL minimum
@@ -113,6 +117,7 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setSingleStep(0.1);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setValue(3.0);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setEnabled(false);
+    m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     tpLayout->addRow(new QLabel("Multiplicateur ATR TP:"), m_widgets["tp_atr_multiplier"]);
     
     // TP minimum
@@ -176,6 +181,7 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setValue(1.0);
     static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setSuffix("%");
     static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setEnabled(false);
+    m_widgets["risk_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     riskLayout->addRow(new QLabel("Risque par trade:"), m_widgets["risk_percentage"]);
     
     m_widgets["use_daily_max_loss"] = new QCheckBox("Perte max journalière");
@@ -190,6 +196,7 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setValue(2.0);
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setSuffix("%");
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setEnabled(false);
+    m_widgets["daily_max_loss_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     riskLayout->addRow(new QLabel("Perte max journalière:"), m_widgets["daily_max_loss_percentage"]);
     
     m_widgets["use_daily_max_profit"] = new QCheckBox("Profit max journalier");
@@ -204,6 +211,7 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setValue(5.0);
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setSuffix("%");
     static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setEnabled(false);
+    m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     riskLayout->addRow(new QLabel("Profit max journalier:"), m_widgets["daily_max_profit_percentage"]);
     
     m_widgets["use_break_even"] = new QCheckBox("Activer Break Even");
@@ -218,6 +226,7 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setSingleStep(0.05);
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setValue(0.7);
     static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setEnabled(false);
+    m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     riskLayout->addRow(new QLabel("Seuil Break Even:"), m_widgets["break_even_threshold"]);
 
     riskGroup->setLayout(riskLayout);
@@ -352,15 +361,31 @@ void StrategyBasePanel::_toggleSlMethod(int index)
     
     if (m_widgets.contains("stop_loss_distance")) {
         m_widgets["stop_loss_distance"]->setEnabled(isFixed);
+        if (isFixed)
+            m_widgets["stop_loss_distance"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["stop_loss_distance"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     if (m_widgets.contains("sl_atr_multiplier")) {
         m_widgets["sl_atr_multiplier"]->setEnabled(isAtr);
+        if (isAtr)
+            m_widgets["sl_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["sl_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     if (m_widgets.contains("sl_minmax_periods")) {
         m_widgets["sl_minmax_periods"]->setEnabled(isMinMax);
+        if (isMinMax)
+            m_widgets["sl_minmax_periods"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["sl_minmax_periods"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     if (m_widgets.contains("sl_minmax_delta")) {
         m_widgets["sl_minmax_delta"]->setEnabled(isMinMax);
+        if (isMinMax)
+            m_widgets["sl_minmax_delta"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["sl_minmax_delta"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     
     // Mettre à jour le statut de la période ATR
@@ -374,9 +399,17 @@ void StrategyBasePanel::_toggleTpMethod(int index)
     
     if (m_widgets.contains("take_profit_distance")) {
         m_widgets["take_profit_distance"]->setEnabled(isFixed);
+        if (isFixed)
+            m_widgets["take_profit_distance"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["take_profit_distance"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     if (m_widgets.contains("tp_atr_multiplier")) {
         m_widgets["tp_atr_multiplier"]->setEnabled(isAtr);
+        if (isAtr)
+            m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     
     // Mettre à jour le statut de la période ATR
@@ -387,6 +420,10 @@ void StrategyBasePanel::_toggleRiskControls(bool checked)
 {
     if (m_widgets.contains("risk_percentage")) {
         m_widgets["risk_percentage"]->setEnabled(checked);
+        if (checked)
+            m_widgets["risk_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["risk_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
 }
 
@@ -394,6 +431,10 @@ void StrategyBasePanel::_toggleBreakEvenControls(bool checked)
 {
     if (m_widgets.contains("break_even_threshold")) {
         m_widgets["break_even_threshold"]->setEnabled(checked);
+        if (checked)
+            m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
 }
 
@@ -401,6 +442,10 @@ void StrategyBasePanel::_toggleDailyMaxLossControls(bool checked)
 {
     if (m_widgets.contains("daily_max_loss_percentage")) {
         m_widgets["daily_max_loss_percentage"]->setEnabled(checked);
+        if (checked)
+            m_widgets["daily_max_loss_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else
+            m_widgets["daily_max_loss_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
 }
 
@@ -408,6 +453,10 @@ void StrategyBasePanel::_toggleDailyMaxProfitControls(bool checked)
 {
     if (m_widgets.contains("daily_max_profit_percentage")) {
         m_widgets["daily_max_profit_percentage"]->setEnabled(checked);
+        if (checked)
+            m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else
+            m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
 }
 
@@ -429,5 +478,9 @@ void StrategyBasePanel::_updateAtrPeriodStatus()
     
     if (m_widgets.contains("atr_period")) {
         m_widgets["atr_period"]->setEnabled(atrNeeded);
+        if (atrNeeded)
+            m_widgets["atr_period"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
+        else
+            m_widgets["atr_period"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
 }

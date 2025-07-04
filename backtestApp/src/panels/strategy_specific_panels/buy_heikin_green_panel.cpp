@@ -275,6 +275,10 @@ void BuyHeikinGreenPanel::_toggleWidgetGroup(const QStringList& widgets, bool en
     for (const QString& widgetName : widgets) {
         if (m_widgets.contains(widgetName)) {
             m_widgets[widgetName]->setEnabled(enabled);
+            if(enabled) 
+                m_widgets[widgetName]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
+             else 
+                m_widgets[widgetName]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
         }
     }
 }

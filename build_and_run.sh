@@ -33,10 +33,6 @@ do
         RUN_APP=0
         shift
         ;;
-        --cmd-app)
-        APP_NAME="ig_cmd_app"
-        shift
-        ;;
         --backtest-app)
         APP_NAME="backtestapp"
         shift
@@ -48,14 +44,11 @@ do
         echo "  --debug         Compiler en mode debug"
         echo "  --clean         Nettoyer le dossier build avant compilation"
         echo "  --no-run        Ne pas exécuter l'application après compilation"
-        echo "  --cmd-app       Compiler et exécuter l'application en ligne de commande IG"
         echo "  --backtest-app  Compiler et exécuter l'application de backtest (défaut)"
         echo "  --help, -h      Afficher cette aide"
         echo ""
         echo "Exemples:"
         echo "  $0                     # Compile et lance l'app de backtest"
-        echo "  $0 --cmd-app          # Compile et lance l'app IG en ligne de commande"
-        echo "  $0 --debug --cmd-app  # Compile en debug et lance l'app IG"
         echo "  $0 --clean --no-run   # Nettoie et compile sans lancer"
         exit 0
         ;;
@@ -101,18 +94,17 @@ cmake $CMAKE_ARGS .. || { show_error "Échec de la configuration CMake"; exit 1;
 
 # Compile the project
 show_step "Compiling project with all available cores..."
-make -j$(nproc) || { show_error "Compilation failed"; exit 1; }
+if command -v nproc &> /dev/null; then
+    CORES=$(nproc)
+else
+    CORES=$(sysctl -n hw.ncpu)
+fi
+make -j"$CORES" || { show_error "Compilation failed"; exit 1; }
 
 show_success "Compilation completed successfully!"
 
-# Create the path to the executable based on the selected application
-if [ "$APP_NAME" = "ig_cmd_app" ]; then
-    APP_PATH="./bin/ig_cmd_app"
-    APP_DISPLAY_NAME="IG Command Line App"
-else
-    APP_PATH="./backtestApp/backtestapp"
-    APP_DISPLAY_NAME="Backtest App"
-fi
+APP_PATH="./backtestApp/backtestapp"
+APP_DISPLAY_NAME="Backtest App"
 
 # Display a message on how to launch the application
 echo -e "${YELLOW}${BOLD}[INFO]${NC} Application path: ${BOLD}./build${APP_PATH:1}${NC}"

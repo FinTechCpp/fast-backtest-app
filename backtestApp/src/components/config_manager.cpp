@@ -3,6 +3,9 @@
 #include "panels/general_params_panel.h"
 #include "panels/strategy_specific_panels/strategy_base_panel.h"
 #include <QCoreApplication>
+#include <QStandardPaths>
+#include <QFileInfo>
+#include <QFile>
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
@@ -38,7 +41,7 @@ QString ConfigManager::getConfigFilePath() const
     QString exeDir = QCoreApplication::applicationDirPath();
     QDir currentDir(exeDir);
     
-    // Remonte dans l'arborescence pour trouver le dossier fast-backtest-app
+    // First, try the original development path logic
     QString projectRoot;
     do {
         QString currentPath = currentDir.absolutePath();
@@ -59,17 +62,53 @@ QString ConfigManager::getConfigFilePath() const
     } while (currentDir.cdUp());
     
     QString configDir;
+    QString configFile;
+    
+    // Development environment: project structure found
     if (!projectRoot.isEmpty()) {
         configDir = QDir(projectRoot).absoluteFilePath("backtestApp");
-    } else {
-        // Fallback vers le répertoire home
-        configDir = QDir::homePath() + "/fast-backtest-app-config/backtestApp";
+        configFile = configDir + "/backtest_config.ini";
+        
+        // Check if we can write to this directory
+        QDir().mkpath(configDir);
+        QFileInfo dirInfo(configDir);
+        
+        if (dirInfo.isWritable()) {
+            qDebug() << "Using development config path:" << configFile;
+            return configFile;
+        } else {
+            qDebug() << "Development path not writable, falling back to user data directory";
+        }
     }
     
-    // Créer le répertoire de configuration s'il n'existe pas
+    // Fallback for distributed applications or when development path is not writable
+    QString userDataDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    configDir = userDataDir;
+    configFile = QDir(configDir).absoluteFilePath("backtest_config.ini");
+    
+    // Create the user data directory if it doesn't exist
     QDir().mkpath(configDir);
     
-    return configDir + "/backtest_config.ini";
+    // Try to migrate existing config from development location if it exists
+    if (!projectRoot.isEmpty()) {
+        QString devConfigPath = QDir(projectRoot).absoluteFilePath("backtestApp/backtest_config.ini");
+        if (QFile::exists(devConfigPath) && !QFile::exists(configFile)) {
+            if (QFile::copy(devConfigPath, configFile)) {
+                qInfo() << "Migrated config from development location:" << devConfigPath << "to user data:" << configFile;
+            }
+        }
+    }
+    
+    // Also try to migrate from home directory fallback (old behavior)
+    QString oldHomePath = QDir::homePath() + "/fast-backtest-app-config/backtestApp/backtest_config.ini";
+    if (QFile::exists(oldHomePath) && !QFile::exists(configFile)) {
+        if (QFile::copy(oldHomePath, configFile)) {
+            qInfo() << "Migrated config from home directory:" << oldHomePath << "to user data:" << configFile;
+        }
+    }
+    
+    qDebug() << "Using user data config path:" << configFile;
+    return configFile;
 }
 
 void ConfigManager::initializeConfig()
@@ -129,6 +168,9 @@ void ConfigManager::loadConfig()
     }
     
     qInfo() << "Configuration chargée, profils disponibles:" << listProfiles();
+    
+    // Émettre le signal pour mettre à jour l'UI
+    emit profileListUpdated();
 }
 
 void ConfigManager::saveConfig()
@@ -146,6 +188,7 @@ QStringList ConfigManager::listProfiles() const
     
     if (m_config) {
         QStringList groups = m_config->childGroups();
+        qDebug() << "Groupes trouvés dans le fichier de configuration:" << groups;
         for (const QString& group : groups) {
             if (group != "DEFAULT") {
                 profiles << group;
@@ -153,6 +196,7 @@ QStringList ConfigManager::listProfiles() const
         }
     }
     
+    qDebug() << "Profils listés:" << profiles;
     return profiles;
 }
 

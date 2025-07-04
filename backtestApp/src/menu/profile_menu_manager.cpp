@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QTimer>
 
 ProfileMenuManager::ProfileMenuManager(App* parent)
     : QObject(parent)
@@ -83,20 +84,34 @@ void ProfileMenuManager::setConfigManager(ConfigManager* configManager)
 {
     m_configManager = configManager;
     if (m_configManager) {
+        qDebug() << "Connexion du ConfigManager au ProfileMenuManager";
+        
         // Connecter le signal de changement de profil
         connect(m_configManager, &ConfigManager::profileChanged,
                 this, &ProfileMenuManager::onProfileChanged);
         connect(m_configManager, &ConfigManager::profileListUpdated,
                 this, &ProfileMenuManager::updateProfileList);
         
-        updateProfileList();
+        qDebug() << "Signaux connectés, mise à jour initiale de la liste des profils";
+        
+        // Utiliser un timer pour s'assurer que la configuration est entièrement chargée
+        QTimer::singleShot(100, this, [this]() {
+            qDebug() << "Mise à jour différée de la liste des profils";
+            updateProfileList();
+        });
+        
         qDebug() << "ConfigManager connecté au ProfileMenuManager";
+    } else {
+        qWarning() << "ConfigManager null passé à setConfigManager";
     }
 }
 
 void ProfileMenuManager::updateProfileList()
 {
+    qDebug() << "updateProfileList() appelé";
+    
     if (!m_configManager || !m_loadProfileSubmenu) {
+        qWarning() << "ConfigManager ou LoadProfileSubmenu manquant";
         return;
     }
     
@@ -111,6 +126,9 @@ void ProfileMenuManager::updateProfileList()
     QStringList profiles = m_configManager->listProfiles();
     QString currentProfile = m_configManager->getCurrentProfile();
     
+    qDebug() << "Profils récupérés:" << profiles;
+    qDebug() << "Profil actuel:" << currentProfile;
+    
     for (const QString& profile : profiles) {
         QAction* action = new QAction(profile, this);
         action->setCheckable(true);
@@ -121,6 +139,8 @@ void ProfileMenuManager::updateProfileList()
         
         m_loadProfileSubmenu->addAction(action);
         m_profileActions[profile] = action;
+        
+        qDebug() << "Action créée pour le profil:" << profile;
     }
     
     qDebug() << "Liste des profils mise à jour avec" << profiles.size() << "profils";

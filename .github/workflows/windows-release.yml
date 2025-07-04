@@ -119,6 +119,12 @@ jobs:
         # Copy the executable and all DLLs
         Copy-Item "$sourceDir/*" $distDir -Recurse -Force
 
+        # Copy the default configuration file if it exists
+        if (Test-Path "backtestApp/backtest_config.ini") {
+          Copy-Item "backtestApp/backtest_config.ini" "$distDir/backtest_config.ini" -Force
+          echo "✅ Default configuration file copied"
+        }
+
         # Copy the data folders if they exist
         if (Test-Path "data") {
           Copy-Item "data" "$distDir/data" -Recurse -Force

@@ -7,11 +7,19 @@
 #include <QSettings>
 #include <QTextStream>
 #include <QStringList>
-#include <QTimeZone>
 #include <algorithm>
 #include <cmath>
 
-// Déclaration de la variable statique pour le cache
+/*
+Note: Market data from New York timezone is processed with a constant offset
+instead of timezone conversion to avoid daylight saving time complications.
+This ensures consistent data timeframes (e.g., 15:30-22:00) throughout the year.
+You can adjust this offset if needed to match your local market hours.
+*/
+static const int CONSTANT_OFFSET_HOURS = 2;
+
+
+// Declaration of the static variable for the cache
 std::map<QString, std::vector<OHLCBar>> DataLoader::s_dataCache;
 
 DataLoader::DataLoader() {}
@@ -233,23 +241,23 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
 
 QString DataLoader::findMarketDataDirectory()
 {
-    // 1. PREMIÈRE ÉTAPE: Vérifier si un chemin personnalisé est défini dans QSettings
+    // 1. FIRST STEP: Check if a custom path is set in QSettings
     QSettings settings("fast-backtest-app", "BacktestApp");
     QString customPath = settings.value("marketDataPath").toString();
     if (!customPath.isEmpty() && QDir(customPath).exists()) {
-        qDebug() << "Utilisation du répertoire personnalisé:" << customPath;
+        qDebug() << "Using custom directory:" << customPath;
         return customPath;
     }
 
-    // 2. Sinon, continuer avec la recherche standard
+    // 2. Otherwise, continue with the standard search
     QString exeDir = QCoreApplication::applicationDirPath();
     QDir currentDir(exeDir);
 
-    // Remonte dans l'arborescence pour trouver le dossier fast-backtest-app
+    // Go up the directory tree to find the fast-backtest-app folder
     do {
         QString currentPath = currentDir.absolutePath();
 
-        // Vérifie si c'est le dossier fast-backtest-app
+        // Check if this is the fast-backtest-app folder
         if (currentDir.dirName() == "fast-backtest-app") {
             QString marketDataPath = currentDir.absoluteFilePath("marketData");
             if (QFileInfo(marketDataPath).isDir()) {
@@ -257,7 +265,7 @@ QString DataLoader::findMarketDataDirectory()
             }
         }
 
-        // Cherche un sous-dossier fast-backtest-app
+        // Look for a subfolder fast-backtest-app
         QString igTradingBotPath = currentDir.absoluteFilePath("fast-backtest-app");
         if (QFileInfo(igTradingBotPath).isDir()) {
             QString marketDataPath = QDir(igTradingBotPath).absoluteFilePath("marketData");
@@ -273,27 +281,27 @@ QString DataLoader::findMarketDataDirectory()
 
 bool DataLoader::setCustomMarketDataDirectory(const QString& path)
 {
-    // Vérifier que le chemin existe ou peut être créé
+    // Check if the path exists or can be created
     QDir dir(path);
     if (!dir.exists()) {
         if (!QDir().mkpath(path)) {
-            qWarning() << "Impossible de créer le répertoire:" << path;
+            qWarning() << "Unable to create directory:" << path;
             return false;
         }
     }
-    
-    // Vérifier les permissions d'écriture
+
+    // Check write permissions
     QFileInfo dirInfo(path);
     if (!dirInfo.isWritable()) {
-        qWarning() << "Le répertoire n'est pas accessible en écriture:" << path;
+        qWarning() << "Directory is not writable:" << path;
         return false;
     }
-    
-    // Sauvegarder le chemin dans les paramètres
+
+    // Save the path in settings
     QSettings settings("fast-backtest-app", "BacktestApp");
     settings.setValue("marketDataPath", path);
-    qInfo() << "Répertoire personnalisé défini:" << path;
-    
+    qInfo() << "Custom directory set:" << path;
+
     return true;
 }
 
@@ -314,7 +322,7 @@ QString DataLoader::findDataFile(const QString& symbol, const QString& interval)
         return QString();
     }
 
-    // Rechercher un fichier correspondant au pattern symbol_interval_*.csv
+    // Search for a file matching the pattern symbol_interval_*.csv
     QDir dir(marketDataDir);
     QStringList nameFilters;
     nameFilters << QString("%1_%2_*.csv").arg(symbol, interval);
@@ -322,15 +330,15 @@ QString DataLoader::findDataFile(const QString& symbol, const QString& interval)
     QStringList files = dir.entryList(nameFilters, QDir::Files, QDir::Time);
 
     if (files.isEmpty()) {
-        qWarning() << "Aucun fichier trouvé pour le pattern:"
+        qWarning() << "No file found for pattern:"
                    << QString("%1_%2_*.csv").arg(symbol, interval)
-                   << "dans" << marketDataDir;
+                   << "in" << marketDataDir;
         return QString();
     }
 
-    // Retourner le fichier le plus récent
+    // Return the most recent file
     QString mostRecentFile = dir.absoluteFilePath(files.first());
-    qDebug() << "Fichier trouvé:" << mostRecentFile;
+    qDebug() << "File found:" << mostRecentFile;
 
     return mostRecentFile;
 }
@@ -382,7 +390,7 @@ std::vector<OHLCBar> DataLoader::resampleData(
     }
     int targetSeconds = intervalToSeconds(targetInterval);
     if (targetSeconds <= 0) {
-        qWarning() << "Intervalle cible invalide:" << targetInterval;
+        qWarning() << "Invalid target interval:" << targetInterval;
         return data;
     }
     std::vector<OHLCBar> resampled;
@@ -412,8 +420,8 @@ std::vector<OHLCBar> DataLoader::resampleData(
         }
     }
     resampled.emplace_back(currentPeriodStart, open, high, low, close, volume);
-    qDebug() << "Resampling de" << data.size() << "à" << resampled.size()
-             << "barres pour l'intervalle" << targetInterval;
+    qDebug() << "Resampling from" << data.size() << "to" << resampled.size()
+             << "bars for interval" << targetInterval;
     return resampled;
 }
 
@@ -426,7 +434,7 @@ std::vector<OHLCBar> DataLoader::loadData(
     QString cacheKey = makeCacheKey(symbol, interval, period, endDate);
     auto it = s_dataCache.find(cacheKey);
     if (it != s_dataCache.end()) {
-        qDebug() << "Données chargées à partir du cache pour la clé:" << cacheKey;
+        qDebug() << "Data loaded from cache for key:" << cacheKey;
         return it->second;
     }
 
@@ -436,18 +444,18 @@ std::vector<OHLCBar> DataLoader::loadData(
     
     QString dataFile = findDataFile(symbol, interval);
     if (dataFile.isEmpty()) {
-        qWarning() << "Aucun fichier de données trouvé pour" << symbol << interval;
+        qWarning() << "No data file found for" << symbol << interval;
         return std::vector<OHLCBar>();
     }
 
-    qDebug() << "Fichier de données trouvé:" << dataFile;
-    
+    qDebug() << "Data file found:" << dataFile;
+
     QDateTime actualEndDate = endDate.isValid() ? endDate : QDateTime::currentDateTime();
     QString endDateString = actualEndDate.toString("dd/MM/yyyy");
 
     std::vector<OHLCBar> result = loadFromCSV(dataFile, period, endDateString);
-    
-    // Stocker dans le cache
+
+    // Store in cache
     s_dataCache[cacheKey] = result;
     return result;
 }
@@ -459,40 +467,40 @@ QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString
     qDebug() << "Calcul de la date de début pour la période:" << period << "depuis:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
     
     if (period.endsWith("d")) {
-        // Périodes en jours
+        // Daily periods
         bool ok;
         int days = period.first(period.length() - 1).toInt(&ok);
         if (ok && days > 0) {
             startDate = endDate.addDays(-days);
         }
     } else if (period.endsWith("w")) {
-        // Périodes en semaines
+        // Weekly periods
         bool ok;
         int weeks = period.first(period.length() - 1).toInt(&ok);
         if (ok && weeks > 0) {
             startDate = endDate.addDays(-weeks * 7);
         }
     } else if (period.endsWith("m")) {
-        // Périodes en mois
+        // Monthly periods
         bool ok;
         int months = period.first(period.length() - 1).toInt(&ok);
         if (ok && months > 0) {
             startDate = endDate.addMonths(-months);
         }
     } else if (period.endsWith("y")) {
-        // Périodes en années
+        // Yearly periods
         bool ok;
         int years = period.first(period.length() - 1).toInt(&ok);
         if (ok && years > 0) {
             startDate = endDate.addYears(-years);
         }
     } else {
-        qWarning() << "Format de période non reconnu:" << period;
-        // Par défaut, prendre 10 jours
+        qWarning() << "Unrecognized period format:" << period;
+        // Default to 10 days
         startDate = endDate.addDays(-10);
     }
-    
-    qDebug() << "Date de début calculée:" << startDate.toString("dd/MM/yyyy hh:mm:ss");
+
+    qDebug() << "Calculated start date:" << startDate.toString("dd/MM/yyyy hh:mm:ss");
     return startDate;
 }
 
@@ -502,19 +510,19 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     const QString& endDate)
 {
     std::vector<OHLCBar> data;
-    data.reserve(1000000); // Pré-allouer mémoire pour éviter les réallocations
+    data.reserve(1000000); // Pre-allocate memory to avoid reallocations
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qCritical() << "Impossible d'ouvrir le fichier:" << filePath;
+        qCritical() << "Unable to open file:" << filePath;
         return data;
     }
     
     QTextStream in(&file);
     QString line;
-    
-    qDebug() << "Chargement des données depuis:" << filePath;
-    
+
+    qDebug() << "Loading data from:" << filePath;
+
     QDateTime endDateTime;
     if (endDate.isEmpty()) {
         endDateTime = QDateTime::currentDateTime();
@@ -526,9 +534,9 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     
     if (in.readLineInto(&line)) {
         if (line.startsWith("date,")) {
-            // C'est l'en-tête, l'ignorer
+            // This is the header, ignore it
         } else {
-            // C'est une vraie donnée, la parser
+            // This is real data, parse it
             auto bar = parseCSVLine(line);
             if (bar && bar->timestamp >= startDateTime && bar->timestamp <= endDateTime) {
                 data.push_back(*bar);
@@ -538,33 +546,25 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     
     int lineCount = 1;
 
-    // Chrono start
-    auto chronoStart = std::chrono::high_resolution_clock::now();
-
     while (in.readLineInto(&line)) {
         lineCount++;
 
         auto bar = parseCSVLine(line);
         if (bar) {
-            // Filtrer directement pendant le chargement
+            // Filter data while loading
             if (bar->timestamp >= startDateTime && bar->timestamp <= endDateTime) {
                 data.push_back(*bar);
             }
             else if (bar->timestamp > endDateTime) {
-                qDebug() << "Fin de période atteinte à la ligne" << lineCount << ", arrêt du chargement";
+                qDebug() << "End of period reached at line" << lineCount << ", stopping loading";
                 break;
             }
         }
     }
 
-    // Chrono end
-    auto chronoEnd = std::chrono::high_resolution_clock::now();
-    auto chronoDuration = std::chrono::duration_cast<std::chrono::milliseconds>(chronoEnd - chronoStart).count();
-
     file.close();
-    qDebug() << "Données chargées:" << data.size() << "barres de prix depuis" << filePath
-             << "en" << chronoDuration << "ms";
-    
+    qDebug() << "Loaded data:" << data.size() << "price bars from" << filePath;
+
     return data;
 }
 
@@ -576,17 +576,17 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
 {
     if (line.length() < 45) return nullptr;
     
-    // Trouver la première virgule pour sauter l'index
+    // Find the first comma to skip the index
     int firstComma = line.indexOf(',');
     if (firstComma == -1) return nullptr;
     
-    // S'assurer qu'il y a assez de caractères après la virgule
+    // Ensure there are enough characters after the comma
     if (line.length() < firstComma + 25) return nullptr;
     
-    // Pointer vers le début de la date (après l'index et la virgule)
+    // Pointer to the start of the date (after the index and the comma)
     const QChar* d = line.constData() + firstComma + 1;
     
-    // Parser manuellement "2022-02-14 14:30:10+00:00" avec calcul direct (évite digitValue)
+    // Manually parse "2022-02-14 14:30:10+00:00" with direct calculation (avoids digitValue)
     int year = ((d[0].unicode() - '0') * 1000) + ((d[1].unicode() - '0') * 100) + 
                ((d[2].unicode() - '0') * 10) + (d[3].unicode() - '0');
     int month = ((d[5].unicode() - '0') * 10) + (d[6].unicode() - '0');
@@ -595,24 +595,26 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
     int minute = ((d[14].unicode() - '0') * 10) + (d[15].unicode() - '0');
     int second = ((d[17].unicode() - '0') * 10) + (d[18].unicode() - '0');
     
-    // Utiliser Qt::UTC directement plutôt que QTimeZone::utc() qui est coûteux
-    static const QDate nullDate(1970, 1, 1);
-    static const QTime nullTime(0, 0, 0);
-    
-    // Vérifier rapidement si les valeurs sont dans des plages valides avant de créer QDateTime
+    // Quickly check if the values are within valid ranges before creating QDateTime
     if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31 ||
         hour > 23 || minute > 59 || second > 59) {
         return nullptr;
     }
     
-    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), QTimeZone::utc());
-    
-    // Optimisation: trouver toutes les virgules en un seul passage
+    // Create the timestamp without timezone conversion, then apply a constant offset
+    // to have the data between 15:30 and 22:00 (New York market hours)
+
+    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), Qt::UTC);
+
+    // Apply a constant offset to simulate the New York -> desired local time shift
+    timestamp = timestamp.addSecs(CONSTANT_OFFSET_HOURS * 3600);
+
+    // Optimization: find all commas in a single pass
     const QChar* ptr = line.constData();
     const QChar* end = ptr + line.length();
-    ptr += firstComma + 25;  // Sauter l'index et la partie date
-    
-    // Trouver les virgules pour les données OHLC
+    ptr += firstComma + 25;  // Skip the index and the date part
+
+    // Find commas for OHLC data
     const QChar* commaPos[4] = {nullptr, nullptr, nullptr, nullptr};
     int commaCount = 0;
     
@@ -622,19 +624,19 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
         }
         ++ptr;
     }
-    
-    if (commaCount < 3) return nullptr; // Pas assez de virgules pour les données OHLC
-    
-    // Parser les valeurs numériques directement
+
+    if (commaCount < 3) return nullptr; // Not enough commas for OHLC data
+
+    // Parse numeric values directly
     double values[4];  // open, high, low, close
-    
-    // Parser open
+
+    // Parse open
     values[0] = parseDouble(commaPos[0] + 1, commaPos[1]);
-    
-    // Parser high
+
+    // Parse high
     values[1] = parseDouble(commaPos[1] + 1, commaPos[2]);
-    
-    // Parser low et close
+
+    // Parse low and close
     if (commaCount == 4) {
         values[2] = parseDouble(commaPos[2] + 1, commaPos[3]);
         values[3] = parseDouble(commaPos[3] + 1, end);
@@ -646,27 +648,27 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
     return std::make_unique<OHLCBar>(timestamp, values[0], values[1], values[2], values[3], 0.0);
 }
 
-// Version optimisée de parseDouble qui évite digitValue()
+// Optimized version of parseDouble that avoids digitValue()
 inline double DataLoader::parseDouble(const QChar* begin, const QChar* end)
 {
     double result = 0.0;
     bool negative = false;
     double fraction = 0.0;
     double divisor = 1.0;
-    
-    // Gestion du signe négatif
+
+    // Handle negative sign
     if (begin < end && begin->unicode() == '-') {
         negative = true;
         ++begin;
     }
-    
-    // Partie entière - calcul direct avec unicode() plutôt que digitValue()
+
+    // Integer part - direct calculation with unicode() instead of digitValue()
     while (begin < end && begin->unicode() >= '0' && begin->unicode() <= '9') {
         result = result * 10.0 + (begin->unicode() - '0');
         ++begin;
     }
-    
-    // Partie décimale
+
+    // Decimal part
     if (begin < end && begin->unicode() == '.') {
         ++begin;
         while (begin < end && begin->unicode() >= '0' && begin->unicode() <= '9') {

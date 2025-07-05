@@ -19,23 +19,23 @@
 #include "components/data_loader.h"
 #include "components/UpdateChecker.h"
 #include "menu/update_menu_manager.h"
-#include "backtest.hpp"   // Pour be::* types
-#include "stats.hpp"      // Pour be::Stats
+#include "backtest.hpp"   // For be::* types
+#include "stats.hpp"      // For be::Stats
 
-// Variables globales pour la configuration du logging
+// Global variables for log management
 static bool g_consoleOutput = false;
 static QtMsgType g_logLevel = QtWarningMsg;
 static QFile* g_logFile = nullptr;
 static QTextStream* g_logStream = nullptr;
 
-// Handler de messages pour les logs
+// Message handler for logs
 void messageHandler(QtMsgType type, const QMessageLogContext& /*context*/, const QString &msg)
 {
-    // Filtrer selon le niveau de log
+    // Filtering on log level
     if (type < g_logLevel)
         return;
     
-    // Écrire dans le fichier si disponible
+    // Write to file if available
     if (g_logStream) {
         QString formattedMsg = QString("[%1] [%2] %3")
             .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss"))
@@ -48,29 +48,29 @@ void messageHandler(QtMsgType type, const QMessageLogContext& /*context*/, const
         *g_logStream << formattedMsg << "\n";
         g_logStream->flush();
     }
-    
-    // Écrire aussi dans la console si demandé
+
+    // Write to console if requested
     if (g_consoleOutput) {
         std::cout << msg.toStdString() << std::endl;
     }
 }
 
-// Fonction pour trouver le répertoire racine du projet
+// Find the project root directory
 QString findProjectRoot()
 {
     QString exeDir = QCoreApplication::applicationDirPath();
     QDir currentDir(exeDir);
     
-    // Remonte dans l'arborescence pour trouver le dossier fast-backtest-app
+    // Traverse up the directory tree to find the fast-backtest-app folder
     do {
         QString currentPath = currentDir.absolutePath();
         
-        // Vérifie si c'est le dossier fast-backtest-app
+        // Check if the current directory is the project root
         if (currentDir.dirName() == "fast-backtest-app") {
             return currentPath;
         }
-        
-        // Cherche un sous-dossier fast-backtest-app
+
+        // Check for a fast-backtest-app subdirectory
         QString igTradingBotPath = currentDir.absoluteFilePath("fast-backtest-app");
         if (QFileInfo(igTradingBotPath).isDir()) {
             return igTradingBotPath;
@@ -81,52 +81,52 @@ QString findProjectRoot()
     return QString(); // Not found
 }
 
-// Fonction pour configurer les logs
+// Function to set up logging
 void setupLogging(QtMsgType logLevel, bool consoleOutput)
 {
-    // Sauvegarder les paramètres dans les variables globales
+    // Save parameters to global variables
     g_logLevel = logLevel;
     g_consoleOutput = consoleOutput;
-    
-    // Trouver le répertoire racine du projet
+
+    // Find the project root directory
     QString projectRoot = findProjectRoot();
     QString logDir;
     
     if (!projectRoot.isEmpty()) {
         QString currentDate = QDateTime::currentDateTime().toString("yyyy-MM-dd");
-        logDir = QDir(projectRoot).absoluteFilePath("logs/backtest/" + currentDate);
+        logDir = QDir(projectRoot).absoluteFilePath("logs/backtestApp/" + currentDate);
         QDir().mkpath(logDir);
     } else {
-        // Fallback vers le répertoire home
-        logDir = QDir::homePath() + "/fast-backtest-app-logs/backtest/" + 
+        // Fallback to home directory
+        logDir = QDir::homePath() + "/fast-backtest-app-logs/backtestApp/" +
                 QDateTime::currentDateTime().toString("yyyy-MM-dd");
         QDir().mkpath(logDir);
     }
-    
-    QString logTime = QDateTime::currentDateTime().toString("hh-mm-ss");
-    QString logFile = logDir + "/backtest_" + logTime + ".log";
+
+    QString logTime = QDateTime::currentDateTime().toString("hh:mm:ss");
+    QString logFile = logDir + "/backtestSession_" + logTime + ".log";
     
     qSetMessagePattern("[%{time yyyy-MM-dd hh:mm:ss}] [%{type}] %{message}");
-    
-    // Initialiser le fichier de log
+
+    // Initialize the log file
     g_logFile = new QFile(logFile);
     if (g_logFile->open(QIODevice::WriteOnly | QIODevice::Append)) {
         g_logStream = new QTextStream(g_logFile);
     } else {
-        std::cerr << "Impossible d'ouvrir le fichier de log: " << logFile.toStdString() << std::endl;
+        std::cerr << "Unable to open log file: " << logFile.toStdString() << std::endl;
         g_logFile = nullptr;
         g_logStream = nullptr;
     }
-    
-    // Installer le handler de messages
+
+    // Install message handler
     qInstallMessageHandler(messageHandler);
-    
-    qInfo() << "Logs configurés dans le fichier:" << logFile;
-    qInfo() << "Niveau de log:" << logLevel;
-    qInfo() << "Sortie console:" << consoleOutput;
+
+    qInfo() << "Logs configured in file:" << logFile;
+    qInfo() << "Log level:" << logLevel;
+    qInfo() << "Console output:" << consoleOutput;
 }
 
-// Fonction pour nettoyer les ressources de logging
+// Function to clean up logging resources
 void cleanupLogging()
 {
     if (g_logStream) {
@@ -142,7 +142,7 @@ void cleanupLogging()
 
 int main(int argc, char *argv[])
 {
-    // Configuration Qt
+    // Qt configuration 
 #if QT_VERSION >= 0x050600 && QT_VERSION < 0x060000
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #endif
@@ -151,11 +151,11 @@ int main(int argc, char *argv[])
 #endif
 
     QApplication app(argc, argv);
-    
-    // Forcer le style Fusion pour tous les OS
+
+    // Force Fusion style for all OS
     app.setStyle(QStyleFactory::create("Fusion"));
-    
-    // Forcer une palette claire
+
+    // Force a light palette
     QPalette lightPalette;
     lightPalette.setColor(QPalette::Window, QColor(230, 230, 230));
     lightPalette.setColor(QPalette::WindowText, QColor(0, 0, 0));
@@ -171,92 +171,92 @@ int main(int argc, char *argv[])
     lightPalette.setColor(QPalette::Highlight, QColor(0, 120, 215));
     lightPalette.setColor(QPalette::HighlightedText, QColor(255, 255, 255));
     app.setPalette(lightPalette);
-    
-    // Configuration de la ligne de commande
+
+    // Command line configuration
     QCommandLineParser parser;
-    parser.setApplicationDescription("Application de backtesting avec interface C++/Qt");
+    parser.setApplicationDescription("Backtesting application with C++/Qt interface");
     parser.addHelpOption();
     parser.addVersionOption();
     
     QCommandLineOption logLevelOption(QStringList() << "l" << "log-level",
-        "Définit le niveau de log (DEBUG, INFO, WARNING, ERROR, CRITICAL)", "level", "DEBUG");  // Changé en DEBUG par défaut
+        "Sets the log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)", "level", "DEBUG");  // Changed to DEBUG by default
     parser.addOption(logLevelOption);
     
     QCommandLineOption consoleOption(QStringList() << "c" << "console",
-        "Affiche aussi les logs dans la console");
+        "Also display logs in the console");
     parser.addOption(consoleOption);
     
     parser.process(app);
-    
-    // Configuration du logging AVANT les premiers appels de log
+
+    // Configure logging BEFORE the first log calls
     QString logLevelStr = parser.value(logLevelOption).toUpper();
     bool consoleOutput = parser.isSet(consoleOption);
-    
-    QtMsgType logLevel = QtWarningMsg;  // Par défaut
+
+    QtMsgType logLevel = QtWarningMsg;  // Default log level
     if (logLevelStr == "DEBUG") logLevel = QtDebugMsg;
     else if (logLevelStr == "INFO") logLevel = QtInfoMsg;
     else if (logLevelStr == "WARNING") logLevel = QtWarningMsg;
     else if (logLevelStr == "ERROR" || logLevelStr == "CRITICAL") logLevel = QtCriticalMsg;
-    
-    // INSTALLER LE HANDLER AVANT LES PREMIERS LOGS
+
+    // INSTALL THE HANDLER BEFORE THE FIRST LOGS
     setupLogging(logLevel, consoleOutput);
-    
-    // MAINTENANT on peut utiliser les logs
-    qInfo() << "=== Démarrage de l'application ===";
+
+    // NOW we can use the logs
+    qInfo() << "=== Application starting ===";
     qInfo() << "Arguments:" << QStringList(argv, argv + argc);
-    
-    // ==== Vérification de la version ====
+
+    // ==== Version check ====
     UpdateChecker updateChecker;
     QObject::connect(&updateChecker, &UpdateChecker::updateAvailable, 
         [&](const QString& newVersion, const QString& downloadUrl) {
-            qInfo() << "Mise à jour disponible:" << newVersion;
-            
-            // Demander à l'utilisateur s'il souhaite mettre à jour
+            qInfo() << "Update available:" << newVersion;
+
+            // Ask the user if they want to update
             QMessageBox msgBox;
             msgBox.setIcon(QMessageBox::Information);
-            msgBox.setText(QString("Une nouvelle version (%1) est disponible.").arg(newVersion));
-            msgBox.setInformativeText("Voulez-vous la télécharger et l'installer maintenant ?");
+            msgBox.setText(QString("A new version (%1) is available.").arg(newVersion));
+            msgBox.setInformativeText("Do you want to download and install it now?");
             msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
             msgBox.setDefaultButton(QMessageBox::Yes);
             
             if (msgBox.exec() == QMessageBox::Yes) {
-                // Télécharger et installer la mise à jour
+                // Download and install the update
                 updateChecker.downloadAndInstallUpdate();
             }
         });
 
-    // Lancer la vérification des mises à jour
-    //updateChecker.checkForUpdates(); // Désactivé pour le moment
-    //==== Attendre la fin de la vérification ====
+    // Start the update check
+    //updateChecker.checkForUpdates(); // Disabled for now
+    //==== Wait for the update check to finish ====
 
-    // Enregistrer les types personnalisés pour Qt
+    // Register custom types for Qt
     qRegisterMetaType<OHLCBar>("OHLCBar");
     qRegisterMetaType<std::vector<OHLCBar>>("std::vector<OHLCBar>");
     qRegisterMetaType<std::shared_ptr<be::Data>>("std::shared_ptr<be::Data>");
     qRegisterMetaType<be::Stats>("be::Stats");
     qRegisterMetaType<BacktestResults*>("BacktestResults*");
-    qInfo() << "Types personnalisés enregistrés dans Qt";
-    
+    qInfo() << "Custom types registered in Qt";
+
     try {
-        // Créer et afficher la fenêtre principale
-        qInfo() << "Création de la fenêtre principale...";
+        // Create and show the main window
+        qInfo() << "Creating main window...";
         App mainWindow;
         mainWindow.show();
-        
-        qInfo() << "Application prête";
-        
-        // Exécuter la boucle d'événements
+
+        qInfo() << "Application ready";
+
+        // Run the event loop
         int result = app.exec();
-        
-        // Nettoyer les logs avant de quitter
+
+        // Clean up logs before exiting
         cleanupLogging();
         
         return result;
     }
     catch (const std::exception& e) {
-        qCritical() << "Erreur lors de l'initialisation de l'application:" << e.what();
-        QMessageBox::critical(nullptr, "Erreur", 
-            QString("Une erreur est survenue: %1").arg(e.what()));
+        qCritical() << "Error initializing application:" << e.what();
+        QMessageBox::critical(nullptr, "Error", 
+            QString("An error occurred: %1").arg(e.what()));
         cleanupLogging();
         return -1;
     }

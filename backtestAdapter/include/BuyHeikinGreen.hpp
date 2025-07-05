@@ -57,7 +57,7 @@ public:
         spdlog::drop("async_file_logger"); // Drop the previous logger if it exists
         auto async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
             "async_file_logger",       // Logger name
-            "logs/async_log.log",      // Log file path
+            "logs/Strategies/BuyHeikinGreen_async.log",      // Log file path
             50 * 1024 * 1024,          // Max file size (50 MB)
             1                          // Max number of files to keep
         );

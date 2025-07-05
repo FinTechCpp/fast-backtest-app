@@ -166,6 +166,15 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     else if (values.contains("tp_method"))
         config.use_atr_for_tp = (values["tp_method"].toInt() == 1); // Index 1 = ATR
     
+    // Paramètres Ratio SL pour TP
+    if (values.contains("use_sl_ratio_for_tp"))
+        config.use_sl_ratio_for_tp = values["use_sl_ratio_for_tp"].toBool();
+    else if (values.contains("tp_method"))
+        config.use_sl_ratio_for_tp = (values["tp_method"].toInt() == 2); // Index 2 = Ratio SL
+    
+    if (values.contains("tp_sl_ratio"))
+        config.tp_sl_ratio = values["tp_sl_ratio"].toDouble();
+    
     if (values.contains("atr_period"))
         config.atr_period = values["atr_period"].toInt();
     

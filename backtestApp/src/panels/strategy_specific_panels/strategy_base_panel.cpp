@@ -95,7 +95,7 @@ void StrategyBasePanel::initialize()
     
     // Méthode de calcul pour le Take Profit
     m_widgets["tp_method"] = new QComboBox();
-    static_cast<QComboBox*>(m_widgets["tp_method"])->addItems({"Fixe", "ATR"});
+    static_cast<QComboBox*>(m_widgets["tp_method"])->addItems({"Fixe", "ATR", "Ratio SL"});
     static_cast<QComboBox*>(m_widgets["tp_method"])->setCurrentIndex(0);
     connect(static_cast<QComboBox*>(m_widgets["tp_method"]), 
                      QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -119,6 +119,16 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setEnabled(false);
     m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     tpLayout->addRow(new QLabel("Multiplicateur ATR TP:"), m_widgets["tp_atr_multiplier"]);
+    
+    // Paramètres Ratio SL - Multiplicateur TP
+    m_widgets["tp_sl_ratio"] = new QDoubleSpinBox();
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setDecimals(1);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setRange(0.1, 10.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setSingleStep(0.1);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setValue(2.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setEnabled(false);
+    m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Ratio TP/SL:"), m_widgets["tp_sl_ratio"]);
     
     // TP minimum
     m_widgets["min_take_profit_distance"] = new QDoubleSpinBox();
@@ -266,11 +276,13 @@ QMap<QString, QVariant> StrategyBasePanel::getValues()
     if (m_widgets.contains("sl_method")) {
         QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
         values["use_atr_for_sl"] = (slMethod->currentIndex() == 1); // Index 1 = ATR
+        values["use_minmax_for_sl"] = (slMethod->currentIndex() == 2); // Index 2 = Min/Max
     }
     
     if (m_widgets.contains("tp_method")) {
         QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
         values["use_atr_for_tp"] = (tpMethod->currentIndex() == 1); // Index 1 = ATR
+        values["use_sl_ratio_for_tp"] = (tpMethod->currentIndex() == 2); // Index 2 = Ratio SL
     }
     
     // Ajouter la liste des jours de trading
@@ -296,7 +308,7 @@ void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
         QVariant value = it.value();
         
         // Ignorer les paramètres calculés use_atr_for_sl et use_atr_for_tp
-        if (key == "use_atr_for_sl" || key == "use_atr_for_tp") {
+        if (key == "use_atr_for_sl" || key == "use_atr_for_tp" || key == "use_minmax_for_sl" || key == "use_sl_ratio_for_tp") {
             continue;
         }
         
@@ -396,6 +408,7 @@ void StrategyBasePanel::_toggleTpMethod(int index)
 {
     bool isFixed = (index == 0);
     bool isAtr = (index == 1);
+    bool isRatio = (index == 2);
     
     if (m_widgets.contains("take_profit_distance")) {
         m_widgets["take_profit_distance"]->setEnabled(isFixed);
@@ -410,6 +423,13 @@ void StrategyBasePanel::_toggleTpMethod(int index)
             m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
         else 
             m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    }
+    if (m_widgets.contains("tp_sl_ratio")) {
+        m_widgets["tp_sl_ratio"]->setEnabled(isRatio);
+        if (isRatio)
+            m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     
     // Mettre à jour le statut de la période ATR

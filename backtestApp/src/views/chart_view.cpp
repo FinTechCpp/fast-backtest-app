@@ -1,4 +1,4 @@
-#include "views/chart_view.h"
+#include "views/chartView.h"
 #include "app.h"
 #include <QDebug>
 #include <QTime>
@@ -6,7 +6,6 @@
 #include <QFrame>
 #include <QResizeEvent>
 #include <QToolButton>
-#include "views/chart_view.h"
 
 ChartView::ChartView(QWidget* parent)
     : BaseView(parent)

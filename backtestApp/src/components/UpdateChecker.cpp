@@ -1,4 +1,4 @@
-#include "components/UpdateChecker.h"
+#include "components/updateChecker.h"
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>

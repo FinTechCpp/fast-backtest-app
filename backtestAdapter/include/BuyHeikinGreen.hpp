@@ -3,7 +3,6 @@
 #include "strategy.hpp"
 #include "broker.hpp"
 #include "data.hpp"
-// #include "Strategies/buy_heikin_green.hpp"
 #include "buy_heikin_green.hpp"
 #include <memory>
 #include <iostream>

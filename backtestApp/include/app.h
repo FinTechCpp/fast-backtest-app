@@ -18,7 +18,7 @@
 #include <QMap>
 #include <QString>
 #include <QDebug>
-#include "components/backtest_results.h"
+#include "components/backtestResults.h"
 
 
 // Forward declarations

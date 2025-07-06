@@ -4,20 +4,20 @@
 #include <QMessageBox>
 #include <QTime>
 
-#include "components/config_manager.h"
-#include "components/UpdateChecker.h"
-#include "panels/general_params_panel.h"
-#include "panels/strategy_specific_panels/strategy_base_panel.h"
-#include "menu/profile_menu_manager.h"
-#include "menu/data_menu_manager.h"
-#include "menu/update_menu_manager.h"
-#include "views/stats_view.h"
-#include "views/chart_view.h"
-#include "views/histogram_view.h"
-#include "components/result_manager.h"
-#include "components/backtest_runner.h"
-#include "panels/strategy_specific_panels/buy_heikin_green_panel.h"
-#include "panels/strategy_specific_panels/sell_heikin_red_panel.h"
+#include "components/configManager.h"
+#include "components/updateChecker.h"
+#include "panels/generalParamsPanel.h"
+#include "panels/strategySpecificPanels/strategyBasePanel.h"
+#include "menu/profileMenuManager.h"
+#include "menu/dataMenuManager.h"
+#include "menu/updateMenuManager.h"
+#include "views/statsView.h"
+#include "views/chartView.h"
+#include "views/histogramView.h"
+#include "components/resultManager.h"
+#include "components/backtestRunner.h"
+#include "panels/strategySpecificPanels/buyHeikinGreenPanel.h"
+#include "panels/strategySpecificPanels/sellHeikinRedPanel.h"
 
 
 App::App() : QMainWindow()

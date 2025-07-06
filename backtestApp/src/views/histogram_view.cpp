@@ -1,4 +1,4 @@
-#include "views/histogram_view.h"
+#include "views/histogramView.h"
 #include "app.h"
 #include <QDebug>
 #include <QDateTime>

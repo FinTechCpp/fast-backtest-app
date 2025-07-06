@@ -1,4 +1,4 @@
-#include "views/stats_view.h"
+#include "views/statsView.h"
 #include "app.h"
 #include <QDebug>
 #include <QTime>

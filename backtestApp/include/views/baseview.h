@@ -8,7 +8,7 @@
 #include "backtest.hpp" // Inclure les définitions de be::Data et be::Stats
 #include "data.hpp"
 #include "stats.hpp"
-#include "components/backtest_results.h" // Inclure la classe BacktestResults pour les résultats du backtest
+#include "components/backtestResults.h" 
 
 /**
  * @brief Classe de base abstraite pour toutes les vues de résultats du backtest

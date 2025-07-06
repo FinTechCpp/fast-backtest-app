@@ -15,10 +15,10 @@
 #include <QMetaType>
 #include <iostream>
 #include "app.h"
-#include "components/backtest_runner.h"
-#include "components/data_loader.h"
-#include "components/UpdateChecker.h"
-#include "menu/update_menu_manager.h"
+#include "components/backtestRunner.h"
+#include "components/dataLoader.h"
+#include "components/updateChecker.h"
+#include "menu/updateMenuManager.h"
 #include "backtest.hpp"   // For be::* types
 #include "stats.hpp"      // For be::Stats
 

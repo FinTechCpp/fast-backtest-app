@@ -1,4 +1,4 @@
-#include "views/baseview.h"
+#include "views/baseView.h"
 #include <QDebug>
 
 BaseView::BaseView(QWidget *parent) : QWidget(parent)

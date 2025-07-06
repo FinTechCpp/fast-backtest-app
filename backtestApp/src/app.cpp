@@ -341,6 +341,16 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
             stoch.params["oversoldLevel"] = params.value("stoch_threshold", 20).toDouble();
             indicators.push_back(stoch);
         }
+        
+        // Supertrend
+        bool use_supertrend = params.value("use_supertrend_filter", false).toBool();
+        if (use_supertrend) {
+            StrategyIndicator supertrend;
+            supertrend.type = StrategyIndicator::SUPERTREND;
+            supertrend.params["period"] = params.value("supertrend_atr_period", 10).toDouble();
+            supertrend.params["multiplier"] = params.value("supertrend_multiplier", 3.0).toDouble();
+            indicators.push_back(supertrend);
+        }
     }
     
     // Pour SellHeikinRed ou d'autres stratégies, ajouter d'autres conditions ici

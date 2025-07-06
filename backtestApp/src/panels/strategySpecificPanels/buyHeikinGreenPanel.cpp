@@ -142,6 +142,37 @@ void BuyHeikinGreenPanel::initialize()
     line4->setFrameShadow(QFrame::Sunken);
     strategyLayout->addWidget(line4);
     
+    // SECTION SUPERTREND
+    QGridLayout* supertrendLayout = new QGridLayout();
+    supertrendLayout->setContentsMargins(5, 5, 5, 5);
+    
+    m_widgets["supertrend_filter_check"] = new QCheckBox("Activer filtre Supertrend", this);
+    connect(static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"]), &QCheckBox::toggled, this, &BuyHeikinGreenPanel::onSupertrendFilterToggled);
+    supertrendLayout->addWidget(m_widgets["supertrend_filter_check"], 0, 0, 1, 2);
+    
+    supertrendLayout->addWidget(new QLabel("Période:", this), 1, 0);
+    m_widgets["supertrend_period_spin"] = new QSpinBox(this);
+    static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->setRange(1, 100);
+    static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->setValue(10);
+    supertrendLayout->addWidget(m_widgets["supertrend_period_spin"], 1, 1);
+    
+    supertrendLayout->addWidget(new QLabel("Multiplicateur:", this), 2, 0);
+    m_widgets["supertrend_multiplier_spin"] = new QDoubleSpinBox(this);
+    static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setRange(0.1, 10.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setValue(3.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setSingleStep(0.1);
+    static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setDecimals(1);
+    supertrendLayout->addWidget(m_widgets["supertrend_multiplier_spin"], 2, 1);
+    supertrendLayout->setColumnStretch(2, 1);
+    
+    strategyLayout->addLayout(supertrendLayout);
+    
+    // Ligne de séparation
+    QFrame* line5 = new QFrame(this);
+    line5->setFrameShape(QFrame::HLine);
+    line5->setFrameShadow(QFrame::Sunken);
+    strategyLayout->addWidget(line5);
+    
     // SECTION AUTRES FILTRES
     QVBoxLayout* otherFiltersLayout = new QVBoxLayout();
     otherFiltersLayout->setContentsMargins(5, 5, 5, 5);
@@ -159,6 +190,7 @@ void BuyHeikinGreenPanel::initialize()
     onEmaLongFilterToggled(static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->isChecked());
     onRsiFilterToggled(static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked());
     onStochFilterToggled(static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked());
+    onSupertrendFilterToggled(static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->isChecked());
 }
 
 // Les méthodes getValues et setValues restent inchangées
@@ -186,6 +218,11 @@ QMap<QString, QVariant> BuyHeikinGreenPanel::getValues()
     values["stoch_slowk"] = static_cast<QSpinBox*>(m_widgets["slowk_spin"])->value();
     values["stoch_slowd"] = static_cast<QSpinBox*>(m_widgets["slowd_spin"])->value();
     values["stoch_threshold"] = static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->value();
+    
+    // Supertrend
+    values["use_supertrend_filter"] = static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->isChecked();
+    values["supertrend_atr_period"] = static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->value();
+    values["supertrend_multiplier"] = static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->value();
     
     // Filtre bougie
     values["use_previous_ha_candle_red_filter"] = static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->isChecked();
@@ -247,6 +284,19 @@ void BuyHeikinGreenPanel::setValues(const QMap<QString, QVariant>& values)
         static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setValue(values["stoch_threshold"].toInt());
     }
     
+    // Supertrend
+    if (values.contains("use_supertrend_filter")) {
+        static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->setChecked(values["use_supertrend_filter"].toBool());
+    }
+    
+    if (values.contains("supertrend_atr_period")) {
+        static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->setValue(values["supertrend_atr_period"].toInt());
+    }
+    
+    if (values.contains("supertrend_multiplier")) {
+        static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setValue(values["supertrend_multiplier"].toDouble());
+    }
+    
     // Filtre bougie
     if (values.contains("use_previous_ha_candle_red_filter")) {
         static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->setChecked(
@@ -270,15 +320,19 @@ void BuyHeikinGreenPanel::onStochFilterToggled(bool checked) {
     _toggleWidgetGroup({"fastk_spin", "slowk_spin", "slowd_spin", "stoch_threshold_spin"}, checked);
 }
 
+void BuyHeikinGreenPanel::onSupertrendFilterToggled(bool checked) {
+    _toggleWidgetGroup({"supertrend_period_spin", "supertrend_multiplier_spin"}, checked);
+}
+
 void BuyHeikinGreenPanel::_toggleWidgetGroup(const QStringList& widgets, bool enabled)
 {
     for (const QString& widgetName : widgets) {
         if (m_widgets.contains(widgetName)) {
             m_widgets[widgetName]->setEnabled(enabled);
             if(enabled) 
-                m_widgets[widgetName]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
+                m_widgets[widgetName]->setStyleSheet("QSpinBox, QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
              else 
-                m_widgets[widgetName]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+                m_widgets[widgetName]->setStyleSheet("QSpinBox, QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
         }
     }
 }

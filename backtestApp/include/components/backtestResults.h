@@ -14,7 +14,8 @@ struct StrategyIndicator {
         RSI,
         EMA,
         STOCHASTIC,
-        ATR
+        ATR,
+        SUPERTREND
     };
     
     Type type;

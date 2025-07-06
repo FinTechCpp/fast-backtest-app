@@ -48,6 +48,16 @@ BuyHeikinGreenConfig BasePanel::convertToConfig<BuyHeikinGreenConfig>(const QMap
     if (values.contains("stoch_threshold"))
         config.stoch_threshold = values["stoch_threshold"].toInt();
     
+    // Supertrend
+    if (values.contains("use_supertrend_filter"))
+        config.use_supertrend_filter = values["use_supertrend_filter"].toBool();
+    
+    if (values.contains("supertrend_atr_period"))
+        config.supertrend_atr_period = values["supertrend_atr_period"].toInt();
+    
+    if (values.contains("supertrend_multiplier"))
+        config.supertrend_multiplier = values["supertrend_multiplier"].toDouble();
+    
     // Filtre bougie précédente
     if (values.contains("use_previous_ha_candle_red_filter"))
         config.use_previous_ha_candle_red_filter = values["use_previous_ha_candle_red_filter"].toBool();

@@ -90,9 +90,8 @@ void ChartRenderer::createOrUpdateChart(
     int startIndex = aggregationInfo.startIndex;
     
     // 1. Ajouter la courbe d'équité en haut si disponible et demandée
-    if (config.showEquity) {
+    if (config.showEquity) 
         addEquityCurveSection(m_financeChart.get(), dataManager, timestamps, startIndex);
-    }
     
     // 2. Ajouter le graphique principal
     m_financeChart->addMainChart(config.chartHeight);
@@ -164,9 +163,8 @@ void ChartRenderer::createOrUpdateChart(
     }
     
     // Mettre à jour le graphique dans le viewer
-    if (viewer) {
+    if (viewer) 
         viewer->setChart(m_financeChart.get());
-    }
 }
 
 void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 

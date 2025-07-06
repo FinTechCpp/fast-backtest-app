@@ -19,14 +19,14 @@ ChartView::ChartView(QWidget* parent)
     , m_leftPanel(nullptr)
     , m_app(nullptr)
 {
-    // Trouver l'application parente
+    // Find the parent App instance
     QWidget* widget = parent;
     while (widget && !m_app) {
         m_app = qobject_cast<App*>(widget);
         widget = widget->parentWidget();
     }
-    
-    // Construire l'interface
+
+    // Build the UI
     setupUI();
 }
 
@@ -36,34 +36,34 @@ ChartView::~ChartView()
 
 void ChartView::setupUI()
 {
-    // Configurer le layout principal pour occuper tout l'espace
+    // Configure the main layout to take up all available space
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(0);
-    
-    // Créer un layout horizontal pour les panneaux gauche et droit
+
+    // Create a horizontal layout for the left and right panels
     QHBoxLayout* horizontalLayout = new QHBoxLayout();
     horizontalLayout->setContentsMargins(0, 0, 0, 0);
     horizontalLayout->setSpacing(0);
     m_mainLayout->addLayout(horizontalLayout);
     
-    // Créer le panneau gauche avec une largeur fixe
+    // Create the left panel with a fixed width
     m_leftPanel = new QWidget();
     m_leftPanel->setObjectName("leftPanel");
     m_leftPanel->setStyleSheet("#leftPanel { background-color: #BADDFF; }");
-    m_leftPanel->setFixedWidth(230); // Augmenter la largeur pour les contrôles d'indicateurs
-    
-    // Ajouter un layout vertical au panneau gauche
+    m_leftPanel->setFixedWidth(230); // Increase width for indicator controls
+
+    // Add a vertical layout to the left panel
     QVBoxLayout* leftPanelLayout = new QVBoxLayout(m_leftPanel);
     leftPanelLayout->setContentsMargins(5, 8, 5, 8);
     leftPanelLayout->setSpacing(10);
-    
-    // Ajouter un titre au panneau gauche
+
+    // Add a title to the left panel
     m_settingsTitle = new QLabel("Settings");
     m_settingsTitle->setAlignment(Qt::AlignCenter);
     m_settingsTitle->setStyleSheet("font-weight: bold; font-size: 16px;");
     leftPanelLayout->addWidget(m_settingsTitle);
-    
-    // Ajouter le sélecteur de type de graphique
+
+    // Add the chart type selector
     QLabel* chartTypeLabel = new QLabel("Chart Type");
     chartTypeLabel->setStyleSheet("font-weight: bold;");
     leftPanelLayout->addWidget(chartTypeLabel);
@@ -79,48 +79,48 @@ void ChartView::setupUI()
     separator->setFrameShape(QFrame::HLine);
     separator->setFrameShadow(QFrame::Sunken);
     leftPanelLayout->addWidget(separator);
-    
-    // Ajouter le contrôle de seuil d'agrégation
+
+    // Add the aggregation threshold control
     QLabel* aggregationTitle = new QLabel("Seuil d'Agrégation");
     aggregationTitle->setStyleSheet("font-weight: bold;");
     leftPanelLayout->addWidget(aggregationTitle);
-    
-    // Layout pour le slider et l'étiquette de valeur
+
+    // Layout for the slider and value label
     QHBoxLayout* sliderLayout = new QHBoxLayout();
-    
-    // Créer le slider
-    int aggregation_default_value = 30000; 
+
+    // Create the slider
+    int aggregation_default_value = 30000;
     m_aggregationSlider = new QSlider(Qt::Horizontal);
-    m_aggregationSlider->setMinimum(1000);   // Minimum 
-    m_aggregationSlider->setMaximum(100000); // Maximum 
-    m_aggregationSlider->setValue(aggregation_default_value); // Valeur par défaut 
+    m_aggregationSlider->setMinimum(1000);   // Minimum
+    m_aggregationSlider->setMaximum(100000); // Maximum
+    m_aggregationSlider->setValue(aggregation_default_value); // Default value
     m_aggregationSlider->setTickInterval(10000);
     m_aggregationSlider->setTickPosition(QSlider::TicksBelow);
-    
-    // Créer l'étiquette de valeur
+
+    // Create the value label
     m_aggregationLabel = new QLabel(QString::number(aggregation_default_value));
     m_aggregationLabel->setMinimumWidth(50);
-    
-    // Ajouter les widgets au layout
+
+    // Add widgets to the layout
     sliderLayout->addWidget(m_aggregationSlider);
     sliderLayout->addWidget(m_aggregationLabel);
-    
-    // Ajouter le layout au panneau gauche
+
+    // Add the layout to the left panel
     leftPanelLayout->addLayout(sliderLayout);
     
-    // Ajouter une description
+    // Add a description
     QLabel* aggregationDesc = new QLabel("Ajuste le nombre maximum de points à afficher avant agrégation");
     aggregationDesc->setWordWrap(true);
     aggregationDesc->setStyleSheet("font-size: 9px; color: #666;");
     leftPanelLayout->addWidget(aggregationDesc);
 
     connect(m_aggregationSlider, &QSlider::valueChanged, this, &ChartView::onAggregationSliderChanged);
-    
-    // Connecter le signal de changement à notre slot
+
+    // Connect the change signal to our slot
     connect(m_chartTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &ChartView::onChartTypeChanged);
-    
-    // Remplacer la case à cocher par un QToolButton stylisé
+
+    // Replace the checkbox with a styled QToolButton
     QToolButton* rulerToolButton = new QToolButton();
     rulerToolButton->setIcon(QIcon(":/icons/ruler_unchecked.png"));
     rulerToolButton->setIconSize(QSize(32, 32));
@@ -137,11 +137,11 @@ void ChartView::setupUI()
         "    background-color:rgb(0, 141, 0);"
         "}"
     );
-    
-    // Connecter le signal de changement du bouton
+
+    // Connect the button's toggle signal
     connect(rulerToolButton, &QToolButton::toggled, this, &ChartView::onRulerToolToggled);
-    
-    // Connecter le signal pour changer l'icône quand l'état change
+
+    // Connect the signal to change the icon when the state changes
     connect(rulerToolButton, &QToolButton::toggled, [rulerToolButton](bool checked) {
         if (checked) {
             rulerToolButton->setIcon(QIcon(":/icons/ruler_checked.png"));
@@ -152,33 +152,33 @@ void ChartView::setupUI()
     
     leftPanelLayout->addWidget(rulerToolButton);
     
-    // Section des indicateurs techniques
+    // Technical Indicators Section
     QLabel* indicatorsLabel = new QLabel("Technical Indicators");
     indicatorsLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
     leftPanelLayout->addWidget(indicatorsLabel);
-    
-    // Configuration des contrôles d'indicateurs
+
+    // Setup the indicator controls
     setupIndicatorControls();
     leftPanelLayout->addWidget(m_indicatorsGroup);
-    
-    // Ajouter un espace extensible en bas
+
+    // Add a stretchable space at the bottom
     leftPanelLayout->addStretch();
-    
-    // Créer un séparateur vertical
+
+    // Create a vertical separator
     QFrame* verticalSeparator = new QFrame();
     verticalSeparator->setFrameStyle(QFrame::VLine | QFrame::Plain);
-    verticalSeparator->setStyleSheet("color: #CCCCCC;"); // Couleur de la ligne
+    verticalSeparator->setStyleSheet("color: #CCCCCC;"); // Line color
 
-    // Créer le panneau droit qui contiendra le graphique
+    // Create the right panel that will contain the chart
     m_rightPanel = new QWidget();
     m_rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    
-    // Layout pour le panneau droit
+
+    // Layout for the right panel
     QVBoxLayout* rightPanelLayout = new QVBoxLayout(m_rightPanel);
     rightPanelLayout->setContentsMargins(0, 0, 0, 0);
     rightPanelLayout->setSpacing(0);
-    
-    // Créer le placeholder initial
+
+    // Create the initial placeholder
     m_chartPlaceholder = new QLabel("Exécutez le backtest pour afficher les graphiques");
     m_chartPlaceholder->setAlignment(Qt::AlignCenter);
     m_chartPlaceholder->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -190,50 +190,44 @@ void ChartView::setupUI()
         "font-size: 14px; "
         "}"
     );
-    
-    // Créer le widget de graphique
+
+    // Create the chart widget
     m_chartWidget = new ChartWidget();
-    m_chartWidget->setVisible(false); // Cacher initialement
+    m_chartWidget->setVisible(false); // Initially hidden
 
     connect(m_chartWidget, &ChartWidget::indicatorAdded, this, &ChartView::onIndicatorAdded);
     connect(m_chartWidget, &ChartWidget::indicatorChanged, this, &ChartView::onIndicatorChanged);
     connect(m_chartWidget, &ChartWidget::indicatorRemoved, this, &ChartView::onIndicatorRemoved);
     connect(m_chartWidget, &ChartWidget::maxDisplayPointsChanged, this, &ChartView::onMaxDisplayPointsChanged);
 
-    // Ajouter les widgets au layout du panneau droit
+    // Add the widgets to the right panel layout
     rightPanelLayout->addWidget(m_chartPlaceholder);
     rightPanelLayout->addWidget(m_chartWidget);
-    
-    // Ajouter les composants au layout horizontal
+
+    // Add the components to the horizontal layout
     horizontalLayout->addWidget(m_leftPanel);
     horizontalLayout->addWidget(verticalSeparator);
     horizontalLayout->addWidget(m_rightPanel);
-    
-    // Configurer le widget pour s'étendre
+
+    // Configure the widget to stretch
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    if (m_app) {
+    if (m_app) 
         connect(m_app, &App::windowResizeStarted, m_chartWidget, [this]() {
             m_chartWidget->setResizing(true);
-        });
-        
-        // connect(m_app, &App::windowResizeFinished, m_chartWidget, [this](QSize size) {
-        //     m_chartWidget->setResizing(false);
-        //     m_chartWidget->onWindowResized(size);
-        // });
-    }
+        }); 
 }
 
 void ChartView::setupIndicatorControls() {
-    // Créer le groupe pour les contrôles d'indicateurs
+    // Create the group for the indicator controls
     m_indicatorsGroup = new QGroupBox("Active Indicators");
     QVBoxLayout* groupLayout = new QVBoxLayout(m_indicatorsGroup);
-    
-    // Créer le layout pour la liste des indicateurs
+
+    // Create the layout for the indicator list
     m_indicatorsLayout = new QVBoxLayout();
     groupLayout->addLayout(m_indicatorsLayout);
-    
-    // Ajouter un bouton d'ajout et une combobox pour le type d'indicateur
+
+    // Add a button and a combobox for the indicator type
     QHBoxLayout* addIndicatorLayout = new QHBoxLayout();
     
     m_addIndicatorButton = new QPushButton("Add");
@@ -243,31 +237,31 @@ void ChartView::setupIndicatorControls() {
     m_indicatorTypeCombo->addItem("RSI", "RSI");
     m_indicatorTypeCombo->addItem("EMA", "EMA");
     m_indicatorTypeCombo->addItem("Supertrend", "SUPERTREND");
-    m_indicatorTypeCombo->addItem("Stochastic", "STOCH");  
-    m_indicatorTypeCombo->addItem("ATR", "ATR"); 
-    // Ajouter d'autres types d'indicateurs ici au besoin
-    
+    m_indicatorTypeCombo->addItem("Stochastic", "STOCH");
+    m_indicatorTypeCombo->addItem("ATR", "ATR");
+    // Add other indicator types here as needed
+
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
     addIndicatorLayout->addWidget(m_addIndicatorButton);
     
     groupLayout->addLayout(addIndicatorLayout);
-    
-    // Connecter les signaux
+
+    // Connect the signals
     connect(m_addIndicatorButton, &QPushButton::clicked, this, &ChartView::onAddIndicatorClicked);
     connect(m_indicatorTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &ChartView::onIndicatorTypeSelected);
 }
 
 void ChartView::onIndicatorTypeSelected(int index) {
-    // Cette méthode peut être utilisée pour ajouter un comportement spécifique
-    // lorsque le type d'indicateur est modifié dans la liste déroulante
+    // This method can be used to add specific behavior
+    // when the indicator type is changed in the dropdown
     Q_UNUSED(index);
 }
 
 void ChartView::onAddIndicatorClicked() {    
     QString indicatorType = m_indicatorTypeCombo->currentData().toString();
-    
-    // il serait bien d'ouvrir la fenetre de dialog directement plutot que mettre des valeurs par défaut
+
+    // It would be better to open the dialog window directly rather than setting default values
     if (indicatorType == "RSI") {
         RSIInstance rsi;
         rsi.period = 14;
@@ -276,7 +270,7 @@ void ChartView::onAddIndicatorClicked() {
     else if (indicatorType == "EMA") {
         EMAInstance ema;
         ema.period = 20;
-        ema.color = 0x0000FF;
+        ema.color = 0xFFA500; // Orange for EMA by default
         m_chartWidget->addIndicator(std::move(ema));
     }
     else if (indicatorType == "SUPERTREND") {
@@ -297,20 +291,20 @@ void ChartView::onAddIndicatorClicked() {
         atr.period = 14;
         m_chartWidget->addIndicator(std::move(atr));
     }
-    // Ajouter d'autres types d'indicateurs ici
+    // Add other indicator types here as needed
 }
 
 void ChartView::createIndicatorWidgets(int id, const QString &name) {
-    // Créer un widget horizontal pour cet indicateur
+    // Create a horizontal widget for this indicator
     QWidget* indicatorWidget = new QWidget();
     QHBoxLayout* layout = new QHBoxLayout(indicatorWidget);
     layout->setContentsMargins(0, 2, 0, 2);
-    
-    // Ajouter un libellé avec le nom de l'indicateur
+
+    // Add a label with the indicator name
     QLabel* nameLabel = new QLabel(name);
     nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    
-    // Ajouter des boutons d'édition et de suppression
+
+    // Add edit and remove buttons
     QPushButton* editButton = new QPushButton("Edit");
     editButton->setFixedWidth(40);
     connect(editButton, &QPushButton::clicked, [this, id]() {
@@ -322,18 +316,18 @@ void ChartView::createIndicatorWidgets(int id, const QString &name) {
     connect(removeButton, &QPushButton::clicked, [this, id]() {
         this->onRemoveIndicator(id);
     });
-    
-    // Ajouter les widgets au layout
+
+    // Add the widgets to the layout
     layout->addWidget(nameLabel);
     layout->addWidget(editButton);
     layout->addWidget(removeButton);
-    
-    // Stocker les références
+
+    // Store the references
     m_indicatorLabels[id] = nameLabel;
     m_editButtons[id] = editButton;
     m_removeButtons[id] = removeButton;
-    
-    // Ajouter au layout principal des indicateurs
+
+    // Add to the main indicators layout
     m_indicatorsLayout->addWidget(indicatorWidget);
 }
 
@@ -345,27 +339,27 @@ void ChartView::onEditIndicator(int id) {
     if (tryOpenDialog<ATRInstance, ATRDialog>(id)) return;
 }
 
-//Remove tous les indicateurs individuellement par leur ID
+// Remove all indicators individually by their ID
 void ChartView::onRemoveIndicator(int id) {
     m_chartWidget->removeIndicator(id);
 }
 
 
 void ChartView::refreshIndicatorsList() {
-    // Supprimer tous les widgets d'indicateurs existants
+    // Remove all existing indicator widgets
     QLayoutItem* child;
     while ((child = m_indicatorsLayout->takeAt(0)) != nullptr) {
         if (child->widget())
             delete child->widget();
         delete child;
     }
-    
-    // Vider les maps
+
+    // Clear the maps
     m_indicatorLabels.clear();
     m_editButtons.clear();
     m_removeButtons.clear();
-    
-    // Approche générique pour tous les indicateurs
+
+    // Generic approach for all indicators
     const std::vector<std::unique_ptr<IndicatorBase>>& allIndicators = m_chartWidget->getIndicators();
     for (const auto& indicator : allIndicators) {
         if (indicator->visible) {
@@ -376,14 +370,14 @@ void ChartView::refreshIndicatorsList() {
 
 void ChartView::updateData(BacktestResults* results) {
     QTime start = QTime::currentTime();
-            
-    // Récupérer les résultats depuis l'App
+
+    // Retrieve results from the App
     BacktestResults* appResults = m_app ? m_app->getBacktestResults() : nullptr;
-    
-    // Mettre à jour les références locales
+
+    // Update local references
     m_currentResults = appResults;
 
-    // Mettre en cache les nouveaux pointeurs
+    // Cache the new pointers
     m_cachedResults = appResults;
     
     if (!appResults || !appResults->data) {
@@ -396,20 +390,18 @@ void ChartView::updateData(BacktestResults* results) {
 
     m_dataExtracted = true;
     
-    // Définir le type de graphique
+    // Define the chart type
     QString chartType = m_chartTypeCombo->currentData().toString();
     m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
-    
-    // Afficher le widget de graphique et masquer le placeholder
-    showChartWidget();
-    
-    // Rafraîchir la liste des indicateurs
-    refreshIndicatorsList();
 
-    if(!results->indicators.empty()) {
-        // Configurer les indicateurs de la stratégie
-        configureStrategyIndicators(results->indicators);
-    }
+    // Show the chart widget and hide the placeholder
+    showChartWidget();
+
+    // Always configure strategy indicators (even if empty to clean)
+    configureStrategyIndicators(results->indicators);
+
+    // Refresh the indicators list AFTER configuring strategy indicators to ensure all indicators are cleared
+    refreshIndicatorsList();
     
     m_dataExtracted = true;
 
@@ -424,8 +416,8 @@ void ChartView::onChartTypeChanged(int index) {
     QVariant data = m_chartTypeCombo->itemData(index);
     if (data.isValid()) {
         QString chartType = data.toString();
-        
-        // Mettre à jour le type de graphique dans le widget
+
+        // Update the chart type in the widget
         m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
     }
 }
@@ -455,16 +447,11 @@ void ChartView::clear() {
     m_currentResults = nullptr;
     m_cachedResults = nullptr;
     m_dataExtracted = false;
-    
-    // Nettoyer le widget de graphique
-    if (m_chartWidget) {
-        // m_chartWidget->clearChart();
-    }
-    
-    // Vider la liste des indicateurs
+
+    // Clear the indicators list
     refreshIndicatorsList();
-    
-    // Réafficher le placeholder
+
+    // Show the placeholder
     showPlaceholder("Exécutez un backtest pour afficher les graphiques");
 }
 
@@ -485,27 +472,23 @@ void ChartView::onIndicatorChanged(int id, const QString &name) {
 }
 
 void ChartView::onIndicatorRemoved(int id) {
-    refreshIndicatorsList(); // methode de merde lourde
-    // Il faudrait plutot supprimer l'indicateur directement
-    // et supprimer les widgets associés
-    // if (m_indicatorLabels.contains(id)) {
-    //     delete m_indicatorLabels[id];
-    //     m_indicatorLabels.remove(id);
-    // }
+    refreshIndicatorsList(); //TODO: This method is a bit heavy, it would be better to remove the indicator directly
+    // and delete the associated widgets directly
+
 }
 
 void ChartView::onAggregationSliderChanged(int value) {
-    // Mettre à jour l'étiquette
+    // Update the label
     m_aggregationLabel->setText(QString::number(value));
-    
-    // Mettre à jour le ChartWidget si disponible
+
+    // Update the ChartWidget if available
     if (m_chartWidget) {
         m_chartWidget->setMaxDisplayPoints(value);
     }
 }
 
 void ChartView::onMaxDisplayPointsChanged(int value) {
-    // Mettre à jour le slider et l'étiquette si la valeur change depuis le ChartWidget
+    // Update the slider and label if the value changes from the ChartWidget
     if (m_aggregationSlider->value() != value) {
         m_aggregationSlider->setValue(value);
         m_aggregationLabel->setText(QString::number(value));
@@ -513,18 +496,18 @@ void ChartView::onMaxDisplayPointsChanged(int value) {
 }
 
 void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>& indicators) {
-    // Supprimer les indicateurs existants
+    // Remove all existing indicators from the chart widget
     if (m_chartWidget) {
         m_chartWidget->removeAllIndicators();
 
-        // Pour chaque indicateur de la stratégie
+        // For each strategy indicator
         for (const auto& indicator : indicators) {
             switch (indicator.type) {
                 case StrategyIndicator::RSI: {
                     RSIInstance rsi;
                     rsi.period = static_cast<int>(indicator.params.at("period"));
-                    rsi.height = 90;  // Hauteur standard
-                    rsi.color = 0x800080;  // Couleur par défaut (violet)
+                    rsi.height = 90;  // Standard height
+                    rsi.color = 0x800080;  // Default color (purple)
                     m_chartWidget->addIndicator(std::move(rsi));
                     break;
                 }
@@ -532,14 +515,14 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     EMAInstance ema;
                     ema.period = static_cast<int>(indicator.params.at("period"));
                     ema.visible = true;
-                    
-                    // Attribuer une couleur différente selon la période
-                    if (ema.period < 50) 
-                        ema.color = 0x0000FF;  // Bleu pour EMA courte
+
+                    // Assign a different color based on the period
+                    if (ema.period < 50)
+                        ema.color = 0x0000FF;  // Blue for short EMA
                     else if (ema.period < 100)
-                        ema.color = 0xFF0000;  // Rouge pour EMA moyenne
+                        ema.color = 0xff00b6;  // Pink for medium EMA   
                     else
-                        ema.color = 0x008000;  // Vert pour EMA longue
+                        ema.color = 0xFFA500;  // Orange for long EMA
 
                     m_chartWidget->addIndicator(std::move(ema));
                     break;
@@ -551,9 +534,9 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     stoch.slowDPeriod = static_cast<int>(indicator.params.at("slowDPeriod"));
                     stoch.overboughtLevel = static_cast<int>(indicator.params.at("overboughtLevel"));
                     stoch.oversoldLevel = static_cast<int>(indicator.params.at("oversoldLevel"));
-                    stoch.height = 90;  // Hauteur standard
-                    stoch.kColor = 0x0000FF;  // Bleu pour K
-                    stoch.dColor = 0xFF0000;  // Rouge pour D
+                    stoch.height = 90;  // Standard height
+                    stoch.kColor = 0x0000FF;  // Blue for K
+                    stoch.dColor = 0xFF0000;  // Red for D
                     m_chartWidget->addIndicator(std::move(stoch));
                     break;
                 }
@@ -561,12 +544,19 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     ATRInstance atr;
                     atr.period = static_cast<int>(indicator.params.at("period"));
                     atr.useLogScale = indicator.params.at("useLogScale") > 0.5;
-                    atr.height = 90;  // Hauteur standard
-                    atr.color = 0x008800;  // Vert
+                    atr.height = 90;  // Standard height
+                    atr.color = 0x008800;  // Green
                     m_chartWidget->addIndicator(std::move(atr));
                     break;
                 }
-            }
+                case StrategyIndicator::SUPERTREND: {
+                    SuperTrendInstance supertrend;
+                    supertrend.period = static_cast<int>(indicator.params.at("period"));
+                    supertrend.multiplier = indicator.params.at("multiplier");
+                    m_chartWidget->addIndicator(std::move(supertrend));
+                    break;
+                }
+            }            
         }
     }
 }

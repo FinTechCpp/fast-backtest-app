@@ -2,6 +2,7 @@
 
 #include <QCheckBox>
 #include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QLabel>
 #include "panels/basePanel.h"
 #include "Strategies/buy_heikin_green.hpp"
@@ -54,6 +55,7 @@ private slots:
     void onEmaLongFilterToggled(bool checked);
     void onRsiFilterToggled(bool checked);
     void onStochFilterToggled(bool checked);
+    void onSupertrendFilterToggled(bool checked);
 
 private:
     /**

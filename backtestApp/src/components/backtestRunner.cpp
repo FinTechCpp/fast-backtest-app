@@ -6,7 +6,7 @@
 #include "panels/strategySpecificPanels/strategyBasePanel.h"
 #include "panels/basePanel.h"
 #include "Strategies/buy_heikin_green.hpp"
-#include "buyHeikinGreen.hpp"
+#include "adapters/buyHeikinGreen.hpp"
 #include <QDebug>
 #include <QApplication>  
 

@@ -3,8 +3,8 @@
 #include "panels/strategySpecificPanels/strategyBasePanel.h"  // Ajoutez cette ligne
 #include "panels/strategySpecificPanels/buyHeikinGreenPanel.h"
 #include "panels/strategySpecificPanels/sellHeikinRedPanel.h"
-#include "buyHeikinGreen.hpp"
-#include "sellHeikinRed.hpp"
+#include "adapters/buyHeikinGreen.hpp"
+#include "adapters/sellHeikinRed.hpp"
 
 // Fonction d'initialisation des stratégies
 void registerAllStrategies() {

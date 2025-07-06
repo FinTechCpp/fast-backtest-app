@@ -23,7 +23,6 @@ target_include_directories(backtestapp
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/backtestEngine/include
         ${CMAKE_SOURCE_DIR}/strategies/include
-        ${CMAKE_SOURCE_DIR}/backtestAdapter/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/src
 )

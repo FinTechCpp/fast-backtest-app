@@ -181,7 +181,7 @@ jobs:
         tag_name: v${{ env.VERSION }}
         name: fast-backtest-app v${{ env.VERSION }}
         body: |
-          🚀 **New release v${{ env.VERSION }}**
+          **New release v${{ env.VERSION }}**
 
           **Build Information:**
           - Version: ${{ env.VERSION }}
@@ -208,15 +208,63 @@ jobs:
         files: ${{ env.ARCHIVE_NAME }}
         token: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Checkout releases repository
+      if: github.ref == 'refs/heads/main'
+      uses: actions/checkout@v4
+      with:
+        repository: FinTechCpp/fast-backtest-app-releases
+        path: releases-repo
+        token: ${{ secrets.RELEASE_REPO_PAT }}  # You need to create this secret in your repository
+
+    - name: Update download URL in website
+      if: github.ref == 'refs/heads/main'
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+        ARCHIVE_NAME: ${{ env.ARCHIVE_NAME }}
+      run: |
+        $htmlFile = "releases-repo/index.html"
+        $content = Get-Content $htmlFile -Raw
+        $version = $env:VERSION
+        $archiveName = $env:ARCHIVE_NAME
+
+        # Update the stable version number and download link
+        $newVersion = "v$version"
+        $downloadUrl = "https://github.com/FinTechCpp/fast-backtest-app/releases/download/v$version/$archiveName"
+        
+        # Update version tag
+        $content = $content -replace '(<span class="version-tag">v)[\d\.]+(<\/span>)', "`${1}$version`$2"
+        
+        # Update download link
+        $content = $content -replace '(<a href=")[^"]+(" class="button">Télécharger pour Windows<\/a>)', "`${1}$downloadUrl`$2"
+        
+        $content | Set-Content $htmlFile -Force
+        echo "Updated download URL to: $downloadUrl"
+
+    - name: Commit and push changes to releases repository
+      if: github.ref == 'refs/heads/main'
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        cd releases-repo
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add index.html
+        git commit -m "Update download URL for version v$env:VERSION"
+        git push
+
     - name: Build Summary
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+        SHORT_SHA: ${{ github.sha }}
+        ARCHIVE_NAME: ${{ env.ARCHIVE_NAME }}
       run: |
         echo "## ✅ Build Successful" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Release Created:** [v${{ env.VERSION }}](https://github.com/hugoMiCode/fast-backtest-app/releases/tag/v${{ env.VERSION }})" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Release Created:** [v$env:VERSION](https://github.com/FinTechCpp/fast-backtest-app/releases/tag/v$env:VERSION)" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**Build Details:**" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Version: ${{ env.VERSION }}" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Commit: ${{ env.SHORT_SHA }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Version: $env:VERSION" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Commit: $($env:SHORT_SHA.Substring(0, 7))" >> $env:GITHUB_STEP_SUMMARY
         echo "- Qt Version: ${{ env.QT_VERSION }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- Build Type: ${{ env.BUILD_TYPE }}" >> $env:GITHUB_STEP_SUMMARY
-        echo "- Archive: ${{ env.ARCHIVE_NAME }}" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Archive: $env:ARCHIVE_NAME" >> $env:GITHUB_STEP_SUMMARY

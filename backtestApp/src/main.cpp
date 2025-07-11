@@ -103,7 +103,7 @@ void setupLogging(QtMsgType logLevel, bool consoleOutput)
         QDir().mkpath(logDir);
     }
 
-    QString logTime = QDateTime::currentDateTime().toString("hh:mm:ss");
+    QString logTime = QDateTime::currentDateTime().toString("hh-mm-ss");
     QString logFile = logDir + "/backtestSession_" + logTime + ".log";
     
     qSetMessagePattern("[%{time yyyy-MM-dd hh:mm:ss}] [%{type}] %{message}");

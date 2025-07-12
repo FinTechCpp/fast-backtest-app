@@ -17,14 +17,22 @@ add_executable(backtestapp
     ${CMAKE_CURRENT_SOURCE_DIR}/qresources.qrc
 )
 
-# Configure the main include paths
+# Configure the main include paths - Modified section
 target_include_directories(backtestapp
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/backtestEngine/include
         ${CMAKE_SOURCE_DIR}/strategies/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/src
+        ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+# Additional include path for internal components
+target_include_directories(backtestapp
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
 
 # Read the version from the VERSION file or environment variable

@@ -1,12 +1,12 @@
 #include "components/backtestRunner.h"
 #include "components/configManager.h"
 #include "components/dataLoader.h"
-#include "app.h"
-#include "panels/generalParamsPanel.h"
-#include "panels/strategySpecificPanels/strategyBasePanel.h"
-#include "panels/basePanel.h"
+#include "ui/app.h"
+#include "ui/panels/generalParamsPanel.h"
+#include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
+#include "ui/panels/basePanel.h"
 #include "Strategies/buy_heikin_green.hpp"
-#include "adapters/buyHeikinGreen.hpp"
+#include "components/adapters/buyHeikinGreen.hpp"
 #include <QDebug>
 #include <QApplication>  
 

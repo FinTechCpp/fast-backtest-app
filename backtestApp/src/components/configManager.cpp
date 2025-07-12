@@ -1,7 +1,7 @@
 #include "components/configManager.h"
-#include "app.h"
-#include "panels/generalParamsPanel.h"
-#include "panels/strategySpecificPanels/strategyBasePanel.h"
+#include "ui/app.h"
+#include "ui/panels/generalParamsPanel.h"
+#include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
 #include <QCoreApplication>
 #include <QStandardPaths>
 #include <QFileInfo>

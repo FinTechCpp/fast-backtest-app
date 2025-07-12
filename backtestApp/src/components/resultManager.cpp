@@ -1,7 +1,7 @@
 #include "components/resultManager.h"
-#include "views/statsView.h"
-#include "views/chartView.h"
-#include "views/histogramView.h"
+#include "ui/views/statsView.h"
+#include "ui/views/chartView.h"
+#include "ui/views/histogramView.h"
 #include <QDebug>
 #include <QTime>
 #include <QResizeEvent>

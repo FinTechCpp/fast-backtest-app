@@ -6,7 +6,7 @@
 #include <QMap>
 #include <QString>
 #include <QResizeEvent>
-#include "views/baseView.h"  
+#include "ui/views/baseView.h"
 
 // Forward declarations
 class StatsView;

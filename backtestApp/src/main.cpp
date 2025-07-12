@@ -14,11 +14,11 @@
 #include <QMessageBox>
 #include <QMetaType>
 #include <iostream>
-#include "app.h"
+#include "ui/app.h"
 #include "components/backtestRunner.h"
 #include "components/dataLoader.h"
 #include "components/updateChecker.h"
-#include "menu/updateMenuManager.h"
+#include "ui/menu/updateMenuManager.h"
 #include "backtest.hpp"   // For be::* types
 #include "stats.hpp"      // For be::Stats
 

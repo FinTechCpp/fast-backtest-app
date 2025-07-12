@@ -16,7 +16,7 @@
 
 #include "components/dataLoader.h"
 #include "components/backtestResults.h"
-#include "strategies/strategyRegistry.h"
+#include "components/strategyRegistry.h"
 
 // Include necessary headers for the backtest components
 #include "backtest.hpp"

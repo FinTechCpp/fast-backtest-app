@@ -58,6 +58,9 @@ public:
         bool isValid = false;
     };
 
+    // on pourrait imaginer de refaire cette structure pour par exemple juste prendre le type de l'indicateur
+    // par exmeple pour le rsi c'est std::vector<double> rsiValues;
+    // pour les points pivots c'est std::map<int, std::vector<double>> pivotPointsValues;
     struct IndicatorData {
         // Pour chaque type d'indicateur, stocker les IDs qui ont été agrégés
         std::set<int> validRsiIds;
@@ -65,6 +68,7 @@ public:
         std::set<int> validSupertrendIds;
         std::set<int> validStochasticIds;
         std::set<int> validAtrIds;
+        std::set<int> validPivotPointsIds;
 
         // Données des indicateurs
         std::map<int, std::vector<double>> rsiValues;
@@ -72,6 +76,10 @@ public:
         std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
+        std::map<int, std::map<int, std::vector<double>>> pivotPointsValues; // ID -> (LevelType -> valeurs)
+        // on pourrait plutot faire : 
+        // std::map<int, std::map<int, std::vector<PivotChange>>> pivotPointChanges;
+        // où PivotChange serait {size_t dataIndex; double price;}
 
         AggregationLevel level;
         
@@ -81,6 +89,7 @@ public:
         bool isSupertrendValid(int id) const { return validSupertrendIds.find(id) != validSupertrendIds.end(); }
         bool isStochasticValid(int id) const { return validStochasticIds.find(id) != validStochasticIds.end(); }
         bool isAtrValid(int id) const { return validAtrIds.find(id) != validAtrIds.end(); }
+        bool isPivotPointsValid(int id) const { return validPivotPointsIds.find(id) != validPivotPointsIds.end(); }
     };
 
     struct HeikinAshiCache {
@@ -211,6 +220,8 @@ private:
     void calculateSupertrend(int id, int period, double multiplier);
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void calculateATR(int id, int period, bool useLogScale = false);
+    // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
+    void calculatePivotPoints(int id, const PivotPointsInstance& config);
 
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;

@@ -106,6 +106,11 @@ private:
         const ChartDataManager& dataManager, 
         const ChartDataManager::AggregationInfo& aggregationInfo);
 
+    void addPivotPointsToChart(FinanceChart* chart,
+        const PivotPointsInstance& pivotPoints,
+        const ChartDataManager& dataManager,
+        const ChartDataManager::AggregationInfo& aggregationInfo);
+
     // Utilitaires
     void addMarkers(XYChart* chart, 
                    const std::vector<std::pair<double, double>>& markers, 

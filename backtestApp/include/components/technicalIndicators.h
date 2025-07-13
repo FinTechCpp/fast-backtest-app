@@ -3,6 +3,10 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <map>
+#include "date.hpp"
+// super pas top, je fais pour avoir PivotPointsInstance::PeriodType pour les points pivots
+#include "ui/chart/indicatorInstances.h"
 
 /**
  * @brief Utility class for calculating technical indicators
@@ -116,5 +120,12 @@ public:
         bool useLogScale = false
     );
 
-
+    static void calculatePivotPoints(
+        const std::vector<double>& highData,
+        const std::vector<double>& lowData,
+        const std::vector<double>& closeData,
+        const std::vector<be::Date>& timestamps,
+        PivotPointsInstance::PeriodType periodType,
+        std::map<int, std::vector<double>>& levelValues
+    );
 };

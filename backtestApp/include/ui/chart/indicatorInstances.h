@@ -3,6 +3,7 @@
 #include <QString>
 #include <vector>
 #include <memory>
+#include <map>
 
 enum class IndicatorType {
     RSI,
@@ -10,7 +11,7 @@ enum class IndicatorType {
     STOCHASTIC,
     ATR,
     SUPERTREND,
-    // autres types futurs
+    PivotPoints,
 };
 
 struct IndicatorBase {
@@ -127,5 +128,74 @@ struct ATRInstance : public IndicatorBase {
     
     QString getDisplayName() const override {
         return QString("ATR (%1)").arg(period);
+    }
+};
+
+
+struct PivotPointsInstance : public IndicatorBase {
+    enum class PeriodType {
+        Daily,      // Points pivots quotidiens
+        Weekly,     // Points pivots hebdomadaires
+        Monthly,    // Points pivots mensuels
+        Quarterly,  // Points pivots trimestriels
+        Yearly      // Points pivots annuels
+    };
+
+    enum class LevelType {
+        Pivot,      // Point pivot principal (PP)
+        R1, R2, R3, // Niveaux de résistance
+        S1, S2, S3, // Niveaux de support
+        M_PR1,      // Milieu entre PP et R1
+        M_R1R2,     // Milieu entre R1 et R2
+        M_R2R3,     // Milieu entre R2 et R3
+        M_PS1,      // Milieu entre PP et S1
+        M_S1S2,     // Milieu entre S1 et S2
+        M_S2S3      // Milieu entre S2 et S3
+    };
+
+    struct LevelStyle {
+        int color = 0x006400;     // Couleur de la ligne
+        int thickness;    // Épaisseur (1-3)
+        Qt::PenStyle lineStyle; // Style (solid, dash, dot, etc.)
+        bool visible;     // Visibilité du niveau
+        
+        QString labelFormat; // Format d'affichage optionnel (ex: "PP: %.2f")
+    };
+
+    PivotPointsInstance() : IndicatorBase(IndicatorType::PivotPoints) {}
+    PeriodType periodType;
+    std::map<LevelType, LevelStyle> levelStyles;
+    bool showMidLevels;  // Afficher les niveaux milieux
+    bool showLabels;     // Afficher les étiquettes des niveaux
+    // peut etre ajouter la configuration de l'affichage des niveaux 3, 4, 5, etc. (activable desactivable)
+
+
+    bool needsRecalculation(const IndicatorBase& other) const override {
+        const PivotPointsInstance* otherPP = dynamic_cast<const PivotPointsInstance*>(&other);
+        if (!otherPP) return true;
+        return true;
+        // return periodType != otherPP->periodType || 
+        //        showMidLevels != otherPP->showMidLevels;
+    }
+    
+    QString getDisplayName() const override {
+        QString periodStr;
+        switch (periodType) {
+            case PeriodType::Daily: periodStr = "Daily"; break;
+            case PeriodType::Weekly: periodStr = "Weekly"; break;
+            case PeriodType::Monthly: periodStr = "Monthly"; break;
+            case PeriodType::Quarterly: periodStr = "Quarterly"; break;
+            case PeriodType::Yearly: periodStr = "Yearly"; break;
+        }
+        return QString("Pivot Points (%1)").arg(periodStr);
+    }
+
+    bool isLevelVisible(LevelType level) const {
+        auto it = levelStyles.find(level);
+        if (it == levelStyles.end()) return false;
+        
+        // Vérifier si c'est un niveau milieu et si les niveaux milieux sont activés
+        bool isMidLevel = (level >= LevelType::M_PR1);
+        return it->second.visible && (!isMidLevel || showMidLevels);
     }
 };

@@ -239,6 +239,7 @@ void ChartView::setupIndicatorControls() {
     m_indicatorTypeCombo->addItem("Supertrend", "SUPERTREND");
     m_indicatorTypeCombo->addItem("Stochastic", "STOCH");
     m_indicatorTypeCombo->addItem("ATR", "ATR");
+    m_indicatorTypeCombo->addItem("Points Pivots", "PivotPoints");
     // Add other indicator types here as needed
 
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
@@ -291,6 +292,17 @@ void ChartView::onAddIndicatorClicked() {
         atr.period = 14;
         m_chartWidget->addIndicator(std::move(atr));
     }
+    else if (indicatorType == "PivotPoints") {
+        PivotPointsInstance pivotPoints;
+        pivotPoints.periodType = PivotPointsInstance::PeriodType::Daily;
+        PivotPointsInstance::LevelStyle pivotStyle;
+        pivotStyle.color = 0xFF0000; // Red for Pivot Points by default
+        pivotStyle.thickness = 2;
+        // pivotStyle.lineStyle = Qt::SolidLine;
+        pivotPoints.levelStyles[PivotPointsInstance::LevelType::Pivot] = pivotStyle;
+
+        m_chartWidget->addIndicator(std::move(pivotPoints));
+    }
     // Add other indicator types here as needed
 }
 
@@ -337,6 +349,7 @@ void ChartView::onEditIndicator(int id) {
     if (tryOpenDialog<SuperTrendInstance, SupertrendDialog>(id)) return;
     if (tryOpenDialog<StochasticInstance, StochasticDialog>(id)) return;
     if (tryOpenDialog<ATRInstance, ATRDialog>(id)) return;
+    if (tryOpenDialog<PivotPointsInstance, PivotPointsDialog>(id)) return;
 }
 
 // Remove all indicators individually by their ID
@@ -556,7 +569,15 @@ void ChartView::configureStrategyIndicators(const std::vector<StrategyIndicator>
                     m_chartWidget->addIndicator(std::move(supertrend));
                     break;
                 }
-            }            
+                // ajouter ici les point pivots quand ils seront dans la stratégie
+                // case StrategyIndicator::PIVOT_POINTS: {
+                //     PivotPointsInstance pivotPoints;
+                //     pivotPoints.periodType = PivotPointsInstance::PeriodType::Daily;
+                //     pivotPoints.levelStyles[PivotPointsInstance::LevelType::Pivot] = { 0xFF0000, 2, Qt::SolidLine };
+                //     m_chartWidget->addIndicator(std::move(pivotPoints));
+                //     break;
+                // }
+            }
         }
     }
 }

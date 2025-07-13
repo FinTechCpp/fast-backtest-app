@@ -358,3 +358,135 @@ void TechnicalIndicators::calculateATR(
         }
     }
 }
+
+void TechnicalIndicators::calculatePivotPoints(
+    const std::vector<double>& highData,
+    const std::vector<double>& lowData,
+    const std::vector<double>& closeData,
+    const std::vector<be::Date>& dates,  // Utilise Date au lieu de QDateTime
+    PivotPointsInstance::PeriodType periodType,
+    std::map<int, std::vector<double>>& levelValues
+) {
+    if (highData.empty() || lowData.empty() || closeData.empty() || dates.empty()) {
+        return;
+    }
+    
+    // Initialiser tous les vecteurs de niveaux avec des zéros
+    size_t dataSize = highData.size();
+    for (int levelType = static_cast<int>(PivotPointsInstance::LevelType::Pivot); 
+         levelType <= static_cast<int>(PivotPointsInstance::LevelType::M_S2S3); 
+         levelType++) {
+        levelValues[levelType] = std::vector<double>(dataSize, 0.0);
+    }
+    
+    // Déterminer les limites de chaque période
+    std::vector<size_t> periodBoundaries;
+    periodBoundaries.push_back(0);  // Commencer par l'index 0
+    
+    be::Date currentDate = dates[0];
+    
+    for (size_t i = 1; i < dataSize; ++i) {
+        const be::Date& date = dates[i];
+        
+        bool newPeriod = false;
+        switch (periodType) {
+            case PivotPointsInstance::PeriodType::Daily:
+                // Nouvelle journée si le jour a changé
+                newPeriod = (date.getDay() != currentDate.getDay() ||
+                             date.getMonth() != currentDate.getMonth() ||
+                             date.getYear() != currentDate.getYear());
+                break;
+                
+            case PivotPointsInstance::PeriodType::Weekly:
+                // Simplification: détecter un changement de semaine quand le jour diminue
+                // ou quand on change de mois/année
+                newPeriod = (date.getDay() < currentDate.getDay() || 
+                            (date.getMonth() != currentDate.getMonth()) ||
+                            (date.getYear() != currentDate.getYear()));
+                break;
+                
+            case PivotPointsInstance::PeriodType::Monthly:
+                // Nouveau mois
+                newPeriod = (date.getMonth() != currentDate.getMonth() ||
+                             date.getYear() != currentDate.getYear());
+                break;
+                
+            case PivotPointsInstance::PeriodType::Quarterly:
+                // Nouveau trimestre (mois 1, 4, 7, 10)
+                newPeriod = ((int(date.getMonth()) % 3 == 1) && 
+                             date.getMonth() != currentDate.getMonth());
+                break;
+                
+            case PivotPointsInstance::PeriodType::Yearly:
+                // Nouvelle année
+                newPeriod = (date.getYear() != currentDate.getYear());
+                break;
+        }
+        
+        if (newPeriod) {
+            periodBoundaries.push_back(i);
+            currentDate = date;
+        }
+    }
+    periodBoundaries.push_back(dataSize);  // Ajouter la fin
+    
+    // Pour chaque période, calculer les niveaux de pivot
+    for (size_t i = 0; i < periodBoundaries.size() - 1; ++i) {
+        size_t start = periodBoundaries[i];
+        size_t end = periodBoundaries[i+1] - 1;
+        
+        // Si première période incomplète (sauf pour quotidien)
+        if (i == 0 && periodType != PivotPointsInstance::PeriodType::Daily) {
+            continue;
+        }
+        
+        // Obtenir high, low, close pour la période précédente
+        double high = -std::numeric_limits<double>::max();
+        double low = std::numeric_limits<double>::max();
+        double close = 0.0;
+        
+        // Si c'est la première période, on utilise les données actuelles
+        size_t calcStart = (i == 0) ? start : periodBoundaries[i-1];
+        size_t calcEnd = (i == 0) ? end : start - 1;
+        
+        for (size_t j = calcStart; j <= calcEnd; ++j) {
+            high = std::max(high, highData[j]);
+            low = std::min(low, lowData[j]);
+            close = closeData[j];  // Dernière valeur
+        }
+        
+        // Le reste du calcul des points pivots reste inchangé
+        double pivot = (high + low + close) / 3.0;
+        double r1 = (2.0 * pivot) - low;
+        double s1 = (2.0 * pivot) - high;
+        double r2 = pivot + (high - low);
+        double s2 = pivot - (high - low);
+        double r3 = high + 2.0 * (pivot - low);
+        double s3 = low - 2.0 * (high - pivot);
+        
+        double mpr1 = (pivot + r1) / 2.0;
+        double mr1r2 = (r1 + r2) / 2.0;
+        double mr2r3 = (r2 + r3) / 2.0;
+        double mps1 = (pivot + s1) / 2.0;
+        double ms1s2 = (s1 + s2) / 2.0;
+        double ms2s3 = (s2 + s3) / 2.0;
+        
+        // Appliquer les niveaux calculés à toute la période
+        for (size_t j = start; j <= end; ++j) {
+            using LT = PivotPointsInstance::LevelType;
+            levelValues[static_cast<int>(LT::Pivot)][j] = pivot;
+            levelValues[static_cast<int>(LT::R1)][j] = r1;
+            levelValues[static_cast<int>(LT::R2)][j] = r2;
+            levelValues[static_cast<int>(LT::R3)][j] = r3;
+            levelValues[static_cast<int>(LT::S1)][j] = s1;
+            levelValues[static_cast<int>(LT::S2)][j] = s2;
+            levelValues[static_cast<int>(LT::S3)][j] = s3;
+            levelValues[static_cast<int>(LT::M_PR1)][j] = mpr1;
+            levelValues[static_cast<int>(LT::M_R1R2)][j] = mr1r2;
+            levelValues[static_cast<int>(LT::M_R2R3)][j] = mr2r3;
+            levelValues[static_cast<int>(LT::M_PS1)][j] = mps1;
+            levelValues[static_cast<int>(LT::M_S1S2)][j] = ms1s2;
+            levelValues[static_cast<int>(LT::M_S2S3)][j] = ms2s3;
+        }
+    }
+}

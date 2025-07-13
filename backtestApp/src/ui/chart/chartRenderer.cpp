@@ -151,6 +151,13 @@ void ChartRenderer::createOrUpdateChart(
             addATRToChart(m_financeChart.get(), *atr, dataManager, aggregationInfo);
         }
     }
+
+    // Points pivots
+    for (const PivotPointsInstance* pivotPoints : dataManager.getIndicatorsOfType<PivotPointsInstance>()) {
+        if (pivotPoints->visible) {
+            addPivotPointsToChart(m_financeChart.get(), *pivotPoints, dataManager, aggregationInfo);
+        }
+    }
     
     // // 4. Ajouter le volume si demandé
     // if (config.showVolume) {
@@ -837,8 +844,182 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
 }
 
-void ChartRenderer::addMarkers(XYChart* chart, const std::vector<std::pair<double, double>>& markers, 
-                              const char* name, int symbolType, int symbolSize, int color)
+void ChartRenderer::addPivotPointsToChart(FinanceChart *chart, 
+                                        const PivotPointsInstance &pivotPoints, 
+                                        const ChartDataManager &dataManager, 
+                                        const ChartDataManager::AggregationInfo &aggregationInfo)
+{
+    // 1. Récupérer les données des points pivots depuis le cache
+    const std::map<int, std::vector<double>>* pivotData = nullptr;
+    int startIndex = aggregationInfo.startIndex;
+    int pointsToShow = aggregationInfo.pointCount;
+
+    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+        // Utiliser les données brutes
+        const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsValues;
+        auto it = pivotMap.find(pivotPoints.id);
+        if (it == pivotMap.end()) return;
+        
+        pivotData = &(it->second);
+    } 
+    else {
+        // Utiliser les données agrégées
+        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
+        auto it = aggregated.pivotPointsValues.find(pivotPoints.id);
+        
+        // Vérifier si les données agrégées sont disponibles et valides
+        if (it != aggregated.pivotPointsValues.end() && aggregated.isPivotPointsValid(pivotPoints.id)) {
+            pivotData = &(it->second);
+        }
+        else {
+            // Fallback aux données brutes
+            const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsValues;
+            auto rawIt = pivotMap.find(pivotPoints.id);
+            if (rawIt == pivotMap.end()) return;
+            
+            pivotData = &(rawIt->second);
+        }
+    }
+
+    if (!pivotData) return;
+    
+    // Obtenir le graphique principal pour ajouter les niveaux de pivot
+    XYChart* mainChart = (XYChart*)chart->getChart(1);
+    if (!mainChart) return;
+    
+    // 2. Obtenir la plage de données visibles pour l'axe X
+    double xMin = mainChart->getXValue(0);
+    double xMax = mainChart->getXValue(mainChart->getWidth());
+    
+    // Récupérer la période visible pour formater les labels appropriés
+    QString periodStr;
+    switch (pivotPoints.periodType) {
+        case PivotPointsInstance::PeriodType::Daily: periodStr = "D"; break;
+        case PivotPointsInstance::PeriodType::Weekly: periodStr = "W"; break;
+        case PivotPointsInstance::PeriodType::Monthly: periodStr = "M"; break;
+        case PivotPointsInstance::PeriodType::Quarterly: periodStr = "Q"; break;
+        case PivotPointsInstance::PeriodType::Yearly: periodStr = "Y"; break;
+    }
+    
+    // 3. Parcourir tous les niveaux définis dans l'instance de points pivots
+    for (const auto& [levelType, style] : pivotPoints.levelStyles) {
+        // Vérifier si ce niveau doit être affiché
+        if (!pivotPoints.isLevelVisible(levelType)) continue;
+        
+        // Obtenir les données pour ce niveau
+        auto levelIt = pivotData->find(static_cast<int>(levelType));
+        if (levelIt == pivotData->end()) continue;
+        
+        const std::vector<double>& values = levelIt->second;
+        if (values.empty() || startIndex >= static_cast<int>(values.size())) continue;
+        
+        // Limiter le nombre de points à afficher
+        int endIndex = std::min(startIndex + pointsToShow, static_cast<int>(values.size()));
+        int actualPoints = endIndex - startIndex;
+        if (actualPoints <= 0) continue;
+        
+        // 4. Détecter les changements de niveaux pour créer des segments horizontaux
+        std::vector<std::pair<int, int>> segments; // Début et fin de chaque segment horizontal
+        std::vector<double> segmentValues;         // Valeur de chaque segment
+        
+        int segmentStart = startIndex;
+        double currentValue = values[startIndex];
+        
+        for (int i = startIndex + 1; i < endIndex; ++i) {
+            if (std::abs(values[i] - currentValue) > 0.00001) {
+                // Valeur a changé, terminer le segment actuel et en commencer un nouveau
+                segments.push_back({segmentStart - startIndex, i - 1 - startIndex});
+                segmentValues.push_back(currentValue);
+                
+                segmentStart = i;
+                currentValue = values[i];
+            }
+        }
+        
+        // Ajouter le dernier segment
+        segments.push_back({segmentStart - startIndex, endIndex - 1 - startIndex});
+        segmentValues.push_back(currentValue);
+        
+        // 5. Créer une couche pour ce niveau
+        QString levelName;
+        switch (levelType) {
+            case PivotPointsInstance::LevelType::Pivot: levelName = "PP"; break;
+            case PivotPointsInstance::LevelType::R1: levelName = "R1"; break;
+            case PivotPointsInstance::LevelType::R2: levelName = "R2"; break;
+            case PivotPointsInstance::LevelType::R3: levelName = "R3"; break;
+            case PivotPointsInstance::LevelType::S1: levelName = "S1"; break;
+            case PivotPointsInstance::LevelType::S2: levelName = "S2"; break;
+            case PivotPointsInstance::LevelType::S3: levelName = "S3"; break;
+            case PivotPointsInstance::LevelType::M_PR1: levelName = "M(P-R1)"; break;
+            case PivotPointsInstance::LevelType::M_R1R2: levelName = "M(R1-R2)"; break;
+            case PivotPointsInstance::LevelType::M_R2R3: levelName = "M(R2-R3)"; break;
+            case PivotPointsInstance::LevelType::M_PS1: levelName = "M(P-S1)"; break;
+            case PivotPointsInstance::LevelType::M_S1S2: levelName = "M(S1-S2)"; break;
+            case PivotPointsInstance::LevelType::M_S2S3: levelName = "M(S2-S3)"; break;
+        }
+        
+        // 6. Dessiner chaque segment horizontal pour ce niveau
+        for (size_t i = 0; i < segments.size(); ++i) {
+            const auto& [start, end] = segments[i];
+            const double value = segmentValues[i];
+            
+            // Ignorer les segments avec des valeurs non valides ou nulles
+            if (value == 0 || std::isnan(value)) continue;
+            
+            // Créer un vecteur de points pour tracer la ligne horizontale
+            std::vector<double> xData = {static_cast<double>(start), static_cast<double>(end)};
+            std::vector<double> yData = {value, value};
+            
+            // Convertir en DoubleArray pour ChartDir
+            DoubleArray xArray = ChartDataManager::vectorToDoubleArray(xData);
+            DoubleArray yArray = ChartDataManager::vectorToDoubleArray(yData);
+            
+            // Créer une couche de ligne
+            LineLayer* layer = mainChart->addLineLayer(yArray, style.color);
+            layer->setXData(xArray);
+            layer->setLineWidth(style.thickness);
+
+
+            // Définir le style de ligne
+            // int dashColor = layer->setDataColor(Chart::dashLineColor(style.color));
+            // switch (style.lineStyle) {
+            //     case Qt::DashLine:
+            //         dashColor = Chart::dashLineColor(style.color, Chart::DashLine);
+            //         break;
+            //     case Qt::DotLine:
+            //         dashColor = Chart::dashLineColor(style.color, Chart::DotLine);
+            //         break;
+            //     case Qt::DashDotLine:
+            //         dashColor = Chart::dashLineColor(style.color, Chart::DotDashLine);
+            //         break;
+            // }
+            // layer->setDataColor(dashColor);
+
+            // 7. Ajouter une étiquette si demandé (uniquement pour le premier segment de chaque niveau)
+            if (pivotPoints.showLabels && i == 0) {
+                // Formater l'étiquette selon le format spécifié
+                QString labelText = style.labelFormat.arg(value);
+                
+                // Si pas de format spécifié, utiliser le nom du niveau et la période
+                if (style.labelFormat.isEmpty()) {
+                    labelText = QString("%1(%2): %3").arg(levelName).arg(periodStr).arg(value, 0, 'f', 2);
+                }
+                
+                // Ajouter l'étiquette sur le côté droit du graphique
+                TextBox* label = mainChart->addText(mainChart->getWidth() - 5, 
+                                                   mainChart->getYCoor(value),
+                                                   labelText.toStdString().c_str(),
+                                                   "Arial", 8);
+                label->setAlignment(Chart::Right);
+                label->setFontColor(style.color);
+                label->setBackground(Chart::Transparent, Chart::Transparent);
+            }
+        }
+    }
+}
+
+void ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<double, double>> &markers,
+                               const char *name, int symbolType, int symbolSize, int color)
 {
     if (markers.empty()) return;
 

@@ -447,6 +447,35 @@ void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
     m_aggregatedIndicatorsCache[AggregationLevel::Raw].atrValues[id] = std::move(atrValues);
 }
 
+void ChartDataManager::calculatePivotPoints(int id, const PivotPointsInstance& config) {
+    // Vérifier si les données nécessaires sont disponibles
+    if (!hasValidData()) return;
+    
+    // Obtenir les prix
+    std::vector<be::Date> dates = m_backtestData->getDates();
+    std::vector<double> highPrices = m_backtestData->getHigh();
+    std::vector<double> lowPrices = m_backtestData->getLow();
+    std::vector<double> closePrices = m_backtestData->getClose();
+    
+    // Structure pour stocker les niveaux calculés
+    std::map<int, std::vector<double>> levelValues;
+    
+    // Calculer les points pivots
+    TechnicalIndicators::calculatePivotPoints(
+        highPrices, 
+        lowPrices, 
+        closePrices, 
+        dates, 
+        config.periodType, 
+        levelValues
+    );
+    
+    // Mettre à jour la structure IndicatorData pour le niveau Raw
+    auto& indicatorData = m_aggregatedIndicatorsCache[AggregationLevel::Raw];
+    indicatorData.validPivotPointsIds.insert(id);
+    indicatorData.pivotPointsValues[id] = std::move(levelValues);
+}
+
 // Méthode utilitaire pour configurer le sélecteur d'agrégation
 bool ChartDataManager::configureAggregationSelector(ArrayMath& math, AggregationLevel level) const {
     switch (level) {
@@ -555,53 +584,53 @@ void ChartDataManager::setMaxDisplayPoints(int value) {
 }
 
 void ChartDataManager::calculateIndicator(const IndicatorBase &config) {
-    // Implémentation spécifique pour chaque type d'indicateur
-    // Par exemple, pour RSI, EMA, Stochastic, ATR, etc.
     switch (config.type_) {
     case IndicatorType::RSI: {
         const RSIInstance& rsiConfig = static_cast<const RSIInstance&>(config);
         calculateRSI(rsiConfig.id, rsiConfig.period);
 
-        // Invalider cet indicateur dans tous les caches d'agrégation
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache) {
+        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
             aggregated.validRsiIds.erase(rsiConfig.id);
-        }
         break;
     }
     case IndicatorType::EMA: {
         const EMAInstance& emaConfig = static_cast<const EMAInstance&>(config);
         calculateEMA(emaConfig.id, emaConfig.period);
 
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache) {
+        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
             aggregated.validEmaIds.erase(emaConfig.id);
-        }
         break;
     }
     case IndicatorType::SUPERTREND: {
         const SuperTrendInstance& supertrendConfig = static_cast<const SuperTrendInstance&>(config);
         calculateSupertrend(supertrendConfig.id, supertrendConfig.period, supertrendConfig.multiplier);
 
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache) {
+        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
             aggregated.validSupertrendIds.erase(supertrendConfig.id);
-        }
         break;
     }
     case IndicatorType::STOCHASTIC: {
         const StochasticInstance& stochasticConfig = static_cast<const StochasticInstance&>(config);
         calculateStochastic(stochasticConfig.id, stochasticConfig.fastKPeriod, stochasticConfig.slowKPeriod, stochasticConfig.slowDPeriod);
 
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache) {
+        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
             aggregated.validStochasticIds.erase(stochasticConfig.id);
-        }
         break;
     }
     case IndicatorType::ATR: {
         const ATRInstance& atrConfig = static_cast<const ATRInstance&>(config);
         calculateATR(atrConfig.id, atrConfig.period, atrConfig.useLogScale);
 
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache) {
+        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
             aggregated.validAtrIds.erase(atrConfig.id);
-        }
+        break;
+    }
+    case IndicatorType::PivotPoints: {
+        const PivotPointsInstance& pivotConfig = static_cast<const PivotPointsInstance&>(config);
+        calculatePivotPoints(pivotConfig.id, pivotConfig);
+
+        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
+            aggregated.validPivotPointsIds.erase(pivotConfig.id);
         break;
     }
     // Ajouter d'autres types d'indicateurs ici

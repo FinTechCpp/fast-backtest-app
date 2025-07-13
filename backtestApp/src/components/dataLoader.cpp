@@ -604,7 +604,7 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
     // Create the timestamp without timezone conversion, then apply a constant offset
     // to have the data between 15:30 and 22:00 (New York market hours)
 
-    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), Qt::UTC);
+    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), QTimeZone::UTC);
 
     // Apply a constant offset to simulate the New York -> desired local time shift
     timestamp = timestamp.addSecs(CONSTANT_OFFSET_HOURS * 3600);

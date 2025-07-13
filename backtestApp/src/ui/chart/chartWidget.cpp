@@ -68,11 +68,6 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
     updateChartDisplay(ViewPortMode::FULL_CHART);
 }
 
-// bool ChartWidget::hasValidData() const {
-//     return m_dataManager.hasValidData();
-// }
-
-
 // mouais vrm pas terrible on pourrait directement utiliser les méthodes de ChartDataManager
 QString ChartWidget::chartTypeToString(ChartDataManager::ChartType type)
 {

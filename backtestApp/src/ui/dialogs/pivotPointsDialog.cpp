@@ -10,86 +10,11 @@ PivotPointsDialog::PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, 
     , m_originalPivots(pivotPoints)
     , m_currentPivots(pivotPoints)
 {
-    // S'assurer que tous les niveaux sont définis avec des valeurs par défaut
-    using LT = PivotPointsInstance::LevelType;
-    if (m_currentPivots.levelStyles.empty()) {
-        // Définir des styles par défaut pour le pivot central (rouge)
-        PivotPointsInstance::LevelStyle pivotStyle;
-        pivotStyle.color = 0xCC0000;  // Rouge
-        pivotStyle.thickness = 2;
-        pivotStyle.lineStyle = Qt::SolidLine;
-        pivotStyle.visible = true;
-        pivotStyle.labelFormat = "PP: %.2f";
-        m_currentPivots.levelStyles[LT::Pivot] = pivotStyle;
-        
-        // Styles pour les résistances (vert)
-        PivotPointsInstance::LevelStyle r1Style = pivotStyle;
-        r1Style.color = 0x009900;  // Vert
-        r1Style.thickness = 1;
-        r1Style.labelFormat = "R1: %.2f";
-        m_currentPivots.levelStyles[LT::R1] = r1Style;
-        
-        PivotPointsInstance::LevelStyle r2Style = r1Style;
-        r2Style.lineStyle = Qt::DashLine;
-        r2Style.labelFormat = "R2: %.2f";
-        m_currentPivots.levelStyles[LT::R2] = r2Style;
-        
-        PivotPointsInstance::LevelStyle r3Style = r1Style;
-        r3Style.lineStyle = Qt::DotLine;
-        r3Style.visible = false;
-        r3Style.labelFormat = "R3: %.2f";
-        m_currentPivots.levelStyles[LT::R3] = r3Style;
-        
-        // Styles pour les supports (bleu)
-        PivotPointsInstance::LevelStyle s1Style = pivotStyle;
-        s1Style.color = 0x0066CC;  // Bleu
-        s1Style.thickness = 1;
-        s1Style.labelFormat = "S1: %.2f";
-        m_currentPivots.levelStyles[LT::S1] = s1Style;
-        
-        PivotPointsInstance::LevelStyle s2Style = s1Style;
-        s2Style.lineStyle = Qt::DashLine;
-        s2Style.labelFormat = "S2: %.2f";
-        m_currentPivots.levelStyles[LT::S2] = s2Style;
-        
-        PivotPointsInstance::LevelStyle s3Style = s1Style;
-        s3Style.lineStyle = Qt::DotLine;
-        s3Style.visible = false;
-        s3Style.labelFormat = "S3: %.2f";
-        m_currentPivots.levelStyles[LT::S3] = s3Style;
-        
-        // Styles pour les niveaux milieux (gris)
-        PivotPointsInstance::LevelStyle midStyle;
-        midStyle.color = 0x888888;  // Gris
-        midStyle.thickness = 1;
-        midStyle.lineStyle = Qt::DotLine;
-        midStyle.visible = true;
-        
-        midStyle.labelFormat = "M(P-R1): %.2f";
-        m_currentPivots.levelStyles[LT::M_PR1] = midStyle;
-        
-        midStyle.labelFormat = "M(R1-R2): %.2f";
-        m_currentPivots.levelStyles[LT::M_R1R2] = midStyle;
-        
-        midStyle.labelFormat = "M(R2-R3): %.2f";
-        m_currentPivots.levelStyles[LT::M_R2R3] = midStyle;
-        
-        midStyle.labelFormat = "M(P-S1): %.2f";
-        m_currentPivots.levelStyles[LT::M_PS1] = midStyle;
-        
-        midStyle.labelFormat = "M(S1-S2): %.2f";
-        m_currentPivots.levelStyles[LT::M_S1S2] = midStyle;
-        
-        midStyle.labelFormat = "M(S2-S3): %.2f";
-        m_currentPivots.levelStyles[LT::M_S2S3] = midStyle;
-    }
-    
-    // Configurer le type de période par défaut si non défini
-    if (m_currentPivots.periodType == PivotPointsInstance::PeriodType::Daily) {
-        m_currentPivots.showMidLevels = false;
-        m_currentPivots.showLabels = true;
-    }
-    
+    setMinimumWidth(500);
+    // Si l'instance est nouvelle (pas de styles définis), initialiser avec les valeurs par défaut
+    if (m_currentPivots.levelStyles.empty())
+        m_currentPivots.initializeDefaultStyles();
+
     setupUI();
     connectSignals();
 }
@@ -106,11 +31,10 @@ void PivotPointsDialog::setupUI()
     
     // Combo box pour le type de période
     m_periodTypeComboBox = new QComboBox();
+    m_periodTypeComboBox->addItem("4H", static_cast<int>(PivotPointsInstance::PeriodType::FourHour));
     m_periodTypeComboBox->addItem("Daily", static_cast<int>(PivotPointsInstance::PeriodType::Daily));
     m_periodTypeComboBox->addItem("Weekly", static_cast<int>(PivotPointsInstance::PeriodType::Weekly));
     m_periodTypeComboBox->addItem("Monthly", static_cast<int>(PivotPointsInstance::PeriodType::Monthly));
-    m_periodTypeComboBox->addItem("Quarterly", static_cast<int>(PivotPointsInstance::PeriodType::Quarterly));
-    m_periodTypeComboBox->addItem("Yearly", static_cast<int>(PivotPointsInstance::PeriodType::Yearly));
     
     // Sélectionner la période actuelle
     m_periodTypeComboBox->setCurrentIndex(static_cast<int>(m_currentPivots.periodType));
@@ -118,7 +42,7 @@ void PivotPointsDialog::setupUI()
     
     // Checkbox pour l'affichage des niveaux milieux
     m_showMidLevelsCheckBox = new QCheckBox();
-    m_showMidLevelsCheckBox->setChecked(m_currentPivots.showMidLevels);
+    m_showMidLevelsCheckBox->setChecked(false); 
     generalLayout->addRow("Show Mid Levels:", m_showMidLevelsCheckBox);
     
     // Checkbox pour l'affichage des étiquettes
@@ -198,10 +122,10 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, PivotPo
     QComboBox* lineStyleComboBox = createLineStyleComboBox();
     int styleIndex = 0;
     switch (style.lineStyle) {
-        case Qt::SolidLine: styleIndex = 0; break;
-        case Qt::DashLine: styleIndex = 1; break;
-        case Qt::DotLine: styleIndex = 2; break;
-        case Qt::DashDotLine: styleIndex = 3; break;
+        case PivotPointsInstance::LineStyle::Solid: styleIndex = 0; break;
+        case PivotPointsInstance::LineStyle::Dash: styleIndex = 1; break;
+        case PivotPointsInstance::LineStyle::Dot: styleIndex = 2; break;
+        // case LineStyle::DashDot: styleIndex = 3; break;
         default: styleIndex = 0; break;
     }
     lineStyleComboBox->setCurrentIndex(styleIndex);
@@ -222,16 +146,14 @@ QComboBox* PivotPointsDialog::createLineStyleComboBox()
     comboBox->addItem("Solid");
     comboBox->addItem("Dash");
     comboBox->addItem("Dot");
-    comboBox->addItem("DashDot");
+    // comboBox->addItem("DashDot");
     return comboBox;
 }
 
 void PivotPointsDialog::updateLevelControlsState()
 {
-    // Mettre à jour la visibilité des niveaux milieux selon l'option showMidLevels
-    bool showMid = m_currentPivots.showMidLevels;
-    
-    // Liste des niveaux milieux
+    // Désactiver le checkbox de visibilité pour les milieux si on utilise le raccourci
+    bool shortcutActive = m_showMidLevelsCheckBox->isChecked();
     std::vector<PivotPointsInstance::LevelType> midLevels = {
         PivotPointsInstance::LevelType::M_PR1,
         PivotPointsInstance::LevelType::M_R1R2,
@@ -240,16 +162,12 @@ void PivotPointsDialog::updateLevelControlsState()
         PivotPointsInstance::LevelType::M_S1S2,
         PivotPointsInstance::LevelType::M_S2S3
     };
-    
-    // Activer/désactiver les contrôles pour les niveaux milieux
     for (auto levelType : midLevels) {
         int levelTypeInt = static_cast<int>(levelType);
         auto it = m_levelControls.find(levelTypeInt);
         if (it != m_levelControls.end()) {
-            it->second.visibilityCheckBox->setEnabled(showMid);
-            it->second.colorButton->setEnabled(showMid && it->second.visibilityCheckBox->isChecked());
-            it->second.thicknessSpinBox->setEnabled(showMid && it->second.visibilityCheckBox->isChecked());
-            it->second.lineStyleComboBox->setEnabled(showMid && it->second.visibilityCheckBox->isChecked());
+            // Si le raccourci est actif, on désactive la modification individuelle
+            it->second.visibilityCheckBox->setEnabled(!shortcutActive);
         }
     }
 }
@@ -258,8 +176,8 @@ void PivotPointsDialog::connectSignals()
 {
     // Connecter les contrôles généraux
     connect(m_periodTypeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PivotPointsDialog::onPeriodTypeChanged);
-    connect(m_showMidLevelsCheckBox, &QCheckBox::stateChanged, this, &PivotPointsDialog::onShowMidLevelsChanged);
-    connect(m_showLabelsCheckBox, &QCheckBox::stateChanged, this, &PivotPointsDialog::onShowLabelsChanged);
+    connect(m_showMidLevelsCheckBox, &QCheckBox::checkStateChanged, this, &PivotPointsDialog::onShowMidLevelsChanged);
+    connect(m_showLabelsCheckBox, &QCheckBox::checkStateChanged, this, &PivotPointsDialog::onShowLabelsChanged);
     
     // Connecter les contrôles pour chaque niveau
     for (auto& [levelType, controls] : m_levelControls) {
@@ -301,9 +219,39 @@ void PivotPointsDialog::onPeriodTypeChanged(int index)
 
 void PivotPointsDialog::onShowMidLevelsChanged(int state)
 {
-    m_currentPivots.showMidLevels = (state == Qt::Checked);
-    updateLevelControlsState();
+    // Liste des niveaux milieux et leurs dépendances
+    struct MidLevelInfo {
+        PivotPointsInstance::LevelType mid;
+        PivotPointsInstance::LevelType left;
+        PivotPointsInstance::LevelType right;
+    };
+    std::vector<MidLevelInfo> midLevels = {
+        {PivotPointsInstance::LevelType::M_PR1, PivotPointsInstance::LevelType::Pivot, PivotPointsInstance::LevelType::R1},
+        {PivotPointsInstance::LevelType::M_R1R2, PivotPointsInstance::LevelType::R1, PivotPointsInstance::LevelType::R2},
+        {PivotPointsInstance::LevelType::M_R2R3, PivotPointsInstance::LevelType::R2, PivotPointsInstance::LevelType::R3},
+        {PivotPointsInstance::LevelType::M_PS1, PivotPointsInstance::LevelType::Pivot, PivotPointsInstance::LevelType::S1},
+        {PivotPointsInstance::LevelType::M_S1S2, PivotPointsInstance::LevelType::S1, PivotPointsInstance::LevelType::S2},
+        {PivotPointsInstance::LevelType::M_S2S3, PivotPointsInstance::LevelType::S2, PivotPointsInstance::LevelType::S3}
+    };
+
+    bool showMid = (state == Qt::Checked);
+
+    for (const auto& info : midLevels) {
+        bool leftVisible = m_currentPivots.levelStyles[info.left].visible;
+        bool rightVisible = m_currentPivots.levelStyles[info.right].visible;
+        bool midShouldBeVisible = showMid && leftVisible && rightVisible;
+
+        m_currentPivots.levelStyles[info.mid].visible = midShouldBeVisible;
+
+        // Met à jour l'état du checkbox dans l'UI
+        int midTypeInt = static_cast<int>(info.mid);
+        auto it = m_levelControls.find(midTypeInt);
+        if (it != m_levelControls.end()) {
+            it->second.visibilityCheckBox->setChecked(midShouldBeVisible);
+        }
+    }
     applyChanges();
+    updateLevelControlsState();
 }
 
 void PivotPointsDialog::onShowLabelsChanged(int state)
@@ -343,13 +291,13 @@ void PivotPointsDialog::onLevelLineStyleChanged(int levelType, int index)
     PivotPointsInstance::LevelType type = static_cast<PivotPointsInstance::LevelType>(levelType);
     
     // Convertir l'index en style de ligne Qt
-    Qt::PenStyle style = Qt::SolidLine;
+    PivotPointsInstance::LineStyle style = PivotPointsInstance::LineStyle::Solid;
     switch (index) {
-        case 0: style = Qt::SolidLine; break;
-        case 1: style = Qt::DashLine; break;
-        case 2: style = Qt::DotLine; break;
-        case 3: style = Qt::DashDotLine; break;
-        default: style = Qt::SolidLine; break;
+        case 0: style = PivotPointsInstance::LineStyle::Solid; break;
+        case 1: style = PivotPointsInstance::LineStyle::Dash; break;
+        case 2: style = PivotPointsInstance::LineStyle::Dot; break;
+        // case 3: style = PivotPointsInstance::LineStyle::DashDot; break;
+        default: style = PivotPointsInstance::LineStyle::Solid; break;
     }
     
     m_currentPivots.levelStyles[type].lineStyle = style;

@@ -134,58 +134,68 @@ struct ATRInstance : public IndicatorBase {
 
 struct PivotPointsInstance : public IndicatorBase {
     enum class PeriodType {
+        FourHour,   // Points pivots toutes les 4 heures
         Daily,      // Points pivots quotidiens
         Weekly,     // Points pivots hebdomadaires
         Monthly,    // Points pivots mensuels
-        Quarterly,  // Points pivots trimestriels
-        Yearly      // Points pivots annuels
     };
 
     enum class LevelType {
+        R3,         // Résistance 3
+        R2,         // Résistance 2
+        R1,         // Résistance 1
         Pivot,      // Point pivot principal (PP)
-        R1, R2, R3, // Niveaux de résistance
-        S1, S2, S3, // Niveaux de support
-        M_PR1,      // Milieu entre PP et R1
-        M_R1R2,     // Milieu entre R1 et R2
+        S1,         // Support 1
+        S2,         // Support 2
+        S3,         // Support 3
         M_R2R3,     // Milieu entre R2 et R3
+        M_R1R2,     // Milieu entre R1 et R2
+        M_PR1,      // Milieu entre PP et R1
         M_PS1,      // Milieu entre PP et S1
         M_S1S2,     // Milieu entre S1 et S2
-        M_S2S3      // Milieu entre S2 et S3
+        M_S2S3,     // Milieu entre S2 et S3
+
+        NumLevels   // Nombre total de niveaux
+    };
+
+    enum class LineStyle {
+        Solid,
+        Dash,
+        Dot
     };
 
     struct LevelStyle {
-        int color = 0x006400;     // Couleur de la ligne
-        int thickness;    // Épaisseur (1-3)
-        Qt::PenStyle lineStyle; // Style (solid, dash, dot, etc.)
-        bool visible;     // Visibilité du niveau
-        
-        QString labelFormat; // Format d'affichage optionnel (ex: "PP: %.2f")
+        int color = 0x000000;     // Couleur de la ligne
+        int thickness = 2;    // Épaisseur (1-3)
+        LineStyle lineStyle = LineStyle::Solid; // Style (solid, dash, dot, etc.)
+        bool visible = false;     // Visibilité du niveau
+
+        QString labelFormat = QString(); // Format d'affichage optionnel (ex: "PP: %.2f")
     };
 
-    PivotPointsInstance() : IndicatorBase(IndicatorType::PivotPoints) {}
+    PivotPointsInstance() : IndicatorBase(IndicatorType::PivotPoints) {
+        initializeDefaultStyles();
+    }
     PeriodType periodType;
     std::map<LevelType, LevelStyle> levelStyles;
-    bool showMidLevels;  // Afficher les niveaux milieux
-    bool showLabels;     // Afficher les étiquettes des niveaux
+    // bool showMidLevels = false;  // Afficher les niveaux milieux
+    bool showLabels = true;     // Afficher les étiquettes des niveaux
     // peut etre ajouter la configuration de l'affichage des niveaux 3, 4, 5, etc. (activable desactivable)
 
 
     bool needsRecalculation(const IndicatorBase& other) const override {
         const PivotPointsInstance* otherPP = dynamic_cast<const PivotPointsInstance*>(&other);
         if (!otherPP) return true;
-        return true;
-        // return periodType != otherPP->periodType || 
-        //        showMidLevels != otherPP->showMidLevels;
+        return periodType != otherPP->periodType;
     }
     
     QString getDisplayName() const override {
         QString periodStr;
         switch (periodType) {
+            case PeriodType::FourHour: periodStr = "4H"; break;
             case PeriodType::Daily: periodStr = "Daily"; break;
             case PeriodType::Weekly: periodStr = "Weekly"; break;
             case PeriodType::Monthly: periodStr = "Monthly"; break;
-            case PeriodType::Quarterly: periodStr = "Quarterly"; break;
-            case PeriodType::Yearly: periodStr = "Yearly"; break;
         }
         return QString("Pivot Points (%1)").arg(periodStr);
     }
@@ -193,9 +203,87 @@ struct PivotPointsInstance : public IndicatorBase {
     bool isLevelVisible(LevelType level) const {
         auto it = levelStyles.find(level);
         if (it == levelStyles.end()) return false;
+        return it->second.visible;
+    }
+
+    void initializeDefaultStyles() {
+        // Point pivot central (noir, trait plein, visible)
+        LevelStyle pivotStyle;
+        pivotStyle.color = 0x000000;  // Noir
+        pivotStyle.thickness = 2;
+        pivotStyle.lineStyle = LineStyle::Solid;
+        pivotStyle.visible = true;
+        pivotStyle.labelFormat = "PP: %.2f";
+        levelStyles[LevelType::Pivot] = pivotStyle;
         
-        // Vérifier si c'est un niveau milieu et si les niveaux milieux sont activés
-        bool isMidLevel = (level >= LevelType::M_PR1);
-        return it->second.visible && (!isMidLevel || showMidLevels);
+        // Résistances (rouge, trait plein, visibles)
+        LevelStyle resistanceStyle;
+        resistanceStyle.color = 0xFF0000;  // Rouge
+        resistanceStyle.thickness = 2;
+        resistanceStyle.lineStyle = LineStyle::Solid;
+        resistanceStyle.visible = true;
+        
+        resistanceStyle.labelFormat = "R1: %.2f";
+        levelStyles[LevelType::R1] = resistanceStyle;
+        
+        resistanceStyle.labelFormat = "R2: %.2f";
+        levelStyles[LevelType::R2] = resistanceStyle;
+        
+        resistanceStyle.labelFormat = "R3: %.2f";
+        levelStyles[LevelType::R3] = resistanceStyle;
+        
+        // Supports (vert, trait plein, visibles)
+        LevelStyle supportStyle;
+        supportStyle.color = 0x008000;  // Vert
+        supportStyle.thickness = 2;
+        supportStyle.lineStyle = LineStyle::Solid;
+        supportStyle.visible = true;
+        
+        supportStyle.labelFormat = "S1: %.2f";
+        levelStyles[LevelType::S1] = supportStyle;
+        
+        supportStyle.labelFormat = "S2: %.2f";
+        levelStyles[LevelType::S2] = supportStyle;
+        
+        supportStyle.labelFormat = "S3: %.2f";
+        levelStyles[LevelType::S3] = supportStyle;
+        
+        // Niveaux milieux résistance (rouge, trait pointillé, non visibles par défaut)
+        LevelStyle midResistanceStyle;
+        midResistanceStyle.color = 0xFF0000;  // Rouge
+        midResistanceStyle.thickness = 1;
+        midResistanceStyle.lineStyle = LineStyle::Dash;
+        midResistanceStyle.visible = false;  // Visible si showMidLevels est true
+        
+        midResistanceStyle.labelFormat = "M(R2-R3): %.2f";
+        levelStyles[LevelType::M_R2R3] = midResistanceStyle;
+        
+        midResistanceStyle.labelFormat = "M(R1-R2): %.2f";
+        levelStyles[LevelType::M_R1R2] = midResistanceStyle;
+        
+        midResistanceStyle.labelFormat = "M(P-R1): %.2f";
+        levelStyles[LevelType::M_PR1] = midResistanceStyle;
+        
+        // Niveaux milieux support (vert, trait pointillé, non visibles par défaut)
+        LevelStyle midSupportStyle;
+        midSupportStyle.color = 0x008000;  // Vert
+        midSupportStyle.thickness = 1;
+        midSupportStyle.lineStyle = LineStyle::Dash;
+        midSupportStyle.visible = false;  // Visible si showMidLevels est true
+        
+        midSupportStyle.labelFormat = "M(P-S1): %.2f";
+        levelStyles[LevelType::M_PS1] = midSupportStyle;
+        
+        midSupportStyle.labelFormat = "M(S1-S2): %.2f";
+        levelStyles[LevelType::M_S1S2] = midSupportStyle;
+        
+        midSupportStyle.labelFormat = "M(S2-S3): %.2f";
+        levelStyles[LevelType::M_S2S3] = midSupportStyle;
+        
+        // Activer les étiquettes par défaut
+        showLabels = true;
+        
+        // Type de période par défaut
+        periodType = PeriodType::Daily;
     }
 };

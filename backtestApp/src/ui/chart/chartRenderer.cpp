@@ -894,11 +894,10 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
     // Récupérer la période visible pour formater les labels appropriés
     QString periodStr;
     switch (pivotPoints.periodType) {
+        case PivotPointsInstance::PeriodType::FourHour: periodStr = "4H"; break;
         case PivotPointsInstance::PeriodType::Daily: periodStr = "D"; break;
         case PivotPointsInstance::PeriodType::Weekly: periodStr = "W"; break;
         case PivotPointsInstance::PeriodType::Monthly: periodStr = "M"; break;
-        case PivotPointsInstance::PeriodType::Quarterly: periodStr = "Q"; break;
-        case PivotPointsInstance::PeriodType::Yearly: periodStr = "Y"; break;
     }
     
     // 3. Parcourir tous les niveaux définis dans l'instance de points pivots
@@ -980,21 +979,27 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
             layer->setLineWidth(style.thickness);
 
 
-            // Définir le style de ligne
-            // int dashColor = layer->setDataColor(Chart::dashLineColor(style.color));
-            // switch (style.lineStyle) {
-            //     case Qt::DashLine:
-            //         dashColor = Chart::dashLineColor(style.color, Chart::DashLine);
-            //         break;
-            //     case Qt::DotLine:
-            //         dashColor = Chart::dashLineColor(style.color, Chart::DotLine);
-            //         break;
-            //     case Qt::DashDotLine:
-            //         dashColor = Chart::dashLineColor(style.color, Chart::DotDashLine);
-            //         break;
-            // }
-            // layer->setDataColor(dashColor);
+            // Définir le style de ligne en fonction du style de LineStyle
+            int dashPatternColor;
+            switch (style.lineStyle) {
+                case PivotPointsInstance::LineStyle::Dash:
+                    // Get the main chart from the layer and use its dashLineColor method
+                    dashPatternColor = mainChart->dashLineColor(style.color, Chart::DashLine);
+                    break;
+                case PivotPointsInstance::LineStyle::Dot:
+                    dashPatternColor = mainChart->dashLineColor(style.color, Chart::DotLine);
+                    break;
+                default: // LineStyle::Solid
+                    dashPatternColor = style.color; // Pas besoin de modifier pour les lignes pleines
+                    break;
+            }
 
+            // Accéder au DataSet et appliquer la couleur
+            DataSet* dataSet = layer->getDataSet(0);  // Obtenir le premier (et probablement unique) DataSet
+            if (dataSet) {
+                dataSet->setDataColor(dashPatternColor);  // Appliquer la couleur avec le motif de dash
+            }
+            
             // 7. Ajouter une étiquette si demandé (uniquement pour le premier segment de chaque niveau)
             if (pivotPoints.showLabels && i == 0) {
                 // Formater l'étiquette selon le format spécifié

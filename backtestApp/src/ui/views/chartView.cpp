@@ -263,6 +263,8 @@ void ChartView::onAddIndicatorClicked() {
     QString indicatorType = m_indicatorTypeCombo->currentData().toString();
 
     // It would be better to open the dialog window directly rather than setting default values
+    // on pourrait faire une methode appeler a la construction de l'indicateur pour les paramettre par défaut
+    // factorisation du code
     if (indicatorType == "RSI") {
         RSIInstance rsi;
         rsi.period = 14;
@@ -294,13 +296,6 @@ void ChartView::onAddIndicatorClicked() {
     }
     else if (indicatorType == "PivotPoints") {
         PivotPointsInstance pivotPoints;
-        pivotPoints.periodType = PivotPointsInstance::PeriodType::Daily;
-        PivotPointsInstance::LevelStyle pivotStyle;
-        pivotStyle.color = 0xFF0000; // Red for Pivot Points by default
-        pivotStyle.thickness = 2;
-        // pivotStyle.lineStyle = Qt::SolidLine;
-        pivotPoints.levelStyles[PivotPointsInstance::LevelType::Pivot] = pivotStyle;
-
         m_chartWidget->addIndicator(std::move(pivotPoints));
     }
     // Add other indicator types here as needed

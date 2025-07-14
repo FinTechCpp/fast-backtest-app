@@ -373,8 +373,8 @@ void TechnicalIndicators::calculatePivotPoints(
     
     // Initialiser tous les vecteurs de niveaux avec des zéros
     size_t dataSize = highData.size();
-    for (int levelType = static_cast<int>(PivotPointsInstance::LevelType::Pivot); 
-         levelType <= static_cast<int>(PivotPointsInstance::LevelType::M_S2S3); 
+    for (int levelType = static_cast<int>(PivotPointsInstance::LevelType::R3); 
+         levelType < static_cast<int>(PivotPointsInstance::LevelType::NumLevels); 
          levelType++) {
         levelValues[levelType] = std::vector<double>(dataSize, 0.0);
     }
@@ -390,6 +390,20 @@ void TechnicalIndicators::calculatePivotPoints(
         
         bool newPeriod = false;
         switch (periodType) {
+            case PivotPointsInstance::PeriodType::FourHour: {
+                // On considère une nouvelle période si l'heure courante est dans {13, 17, 21, 1}
+                // et différente de la précédente (pour éviter de splitter plusieurs fois sur la même heure)
+                int hour = static_cast<int>(date.getHour());
+                bool isBoundary = (hour == 13 || hour == 17 || hour == 21 || hour == 1);
+                int prevHour = static_cast<int>(currentDate.getHour());
+                newPeriod = isBoundary && (hour != prevHour);
+                // On force aussi le split si le jour/mois/année change
+                newPeriod = newPeriod ||
+                            (date.getDay() != currentDate.getDay()) ||
+                            (date.getMonth() != currentDate.getMonth()) ||
+                            (date.getYear() != currentDate.getYear());
+                break;
+            }
             case PivotPointsInstance::PeriodType::Daily:
                 // Nouvelle journée si le jour a changé
                 newPeriod = (date.getDay() != currentDate.getDay() ||
@@ -397,29 +411,18 @@ void TechnicalIndicators::calculatePivotPoints(
                              date.getYear() != currentDate.getYear());
                 break;
                 
-            case PivotPointsInstance::PeriodType::Weekly:
-                // Simplification: détecter un changement de semaine quand le jour diminue
-                // ou quand on change de mois/année
-                newPeriod = (date.getDay() < currentDate.getDay() || 
-                            (date.getMonth() != currentDate.getMonth()) ||
-                            (date.getYear() != currentDate.getYear()));
+            case PivotPointsInstance::PeriodType::Weekly: {
+                // Nouvelle semaine si la différence de jours > 2 (week-end ou jours fériés)
+                int dayDiff = static_cast<int>(date.getDay() - dates[i-1].getDay());
+                bool isMonday = (dayDiff > 2);
+                newPeriod = isMonday;
                 break;
+            }
                 
             case PivotPointsInstance::PeriodType::Monthly:
                 // Nouveau mois
                 newPeriod = (date.getMonth() != currentDate.getMonth() ||
                              date.getYear() != currentDate.getYear());
-                break;
-                
-            case PivotPointsInstance::PeriodType::Quarterly:
-                // Nouveau trimestre (mois 1, 4, 7, 10)
-                newPeriod = ((int(date.getMonth()) % 3 == 1) && 
-                             date.getMonth() != currentDate.getMonth());
-                break;
-                
-            case PivotPointsInstance::PeriodType::Yearly:
-                // Nouvelle année
-                newPeriod = (date.getYear() != currentDate.getYear());
                 break;
         }
         
@@ -452,8 +455,8 @@ void TechnicalIndicators::calculatePivotPoints(
         for (size_t j = calcStart; j <= calcEnd; ++j) {
             high = std::max(high, highData[j]);
             low = std::min(low, lowData[j]);
-            close = closeData[j];  // Dernière valeur
         }
+        close = closeData[calcEnd];  // Dernière valeur
         
         // Le reste du calcul des points pivots reste inchangé
         double pivot = (high + low + close) / 3.0;

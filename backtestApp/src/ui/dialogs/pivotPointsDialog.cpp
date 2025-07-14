@@ -3,6 +3,9 @@
 #include <QGroupBox>
 #include <QLabel>
 #include <QDebug>
+#include <QColorDialog>
+#include <QPainter>
+#include <QPen>
 
 PivotPointsDialog::PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, int pivotId, const PivotPointsInstance& pivotPoints)
     : BaseDialog(parent, chartWidget, "Configure Pivot Points")
@@ -10,7 +13,7 @@ PivotPointsDialog::PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, 
     , m_originalPivots(pivotPoints)
     , m_currentPivots(pivotPoints)
 {
-    setMinimumWidth(500);
+    setMinimumWidth(550);
     // Si l'instance est nouvelle (pas de styles définis), initialiser avec les valeurs par défaut
     if (m_currentPivots.levelStyles.empty())
         m_currentPivots.initializeDefaultStyles();
@@ -125,7 +128,8 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, PivotPo
         case PivotPointsInstance::LineStyle::Solid: styleIndex = 0; break;
         case PivotPointsInstance::LineStyle::Dash: styleIndex = 1; break;
         case PivotPointsInstance::LineStyle::Dot: styleIndex = 2; break;
-        // case LineStyle::DashDot: styleIndex = 3; break;
+        case PivotPointsInstance::LineStyle::DotDash: styleIndex = 3; break;
+        case PivotPointsInstance::LineStyle::AltDash: styleIndex = 4; break;
         default: styleIndex = 0; break;
     }
     lineStyleComboBox->setCurrentIndex(styleIndex);
@@ -143,10 +147,62 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, PivotPo
 QComboBox* PivotPointsDialog::createLineStyleComboBox()
 {
     QComboBox* comboBox = new QComboBox();
-    comboBox->addItem("Solid");
-    comboBox->addItem("Dash");
-    comboBox->addItem("Dot");
-    // comboBox->addItem("DashDot");
+    
+    // Dimensions de l'icône
+    const int width = 80;
+    const int height = 20;
+    
+    // Créer une icône pour chaque style de ligne
+    // 1. Solid
+    QPixmap solidPixmap(width, height);
+    solidPixmap.fill(Qt::transparent);
+    QPainter solidPainter(&solidPixmap);
+    QPen solidPen(Qt::black, 2, Qt::SolidLine);
+    solidPainter.setPen(solidPen);
+    solidPainter.drawLine(5, height/2, width-5, height/2);
+    
+    // 2. Dash
+    QPixmap dashPixmap(width, height);
+    dashPixmap.fill(Qt::transparent);
+    QPainter dashPainter(&dashPixmap);
+    QPen dashPen(Qt::black, 2, Qt::DashLine);
+    dashPainter.setPen(dashPen);
+    dashPainter.drawLine(5, height/2, width-5, height/2);
+    
+    // 3. Dot
+    QPixmap dotPixmap(width, height);
+    dotPixmap.fill(Qt::transparent);
+    QPainter dotPainter(&dotPixmap);
+    QPen dotPen(Qt::black, 2, Qt::DotLine);
+    dotPainter.setPen(dotPen);
+    dotPainter.drawLine(5, height/2, width-5, height/2);
+    
+    // 4. DotDash
+    QPixmap dotDashPixmap(width, height);
+    dotDashPixmap.fill(Qt::transparent);
+    QPainter dotDashPainter(&dotDashPixmap);
+    QPen dotDashPen(Qt::black, 2, Qt::DashDotLine);
+    dotDashPainter.setPen(dotDashPen);
+    dotDashPainter.drawLine(5, height/2, width-5, height/2);
+    
+    // 5. AltDash
+    QPixmap altDashPixmap(width, height);
+    altDashPixmap.fill(Qt::transparent);
+    QPainter altDashPainter(&altDashPixmap);
+    QPen altDashPen(Qt::black, 2, Qt::DashDotDotLine);
+    altDashPainter.setPen(altDashPen);
+    altDashPainter.drawLine(5, height/2, width-5, height/2);
+    
+    // Ajouter les items avec leurs icônes
+    comboBox->addItem(QIcon(solidPixmap), "Solid");
+    comboBox->addItem(QIcon(dashPixmap), "Dash");
+    comboBox->addItem(QIcon(dotPixmap), "Dot");
+    comboBox->addItem(QIcon(dotDashPixmap), "DotDash");
+    comboBox->addItem(QIcon(altDashPixmap), "AltDash");
+    
+    // Permettre suffisamment d'espace pour voir les icônes
+    comboBox->setIconSize(QSize(width, height));
+    
     return comboBox;
 }
 
@@ -296,7 +352,8 @@ void PivotPointsDialog::onLevelLineStyleChanged(int levelType, int index)
         case 0: style = PivotPointsInstance::LineStyle::Solid; break;
         case 1: style = PivotPointsInstance::LineStyle::Dash; break;
         case 2: style = PivotPointsInstance::LineStyle::Dot; break;
-        // case 3: style = PivotPointsInstance::LineStyle::DashDot; break;
+        case 3: style = PivotPointsInstance::LineStyle::DotDash; break;
+        case 4: style = PivotPointsInstance::LineStyle::AltDash; break;
         default: style = PivotPointsInstance::LineStyle::Solid; break;
     }
     

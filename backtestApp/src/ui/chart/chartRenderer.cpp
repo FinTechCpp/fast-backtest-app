@@ -376,46 +376,57 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     if (aggregationInfo.level != ChartDataManager::AggregationLevel::Raw) 
         return; // Les trades ne sont affichés qu'en mode Raw pour l'instant
 
-
     // Obtenir le graphique principal
     XYChart* mainChart = (XYChart*)chart->getChart(1);
     if (!mainChart)
         return;
 
-    // Structure pour organiser les marqueurs par type
-    enum TradeResult { WINNING = 0, LOSING = 1, NEUTRAL = 2, RESULT_COUNT = 3 };
-    const int COLORS[RESULT_COUNT] = { 0x00AA00, 0xCC0000, 0x000000 }; // Vert, Rouge, Noir
-
-    // Tous nos containers de marqueurs
+    // Constantes pour les couleurs selon résultat
+    const int COLOR_WIN = 0x00AA00;    // Vert
+    const int COLOR_LOSS = 0xCC0000;   // Rouge
+    const int COLOR_NEUTRAL = 0x000000; // Noir
+    
+    // Marqueurs carrés pour position exacte
     std::vector<std::pair<double, double>> entryMarkers;
     std::vector<std::pair<double, double>> exitMarkers;
-    std::vector<std::pair<double, double>> entryArrows[RESULT_COUNT];
-    std::vector<std::pair<double, double>> exitArrows[RESULT_COUNT];
+    
+    // Flèches d'entrée (selon direction du trade)
+    std::vector<std::pair<double, double>> entryLongArrows;  // Achats (flèche verte vers le haut)
+    std::vector<std::pair<double, double>> entryShortArrows; // Ventes (flèche rouge vers le bas)
+    
+    // Flèches de sortie (selon résultat et direction)
+    std::vector<std::pair<double, double>> exitLongWinArrows;    // Sortie achat gagnant
+    std::vector<std::pair<double, double>> exitLongLossArrows;   // Sortie achat perdant
+    std::vector<std::pair<double, double>> exitLongNeutralArrows; // Sortie achat neutre
+    std::vector<std::pair<double, double>> exitShortWinArrows;   // Sortie vente gagnante
+    std::vector<std::pair<double, double>> exitShortLossArrows;  // Sortie vente perdante
+    std::vector<std::pair<double, double>> exitShortNeutralArrows; // Sortie vente neutre
     
     // Préallocation
     size_t estimatedMarkers = std::min(size_t(100), trades.size() * 2);
     entryMarkers.reserve(estimatedMarkers);
     exitMarkers.reserve(estimatedMarkers);
-    
-    for (int i = 0; i < RESULT_COUNT; i++) {
-        entryArrows[i].reserve(estimatedMarkers);
-        exitArrows[i].reserve(estimatedMarkers);
-    }
+    entryLongArrows.reserve(estimatedMarkers);
+    entryShortArrows.reserve(estimatedMarkers);
+    exitLongWinArrows.reserve(estimatedMarkers/3);
+    exitLongLossArrows.reserve(estimatedMarkers/3);
+    exitLongNeutralArrows.reserve(estimatedMarkers/3);
+    exitShortWinArrows.reserve(estimatedMarkers/3);
+    exitShortLossArrows.reserve(estimatedMarkers/3);
+    exitShortNeutralArrows.reserve(estimatedMarkers/3);
 
     std::vector<TPSLSegment> tpslSegments;
     tpslSegments.reserve(estimatedMarkers * 2);
 
-    // Mode Raw (affichage détaillé)
     for (const auto& trade : trades) {
-        // Déterminer la catégorie du résultat
-        int resultIndex = NEUTRAL; // Par défaut
+        bool isLong = trade->isLong();
         
+        // Déterminer le résultat du trade
+        int resultCategory = 0; // 0=neutre, 1=win, 2=loss
         if (trade->isClosed()) {
             double pnl = trade->pl();
-            if (pnl > 0) 
-                resultIndex = WINNING;
-            else if (pnl < 0) 
-                resultIndex = LOSING;
+            if (pnl > 0) resultCategory = 1;
+            else if (pnl < 0) resultCategory = 2;
         }
 
         // Traiter le point d'entrée
@@ -427,27 +438,38 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
             // Marqueur carré pour la position d'entrée
             entryMarkers.push_back({relativeIndex, trade->entryPrice()});
             
-            // Flèche d'entrée
             if (entryBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
                 const be::Candle& entryCandle = dataManager.getBacktestData()->at(entryBarIndex);
-                double arrowY = entryCandle.high * 1.0005; // Légèrement au-dessus du high
-                entryArrows[resultIndex].push_back({relativeIndex, arrowY});
+                
+                if (isLong) {
+                    // Achat: flèche vers le haut SOUS la bougie
+                    double arrowY = entryCandle.low;
+                    entryLongArrows.push_back({relativeIndex, arrowY});
+                } else {
+                    // Vente: flèche vers le bas AU-DESSUS de la bougie
+                    double arrowY = entryCandle.high;
+                    entryShortArrows.push_back({relativeIndex, arrowY});
+                }
             }
 
-            // Si le trade est fermé, on peut ajouter les segments TP/SL
+            // Ajouter les segments TP/SL (inchangé)
             if (trade->isClosed()) {
                 size_t exitBarIndex = trade->exitBar();
                 if (exitBarIndex >= static_cast<size_t>(startIndex) && 
                     exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
                     double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
                     
-                    // Récupérer les valeurs de TP et SL si elles existent
+                    int color;
+                    if (resultCategory == 1) color = COLOR_WIN;
+                    else if (resultCategory == 2) color = COLOR_LOSS;
+                    else color = COLOR_NEUTRAL;
+                    
                     double tpValue = trade->tp();
                     if (tpValue > 0) {
                         tpslSegments.push_back({
                             relativeIndex, relativeExitIndex, 
                             tpValue, true, // true = TP
-                            COLORS[resultIndex]
+                            color
                         });
                     }
                     
@@ -456,7 +478,7 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
                         tpslSegments.push_back({
                             relativeIndex, relativeExitIndex,
                             slValue, false, // false = SL
-                            COLORS[resultIndex]
+                            color
                         });
                     }
                 }
@@ -473,35 +495,69 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
                 // Marqueur carré pour la position de sortie
                 exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
                 
-                // Flèche de sortie
                 if (exitBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
                     const be::Candle& exitCandle = dataManager.getBacktestData()->at(exitBarIndex);
-                    double arrowY = exitCandle.low * 0.9995; // Légèrement en-dessous du low
-                    exitArrows[resultIndex].push_back({relativeExitIndex, arrowY});
+                    
+                    if (isLong) {
+                        // Sortie achat: flèche vers le bas AU-DESSUS de la bougie
+                        double arrowY = exitCandle.high;
+                        
+                        if (resultCategory == 1)
+                            exitLongWinArrows.push_back({relativeExitIndex, arrowY});
+                        else if (resultCategory == 2)
+                            exitLongLossArrows.push_back({relativeExitIndex, arrowY});
+                        else
+                            exitLongNeutralArrows.push_back({relativeExitIndex, arrowY});
+                    } else {
+                        // Sortie vente: flèche vers le haut SOUS la bougie
+                        double arrowY = exitCandle.low;
+                        
+                        if (resultCategory == 1)
+                            exitShortWinArrows.push_back({relativeExitIndex, arrowY});
+                        else if (resultCategory == 2)
+                            exitShortLossArrows.push_back({relativeExitIndex, arrowY});
+                        else
+                            exitShortNeutralArrows.push_back({relativeExitIndex, arrowY});
+                    }
                 }
             }
         }
     }
 
-    // Ajouter les marqueurs carrés pour les entrées et sorties
+    // Ajouter les marqueurs carrés pour les positions exactes
     addMarkers(mainChart, entryMarkers, "Entry", Chart::SquareSymbol, 7, 0x000000);
     addMarkers(mainChart, exitMarkers, "Exit", Chart::SquareSymbol, 7, 0x000000);
     addTPSLSegments(mainChart, tpslSegments);
     
-    // Ajouter les flèches
-    const char* resultNames[RESULT_COUNT] = { "Win", "Loss", "Flat" };
+    // Taille des symboles
+    int symbolSize = (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) ? 11 : 9;
     
-    for (int i = 0; i < RESULT_COUNT; i++) {
-        if (!entryArrows[i].empty()) {
-            int symbolSize = (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) ? 15 : 10;
-            addMarkers(mainChart, entryArrows[i], "", Chart::InvertedTriangleSymbol, symbolSize, COLORS[i]);
-        }
-        
-        // En mode Raw uniquement, afficher les flèches de sortie
-        if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw && !exitArrows[i].empty()) {
-            addMarkers(mainChart, exitArrows[i], "", Chart::TriangleSymbol, 15, COLORS[i]);
-        }
-    }
+    // Flèches d'entrée
+    if (!entryLongArrows.empty())
+        addMarkers(mainChart, entryLongArrows, "Long Entry", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_WIN, 0, 20); // Flèche verte vers le haut sous la bougie
+    
+    if (!entryShortArrows.empty())
+        addMarkers(mainChart, entryShortArrows, "Short Entry", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_LOSS, 0, -20); // Flèche rouge vers le bas au-dessus
+    
+    // Flèches de sortie Long (achat)
+    if (!exitLongWinArrows.empty())
+        addMarkers(mainChart, exitLongWinArrows, "Long Exit Win", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_WIN, 0, -20); // Flèche verte vers le bas au-dessus
+    
+    if (!exitLongLossArrows.empty())
+        addMarkers(mainChart, exitLongLossArrows, "Long Exit Loss", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_LOSS, 0, -20); // Flèche rouge vers le bas au-dessus
+    
+    if (!exitLongNeutralArrows.empty())
+        addMarkers(mainChart, exitLongNeutralArrows, "Long Exit Neutral", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_NEUTRAL, 0, -20); // Flèche noire vers le bas au-dessus
+    
+    // Flèches de sortie Short (vente)
+    if (!exitShortWinArrows.empty())
+        addMarkers(mainChart, exitShortWinArrows, "Short Exit Win", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_WIN, 0, 20); // Flèche verte vers le haut sous la bougie
+    
+    if (!exitShortLossArrows.empty())
+        addMarkers(mainChart, exitShortLossArrows, "Short Exit Loss", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_LOSS, 0, 20); // Flèche rouge vers le haut sous la bougie
+    
+    if (!exitShortNeutralArrows.empty())
+        addMarkers(mainChart, exitShortNeutralArrows, "Short Exit Neutral", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_NEUTRAL, 0, 20); // Flèche noire vers le haut sous la bougie
 }
 
 void ChartRenderer::addRSIToChart(FinanceChart* chart, 
@@ -989,6 +1045,12 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
                 case PivotPointsInstance::LineStyle::Dot:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::DotLine);
                     break;
+                case PivotPointsInstance::LineStyle::DotDash:
+                    dashPatternColor = mainChart->dashLineColor(style.color, Chart::DotDashLine);
+                    break;
+                case PivotPointsInstance::LineStyle::AltDash:
+                    dashPatternColor = mainChart->dashLineColor(style.color, Chart::AltDashLine);
+                    break;
                 default: // LineStyle::Solid
                     dashPatternColor = style.color; // Pas besoin de modifier pour les lignes pleines
                     break;
@@ -1001,7 +1063,7 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
             }
             
             // 7. Ajouter une étiquette si demandé (uniquement pour le premier segment de chaque niveau)
-            if (pivotPoints.showLabels && i == 0) {
+            if (pivotPoints.showLabels) {
                 // Formater l'étiquette selon le format spécifié
                 QString labelText = style.labelFormat.arg(value);
                 
@@ -1014,17 +1076,17 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
                 TextBox* label = mainChart->addText(mainChart->getWidth() - 5, 
                                                    mainChart->getYCoor(value),
                                                    labelText.toStdString().c_str(),
-                                                   "Arial", 8);
+                                                   "Arial", 20);
                 label->setAlignment(Chart::Right);
-                label->setFontColor(style.color);
-                label->setBackground(Chart::Transparent, Chart::Transparent);
+                label->setFontColor(0x000000); // Couleur noire
+                label->setBackground(0xFFFFFFAA);
             }
         }
     }
 }
 
 void ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<double, double>> &markers,
-                               const char *name, int symbolType, int symbolSize, int color)
+                               const char *name, int symbolType, int symbolSize, int color, int offsetX, int offsetY)
 {
     if (markers.empty()) return;
 
@@ -1044,6 +1106,10 @@ void ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<doubl
 
     ScatterLayer* layer = chart->addScatterLayer(xArray, yArray, name, 
                                               symbolType, symbolSize, color);
+
+    if (offsetX != 0 || offsetY != 0)
+        layer->getDataSet(0)->setSymbolOffset(offsetX, offsetY);
+
     layer->moveFront();
 }
 

@@ -117,7 +117,9 @@ private:
                    const char* name, 
                    int symbolType, 
                    int symbolSize, 
-                   int color);
+                   int color, 
+                   int offsetX = 0, 
+                   int offsetY = 0);
     
     void addTPSLSegments(XYChart* chart, 
                         const std::vector<TPSLSegment>& segments);

@@ -161,7 +161,9 @@ struct PivotPointsInstance : public IndicatorBase {
     enum class LineStyle {
         Solid,
         Dash,
-        Dot
+        Dot,
+        DotDash,
+        AltDash
     };
 
     struct LevelStyle {
@@ -178,7 +180,6 @@ struct PivotPointsInstance : public IndicatorBase {
     }
     PeriodType periodType;
     std::map<LevelType, LevelStyle> levelStyles;
-    // bool showMidLevels = false;  // Afficher les niveaux milieux
     bool showLabels = true;     // Afficher les étiquettes des niveaux
     // peut etre ajouter la configuration de l'affichage des niveaux 3, 4, 5, etc. (activable desactivable)
 

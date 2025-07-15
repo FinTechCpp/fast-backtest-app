@@ -267,31 +267,22 @@ void ChartView::onAddIndicatorClicked() {
     // factorisation du code
     if (indicatorType == "RSI") {
         RSIInstance rsi;
-        rsi.period = 14;
         m_chartWidget->addIndicator(std::move(rsi));
     }
     else if (indicatorType == "EMA") {
         EMAInstance ema;
-        ema.period = 20;
-        ema.color = 0xFFA500; // Orange for EMA by default
         m_chartWidget->addIndicator(std::move(ema));
     }
     else if (indicatorType == "SUPERTREND") {
         SuperTrendInstance supertrend;
-        supertrend.period = 10;
-        supertrend.multiplier = 3.0;
         m_chartWidget->addIndicator(std::move(supertrend));
     }
     else if (indicatorType == "STOCH") {
         StochasticInstance stochastic;
-        stochastic.fastKPeriod = 14;
-        stochastic.slowKPeriod = 3;
-        stochastic.slowDPeriod = 3;
         m_chartWidget->addIndicator(std::move(stochastic));
     }
     else if (indicatorType == "ATR") {
         ATRInstance atr;
-        atr.period = 14;
         m_chartWidget->addIndicator(std::move(atr));
     }
     else if (indicatorType == "PivotPoints") {

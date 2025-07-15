@@ -35,7 +35,9 @@ struct IndicatorBase {
 };
 
 struct RSIInstance : public IndicatorBase {
-    RSIInstance() : IndicatorBase(IndicatorType::RSI) {}
+    RSIInstance() : IndicatorBase(IndicatorType::RSI) {
+        period = 14; // Valeur par défaut pour la période du RSI
+    }
     int period;             // Période du RSI
     int height = 120;       // Hauteur du panneau
     int color = 0x800080;   // Couleur de la ligne principale (violet par défaut)
@@ -56,7 +58,9 @@ struct RSIInstance : public IndicatorBase {
 };
 
 struct EMAInstance : public IndicatorBase {
-    EMAInstance() : IndicatorBase(IndicatorType::EMA) {}
+    EMAInstance() : IndicatorBase(IndicatorType::EMA) {
+        period = 20; // Valeur par défaut pour la période de l'EMA
+    }
     int period;            // Période de l'EMA
     int color = 0x0000FF;  // Couleur de la ligne (bleu par défaut)
 
@@ -72,7 +76,10 @@ struct EMAInstance : public IndicatorBase {
 };
 
 struct SuperTrendInstance : public IndicatorBase {
-    SuperTrendInstance() : IndicatorBase(IndicatorType::SUPERTREND) {}
+    SuperTrendInstance() : IndicatorBase(IndicatorType::SUPERTREND) {
+        period = 10; // Valeur par défaut pour la période du SuperTrend
+        multiplier = 3.0; // Valeur par défaut pour le multiplicateur
+    }
     int period;            // Période pour le SuperTrend
     double multiplier;     // Multiplicateur pour le SuperTrend
     int upColor = 0x00AA00;  // Couleur de la ligne (vert par défaut)
@@ -90,7 +97,11 @@ struct SuperTrendInstance : public IndicatorBase {
 };
 
 struct StochasticInstance : public IndicatorBase {
-    StochasticInstance() : IndicatorBase(IndicatorType::STOCHASTIC) {}
+    StochasticInstance() : IndicatorBase(IndicatorType::STOCHASTIC) {
+        fastKPeriod = 14; // Période par défaut pour %K
+        slowKPeriod = 3;  // Période de lissage par défaut pour %K
+        slowDPeriod = 3;  // Période par défaut pour %D
+    }
     int fastKPeriod;        // Période pour calculer le %K brut
     int slowKPeriod;        // Période de lissage pour %K
     int slowDPeriod;        // Période pour calculer %D
@@ -114,7 +125,9 @@ struct StochasticInstance : public IndicatorBase {
 };
 
 struct ATRInstance : public IndicatorBase {
-    ATRInstance() : IndicatorBase(IndicatorType::ATR) {}
+    ATRInstance() : IndicatorBase(IndicatorType::ATR) {
+        period = 14; // Valeur par défaut pour la période de l'ATR
+    }
     int period;            // Période de l'ATR
     int height = 120;      // Hauteur du panneau
     int color = 0x006400;  // Couleur de la ligne (vert foncé par défaut)

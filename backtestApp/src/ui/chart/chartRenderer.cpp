@@ -4,6 +4,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 ChartRenderer::ChartRenderer() : m_financeChart(nullptr) {
 }
@@ -155,7 +156,7 @@ void ChartRenderer::createOrUpdateChart(
     // Points pivots
     for (const PivotPointsInstance* pivotPoints : dataManager.getIndicatorsOfType<PivotPointsInstance>()) {
         if (pivotPoints->visible) {
-            addPivotPointsToChart(m_financeChart.get(), *pivotPoints, dataManager, aggregationInfo);
+            addPivotPointsToChart(mainChart, *pivotPoints, dataManager, aggregationInfo);
         }
     }
     
@@ -168,10 +169,15 @@ void ChartRenderer::createOrUpdateChart(
     if (config.showTrades) {
         addTradeMarkers(m_financeChart.get(), timestamps, startIndex, dataManager.getTrades(), dataManager, aggregationInfo);
     }
-    
+
+    // std::cout << "Avant " << mainChart->getYCoor(20000) << std::endl;
+
     // Mettre à jour le graphique dans le viewer
     if (viewer) 
         viewer->setChart(m_financeChart.get());
+
+    // std::cout << "Après " << mainChart->getYCoor(20000) << std::endl;
+
 }
 
 void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 
@@ -900,7 +906,7 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
 }
 
-void ChartRenderer::addPivotPointsToChart(FinanceChart *chart, 
+void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, 
                                         const PivotPointsInstance &pivotPoints, 
                                         const ChartDataManager &dataManager, 
                                         const ChartDataManager::AggregationInfo &aggregationInfo)
@@ -939,14 +945,6 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
 
     if (!pivotData) return;
     
-    // Obtenir le graphique principal pour ajouter les niveaux de pivot
-    XYChart* mainChart = (XYChart*)chart->getChart(1);
-    if (!mainChart) return;
-    
-    // 2. Obtenir la plage de données visibles pour l'axe X
-    double xMin = mainChart->getXValue(0);
-    double xMax = mainChart->getXValue(mainChart->getWidth());
-    
     // Récupérer la période visible pour formater les labels appropriés
     QString periodStr;
     switch (pivotPoints.periodType) {
@@ -956,7 +954,18 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
         case PivotPointsInstance::PeriodType::Monthly: periodStr = "M"; break;
     }
     
-    // 3. Parcourir tous les niveaux définis dans l'instance de points pivots
+    // Structure pour stocker les informations sur les segments et étiquettes
+    struct PivotSegmentInfo {
+        PivotPointsInstance::LevelType levelType;
+        int startX;
+        int endX;
+        double value;
+        QString levelName;
+        const PivotPointsInstance::LevelStyle* style;
+    };
+    std::vector<PivotSegmentInfo> segmentsInfo;
+    
+    // PREMIÈRE BOUCLE: Créer tous les segments
     for (const auto& [levelType, style] : pivotPoints.levelStyles) {
         // Vérifier si ce niveau doit être affiché
         if (!pivotPoints.isLevelVisible(levelType)) continue;
@@ -973,7 +982,25 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
         int actualPoints = endIndex - startIndex;
         if (actualPoints <= 0) continue;
         
-        // 4. Détecter les changements de niveaux pour créer des segments horizontaux
+        // Définir le nom du niveau
+        QString levelName;
+        switch (levelType) {
+            case PivotPointsInstance::LevelType::Pivot: levelName = "PP"; break;
+            case PivotPointsInstance::LevelType::R1: levelName = "R1"; break;
+            case PivotPointsInstance::LevelType::R2: levelName = "R2"; break;
+            case PivotPointsInstance::LevelType::R3: levelName = "R3"; break;
+            case PivotPointsInstance::LevelType::S1: levelName = "S1"; break;
+            case PivotPointsInstance::LevelType::S2: levelName = "S2"; break;
+            case PivotPointsInstance::LevelType::S3: levelName = "S3"; break;
+            case PivotPointsInstance::LevelType::M_PR1: levelName = "M(P-R1)"; break;
+            case PivotPointsInstance::LevelType::M_R1R2: levelName = "M(R1-R2)"; break;
+            case PivotPointsInstance::LevelType::M_R2R3: levelName = "M(R2-R3)"; break;
+            case PivotPointsInstance::LevelType::M_PS1: levelName = "M(P-S1)"; break;
+            case PivotPointsInstance::LevelType::M_S1S2: levelName = "M(S1-S2)"; break;
+            case PivotPointsInstance::LevelType::M_S2S3: levelName = "M(S2-S3)"; break;
+        }
+        
+        // Détecter les changements de niveaux pour créer des segments horizontaux
         std::vector<std::pair<int, int>> segments; // Début et fin de chaque segment horizontal
         std::vector<double> segmentValues;         // Valeur de chaque segment
         
@@ -995,25 +1022,7 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
         segments.push_back({segmentStart - startIndex, endIndex - 1 - startIndex});
         segmentValues.push_back(currentValue);
         
-        // 5. Créer une couche pour ce niveau
-        QString levelName;
-        switch (levelType) {
-            case PivotPointsInstance::LevelType::Pivot: levelName = "PP"; break;
-            case PivotPointsInstance::LevelType::R1: levelName = "R1"; break;
-            case PivotPointsInstance::LevelType::R2: levelName = "R2"; break;
-            case PivotPointsInstance::LevelType::R3: levelName = "R3"; break;
-            case PivotPointsInstance::LevelType::S1: levelName = "S1"; break;
-            case PivotPointsInstance::LevelType::S2: levelName = "S2"; break;
-            case PivotPointsInstance::LevelType::S3: levelName = "S3"; break;
-            case PivotPointsInstance::LevelType::M_PR1: levelName = "M(P-R1)"; break;
-            case PivotPointsInstance::LevelType::M_R1R2: levelName = "M(R1-R2)"; break;
-            case PivotPointsInstance::LevelType::M_R2R3: levelName = "M(R2-R3)"; break;
-            case PivotPointsInstance::LevelType::M_PS1: levelName = "M(P-S1)"; break;
-            case PivotPointsInstance::LevelType::M_S1S2: levelName = "M(S1-S2)"; break;
-            case PivotPointsInstance::LevelType::M_S2S3: levelName = "M(S2-S3)"; break;
-        }
-        
-        // 6. Dessiner chaque segment horizontal pour ce niveau
+        // Dessiner chaque segment horizontal pour ce niveau
         for (size_t i = 0; i < segments.size(); ++i) {
             const auto& [start, end] = segments[i];
             const double value = segmentValues[i];
@@ -1034,12 +1043,10 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
             layer->setXData(xArray);
             layer->setLineWidth(style.thickness);
 
-
             // Définir le style de ligne en fonction du style de LineStyle
             int dashPatternColor;
             switch (style.lineStyle) {
                 case PivotPointsInstance::LineStyle::Dash:
-                    // Get the main chart from the layer and use its dashLineColor method
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::DashLine);
                     break;
                 case PivotPointsInstance::LineStyle::Dot:
@@ -1052,37 +1059,76 @@ void ChartRenderer::addPivotPointsToChart(FinanceChart *chart,
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::AltDashLine);
                     break;
                 default: // LineStyle::Solid
-                    dashPatternColor = style.color; // Pas besoin de modifier pour les lignes pleines
+                    dashPatternColor = style.color;
                     break;
             }
 
-            // Accéder au DataSet et appliquer la couleur
-            DataSet* dataSet = layer->getDataSet(0);  // Obtenir le premier (et probablement unique) DataSet
-            if (dataSet) {
-                dataSet->setDataColor(dashPatternColor);  // Appliquer la couleur avec le motif de dash
-            }
+            // Appliquer la couleur au DataSet
+            DataSet* dataSet = layer->getDataSet(0);
+            if (dataSet)
+                dataSet->setDataColor(dashPatternColor);
             
-            // 7. Ajouter une étiquette si demandé (uniquement pour le premier segment de chaque niveau)
+            // Stocker les informations pour l'ajout d'étiquettes plus tard
             if (pivotPoints.showLabels) {
-                // Formater l'étiquette selon le format spécifié
-                QString labelText = style.labelFormat.arg(value);
-                
-                // Si pas de format spécifié, utiliser le nom du niveau et la période
-                if (style.labelFormat.isEmpty()) {
-                    labelText = QString("%1(%2): %3").arg(levelName).arg(periodStr).arg(value, 0, 'f', 2);
-                }
-                
-                // Ajouter l'étiquette sur le côté droit du graphique
-                TextBox* label = mainChart->addText(mainChart->getWidth() - 5, 
-                                                   mainChart->getYCoor(value),
-                                                   labelText.toStdString().c_str(),
-                                                   "Arial", 20);
-                label->setAlignment(Chart::Right);
-                label->setFontColor(0x000000); // Couleur noire
-                label->setBackground(0xFFFFFFAA);
+                PivotSegmentInfo segInfo;
+                segInfo.levelType = levelType;
+                segInfo.startX = start;
+                segInfo.endX = end;
+                segInfo.value = value;
+                segInfo.levelName = levelName;
+                segInfo.style = &style;
+                segmentsInfo.push_back(segInfo);
             }
         }
     }
+
+    // sinon au lieu de faire cela on peux essayer de tricher : voir doc de Symbol Line Chart
+    // utiliser layer->setDataLabelFormat("{value|0}%"); pour mettre des étiquettes formatées a des points spécifiques
+    //    // Add the third data set to the stacked bar layer, and set its data label font to Arial Bold
+    // Italic.
+    // TextBox* textbox = layer->addDataSet(DoubleArray(data2, data2_size), -1, "Server #3"
+    //     )->setDataLabelStyle("Arial Bold Italic");
+
+    // sinon utiliser les Mark : mainChart->yAxis()->addMark au moins j'aurai les labels  mais pas au dessus de tous les segments
+
+    
+    // Appeler layoutLegend pour s'assurer que le graphique est correctement mis en page
+    // avant d'ajouter les étiquettes
+    // mainChart->layoutAxes();
+    
+    // // DEUXIÈME BOUCLE: Ajouter les étiquettes après layout
+    // if (pivotPoints.showLabels) {
+    //     for (const auto& segInfo : segmentsInfo) {
+    //         // Formater l'étiquette selon le format spécifié ou le format par défaut
+    //         QString labelText = segInfo.style->labelFormat.arg(segInfo.value);
+            
+    //         if (segInfo.style->labelFormat.isEmpty()) {
+    //             labelText = QString("%1(%2): %3").arg(segInfo.levelName)
+    //                                            .arg(periodStr)
+    //                                            .arg(segInfo.value, 0, 'f', 2);
+    //         }
+            
+    //         // Calculer la position X au milieu du segment
+    //         int labelX = mainChart->getXCoor((segInfo.startX + segInfo.endX) / 2.0);
+            
+    //         // Calculer la position Y basée sur la valeur du point pivot
+    //         // Utiliser getYCoor pour convertir correctement la valeur en coordonnée d'écran
+    //         int labelY = mainChart->getYCoor(segInfo.value) - 15; // 15 pixels au-dessus de la ligne
+            
+    //         // Ajouter l'étiquette
+    //         TextBox* label = mainChart->addText(labelX, labelY, 
+    //                                            labelText.toStdString().c_str(),
+    //                                            "Arial Bold", 8);
+            
+    //         // Configurer l'apparence
+    //         label->setAlignment(Chart::Center);
+    //         label->setFontColor(segInfo.style->color);
+    //         label->setBackground(0xFFFFFFCC); // Fond blanc semi-transparent
+    //         label->setMargin(3);
+    //         label->setRoundedCorners(3);
+    //         // label->moveToFront();
+    //     }
+    // }
 }
 
 void ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<double, double>> &markers,

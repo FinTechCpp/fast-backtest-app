@@ -106,7 +106,7 @@ private:
         const ChartDataManager& dataManager, 
         const ChartDataManager::AggregationInfo& aggregationInfo);
 
-    void addPivotPointsToChart(FinanceChart* chart,
+    void addPivotPointsToChart(XYChart* mainChart,
         const PivotPointsInstance& pivotPoints,
         const ChartDataManager& dataManager,
         const ChartDataManager::AggregationInfo& aggregationInfo);

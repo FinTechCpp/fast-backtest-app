@@ -227,7 +227,7 @@ struct PivotPointsInstance : public IndicatorBase {
         pivotStyle.thickness = 2;
         pivotStyle.lineStyle = LineStyle::Solid;
         pivotStyle.visible = true;
-        pivotStyle.labelFormat = "PP: %.2f";
+        pivotStyle.labelFormat = "Piv %1";
         levelStyles[LevelType::Pivot] = pivotStyle;
         
         // Résistances (rouge, trait plein, visibles)
@@ -237,13 +237,13 @@ struct PivotPointsInstance : public IndicatorBase {
         resistanceStyle.lineStyle = LineStyle::Solid;
         resistanceStyle.visible = true;
         
-        resistanceStyle.labelFormat = "R1: %.2f";
+        resistanceStyle.labelFormat = "R1 %1";
         levelStyles[LevelType::R1] = resistanceStyle;
-        
-        resistanceStyle.labelFormat = "R2: %.2f";
+
+        resistanceStyle.labelFormat = "R2 %1";
         levelStyles[LevelType::R2] = resistanceStyle;
-        
-        resistanceStyle.labelFormat = "R3: %.2f";
+
+        resistanceStyle.labelFormat = "R3 %1";
         levelStyles[LevelType::R3] = resistanceStyle;
         
         // Supports (vert, trait plein, visibles)
@@ -252,14 +252,14 @@ struct PivotPointsInstance : public IndicatorBase {
         supportStyle.thickness = 2;
         supportStyle.lineStyle = LineStyle::Solid;
         supportStyle.visible = true;
-        
-        supportStyle.labelFormat = "S1: %.2f";
+
+        supportStyle.labelFormat = "S1 %1";
         levelStyles[LevelType::S1] = supportStyle;
-        
-        supportStyle.labelFormat = "S2: %.2f";
+
+        supportStyle.labelFormat = "S2 %1";
         levelStyles[LevelType::S2] = supportStyle;
-        
-        supportStyle.labelFormat = "S3: %.2f";
+
+        supportStyle.labelFormat = "S3 %1";
         levelStyles[LevelType::S3] = supportStyle;
         
         // Niveaux milieux résistance (rouge, trait pointillé, non visibles par défaut)
@@ -269,13 +269,13 @@ struct PivotPointsInstance : public IndicatorBase {
         midResistanceStyle.lineStyle = LineStyle::Dash;
         midResistanceStyle.visible = false;  // Visible si showMidLevels est true
         
-        midResistanceStyle.labelFormat = "M(R2-R3): %.2f";
+        midResistanceStyle.labelFormat = "mR3 %1";
         levelStyles[LevelType::M_R2R3] = midResistanceStyle;
-        
-        midResistanceStyle.labelFormat = "M(R1-R2): %.2f";
+
+        midResistanceStyle.labelFormat = "mR2 %1";
         levelStyles[LevelType::M_R1R2] = midResistanceStyle;
-        
-        midResistanceStyle.labelFormat = "M(P-R1): %.2f";
+
+        midResistanceStyle.labelFormat = "mR1 %1";
         levelStyles[LevelType::M_PR1] = midResistanceStyle;
         
         // Niveaux milieux support (vert, trait pointillé, non visibles par défaut)
@@ -284,14 +284,14 @@ struct PivotPointsInstance : public IndicatorBase {
         midSupportStyle.thickness = 1;
         midSupportStyle.lineStyle = LineStyle::Dash;
         midSupportStyle.visible = false;  // Visible si showMidLevels est true
-        
-        midSupportStyle.labelFormat = "M(P-S1): %.2f";
+
+        midSupportStyle.labelFormat = "mS1 %1";
         levelStyles[LevelType::M_PS1] = midSupportStyle;
-        
-        midSupportStyle.labelFormat = "M(S1-S2): %.2f";
+
+        midSupportStyle.labelFormat = "mS2 %1";
         levelStyles[LevelType::M_S1S2] = midSupportStyle;
-        
-        midSupportStyle.labelFormat = "M(S2-S3): %.2f";
+
+        midSupportStyle.labelFormat = "mS2 %1";
         levelStyles[LevelType::M_S2S3] = midSupportStyle;
         
         // Activer les étiquettes par défaut

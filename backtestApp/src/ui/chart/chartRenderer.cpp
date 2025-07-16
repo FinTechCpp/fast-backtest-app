@@ -954,18 +954,7 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
         case PivotPointsInstance::PeriodType::Monthly: periodStr = "M"; break;
     }
     
-    // Structure pour stocker les informations sur les segments et étiquettes
-    struct PivotSegmentInfo {
-        PivotPointsInstance::LevelType levelType;
-        int startX;
-        int endX;
-        double value;
-        QString levelName;
-        const PivotPointsInstance::LevelStyle* style;
-    };
-    std::vector<PivotSegmentInfo> segmentsInfo;
-    
-    // PREMIÈRE BOUCLE: Créer tous les segments
+    // CRÉER TOUS LES SEGMENTS
     for (const auto& [levelType, style] : pivotPoints.levelStyles) {
         // Vérifier si ce niveau doit être affiché
         if (!pivotPoints.isLevelVisible(levelType)) continue;
@@ -981,24 +970,6 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
         int endIndex = std::min(startIndex + pointsToShow, static_cast<int>(values.size()));
         int actualPoints = endIndex - startIndex;
         if (actualPoints <= 0) continue;
-        
-        // Définir le nom du niveau
-        QString levelName;
-        switch (levelType) {
-            case PivotPointsInstance::LevelType::Pivot: levelName = "PP"; break;
-            case PivotPointsInstance::LevelType::R1: levelName = "R1"; break;
-            case PivotPointsInstance::LevelType::R2: levelName = "R2"; break;
-            case PivotPointsInstance::LevelType::R3: levelName = "R3"; break;
-            case PivotPointsInstance::LevelType::S1: levelName = "S1"; break;
-            case PivotPointsInstance::LevelType::S2: levelName = "S2"; break;
-            case PivotPointsInstance::LevelType::S3: levelName = "S3"; break;
-            case PivotPointsInstance::LevelType::M_PR1: levelName = "M(P-R1)"; break;
-            case PivotPointsInstance::LevelType::M_R1R2: levelName = "M(R1-R2)"; break;
-            case PivotPointsInstance::LevelType::M_R2R3: levelName = "M(R2-R3)"; break;
-            case PivotPointsInstance::LevelType::M_PS1: levelName = "M(P-S1)"; break;
-            case PivotPointsInstance::LevelType::M_S1S2: levelName = "M(S1-S2)"; break;
-            case PivotPointsInstance::LevelType::M_S2S3: levelName = "M(S2-S3)"; break;
-        }
         
         // Détecter les changements de niveaux pour créer des segments horizontaux
         std::vector<std::pair<int, int>> segments; // Début et fin de chaque segment horizontal
@@ -1068,67 +1039,35 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
             if (dataSet)
                 dataSet->setDataColor(dashPatternColor);
             
-            // Stocker les informations pour l'ajout d'étiquettes plus tard
+            // NOUVEAU CODE: Ajouter une étiquette personnalisée au point de fin du segment si demandé
             if (pivotPoints.showLabels) {
-                PivotSegmentInfo segInfo;
-                segInfo.levelType = levelType;
-                segInfo.startX = start;
-                segInfo.endX = end;
-                segInfo.value = value;
-                segInfo.levelName = levelName;
-                segInfo.style = &style;
-                segmentsInfo.push_back(segInfo);
+
+                QString periodSuffix;
+                switch (pivotPoints.periodType) {
+                    case PivotPointsInstance::PeriodType::FourHour: periodSuffix = "4H"; break;
+                    case PivotPointsInstance::PeriodType::Daily: periodSuffix = "J"; break;
+                    case PivotPointsInstance::PeriodType::Weekly: periodSuffix = "S"; break;
+                    case PivotPointsInstance::PeriodType::Monthly: periodSuffix = "M"; break;
+                }
+
+                // Formater l'étiquette selon le format spécifié ou le format par défaut
+                QString labelText;
+                if (!style.labelFormat.isEmpty())
+                    labelText = style.labelFormat.arg(periodSuffix);
+                
+                // Ajouter un label personnalisé au point final du segment (index 1)
+                TextBox* label = layer->addCustomDataLabel(0, 1, 
+                                                         labelText.toStdString().c_str(), 
+                                                         "Arial Bold", 8, style.color);
+                
+                // Configurer l'apparence du label
+                label->setAlignment(Chart::Right);
+                label->setPos(label->getLeftX() - 5, label->getTopY() - 8); // Décalage à droite et vers le haut
+                label->setBackground(Chart::Transparent);
+                label->setMargin(3);               // Marge interne
             }
         }
     }
-
-    // sinon au lieu de faire cela on peux essayer de tricher : voir doc de Symbol Line Chart
-    // utiliser layer->setDataLabelFormat("{value|0}%"); pour mettre des étiquettes formatées a des points spécifiques
-    //    // Add the third data set to the stacked bar layer, and set its data label font to Arial Bold
-    // Italic.
-    // TextBox* textbox = layer->addDataSet(DoubleArray(data2, data2_size), -1, "Server #3"
-    //     )->setDataLabelStyle("Arial Bold Italic");
-
-    // sinon utiliser les Mark : mainChart->yAxis()->addMark au moins j'aurai les labels  mais pas au dessus de tous les segments
-
-    
-    // Appeler layoutLegend pour s'assurer que le graphique est correctement mis en page
-    // avant d'ajouter les étiquettes
-    // mainChart->layoutAxes();
-    
-    // // DEUXIÈME BOUCLE: Ajouter les étiquettes après layout
-    // if (pivotPoints.showLabels) {
-    //     for (const auto& segInfo : segmentsInfo) {
-    //         // Formater l'étiquette selon le format spécifié ou le format par défaut
-    //         QString labelText = segInfo.style->labelFormat.arg(segInfo.value);
-            
-    //         if (segInfo.style->labelFormat.isEmpty()) {
-    //             labelText = QString("%1(%2): %3").arg(segInfo.levelName)
-    //                                            .arg(periodStr)
-    //                                            .arg(segInfo.value, 0, 'f', 2);
-    //         }
-            
-    //         // Calculer la position X au milieu du segment
-    //         int labelX = mainChart->getXCoor((segInfo.startX + segInfo.endX) / 2.0);
-            
-    //         // Calculer la position Y basée sur la valeur du point pivot
-    //         // Utiliser getYCoor pour convertir correctement la valeur en coordonnée d'écran
-    //         int labelY = mainChart->getYCoor(segInfo.value) - 15; // 15 pixels au-dessus de la ligne
-            
-    //         // Ajouter l'étiquette
-    //         TextBox* label = mainChart->addText(labelX, labelY, 
-    //                                            labelText.toStdString().c_str(),
-    //                                            "Arial Bold", 8);
-            
-    //         // Configurer l'apparence
-    //         label->setAlignment(Chart::Center);
-    //         label->setFontColor(segInfo.style->color);
-    //         label->setBackground(0xFFFFFFCC); // Fond blanc semi-transparent
-    //         label->setMargin(3);
-    //         label->setRoundedCorners(3);
-    //         // label->moveToFront();
-    //     }
-    // }
 }
 
 void ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<double, double>> &markers,

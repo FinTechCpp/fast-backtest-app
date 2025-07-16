@@ -294,8 +294,6 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     QSize newSize = event->size();
-
-    std::cout << "ChartWidget resized to: " << newSize.width() << "x" << newSize.height() << std::endl;
     
     // Ne pas mettre à jour pendant un redimensionnement en cours
     // if (m_isResizing) {

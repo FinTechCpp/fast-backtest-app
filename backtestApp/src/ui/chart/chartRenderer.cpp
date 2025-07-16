@@ -89,13 +89,32 @@ void ChartRenderer::createOrUpdateChart(
     
     // Déterminer l'index de début pour les données visibles
     int startIndex = aggregationInfo.startIndex;
+
+    int subChartsTotalHeight = 0;
     
     // 1. Ajouter la courbe d'équité en haut si disponible et demandée
-    if (config.showEquity) 
+    if (config.showEquity) {
         addEquityCurveSection(m_financeChart.get(), dataManager, timestamps, startIndex);
+        subChartsTotalHeight += config.equityHeight;
+    }
+
+    for (const RSIInstance* rsi : dataManager.getIndicatorsOfType<RSIInstance>())
+        if (rsi->visible)
+            subChartsTotalHeight += rsi->height;
+    
+    // 3. Espace pour Stochastique
+    for (const StochasticInstance* stochastic : dataManager.getIndicatorsOfType<StochasticInstance>())
+        if (stochastic->visible)
+            subChartsTotalHeight += stochastic->height;
+    
+    // 4. Espace pour ATR
+    for (const ATRInstance* atr : dataManager.getIndicatorsOfType<ATRInstance>())
+        if (atr->visible)
+            subChartsTotalHeight += atr->height;
     
     // 2. Ajouter le graphique principal
-    m_financeChart->addMainChart(config.chartHeight);
+    int mainChartHeight = std::max(300, config.chartHeight - subChartsTotalHeight);
+    m_financeChart->addMainChart(mainChartHeight);
     XYChart* mainChart = (XYChart*)m_financeChart->getChart(1);
     
     // Personnaliser l'affichage des grilles

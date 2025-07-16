@@ -294,16 +294,19 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     QSize newSize = event->size();
+
+    std::cout << "ChartWidget resized to: " << newSize.width() << "x" << newSize.height() << std::endl;
     
     // Ne pas mettre à jour pendant un redimensionnement en cours
-    if (m_isResizing) {
-        m_pendingResize = newSize;
-        return;
-    }
+    // if (m_isResizing) {
+    //     m_pendingResize = newSize;
+    //     return;
+    // }
     
     // Mettre à jour la largeur du graphique en fonction de la largeur du widget
     if (newSize.width() > 10) {
         m_config.chartWidth = newSize.width();
+        m_config.chartHeight = newSize.height() - 20;
         
         // Mettre à jour le graphique seulement si nécessaire
         if (m_dataManager.hasValidData() && m_chartViewer) {

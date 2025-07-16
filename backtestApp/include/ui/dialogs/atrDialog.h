@@ -13,7 +13,6 @@ class ATRDialog : public IndicatorDialog<ATRInstance>
     Q_OBJECT
     
 public:
-    // Constructor for ATR
     ATRDialog(QWidget* parent, ChartWidget* chartWidget, const ATRInstance& atr);
     ~ATRDialog() override;
     

@@ -11,8 +11,7 @@ PivotPointsDialog::PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, 
     : IndicatorDialog<PivotPointsInstance>(parent, "Pivot Points", chartWidget, pivotPoints)
 {
     // setMinimumWidth(500);
-    setupUI();
-    connectSignals();
+    initialize();
 }
 
 PivotPointsDialog::~PivotPointsDialog()
@@ -33,7 +32,6 @@ void PivotPointsDialog::setupUI()
     m_periodTypeComboBox->addItem("Monthly", static_cast<int>(PivotPointsInstance::PeriodType::Monthly));
     
     // Sélectionner la période actuelle
-    m_periodTypeComboBox->setCurrentIndex(static_cast<int>(m_currentIndicator.periodType));
     generalLayout->addRow("Period Type:", m_periodTypeComboBox);
 
     m_calculationMethodComboBox = new QComboBox();
@@ -45,7 +43,6 @@ void PivotPointsDialog::setupUI()
                                         static_cast<int>(PivotPointsInstance::CalculationMethod::HL0));
 
     // Sélectionner la méthode de calcul actuelle
-    m_calculationMethodComboBox->setCurrentIndex(static_cast<int>(m_currentIndicator.calculationMethod));
     generalLayout->addRow("Calculation Method:", m_calculationMethodComboBox);
     
 
@@ -56,7 +53,6 @@ void PivotPointsDialog::setupUI()
     
     // Checkbox pour l'affichage des étiquettes
     m_showLabelsCheckBox = new QCheckBox();
-    m_showLabelsCheckBox->setChecked(m_currentIndicator.showLabels);
     generalLayout->addRow("Show Labels:", m_showLabelsCheckBox);
     
     // Ajouter la section générale au layout principal
@@ -116,37 +112,21 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, PivotPo
     int levelTypeInt = static_cast<int>(levelType);
     auto& style = m_currentIndicator.levelStyles[levelType];
     
-    // Labels
-    // layout->addWidget(new QLabel(labelText), row, 0);
-    
     // Visibility checkbox
     QCheckBox* visibilityCheckBox = new QCheckBox(labelText);
-    visibilityCheckBox->setChecked(style.visible);
     layout->addWidget(visibilityCheckBox, row, 0);
     
     // Color button
     QPushButton* colorButton = new QPushButton();
-    updateColorButtonStyle(colorButton, style.color);
     layout->addWidget(colorButton, row, 1);
     
     // Thickness spinbox
     QSpinBox* thicknessSpinBox = new QSpinBox();
     thicknessSpinBox->setRange(1, 5);
-    thicknessSpinBox->setValue(style.thickness > 0 ? style.thickness : 1);
     layout->addWidget(thicknessSpinBox, row, 2);
     
     // Line style combobox
     QComboBox* lineStyleComboBox = createLineStyleComboBox();
-    int styleIndex = 0;
-    switch (style.lineStyle) {
-        case PivotPointsInstance::LineStyle::Solid: styleIndex = 0; break;
-        case PivotPointsInstance::LineStyle::Dash: styleIndex = 1; break;
-        case PivotPointsInstance::LineStyle::Dot: styleIndex = 2; break;
-        case PivotPointsInstance::LineStyle::DotDash: styleIndex = 3; break;
-        case PivotPointsInstance::LineStyle::AltDash: styleIndex = 4; break;
-        default: styleIndex = 0; break;
-    }
-    lineStyleComboBox->setCurrentIndex(styleIndex);
     layout->addWidget(lineStyleComboBox, row, 3);
     
     // Stocker les contrôles pour les utiliser plus tard
@@ -248,24 +228,7 @@ void PivotPointsDialog::updateUIFromInstance()
     m_periodTypeComboBox->setCurrentIndex(static_cast<int>(m_currentIndicator.periodType));
     m_calculationMethodComboBox->setCurrentIndex(static_cast<int>(m_currentIndicator.calculationMethod));
     m_showLabelsCheckBox->setChecked(m_currentIndicator.showLabels);
-    
-    // Déterminer si des niveaux milieux sont visibles
-    bool anyMidVisible = false;
-    std::vector<PivotPointsInstance::LevelType> midLevels = {
-        PivotPointsInstance::LevelType::M_PR1,
-        PivotPointsInstance::LevelType::M_R1R2,
-        PivotPointsInstance::LevelType::M_R2R3,
-        PivotPointsInstance::LevelType::M_PS1,
-        PivotPointsInstance::LevelType::M_S1S2,
-        PivotPointsInstance::LevelType::M_S2S3
-    };
-    for (auto level : midLevels) {
-        if (m_currentIndicator.levelStyles[level].visible) {
-            anyMidVisible = true;
-            break;
-        }
-    }
-    m_showMidLevelsCheckBox->setChecked(anyMidVisible);
+    m_showMidLevelsCheckBox->setChecked(false);
     
     // Mettre à jour les contrôles pour chaque niveau
     for (auto& [levelType, controls] : m_levelControls) {
@@ -274,7 +237,7 @@ void PivotPointsDialog::updateUIFromInstance()
         
         controls.visibilityCheckBox->setChecked(style.visible);
         updateColorButtonStyle(controls.colorButton, style.color);
-        controls.thicknessSpinBox->setValue(style.thickness);
+        controls.thicknessSpinBox->setValue(style.thickness > 0 ? style.thickness : 1);
         
         int styleIndex = 0;
         switch (style.lineStyle) {

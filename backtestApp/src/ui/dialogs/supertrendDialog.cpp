@@ -3,8 +3,7 @@
 SupertrendDialog::SupertrendDialog(QWidget* parent, ChartWidget* chartWidget, const SuperTrendInstance& supertrend)
     : IndicatorDialog<SuperTrendInstance>(parent, "Supertrend", chartWidget, supertrend)
 {
-    setupUI();
-    connectSignals();
+    initialize();
 }
 
 SupertrendDialog::~SupertrendDialog()
@@ -16,7 +15,6 @@ void SupertrendDialog::setupUI()
     // Période
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 100);
-    m_periodSpinBox->setValue(m_currentIndicator.period);
     m_formLayout->addRow("ATR Period:", m_periodSpinBox);
     
     // Multiplicateur
@@ -24,17 +22,14 @@ void SupertrendDialog::setupUI()
     m_multiplierSpinBox->setRange(0.1, 10.0);
     m_multiplierSpinBox->setSingleStep(0.1);
     m_multiplierSpinBox->setDecimals(1);
-    m_multiplierSpinBox->setValue(m_currentIndicator.multiplier);
     m_formLayout->addRow("Multiplier:", m_multiplierSpinBox);
     
     // Couleur tendance haussière
     m_upColorButton = new QPushButton();
-    updateColorButtonStyle(m_upColorButton, m_currentIndicator.upColor);
     m_formLayout->addRow("Up Trend Color:", m_upColorButton);
     
     // Couleur tendance baissière
     m_downColorButton = new QPushButton();
-    updateColorButtonStyle(m_downColorButton, m_currentIndicator.downColor);
     m_formLayout->addRow("Down Trend Color:", m_downColorButton);
 }
 

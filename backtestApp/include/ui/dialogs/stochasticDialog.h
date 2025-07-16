@@ -11,7 +11,6 @@ class StochasticDialog : public IndicatorDialog<StochasticInstance>
     Q_OBJECT
     
 public:
-    // Stochastic constructor
     StochasticDialog(QWidget* parent, ChartWidget* chartWidget, const StochasticInstance& stochastic);
     ~StochasticDialog() override;
     

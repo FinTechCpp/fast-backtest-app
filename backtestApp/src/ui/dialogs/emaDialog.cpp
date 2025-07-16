@@ -3,8 +3,7 @@
 EMADialog::EMADialog(QWidget* parent, ChartWidget* chartWidget, const EMAInstance& ema)
     : IndicatorDialog<EMAInstance>(parent, "EMA", chartWidget, ema)
 {
-    setupUI();
-    connectSignals();
+    initialize();
 }
 
 EMADialog::~EMADialog()
@@ -16,12 +15,10 @@ void EMADialog::setupUI()
     // Période
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 200);
-    m_periodSpinBox->setValue(m_currentIndicator.period);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
     // Couleur de la ligne
     m_colorButton = new QPushButton();
-    updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
     m_formLayout->addRow("Line Color:", m_colorButton);
 }
 

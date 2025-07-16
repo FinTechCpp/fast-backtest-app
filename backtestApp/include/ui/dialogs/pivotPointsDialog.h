@@ -19,7 +19,6 @@ class PivotPointsDialog : public IndicatorDialog<PivotPointsInstance>
     Q_OBJECT
     
 public:
-    // Constructor
     PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, const PivotPointsInstance& pivotPoints);
     ~PivotPointsDialog() override;
     

@@ -3,49 +3,45 @@
 RSIDialog::RSIDialog(QWidget* parent, ChartWidget* chartWidget, const RSIInstance& rsi)
     : IndicatorDialog<RSIInstance>(parent, "RSI", chartWidget, rsi)
 {
-    setupUI();
-    connectSignals();
+    initialize();
+}
+
+RSIDialog::~RSIDialog() 
+{
 }
 
 void RSIDialog::setupUI() {
     // Période
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 100);
-    m_periodSpinBox->setValue(m_currentIndicator.period);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
     // Hauteur
     m_heightSpinBox = new QSpinBox();
     m_heightSpinBox->setRange(50, 300);
     m_heightSpinBox->setSingleStep(10);
-    m_heightSpinBox->setValue(m_currentIndicator.height);
     m_formLayout->addRow("Height:", m_heightSpinBox);
     
     // Niveau de surachat
     m_overboughtLevelSpinBox = new QSpinBox();
     m_overboughtLevelSpinBox->setRange(50, 100);
-    m_overboughtLevelSpinBox->setValue(m_currentIndicator.overboughtLevel);
     m_formLayout->addRow("Overbought Level:", m_overboughtLevelSpinBox);
     
     // Niveau de survente
     m_oversoldLevelSpinBox = new QSpinBox();
     m_oversoldLevelSpinBox->setRange(0, 50);
-    m_oversoldLevelSpinBox->setValue(m_currentIndicator.oversoldLevel);
     m_formLayout->addRow("Oversold Level:", m_oversoldLevelSpinBox);
     
     // Couleur principale
     m_colorButton = new QPushButton();
-    updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
     m_formLayout->addRow("Line Color:", m_colorButton);
     
     // Couleur zone supérieure
     m_upperColorButton = new QPushButton();
-    updateColorButtonStyle(m_upperColorButton, m_currentIndicator.upperColor);
     m_formLayout->addRow("Upper Zone Color:", m_upperColorButton);
     
     // Couleur zone inférieure
     m_lowerColorButton = new QPushButton();
-    updateColorButtonStyle(m_lowerColorButton, m_currentIndicator.lowerColor);
     m_formLayout->addRow("Lower Zone Color:", m_lowerColorButton);
 }
 
@@ -68,10 +64,6 @@ void RSIDialog::updateUIFromInstance()
     updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
     updateColorButtonStyle(m_upperColorButton, m_currentIndicator.upperColor);
     updateColorButtonStyle(m_lowerColorButton, m_currentIndicator.lowerColor);
-}
-
-RSIDialog::~RSIDialog()
-{
 }
 
 void RSIDialog::onPeriodChanged(int period) {

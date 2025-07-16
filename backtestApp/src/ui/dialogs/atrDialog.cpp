@@ -3,8 +3,7 @@
 ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, const ATRInstance& atr)
     : IndicatorDialog<ATRInstance>(parent, "ATR", chartWidget, atr)
 {
-    setupUI();
-    connectSignals();
+    initialize();
 }
 
 ATRDialog::~ATRDialog()
@@ -15,24 +14,20 @@ void ATRDialog::setupUI() {
     // Période
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 100);
-    m_periodSpinBox->setValue(m_currentIndicator.period);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
     // Hauteur
     m_heightSpinBox = new QSpinBox();
     m_heightSpinBox->setRange(50, 300);
     m_heightSpinBox->setSingleStep(10);
-    m_heightSpinBox->setValue(m_currentIndicator.height);
     m_formLayout->addRow("Height:", m_heightSpinBox);
     
     // Case à cocher pour l'échelle logarithmique
     m_useLogScaleCheckBox = new QCheckBox();
-    m_useLogScaleCheckBox->setChecked(m_currentIndicator.useLogScale);
     m_formLayout->addRow("Use Logarithmic Scale:", m_useLogScaleCheckBox);
     
     // Couleur de la ligne
     m_colorButton = new QPushButton();
-    updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
     m_formLayout->addRow("Line Color:", m_colorButton);
 }
 

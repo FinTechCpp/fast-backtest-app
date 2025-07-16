@@ -17,8 +17,6 @@ class RSIDialog : public IndicatorDialog<RSIInstance>
     Q_OBJECT
     
 public:
-    // Constructor for RSI
-
     RSIDialog(QWidget* parent, ChartWidget* chartWidget, const RSIInstance& rsi);
     ~RSIDialog() override;
     

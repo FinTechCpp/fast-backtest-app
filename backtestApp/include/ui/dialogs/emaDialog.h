@@ -11,7 +11,6 @@ class EMADialog : public IndicatorDialog<EMAInstance>
     Q_OBJECT
     
 public:
-    // Constructor for one EMA
     EMADialog(QWidget* parent, ChartWidget* chartWidget, const EMAInstance& ema);
     ~EMADialog() override;
     

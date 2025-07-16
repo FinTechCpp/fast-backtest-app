@@ -58,7 +58,8 @@ public:
         , m_chartWidget(chartWidget)
         , m_originalIndicator(originalIndicator)
         , m_currentIndicator(originalIndicator)
-    {}
+    {
+    }
     
 protected:
     IndicatorType m_originalIndicator;
@@ -79,6 +80,12 @@ protected:
         m_currentIndicator.setDefaults();
         updateUIFromInstance();
         applyChanges();
+    }
+
+    void initialize() {
+        setupUI();
+        connectSignals();
+        updateUIFromInstance();
     }
 
 private:

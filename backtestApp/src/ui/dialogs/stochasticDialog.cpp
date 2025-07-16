@@ -3,8 +3,7 @@
 StochasticDialog::StochasticDialog(QWidget* parent, ChartWidget* chartWidget, const StochasticInstance& stochastic)
     : IndicatorDialog<StochasticInstance>(parent, "Stochastic", chartWidget, stochastic)
 {
-    setupUI();
-    connectSignals();
+    initialize();
 }
 
 StochasticDialog::~StochasticDialog()
@@ -15,48 +14,40 @@ void StochasticDialog::setupUI() {
     // Période Fast K
     m_fastKPeriodSpinBox = new QSpinBox();
     m_fastKPeriodSpinBox->setRange(2, 100);
-    m_fastKPeriodSpinBox->setValue(m_currentIndicator.fastKPeriod);
     m_formLayout->addRow("Fast K Period:", m_fastKPeriodSpinBox);
     
     // Période Slow K
     m_slowKPeriodSpinBox = new QSpinBox();
     m_slowKPeriodSpinBox->setRange(1, 100);
-    m_slowKPeriodSpinBox->setValue(m_currentIndicator.slowKPeriod);
     m_formLayout->addRow("Slow K Period:", m_slowKPeriodSpinBox);
     
     // Période Slow D
     m_slowDPeriodSpinBox = new QSpinBox();
     m_slowDPeriodSpinBox->setRange(1, 100);
-    m_slowDPeriodSpinBox->setValue(m_currentIndicator.slowDPeriod);
     m_formLayout->addRow("Slow D Period:", m_slowDPeriodSpinBox);
     
     // Hauteur
     m_heightSpinBox = new QSpinBox();
     m_heightSpinBox->setRange(50, 300);
     m_heightSpinBox->setSingleStep(10);
-    m_heightSpinBox->setValue(m_currentIndicator.height);
     m_formLayout->addRow("Height:", m_heightSpinBox);
     
     // Niveau de surachat
     m_overboughtLevelSpinBox = new QSpinBox();
     m_overboughtLevelSpinBox->setRange(50, 100);
-    m_overboughtLevelSpinBox->setValue(m_currentIndicator.overboughtLevel);
     m_formLayout->addRow("Overbought Level:", m_overboughtLevelSpinBox);
     
     // Niveau de survente
     m_oversoldLevelSpinBox = new QSpinBox();
     m_oversoldLevelSpinBox->setRange(0, 50);
-    m_oversoldLevelSpinBox->setValue(m_currentIndicator.oversoldLevel);
     m_formLayout->addRow("Oversold Level:", m_oversoldLevelSpinBox);
     
     // Couleur de la ligne K
     m_kColorButton = new QPushButton();
-    updateColorButtonStyle(m_kColorButton, m_currentIndicator.kColor);
     m_formLayout->addRow("%K Line Color:", m_kColorButton);
     
     // Couleur de la ligne D
     m_dColorButton = new QPushButton();
-    updateColorButtonStyle(m_dColorButton, m_currentIndicator.dColor);
     m_formLayout->addRow("%D Line Color:", m_dColorButton);
 }
 

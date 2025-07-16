@@ -7,12 +7,12 @@
 /**
  * @brief Modal dialog to edit the parameters of a Supertrend indicator
  */
-class SupertrendDialog : public BaseDialog
+class SupertrendDialog : public IndicatorDialog<SuperTrendInstance>
 {
     Q_OBJECT
     
 public:
-    SupertrendDialog(QWidget* parent, ChartWidget* chartWidget, int supertrendId, const SuperTrendInstance& supertrend);
+    SupertrendDialog(QWidget* parent, ChartWidget* chartWidget, const SuperTrendInstance& supertrend);
     ~SupertrendDialog() override;
     
 private slots:
@@ -25,13 +25,9 @@ protected:
     // Virtual methods from BaseDialog
     void setupUI() override;
     void connectSignals() override;
-    void applyChanges() override;
-    void cancelChanges() override;
+    void updateUIFromInstance() override;
 
 private:
-    int m_supertrendId;
-    SuperTrendInstance m_originalSupertrend;  // To restore in case of cancellation
-    SuperTrendInstance m_currentSupertrend;   // For ongoing modifications
 
     QSpinBox* m_periodSpinBox;
     QDoubleSpinBox* m_multiplierSpinBox;

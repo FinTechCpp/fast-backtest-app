@@ -8,13 +8,13 @@
 /**
  * @brief Modal dialog to modify the parameters of an ATR (Average True Range) indicator
  */
-class ATRDialog : public BaseDialog
+class ATRDialog : public IndicatorDialog<ATRInstance>
 {
     Q_OBJECT
     
 public:
     // Constructor for ATR
-    ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const ATRInstance& atr);
+    ATRDialog(QWidget* parent, ChartWidget* chartWidget, const ATRInstance& atr);
     ~ATRDialog() override;
     
 private slots:
@@ -27,16 +27,11 @@ protected:
     //Virtual methods from BaseDialog
     void setupUI() override;
     void connectSignals() override;
-    void applyChanges() override;
-    void cancelChanges() override;
+    void updateUIFromInstance() override;
 
 private:
-    int m_atrId;
-    ATRInstance m_originalAtr;  // For restoring in case of cancellation
-    ATRInstance m_currentAtr;   // For ongoing modifications
-
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;
-    QCheckBox* m_useLogScaleCheckBox;  // New control
+    QCheckBox* m_useLogScaleCheckBox;
     QPushButton* m_colorButton;
 };

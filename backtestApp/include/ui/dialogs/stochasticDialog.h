@@ -6,13 +6,13 @@
 /**
  * @brief Modal dialog to edit the parameters of a Stochastic indicator
  */
-class StochasticDialog : public BaseDialog
+class StochasticDialog : public IndicatorDialog<StochasticInstance>
 {
     Q_OBJECT
     
 public:
     // Stochastic constructor
-    StochasticDialog(QWidget* parent, ChartWidget* chartWidget, int stochasticId, const StochasticInstance& stochastic);
+    StochasticDialog(QWidget* parent, ChartWidget* chartWidget, const StochasticInstance& stochastic);
     ~StochasticDialog() override;
     
 private slots:
@@ -28,14 +28,9 @@ private slots:
 protected:
     void setupUI() override;
     void connectSignals() override;
-    void applyChanges() override;
-    void cancelChanges() override;
+    void updateUIFromInstance() override;
 
 private:
-    int m_stochasticId;
-    StochasticInstance m_originalStochastic;  // To restore in case of cancellation
-    StochasticInstance m_currentStochastic;   // For ongoing modifications
-
     QSpinBox* m_fastKPeriodSpinBox;
     QSpinBox* m_slowKPeriodSpinBox;
     QSpinBox* m_slowDPeriodSpinBox;

@@ -16,14 +16,11 @@ class BaseDialog : public QDialog
     Q_OBJECT
     
 public:
-    BaseDialog(QWidget* parent, ChartWidget* chartWidget, const QString& title);
+    BaseDialog(QWidget* parent, const QString& title);
     virtual ~BaseDialog();
 
 protected:
-    ChartWidget* m_chartWidget;
-    QVBoxLayout* m_mainLayout;
     QFormLayout* m_formLayout;
-    QDialogButtonBox* m_buttonBox;
     
     // Common utility methods
     void updateColorButtonStyle(QPushButton* button, int color);
@@ -36,8 +33,54 @@ protected:
     virtual void connectSignals() = 0;
     virtual void applyChanges() = 0;
     virtual void cancelChanges() = 0;
+    virtual void resetToDefaults() = 0;
+    
+private:
+    QVBoxLayout* m_mainLayout;
+    QDialogButtonBox* m_buttonBox;
+    QLabel* m_resetLink;
 
 private slots:
     void onApply();
     void onCancel();
+    void onReset();
+};
+
+/**
+ * @brief Base template class for all indicator configuration dialogs
+ */
+template<typename IndicatorType>
+class IndicatorDialog : public BaseDialog
+{
+public:
+    IndicatorDialog(QWidget* parent, const QString& title, ChartWidget* chartWidget, const IndicatorType& originalIndicator)
+        : BaseDialog(parent, title)
+        , m_chartWidget(chartWidget)
+        , m_originalIndicator(originalIndicator)
+        , m_currentIndicator(originalIndicator)
+    {}
+    
+protected:
+    IndicatorType m_originalIndicator;
+    IndicatorType m_currentIndicator;
+    
+    // Implementation of common methods from BaseDialog
+    void applyChanges() override {
+        m_chartWidget->updateIndicator(m_currentIndicator);
+    }
+    
+    void cancelChanges() override {
+        m_chartWidget->updateIndicator(m_originalIndicator);
+    }
+    
+    virtual void updateUIFromInstance() = 0;
+    
+    void resetToDefaults() override {
+        m_currentIndicator.setDefaults();
+        updateUIFromInstance();
+        applyChanges();
+    }
+
+private:
+    ChartWidget* m_chartWidget;
 };

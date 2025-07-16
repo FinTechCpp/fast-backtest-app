@@ -1,8 +1,7 @@
 #include "ui/dialogs/baseDialog.h"
 
-BaseDialog::BaseDialog(QWidget* parent, ChartWidget* chartWidget, const QString& title)
+BaseDialog::BaseDialog(QWidget* parent, const QString& title)
     : QDialog(parent)
-    , m_chartWidget(chartWidget)
 {
     // Configuration du dialogue
     setWindowTitle(title);
@@ -15,6 +14,13 @@ BaseDialog::BaseDialog(QWidget* parent, ChartWidget* chartWidget, const QString&
     // Formulaire de paramètres
     m_formLayout = new QFormLayout();
     m_mainLayout->addLayout(m_formLayout);
+
+    // Ajouter le lien de réinitialisation en haut
+    m_resetLink = new QLabel("<a href=\"#\">Reset to defaults</a>");
+    m_resetLink->setAlignment(Qt::AlignRight);
+    m_resetLink->setCursor(Qt::PointingHandCursor);
+    connect(m_resetLink, &QLabel::linkActivated, this, &BaseDialog::onReset);
+    m_mainLayout->addWidget(m_resetLink);
     
     // Boutons Annuler/Appliquer
     m_buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
@@ -79,4 +85,9 @@ void BaseDialog::onCancel()
 {
     cancelChanges();
     reject();
+}
+
+void BaseDialog::onReset()
+{
+    resetToDefaults();
 }

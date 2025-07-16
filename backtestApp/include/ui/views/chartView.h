@@ -113,7 +113,7 @@ private:
     bool tryOpenDialog(int id) {
         IndicatorType* indicator = m_chartWidget->findIndicator<IndicatorType>(id);
         if (indicator) {
-            DialogType* dialog = new DialogType(this, m_chartWidget, id, *indicator);
+            DialogType* dialog = new DialogType(this, m_chartWidget, *indicator);
             dialog->exec();
             delete dialog;
             return true;

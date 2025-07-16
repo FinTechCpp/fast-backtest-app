@@ -14,13 +14,13 @@
 /**
  * @brief Modal dialog to modify the parameters of Pivot Points indicator
  */
-class PivotPointsDialog : public BaseDialog
+class PivotPointsDialog : public IndicatorDialog<PivotPointsInstance>
 {
     Q_OBJECT
     
 public:
     // Constructor
-    PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, int pivotId, const PivotPointsInstance& pivotPoints);
+    PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, const PivotPointsInstance& pivotPoints);
     ~PivotPointsDialog() override;
     
 private slots:
@@ -39,18 +39,13 @@ protected:
     // Méthodes virtuelles de BaseDialog
     void setupUI() override;
     void connectSignals() override;
-    void applyChanges() override;
-    void cancelChanges() override;
+    void updateUIFromInstance() override;
 
 private:
     // Méthodes utilitaires
     void setupLevelControls(QGridLayout* layout, int row, PivotPointsInstance::LevelType levelType, const QString& labelText);
     QComboBox* createLineStyleComboBox();
     void updateLevelControlsState();
-    
-    int m_pivotId;
-    PivotPointsInstance m_originalPivots;  // Pour restauration en cas d'annulation
-    PivotPointsInstance m_currentPivots;   // Pour les modifications en cours
     
     // Widgets de configuration générale
     QComboBox* m_periodTypeComboBox;

@@ -12,14 +12,14 @@
 /**
  * @brief Modal dialog to modify the parameters of a technical indicator
  */
-class RSIDialog : public BaseDialog
+class RSIDialog : public IndicatorDialog<RSIInstance>
 {
     Q_OBJECT
     
 public:
     // Constructor for RSI
 
-    RSIDialog(QWidget* parent, ChartWidget* chartWidget, int rsiId, const RSIInstance& rsi);
+    RSIDialog(QWidget* parent, ChartWidget* chartWidget, const RSIInstance& rsi);
     ~RSIDialog() override;
     
 private slots:
@@ -35,14 +35,9 @@ private slots:
 protected:
     void setupUI() override;
     void connectSignals() override;
-    void applyChanges() override;
-    void cancelChanges() override;
+    void updateUIFromInstance() override;
     
-private:
-    int m_rsiId;
-    RSIInstance m_originalRsi;  // To restore in case of cancellation
-    RSIInstance m_currentRsi;   // For ongoing modifications
-    
+private:    
     QSpinBox* m_periodSpinBox;
     QSpinBox* m_heightSpinBox;
     QSpinBox* m_overboughtLevelSpinBox;

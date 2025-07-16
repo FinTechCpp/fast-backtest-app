@@ -1,10 +1,7 @@
 #include "ui/dialogs/atrDialog.h"
 
-ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, int atrId, const ATRInstance& atr)
-    : BaseDialog(parent, chartWidget, "ATR Settings")
-    , m_atrId(atrId)
-    , m_originalAtr(atr)
-    , m_currentAtr(atr)
+ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, const ATRInstance& atr)
+    : IndicatorDialog<ATRInstance>(parent, "ATR", chartWidget, atr)
 {
     setupUI();
     connectSignals();
@@ -18,24 +15,24 @@ void ATRDialog::setupUI() {
     // Période
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 100);
-    m_periodSpinBox->setValue(m_currentAtr.period);
+    m_periodSpinBox->setValue(m_currentIndicator.period);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
     // Hauteur
     m_heightSpinBox = new QSpinBox();
     m_heightSpinBox->setRange(50, 300);
     m_heightSpinBox->setSingleStep(10);
-    m_heightSpinBox->setValue(m_currentAtr.height);
+    m_heightSpinBox->setValue(m_currentIndicator.height);
     m_formLayout->addRow("Height:", m_heightSpinBox);
     
     // Case à cocher pour l'échelle logarithmique
     m_useLogScaleCheckBox = new QCheckBox();
-    m_useLogScaleCheckBox->setChecked(m_currentAtr.useLogScale);
+    m_useLogScaleCheckBox->setChecked(m_currentIndicator.useLogScale);
     m_formLayout->addRow("Use Logarithmic Scale:", m_useLogScaleCheckBox);
     
     // Couleur de la ligne
     m_colorButton = new QPushButton();
-    updateColorButtonStyle(m_colorButton, m_currentAtr.color);
+    updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
     m_formLayout->addRow("Line Color:", m_colorButton);
 }
 
@@ -46,35 +43,35 @@ void ATRDialog::connectSignals() {
     connect(m_colorButton, &QPushButton::clicked, this, &ATRDialog::onColorButtonClicked);
 }
 
+void ATRDialog::updateUIFromInstance()
+{
+    m_periodSpinBox->setValue(m_currentIndicator.period);
+    m_heightSpinBox->setValue(m_currentIndicator.height);
+    m_useLogScaleCheckBox->setChecked(m_currentIndicator.useLogScale);
+    updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
+}
+
 void ATRDialog::onPeriodChanged(int period) {
-    m_currentAtr.period = period;
+    m_currentIndicator.period = period;
     applyChanges(); // Appliquer immédiatement les changements
 }
 
 void ATRDialog::onHeightChanged(int height) {
-    m_currentAtr.height = height;
+    m_currentIndicator.height = height;
     applyChanges(); // Appliquer immédiatement les changements
 }
 
 void ATRDialog::onLogScaleChanged(int state) {
-    m_currentAtr.useLogScale = (state == Qt::Checked);
+    m_currentIndicator.useLogScale = (state == Qt::Checked);
     applyChanges(); // Appliquer immédiatement les changements
 }
 
 void ATRDialog::onColorButtonClicked() {
-    QColor color = openColorDialog(m_currentAtr.color, "Select Line Color");
+    QColor color = openColorDialog(m_currentIndicator.color, "Select Line Color");
     
     if (color.isValid()) {
-        m_currentAtr.color = colorFromRGB(color.red(), color.green(), color.blue());
-        updateColorButtonStyle(m_colorButton, m_currentAtr.color);
+        m_currentIndicator.color = colorFromRGB(color.red(), color.green(), color.blue());
+        updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
         applyChanges(); // Appliquer immédiatement les changements
     }
-}
-
-void ATRDialog::applyChanges() {
-    m_chartWidget->updateIndicator(m_currentAtr);
-}
-
-void ATRDialog::cancelChanges() {
-    m_chartWidget->updateIndicator(m_originalAtr);
 }

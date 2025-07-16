@@ -13,10 +13,10 @@ PivotPointsDialog::PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, 
     , m_originalPivots(pivotPoints)
     , m_currentPivots(pivotPoints)
 {
-    setMinimumWidth(550);
+    setMinimumWidth(500);
     // Si l'instance est nouvelle (pas de styles définis), initialiser avec les valeurs par défaut
     if (m_currentPivots.levelStyles.empty())
-        m_currentPivots.initializeDefaultStyles();
+        m_currentPivots.setDefaults();
 
     setupUI();
     connectSignals();
@@ -79,29 +79,38 @@ void PivotPointsDialog::setupUI()
     levelsLayout->addWidget(new QLabel("Color"), 0, 2);
     levelsLayout->addWidget(new QLabel("Thickness"), 0, 3);
     levelsLayout->addWidget(new QLabel("Style"), 0, 4);
+
+    // Obtenir le suffixe de période actuel
+    QString periodSuffix;
+    switch (m_currentPivots.periodType) {
+        case PivotPointsInstance::PeriodType::FourHour: periodSuffix = "4H"; break;
+        case PivotPointsInstance::PeriodType::Daily: periodSuffix = "J"; break;
+        case PivotPointsInstance::PeriodType::Weekly: periodSuffix = "S"; break;
+        case PivotPointsInstance::PeriodType::Monthly: periodSuffix = "M"; break;
+    }
     
     // Ajouter les niveaux dans l'ordre du plus élevé au plus bas
     int row = 1;
     
     // Résistances et leurs niveaux milieux
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::R3, "Resistance 3 (R3):");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_R2R3, "Mid R2-R3:");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::R2, "Resistance 2 (R2):");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_R1R2, "Mid R1-R2:");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::R1, "Resistance 1 (R1):");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_PR1, "Mid PP-R1:");
-    
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::R3, "R3:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_R2R3, "mR3:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::R2, "R2:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_R1R2, "mR2:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::R1, "R1:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_PR1, "mR1:");
+
     // Pivot central
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::Pivot, "Pivot Point (PP):");
-    
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::Pivot, "Piv:");
+
     // Supports et leurs niveaux milieux
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_PS1, "Mid PP-S1:");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::S1, "Support 1 (S1):");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_S1S2, "Mid S1-S2:");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::S2, "Support 2 (S2):");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_S2S3, "Mid S2-S3:");
-    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::S3, "Support 3 (S3):");
-    
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_PS1, "mS1:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::S1, "S1:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_S1S2, "mS2:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::S2, "S2:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::M_S2S3, "mS3:");
+    setupLevelControls(levelsLayout, row++, PivotPointsInstance::LevelType::S3, "S3:");
+
     // Rendre le groupe des niveaux déroulable
     levelsGroupBox->setLayout(levelsLayout);
     m_mainLayout->addWidget(levelsGroupBox);
@@ -119,7 +128,7 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, PivotPo
     layout->addWidget(new QLabel(labelText), row, 0);
     
     // Visibility checkbox
-    QCheckBox* visibilityCheckBox = new QCheckBox("Visible");
+    QCheckBox* visibilityCheckBox = new QCheckBox("");
     visibilityCheckBox->setChecked(style.visible);
     layout->addWidget(visibilityCheckBox, row, 1);
     

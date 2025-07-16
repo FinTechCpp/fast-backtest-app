@@ -25,6 +25,10 @@ struct IndicatorBase {
     // Nouvelle méthode pour obtenir le nom d'affichage de l'indicateur
     virtual QString getDisplayName() const = 0;
 
+    virtual void setDefaults() = 0;
+
+    virtual ~IndicatorBase() = default;
+
     bool operator==(const IndicatorBase& other) const {
         return id == other.id && type_ == other.type_;
     }
@@ -36,15 +40,15 @@ struct IndicatorBase {
 
 struct RSIInstance : public IndicatorBase {
     RSIInstance() : IndicatorBase(IndicatorType::RSI) {
-        period = 14; // Valeur par défaut pour la période du RSI
+        setDefaults();
     }
     int period;             // Période du RSI
-    int height = 120;       // Hauteur du panneau
-    int color = 0x800080;   // Couleur de la ligne principale (violet par défaut)
-    int overboughtLevel = 80; // Niveau de surachat
-    int oversoldLevel = 20;   // Niveau de survente
-    int upperColor = 0xff6666; // Couleur pour la zone de surachat
-    int lowerColor = 0x6666ff; // Couleur pour la zone de survente
+    int height;             // Hauteur du panneau
+    int color;              // Couleur de la ligne principale (violet par défaut)
+    int overboughtLevel;    // Niveau de surachat
+    int oversoldLevel;      // Niveau de survente
+    int upperColor;         // Couleur pour la zone de surachat
+    int lowerColor;         // Couleur pour la zone de survente
 
     bool needsRecalculation(const IndicatorBase& other) const override {
         const RSIInstance* otherRSI = dynamic_cast<const RSIInstance*>(&other);
@@ -55,14 +59,24 @@ struct RSIInstance : public IndicatorBase {
     QString getDisplayName() const override {
         return QString("RSI (%1)").arg(period);
     }
+
+    void setDefaults() override {
+        period = 14;
+        height = 120;
+        color = 0x800080; // Violet
+        overboughtLevel = 80;
+        oversoldLevel = 20;
+        upperColor = 0xff6666; // Rouge clair
+        lowerColor = 0x6666ff; // Bleu clair
+    }
 };
 
 struct EMAInstance : public IndicatorBase {
     EMAInstance() : IndicatorBase(IndicatorType::EMA) {
-        period = 20; // Valeur par défaut pour la période de l'EMA
+        setDefaults();
     }
     int period;            // Période de l'EMA
-    int color = 0x0000FF;  // Couleur de la ligne (bleu par défaut)
+    int color;             // Couleur de la ligne (bleu par défaut)
 
     bool needsRecalculation(const IndicatorBase& other) const override {
         const EMAInstance* otherEMA = dynamic_cast<const EMAInstance*>(&other);
@@ -73,17 +87,21 @@ struct EMAInstance : public IndicatorBase {
     QString getDisplayName() const override {
         return QString("EMA (%1)").arg(period);
     }
+
+    void setDefaults() override {
+        period = 20;
+        color = 0x0000FF; // Bleu par défaut
+    }
 };
 
 struct SuperTrendInstance : public IndicatorBase {
     SuperTrendInstance() : IndicatorBase(IndicatorType::SUPERTREND) {
-        period = 10; // Valeur par défaut pour la période du SuperTrend
-        multiplier = 3.0; // Valeur par défaut pour le multiplicateur
+        setDefaults();
     }
     int period;            // Période pour le SuperTrend
     double multiplier;     // Multiplicateur pour le SuperTrend
-    int upColor = 0x00AA00;  // Couleur de la ligne (vert par défaut)
-    int downColor = 0xFF0000; // Couleur de la ligne (rouge par défaut)
+    int upColor;           // Couleur de la ligne (vert par défaut)
+    int downColor;         // Couleur de la ligne (rouge par défaut)
 
     bool needsRecalculation(const IndicatorBase& other) const override {
         const SuperTrendInstance* otherST = dynamic_cast<const SuperTrendInstance*>(&other);
@@ -94,22 +112,27 @@ struct SuperTrendInstance : public IndicatorBase {
     QString getDisplayName() const override {
         return QString("Supertrend (%1, %2)").arg(period).arg(multiplier, 0, 'f', 1);
     }
+
+    void setDefaults() override {
+        period = 10;
+        multiplier = 3.0;
+        upColor = 0x00AA00;
+        downColor = 0xFF0000;
+    }
 };
 
 struct StochasticInstance : public IndicatorBase {
     StochasticInstance() : IndicatorBase(IndicatorType::STOCHASTIC) {
-        fastKPeriod = 14; // Période par défaut pour %K
-        slowKPeriod = 3;  // Période de lissage par défaut pour %K
-        slowDPeriod = 3;  // Période par défaut pour %D
+        setDefaults();
     }
     int fastKPeriod;        // Période pour calculer le %K brut
     int slowKPeriod;        // Période de lissage pour %K
     int slowDPeriod;        // Période pour calculer %D
-    int height = 120;       // Hauteur du panneau
-    int kColor = 0x0000FF;  // Couleur de la ligne %K (bleu par défaut)
-    int dColor = 0xFF0000;  // Couleur de la ligne %D (rouge par défaut)
-    int overboughtLevel = 80; // Niveau de surachat
-    int oversoldLevel = 20;   // Niveau de survente
+    int height;             // Hauteur du panneau
+    int kColor;             // Couleur de la ligne %K (bleu par défaut)
+    int dColor;             // Couleur de la ligne %D (rouge par défaut)
+    int overboughtLevel;    // Niveau de surachat
+    int oversoldLevel;      // Niveau de survente
 
     bool needsRecalculation(const IndicatorBase& other) const override {
         const StochasticInstance* otherStochastic = dynamic_cast<const StochasticInstance*>(&other);
@@ -122,16 +145,27 @@ struct StochasticInstance : public IndicatorBase {
     QString getDisplayName() const override {
         return QString("Stochastic (%1,%2,%3)").arg(fastKPeriod).arg(slowKPeriod).arg(slowDPeriod);
     }
+
+    void setDefaults() override {
+        fastKPeriod = 14;
+        slowKPeriod = 3;
+        slowDPeriod = 3;
+        height = 120;
+        kColor = 0x0000FF;
+        dColor = 0xFF0000;
+        overboughtLevel = 80;
+        oversoldLevel = 20;
+    }
 };
 
 struct ATRInstance : public IndicatorBase {
     ATRInstance() : IndicatorBase(IndicatorType::ATR) {
-        period = 14; // Valeur par défaut pour la période de l'ATR
+        setDefaults();
     }
     int period;            // Période de l'ATR
-    int height = 120;      // Hauteur du panneau
-    int color = 0x006400;  // Couleur de la ligne (vert foncé par défaut)
-    bool useLogScale = false; // Indique si l'échelle logarithmique est utilisée
+    int height;            // Hauteur du panneau
+    int color;             // Couleur de la ligne (vert foncé par défaut)
+    bool useLogScale;      // Indique si l'échelle logarithmique est utilisée
 
     bool needsRecalculation(const IndicatorBase& other) const override {
         const ATRInstance* otherATR = dynamic_cast<const ATRInstance*>(&other);
@@ -141,6 +175,13 @@ struct ATRInstance : public IndicatorBase {
     
     QString getDisplayName() const override {
         return QString("ATR (%1)").arg(period);
+    }
+
+    void setDefaults() override {
+        period = 14;
+        height = 120;
+        color = 0x006400;
+        useLogScale = false;
     }
 };
 
@@ -195,13 +236,12 @@ struct PivotPointsInstance : public IndicatorBase {
     };
 
     PivotPointsInstance() : IndicatorBase(IndicatorType::PivotPoints) {
-        initializeDefaultStyles();
+        setDefaults();
     }
-    PeriodType periodType;
-    CalculationMethod calculationMethod = CalculationMethod::HLC;
-    std::map<LevelType, LevelStyle> levelStyles;
-    bool showLabels = true;     // Afficher les étiquettes des niveaux
-    // peut etre ajouter la configuration de l'affichage des niveaux 3, 4, 5, etc. (activable desactivable)
+    PeriodType periodType;                          // Type de période (4H, journalier, hebdomadaire, mensuel)
+    CalculationMethod calculationMethod;            // Méthode de calcul des points pivots
+    std::map<LevelType, LevelStyle> levelStyles;    // Styles pour chaque niveau de pivot
+    bool showLabels = true;                         // Afficher les étiquettes des niveaux
 
 
     bool needsRecalculation(const IndicatorBase& other) const override {
@@ -214,9 +254,9 @@ struct PivotPointsInstance : public IndicatorBase {
         QString periodStr;
         switch (periodType) {
             case PeriodType::FourHour: periodStr = "4H"; break;
-            case PeriodType::Daily: periodStr = "Daily"; break;
-            case PeriodType::Weekly: periodStr = "Weekly"; break;
-            case PeriodType::Monthly: periodStr = "Monthly"; break;
+            case PeriodType::Daily: periodStr = "Jour"; break;
+            case PeriodType::Weekly: periodStr = "Hebdomadaire"; break;
+            case PeriodType::Monthly: periodStr = "Mensuel"; break;
         }
         return QString("Pivot Points (%1)").arg(periodStr);
     }
@@ -227,7 +267,7 @@ struct PivotPointsInstance : public IndicatorBase {
         return it->second.visible;
     }
 
-    void initializeDefaultStyles() {
+    void setDefaults() override {
         // Point pivot central (noir, trait plein, visible)
         LevelStyle pivotStyle;
         pivotStyle.color = 0x000000;  // Noir
@@ -298,7 +338,7 @@ struct PivotPointsInstance : public IndicatorBase {
         midSupportStyle.labelFormat = "mS2 %1";
         levelStyles[LevelType::M_S1S2] = midSupportStyle;
 
-        midSupportStyle.labelFormat = "mS2 %1";
+        midSupportStyle.labelFormat = "mS3 %1";
         levelStyles[LevelType::M_S2S3] = midSupportStyle;
         
         // Activer les étiquettes par défaut
@@ -306,5 +346,7 @@ struct PivotPointsInstance : public IndicatorBase {
         
         // Type de période par défaut
         periodType = PeriodType::Daily;
+
+        calculationMethod = CalculationMethod::HLC;
     }
 };

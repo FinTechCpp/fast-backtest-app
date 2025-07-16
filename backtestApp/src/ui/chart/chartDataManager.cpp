@@ -453,6 +453,7 @@ void ChartDataManager::calculatePivotPoints(int id, const PivotPointsInstance& c
     
     // Obtenir les prix
     std::vector<be::Date> dates = m_backtestData->getDates();
+    std::vector<double> openPrices = m_backtestData->getOpen();
     std::vector<double> highPrices = m_backtestData->getHigh();
     std::vector<double> lowPrices = m_backtestData->getLow();
     std::vector<double> closePrices = m_backtestData->getClose();
@@ -462,11 +463,13 @@ void ChartDataManager::calculatePivotPoints(int id, const PivotPointsInstance& c
     
     // Calculer les points pivots
     TechnicalIndicators::calculatePivotPoints(
+        openPrices,
         highPrices, 
         lowPrices, 
         closePrices, 
         dates, 
-        config.periodType, 
+        config.periodType,
+        config.calculationMethod,
         levelValues
     );
     

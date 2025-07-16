@@ -25,6 +25,7 @@ public:
     
 private slots:
     void onPeriodTypeChanged(int index);
+    void onCalculationMethodChanged(int index);
     void onShowMidLevelsChanged(int state);
     void onShowLabelsChanged(int state);
     
@@ -53,6 +54,7 @@ private:
     
     // Widgets de configuration générale
     QComboBox* m_periodTypeComboBox;
+    QComboBox* m_calculationMethodComboBox;
     QCheckBox* m_showMidLevelsCheckBox;
     QCheckBox* m_showLabelsCheckBox;
     

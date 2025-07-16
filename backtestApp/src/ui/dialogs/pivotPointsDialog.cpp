@@ -42,7 +42,20 @@ void PivotPointsDialog::setupUI()
     // Sélectionner la période actuelle
     m_periodTypeComboBox->setCurrentIndex(static_cast<int>(m_currentPivots.periodType));
     generalLayout->addRow("Period Type:", m_periodTypeComboBox);
+
+    m_calculationMethodComboBox = new QComboBox();
+    m_calculationMethodComboBox->addItem("High, Low, Close (Standard)", 
+                                        static_cast<int>(PivotPointsInstance::CalculationMethod::HLC));
+    m_calculationMethodComboBox->addItem("Open, High, Low, Close", 
+                                        static_cast<int>(PivotPointsInstance::CalculationMethod::OHLC));
+    m_calculationMethodComboBox->addItem("High, Low, Open", 
+                                        static_cast<int>(PivotPointsInstance::CalculationMethod::HL0));
+
+    // Sélectionner la méthode de calcul actuelle
+    m_calculationMethodComboBox->setCurrentIndex(static_cast<int>(m_currentPivots.calculationMethod));
+    generalLayout->addRow("Calculation Method:", m_calculationMethodComboBox);
     
+
     // Checkbox pour l'affichage des niveaux milieux
     m_showMidLevelsCheckBox = new QCheckBox();
     m_showMidLevelsCheckBox->setChecked(false); 
@@ -232,6 +245,7 @@ void PivotPointsDialog::connectSignals()
 {
     // Connecter les contrôles généraux
     connect(m_periodTypeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PivotPointsDialog::onPeriodTypeChanged);
+    connect(m_calculationMethodComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PivotPointsDialog::onCalculationMethodChanged);
     connect(m_showMidLevelsCheckBox, &QCheckBox::checkStateChanged, this, &PivotPointsDialog::onShowMidLevelsChanged);
     connect(m_showLabelsCheckBox, &QCheckBox::checkStateChanged, this, &PivotPointsDialog::onShowLabelsChanged);
     
@@ -270,6 +284,12 @@ void PivotPointsDialog::connectSignals()
 void PivotPointsDialog::onPeriodTypeChanged(int index)
 {
     m_currentPivots.periodType = static_cast<PivotPointsInstance::PeriodType>(index);
+    applyChanges();
+}
+
+void PivotPointsDialog::onCalculationMethodChanged(int index)
+{
+    m_currentPivots.calculationMethod = static_cast<PivotPointsInstance::CalculationMethod>(index);
     applyChanges();
 }
 

@@ -360,16 +360,17 @@ void TechnicalIndicators::calculateATR(
 }
 
 void TechnicalIndicators::calculatePivotPoints(
+    const std::vector<double>& openData,
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     const std::vector<be::Date>& dates,  // Utilise Date au lieu de QDateTime
     PivotPointsInstance::PeriodType periodType,
+    PivotPointsInstance::CalculationMethod calcMethod,
     std::map<int, std::vector<double>>& levelValues
 ) {
-    if (highData.empty() || lowData.empty() || closeData.empty() || dates.empty()) {
+    if (openData.empty() || highData.empty() || lowData.empty() || closeData.empty() || dates.empty())
         return;
-    }
     
     // Initialiser tous les vecteurs de niveaux avec des zéros
     size_t dataSize = highData.size();
@@ -444,6 +445,7 @@ void TechnicalIndicators::calculatePivotPoints(
         }
         
         // Obtenir high, low, close pour la période précédente
+        double open = 0.0;
         double high = -std::numeric_limits<double>::max();
         double low = std::numeric_limits<double>::max();
         double close = 0.0;
@@ -456,10 +458,25 @@ void TechnicalIndicators::calculatePivotPoints(
             high = std::max(high, highData[j]);
             low = std::min(low, lowData[j]);
         }
+        open = openData[calcStart];  // Première valeur de la période
         close = closeData[calcEnd];  // Dernière valeur
         
         // Le reste du calcul des points pivots reste inchangé
-        double pivot = (high + low + close) / 3.0;
+        double pivot;
+        switch (calcMethod) {
+            case PivotPointsInstance::CalculationMethod::OHLC:
+                pivot = (high + low + close + open) / 4.0;
+                break;
+            case PivotPointsInstance::CalculationMethod::HL0:
+                pivot = (high + low + open) / 3.0;
+                break;
+            case PivotPointsInstance::CalculationMethod::HLC:
+            default:
+                pivot = (high + low + close) / 3.0;
+                break;
+        }
+
+
         double r1 = (2.0 * pivot) - low;
         double s1 = (2.0 * pivot) - high;
         double r2 = pivot + (high - low);

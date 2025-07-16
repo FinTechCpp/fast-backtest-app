@@ -153,6 +153,12 @@ struct PivotPointsInstance : public IndicatorBase {
         Monthly,    // Points pivots mensuels
     };
 
+    enum class CalculationMethod {
+        HLC,     // High, Low, Close (méthode standard)
+        OHLC,    // Open, High, Low, Close
+        HL0       // High, Low, Open
+    };
+
     enum class LevelType {
         R3,         // Résistance 3
         R2,         // Résistance 2
@@ -192,6 +198,7 @@ struct PivotPointsInstance : public IndicatorBase {
         initializeDefaultStyles();
     }
     PeriodType periodType;
+    CalculationMethod calculationMethod = CalculationMethod::HLC;
     std::map<LevelType, LevelStyle> levelStyles;
     bool showLabels = true;     // Afficher les étiquettes des niveaux
     // peut etre ajouter la configuration de l'affichage des niveaux 3, 4, 5, etc. (activable desactivable)
@@ -200,7 +207,7 @@ struct PivotPointsInstance : public IndicatorBase {
     bool needsRecalculation(const IndicatorBase& other) const override {
         const PivotPointsInstance* otherPP = dynamic_cast<const PivotPointsInstance*>(&other);
         if (!otherPP) return true;
-        return periodType != otherPP->periodType;
+        return periodType != otherPP->periodType || calculationMethod != otherPP->calculationMethod;
     }
     
     QString getDisplayName() const override {

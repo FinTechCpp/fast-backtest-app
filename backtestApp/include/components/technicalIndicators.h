@@ -121,11 +121,13 @@ public:
     );
 
     static void calculatePivotPoints(
+        const std::vector<double>& openData,
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         const std::vector<be::Date>& timestamps,
         PivotPointsInstance::PeriodType periodType,
+        PivotPointsInstance::CalculationMethod calcMethod,
         std::map<int, std::vector<double>>& levelValues
     );
 };

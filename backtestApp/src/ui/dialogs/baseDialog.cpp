@@ -5,7 +5,7 @@ BaseDialog::BaseDialog(QWidget* parent, const QString& title)
 {
     // Configuration du dialogue
     setWindowTitle(title);
-    setMinimumWidth(350);
+    setMinimumWidth(450);
     setModal(true);
     
     // Layout principal

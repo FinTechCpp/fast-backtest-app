@@ -105,7 +105,8 @@ signals:
     
 protected:
     void resizeEvent(QResizeEvent* event) override;
-    
+    void mouseReleaseEvent(QMouseEvent* event) override;
+
 private slots:
     void onViewPortChanged();
     void onMouseMovePlotArea(QMouseEvent* event);
@@ -143,4 +144,8 @@ private:
     bool m_rulerFirstPointSelected;    // Si le premier point a été sélectionné
     double m_rulerStartX;              // Coordonnée X du point de départ
     double m_rulerStartY;              // Coordonnée Y du point de départ
+
+
+    bool m_yAxisZoomMode = false;
+    int m_yAxisZoomStartY = 0;
 };

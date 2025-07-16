@@ -38,13 +38,10 @@ ChartWidget::ChartWidget(QWidget* parent)
     m_chartViewer->setZoomInWidthLimit(0.00001); // Limite de zoom pour éviter les zooms trop fins
     
     // Connecter les signaux
-    connect(m_chartViewer, &QChartViewer::viewPortChanged, 
-            this, &ChartWidget::onViewPortChanged);
-    connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, 
-            this, &ChartWidget::onMouseMovePlotArea);
-    connect(m_chartViewer, &QChartViewer::clicked, 
-            this, &ChartWidget::onMouseClickPlotArea);
-    
+    connect(m_chartViewer, &QChartViewer::viewPortChanged, this, &ChartWidget::onViewPortChanged);
+    connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, this, &ChartWidget::onMouseMovePlotArea);
+    connect(m_chartViewer, &QChartViewer::clicked, this, &ChartWidget::onMouseClickPlotArea);
+
     // Ajouter le viewer au layout
     layout->addWidget(m_chartViewer);
     
@@ -153,6 +150,44 @@ void ChartWidget::onViewPortChanged()
 void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
 {
     if (!m_chartViewer) return;
+
+    // if (m_yAxisZoomMode) {
+    //     int deltaY = m_yAxisZoomStartY - m_chartViewer->getPlotAreaMouseY();
+    //     if (abs(deltaY) > 10) { // Éviter les micro-mouvements
+    //         // Calculer le facteur de zoom en fonction du mouvement vertical
+    //         double zoomFactor = 1.0 + (abs(deltaY) / 100.0);
+
+    //         std::cout << "Zooming Y-Axis: " << (deltaY > 0 ? "In" : "Out") 
+    //                   << " with factor: " << zoomFactor << std::endl;
+            
+    //         // Direction du zoom basée sur le mouvement vers le haut ou vers le bas
+    //         if (deltaY > 0) { // Mouvement vers le haut = zoom in
+    //             double newHeight = m_chartViewer->getViewPortHeight() / zoomFactor;
+    //             double newTop = m_chartViewer->getViewPortTop() + 
+    //                            (m_chartViewer->getViewPortHeight() - newHeight) / 2;
+                
+    //             m_chartViewer->setViewPortTop(newTop);
+    //             m_chartViewer->setViewPortHeight(newHeight);
+    //         } else { // Mouvement vers le bas = zoom out
+    //             double newHeight = m_chartViewer->getViewPortHeight() * zoomFactor;
+    //             double newTop = m_chartViewer->getViewPortTop() - 
+    //                            (newHeight - m_chartViewer->getViewPortHeight()) / 2;
+                
+    //             // Limiter le zoom out à 100%
+    //             if (newHeight <= 1.0) {
+    //                 m_chartViewer->setViewPortTop(newTop);
+    //                 m_chartViewer->setViewPortHeight(newHeight);
+    //             }
+    //         }
+            
+    //         // Réinitialiser la position de départ pour le prochain mouvement
+    //         m_yAxisZoomStartY = m_chartViewer->getPlotAreaMouseY();
+            
+    //         // Mettre à jour l'affichage
+    //         updateChartDisplay(ViewPortMode::USE_CURRENT);
+    //     }
+    //     return;
+    // }
     
 
     m_renderer.updateDynamicLayer(
@@ -188,29 +223,48 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     m_chartViewer->updateDisplay();
 }
 
+void ChartWidget::mouseReleaseEvent(QMouseEvent* event)
+{
+    QWidget::mouseReleaseEvent(event);
+    
+    // Si nous étions en mode zoom Y, le désactiver
+    if (m_yAxisZoomMode) {
+        m_yAxisZoomMode = false;
+        setCursor(Qt::ArrowCursor);
+    }
+}
+
 void ChartWidget::onMouseClickPlotArea(QMouseEvent* event)
 {
-    if (!m_rulerToolEnabled || !m_chartViewer || !m_chartViewer->getChart()) {
+    if (!m_chartViewer || !m_chartViewer->getChart()) {
         return;
     }
     
     // Si le bouton gauche est cliqué et que l'outil règle est activé
-    if (event->button() == Qt::LeftButton) {
-        // Si c'est le premier clic, enregistrer le point de départ
-        if (!m_rulerFirstPointSelected) {
-            // Use plot area coordinates instead of chart coordinates
-            m_rulerStartX = m_chartViewer->getPlotAreaMouseX();
-            m_rulerStartY = m_chartViewer->getPlotAreaMouseY();
-            m_rulerFirstPointSelected = true;
-            
-        } else {
-            m_rulerFirstPointSelected = false;
-        }
-        
-        // Mettre à jour l'affichage
-        if (m_chartViewer->getChart()) {
+    if (m_rulerToolEnabled) {
+        if (event->button() == Qt::LeftButton) {
+            if (!m_rulerFirstPointSelected) {
+                // Use plot area coordinates instead of chart coordinates
+                m_rulerStartX = m_chartViewer->getPlotAreaMouseX();
+                m_rulerStartY = m_chartViewer->getPlotAreaMouseY();
+                m_rulerFirstPointSelected = true;
+                
+            } else {
+                m_rulerFirstPointSelected = false;
+            }
             m_chartViewer->updateDisplay();
         }
+
+        return;
+    }
+
+    if (event->button() == Qt::LeftButton && m_chartViewer->getPlotAreaMouseX() < 50) {
+        m_yAxisZoomMode = true;
+        m_yAxisZoomStartY = m_chartViewer->getPlotAreaMouseY();
+        // Changement temporaire de curseur pour indiquer le mode zoom Y
+        setCursor(Qt::SizeVerCursor);
+
+        // std::cout << "Y-Axis Zoom Mode Activated at Y: " << m_yAxisZoomStartY << std::endl;
     }
 }
 

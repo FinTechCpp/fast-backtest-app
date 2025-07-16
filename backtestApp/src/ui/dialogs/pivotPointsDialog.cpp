@@ -68,10 +68,9 @@ void PivotPointsDialog::setupUI()
     
     // En-têtes pour la grille des niveaux
     levelsLayout->addWidget(new QLabel("Level"), 0, 0);
-    levelsLayout->addWidget(new QLabel("Visible"), 0, 1);
-    levelsLayout->addWidget(new QLabel("Color"), 0, 2);
-    levelsLayout->addWidget(new QLabel("Thickness"), 0, 3);
-    levelsLayout->addWidget(new QLabel("Style"), 0, 4);
+    levelsLayout->addWidget(new QLabel("Color"), 0, 1);
+    levelsLayout->addWidget(new QLabel("Thickness"), 0, 2);
+    levelsLayout->addWidget(new QLabel("Style"), 0, 3);
 
     // Obtenir le suffixe de période actuel
     QString periodSuffix;
@@ -118,23 +117,23 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, PivotPo
     auto& style = m_currentIndicator.levelStyles[levelType];
     
     // Labels
-    layout->addWidget(new QLabel(labelText), row, 0);
+    // layout->addWidget(new QLabel(labelText), row, 0);
     
     // Visibility checkbox
-    QCheckBox* visibilityCheckBox = new QCheckBox("");
+    QCheckBox* visibilityCheckBox = new QCheckBox(labelText);
     visibilityCheckBox->setChecked(style.visible);
-    layout->addWidget(visibilityCheckBox, row, 1);
+    layout->addWidget(visibilityCheckBox, row, 0);
     
     // Color button
     QPushButton* colorButton = new QPushButton();
     updateColorButtonStyle(colorButton, style.color);
-    layout->addWidget(colorButton, row, 2);
+    layout->addWidget(colorButton, row, 1);
     
     // Thickness spinbox
     QSpinBox* thicknessSpinBox = new QSpinBox();
     thicknessSpinBox->setRange(1, 5);
     thicknessSpinBox->setValue(style.thickness > 0 ? style.thickness : 1);
-    layout->addWidget(thicknessSpinBox, row, 3);
+    layout->addWidget(thicknessSpinBox, row, 2);
     
     // Line style combobox
     QComboBox* lineStyleComboBox = createLineStyleComboBox();
@@ -148,7 +147,7 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, PivotPo
         default: styleIndex = 0; break;
     }
     lineStyleComboBox->setCurrentIndex(styleIndex);
-    layout->addWidget(lineStyleComboBox, row, 4);
+    layout->addWidget(lineStyleComboBox, row, 3);
     
     // Stocker les contrôles pour les utiliser plus tard
     m_levelControls[levelTypeInt] = {

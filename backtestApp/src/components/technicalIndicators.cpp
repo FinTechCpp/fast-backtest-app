@@ -1,13 +1,13 @@
 #include "components/technicalIndicators.h"
 
-void TechnicalIndicators::calculateRSI(const std::vector<double>& closeData, int period, std::vector<double>& rsiValues)
+std::vector<double> TechnicalIndicators::calculateRSI(const std::vector<double>& closeData, int period)
 {
     size_t dataSize = closeData.size();
-    rsiValues.resize(dataSize);
-    
+    std::vector<double> rsiValues(dataSize, 0.0);
+
     if (dataSize <= period) {
         std::fill(rsiValues.begin(), rsiValues.end(), 50.0);  // Valeur neutre par défaut
-        return;
+        return rsiValues;
     }
 
     // Calculer les variations de prix (delta)
@@ -57,26 +57,24 @@ void TechnicalIndicators::calculateRSI(const std::vector<double>& closeData, int
             rsiValues[i] = 100.0;
         }
     }
+
+    return rsiValues;
 }
 
-void TechnicalIndicators::calculateHeikinAshi(
+std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>> TechnicalIndicators::calculateHeikinAshi(
     const std::vector<double>& open,
     const std::vector<double>& high,
     const std::vector<double>& low,
-    const std::vector<double>& close,
-    std::vector<double>& ha_open,
-    std::vector<double>& ha_high,
-    std::vector<double>& ha_low,
-    std::vector<double>& ha_close)
+    const std::vector<double>& close)
 {
     size_t size = open.size();
-    if (size == 0) return;
-    
-    ha_open.resize(size);
-    ha_high.resize(size);
-    ha_low.resize(size);
-    ha_close.resize(size);
-    
+    if (size == 0) return {};
+
+    std::vector<double> ha_open(size);
+    std::vector<double> ha_high(size);
+    std::vector<double> ha_low(size);
+    std::vector<double> ha_close(size);
+
     // Première bougie
     ha_open[0] = open[0];
     ha_close[0] = (open[0] + high[0] + low[0] + close[0]) / 4.0;
@@ -90,16 +88,18 @@ void TechnicalIndicators::calculateHeikinAshi(
         ha_high[i] = std::max(std::max(high[i], ha_open[i]), ha_close[i]);
         ha_low[i] = std::min(std::min(low[i], ha_open[i]), ha_close[i]);
     }
+
+    return {ha_open, ha_high, ha_low, ha_close};
 }
 
-void TechnicalIndicators::calculateEMA(const std::vector<double>& closeData, int period, std::vector<double>& emaValues)
+std::vector<double> TechnicalIndicators::calculateEMA(const std::vector<double>& closeData, int period)
 {
     size_t dataSize = closeData.size();
-    emaValues.resize(dataSize);
-    
+    std::vector<double> emaValues(dataSize, 0.0);
+
     if (dataSize <= period) {
         std::copy(closeData.begin(), closeData.end(), emaValues.begin());
-        return;
+        return emaValues;
     }
     
     // Calcul du facteur de lissage
@@ -117,29 +117,27 @@ void TechnicalIndicators::calculateEMA(const std::vector<double>& closeData, int
     for (size_t i = period; i < dataSize; ++i) {
         emaValues[i] = (closeData[i] - emaValues[i-1]) * multiplier + emaValues[i-1];
     }
+    return emaValues;
 }
 
-void TechnicalIndicators::calculateSupertrend(
+std::tuple<std::vector<double>, std::vector<int>> TechnicalIndicators::calculateSupertrend(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     int period,
-    double multiplier,
-    std::vector<double>& supertrendValues,
-    std::vector<int>& trendDirections)
+    double multiplier)
 {
     size_t dataSize = closeData.size();
-    supertrendValues.resize(dataSize);
-    trendDirections.resize(dataSize, 0);
-    
+    std::vector<double> supertrendValues(dataSize);
+    std::vector<int> trendDirections(dataSize, 0);
+
     if (dataSize <= period) {
         std::fill(supertrendValues.begin(), supertrendValues.end(), 0.0);
-        return;
+        return {supertrendValues, trendDirections};
     }
     
     // Calculer l'ATR
-    std::vector<double> atrValues;
-    calculateATR(highData, lowData, closeData, period, atrValues, false);
+    std::vector<double> atrValues = calculateATR(highData, lowData, closeData, period, false);
     
     // Calculer les bandes de base (HL2 +/- multiplier * ATR)
     std::vector<double> basicUpperBand(dataSize);
@@ -222,36 +220,33 @@ void TechnicalIndicators::calculateSupertrend(
             }
         }
     }
+
+    return {supertrendValues, trendDirections};
 }
 
-void TechnicalIndicators::calculateStochastic(
+std::tuple<std::vector<double>, std::vector<double>> TechnicalIndicators::calculateStochastic(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     int fastKPeriod,
     int slowKPeriod,
-    int slowDPeriod,
-    std::vector<double>& kValues,
-    std::vector<double>& dValues)
+    int slowDPeriod)
 {
     // Vérification des données d'entrée
     size_t dataSize = closeData.size();
-    if (dataSize == 0 || highData.size() != dataSize || lowData.size() != dataSize) {
-        kValues.clear();
-        dValues.clear();
-        return;
-    }
+    if (dataSize == 0 || highData.size() != dataSize || lowData.size() != dataSize)
+        return {std::vector<double>(), std::vector<double>()};
     
     // Redimensionner les vecteurs de sortie
-    kValues.resize(dataSize);
-    dValues.resize(dataSize);
+    std::vector<double> kValues(dataSize);
+    std::vector<double> dValues(dataSize);
 
     // Valeurs par défaut (50 est une valeur neutre pour l'oscillateur)
     std::fill(kValues.begin(), kValues.end(), 50.0);
     std::fill(dValues.begin(), dValues.end(), 50.0);
     
     if (dataSize < static_cast<size_t>(fastKPeriod)) {
-        return;  // Pas assez de données pour calculer
+        return {kValues, dValues};  // Pas assez de données pour calculer le Stochastic
     }
     
     // Étape 1: Calculer le %K brut (Fast %K) - La formule est:
@@ -306,22 +301,23 @@ void TechnicalIndicators::calculateStochastic(
         }
         dValues[i] = sum / slowDPeriod;
     }
+
+    return {kValues, dValues};
 }
 
-void TechnicalIndicators::calculateATR(
+std::vector<double> TechnicalIndicators::calculateATR(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     int period,
-    std::vector<double>& atrValues,
     bool useLogScale)
 {
     size_t dataSize = closeData.size();
-    atrValues.resize(dataSize);
-    
+    std::vector<double> atrValues(dataSize, 0.0);
+
     if (dataSize < static_cast<size_t>(period)) {
         std::fill(atrValues.begin(), atrValues.end(), 0.0);
-        return;
+        return atrValues;
     }
     
     // Calculer les variations de prix
@@ -357,21 +353,24 @@ void TechnicalIndicators::calculateATR(
             atrValues[i] = atrValue;  // Stocker normalement
         }
     }
+
+    return atrValues;
 }
 
-void TechnicalIndicators::calculatePivotPoints(
+std::map<int, std::vector<PivotSegment>> TechnicalIndicators::calculatePivotPoints(
     const std::vector<double>& openData,
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     const std::vector<be::Date>& dates,
     PivotPointsInstance::PeriodType periodType,
-    PivotPointsInstance::CalculationMethod calcMethod,
-    std::map<int, std::vector<PivotSegment>>& levelSegments
+    PivotPointsInstance::CalculationMethod calcMethod
 ) {
     if (openData.empty() || highData.empty() || lowData.empty() || closeData.empty() || dates.empty())
-        return;
-    
+        return {};
+
+    std::map<int, std::vector<PivotSegment>> levelSegments;
+
     // Initialiser tous les vecteurs de niveaux avec des zéros
     size_t dataSize = highData.size();
     for (int levelType = static_cast<int>(PivotPointsInstance::LevelType::R3); 
@@ -507,4 +506,6 @@ void TechnicalIndicators::calculatePivotPoints(
         levelSegments[static_cast<int>(LT::M_S1S2)].emplace_back(start, end, ms1s2);
         levelSegments[static_cast<int>(LT::M_S2S3)].emplace_back(start, end, ms2s3);
     }
+
+    return levelSegments;
 }

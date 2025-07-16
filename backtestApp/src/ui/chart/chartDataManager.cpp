@@ -97,15 +97,11 @@ void ChartDataManager::updateHeikinAshiCache() {
         return;
     }
 
-    TechnicalIndicators::calculateHeikinAshi(
+    std::tie(m_heikinAshiCache.open, m_heikinAshiCache.high, m_heikinAshiCache.low, m_heikinAshiCache.close) = TechnicalIndicators::calculateHeikinAshi(
         m_backtestData->getOpen(), 
         m_backtestData->getHigh(), 
         m_backtestData->getLow(),
-        m_backtestData->getClose(),
-        m_heikinAshiCache.open,
-        m_heikinAshiCache.high,
-        m_heikinAshiCache.low,
-        m_heikinAshiCache.close
+        m_backtestData->getClose()
     );
     
     m_heikinAshiCache.isValid = true;
@@ -374,9 +370,8 @@ void ChartDataManager::calculateRSI(int id, int period) {
 
     // Obtenir les prix de clôture
     const std::vector<double>& closePrices = m_backtestData->getClose();
-    
-    std::vector<double> rsiValues;
-    TechnicalIndicators::calculateRSI(closePrices, period, rsiValues);
+
+    std::vector<double> rsiValues = TechnicalIndicators::calculateRSI(closePrices, period);
 
     // Mettre à jour le cache des indicateurs actifs
     m_aggregatedIndicatorsCache[AggregationLevel::Raw].rsiValues[id] = std::move(rsiValues);
@@ -388,9 +383,8 @@ void ChartDataManager::calculateEMA(int id, int period) {
 
     // Obtenir les prix de clôture
     const std::vector<double>& closePrices = m_backtestData->getClose();
-    
-    std::vector<double> emaValues;
-    TechnicalIndicators::calculateEMA(closePrices, period, emaValues);
+
+    std::vector<double> emaValues = TechnicalIndicators::calculateEMA(closePrices, period);
 
     // Mettre à jour le cache des indicateurs actifs
     m_aggregatedIndicatorsCache[AggregationLevel::Raw].emaValues[id] = std::move(emaValues);
@@ -407,7 +401,7 @@ void ChartDataManager::calculateSupertrend(int id, int period, double multiplier
 
     std::vector<double> supertrendValues;
     std::vector<int> trendDirections;
-    TechnicalIndicators::calculateSupertrend(highPrices, lowPrices, closePrices, period, multiplier, supertrendValues, trendDirections);
+    std::tie(supertrendValues, trendDirections) = TechnicalIndicators::calculateSupertrend(highPrices, lowPrices, closePrices, period, multiplier);
 
     // Mettre à jour le cache des indicateurs actifs
     m_aggregatedIndicatorsCache[AggregationLevel::Raw].supertrendValues[id] = std::make_pair(std::move(supertrendValues), std::move(trendDirections));
@@ -422,12 +416,14 @@ void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPer
     const std::vector<double>& lowPrices = m_backtestData->getLow();
     const std::vector<double>& closePrices = m_backtestData->getClose();
 
-    std::vector<double> stochasticKValues;
-    std::vector<double> stochasticDValues;
-    TechnicalIndicators::calculateStochastic(highPrices, lowPrices, closePrices, fastKPeriod, slowKPeriod, slowDPeriod, stochasticKValues, stochasticDValues);
+    auto [stochasticKValues, stochasticDValues] = TechnicalIndicators::calculateStochastic(
+        highPrices, lowPrices, closePrices, fastKPeriod, slowKPeriod, slowDPeriod
+    );
 
     // Mettre à jour le cache des indicateurs actifs
-    m_aggregatedIndicatorsCache[AggregationLevel::Raw].stochasticValues[id] = std::make_pair(std::move(stochasticKValues), std::move(stochasticDValues));
+    m_aggregatedIndicatorsCache[AggregationLevel::Raw].stochasticValues[id] = {
+        std::move(stochasticKValues), std::move(stochasticDValues)
+    };
 }
 
 void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
@@ -439,8 +435,7 @@ void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
     const std::vector<double>& lowPrices = m_backtestData->getLow();
     const std::vector<double>& closePrices = m_backtestData->getClose();
 
-    std::vector<double> atrValues;
-    TechnicalIndicators::calculateATR(highPrices, lowPrices, closePrices, period, atrValues, useLogScale);
+    std::vector<double> atrValues = TechnicalIndicators::calculateATR(highPrices, lowPrices, closePrices, period, useLogScale);
 
     // Mettre à jour le cache des indicateurs actifs
     m_aggregatedIndicatorsCache[AggregationLevel::Raw].atrValues[id] = std::move(atrValues);
@@ -458,18 +453,14 @@ void ChartDataManager::calculatePivotPoints(int id, const PivotPointsInstance& c
     std::vector<double> closePrices = m_backtestData->getClose();
     
     // Structure pour stocker les niveaux calculés
-    std::map<int, std::vector<PivotSegment>> levelSegments;
-    
-    // Calculer les points pivots
-    TechnicalIndicators::calculatePivotPoints(
+    std::map<int, std::vector<PivotSegment>> levelSegments = TechnicalIndicators::calculatePivotPoints(
         openPrices,
         highPrices, 
         lowPrices, 
         closePrices, 
         dates, 
         config.periodType,
-        config.calculationMethod,
-        levelSegments
+        config.calculationMethod
     );
     
     // Mettre à jour la structure IndicatorData pour le niveau Raw

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include <tuple>
 #include "date.hpp"
 // super pas top, je fais pour avoir PivotPointsInstance::PeriodType pour les points pivots
 #include "ui/chart/indicatorInstances.h"
@@ -32,7 +33,7 @@ public:
      * @param period The period for RSI calculation
      * @param rsiValues Output vector that will contain the calculated RSI values
      */
-    static void calculateRSI(const std::vector<double>& closeData, int period, std::vector<double>& rsiValues);
+    static std::vector<double> calculateRSI(const std::vector<double>& closeData, int period);
 
     /**
      * @brief Calculates Heikin-Ashi candles
@@ -46,15 +47,11 @@ public:
      * @param ha_low Heikin-Ashi low prices (output)
      * @param ha_close Heikin-Ashi closing prices (output)
      */
-    static void calculateHeikinAshi(
+    static std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>> calculateHeikinAshi(
         const std::vector<double>& open,
         const std::vector<double>& high,
         const std::vector<double>& low,
-        const std::vector<double>& close,
-        std::vector<double>& ha_open,
-        std::vector<double>& ha_high,
-        std::vector<double>& ha_low,
-        std::vector<double>& ha_close
+        const std::vector<double>& close
     );
 
     /**
@@ -64,7 +61,7 @@ public:
      * @param period The period for EMA calculation
      * @param emaValues Output vector that will contain the calculated EMA values
      */
-    static void calculateEMA(const std::vector<double>& closeData, int period, std::vector<double>& emaValues);
+    static std::vector<double> calculateEMA(const std::vector<double>& closeData, int period);
 
     /**
      * @brief Calculates the SuperTrend indicator
@@ -77,14 +74,12 @@ public:
      * @param supertrendValues Output vector that will contain the calculated SuperTrend values
      * @param trendDirections Output vector that will contain the trend directions (1 for bullish trend, -1 for bearish trend)
      */
-    static void calculateSupertrend(
+    static std::tuple<std::vector<double>, std::vector<int>> calculateSupertrend(
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         int period,
-        double multiplier,
-        std::vector<double>& supertrendValues,
-        std::vector<int>& trendDirections
+        double multiplier
     );
 
     /**
@@ -99,15 +94,14 @@ public:
      * @param kValues Output vector that will contain the smoothed %K values
      * @param dValues Output vector that will contain the %D values
      */
-    static void calculateStochastic(
+    static std::tuple<std::vector<double>, std::vector<double>> calculateStochastic(
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         int fastKPeriod,
         int slowKPeriod,
-        int slowDPeriod,
-        std::vector<double>& kValues,
-        std::vector<double>& dValues);
+        int slowDPeriod
+    );
 
     /**
      * @brief Calculates the Average True Range (ATR)
@@ -120,23 +114,21 @@ public:
      * @param useLogScale Indicates whether to use logarithmic scale for ATR
      */
 
-    static void calculateATR(
+    static std::vector<double> calculateATR(
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         int period,
-        std::vector<double>& atrValues,
         bool useLogScale = false
     );
 
-    static void calculatePivotPoints(
+    static std::map<int, std::vector<PivotSegment>> calculatePivotPoints(
         const std::vector<double>& openData,
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         const std::vector<be::Date>& timestamps,
         PivotPointsInstance::PeriodType periodType,
-        PivotPointsInstance::CalculationMethod calcMethod,
-        std::map<int, std::vector<PivotSegment>>& levelSegments
+        PivotPointsInstance::CalculationMethod calcMethod
     );
 };

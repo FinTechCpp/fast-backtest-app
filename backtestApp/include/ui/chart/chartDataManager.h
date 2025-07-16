@@ -12,6 +12,8 @@
 #include "trade.hpp"
 #include "chartdir.h"
 #include "ui/chart/indicatorInstances.h"
+#include "components/technicalIndicators.h"
+
 
 // je sais aps trop mais a voir avec claude
 // template<> inline IndicatorType RSIInstance::getStaticType() { return IndicatorType::RSI; }
@@ -77,9 +79,7 @@ public:
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
         std::map<int, std::map<int, std::vector<double>>> pivotPointsValues; // ID -> (LevelType -> valeurs)
-        // on pourrait plutot faire : 
-        // std::map<int, std::map<int, std::vector<PivotChange>>> pivotPointChanges;
-        // où PivotChange serait {size_t dataIndex; double price;}
+        std::map<int, std::map<int, std::vector<PivotSegment>>> pivotPointsSegments;
 
         AggregationLevel level;
         

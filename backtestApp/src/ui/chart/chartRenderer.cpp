@@ -931,98 +931,69 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
                                         const ChartDataManager::AggregationInfo &aggregationInfo)
 {
     // 1. Récupérer les données des points pivots depuis le cache
-    const std::map<int, std::vector<double>>* pivotData = nullptr;
+    const std::map<int, std::vector<PivotSegment>>* pivotSegments = nullptr;
     int startIndex = aggregationInfo.startIndex;
-    int pointsToShow = aggregationInfo.pointCount;
+    int endIndex = startIndex + aggregationInfo.pointCount - 1;
 
     if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
         // Utiliser les données brutes
-        const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsValues;
+        const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsSegments;
         auto it = pivotMap.find(pivotPoints.id);
         if (it == pivotMap.end()) return;
         
-        pivotData = &(it->second);
+        pivotSegments = &(it->second);
     } 
     else {
         // Utiliser les données agrégées
         const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
-        auto it = aggregated.pivotPointsValues.find(pivotPoints.id);
+        auto it = aggregated.pivotPointsSegments.find(pivotPoints.id);
         
         // Vérifier si les données agrégées sont disponibles et valides
-        if (it != aggregated.pivotPointsValues.end() && aggregated.isPivotPointsValid(pivotPoints.id)) {
-            pivotData = &(it->second);
+        if (it != aggregated.pivotPointsSegments.end() && aggregated.isPivotPointsValid(pivotPoints.id)) {
+            pivotSegments = &(it->second);
         }
         else {
             // Fallback aux données brutes
-            const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsValues;
+            const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsSegments;
             auto rawIt = pivotMap.find(pivotPoints.id);
             if (rawIt == pivotMap.end()) return;
             
-            pivotData = &(rawIt->second);
+            pivotSegments = &(rawIt->second);
         }
     }
 
-    if (!pivotData) return;
-    
-    // Récupérer la période visible pour formater les labels appropriés
-    QString periodStr;
-    switch (pivotPoints.periodType) {
-        case PivotPointsInstance::PeriodType::FourHour: periodStr = "4H"; break;
-        case PivotPointsInstance::PeriodType::Daily: periodStr = "D"; break;
-        case PivotPointsInstance::PeriodType::Weekly: periodStr = "W"; break;
-        case PivotPointsInstance::PeriodType::Monthly: periodStr = "M"; break;
-    }
+    if (!pivotSegments) return;
     
     // CRÉER TOUS LES SEGMENTS
     for (const auto& [levelType, style] : pivotPoints.levelStyles) {
         // Vérifier si ce niveau doit être affiché
         if (!pivotPoints.isLevelVisible(levelType)) continue;
         
-        // Obtenir les données pour ce niveau
-        auto levelIt = pivotData->find(static_cast<int>(levelType));
-        if (levelIt == pivotData->end()) continue;
+        // Obtenir les segments pour ce niveau
+        auto levelIt = pivotSegments->find(static_cast<int>(levelType));
+        if (levelIt == pivotSegments->end()) continue;
         
-        const std::vector<double>& values = levelIt->second;
-        if (values.empty() || startIndex >= static_cast<int>(values.size())) continue;
+        const auto& segments = levelIt->second;
+        if (segments.empty()) continue;
         
-        // Limiter le nombre de points à afficher
-        int endIndex = std::min(startIndex + pointsToShow, static_cast<int>(values.size()));
-        int actualPoints = endIndex - startIndex;
-        if (actualPoints <= 0) continue;
-        
-        // Détecter les changements de niveaux pour créer des segments horizontaux
-        std::vector<std::pair<int, int>> segments; // Début et fin de chaque segment horizontal
-        std::vector<double> segmentValues;         // Valeur de chaque segment
-        
-        int segmentStart = startIndex;
-        double currentValue = values[startIndex];
-        
-        for (int i = startIndex + 1; i < endIndex; ++i) {
-            if (std::abs(values[i] - currentValue) > 0.00001) {
-                // Valeur a changé, terminer le segment actuel et en commencer un nouveau
-                segments.push_back({segmentStart - startIndex, i - 1 - startIndex});
-                segmentValues.push_back(currentValue);
-                
-                segmentStart = i;
-                currentValue = values[i];
+        // Parcourir tous les segments pour ce niveau
+        for (const auto& segment : segments) {
+            // Vérifier si le segment est dans la plage visible
+            if (segment.endIndex < static_cast<size_t>(startIndex) || 
+                segment.startIndex > static_cast<size_t>(endIndex)) {
+                continue;  // Segment hors plage visible
             }
-        }
-        
-        // Ajouter le dernier segment
-        segments.push_back({segmentStart - startIndex, endIndex - 1 - startIndex});
-        segmentValues.push_back(currentValue);
-        
-        // Dessiner chaque segment horizontal pour ce niveau
-        for (size_t i = 0; i < segments.size(); ++i) {
-            const auto& [start, end] = segments[i];
-            const double value = segmentValues[i];
+            
+            // Calculer les indices relatifs pour l'affichage
+            int relativeStart = std::max(static_cast<int>(segment.startIndex) - startIndex, 0);
+            int relativeEnd = std::min(static_cast<int>(segment.endIndex) - startIndex, aggregationInfo.pointCount - 1);
             
             // Ignorer les segments avec des valeurs non valides ou nulles
-            if (value == 0 || std::isnan(value)) continue;
+            if (segment.value == 0 || std::isnan(segment.value)) continue;
             
             // Créer un vecteur de points pour tracer la ligne horizontale
-            std::vector<double> xData = {static_cast<double>(start), static_cast<double>(end)};
-            std::vector<double> yData = {value, value};
+            std::vector<double> xData = {static_cast<double>(relativeStart), static_cast<double>(relativeEnd)};
+            std::vector<double> yData = {segment.value, segment.value};
             
             // Convertir en DoubleArray pour ChartDir
             DoubleArray xArray = ChartDataManager::vectorToDoubleArray(xData);

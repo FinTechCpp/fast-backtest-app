@@ -1,5 +1,4 @@
 #include "ui/chart/chartDataManager.h"
-#include "components/technicalIndicators.h"
 #include <QDebug>
 
 
@@ -459,7 +458,7 @@ void ChartDataManager::calculatePivotPoints(int id, const PivotPointsInstance& c
     std::vector<double> closePrices = m_backtestData->getClose();
     
     // Structure pour stocker les niveaux calculés
-    std::map<int, std::vector<double>> levelValues;
+    std::map<int, std::vector<PivotSegment>> levelSegments;
     
     // Calculer les points pivots
     TechnicalIndicators::calculatePivotPoints(
@@ -470,13 +469,13 @@ void ChartDataManager::calculatePivotPoints(int id, const PivotPointsInstance& c
         dates, 
         config.periodType,
         config.calculationMethod,
-        levelValues
+        levelSegments
     );
     
     // Mettre à jour la structure IndicatorData pour le niveau Raw
     auto& indicatorData = m_aggregatedIndicatorsCache[AggregationLevel::Raw];
     indicatorData.validPivotPointsIds.insert(id);
-    indicatorData.pivotPointsValues[id] = std::move(levelValues);
+    indicatorData.pivotPointsSegments[id] = std::move(levelSegments);
 }
 
 // Méthode utilitaire pour configurer le sélecteur d'agrégation

@@ -364,10 +364,10 @@ void TechnicalIndicators::calculatePivotPoints(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
-    const std::vector<be::Date>& dates,  // Utilise Date au lieu de QDateTime
+    const std::vector<be::Date>& dates,
     PivotPointsInstance::PeriodType periodType,
     PivotPointsInstance::CalculationMethod calcMethod,
-    std::map<int, std::vector<double>>& levelValues
+    std::map<int, std::vector<PivotSegment>>& levelSegments
 ) {
     if (openData.empty() || highData.empty() || lowData.empty() || closeData.empty() || dates.empty())
         return;
@@ -377,7 +377,7 @@ void TechnicalIndicators::calculatePivotPoints(
     for (int levelType = static_cast<int>(PivotPointsInstance::LevelType::R3); 
          levelType < static_cast<int>(PivotPointsInstance::LevelType::NumLevels); 
          levelType++) {
-        levelValues[levelType] = std::vector<double>(dataSize, 0.0);
+        levelSegments[levelType] = std::vector<PivotSegment>();
     }
     
     // Déterminer les limites de chaque période
@@ -491,22 +491,20 @@ void TechnicalIndicators::calculatePivotPoints(
         double ms1s2 = (s1 + s2) / 2.0;
         double ms2s3 = (s2 + s3) / 2.0;
         
-        // Appliquer les niveaux calculés à toute la période
-        for (size_t j = start; j <= end; ++j) {
-            using LT = PivotPointsInstance::LevelType;
-            levelValues[static_cast<int>(LT::Pivot)][j] = pivot;
-            levelValues[static_cast<int>(LT::R1)][j] = r1;
-            levelValues[static_cast<int>(LT::R2)][j] = r2;
-            levelValues[static_cast<int>(LT::R3)][j] = r3;
-            levelValues[static_cast<int>(LT::S1)][j] = s1;
-            levelValues[static_cast<int>(LT::S2)][j] = s2;
-            levelValues[static_cast<int>(LT::S3)][j] = s3;
-            levelValues[static_cast<int>(LT::M_PR1)][j] = mpr1;
-            levelValues[static_cast<int>(LT::M_R1R2)][j] = mr1r2;
-            levelValues[static_cast<int>(LT::M_R2R3)][j] = mr2r3;
-            levelValues[static_cast<int>(LT::M_PS1)][j] = mps1;
-            levelValues[static_cast<int>(LT::M_S1S2)][j] = ms1s2;
-            levelValues[static_cast<int>(LT::M_S2S3)][j] = ms2s3;
-        }
+        // Stocker un segment unique pour chaque niveau durant cette période
+        using LT = PivotPointsInstance::LevelType;
+        levelSegments[static_cast<int>(LT::Pivot)].emplace_back(start, end, pivot);
+        levelSegments[static_cast<int>(LT::R1)].emplace_back(start, end, r1);
+        levelSegments[static_cast<int>(LT::R2)].emplace_back(start, end, r2);
+        levelSegments[static_cast<int>(LT::R3)].emplace_back(start, end, r3);
+        levelSegments[static_cast<int>(LT::S1)].emplace_back(start, end, s1);
+        levelSegments[static_cast<int>(LT::S2)].emplace_back(start, end, s2);
+        levelSegments[static_cast<int>(LT::S3)].emplace_back(start, end, s3);
+        levelSegments[static_cast<int>(LT::M_PR1)].emplace_back(start, end, mpr1);
+        levelSegments[static_cast<int>(LT::M_R1R2)].emplace_back(start, end, mr1r2);
+        levelSegments[static_cast<int>(LT::M_R2R3)].emplace_back(start, end, mr2r3);
+        levelSegments[static_cast<int>(LT::M_PS1)].emplace_back(start, end, mps1);
+        levelSegments[static_cast<int>(LT::M_S1S2)].emplace_back(start, end, ms1s2);
+        levelSegments[static_cast<int>(LT::M_S2S3)].emplace_back(start, end, ms2s3);
     }
 }

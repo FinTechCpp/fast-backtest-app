@@ -8,6 +8,15 @@
 // super pas top, je fais pour avoir PivotPointsInstance::PeriodType pour les points pivots
 #include "ui/chart/indicatorInstances.h"
 
+struct PivotSegment {
+    size_t startIndex;  // Indice de début du segment
+    size_t endIndex;    // Indice de fin du segment (inclus)
+    double value;       // Valeur du niveau pour ce segment
+    
+    PivotSegment(size_t start, size_t end, double val) 
+        : startIndex(start), endIndex(end), value(val) {}
+};
+
 /**
  * @brief Utility class for calculating technical indicators
  * 
@@ -128,6 +137,6 @@ public:
         const std::vector<be::Date>& timestamps,
         PivotPointsInstance::PeriodType periodType,
         PivotPointsInstance::CalculationMethod calcMethod,
-        std::map<int, std::vector<double>>& levelValues
+        std::map<int, std::vector<PivotSegment>>& levelSegments
     );
 };

@@ -115,6 +115,14 @@ public:
     static QString findDataFile(const QString& symbol, const QString& interval);
     
     /**
+     * @brief Find the best base data file for resampling to target interval
+     * @param symbol Symbol to search for
+     * @param interval Target interval to determine the best base file
+     * @return Path to the best base file, empty QString if not found
+     */
+    static QString findBestBaseDataFile(const QString& symbol, const QString& interval);
+    
+    /**
      * @brief Parse a CSV line into an OHLC bar
      * @param line CSV line to parse
      * @param hasHeader Indicates if this is the header line
@@ -195,5 +203,13 @@ private:
 
     // Helper method for double conversion
     static inline double parseDouble(const QChar* begin, const QChar* end);
+    
+    // Helper methods for resampling
+    static QString extractIntervalFromFilename(const QString& filePath);
+    static bool isValidResamplingInterval(const QString& sourceInterval, const QString& targetInterval);
+    static QDateTime alignToInterval(const QDateTime& timestamp, int intervalSeconds);
+    
+    // New helper method for duplicating first candles of each day
+    static std::vector<OHLCBar> duplicateFirstCandle(const std::vector<OHLCBar>& data, int targetIntervalSeconds);
 };
 

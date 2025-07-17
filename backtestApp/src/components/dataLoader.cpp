@@ -322,25 +322,76 @@ QString DataLoader::findDataFile(const QString& symbol, const QString& interval)
         return QString();
     }
 
-    // Search for a file matching the pattern symbol_interval_*.csv
     QDir dir(marketDataDir);
+    
+    // First, try to find exact match
     QStringList nameFilters;
     nameFilters << QString("%1_%2_*.csv").arg(symbol, interval);
-
     QStringList files = dir.entryList(nameFilters, QDir::Files, QDir::Time);
 
-    if (files.isEmpty()) {
-        qWarning() << "No file found for pattern:"
-                   << QString("%1_%2_*.csv").arg(symbol, interval)
-                   << "in" << marketDataDir;
+    if (!files.isEmpty()) {
+        QString exactMatch = dir.absoluteFilePath(files.first());
+        qDebug() << "Exact file match found:" << exactMatch;
+        return exactMatch;
+    }
+
+    // If no exact match, find the best base file for resampling
+    QString baseFile = findBestBaseDataFile(symbol, interval);
+    if (!baseFile.isEmpty()) {
+        qDebug() << "Base file found for resampling:" << baseFile;
+        return baseFile;
+    }
+
+    qWarning() << "No suitable data file found for symbol:" << symbol << "interval:" << interval;
+    return QString();
+}
+
+QString DataLoader::findBestBaseDataFile(const QString& symbol, const QString& interval)
+{
+    QString marketDataDir = findMarketDataDirectory();
+    if (marketDataDir.isEmpty()) {
         return QString();
     }
 
-    // Return the most recent file
-    QString mostRecentFile = dir.absoluteFilePath(files.first());
-    qDebug() << "File found:" << mostRecentFile;
+    QDir dir(marketDataDir);
+    int targetSeconds = intervalToSeconds(interval);
+    
+    if (targetSeconds <= 0) {
+        qWarning() << "Invalid interval for base file search:" << interval;
+        return QString();
+    }
 
-    return mostRecentFile;
+    // Strategy: if target < 60 seconds, use 10secs base; otherwise use 1min base
+    QString baseInterval;
+    if (targetSeconds < 60) {
+        baseInterval = "10secs";
+    } else {
+        baseInterval = "1min";
+    }
+
+    // Search for base file
+    QStringList nameFilters;
+    nameFilters << QString("%1_%2_*.csv").arg(symbol, baseInterval);
+    QStringList files = dir.entryList(nameFilters, QDir::Files, QDir::Time);
+
+    if (!files.isEmpty()) {
+        QString baseFile = dir.absoluteFilePath(files.first());
+        qDebug() << "Selected base file:" << baseFile << "for target interval:" << interval;
+        return baseFile;
+    }
+
+    // Fallback: try to find any file for this symbol
+    nameFilters.clear();
+    nameFilters << QString("%1_*.csv").arg(symbol);
+    files = dir.entryList(nameFilters, QDir::Files, QDir::Time);
+    
+    if (!files.isEmpty()) {
+        QString fallbackFile = dir.absoluteFilePath(files.first());
+        qWarning() << "Using fallback file:" << fallbackFile << "for interval:" << interval;
+        return fallbackFile;
+    }
+
+    return QString();
 }
 
 std::vector<OHLCBar> DataLoader::filterByPeriod(
@@ -381,47 +432,202 @@ int DataLoader::intervalToSeconds(const QString& interval)
     return 0;
 }
 
+std::vector<OHLCBar> DataLoader::duplicateFirstCandle(const std::vector<OHLCBar>& data, int targetIntervalSeconds)
+{
+    if (data.empty()) {
+        return data;
+    }
+
+    // Only apply this for 10-second source data
+    QString sourceInterval = extractIntervalFromFilename(findDataFile(QString(), QString()));
+    bool is10SecData = sourceInterval.toLower() == "10secs";
+    
+    if (!is10SecData) {
+        qDebug() << "Source data is not 10-second interval, skipping first candle duplication";
+        return data;
+    }
+
+    std::vector<OHLCBar> result;
+    result.reserve(data.size() + 100); // Reserve a bit more space for duplicates
+    
+    QDate currentDay;
+    bool firstCandleOfDay = true;
+    
+    for (const auto& bar : data) {
+        QDate barDate = bar.timestamp.date();
+        
+        // Check if this is a new day
+        if (barDate != currentDay) {
+            currentDay = barDate;
+            firstCandleOfDay = true;
+        }
+        
+        // If this is the first candle of the day and its time is offset (like 15:30:10)
+        if (firstCandleOfDay) {
+            QTime barTime = bar.timestamp.time();
+            int seconds = barTime.second();
+            
+            // Check if the seconds value indicates it's not aligned to a perfect interval
+            // For example, 10 seconds offset from the minute
+            if (seconds > 0 && seconds < targetIntervalSeconds) {
+                // Create a duplicate with adjusted timestamp
+                QDateTime adjustedTime = bar.timestamp.addSecs(-seconds);
+                qDebug() << "Day" << barDate.toString("yyyy-MM-dd") 
+                         << "- Duplicating first candle at" << barTime.toString("hh:mm:ss")
+                         << "to" << adjustedTime.time().toString("hh:mm:ss")
+                         << "for proper interval alignment";
+                
+                // Add the duplicate with the adjusted timestamp
+                result.push_back(OHLCBar(adjustedTime, bar.open, bar.high, bar.low, bar.close, bar.volume));
+            }
+            
+            firstCandleOfDay = false;
+        }
+        
+        // Add the original bar
+        result.push_back(bar);
+    }
+    
+    qInfo() << "Added" << (result.size() - data.size()) << "duplicate candles for interval alignment";
+    return result;
+}
+
 std::vector<OHLCBar> DataLoader::resampleData(
     const std::vector<OHLCBar>& data,
     const QString& targetInterval)
 {
     if (data.empty()) {
+        qWarning() << "Cannot resample empty data";
         return data;
     }
+    
     int targetSeconds = intervalToSeconds(targetInterval);
     if (targetSeconds <= 0) {
         qWarning() << "Invalid target interval:" << targetInterval;
         return data;
     }
+
+    // STEP 1: Duplicate first candle to get the first period aligned
+    std::vector<OHLCBar> cleanedData = duplicateFirstCandle(data, targetSeconds);
+
+    if (cleanedData.empty()) {
+        qWarning() << "No complete candles found after cleaning";
+        return cleanedData;
+    }
+    
+    // STEP 2: Proceed with normal resampling on cleaned data
     std::vector<OHLCBar> resampled;
-    QDateTime currentPeriodStart = data[0].timestamp;
+    resampled.reserve(cleanedData.size() / (targetSeconds / 10) + 1); // Rough estimate for better memory allocation
+    
+    // Start with the first bar's timestamp aligned to the target interval
+    QDateTime firstTimestamp = cleanedData[0].timestamp;
+    QDateTime currentPeriodStart = alignToInterval(firstTimestamp, targetSeconds);
     QDateTime currentPeriodEnd = currentPeriodStart.addSecs(targetSeconds);
-    double open = data[0].open;
-    double high = data[0].high;
-    double low = data[0].low;
-    double close = data[0].close;
-    double volume = data[0].volume;
-    for (size_t i = 1; i < data.size(); ++i) {
-        const auto& bar = data[i];
-        if (bar.timestamp < currentPeriodEnd) {
-            high = std::max(high, bar.high);
-            low = std::min(low, bar.low);
-            close = bar.close;
-            volume += bar.volume;
-        } else {
-            resampled.emplace_back(currentPeriodStart, open, high, low, close, volume);
+    
+    double open = 0.0;
+    double high = -std::numeric_limits<double>::max();
+    double low = std::numeric_limits<double>::max();
+    double close = 0.0;
+    double volume = 0.0;
+    bool hasData = false;
+    
+    qDebug() << "Starting resampling with cleaned data:" << cleanedData.size() << "bars";
+    
+    for (size_t i = 0; i < cleanedData.size(); ++i) {
+        const auto& bar = cleanedData[i];
+        
+        // Skip bars that are before our current period
+        if (bar.timestamp < currentPeriodStart) {
+            continue;
+        }
+        
+        // Check if we need to move to the next period
+        while (bar.timestamp >= currentPeriodEnd) {
+            // Finalize current period if we have data
+            if (hasData) {
+                resampled.emplace_back(currentPeriodStart, open, high, low, close, volume);
+            }
+            
+            // Move to next period
             currentPeriodStart = currentPeriodEnd;
             currentPeriodEnd = currentPeriodStart.addSecs(targetSeconds);
-            open = bar.open;
-            high = bar.high;
-            low = bar.low;
-            close = bar.close;
-            volume = bar.volume;
+            
+            // Reset aggregation variables
+            open = 0.0;
+            high = -std::numeric_limits<double>::max();
+            low = std::numeric_limits<double>::max();
+            close = 0.0;
+            volume = 0.0;
+            hasData = false;
+        }
+        
+        // Aggregate data for current period
+        if (bar.timestamp >= currentPeriodStart && bar.timestamp < currentPeriodEnd) {
+            if (!hasData) {
+                // First bar in this period
+                open = bar.open;
+                hasData = true;
+            }
+            
+            high = std::max(high, bar.high);
+            low = std::min(low, bar.low);
+            close = bar.close; // Always use the most recent close
+            volume += bar.volume;
         }
     }
-    resampled.emplace_back(currentPeriodStart, open, high, low, close, volume);
-    qDebug() << "Resampling from" << data.size() << "to" << resampled.size()
-             << "bars for interval" << targetInterval;
+    
+    // Don't forget the last period if it has data
+    if (hasData) {
+        resampled.emplace_back(currentPeriodStart, open, high, low, close, volume);
+    }
+    
+    qInfo() << "Resampled from" << data.size() << "original bars (" << cleanedData.size() << "after cleaning) to" << resampled.size()
+            << "bars for interval" << targetInterval
+            << "(compression factor:" << QString::number(double(cleanedData.size()) / resampled.size(), 'f', 1) << ")";
+    
+    // Debug: Print first 10 bars of original data
+    qDebug() << "=== ORIGINAL DATA (first 10 bars) ===";
+    for (size_t i = 0; i < std::min(size_t(10), data.size()); ++i) {
+        const auto& bar = data[i];
+        qDebug() << QString("Original[%1]: %2 | O:%3 H:%4 L:%5 C:%6 V:%7")
+                    .arg(i)
+                    .arg(bar.timestamp.toString("yyyy-MM-dd hh:mm:ss"))
+                    .arg(bar.open, 0, 'f', 2)
+                    .arg(bar.high, 0, 'f', 2)
+                    .arg(bar.low, 0, 'f', 2)
+                    .arg(bar.close, 0, 'f', 2)
+                    .arg(bar.volume, 0, 'f', 0);
+    }
+    
+    // Debug: Print first 10 bars of cleaned data
+    qDebug() << "=== CLEANED DATA (first 10 bars) ===";
+    for (size_t i = 0; i < std::min(size_t(10), cleanedData.size()); ++i) {
+        const auto& bar = cleanedData[i];
+        qDebug() << QString("Cleaned[%1]: %2 | O:%3 H:%4 L:%5 C:%6 V:%7")
+                    .arg(i)
+                    .arg(bar.timestamp.toString("yyyy-MM-dd hh:mm:ss"))
+                    .arg(bar.open, 0, 'f', 2)
+                    .arg(bar.high, 0, 'f', 2)
+                    .arg(bar.low, 0, 'f', 2)
+                    .arg(bar.close, 0, 'f', 2)
+                    .arg(bar.volume, 0, 'f', 0);
+    }
+    
+    // Debug: Print first 10 bars of resampled data
+    qDebug() << "=== RESAMPLED DATA (first 10 bars) ===";
+    for (size_t i = 0; i < std::min(size_t(10), resampled.size()); ++i) {
+        const auto& bar = resampled[i];
+        qDebug() << QString("Resampled[%1]: %2 | O:%3 H:%4 L:%5 C:%6 V:%7")
+                    .arg(i)
+                    .arg(bar.timestamp.toString("yyyy-MM-dd hh:mm:ss"))
+                    .arg(bar.open, 0, 'f', 2)
+                    .arg(bar.high, 0, 'f', 2)
+                    .arg(bar.low, 0, 'f', 2)
+                    .arg(bar.close, 0, 'f', 2)
+                    .arg(bar.volume, 0, 'f', 0);
+    }
+    qDebug() << "=== END DEBUG OUTPUT ===";
+    
     return resampled;
 }
 
@@ -453,7 +659,23 @@ std::vector<OHLCBar> DataLoader::loadData(
     QDateTime actualEndDate = endDate.isValid() ? endDate : QDateTime::currentDateTime();
     QString endDateString = actualEndDate.toString("dd/MM/yyyy");
 
+    // Load raw data from CSV
     std::vector<OHLCBar> result = loadFromCSV(dataFile, period, endDateString);
+    
+    // Check if we need to resample the data
+    QString fileInterval = extractIntervalFromFilename(dataFile);
+    if (!fileInterval.isEmpty() && fileInterval != interval) {
+        qInfo() << "Resampling data from" << fileInterval << "to" << interval;
+        
+        // Validate that target interval is compatible with source interval
+        if (isValidResamplingInterval(fileInterval, interval)) {
+            result = resampleData(result, interval);
+            qInfo() << "Resampling completed. Final data size:" << result.size();
+        } else {
+            qWarning() << "Invalid resampling: cannot resample from" << fileInterval << "to" << interval;
+            qWarning() << "Target interval must be a multiple of source interval";
+        }
+    }
 
     // Store in cache
     s_dataCache[cacheKey] = result;
@@ -570,6 +792,74 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
 
 QString DataLoader::makeCacheKey(const QString& symbol, const QString& interval, const QString& period, const QDateTime& endDate) {
     return symbol + "|" + interval + "|" + period + "|" + endDate.toString(Qt::ISODate);
+}
+
+QString DataLoader::extractIntervalFromFilename(const QString& filePath)
+{
+    QFileInfo fileInfo(filePath);
+    QString fileName = fileInfo.baseName(); // Get filename without extension
+    
+    // Expected pattern: SYMBOL_INTERVAL_dates
+    // e.g., "NDX_10secs_20220214_to_20250716_TRADES"
+    QStringList parts = fileName.split('_');
+    
+    if (parts.size() >= 2) {
+        QString possibleInterval = parts[1];
+        
+        // Validate that this looks like an interval
+        if (possibleInterval.endsWith("secs") || 
+            possibleInterval.endsWith("min") || 
+            possibleInterval.endsWith("h")) {
+            qDebug() << "Extracted interval:" << possibleInterval << "from file:" << fileName;
+            return possibleInterval;
+        }
+    }
+    
+    qWarning() << "Could not extract interval from filename:" << fileName;
+    return QString();
+}
+
+bool DataLoader::isValidResamplingInterval(const QString& sourceInterval, const QString& targetInterval)
+{
+    int sourceSeconds = intervalToSeconds(sourceInterval);
+    int targetSeconds = intervalToSeconds(targetInterval);
+    
+    if (sourceSeconds <= 0 || targetSeconds <= 0) {
+        qWarning() << "Invalid intervals for resampling:" << sourceInterval << "to" << targetInterval;
+        return false;
+    }
+    
+    if (targetSeconds < sourceSeconds) {
+        qWarning() << "Cannot downsample: target interval" << targetInterval 
+                   << "(" << targetSeconds << "s) is smaller than source interval" 
+                   << sourceInterval << "(" << sourceSeconds << "s)";
+        return false;
+    }
+    
+    if (targetSeconds % sourceSeconds != 0) {
+        qWarning() << "Target interval" << targetInterval << "(" << targetSeconds << "s)"
+                   << "is not a multiple of source interval" << sourceInterval 
+                   << "(" << sourceSeconds << "s)";
+        return false;
+    }
+    
+    qDebug() << "Valid resampling:" << sourceInterval << "to" << targetInterval
+             << "(factor:" << (targetSeconds / sourceSeconds) << ")";
+    return true;
+}
+
+QDateTime DataLoader::alignToInterval(const QDateTime& timestamp, int intervalSeconds)
+{
+    // Align timestamp to the start of the interval period
+    qint64 epochSeconds = timestamp.toSecsSinceEpoch();
+    qint64 alignedSeconds = (epochSeconds / intervalSeconds) * intervalSeconds;
+    
+    QDateTime aligned = QDateTime::fromSecsSinceEpoch(alignedSeconds, timestamp.timeSpec());
+    qDebug() << "Aligned timestamp" << timestamp.toString("yyyy-MM-dd hh:mm:ss")
+             << "to interval start" << aligned.toString("yyyy-MM-dd hh:mm:ss")
+             << "for" << intervalSeconds << "second intervals";
+    
+    return aligned;
 }
 
 std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)

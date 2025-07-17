@@ -39,7 +39,7 @@ void GeneralParamsPanel::initialize()
     
     // Période
     m_widgets["period"] = new QComboBox(this);
-    static_cast<QComboBox*>(m_widgets["period"])->addItems({"1m", "2m", "3m", "6m", "1y", "3y"});
+    static_cast<QComboBox*>(m_widgets["period"])->addItems({"3m", "6m", "1y", "3y", "5y", "10y", "20y"});
     static_cast<QComboBox*>(m_widgets["period"])->setCurrentIndex(5);
     paramsLayout->addRow(new QLabel("Période de données:", this), m_widgets["period"]);
     
@@ -55,7 +55,7 @@ void GeneralParamsPanel::initialize()
     // Date de fin
     m_widgets["end_date"] = new QDateEdit(this);
     QDateEdit* dateEdit = static_cast<QDateEdit*>(m_widgets["end_date"]);
-    dateEdit->setDate(QDate(2025, 5, 30));
+    dateEdit->setDate(QDate(2025, 7, 17));
     dateEdit->setCalendarPopup(true);
     paramsLayout->addRow(new QLabel("Date de fin:", this), m_widgets["end_date"]);
     
@@ -72,7 +72,7 @@ void GeneralParamsPanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["cash"])->setDecimals(2);
     static_cast<QDoubleSpinBox*>(m_widgets["cash"])->setRange(1000, 10000000);
     static_cast<QDoubleSpinBox*>(m_widgets["cash"])->setSingleStep(1000);
-    static_cast<QDoubleSpinBox*>(m_widgets["cash"])->setValue(100000);
+    static_cast<QDoubleSpinBox*>(m_widgets["cash"])->setValue(10000);
     paramsLayout->addRow(new QLabel("Cash initial:", this), m_widgets["cash"]);
 
     // Levier maximal autorisé

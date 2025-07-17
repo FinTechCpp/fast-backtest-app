@@ -28,12 +28,13 @@ ChartWidget::ChartWidget(QWidget* parent)
     m_chartViewer = new QChartViewer(this);
     m_chartViewer->setObjectName("chartViewer");
     m_chartViewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // m_chartViewer->setUpdateInterval(5);
     
     // Configurer le viewer
     m_chartViewer->setMouseUsage(Chart::MouseUsageScroll);
     m_chartViewer->setMouseTracking(true);
     m_chartViewer->setMouseWheelZoomRatio(1.4);
-    m_chartViewer->setScrollDirection(Chart::DirectionHorizontalVertical);
+    m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
     m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
     m_chartViewer->setZoomInWidthLimit(0.00001); // Limite de zoom pour éviter les zooms trop fins
     
@@ -42,7 +43,7 @@ ChartWidget::ChartWidget(QWidget* parent)
     connect(m_chartViewer, &QChartViewer::mousePressed, this, &ChartWidget::onMousePressed);
     connect(m_chartViewer, &QChartViewer::mouseMoveChart, this, &ChartWidget::onMouseMoveChart);
     connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, this, &ChartWidget::onMouseMovePlotArea);
-    connect(m_chartViewer, &QChartViewer::mouseReleased, this, &ChartWidget::onMouseReleasedPlotArea);
+    connect(m_chartViewer, &QChartViewer::mouseReleased, this, &ChartWidget::onMouseReleased);
     connect(m_chartViewer, &QChartViewer::mouseDoubleClicked, this, &ChartWidget::onMouseDoubleClicked);
 
     // Ajouter le viewer au layout
@@ -154,21 +155,10 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
             
             // Mettre à jour la position de référence
             m_lastMousePos = event->pos();
-            
-            // Redessiner le graphique avec la nouvelle configuration
-            updateChartDisplay(ViewPortMode::USE_CURRENT);
         }
     }
     
 
-    m_renderer.updateDynamicLayer(
-        m_chartViewer,
-        m_rulerToolEnabled,
-        m_rulerFirstPointSelected,
-        m_rulerStartX, m_rulerStartY,
-        m_dataManager,
-        m_currentAggregation
-    );
 
     // Récupérer les informations sur le point
     // if (m_financeChart->getChart()->getChartCount() > 1) {
@@ -191,7 +181,7 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     // }
     
     // Mettre à jour l'affichage
-    m_chartViewer->updateDisplay();
+
 }
 
 void ChartWidget::onMousePressed(QMouseEvent* event)
@@ -211,7 +201,7 @@ void ChartWidget::onMousePressed(QMouseEvent* event)
         m_pixelToValueRatio = yRange / plotAreaHeight;
 
         double relativeYPos = (m_lastMousePos.y() - m_config.equityHeight) / plotAreaHeight;
-        if (m_lastMousePos.x() > m_config.chartWidth - 50 && relativeYPos >= 0 && relativeYPos <= 1) {
+        if (m_lastMousePos.x() > m_config.chartWidth - m_yAxisMarginWidth && relativeYPos >= 0 && relativeYPos <= 1) {
             m_yAxisClickRelativePos = 1.0 - relativeYPos; // Inverser pour que 0 soit en bas et 1 en haut
             
             m_config.fixedYScale = true;
@@ -266,7 +256,7 @@ void ChartWidget::onMouseMoveChart(QMouseEvent *event)
             m_lastMousePos = event->pos();
             
             // Recalculer le ratio pour le déplacement vertical
-            m_pixelToValueRatio = (m_config.yScaleMax - m_config.yScaleMin) / m_renderer.getPlotAreaHeight();
+            m_pixelToValueRatio = (newMax - newMin) / m_renderer.getPlotAreaHeight();
 
             // Indiquer que nous sommes en mode déplacement vertical
             m_verticalMoveMode = true;
@@ -275,9 +265,20 @@ void ChartWidget::onMouseMoveChart(QMouseEvent *event)
             updateChartDisplay(ViewPortMode::USE_CURRENT);
         }
     }
+
+    m_renderer.updateDynamicLayer(
+        m_chartViewer,
+        m_rulerToolEnabled,
+        m_rulerFirstPointSelected,
+        m_rulerStartX, m_rulerStartY,
+        m_dataManager,
+        m_currentAggregation
+    );
+
+    m_chartViewer->updateDisplay();
 }
 
-void ChartWidget::onMouseReleasedPlotArea(QMouseEvent *event)
+void ChartWidget::onMouseReleased(QMouseEvent *event)
 {
     if (!m_chartViewer || !m_chartViewer->getChart())
         return;

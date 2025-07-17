@@ -70,7 +70,7 @@ void ChartRenderer::createOrUpdateChart(
         "<*font=Arial Bold*>{value|d MMM hh:nn}<*/font*>",  // Première heure avec jour
         "{value|hh:nn}"  // Autres heures
     );
-    m_financeChart->setMargins(0, 20, 40, 100);  // Pas de marges
+    m_financeChart->setMargins(0, 20, 50, 100);  // Pas de marges
     m_financeChart->setDateLabelSpacing(80);
     
     // Configurer les données
@@ -121,6 +121,8 @@ void ChartRenderer::createOrUpdateChart(
     mainChart->xAxis()->setTickLength(4, 2);  // Ticks plus visibles
     mainChart->xAxis()->setLabelStyle("Arial Bold", 9);  // Étiquettes plus lisibles
     mainChart->yAxis()->setAutoScale(0.01, 0.01, 0);
+    // mainChart->xAxis()->setMinTickGap(20); // Espace minimal entre les ticks (en pixels)
+    // mainChart->xAxis()->setMaxTickGap(20);
 
     if (config.fixedYScale) {
         // Calculer les nouvelles limites en appliquant l'offset
@@ -128,6 +130,7 @@ void ChartRenderer::createOrUpdateChart(
         double newMax = config.yScaleMax + config.yScaleOffset;
         
         // Appliquer les limites au graphique principal
+        mainChart->yAxis()->setRounding(false, false);
         mainChart->yAxis()->setLinearScale(newMin, newMax);
     }
  
@@ -213,8 +216,6 @@ void ChartRenderer::createOrUpdateChart(
     m_lastYMin = mainChart->yAxis()->getMinValue();
     m_lastYMax = mainChart->yAxis()->getMaxValue();
     m_plotAreaHeight = mainChart->getPlotArea()->getHeight();
-
-    // std::cout << "Renderer Y Min: " << m_lastYMin << ", Y Max: " << m_lastYMax << std::endl;
 }
 
 void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 

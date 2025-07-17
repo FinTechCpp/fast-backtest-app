@@ -112,7 +112,7 @@ private slots:
     void onMouseDoubleClicked(QMouseEvent* event);
     void onMouseMoveChart(QMouseEvent* event);
     void onMouseMovePlotArea(QMouseEvent* event);
-    void onMouseReleasedPlotArea(QMouseEvent* event);
+    void onMouseReleased(QMouseEvent* event);
 
 private:
     enum class ViewPortMode {
@@ -158,8 +158,6 @@ private:
     // Propriétés pour le déplacement vertical
     bool m_verticalMoveMode = false;
     QPoint m_lastMousePos;
-    double m_lastYMin = 0.0;
-    double m_lastYMax = 0.0;
     double m_pixelToValueRatio = 0.0;
 
     // Variables pour le zoom vertical sur l'axe Y

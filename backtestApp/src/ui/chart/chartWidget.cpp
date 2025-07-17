@@ -40,8 +40,9 @@ ChartWidget::ChartWidget(QWidget* parent)
     // Connecter les signaux
     connect(m_chartViewer, &QChartViewer::viewPortChanged, this, &ChartWidget::onViewPortChanged);
     connect(m_chartViewer, &QChartViewer::mousePressed, this, &ChartWidget::onMousePressed);
+    connect(m_chartViewer, &QChartViewer::mouseMoveChart, this, &ChartWidget::onMouseMoveChart);
     connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, this, &ChartWidget::onMouseMovePlotArea);
-    connect(m_chartViewer, &QChartViewer::clicked, this, &ChartWidget::onMouseClickPlotArea);
+    connect(m_chartViewer, &QChartViewer::mouseReleased, this, &ChartWidget::onMouseReleasedPlotArea);
     connect(m_chartViewer, &QChartViewer::mouseDoubleClicked, this, &ChartWidget::onMouseDoubleClicked);
 
     // Ajouter le viewer au layout
@@ -195,9 +196,7 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
 
 void ChartWidget::onMousePressed(QMouseEvent* event)
 {
-    std::cout << "Mouse pressed at: " 
-              << event->position().x() << ", " << event->position().y() << std::endl;
-    if (m_verticalMoveMode && event->button() == Qt::LeftButton) {
+    if (event->button() == Qt::LeftButton) {
         m_lastMousePos = event->pos();
 
         // Au lieu de réinitialiser l'offset, mettre à jour les valeurs de référence
@@ -208,28 +207,80 @@ void ChartWidget::onMousePressed(QMouseEvent* event)
         
         // Recalculer le ratio pixel/valeur pour la nouvelle échelle
         double yRange = m_config.yScaleMax - m_config.yScaleMin;
-        m_pixelToValueRatio = yRange / m_renderer.getPlotAreaHeight();
+        double plotAreaHeight = m_renderer.getPlotAreaHeight();
+        m_pixelToValueRatio = yRange / plotAreaHeight;
+
+        double relativeYPos = (m_lastMousePos.y() - m_config.equityHeight) / plotAreaHeight;
+        if (m_lastMousePos.x() > m_config.chartWidth - 50 && relativeYPos >= 0 && relativeYPos <= 1) {
+            m_yAxisClickRelativePos = 1.0 - relativeYPos; // Inverser pour que 0 soit en bas et 1 en haut
+            
+            m_config.fixedYScale = true;
+
+            m_isYAxisDragging = true;
+            setCursor(Qt::SizeVerCursor);
+        }
     }
 }
 
 void ChartWidget::onMouseDoubleClicked(QMouseEvent *event)
 {
     if (m_verticalMoveMode) {
-        toggleVerticalMoveMode();
+        m_config.fixedYScale = false;
+        setCursor(Qt::ArrowCursor);
+
+        updateChartDisplay(ViewPortMode::USE_CURRENT);
     }
 }
 
-void ChartWidget::onMouseClickPlotArea(QMouseEvent *event)
+void ChartWidget::onMouseMoveChart(QMouseEvent *event)
 {
-    // std::cout << "Mouse clicked at: " 
-    //           << event->position().x() << ", " << event->position().y() << std::endl;
+    // Gestion du zoom vertical sur l'axe Y
+    if (m_isYAxisDragging && (event->buttons() & Qt::LeftButton)) {
+        // Calculer le delta en pixels
+        int deltaY = event->pos().y() - m_lastMousePos.y();
+        
+        if (deltaY != 0) {
+            // Facteur d'amortissement pour contrôler la vitesse du zoom
+            double zoomFactor = 1.0 - (deltaY * 0.005); // Ajuster selon la sensibilité souhaitée
+            
+            // Récupérer l'échelle Y actuelle
+            double currentMin = m_config.yScaleMin;
+            double currentMax = m_config.yScaleMax;
+            double currentRange = currentMax - currentMin;
+            
+            // Calculer le point pivot (la valeur qui reste fixe pendant le zoom)
+            double pivotValue = currentMin + m_yAxisClickRelativePos * currentRange;
+            
+            // Calculer la nouvelle plage en fonction du facteur de zoom
+            double newRange = currentRange / zoomFactor;
+            
+            // Calculer les nouvelles limites en maintenant le point pivot à sa position relative
+            double newMin = pivotValue - (m_yAxisClickRelativePos * newRange);
+            double newMax = pivotValue + ((1.0 - m_yAxisClickRelativePos) * newRange);
+            
+            // Mettre à jour l'échelle Y
+            m_config.yScaleMin = newMin;
+            m_config.yScaleMax = newMax;
+            
+            // Mettre à jour la position de référence
+            m_lastMousePos = event->pos();
+            
+            // Recalculer le ratio pour le déplacement vertical
+            m_pixelToValueRatio = (m_config.yScaleMax - m_config.yScaleMin) / m_renderer.getPlotAreaHeight();
 
-    // On peut checker les double click pour revenir en mode par defaut
-
-
-    if (!m_chartViewer || !m_chartViewer->getChart()) {
-        return;
+            // Indiquer que nous sommes en mode déplacement vertical
+            m_verticalMoveMode = true;
+            
+            // Redessiner le graphique avec la nouvelle configuration
+            updateChartDisplay(ViewPortMode::USE_CURRENT);
+        }
     }
+}
+
+void ChartWidget::onMouseReleasedPlotArea(QMouseEvent *event)
+{
+    if (!m_chartViewer || !m_chartViewer->getChart())
+        return;
     
     // Si le bouton gauche est cliqué et que l'outil règle est activé
     if (m_rulerToolEnabled) {
@@ -247,6 +298,13 @@ void ChartWidget::onMouseClickPlotArea(QMouseEvent *event)
         }
 
         return;
+    }
+
+    if (m_isYAxisDragging) {
+        m_isYAxisDragging = false;
+        // Maintenir le curseur en mode vertical puisqu'on reste en mode vertical
+        setCursor(Qt::SizeVerCursor);
+        event->accept();
     }
 }
 

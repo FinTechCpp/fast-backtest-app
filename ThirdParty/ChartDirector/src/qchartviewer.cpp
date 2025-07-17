@@ -655,7 +655,7 @@ void QChartViewer::mouseReleaseEvent(QMouseEvent *event)
                 updateViewPort(false, true);
             else
                 // Is not zooming or scrolling, so is just a normal click event.
-                emit clicked(event);
+                emit mouseReleased(event);
             break;
         }
 
@@ -665,7 +665,7 @@ void QChartViewer::mouseReleaseEvent(QMouseEvent *event)
             updateViewPort(true, true);
     }
     else
-        emit clicked(event);
+        emit mouseReleased(event);
 
     onSetCursor();
 }

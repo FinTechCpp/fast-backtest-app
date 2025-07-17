@@ -261,8 +261,8 @@ private:
 signals:
     void viewPortChanged();                     // View port has changed
     void mousePressed(QMouseEvent *event);   // Mouse button pressed
+    void mouseReleased(QMouseEvent *event);  // Mouse button released
     void mouseDoubleClicked(QMouseEvent *event); // Mouse button double clicked
-    void clicked(QMouseEvent *event);           // Mouse button clicked
     void mouseMove(QMouseEvent *event);         // Mouse moves over the widget
     void mouseWheel(QWheelEvent *event);        // Mouse wheel scrolled
     void mouseMoveChart(QMouseEvent *event);    // Mouse moves over the chart

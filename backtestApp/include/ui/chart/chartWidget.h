@@ -113,8 +113,9 @@ private slots:
     void onViewPortChanged();
     void onMousePressed(QMouseEvent* event);
     void onMouseDoubleClicked(QMouseEvent* event);
+    void onMouseMoveChart(QMouseEvent* event);
     void onMouseMovePlotArea(QMouseEvent* event);
-    void onMouseClickPlotArea(QMouseEvent* event);
+    void onMouseReleasedPlotArea(QMouseEvent* event);
 
 private:
     enum class ViewPortMode {
@@ -163,4 +164,9 @@ private:
     double m_lastYMin = 0.0;
     double m_lastYMax = 0.0;
     double m_pixelToValueRatio = 0.0;
+
+    // Variables pour le zoom vertical sur l'axe Y
+    bool m_isYAxisDragging = false;     // Indique si on est en train de faire glisser l'axe Y
+    double m_yAxisClickRelativePos = 0.0; // Position relative du clic sur l'axe Y (0 = bas, 1 = haut)
+    int m_yAxisMarginWidth = 50;        // Marge en pixels pour détecter les clics sur l'axe Y
 };

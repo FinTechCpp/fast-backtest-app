@@ -213,6 +213,8 @@ void ChartRenderer::createOrUpdateChart(
     m_lastYMin = mainChart->yAxis()->getMinValue();
     m_lastYMax = mainChart->yAxis()->getMaxValue();
     m_plotAreaHeight = mainChart->getPlotArea()->getHeight();
+
+    std::cout << "Renderer Y Min: " << m_lastYMin << ", Y Max: " << m_lastYMax << std::endl;
 }
 
 void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 

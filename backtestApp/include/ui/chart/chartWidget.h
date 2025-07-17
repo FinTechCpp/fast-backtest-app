@@ -93,7 +93,7 @@ public:
     bool removeIndicator(int id);
 
 public slots:
-    void toggleVerticalMoveMode(); 
+    void toggleVerticalMoveMode();
     
 signals:
     void chartCreated();
@@ -108,13 +108,11 @@ signals:
     
 protected:
     void resizeEvent(QResizeEvent* event) override;
-    void keyPressEvent(QKeyEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
 
 private slots:
     void onViewPortChanged();
     void onMousePressed(QMouseEvent* event);
+    void onMouseDoubleClicked(QMouseEvent* event);
     void onMouseMovePlotArea(QMouseEvent* event);
     void onMouseClickPlotArea(QMouseEvent* event);
 

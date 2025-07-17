@@ -150,6 +150,7 @@ protected:
     //
 
     virtual void mouseMoveEvent(QMouseEvent *event);
+    virtual void mouseDoubleClickEvent(QMouseEvent *event);
     virtual void onDelayedMouseMove();
     virtual void mousePressEvent(QMouseEvent *event);
     virtual void mouseReleaseEvent(QMouseEvent *event);
@@ -260,6 +261,7 @@ private:
 signals:
     void viewPortChanged();                     // View port has changed
     void mousePressed(QMouseEvent *event);   // Mouse button pressed
+    void mouseDoubleClicked(QMouseEvent *event); // Mouse button double clicked
     void clicked(QMouseEvent *event);           // Mouse button clicked
     void mouseMove(QMouseEvent *event);         // Mouse moves over the widget
     void mouseWheel(QWheelEvent *event);        // Mouse wheel scrolled

@@ -281,6 +281,11 @@ void QChartViewer::mouseMoveEvent(QMouseEvent *event)
     onSetCursor();
 }
 
+void QChartViewer::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    emit mouseDoubleClicked(event);
+}
+
 //
 // The method that actually performs MouseMove event processing
 //

@@ -34,7 +34,7 @@ void GeneralParamsPanel::initialize()
     
     // Symbole
     m_widgets["symbol"] = new QComboBox(this);
-    static_cast<QComboBox*>(m_widgets["symbol"])->addItems({"NDX", "IBUST100", "EURUSD"});
+    static_cast<QComboBox*>(m_widgets["symbol"])->addItems({"NDX", "EUR"});
     paramsLayout->addRow(new QLabel("Symbole:", this), m_widgets["symbol"]);
     
     // Période

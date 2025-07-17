@@ -95,7 +95,7 @@ def checkDataFile(
         - Summary statistics
     """
     # Load the data
-    df = pd.read_csv(file_path)
+    df = pd.read_csv(file_path, low_memory=False)
     
     # Ensure date column is datetime with timezone
     df['date'] = pd.to_datetime(df['date'])
@@ -236,7 +236,7 @@ def identify_gaps(timestamps, interval_seconds):
     for i in range(1, len(timestamps)):
         diff = timestamps[i] - timestamps[i-1]
         if diff > expected_interval * 1.1:  # Allow 10% tolerance
-            missing_points = int(diff.total_seconds() / interval_seconds) - 1
+            missing_points = int(diff / np.timedelta64(1, 's') / interval_seconds) - 1
             if missing_points > 0:  # Only count if there are actually missing points
                 gaps.append({
                     "start": timestamps[i-1],

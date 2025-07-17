@@ -33,12 +33,13 @@ ChartWidget::ChartWidget(QWidget* parent)
     m_chartViewer->setMouseUsage(Chart::MouseUsageScroll);
     m_chartViewer->setMouseTracking(true);
     m_chartViewer->setMouseWheelZoomRatio(1.4);
-    m_chartViewer->setScrollDirection(Chart::DirectionHorizontal);
+    m_chartViewer->setScrollDirection(Chart::DirectionHorizontalVertical);
     m_chartViewer->setZoomDirection(Chart::DirectionHorizontal);
     m_chartViewer->setZoomInWidthLimit(0.00001); // Limite de zoom pour éviter les zooms trop fins
     
     // Connecter les signaux
     connect(m_chartViewer, &QChartViewer::viewPortChanged, this, &ChartWidget::onViewPortChanged);
+    connect(m_chartViewer, &QChartViewer::mousePressed, this, &ChartWidget::onMousePressed);
     connect(m_chartViewer, &QChartViewer::mouseMovePlotArea, this, &ChartWidget::onMouseMovePlotArea);
     connect(m_chartViewer, &QChartViewer::clicked, this, &ChartWidget::onMouseClickPlotArea);
 
@@ -118,8 +119,7 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
     }
 
     m_currentAggregation = m_dataManager.getOptimalAggregationInfo(DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow));
-    
-    // Corriger l'appel avec tous les paramètres requis
+
     m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation);
 
     if (mode == ViewPortMode::FULL_CHART) {
@@ -134,7 +134,7 @@ void ChartWidget::onViewPortChanged()
 {
     // Redessiner le graphique avec le nouveau viewport
     // if (m_chartViewer->needUpdateChart())
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
+    updateChartDisplay(ViewPortMode::USE_CURRENT);
 
     // Émettre un signal pour indiquer que le viewport a changé
     // emit viewPortChanged();
@@ -151,43 +151,26 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
 {
     if (!m_chartViewer) return;
 
-    // if (m_yAxisZoomMode) {
-    //     int deltaY = m_yAxisZoomStartY - m_chartViewer->getPlotAreaMouseY();
-    //     if (abs(deltaY) > 10) { // Éviter les micro-mouvements
-    //         // Calculer le facteur de zoom en fonction du mouvement vertical
-    //         double zoomFactor = 1.0 + (abs(deltaY) / 100.0);
+    if (m_verticalMoveMode && (event->buttons() & Qt::LeftButton)) {
+        // Calculer le delta en pixels
+        int deltaY = event->pos().y() - m_lastMousePos.y();
 
-    //         std::cout << "Zooming Y-Axis: " << (deltaY > 0 ? "In" : "Out") 
-    //                   << " with factor: " << zoomFactor << std::endl;
+        // std::cout << "Mouse moved vertically: " << deltaY << " pixels" << std::endl;
+        
+        if (deltaY != 0) {
+            // Convertir le delta en pixels en unités de l'échelle Y
+            double valueShift = deltaY * m_pixelToValueRatio;
             
-    //         // Direction du zoom basée sur le mouvement vers le haut ou vers le bas
-    //         if (deltaY > 0) { // Mouvement vers le haut = zoom in
-    //             double newHeight = m_chartViewer->getViewPortHeight() / zoomFactor;
-    //             double newTop = m_chartViewer->getViewPortTop() + 
-    //                            (m_chartViewer->getViewPortHeight() - newHeight) / 2;
-                
-    //             m_chartViewer->setViewPortTop(newTop);
-    //             m_chartViewer->setViewPortHeight(newHeight);
-    //         } else { // Mouvement vers le bas = zoom out
-    //             double newHeight = m_chartViewer->getViewPortHeight() * zoomFactor;
-    //             double newTop = m_chartViewer->getViewPortTop() - 
-    //                            (newHeight - m_chartViewer->getViewPortHeight()) / 2;
-                
-    //             // Limiter le zoom out à 100%
-    //             if (newHeight <= 1.0) {
-    //                 m_chartViewer->setViewPortTop(newTop);
-    //                 m_chartViewer->setViewPortHeight(newHeight);
-    //             }
-    //         }
+            // Mettre à jour l'offset dans la configuration
+            m_config.yScaleOffset += valueShift; // Inverser le signe pour un déplacement naturel
             
-    //         // Réinitialiser la position de départ pour le prochain mouvement
-    //         m_yAxisZoomStartY = m_chartViewer->getPlotAreaMouseY();
+            // Mettre à jour la position de référence
+            m_lastMousePos = event->pos();
             
-    //         // Mettre à jour l'affichage
-    //         updateChartDisplay(ViewPortMode::USE_CURRENT);
-    //     }
-    //     return;
-    // }
+            // Redessiner le graphique avec la nouvelle configuration
+            updateChartDisplay(ViewPortMode::USE_CURRENT);
+        }
+    }
     
 
     m_renderer.updateDynamicLayer(
@@ -223,19 +206,44 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     m_chartViewer->updateDisplay();
 }
 
+void ChartWidget::mousePressEvent(QMouseEvent* event)
+{
+    if (event->button() == Qt::LeftButton && m_advancedNavigationMode) {
+        m_isDraggingVertically = true;
+        m_lastMousePos = event->pos();
+        setCursor(Qt::ClosedHandCursor); // Curseur "main fermée" pour indiquer le déplacement
+        event->accept();
+    } else {
+        QWidget::mousePressEvent(event);
+    }
+}
+
 void ChartWidget::mouseReleaseEvent(QMouseEvent* event)
 {
-    QWidget::mouseReleaseEvent(event);
-    
-    // Si nous étions en mode zoom Y, le désactiver
-    if (m_yAxisZoomMode) {
-        m_yAxisZoomMode = false;
-        setCursor(Qt::ArrowCursor);
+    if (m_isDraggingVertically) {
+        m_isDraggingVertically = false;
+        setCursor(m_advancedNavigationMode ? Qt::OpenHandCursor : Qt::ArrowCursor);
+        event->accept();
+    } else {
+        QWidget::mouseReleaseEvent(event);
+    }
+}
+
+void ChartWidget::onMousePressed(QMouseEvent* event)
+{
+    if (m_verticalMoveMode && event->button() == Qt::LeftButton) {
+        m_lastMousePos = event->pos();
     }
 }
 
 void ChartWidget::onMouseClickPlotArea(QMouseEvent* event)
 {
+    // std::cout << "Mouse clicked at: " 
+    //           << event->position().x() << ", " << event->position().y() << std::endl;
+
+    // On peut checker les double click pour revenir en mode par defaut
+
+
     if (!m_chartViewer || !m_chartViewer->getChart()) {
         return;
     }
@@ -283,6 +291,40 @@ void ChartWidget::setMaxDisplayPoints(int value) {
 
 int ChartWidget::getMaxDisplayPoints() const {
     return m_dataManager.getMaxDisplayPoints();
+}
+
+void ChartWidget::toggleVerticalMoveMode()
+{
+    m_verticalMoveMode = !m_verticalMoveMode;
+    
+    if (m_verticalMoveMode) {
+        // Activer le mode déplacement vertical
+        
+        // Récupérer l'échelle Y actuelle
+        m_lastYMin = m_renderer.getYAxisMin();
+        m_lastYMax = m_renderer.getYAxisMax();
+        double plotAreaHeight = m_renderer.getPlotAreaHeight();
+        
+        // Calculer le ratio pixel/valeur pour les conversions
+        double yRange = m_lastYMax - m_lastYMin;
+        m_pixelToValueRatio = yRange / plotAreaHeight;
+        
+        // Configurer le renderer pour utiliser l'échelle Y fixe
+        m_config.fixedYScale = true;
+        m_config.yScaleMin = m_lastYMin;
+        m_config.yScaleMax = m_lastYMax;
+        m_config.yScaleOffset = 0.0;
+        
+        // Indicateur visuel
+        setCursor(Qt::SizeVerCursor);
+    } else {
+        // Désactiver le mode déplacement vertical
+        m_config.fixedYScale = false;
+        setCursor(Qt::ArrowCursor);
+    }
+    
+    // Mettre à jour l'affichage
+    updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
 void ChartWidget::setRulerToolEnabled(bool enabled)
@@ -344,10 +386,24 @@ double ChartWidget::dateToChartTimestamp(const be::Date& date) {
 //     }
 // }
 
+void ChartWidget::keyPressEvent(QKeyEvent* event) 
+{
+    if (event->key() == Qt::Key_Space) {
+        std::cout << "Space key pressed" << std::endl;
+        toggleVerticalMoveMode();
+        event->accept();
+    } else {
+        QWidget::keyPressEvent(event);
+    }
+}
+
 void ChartWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     QSize newSize = event->size();
+
+    std::cout << "Resizing ChartWidget to: " 
+              << newSize.width() << "x" << newSize.height() << std::endl;
     
     // Ne pas mettre à jour pendant un redimensionnement en cours
     // if (m_isResizing) {

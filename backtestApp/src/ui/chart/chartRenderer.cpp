@@ -114,14 +114,22 @@ void ChartRenderer::createOrUpdateChart(
     
     // 2. Ajouter le graphique principal
     int mainChartHeight = std::max(300, config.chartHeight - subChartsTotalHeight);
-    m_financeChart->addMainChart(mainChartHeight);
-    XYChart* mainChart = (XYChart*)m_financeChart->getChart(1);
+    XYChart* mainChart = m_financeChart->addMainChart(mainChartHeight);
     
     // Personnaliser l'affichage des grilles
     mainChart->xAxis()->setWidth(2);  // Axe plus épais
     mainChart->xAxis()->setTickLength(4, 2);  // Ticks plus visibles
     mainChart->xAxis()->setLabelStyle("Arial Bold", 9);  // Étiquettes plus lisibles
     mainChart->yAxis()->setAutoScale(0.01, 0.01, 0);
+
+    if (config.fixedYScale) {
+        // Calculer les nouvelles limites en appliquant l'offset
+        double newMin = config.yScaleMin + config.yScaleOffset;
+        double newMax = config.yScaleMax + config.yScaleOffset;
+        
+        // Appliquer les limites au graphique principal
+        mainChart->yAxis()->setLinearScale(newMin, newMax);
+    }
  
     // Ajouter le type de graphique approprié selon le type actuel
     if (config.chartType == ChartDataManager::ChartType::CandleStick || 
@@ -178,6 +186,10 @@ void ChartRenderer::createOrUpdateChart(
             addPivotPointsToChart(mainChart, *pivotPoints, dataManager, aggregationInfo);
         }
     }
+
+    // super important va me permettre de faire le zoome vertical
+    // mainChart->yAxis()->setLinearScale(200, 20000);
+
     
     // // 4. Ajouter le volume si demandé
     // if (config.showVolume) {
@@ -197,6 +209,10 @@ void ChartRenderer::createOrUpdateChart(
 
     // std::cout << "Après " << mainChart->getYCoor(20000) << std::endl;
 
+    // Mettre à jour les dimensions du renderer
+    m_lastYMin = mainChart->yAxis()->getMinValue();
+    m_lastYMax = mainChart->yAxis()->getMaxValue();
+    m_plotAreaHeight = mainChart->getPlotArea()->getHeight();
 }
 
 void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 

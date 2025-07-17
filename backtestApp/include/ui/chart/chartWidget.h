@@ -91,6 +91,9 @@ public:
     }
 
     bool removeIndicator(int id);
+
+public slots:
+    void toggleVerticalMoveMode(); 
     
 signals:
     void chartCreated();
@@ -105,10 +108,13 @@ signals:
     
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
     void mouseReleaseEvent(QMouseEvent* event) override;
 
 private slots:
     void onViewPortChanged();
+    void onMousePressed(QMouseEvent* event);
     void onMouseMovePlotArea(QMouseEvent* event);
     void onMouseClickPlotArea(QMouseEvent* event);
 
@@ -148,4 +154,15 @@ private:
 
     bool m_yAxisZoomMode = false;
     int m_yAxisZoomStartY = 0;
+    bool m_advancedNavigationMode = false;
+
+    bool m_isDraggingVertically = false;
+    int m_cumulativeVerticalDelta = 0; // Pour le suivi des déplacements cumulés
+
+    // Propriétés pour le déplacement vertical
+    bool m_verticalMoveMode = false;
+    QPoint m_lastMousePos;
+    double m_lastYMin = 0.0;
+    double m_lastYMax = 0.0;
+    double m_pixelToValueRatio = 0.0;
 };

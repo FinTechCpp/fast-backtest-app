@@ -591,6 +591,9 @@ void QChartViewer::mousePressEvent(QMouseEvent *event)
 {
     onDelayedMouseMove();
 
+    // Emit mousePressed signal
+    emit mousePressed(event);
+
     if ((event->button() == Qt::LeftButton) && inPlotArea(toImageX(event->x()), toImageY(event->y())) &&
         (m_mouseUsage != Chart::MouseUsageDefault))
     {

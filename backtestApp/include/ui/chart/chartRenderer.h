@@ -25,6 +25,12 @@ struct ChartConfiguration {
     // int volumeHeight = 100;
     bool showTrades = true;
     bool showEquity = true;
+
+    // Propriétés pour le mode d'échelle Y fixe
+    bool fixedYScale = false;     // Indique si on utilise une échelle Y fixe
+    double yScaleMin = 0.0;       // Valeur minimale de l'échelle Y
+    double yScaleMax = 0.0;       // Valeur maximale de l'échelle Y
+    double yScaleOffset = 0.0;    // Décalage vertical en unités de l'échelle
 };
 
 // Structure pour les segments TP/SL des trades
@@ -56,6 +62,18 @@ public:
                         int rulerStartX, int rulerStartY, 
                         const ChartDataManager& dataManager,
                         const ChartDataManager::AggregationInfo& aggregationInfo);
+
+    double getYAxisMin() const {
+        return m_lastYMin;
+    }
+
+    double getYAxisMax() const {
+        return m_lastYMax;
+    }
+
+    double getPlotAreaHeight() const {
+        return m_plotAreaHeight;
+    }
     
 private:
     // Méthode pour dessiner la règle
@@ -126,4 +144,8 @@ private:
         
     // Données membres
     std::unique_ptr<FinanceChart> m_financeChart;
+
+    double m_lastYMin = 0.0; // Dernière valeur minimale de l'échelle Y
+    double m_lastYMax = 0.0; // Dernière valeur maximale de l'échelle Y
+    double m_plotAreaHeight = 0.0; // Hauteur de la zone de tracé
 };

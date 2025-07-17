@@ -151,7 +151,7 @@ void ChartView::setupUI()
     });
     
     leftPanelLayout->addWidget(rulerToolButton);
-    
+
     // Technical Indicators Section
     QLabel* indicatorsLabel = new QLabel("Technical Indicators");
     indicatorsLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
@@ -216,6 +216,22 @@ void ChartView::setupUI()
         connect(m_app, &App::windowResizeStarted, m_chartWidget, [this]() {
             m_chartWidget->setResizing(true);
         }); 
+
+    QPushButton* zoomModeButton = new QPushButton("Zoom Y");
+    zoomModeButton->setCheckable(true);
+    zoomModeButton->setStyleSheet(
+        "QPushButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+        "QPushButton:checked {"
+        "    background-color: rgb(0, 141, 0);"
+        "}"
+    );
+    connect(zoomModeButton, &QPushButton::toggled, m_chartWidget, &ChartWidget::toggleVerticalMoveMode);
+    leftPanelLayout->addWidget(zoomModeButton);
 }
 
 void ChartView::setupIndicatorControls() {

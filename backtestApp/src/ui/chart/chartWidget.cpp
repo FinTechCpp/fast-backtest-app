@@ -325,40 +325,6 @@ int ChartWidget::getMaxDisplayPoints() const {
     return m_dataManager.getMaxDisplayPoints();
 }
 
-void ChartWidget::toggleVerticalMoveMode()
-{
-    m_verticalMoveMode = !m_verticalMoveMode;
-    
-    if (m_verticalMoveMode) {
-        // Activer le mode déplacement vertical
-        
-        // Récupérer l'échelle Y actuelle
-        m_lastYMin = m_renderer.getYAxisMin();
-        m_lastYMax = m_renderer.getYAxisMax();
-        double plotAreaHeight = m_renderer.getPlotAreaHeight();
-        
-        // Calculer le ratio pixel/valeur pour les conversions
-        double yRange = m_lastYMax - m_lastYMin;
-        m_pixelToValueRatio = yRange / plotAreaHeight;
-        
-        // Configurer le renderer pour utiliser l'échelle Y fixe
-        m_config.fixedYScale = true;
-        m_config.yScaleMin = m_lastYMin;
-        m_config.yScaleMax = m_lastYMax;
-        m_config.yScaleOffset = 0.0;
-        
-        // Indicateur visuel
-        setCursor(Qt::SizeVerCursor);
-    } else {
-        // Désactiver le mode déplacement vertical
-        m_config.fixedYScale = false;
-        setCursor(Qt::ArrowCursor);
-    }
-    
-    // Mettre à jour l'affichage
-    updateChartDisplay(ViewPortMode::USE_CURRENT);
-}
-
 void ChartWidget::setRulerToolEnabled(bool enabled)
 {
     m_rulerToolEnabled = enabled;

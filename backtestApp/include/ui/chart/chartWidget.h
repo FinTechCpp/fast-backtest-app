@@ -91,9 +91,6 @@ public:
     }
 
     bool removeIndicator(int id);
-
-public slots:
-    void toggleVerticalMoveMode();
     
 signals:
     void chartCreated();

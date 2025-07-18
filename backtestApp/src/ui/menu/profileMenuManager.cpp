@@ -197,9 +197,9 @@ void ProfileMenuManager::onImportProfile()
 
 void ProfileMenuManager::onExportProfile()
 {
-    if (m_configManager) {
+    if (m_configManager) 
         m_configManager->exportConfigToFile(m_mainWindow);
-    }
+    
 }
 
 void ProfileMenuManager::onLoadProfile()

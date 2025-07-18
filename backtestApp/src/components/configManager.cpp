@@ -6,6 +6,7 @@
 #include <QStandardPaths>
 #include <QFileInfo>
 #include <QFile>
+#include <QDateTime>
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
@@ -13,20 +14,20 @@ ConfigManager::ConfigManager(QObject *parent)
     , m_currentProfile("DEFAULT")
     , m_mainWindow(nullptr)
 {
-    // Récupérer la référence à MainWindow si le parent est MainWindow
+    // Get a reference to MainWindow if the parent is MainWindow
     m_mainWindow = qobject_cast<App*>(parent);
-    
-    // Déterminer le chemin du fichier de configuration
+
+    // Determine the configuration file path
     m_configFile = getConfigFilePath();
-    
-    qInfo() << "Initialisation du ConfigManager avec le fichier:" << m_configFile;
-    
-    // Initialiser la configuration
+
+    qInfo() << "Initialization of ConfigManager with file:" << m_configFile;
+
+    // Initialize the configuration
     initializeConfig();
     setupDefaultValues();
     loadConfig();
-    
-    qInfo() << "ConfigManager initialisé avec succès";
+
+    qInfo() << "ConfigManager successfully initialized";
 }
 
 ConfigManager::~ConfigManager()
@@ -46,13 +47,13 @@ QString ConfigManager::getConfigFilePath() const
     do {
         QString currentPath = currentDir.absolutePath();
         
-        // Vérifie si c'est le dossier fast-backtest-app
+        // Check if we are in the project root directory
         if (currentDir.dirName() == "fast-backtest-app") {
             projectRoot = currentPath;
             break;
         }
-        
-        // Cherche un sous-dossier fast-backtest-app
+
+        // Look for a subdirectory fast-backtest-app
         QString igTradingBotPath = currentDir.absoluteFilePath("fast-backtest-app");
         if (QFileInfo(igTradingBotPath).isDir()) {
             projectRoot = igTradingBotPath;
@@ -114,12 +115,12 @@ QString ConfigManager::getConfigFilePath() const
 void ConfigManager::initializeConfig()
 {
     m_config = new QSettings(m_configFile, QSettings::IniFormat, this);
-    qDebug() << "Fichier de configuration initialisé:" << m_configFile;
+    qDebug() << "Configuration file initialized:" << m_configFile;
 }
 
 void ConfigManager::setupDefaultValues()
 {
-    // Valeurs par défaut pour les paramètres généraux
+    // Default values for general settings
     m_defaultValues["symbol"] = "NDX";
     m_defaultValues["period"] = "10d";
     m_defaultValues["interval"] = "20secs";
@@ -128,8 +129,8 @@ void ConfigManager::setupDefaultValues()
     m_defaultValues["cash"] = 100000.0;
     m_defaultValues["strategy"] = "BuyHeikinGreenBA";
     m_defaultValues["leverage_limit"] = 20.0;
-    
-    // Valeurs par défaut pour les paramètres de stratégie de base
+
+    // Default values for base strategy parameters
     m_defaultValues["stop_loss_distance"] = 20.0;
     m_defaultValues["take_profit_distance"] = 30.0;
     m_defaultValues["use_atr_for_sl"] = false;
@@ -137,8 +138,8 @@ void ConfigManager::setupDefaultValues()
     m_defaultValues["atr_period"] = 14;
     m_defaultValues["stop_loss_atr_multiplier"] = 2.0;
     m_defaultValues["take_profit_atr_multiplier"] = 3.0;
-    
-    // Paramètres spécifiques BuyHeikinGreen
+
+    // Specific parameters for BuyHeikinGreen
     m_defaultValues["ema_short_period"] = 150;
     m_defaultValues["ema_long_period"] = 198;
     m_defaultValues["stoch_fastk"] = 10;
@@ -148,17 +149,17 @@ void ConfigManager::setupDefaultValues()
     m_defaultValues["use_ema_short_filter"] = false;
     m_defaultValues["use_ema_long_filter"] = false;
     m_defaultValues["use_stoch_filter"] = false;
-    
-    qDebug() << "Valeurs par défaut configurées";
+
+    qDebug() << "Default values set";
 }
 
 void ConfigManager::loadConfig()
 {
-    // S'assurer qu'il y a au moins un profil DEFAULT
+    // Ensure there is at least one DEFAULT profile
     if (!m_config->childGroups().contains("DEFAULT") && !m_config->contains("symbol")) {
-        qInfo() << "Création du profil DEFAULT avec les valeurs par défaut";
-        
-        // Sauvegarder les valeurs par défaut dans le profil DEFAULT
+        qInfo() << "Creating DEFAULT profile with default values";
+
+        // Save default values to DEFAULT profile
         m_config->beginGroup("DEFAULT");
         for (auto it = m_defaultValues.begin(); it != m_defaultValues.end(); ++it) {
             m_config->setValue(it.key(), it.value());
@@ -166,10 +167,10 @@ void ConfigManager::loadConfig()
         m_config->endGroup();
         m_config->sync();
     }
-    
-    qInfo() << "Configuration chargée, profils disponibles:" << listProfiles();
-    
-    // Émettre le signal pour mettre à jour l'UI
+
+    qInfo() << "Configuration loaded, available profiles:" << listProfiles();
+
+    // Emit signal to update UI
     emit profileListUpdated();
 }
 
@@ -177,7 +178,7 @@ void ConfigManager::saveConfig()
 {
     if (m_config) {
         m_config->sync();
-        qDebug() << "Configuration sauvegardée";
+        qDebug() << "Configuration saved";
     }
 }
 
@@ -188,15 +189,15 @@ QStringList ConfigManager::listProfiles() const
     
     if (m_config) {
         QStringList groups = m_config->childGroups();
-        qDebug() << "Groupes trouvés dans le fichier de configuration:" << groups;
+        qDebug() << "Groups found in config file:" << groups;
         for (const QString& group : groups) {
             if (group != "DEFAULT") {
                 profiles << group;
             }
         }
     }
-    
-    qDebug() << "Profils listés:" << profiles;
+
+    qDebug() << "Profiles listed:" << profiles;
     return profiles;
 }
 
@@ -231,8 +232,8 @@ QMap<QString, QVariant> ConfigManager::getProfile(const QString& profileName) co
         }
         m_config->endGroup();
     }
-    
-    // Compléter avec les valeurs par défaut si nécessaire
+
+    // Complete with default values if necessary
     for (auto it = m_defaultValues.begin(); it != m_defaultValues.end(); ++it) {
         if (!profileData.contains(it.key())) {
             profileData[it.key()] = it.value();
@@ -252,20 +253,20 @@ bool ConfigManager::saveProfile(const QString& profileName, const QMap<QString, 
         QString groupName = (profileName == "DEFAULT") ? "DEFAULT" : profileName;
         
         m_config->beginGroup(groupName);
-        
-        // Sauvegarder toutes les valeurs
+
+        // Save all values
         for (auto it = profileData.begin(); it != profileData.end(); ++it) {
             m_config->setValue(it.key(), it.value());
         }
         
         m_config->endGroup();
         m_config->sync();
-        
-        qInfo() << "Profil" << profileName << "sauvegardé avec succès";
+
+        qInfo() << "Profile" << profileName << "saved successfully";
         return true;
     }
     catch (const std::exception& e) {
-        qWarning() << "Erreur lors de la sauvegarde du profil:" << e.what();
+        qWarning() << "Error saving profile:" << e.what();
         return false;
     }
 }
@@ -278,11 +279,11 @@ bool ConfigManager::deleteProfile(const QString& profileName)
     
     if (m_config->childGroups().contains(profileName)) {
         m_config->beginGroup(profileName);
-        m_config->remove("");  // Supprime tout le groupe
+        m_config->remove("");  // Remove the entire group
         m_config->endGroup();
         m_config->sync();
-        
-        qInfo() << "Profil" << profileName << "supprimé";
+
+        qInfo() << "Profile" << profileName << "deleted";
         return true;
     }
     
@@ -294,34 +295,34 @@ QMap<QString, QVariant> ConfigManager::getProfileFromUI() const
     QMap<QString, QVariant> profileData;
     
     if (!m_mainWindow) {
-        qWarning() << "Pas de référence à l'application principale";
+        qWarning() << "No reference to main application";
         return profileData;
     }
-    
-    // Récupérer les données de configuration
+
+    // Retrieve configuration data
     profileData = m_mainWindow->getStrategyConfig();
-    
-    qDebug() << "Données récupérées de l'UI:" << profileData.size() << "éléments";
+
+    qDebug() << "Data retrieved from UI:" << profileData.size() << "elements";
     return profileData;
 }
 
 bool ConfigManager::applyProfileToUI(const QString& profileName)
 {
     if (!m_mainWindow) {
-        qWarning() << "MainWindow non définie";
+        qWarning() << "MainWindow not defined";
         return false;
     }
     
     QMap<QString, QVariant> profileData = getProfile(profileName);
     if (profileData.isEmpty()) {
-        qWarning() << "Profil" << profileName << "non trouvé ou vide";
+        qWarning() << "Profile" << profileName << "not found or empty";
         return false;
     }
-    
-    qDebug() << "Application du profil" << profileName << "à l'UI";
-    
+
+    qDebug() << "Applying profile" << profileName << "to UI";
+
     try {
-        // Appliquer les valeurs aux panels
+        // Apply values to panels
         if (m_mainWindow->getGeneralParamsPanel()) {
             m_mainWindow->getGeneralParamsPanel()->setValues(profileData);
         }
@@ -333,20 +334,18 @@ bool ConfigManager::applyProfileToUI(const QString& profileName)
         if (m_mainWindow->getStrategySpecificPanel()) {
             m_mainWindow->getStrategySpecificPanel()->setValues(profileData);
         }
-        
-        // SUPPRESSION de l'appel au ProfilePanel (maintenant géré par le menu)
-        
-        // Mettre à jour le profil actuel
+
+        // Update current profile
         m_currentProfile = profileName;
-        
-        // Émettre le signal de changement
+
+        // Emit profile changed signal
         emit profileChanged(profileName);
-        
-        qInfo() << "Profil" << profileName << "appliqué avec succès";
+
+        qInfo() << "Profile" << profileName << "applied successfully";
         return true;
         
     } catch (const std::exception& e) {
-        qCritical() << "Erreur lors de l'application du profil:" << e.what();
+        qCritical() << "Error applying profile:" << e.what();
         return false;
     }
 }
@@ -420,7 +419,7 @@ bool ConfigManager::deleteCurrentProfile(QWidget* parentWidget)
         bool success = deleteProfile(m_currentProfile);
         
         if (success) {
-            // Revenir au profil DEFAULT
+            // Revert to DEFAULT profile
             m_currentProfile = "DEFAULT";
             applyProfileToUI("DEFAULT");
             emit profileChanged("DEFAULT");
@@ -448,34 +447,232 @@ bool ConfigManager::importConfigFromFile(QWidget* parentWidget)
                                                    QDir::homePath(),
                                                    "Fichiers de configuration (*.ini)");
     
-    if (!fileName.isEmpty()) {
-        // TODO: Implémenter l'importation
-        QMessageBox::information(parentWidget, "Information", "Fonctionnalité d'import en cours de développement");
+    if (fileName.isEmpty()) {
+        return false; // User canceled
     }
     
-    return false;
+    if (!QFile::exists(fileName)) {
+        if (parentWidget) {
+            QMessageBox::warning(parentWidget, "Error", "The selected file does not exist.");
+        }
+        return false;
+    }
+    
+    try {
+        // Read import file
+        QSettings importSettings(fileName, QSettings::IniFormat);
+
+        // Check file status
+        if (importSettings.status() != QSettings::NoError) {
+            if (parentWidget) {
+                QMessageBox::critical(parentWidget, "Erreur d'importation", 
+                                    "Impossible de lire le fichier de configuration.");
+            }
+            return false;
+        }
+
+        // Read metadata if available
+        QString originalProfile = "Imported";
+        QString exportVersion = "Unknown";
+        
+        if (importSettings.childGroups().contains("ExportInfo")) {
+            importSettings.beginGroup("ExportInfo");
+            originalProfile = importSettings.value("exported_from_profile", "Imported").toString();
+            exportVersion = importSettings.value("export_format_version", "Unknown").toString();
+            QDateTime exportedAt = QDateTime::fromString(importSettings.value("exported_at").toString(), Qt::ISODate);
+            importSettings.endGroup();
+
+            qInfo() << "Import configuration - Original profile:" << originalProfile << "Version:" << exportVersion;
+        }
+
+        // Read configuration data
+        QMap<QString, QVariant> importedData;
+        
+        if (importSettings.childGroups().contains("ProfileData")) {
+            // Modern format with ProfileData group
+            importSettings.beginGroup("ProfileData");
+            QStringList keys = importSettings.allKeys();
+            for (const QString& key : keys) {
+                importedData[key] = importSettings.value(key);
+            }
+            importSettings.endGroup();
+        } else {
+            // Legacy format - read all keys directly
+            QStringList allKeys = importSettings.allKeys();
+            for (const QString& key : allKeys) {
+                importedData[key] = importSettings.value(key);
+            }
+        }
+        
+        if (importedData.isEmpty()) {
+            if (parentWidget) {
+                QMessageBox::warning(parentWidget, "Erreur d'importation", 
+                                    "Aucune donnée de configuration trouvée dans le fichier.");
+            }
+            return false;
+        }
+        
+        // Ask the name of the new profile or if to overwrite the current profile
+        QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
+                                                                   "Mode d'importation",
+                                                                   QString("Voulez-vous:\n\n"
+                                                                          "• Créer un nouveau profil avec ces données ?\n"
+                                                                          "• Ou remplacer la configuration actuelle du profil '%1' ?").arg(m_currentProfile),
+                                                                   QMessageBox::Save | QMessageBox::Apply | QMessageBox::Cancel,
+                                                                   QMessageBox::Save);
+        
+        if (choice == QMessageBox::Cancel) {
+            return false;
+        }
+        
+        QString targetProfile = m_currentProfile;
+        bool success = false;
+        
+        if (choice == QMessageBox::Save) {
+            // Create a new profile
+            bool ok;
+            QString newProfileName = QInputDialog::getText(parentWidget, 
+                                                          "Nom du nouveau profil", 
+                                                          QString("Nom du profil (original: %1):").arg(originalProfile),
+                                                          QLineEdit::Normal,
+                                                          originalProfile, &ok);
+            
+            if (ok && !newProfileName.isEmpty() && newProfileName != "DEFAULT") {
+                targetProfile = newProfileName;
+                success = saveProfile(targetProfile, importedData);
+                
+                if (success) {
+                    // Switch to the new profile
+                    m_currentProfile = targetProfile;
+                    applyProfileToUI(targetProfile);
+                    emit profileChanged(targetProfile);
+                    emit profileListUpdated();
+                }
+            }
+        } else if (choice == QMessageBox::Apply) {
+            // Replace the current profile
+            success = saveProfile(targetProfile, importedData);
+            
+            if (success) {
+                // Reload configuration into UI
+                applyProfileToUI(targetProfile);
+                emit profileChanged(targetProfile);
+            }
+        }
+        
+        if (success) {
+            if (parentWidget) {
+                QMessageBox::information(parentWidget, "Import réussi", 
+                                        QString("Configuration imported successfully into profile '%1'.").arg(targetProfile));
+            }
+            qInfo() << "Configuration imported successfully from:" << fileName << "to profile:" << targetProfile;
+        } else {
+            if (parentWidget) {
+                QMessageBox::warning(parentWidget, "Import Error", 
+                                    "Failed to import configuration.");
+            }
+        }
+        
+        return success;
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Error importing configuration:" << e.what();
+        if (parentWidget) {
+            QMessageBox::critical(parentWidget, "Erreur d'importation", 
+                                QString("Erreur lors de l'importation: %1").arg(e.what()));
+        }
+        return false;
+    }
 }
 
 bool ConfigManager::exportConfigToFile(QWidget* parentWidget, const QString& profileName)
 {
-    Q_UNUSED(profileName);
     
-    QString fileName = QFileDialog::getSaveFileName(parentWidget,
-                                                   "Exporter la configuration",
-                                                   QDir::homePath() + "/backtest_config_export.ini",
-                                                   "Fichiers de configuration (*.ini)");
-    
-    if (!fileName.isEmpty()) {
-        // TODO: Implémenter l'exportation
-        QMessageBox::information(parentWidget, "Information", "Fonctionnalité d'export en cours de développement");
+    QString targetProfile = profileName.isEmpty() ? m_currentProfile : profileName;
+
+    // Get data from the profile to export
+    QMap<QString, QVariant> profileData;
+    if (targetProfile == m_currentProfile) {
+        // If it's the current profile, retrieve values from the UI
+        profileData = getProfileFromUI();
+    } else {
+        // Otherwise, retrieve from the saved configuration
+        profileData = getProfile(targetProfile);
     }
     
-    return false;
+    if (profileData.isEmpty()) {
+        if (parentWidget) {
+            QMessageBox::warning(parentWidget, "Erreur", 
+                                QString("Impossible de récupérer les données du profil '%1'.").arg(targetProfile));
+        }
+        return false;
+    }
+
+    // Default file name with profile name and timestamp
+    QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
+    QString defaultFileName = QString("backtest_config_%1_%2.ini").arg(targetProfile).arg(timestamp);
+    
+    QString fileName = QFileDialog::getSaveFileName(parentWidget,
+                                                   QString("Exporter la configuration - Profil: %1").arg(targetProfile),
+                                                   QDir::homePath() + "/" + defaultFileName,
+                                                   "Fichiers de configuration (*.ini)");
+    
+    if (fileName.isEmpty()) {
+        return false; // User canceled
+    }
+    
+    try {
+        // Create a temporary QSettings object for export
+        QSettings exportSettings(fileName, QSettings::IniFormat);
+        
+        // Write export metadata
+        exportSettings.beginGroup("ExportInfo");
+        exportSettings.setValue("exported_at", QDateTime::currentDateTime().toString(Qt::ISODate));
+        exportSettings.setValue("exported_from_profile", targetProfile);
+        exportSettings.setValue("application_version", QCoreApplication::applicationVersion());
+        exportSettings.setValue("export_format_version", "1.0");
+        exportSettings.endGroup();
+
+        // Export profile data
+        exportSettings.beginGroup("ProfileData");
+        for (auto it = profileData.begin(); it != profileData.end(); ++it) {
+            exportSettings.setValue(it.key(), it.value());
+        }
+        exportSettings.endGroup();
+
+        // Ensure everything is written
+        exportSettings.sync();
+
+        // Check that the file was created successfully
+        if (exportSettings.status() != QSettings::NoError) {
+            if (parentWidget) {
+                QMessageBox::critical(parentWidget, "Erreur d'exportation", 
+                                    "Erreur lors de l'écriture du fichier de configuration.");
+            }
+            return false;
+        }
+        
+        if (parentWidget) {
+            QMessageBox::information(parentWidget, "Export réussi", 
+                                    QString("Configuration du profil '%1' exportée vers:\n%2").arg(targetProfile).arg(fileName));
+        }
+
+        qInfo() << "Configuration successfully exported to:" << fileName;
+        return true;
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Error exporting configuration:" << e.what();
+        if (parentWidget) {
+            QMessageBox::critical(parentWidget, "Erreur d'exportation", 
+                                QString("Erreur lors de l'exportation: %1").arg(e.what()));
+        }
+        return false;
+    }
 }
 
 void ConfigManager::updateProfileUI(const QString& selectedProfile)
 {
-    // Émettre les signaux pour que l'UI se mette à jour
+    // Emit signals to update the UI
     emit profileChanged(selectedProfile);
 }
 

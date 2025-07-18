@@ -37,18 +37,11 @@ Backtest::Backtest(std::shared_ptr<Data> data,
       _finalizeTrades(finalizeTrades) {
     
     // Validation des entrées
-    if (!data) {
-        throw std::invalid_argument("Data cannot be null");
-    }
-    if (!strategyFactory) {
-        throw std::invalid_argument("Strategy factory cannot be null");
-    }
-    if (cash <= 0) {
-        throw std::invalid_argument("Cash must be positive");
-    }
-    if (margin <= 0 || margin > 1) {
-        throw std::invalid_argument("Margin must be between 0 and 1");
-    }
+    if (!data) throw std::invalid_argument("Data cannot be null");
+    if (!strategyFactory) throw std::invalid_argument("Strategy factory cannot be null");
+    if (cash <= 0) throw std::invalid_argument("Cash must be positive");
+    if (margin <= 0 || margin > 1) throw std::invalid_argument("Margin must be between 0 and 1");
+    
     
     // Vérifier que les données OHLC ne contiennent pas de valeurs manquantes
     // Utilise maintenant la méthode at() de notre nouvelle interface

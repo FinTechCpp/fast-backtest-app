@@ -157,8 +157,10 @@ double Broker::adjustedPrice(double size, double price) const {
     if (price == 0.0) {
         price = lastPrice();
     }
-    // In long positions, the adjusted price is a fraction higher, and vice versa
-    return price * (1.0 + std::copysign(_spread, size));
+    // Apply spread in points: add spread for long positions, subtract for short positions
+    // The spread widens the bid-ask: longs buy at ask (price + spread), shorts sell at bid (price - spread)
+    // This simulates the real market where there's always a cost to enter/exit positions
+    return price + std::copysign(_spread, size);
 }
 
 double Broker::calculateCommission(double size, double price) const {
@@ -389,14 +391,14 @@ void Broker::processOrders() {
                 
                 // Calculate SL/TP prices using points if specified
                 if (order.slPoints() > 0.0)
-                    slPrice = price - order.slPoints() * (order.isLong() ? 1 : -1);
+                    slPrice = adjustedP - order.slPoints() * (order.isLong() ? 1 : -1);
 
                 if (order.tpPoints() > 0.0)
-                    tpPrice = price + order.tpPoints() * (order.isLong() ? 1 : -1);
+                    tpPrice = adjustedP + order.tpPoints() * (order.isLong() ? 1 : -1);
                 
-                // Ouvrir le trade
+                // Ouvrir le trade avec le prix ajusté incluant le spread
                 try {
-                    openTrade(price, needSize, slPrice, tpPrice, timeIndex, order.tag(), order);
+                    openTrade(adjustedP, needSize, slPrice, tpPrice, timeIndex, order.tag(), order);
                     
                     // MODIFICATION: Ne pas retraiter les ordres SL/TP dans la même barre
                     // Supprimer ou commenter ces lignes:
@@ -518,15 +520,20 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
         }
     }
     
+    // Apply spread to exit price - opposite direction to entry
+    // When closing a long position (selling), we get bid price (price - spread)
+    // When closing a short position (buying), we pay ask price (price + spread)
+    double adjustedExitPrice = price - std::copysign(_spread, trade->size());
+    
     // Set exit information and add to closed trades
-    trade->setExitPrice(price);
+    trade->setExitPrice(adjustedExitPrice);
     trade->setExitBar(barIndex);
     trade->setExitDate(_data->currentDate());
 
     _closedTrades.push_back(trade);
     
     // Apply commission for trade exit and update cash
-    double commission = calculateCommission(trade->size(), price);
+    double commission = calculateCommission(trade->size(), adjustedExitPrice);
     _cash += trade->pl() - commission;
     
     // Save commissions on the Trade instance for stats

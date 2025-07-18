@@ -59,20 +59,6 @@ Backtest::Backtest(std::shared_ptr<Data> data,
             throw std::invalid_argument("OHLC data contains NaN values. Please clean the data first.");
         }
     }
-    
-    // Vérifier si certains prix sont supérieurs au capital initial
-    bool largePrices = false;
-    for (size_t i = 0; i < data->size(); ++i) {
-        if (data->at(i).close > cash) {
-            largePrices = true;
-            break;
-        }
-    }
-    
-    if (largePrices) {
-        std::cerr << "WARNING: Some prices are larger than initial cash value. "
-                  << "Note that fractional trading is not supported.\n";
-    }
 }
 
 Stats Backtest::run() {

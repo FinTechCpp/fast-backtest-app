@@ -177,11 +177,16 @@ void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString&
         );
         m_progressDialog->setWindowModality(Qt::WindowModal);
         m_progressDialog->setMinimumDuration(0);
+        m_progressDialog->setAutoClose(false);
+        m_progressDialog->setAutoReset(false);
         m_progressDialog->show();
         
-        // Connect cancel signal
+        // Connect cancel signal properly to abort the download
         connect(m_progressDialog, &QProgressDialog::canceled, this, [this]() {
             qInfo() << "Download canceled by user";
+            if (m_updateChecker) {
+                m_updateChecker->abortDownload();
+            }
             if (m_progressDialog) {
                 m_progressDialog->close();
                 delete m_progressDialog;
@@ -254,10 +259,15 @@ void UpdateMenuManager::onUpdateCheckFailed(const QString& error)
 
 void UpdateMenuManager::onDownloadProgress(int percentage)
 {
-    if (m_progressDialog) {
+    qDebug() << "UpdateMenuManager received download progress:" << percentage << "%";
+    
+    if (m_progressDialog && !m_progressDialog->wasCanceled()) {
         m_progressDialog->setLabelText(tr("Téléchargement en cours... %1%").arg(percentage));
         m_progressDialog->setValue(percentage);
         m_progressDialog->setMaximum(100);
+        qDebug() << "Progress dialog updated to" << percentage << "%";
+    } else {
+        qDebug() << "Progress dialog not available or canceled";
     }
 }
 

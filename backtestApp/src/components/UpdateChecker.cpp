@@ -28,8 +28,6 @@ const QUrl UpdateChecker::GITHUB_PAGES_RELEASES_URL = QUrl(QStringLiteral("https
 
 const QStringList UpdateChecker::USER_PRESERVE_DIRS = {
     "marketData",
-    "logs", 
-    "Notebooks",
     "images"
 };
 
@@ -63,11 +61,21 @@ QString UpdateChecker::currentVersion()
     return QString(APP_VERSION);
 }
 
+void UpdateChecker::abortDownload()
+{
+    if (m_currentReply) {
+        qInfo() << "Aborting download...";
+        m_currentReply->abort();
+        m_currentReply->deleteLater();
+        m_currentReply = nullptr;
+    }
+}
+
 void UpdateChecker::checkForUpdates()
 {
-    qInfo() << "Vérification des mises à jour...";
-    qInfo() << "Version actuelle:" << currentVersion();
-    
+    qInfo() << "Checking for updates...";
+    qInfo() << "Current version:" << currentVersion();
+
     // Cancel any ongoing request
     if (m_currentReply) {
         m_currentReply->abort();
@@ -115,7 +123,7 @@ void UpdateChecker::onUpdateCheckFinished()
     QByteArray responseData = m_currentReply->readAll();
     QString html = QString::fromUtf8(responseData);
 
-    qDebug() << "RResponse received, size:" << responseData.size() << "bytes";
+    qDebug() << "Response received, size:" << responseData.size() << "bytes";
 
     // Extract version and download URL from HTML
     QString latestVersion = extractVersionFromHtml(html);
@@ -167,8 +175,8 @@ QString UpdateChecker::extractVersionFromHtml(const QString& html)
 
 QString UpdateChecker::extractDownloadUrlFromHtml(const QString& html)
 {
-    // Look for download URL pattern in the HTML
-    QRegularExpression urlRegex("<a href=\"(https://github\\.com/FinTechCpp/fast-backtest-app/releases/download/[^\"]+\\.zip)\" class=\"button\">");
+    // Look for download URL pattern in the HTML (matches both public and private repo URLs)
+    QRegularExpression urlRegex("<a href=\"(https://github\\.com/FinTechCpp/fast-backtest-app[^\"]*\\.zip)\" class=\"button\">");
     QRegularExpressionMatch match = urlRegex.match(html);
     
     if (match.hasMatch()) {
@@ -233,6 +241,18 @@ void UpdateChecker::downloadAndInstallUpdate(const QString& downloadUrl)
     request.setHeader(QNetworkRequest::UserAgentHeader, 
                      QString("FastBacktestApp/%1").arg(currentVersion()));
     
+    // Add some additional headers to ensure proper download
+    request.setRawHeader("Accept", "application/octet-stream, */*");
+    request.setRawHeader("Connection", "keep-alive");
+    
+    // Set a longer timeout for large file downloads
+    request.setTransferTimeout(60000); // 1 minute
+
+    // Enable automatic redirect following
+    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
+    
+    qDebug() << "Making network request to:" << downloadUrl;
+    
     // Make the request
     m_currentReply = m_networkManager->get(request);
     
@@ -241,32 +261,44 @@ void UpdateChecker::downloadAndInstallUpdate(const QString& downloadUrl)
             this, &UpdateChecker::onDownloadFinished);
     connect(m_currentReply, &QNetworkReply::downloadProgress,
             this, &UpdateChecker::onDownloadProgress);
+    connect(m_currentReply, &QNetworkReply::errorOccurred,
+            this, [this](QNetworkReply::NetworkError error) {
+                qWarning() << "Network error during download:" << error << m_currentReply->errorString();
+            });
 
     qInfo() << "Download started...";
 }
 
 void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 {
+    qDebug() << "Download progress called - Received:" << bytesReceived << "Total:" << bytesTotal;
+    
     if (bytesTotal <= 0) {
+        qDebug() << "bytesTotal <= 0, returning early";
         return;
     }
     
     int percentage = static_cast<int>((bytesReceived * 100) / bytesTotal);
+    qDebug() << "Calculated percentage:" << percentage;
+    
     emit downloadProgress(percentage);
     
     if (percentage % 10 == 0) { // Log every 10%
-        qDebug() << "Download progress:" << percentage << "%";
+        qInfo() << "Download progress:" << percentage << "%";
     }
 }
 
 void UpdateChecker::onDownloadFinished()
 {
+    qDebug() << "onDownloadFinished() called";
+    
     if (!m_currentReply) {
         qWarning() << "Null reply in onDownloadFinished";
         return;
     }
     
     QNetworkReply::NetworkError error = m_currentReply->error();
+    qDebug() << "Download finished with error code:" << error;
     
     if (error != QNetworkReply::NoError) {
         QString errorString = m_currentReply->errorString();

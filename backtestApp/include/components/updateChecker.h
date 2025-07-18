@@ -27,6 +27,7 @@ public:
     // Public methods
     void checkForUpdates();
     void downloadAndInstallUpdate(const QString& downloadUrl);
+    void abortDownload();
 
 signals:
     void updateAvailable(const QString& version, const QString& downloadUrl);

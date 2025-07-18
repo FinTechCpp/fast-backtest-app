@@ -208,6 +208,41 @@ jobs:
         files: ${{ env.ARCHIVE_NAME }}
         token: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Create Public Release
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v2
+      with:
+        repository: FinTechCpp/fast-backtest-app-releases
+        tag_name: v${{ env.VERSION }}
+        name: fast-backtest-app v${{ env.VERSION }}
+        body: |
+          **New release v${{ env.VERSION }}**
+
+          **Build Information:**
+          - Version: ${{ env.VERSION }}
+          - Checksum SHA256: `${{ env.CHECKSUM }}`
+          - Size: ${{ env.DOWNLOAD_SIZE }} bytes
+          - Commit: ${{ env.SHORT_SHA }}
+          - Qt Version: ${{ env.QT_VERSION }}
+          - Build Type: ${{ env.BUILD_TYPE }}
+          - Date: ${{ github.event.head_commit.timestamp }}
+
+          **Contents:**
+          - Windows 64-bit executable (`backtestapp.exe`)
+          - All necessary Qt DLLs
+          - ChartDirector DLL
+          - Data files (if present)
+
+          **Installation:**
+          1. Download the ZIP file
+          2. Extract it to a folder of your choice
+          3. Run `backtestapp.exe`
+
+        draft: false
+        prerelease: false
+        files: ${{ env.ARCHIVE_NAME }}
+        token: ${{ secrets.RELEASE_REPO_PAT }}
+
     - name: Checkout releases repository
       if: github.ref == 'refs/heads/main'
       uses: actions/checkout@v4
@@ -229,7 +264,7 @@ jobs:
 
         # Update the stable version number and download link
         $newVersion = "v$version"
-        $downloadUrl = "https://github.com/FinTechCpp/fast-backtest-app/releases/download/v$version/$archiveName"
+        $downloadUrl = "https://github.com/FinTechCpp/fast-backtest-app-releases/releases/download/v$version/$archiveName"
         
         # Update version tag
         $content = $content -replace '(<span class="version-tag">v)[\d\.]+(<\/span>)', "`${1}$version`$2"

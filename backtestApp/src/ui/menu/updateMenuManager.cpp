@@ -9,7 +9,7 @@
 #include <QAbstractButton>
 #include <QTimer>
 
-static const QUrl GITHUB_PAGES_RELEASES_URL = QUrl(QStringLiteral("https://fintechcpp.github.io/fast-backtest-app-releases/#download"));
+static const QUrl GITHUB_PAGES_RELEASES_URL = QUrl(QStringLiteral("https://fintechcpp.github.io/fast-backtest-app-releases/"));
 
 UpdateMenuManager::UpdateMenuManager(QObject* parent)
     : QObject(parent),
@@ -197,8 +197,8 @@ void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString&
         // Download and install with the new system
         m_updateChecker->downloadAndInstallUpdate(m_downloadUrl);
     } else if (clickedBtn == static_cast<QAbstractButton*>(viewButton)) {
-        // Open the release page on GitHub
-        QString releaseUrl = GITHUB_PAGES_RELEASES_URL.toString();
+        // Open the release page on GitHub Pages (with download section)
+        QString releaseUrl = GITHUB_PAGES_RELEASES_URL.toString() + "#download";
 
         #ifdef Q_OS_WIN
         QProcess::startDetached("cmd", {"/c", "start", releaseUrl});

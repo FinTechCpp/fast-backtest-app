@@ -124,6 +124,7 @@ void UpdateChecker::onUpdateCheckFinished()
     QString html = QString::fromUtf8(responseData);
 
     qDebug() << "Response received, size:" << responseData.size() << "bytes";
+    qDebug() << "HTML content preview:" << html.left(500) << "...";
 
     // Extract version and download URL from HTML
     QString latestVersion = extractVersionFromHtml(html);
@@ -169,23 +170,75 @@ QString UpdateChecker::extractVersionFromHtml(const QString& html)
         return version;
     }
 
+    // Try alternative patterns if the first one doesn't work
+    QRegularExpression altVersionRegex("Version Stable v([\\d\\.]+)");
+    QRegularExpressionMatch altMatch = altVersionRegex.match(html);
+    
+    if (altMatch.hasMatch()) {
+        QString version = altMatch.captured(1);
+        qDebug() << "Version extracted (alternative pattern):" << version;
+        return version;
+    }
+
     qWarning() << "Version not found in HTML";
+    qDebug() << "Searching for version patterns in HTML...";
+    
+    // Debug: show any version-like patterns found
+    QRegularExpression debugRegex("v?([\\d]+\\.[\\d]+\\.[\\d]+\\.[\\d]+)");
+    QRegularExpressionMatchIterator it = debugRegex.globalMatch(html);
+    while (it.hasNext()) {
+        QRegularExpressionMatch debugMatch = it.next();
+        qDebug() << "Found version-like pattern:" << debugMatch.captured(0);
+    }
+    
     return QString();
 }
 
 QString UpdateChecker::extractDownloadUrlFromHtml(const QString& html)
 {
-    // Look for download URL pattern in the HTML (matches both public and private repo URLs)
-    QRegularExpression urlRegex("<a href=\"(https://github\\.com/FinTechCpp/fast-backtest-app[^\"]*\\.zip)\" class=\"button\">");
-    QRegularExpressionMatch match = urlRegex.match(html);
+    // First, try to find download URL from GitHub Pages (preferred)
+    QRegularExpression pagesUrlRegex("<a href=\"(https://fintechcpp\\.github\\.io/fast-backtest-app-releases/downloads/[^\"]*\\.zip)\" class=\"button\">");
+    QRegularExpressionMatch pagesMatch = pagesUrlRegex.match(html);
     
-    if (match.hasMatch()) {
-        QString url = match.captured(1);
-        qDebug() << "Download URL extracted:" << url;
+    if (pagesMatch.hasMatch()) {
+        QString url = pagesMatch.captured(1);
+        qDebug() << "Download URL extracted from GitHub Pages:" << url;
         return url;
     }
 
+    // Try to find ANY download URL pattern and convert it to GitHub Pages
+    QRegularExpression anyUrlRegex("<a href=\"(https://github\\.com/[^/]+/[^/]+/releases/download/[^\"]*([^/]+\\.zip))\" class=\"button\">");
+    QRegularExpressionMatch anyMatch = anyUrlRegex.match(html);
+    
+    if (anyMatch.hasMatch()) {
+        QString originalUrl = anyMatch.captured(1);
+        QString filename = anyMatch.captured(2); // Just the filename
+        
+        // Convert any GitHub release URL to GitHub Pages URL
+        QString pagesUrl = QString("https://fintechcpp.github.io/fast-backtest-app-releases/downloads/%1").arg(filename);
+        
+        qDebug() << "Found GitHub release URL:" << originalUrl;
+        qDebug() << "Converting to GitHub Pages URL:" << pagesUrl;
+        return pagesUrl;
+    }
+
+    // Fallback: look for any ZIP file mentioned in the HTML and construct the GitHub Pages URL
+    QRegularExpression filenameRegex("(fast-backtest-app-windows-v[\\d\\.]+\\.zip)");
+    QRegularExpressionMatch filenameMatch = filenameRegex.match(html);
+    
+    if (filenameMatch.hasMatch()) {
+        QString filename = filenameMatch.captured(1);
+        QString pagesUrl = QString("https://fintechcpp.github.io/fast-backtest-app-releases/downloads/%1").arg(filename);
+        
+        qDebug() << "Found filename in HTML:" << filename;
+        qDebug() << "Constructing GitHub Pages URL:" << pagesUrl;
+        return pagesUrl;
+    }
+
     qWarning() << "Download URL not found in HTML";
+    qDebug() << "HTML content for debugging:";
+    qDebug() << html;
+    
     return QString();
 }
 

@@ -208,41 +208,6 @@ jobs:
         files: ${{ env.ARCHIVE_NAME }}
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Create Public Release
-      if: github.ref == 'refs/heads/main'
-      uses: softprops/action-gh-release@v2
-      with:
-        repository: FinTechCpp/fast-backtest-app-releases
-        tag_name: v${{ env.VERSION }}
-        name: fast-backtest-app v${{ env.VERSION }}
-        body: |
-          **New release v${{ env.VERSION }}**
-
-          **Build Information:**
-          - Version: ${{ env.VERSION }}
-          - Checksum SHA256: `${{ env.CHECKSUM }}`
-          - Size: ${{ env.DOWNLOAD_SIZE }} bytes
-          - Commit: ${{ env.SHORT_SHA }}
-          - Qt Version: ${{ env.QT_VERSION }}
-          - Build Type: ${{ env.BUILD_TYPE }}
-          - Date: ${{ github.event.head_commit.timestamp }}
-
-          **Contents:**
-          - Windows 64-bit executable (`backtestapp.exe`)
-          - All necessary Qt DLLs
-          - ChartDirector DLL
-          - Data files (if present)
-
-          **Installation:**
-          1. Download the ZIP file
-          2. Extract it to a folder of your choice
-          3. Run `backtestapp.exe`
-
-        draft: false
-        prerelease: false
-        files: ${{ env.ARCHIVE_NAME }}
-        token: ${{ secrets.RELEASE_REPO_PAT }}
-
     - name: Checkout releases repository
       if: github.ref == 'refs/heads/main'
       uses: actions/checkout@v4
@@ -250,6 +215,24 @@ jobs:
         repository: FinTechCpp/fast-backtest-app-releases
         path: releases-repo
         token: ${{ secrets.RELEASE_REPO_PAT }}  # You need to create this secret in your repository
+
+    - name: Upload executable ZIP to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+        ARCHIVE_NAME: ${{ env.ARCHIVE_NAME }}
+      run: |
+        # Create downloads directory if it doesn't exist
+        New-Item -ItemType Directory -Path "releases-repo/downloads" -Force
+        
+        # Copy the executable ZIP to the downloads directory
+        Copy-Item $env:ARCHIVE_NAME "releases-repo/downloads/$env:ARCHIVE_NAME" -Force
+        
+        # Also create a "latest" version for easy access
+        Copy-Item $env:ARCHIVE_NAME "releases-repo/downloads/fast-backtest-app-windows-latest.zip" -Force
+        
+        echo "Uploaded executable ZIP to GitHub Pages"
+        echo "File size: $((Get-Item $env:ARCHIVE_NAME).Length) bytes"
 
     - name: Update download URL in website
       if: github.ref == 'refs/heads/main'
@@ -262,14 +245,14 @@ jobs:
         $version = $env:VERSION
         $archiveName = $env:ARCHIVE_NAME
 
-        # Update the stable version number and download link
+        # Update the stable version number and download link to GitHub Pages
         $newVersion = "v$version"
-        $downloadUrl = "https://github.com/FinTechCpp/fast-backtest-app-releases/releases/download/v$version/$archiveName"
+        $downloadUrl = "https://fintechcpp.github.io/fast-backtest-app-releases/downloads/$archiveName"
         
         # Update version tag
         $content = $content -replace '(<span class="version-tag">v)[\d\.]+(<\/span>)', "`${1}$version`$2"
         
-        # Update download link
+        # Update download link to point to GitHub Pages
         $content = $content -replace '(<a href=")[^"]+(" class="button">Télécharger pour Windows<\/a>)', "`${1}$downloadUrl`$2"
         
         $content | Set-Content $htmlFile -Force
@@ -283,8 +266,8 @@ jobs:
         cd releases-repo
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        git add index.html
-        git commit -m "Update download URL for version v$env:VERSION"
+        git add .
+        git commit -m "Update download URL and upload executable for version v$env:VERSION"
         git push
 
     - name: Build Summary
@@ -295,7 +278,7 @@ jobs:
       run: |
         echo "## ✅ Build Successful" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**Release Created:** [v$env:VERSION](https://github.com/FinTechCpp/fast-backtest-app/releases/tag/v$env:VERSION)" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Executable uploaded to GitHub Pages:** [Download v$env:VERSION](https://fintechcpp.github.io/fast-backtest-app-releases/downloads/$env:ARCHIVE_NAME)" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**Build Details:**" >> $env:GITHUB_STEP_SUMMARY
         echo "- Version: $env:VERSION" >> $env:GITHUB_STEP_SUMMARY
@@ -303,3 +286,4 @@ jobs:
         echo "- Qt Version: ${{ env.QT_VERSION }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- Build Type: ${{ env.BUILD_TYPE }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- Archive: $env:ARCHIVE_NAME" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Public Download: https://fintechcpp.github.io/fast-backtest-app-releases/#download" >> $env:GITHUB_STEP_SUMMARY

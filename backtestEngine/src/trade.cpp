@@ -45,7 +45,7 @@ void Trade::close(double portion) {
     Order order = _broker->newOrder(closeSize, 0.0, 0.0, 0.0, 0.0, _tag, 0.0, 0.0, shared_from_this());
 }
 
-bool Trade::setBreakEven(double offset) {
+bool Trade::setBreakEven(double offset, double triggerPrice) {
     // Ne rien faire si déjà en break-even
     if (_isBreakEven)
         return true;
@@ -56,6 +56,11 @@ bool Trade::setBreakEven(double offset) {
     } else {
         // Aucun stop loss défini, impossible de passer en break-even
         return false;
+    }
+
+    // Enregistrer le prix de déclenchement du break-even
+    if (triggerPrice > 0) {
+        _breakEvenTriggerPrice = triggerPrice;
     }
     
     // Calculer le nouveau prix du SL (prix d'entrée avec offset éventuel)
@@ -122,6 +127,11 @@ void Trade::sl(double price) {
     // if ((isLong() && price >= _entryPrice) || (isShort() && price <= _entryPrice)) {
     //     throw std::invalid_argument("SL price must be below entry for long trades and above entry for short trades");
     // }
+
+    // Sauvegarder le prix initial du SL si c'est le premier placement
+    if (!_slOrder && _initialSlPrice == 0.0) {
+        _initialSlPrice = price;
+    }
     
     // Annuler l'ordre existant s'il y en a un
     if (_slOrder) {
@@ -195,6 +205,11 @@ void Trade::setCommissions(double commissions) {
 }
 
 void Trade::setSlOrder(Order order) {
+    // Si c'est le premier SL, enregistrer le prix initial
+    if (!_slOrder && _initialSlPrice == 0.0) {
+        _initialSlPrice = order.sl();
+    }
+
     _slOrder = std::make_shared<Order>(order);
 }
 

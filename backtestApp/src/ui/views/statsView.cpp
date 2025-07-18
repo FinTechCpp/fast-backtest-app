@@ -122,11 +122,9 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         
         // Stop Loss (si disponible)
         QString slText = "-";
-        if (trade->isBreakEven() && trade->initialSlPrice() > 0) {
-            // Pour les trades en break-even, afficher le SL initial
+        if (trade->initialSlPrice() > 0) {
             slText = formatNumber(trade->initialSlPrice(), 2);
         } else if (trade->sl() > 0) {
-            // Pour les autres trades, afficher le SL actuel
             slText = formatNumber(trade->sl(), 2);
         }
         setItem(row, 10, new QStandardItem(slText));

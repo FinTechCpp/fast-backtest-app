@@ -42,6 +42,14 @@ struct TPSLSegment {
     int color;            // Couleur basée sur le résultat du trade
 };
 
+// il faut merge avec la structure TPSLSegment
+struct TriggerPriceSegment {
+    double startIndex;
+    double endIndex;
+    double price;
+    int color;
+};
+
 
 class ChartRenderer {
 public:
@@ -96,6 +104,9 @@ private:
                          const std::vector<std::shared_ptr<be::Trade>>& trades,
                          const ChartDataManager& dataManager,
                          const ChartDataManager::AggregationInfo& aggregationInfo);
+                         
+    void addTriggerPriceSegments(XYChart* chart, const std::vector<TriggerPriceSegment>& segments);
+
     
     // Méthodes pour l'ajout d'indicateurs
     void addRSIToChart(FinanceChart* chart, 

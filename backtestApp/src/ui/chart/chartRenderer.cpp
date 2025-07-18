@@ -517,7 +517,7 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
                         });
                     }
                     
-                    double slValue = trade->sl();
+                    double slValue = (trade->initialSlPrice() > 0) ? trade->initialSlPrice() : trade->sl();
                     if (slValue > 0) {
                         tpslSegments.push_back({
                             relativeIndex, relativeExitIndex,
@@ -603,6 +603,25 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     if (!exitShortNeutralArrows.empty())
         addMarkers(mainChart, exitShortNeutralArrows, "Short Exit Neutral", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_NEUTRAL, 0, 20); // Flèche noire vers le haut sous la bougie
 }
+
+// void ChartRenderer::addTriggerPriceSegments(XYChart* chart, const std::vector<TriggerPriceSegment>& segments) {
+//     for (const auto& segment : segments) {
+//         // Créer une ligne horizontale pour le prix de trigger
+//         LineLayer* layer = chart->addLineLayer();
+//         layer->setLineWidth(1);
+        
+//         // Définir les points de la ligne
+//         DoubleArray xData{segment.startIndex, segment.endIndex};
+//         DoubleArray yData{segment.price, segment.price};
+//         layer->setXData(xData);
+//         layer->setYData(yData);
+        
+//         // Style en pointillés
+//         layer->setLineColor(segment.color);
+//         layer->setLineWidth(1);
+//         layer->setLineStyle(Chart::DashLine);
+//     }
+// }
 
 void ChartRenderer::addRSIToChart(FinanceChart* chart, 
                                 const RSIInstance& rsi, 

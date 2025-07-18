@@ -76,7 +76,7 @@ public:
      * @param offset Décalage optionnel par rapport au prix d'entrée
      * @return true si le passage en break-even a réussi
      */
-    bool setBreakEven(double offset = 0.0);
+    bool setBreakEven(double offset = 0.0, double triggerPrice = 0.0);
     
     // Getters
     double size() const { return _size; } ///< Taille de la position (+ achat, - vente)
@@ -93,6 +93,12 @@ public:
      * @return true si le trade est en break-even
      */
     bool isBreakEven() const { return _isBreakEven; }
+
+    /**
+     * @brief Obtient le prix de déclenchement du break-even
+     * @return Prix qui a déclenché le passage en break-even
+     */
+    double breakEvenTriggerPrice() const { return _breakEvenTriggerPrice; }
     
     /**
      * @brief Obtient le prix du Stop Loss initial
@@ -207,9 +213,10 @@ private:
     Date _exitDate;                      ///< Date de sortie
     std::string _tag;                    ///< Étiquette descriptive
     double _commissions;                 ///< Commissions totales payées
-    bool _isBreakEven = false;          ///< Indique si le trade est en mode break-even
+    bool _isBreakEven = false;           ///< Indique si le trade est en mode break-even
     double _initialSlPrice = 0.0;        ///< Prix du SL initial (avant passage en break-even)
-    
+    double _breakEvenTriggerPrice = 0.0; ///< Prix qui a déclenché le passage en break-even
+
     std::shared_ptr<Order> _slOrder;     ///< Ordre de Stop Loss
     std::shared_ptr<Order> _tpOrder;     ///< Ordre de Take Profit
     

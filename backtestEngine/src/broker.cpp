@@ -157,10 +157,12 @@ double Broker::adjustedPrice(double size, double price) const {
     if (price == 0.0) {
         price = lastPrice();
     }
-    // Apply spread in points: add spread for long positions, subtract for short positions
+    // Apply spread as per-thousand of price: spread_points = price * spread_per_thousand / 1000
+    // Add spread for long positions, subtract for short positions
     // The spread widens the bid-ask: longs buy at ask (price + spread), shorts sell at bid (price - spread)
     // This simulates the real market where there's always a cost to enter/exit positions
-    return price + std::copysign(_spread, size);
+    double spreadInPoints = price * _spread / 1000.0;
+    return price + std::copysign(spreadInPoints, size);
 }
 
 double Broker::calculateCommission(double size, double price) const {
@@ -523,7 +525,9 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     // Apply spread to exit price - opposite direction to entry
     // When closing a long position (selling), we get bid price (price - spread)
     // When closing a short position (buying), we pay ask price (price + spread)
-    double adjustedExitPrice = price - std::copysign(_spread, trade->size());
+    // Calculate spread as per-thousand of price
+    double spreadInPoints = price * _spread / 1000.0;
+    double adjustedExitPrice = price - std::copysign(spreadInPoints, trade->size());
     
     // Set exit information and add to closed trades
     trade->setExitPrice(adjustedExitPrice);

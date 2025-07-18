@@ -228,7 +228,7 @@ void BacktestWorker::run()
     QString interval = m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString();
     QString period = m_mainWindow->getGeneralParamsPanel()->getValues().value("period", "10d").toString();
     double cash = m_mainWindow->getGeneralParamsPanel()->getValues().value("cash", 100000.0).toDouble();
-    double spread = m_mainWindow->getGeneralParamsPanel()->getValues().value("spread", 0.00010).toDouble();
+    double spread = m_mainWindow->getGeneralParamsPanel()->getValues().value("spread", 0.100).toDouble();
     double commission = m_mainWindow->getGeneralParamsPanel()->getValues().value("commission", 0.0).toDouble();
     double leverage_limit = m_mainWindow->getGeneralParamsPanel()->getValues().value("leverage_limit", 20.0).toDouble();
     bool tradeOnClose = m_mainWindow->getGeneralParamsPanel()->getValues().value("trade_on_close", false).toBool();

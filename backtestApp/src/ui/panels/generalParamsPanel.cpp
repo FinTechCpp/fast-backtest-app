@@ -59,13 +59,13 @@ void GeneralParamsPanel::initialize()
     dateEdit->setCalendarPopup(true);
     paramsLayout->addRow(new QLabel("Date de fin:", this), m_widgets["end_date"]);
     
-    // Spread (en points)
+    // Spread (en pour mille)
     m_widgets["spread"] = new QDoubleSpinBox(this);
-    static_cast<QDoubleSpinBox*>(m_widgets["spread"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["spread"])->setRange(0, 100);
-    static_cast<QDoubleSpinBox*>(m_widgets["spread"])->setSingleStep(0.1); 
-    static_cast<QDoubleSpinBox*>(m_widgets["spread"])->setValue(1);
-    paramsLayout->addRow(new QLabel("Spread (points):", this), m_widgets["spread"]);
+    static_cast<QDoubleSpinBox*>(m_widgets["spread"])->setDecimals(3);
+    static_cast<QDoubleSpinBox*>(m_widgets["spread"])->setRange(0, 10);
+    static_cast<QDoubleSpinBox*>(m_widgets["spread"])->setSingleStep(0.001); 
+    static_cast<QDoubleSpinBox*>(m_widgets["spread"])->setValue(0.100);
+    paramsLayout->addRow(new QLabel("Spread (‰):", this), m_widgets["spread"]);
     
     // Cash initial
     m_widgets["cash"] = new QDoubleSpinBox(this);

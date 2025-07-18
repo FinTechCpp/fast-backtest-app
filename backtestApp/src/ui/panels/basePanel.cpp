@@ -222,9 +222,6 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     if (values.contains("cash"))
         config.cash = values["cash"].toDouble();
     
-    if (values.contains("max_position_percentage"))
-        config.max_position_percentage = values["max_position_percentage"].toDouble();
-    
     if (values.contains("leverage_limit"))
         config.leverage_limit = values["leverage_limit"].toDouble();
     

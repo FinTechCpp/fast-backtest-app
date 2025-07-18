@@ -1,5 +1,6 @@
 #include "components/strategyRegistry.h"
 #include "ui/app.h"
+#include "ui/panels/generalParamsPanel.h"
 #include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
 #include "ui/panels/strategySpecificPanels/buyHeikinGreenPanel.h"
 #include "ui/panels/strategySpecificPanels/sellHeikinRedPanel.h"
@@ -16,7 +17,9 @@ void registerAllStrategies() {
         "Buy Heikin Ashi (Green)",
         [](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, App* app) {
             // Récupérer les configurations typées directement depuis les panels
+            QMap<QString, QVariant> generalParams = app->getGeneralParamsPanel()->getValues();
             StrategyBaseConfig baseConfig = app->getStrategyBasePanel()->getConfig();
+            baseConfig.cash = generalParams.value("cash", 0.0).toDouble();
             BuyHeikinGreenConfig specificConfig = 
                 dynamic_cast<BuyHeikinGreenPanel*>(app->getStrategySpecificPanel())->getConfig();
 

@@ -12,6 +12,7 @@
 #include <QDir>
 #include <QUrl>
 #include <QTemporaryDir>
+#include <QTimer>
 
 class UpdateChecker : public QObject
 {
@@ -41,6 +42,7 @@ private slots:
     void onUpdateCheckFinished();
     void onDownloadFinished();
     void onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+    void onTimeoutOccurred();
 
 private:
     // Private methods
@@ -60,6 +62,7 @@ private:
     QString m_downloadUrl;
     QString m_downloadPath;
     QTemporaryDir* m_tempDir;
+    QTimer* m_timeoutTimer;
     
     // Constants
     static const QUrl GITHUB_PAGES_RELEASES_URL;

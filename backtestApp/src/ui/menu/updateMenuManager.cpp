@@ -181,16 +181,59 @@ void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString&
         m_progressDialog->setAutoReset(false);
         m_progressDialog->show();
         
+        qDebug() << "Progress dialog created with settings:";
+        qDebug() << "  - minimum:" << m_progressDialog->minimum();
+        qDebug() << "  - maximum:" << m_progressDialog->maximum();
+        qDebug() << "  - value:" << m_progressDialog->value();
+        qDebug() << "  - autoClose:" << m_progressDialog->autoClose();
+        qDebug() << "  - autoReset:" << m_progressDialog->autoReset();
+        qDebug() << "  - minimumDuration:" << m_progressDialog->minimumDuration();
+        qDebug() << "  - wasCanceled:" << m_progressDialog->wasCanceled();
+        
         // Connect cancel signal properly to abort the download
         connect(m_progressDialog, &QProgressDialog::canceled, this, [this]() {
             qInfo() << "Download canceled by user";
+            qDebug() << "Progress dialog canceled signal received";
             if (m_updateChecker) {
+                qDebug() << "Calling abortDownload() due to user cancellation";
                 m_updateChecker->abortDownload();
             }
             if (m_progressDialog) {
                 m_progressDialog->close();
                 delete m_progressDialog;
                 m_progressDialog = nullptr;
+            }
+        });
+        
+        // Add logging to track when the dialog is shown/hidden
+        connect(m_progressDialog, &QProgressDialog::finished, this, [this]() {
+            qDebug() << "Progress dialog finished signal received";
+        });
+        
+        // Debug: Check if dialog is being automatically canceled
+        QTimer::singleShot(1000, this, [this]() {
+            if (m_progressDialog) {
+                qDebug() << "Progress dialog state after 1 second:";
+                qDebug() << "  - was canceled:" << m_progressDialog->wasCanceled();
+                qDebug() << "  - is visible:" << m_progressDialog->isVisible();
+                qDebug() << "  - value:" << m_progressDialog->value();
+                qDebug() << "  - minimum:" << m_progressDialog->minimum();
+                qDebug() << "  - maximum:" << m_progressDialog->maximum();
+            }
+        });
+        
+        // Check immediately after creation
+        QTimer::singleShot(100, this, [this]() {
+            if (m_progressDialog) {
+                qDebug() << "Progress dialog state after 100ms:";
+                qDebug() << "  - was canceled:" << m_progressDialog->wasCanceled();
+                qDebug() << "  - is visible:" << m_progressDialog->isVisible();
+                qDebug() << "  - value:" << m_progressDialog->value();
+                
+                if (m_progressDialog->wasCanceled()) {
+                    qCritical() << "Progress dialog was canceled immediately after creation!";
+                    qCritical() << "This indicates a configuration issue with QProgressDialog";
+                }
             }
         });
         
@@ -261,14 +304,30 @@ void UpdateMenuManager::onDownloadProgress(int percentage)
 {
     qDebug() << "UpdateMenuManager received download progress:" << percentage << "%";
     
-    if (m_progressDialog && !m_progressDialog->wasCanceled()) {
-        m_progressDialog->setLabelText(tr("Téléchargement en cours... %1%").arg(percentage));
-        m_progressDialog->setValue(percentage);
-        m_progressDialog->setMaximum(100);
-        qDebug() << "Progress dialog updated to" << percentage << "%";
-    } else {
-        qDebug() << "Progress dialog not available or canceled";
+    if (!m_progressDialog) {
+        qWarning() << "Progress dialog is null!";
+        return;
     }
+    
+    qDebug() << "Progress dialog state before update:";
+    qDebug() << "  - wasCanceled:" << m_progressDialog->wasCanceled();
+    qDebug() << "  - isVisible:" << m_progressDialog->isVisible();
+    qDebug() << "  - value:" << m_progressDialog->value();
+    
+    if (m_progressDialog->wasCanceled()) {
+        qWarning() << "Progress dialog was canceled - not updating progress";
+        return;
+    }
+    
+    m_progressDialog->setLabelText(tr("Téléchargement en cours... %1%").arg(percentage));
+    m_progressDialog->setValue(percentage);
+    m_progressDialog->setMaximum(100);
+    qDebug() << "Progress dialog updated to" << percentage << "%";
+    
+    qDebug() << "Progress dialog state after update:";
+    qDebug() << "  - wasCanceled:" << m_progressDialog->wasCanceled();
+    qDebug() << "  - isVisible:" << m_progressDialog->isVisible();
+    qDebug() << "  - value:" << m_progressDialog->value();
 }
 
 void UpdateMenuManager::onUpdateCompleted()

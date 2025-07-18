@@ -39,13 +39,21 @@ UpdateChecker::UpdateChecker(QObject* parent)
     : QObject(parent),
       m_networkManager(new QNetworkAccessManager(this)),
       m_currentReply(nullptr),
-      m_tempDir(nullptr)
+      m_tempDir(nullptr),
+      m_timeoutTimer(new QTimer(this))
 {
+    // Configure timeout timer
+    m_timeoutTimer->setSingleShot(true);
+    connect(m_timeoutTimer, &QTimer::timeout, this, &UpdateChecker::onTimeoutOccurred);
+    
     qDebug() << "UpdateChecker created";
 }
 
 UpdateChecker::~UpdateChecker()
 {
+    if (m_timeoutTimer) {
+        m_timeoutTimer->stop();
+    }
     if (m_currentReply) {
         m_currentReply->abort();
         m_currentReply->deleteLater();
@@ -63,11 +71,22 @@ QString UpdateChecker::currentVersion()
 
 void UpdateChecker::abortDownload()
 {
+    qDebug() << "abortDownload() called";
+    qDebug() << "Current reply is null:" << (m_currentReply == nullptr);
+    
+    if (m_timeoutTimer) {
+        m_timeoutTimer->stop();
+        qDebug() << "Timeout timer stopped";
+    }
     if (m_currentReply) {
         qInfo() << "Aborting download...";
+        qDebug() << "Reply state before abort - running:" << m_currentReply->isRunning() << "finished:" << m_currentReply->isFinished();
         m_currentReply->abort();
         m_currentReply->deleteLater();
         m_currentReply = nullptr;
+        qDebug() << "Reply set to nullptr after abort";
+    } else {
+        qDebug() << "No current reply to abort";
     }
 }
 
@@ -83,6 +102,11 @@ void UpdateChecker::checkForUpdates()
         m_currentReply = nullptr;
     }
     
+    // Stop any existing timeout
+    if (m_timeoutTimer) {
+        m_timeoutTimer->stop();
+    }
+    
     // Create network request
     QNetworkRequest request(GITHUB_PAGES_RELEASES_URL);
     request.setHeader(QNetworkRequest::UserAgentHeader, 
@@ -94,6 +118,9 @@ void UpdateChecker::checkForUpdates()
     // Make the request
     m_currentReply = m_networkManager->get(request);
     
+    // Start timeout timer (15 seconds total timeout)
+    m_timeoutTimer->start(15000);
+    
     // Connect signals
     connect(m_currentReply, &QNetworkReply::finished,
             this, &UpdateChecker::onUpdateCheckFinished);
@@ -103,6 +130,11 @@ void UpdateChecker::checkForUpdates()
 
 void UpdateChecker::onUpdateCheckFinished()
 {
+    // Stop timeout timer
+    if (m_timeoutTimer) {
+        m_timeoutTimer->stop();
+    }
+    
     if (!m_currentReply) {
         qWarning() << "Null reply in onUpdateCheckFinished";
         return;
@@ -268,6 +300,11 @@ void UpdateChecker::downloadAndInstallUpdate(const QString& downloadUrl)
         m_currentReply = nullptr;
     }
     
+    // Stop any existing timeout
+    if (m_timeoutTimer) {
+        m_timeoutTimer->stop();
+    }
+    
     // Create temporary directory
     if (m_tempDir) {
         delete m_tempDir;
@@ -298,8 +335,8 @@ void UpdateChecker::downloadAndInstallUpdate(const QString& downloadUrl)
     request.setRawHeader("Accept", "application/octet-stream, */*");
     request.setRawHeader("Connection", "keep-alive");
     
-    // Set a longer timeout for large file downloads
-    request.setTransferTimeout(60000); // 1 minute
+    // Set a shorter timeout for large file downloads
+    request.setTransferTimeout(30000); // 30 seconds (reduced from 60)
 
     // Enable automatic redirect following
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -309,6 +346,9 @@ void UpdateChecker::downloadAndInstallUpdate(const QString& downloadUrl)
     // Make the request
     m_currentReply = m_networkManager->get(request);
     
+    // Start timeout timer (60 seconds total timeout for download)
+    m_timeoutTimer->start(60000);
+    
     // Connect signals
     connect(m_currentReply, &QNetworkReply::finished,
             this, &UpdateChecker::onDownloadFinished);
@@ -317,9 +357,104 @@ void UpdateChecker::downloadAndInstallUpdate(const QString& downloadUrl)
     connect(m_currentReply, &QNetworkReply::errorOccurred,
             this, [this](QNetworkReply::NetworkError error) {
                 qWarning() << "Network error during download:" << error << m_currentReply->errorString();
+                if (error == QNetworkReply::ContentNotFoundError) {
+                    qCritical() << "File not found (404) - the executable may not have been uploaded to GitHub Pages yet";
+                    emit updateFailed("File not found on server. The update may not be available yet.");
+                }
             });
+    
+    // Add connection to track when reply is destroyed
+    connect(m_currentReply, &QObject::destroyed, this, [this]() {
+        qCritical() << "CRITICAL: QNetworkReply was destroyed unexpectedly!";
+        qCritical() << "This should not happen during normal operation";
+    });
+    
+    // Add connection to track SSL errors
+    connect(m_currentReply, &QNetworkReply::sslErrors, this, [this](const QList<QSslError> &errors) {
+        qWarning() << "SSL errors occurred:";
+        for (const QSslError &error : errors) {
+            qWarning() << "SSL Error:" << error.errorString();
+        }
+    });
 
     qInfo() << "Download started...";
+    qDebug() << "Network reply created, checking initial state...";
+    qDebug() << "Reply is running:" << m_currentReply->isRunning();
+    qDebug() << "Reply is finished:" << m_currentReply->isFinished();
+    qDebug() << "Reply error:" << m_currentReply->error();
+    qDebug() << "Reply URL:" << m_currentReply->url().toString();
+    qDebug() << "Request headers count:" << m_currentReply->request().rawHeaderList().size();
+    qDebug() << "Timeout timer active:" << m_timeoutTimer->isActive();
+    qDebug() << "Timeout timer remaining:" << m_timeoutTimer->remainingTime() << "ms";
+    
+    // Add a debug timer to check status every 5 seconds
+    QTimer* debugTimer = new QTimer(this);
+    debugTimer->setInterval(5000); // 5 seconds
+    connect(debugTimer, &QTimer::timeout, this, [this, debugTimer]() {
+        if (m_currentReply) {
+            qDebug() << "=== Download Status Update ===";
+            qDebug() << "Reply is running:" << m_currentReply->isRunning();
+            qDebug() << "Reply is finished:" << m_currentReply->isFinished();
+            qDebug() << "Reply error:" << m_currentReply->error();
+            qDebug() << "Bytes received:" << m_currentReply->bytesAvailable();
+            qDebug() << "HTTP status:" << m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+            qDebug() << "Timeout timer remaining:" << m_timeoutTimer->remainingTime() << "ms";
+            qDebug() << "============================";
+        } else {
+            qDebug() << "Debug timer: m_currentReply is null, stopping timer";
+            debugTimer->stop();
+            debugTimer->deleteLater();
+        }
+    });
+    debugTimer->start();
+    
+    // Add connection to track when the reply starts receiving data
+    connect(m_currentReply, &QNetworkReply::readyRead, this, [this]() {
+        static bool firstDataReceived = false;
+        if (!firstDataReceived) {
+            qInfo() << "First data received from server - download is working!";
+            qDebug() << "Bytes available:" << m_currentReply->bytesAvailable();
+            firstDataReceived = true;
+        }
+    });
+    
+    // Add connection to track metadata received
+    connect(m_currentReply, &QNetworkReply::metaDataChanged, this, [this]() {
+        qDebug() << "Metadata received:";
+        qDebug() << "Content-Type:" << m_currentReply->header(QNetworkRequest::ContentTypeHeader).toString();
+        qDebug() << "Content-Length:" << m_currentReply->header(QNetworkRequest::ContentLengthHeader).toLongLong();
+        qDebug() << "HTTP Status:" << m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        qDebug() << "HTTP Reason:" << m_currentReply->attribute(QNetworkRequest::HttpReasonPhraseAttribute).toString();
+        
+        // Check if we're getting redirected
+        QVariant redirectUrl = m_currentReply->attribute(QNetworkRequest::RedirectionTargetAttribute);
+        if (redirectUrl.isValid()) {
+            qDebug() << "Redirect to:" << redirectUrl.toString();
+        }
+        
+        // Check if we got a 404 or other error status
+        int httpStatus = m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        if (httpStatus >= 400) {
+            qCritical() << "HTTP Error Status:" << httpStatus;
+            qCritical() << "This will likely cause the download to fail";
+        }
+        
+        // Check if the content length is valid
+        qint64 contentLength = m_currentReply->header(QNetworkRequest::ContentLengthHeader).toLongLong();
+        if (contentLength <= 0) {
+            qWarning() << "Content-Length is 0 or invalid - this might cause issues";
+        } else {
+            qDebug() << "Expected download size:" << contentLength << "bytes";
+        }
+    });
+    
+    // Force the event loop to process the request
+    QCoreApplication::processEvents();
+    
+    qDebug() << "After processEvents() - Reply state:";
+    qDebug() << "Reply is running:" << m_currentReply->isRunning();
+    qDebug() << "Reply is finished:" << m_currentReply->isFinished();
+    qDebug() << "Reply error:" << m_currentReply->error();
 }
 
 void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
@@ -343,7 +478,13 @@ void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 
 void UpdateChecker::onDownloadFinished()
 {
+    // Stop timeout timer
+    if (m_timeoutTimer) {
+        m_timeoutTimer->stop();
+    }
+    
     qDebug() << "onDownloadFinished() called";
+    qDebug() << "ENTRY: m_currentReply is null:" << (m_currentReply == nullptr);
     
     if (!m_currentReply) {
         qWarning() << "Null reply in onDownloadFinished";
@@ -351,12 +492,27 @@ void UpdateChecker::onDownloadFinished()
     }
     
     QNetworkReply::NetworkError error = m_currentReply->error();
+    int httpStatus = m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    
     qDebug() << "Download finished with error code:" << error;
+    qDebug() << "HTTP status code:" << httpStatus;
+    qDebug() << "Reply URL:" << m_currentReply->url().toString();
+    qDebug() << "Reply operation:" << m_currentReply->operation();
+    qDebug() << "Reply bytes available:" << m_currentReply->bytesAvailable();
+    qDebug() << "Reply is finished:" << m_currentReply->isFinished();
+    qDebug() << "Reply is running:" << m_currentReply->isRunning();
     
     if (error != QNetworkReply::NoError) {
         QString errorString = m_currentReply->errorString();
         qCritical() << "Download error:" << errorString;
-        emit updateFailed(QString("Download error: %1").arg(errorString));
+        qCritical() << "HTTP status:" << httpStatus;
+        
+        if (httpStatus == 404) {
+            emit updateFailed("File not found on server (404). The update may not be available yet, or the file wasn't uploaded to GitHub Pages.");
+        } else {
+            emit updateFailed(QString("Download error: %1 (HTTP %2)").arg(errorString).arg(httpStatus));
+        }
+        
         m_currentReply->deleteLater();
         m_currentReply = nullptr;
         return;
@@ -397,6 +553,25 @@ void UpdateChecker::onDownloadFinished()
     
     m_currentReply->deleteLater();
     m_currentReply = nullptr;
+}
+
+void UpdateChecker::onTimeoutOccurred()
+{
+    qWarning() << "Timeout occurred during network request";
+    qDebug() << "Timeout handler called - m_currentReply is null:" << (m_currentReply == nullptr);
+    
+    if (m_currentReply) {
+        qDebug() << "Reply state at timeout - running:" << m_currentReply->isRunning() << "finished:" << m_currentReply->isFinished();
+        qDebug() << "Reply error at timeout:" << m_currentReply->error();
+        m_currentReply->abort();
+        m_currentReply->deleteLater();
+        m_currentReply = nullptr;
+        qDebug() << "Reply set to nullptr after timeout";
+    } else {
+        qDebug() << "No reply to timeout";
+    }
+    
+    emit updateFailed("Network timeout occurred. Please check your internet connection and try again.");
 }
 
 bool UpdateChecker::verifyChecksum(const QString& filePath, const QString& expectedChecksum)

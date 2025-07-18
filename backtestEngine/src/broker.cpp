@@ -527,6 +527,8 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
     // When closing a short position (buying), we pay ask price (price + spread)
     // Calculate spread as per-thousand of price
     double spreadInPoints = price * _spread / 1000.0;
+    spreadInPoints = 0.0; // we considere the spread as 0 for the exit point, the spread has been taken into account at the entry point
+    // We could also apply half the spread at entry price en half the spread at exit price => but more complex for the breake-even calculation
     double adjustedExitPrice = price - std::copysign(spreadInPoints, trade->size());
     
     // Set exit information and add to closed trades

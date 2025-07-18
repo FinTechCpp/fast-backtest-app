@@ -66,6 +66,17 @@ public:
      * @throws std::invalid_argument Si portion n'est pas entre 0 et 1
      */
     void close(double portion = 1.0);
+
+    /**
+     * @brief Passe le trade en mode break-even
+     * 
+     * Déplace le stop loss au niveau du prix d'entrée (ou avec un léger offset)
+     * pour éliminer le risque de perte.
+     * 
+     * @param offset Décalage optionnel par rapport au prix d'entrée
+     * @return true si le passage en break-even a réussi
+     */
+    bool setBreakEven(double offset = 0.0);
     
     // Getters
     double size() const { return _size; } ///< Taille de la position (+ achat, - vente)
@@ -76,7 +87,19 @@ public:
     Date entryDate() const { return _entryDate; } ///< Date d'entrée
     Date exitDate() const { return _exitDate; } ///< Date de sortie (Date() si encore actif)
     std::string tag() const { return _tag; } ///< Étiquette descriptive
+
+    /**
+     * @brief Vérifie si le trade est en mode break-even
+     * @return true si le trade est en break-even
+     */
+    bool isBreakEven() const { return _isBreakEven; }
     
+    /**
+     * @brief Obtient le prix du Stop Loss initial
+     * @return Prix du SL initial ou 0.0 si aucun SL n'était défini
+     */
+    double initialSlPrice() const { return _initialSlPrice; }
+
     /**
      * @brief Calcule le profit/perte actuel ou final de la position
      * 
@@ -184,6 +207,8 @@ private:
     Date _exitDate;                      ///< Date de sortie
     std::string _tag;                    ///< Étiquette descriptive
     double _commissions;                 ///< Commissions totales payées
+    bool _isBreakEven = false;          ///< Indique si le trade est en mode break-even
+    double _initialSlPrice = 0.0;        ///< Prix du SL initial (avant passage en break-even)
     
     std::shared_ptr<Order> _slOrder;     ///< Ordre de Stop Loss
     std::shared_ptr<Order> _tpOrder;     ///< Ordre de Take Profit

@@ -47,7 +47,7 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
     QStringList headers;
     headers << "#" << "Type" << "Taille" << "Prix d'entrée" << "Prix de sortie" 
             << "PnL" << "PnL %" << "Durée" << "Date d'entrée" << "Date de sortie"
-            << "SL" << "TP" << "Tag";
+            << "SL initial" << "TP" << "B.E." << "Tag";  // Renommé "SL" en "SL initial" et ajouté "B.E."
     setHorizontalHeaderLabels(headers);
     
     // Ajouter les nouvelles données
@@ -79,12 +79,18 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         double pnl = trade->pl();
         QStandardItem* pnlItem = new QStandardItem(formatNumber(pnl, 2));
         pnlItem->setForeground(pnl >= 0 ? Qt::darkGreen : Qt::darkRed);
+        QFont boldFont = pnlItem->font(); // Récupère la police actuelle
+        boldFont.setBold(true);           // Active le gras
+        pnlItem->setFont(boldFont);       // Applique la police modifiée
         setItem(row, 5, pnlItem);
         
         // PnL %
         double returnPct = trade->plPercent();
         QStandardItem* pctItem = new QStandardItem(formatNumber(returnPct * 100, 2) + "%");
         pctItem->setForeground(returnPct >= 0 ? Qt::darkGreen : Qt::darkRed);
+        QFont pctFont = pctItem->font();
+        pctFont.setBold(true);
+        pctItem->setFont(pctFont);
         setItem(row, 6, pctItem);
         
         // Durée - calculer à partir des dates
@@ -116,7 +122,11 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         
         // Stop Loss (si disponible)
         QString slText = "-";
-        if (trade->sl() > 0) {
+        if (trade->isBreakEven() && trade->initialSlPrice() > 0) {
+            // Pour les trades en break-even, afficher le SL initial
+            slText = formatNumber(trade->initialSlPrice(), 2);
+        } else if (trade->sl() > 0) {
+            // Pour les autres trades, afficher le SL actuel
             slText = formatNumber(trade->sl(), 2);
         }
         setItem(row, 10, new QStandardItem(slText));
@@ -127,15 +137,53 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
             tpText = formatNumber(trade->tp(), 2);
         }
         setItem(row, 11, new QStandardItem(tpText));
+
+        // Break-Even status
+        QString beStatus = trade->isBreakEven() ? "Oui" : "-";
+        QStandardItem* beItem = new QStandardItem(beStatus);
+        if (trade->isBreakEven()) {
+            beItem->setForeground(Qt::darkBlue);
+            QFont beFont = beItem->font();
+            beFont.setBold(true);
+            beItem->setFont(beFont);
+        }
+        setItem(row, 12, beItem);
         
         // Tag (si disponible)
         QString tag = "-";
         if (!trade->tag().empty()) {
             tag = QString::fromStdString(trade->tag());
         }
-        setItem(row, 12, new QStandardItem(tag));
+        setItem(row, 13, new QStandardItem(tag));
+
+        // Appliquer un style spécial si c'est un trade en break-even
+        if (trade->isBreakEven() && std::abs(trade->pl()) < 1) {
+            // Parcourir toutes les cellules de la ligne et appliquer une couleur de fond légère
+            for (int col = 0; col < columnCount(); ++col) {
+                QStandardItem* item = this->item(row, col);
+                if (item) {
+                    item->setData(QColor(220, 240, 255), Qt::BackgroundRole); // Bleu très clair
+                }
+            }
+        }
+        else if (pnl >= 0) {
+            for (int col = 0; col < columnCount(); ++col) {
+                QStandardItem* item = this->item(row, col);
+                if (item) {
+                    item->setData(QColor(220, 255, 220), Qt::BackgroundRole); // Vert très clair
+                }
+            }
+        }
+        else {
+            for (int col = 0; col < columnCount(); ++col) {
+                QStandardItem* item = this->item(row, col);
+                if (item) {
+                    item->setData(QColor(255, 220, 220), Qt::BackgroundRole); // Rouge très clair
+                }
+            }
+        }
     }
-    
+
     endResetModel();
 }
 
@@ -523,6 +571,10 @@ void StatsView::initializeMetricDefinitions() {
             },
             [](const be::Stats& s) { return QString::number(s.numLosingTrades); }
         },
+        {"neutral_trades", "Trades neutres:", "Nombre de trades neutres", "general",
+            [](const be::Stats& s) { return s.numNeutralTrades <= s.numWinningTrades ? MetricStatus::Neutral : MetricStatus::Bad; },
+            [](const be::Stats& s) { return QString::number(s.numNeutralTrades); }
+        },
         {"best_trade", "Meilleur trade:", "Pourcentage de gain du meilleur trade", "general",
             [](const be::Stats& s) { return MetricStatus::Good; },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.bestTradePct, 'f', 2)); }
@@ -672,19 +724,20 @@ void StatsView::createTradesTableView() {
     header->setSectionResizeMode(QHeaderView::Interactive);
     
     // Définir des largeurs minimales pour certaines colonnes
-    m_tradesTable->setColumnWidth(0, 10);  // #
-    m_tradesTable->setColumnWidth(1, 50);  // Type
-    m_tradesTable->setColumnWidth(2, 70); // Taille
-    m_tradesTable->setColumnWidth(3, 120); // Prix d'entrée
-    m_tradesTable->setColumnWidth(4, 120); // Prix de sortie
-    m_tradesTable->setColumnWidth(5, 100); // PnL
-    m_tradesTable->setColumnWidth(6, 80);  // PnL %
-    m_tradesTable->setColumnWidth(7, 100); // Durée
-    m_tradesTable->setColumnWidth(8, 150); // Date d'entrée
-    m_tradesTable->setColumnWidth(9, 150); // Date de sortie
-    m_tradesTable->setColumnWidth(10, 100); // Stop Loss
+    m_tradesTable->setColumnWidth(0, 10);   // #
+    m_tradesTable->setColumnWidth(1, 50);   // Type
+    m_tradesTable->setColumnWidth(2, 70);   // Taille
+    m_tradesTable->setColumnWidth(3, 120);  // Prix d'entrée
+    m_tradesTable->setColumnWidth(4, 120);  // Prix de sortie
+    m_tradesTable->setColumnWidth(5, 100);  // PnL
+    m_tradesTable->setColumnWidth(6, 80);   // PnL %
+    m_tradesTable->setColumnWidth(7, 100);  // Durée
+    m_tradesTable->setColumnWidth(8, 150);  // Date d'entrée
+    m_tradesTable->setColumnWidth(9, 150);  // Date de sortie
+    m_tradesTable->setColumnWidth(10, 100); // Stop Loss initial
     m_tradesTable->setColumnWidth(11, 100); // Take Profit
-    m_tradesTable->setColumnWidth(12, 30); // Tag
+    m_tradesTable->setColumnWidth(12, 50);  // Break-Even (nouvelle colonne)
+    m_tradesTable->setColumnWidth(13, 80);  // Tag (déplacé)
 
     // Hauteur de la table
     m_tradesTable->setMaximumHeight(1000);  

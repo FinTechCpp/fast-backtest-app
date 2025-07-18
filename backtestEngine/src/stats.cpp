@@ -288,8 +288,8 @@ Stats computeStats(
     // Statistiques des trades (victoires/défaites)
     std::ptrdiff_t winning_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl > 0; });
     std::ptrdiff_t losing_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl < 0; });
-    std::ptrdiff_t neutral_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl == 0; });
-    
+    std::ptrdiff_t neutral_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return std::abs(pl) < 1e-10; });
+
     double win_rate = n_trades ? static_cast<double>(winning_trades) / n_trades : NaN;
     
     stats.winRatePct = win_rate * 100;

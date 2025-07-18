@@ -57,8 +57,8 @@ public:
         auto async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
             "async_file_logger",       // Logger name
             "logs/Strategies/BuyHeikinGreen_async.log",      // Log file path
-            50 * 1024 * 1024,          // Max file size (50 MB)
-            1                          // Max number of files to keep
+            100 * 1024 * 1024,          // Max file size (100 MB)
+            10                          // Max number of files to keep
         );
         async_file->set_level(spdlog::level::debug);
 
@@ -150,7 +150,7 @@ public:
             }
         }
         else if (signal->action == "MOVE_SL") {
-            current_trade->sl(signal->new_sl);
+            bool success = current_trade->setBreakEven(0.0);
         }
         else if (trades.empty() && signal->action == "BUY") {
             // Process a buy signal

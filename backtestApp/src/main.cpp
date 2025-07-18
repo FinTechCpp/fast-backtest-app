@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
             
             if (msgBox.exec() == QMessageBox::Yes) {
                 // Download and install the update
-                updateChecker.downloadAndInstallUpdate();
+                updateChecker.downloadAndInstallUpdate(downloadUrl);
             }
         });
 

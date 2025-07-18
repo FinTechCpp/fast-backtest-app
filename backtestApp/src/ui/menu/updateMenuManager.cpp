@@ -7,6 +7,9 @@
 #include <QProcess> 
 #include <QPushButton>
 #include <QAbstractButton>
+#include <QTimer>
+
+static const QUrl GITHUB_PAGES_RELEASES_URL = QUrl(QStringLiteral("https://fintechcpp.github.io/fast-backtest-app-releases/#download"));
 
 UpdateMenuManager::UpdateMenuManager(QObject* parent)
     : QObject(parent),
@@ -16,10 +19,10 @@ UpdateMenuManager::UpdateMenuManager(QObject* parent)
       m_updateChecker(nullptr),
       m_progressDialog(nullptr)
 {
-    // Créer l'instance d'UpdateChecker
+    // Create the UpdateChecker instance
     m_updateChecker = new UpdateChecker(this);
-    
-    // Connecter les signaux
+
+    // Connect signals
     connect(m_updateChecker, &UpdateChecker::updateAvailable,
             this, &UpdateMenuManager::onUpdateAvailable);
     connect(m_updateChecker, &UpdateChecker::noUpdateAvailable,
@@ -44,32 +47,32 @@ UpdateMenuManager::~UpdateMenuManager()
 void UpdateMenuManager::createUpdateMenu(QMenuBar* menuBar)
 {
     if (!menuBar) {
-        qWarning() << "MenuBar null passé à createUpdateMenu";
+        qWarning() << "MenuBar null switched to createUpdateMenu";
         return;
     }
-    
-    // Créer le menu Mise à jour (avant le menu Aide)
+
+    // Create the Update menu (before the Help menu)
     m_updateMenu = menuBar->addMenu(tr("&Mise à jour"));
     
     createActions();
-    
-    // Ajouter les actions au menu
+
+    // Add actions to the menu
     m_updateMenu->addAction(m_checkUpdateAction);
     m_updateMenu->addSeparator();
     m_updateMenu->addAction(m_aboutVersionAction);
-    
-    qDebug() << "Menu Mise à jour créé";
+
+    qDebug() << "Menu Update created";
 }
 
 void UpdateMenuManager::createActions()
 {
-    // Action Vérifier les mises à jour
+    // Check for updates action
     m_checkUpdateAction = new QAction(tr("&Vérifier les mises à jour"), this);
     m_checkUpdateAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_U));
     m_checkUpdateAction->setStatusTip(tr("Vérifier s'il existe une nouvelle version disponible"));
     connect(m_checkUpdateAction, &QAction::triggered, this, &UpdateMenuManager::onCheckForUpdates);
-    
-    // Action À propos de la version
+
+    // About version action
     m_aboutVersionAction = new QAction(tr("À propos de la &version"), this);
     m_aboutVersionAction->setStatusTip(tr("Afficher les informations sur la version actuelle"));
     connect(m_aboutVersionAction, &QAction::triggered, this, [this]() {
@@ -84,13 +87,13 @@ void UpdateMenuManager::createActions()
 
 void UpdateMenuManager::onCheckForUpdates()
 {
-    qInfo() << "Vérification manuelle des mises à jour demandée";
-    
-    // Désactiver le bouton pendant la vérification
+    qInfo() << "Manual update check requested";
+
+    // Disable the button during the check
     m_checkUpdateAction->setEnabled(false);
-    m_checkUpdateAction->setText(tr("Vérification en cours..."));
-    
-    // Créer une boîte de dialogue de progression
+    m_checkUpdateAction->setText(tr("Checking for updates..."));
+
+    // Create a progress dialog
     if (m_progressDialog) {
         delete m_progressDialog;
     }
@@ -105,42 +108,48 @@ void UpdateMenuManager::onCheckForUpdates()
     m_progressDialog->setMinimumDuration(0);
     m_progressDialog->show();
     
-    // Connecter le bouton annuler (optionnel)
+    // Connect cancel button (optional)
     connect(m_progressDialog, &QProgressDialog::canceled, this, [this]() {
-        qInfo() << "Vérification des mises à jour annulée par l'utilisateur";
+        qInfo() << "Update check canceled by user";
         m_checkUpdateAction->setEnabled(true);
         m_checkUpdateAction->setText(tr("&Vérifier les mises à jour"));
     });
     
-    // Lancer la vérification
+    // Launch the update check
+    qInfo() << "Starting update check...";
     m_updateChecker->checkForUpdates();
 }
 
 void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString& downloadUrl)
 {
-    // Fermer la boîte de dialogue de progression
+    // Close the progress dialog
     if (m_progressDialog) {
         m_progressDialog->close();
         delete m_progressDialog;
         m_progressDialog = nullptr;
     }
-    
-    // Réactiver le bouton
+
+    // Reactivate the button
     m_checkUpdateAction->setEnabled(true);
     m_checkUpdateAction->setText(tr("&Vérifier les mises à jour"));
-    
-    // Sauvegarder les informations de mise à jour
+
+    // Save update information
     m_latestVersion = version;
     m_downloadUrl = downloadUrl;
-    
-    qInfo() << "Mise à jour disponible:" << version;
-    
-    // Afficher la boîte de dialogue de mise à jour avec plus d'informations
+
+    qInfo() << "Update available:" << version;
+
+    // Show the update dialog with more information
     QMessageBox msgBox(qobject_cast<QWidget*>(parent()));
     msgBox.setIcon(QMessageBox::Information);
     msgBox.setWindowTitle(tr("Mise à jour disponible"));
     msgBox.setText(tr("Une nouvelle version est disponible !"));
-    msgBox.setInformativeText(tr("Version actuelle: %1\nNouvelle version: %2\n\nVoulez-vous télécharger et installer la mise à jour maintenant ?\n\n⚠️ L'application redémarrera automatiquement après l'installation.\n✅ Vos configurations seront préservées.")
+    msgBox.setInformativeText(tr("Version actuelle: %1\nNouvelle version: %2\n\n"
+                                 "Voulez-vous télécharger et installer la mise à jour maintenant ?\n\n"
+                                 "📥 Téléchargement automatique depuis GitHub\n"
+                                 "🔄 Installation automatique\n"
+                                 "🔒 Vos données seront préservées (config, marketData, logs)\n"
+                                 "⚠️ L'application redémarrera automatiquement")
                              .arg(UpdateChecker::currentVersion())
                              .arg(version));
     
@@ -155,12 +164,37 @@ void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString&
     QAbstractButton* clickedBtn = msgBox.clickedButton();
 
     if (clickedBtn == static_cast<QAbstractButton*>(downloadButton)) {
-        // Télécharger et installer avec le nouveau système
-        m_updateChecker->downloadAndInstallUpdate();
-    } else if (clickedBtn == static_cast<QAbstractButton*>(viewButton)) {
-        // Ouvrir la page de release sur GitHub
-        QString releaseUrl = QString("https://github.com/FinTechCpp/fast-backtest-app/releases/tag/v%1").arg(version);
+        // Create a progress dialog for the download
+        if (m_progressDialog) {
+            delete m_progressDialog;
+        }
         
+        m_progressDialog = new QProgressDialog(
+            tr("Préparation du téléchargement..."),
+            tr("Annuler"),
+            0, 100,
+            qobject_cast<QWidget*>(parent())
+        );
+        m_progressDialog->setWindowModality(Qt::WindowModal);
+        m_progressDialog->setMinimumDuration(0);
+        m_progressDialog->show();
+        
+        // Connect cancel signal
+        connect(m_progressDialog, &QProgressDialog::canceled, this, [this]() {
+            qInfo() << "Download canceled by user";
+            if (m_progressDialog) {
+                m_progressDialog->close();
+                delete m_progressDialog;
+                m_progressDialog = nullptr;
+            }
+        });
+        
+        // Download and install with the new system
+        m_updateChecker->downloadAndInstallUpdate(m_downloadUrl);
+    } else if (clickedBtn == static_cast<QAbstractButton*>(viewButton)) {
+        // Open the release page on GitHub
+        QString releaseUrl = GITHUB_PAGES_RELEASES_URL.toString();
+
         #ifdef Q_OS_WIN
         QProcess::startDetached("cmd", {"/c", "start", releaseUrl});
         #elif defined(Q_OS_MAC)
@@ -169,25 +203,25 @@ void UpdateMenuManager::onUpdateAvailable(const QString& version, const QString&
         QProcess::startDetached("xdg-open", {releaseUrl});
         #endif
     }
-    // Si "Plus tard" est cliqué, ne rien faire
+    // If "Later" is clicked, do nothing
 }
 
 void UpdateMenuManager::onNoUpdateAvailable()
 {
-    // Fermer la boîte de dialogue de progression
+    // Close the progress dialog
     if (m_progressDialog) {
         m_progressDialog->close();
         delete m_progressDialog;
         m_progressDialog = nullptr;
     }
-    
-    // Réactiver le bouton
+
+    // Reactivate the button
     m_checkUpdateAction->setEnabled(true);
     m_checkUpdateAction->setText(tr("&Vérifier les mises à jour"));
     
-    qInfo() << "Aucune mise à jour disponible";
-    
-    // Afficher un message informatif
+    qInfo() << "No update available";
+
+    // Show an informative message
     QMessageBox::information(
         qobject_cast<QWidget*>(parent()),
         tr("Aucune mise à jour"),
@@ -197,20 +231,20 @@ void UpdateMenuManager::onNoUpdateAvailable()
 
 void UpdateMenuManager::onUpdateCheckFailed(const QString& error)
 {
-    // Fermer la boîte de dialogue de progression
+    // Close the progress dialog
     if (m_progressDialog) {
         m_progressDialog->close();
         delete m_progressDialog;
         m_progressDialog = nullptr;
     }
-    
-    // Réactiver le bouton
+
+    // Reactivate the button
     m_checkUpdateAction->setEnabled(true);
     m_checkUpdateAction->setText(tr("&Vérifier les mises à jour"));
     
-    qWarning() << "Échec de la vérification des mises à jour:" << error;
-    
-    // Afficher un message d'erreur
+    qWarning() << "Update check failed:" << error;
+
+    // Show an error message
     QMessageBox::warning(
         qobject_cast<QWidget*>(parent()),
         tr("Erreur de vérification"),
@@ -234,12 +268,44 @@ void UpdateMenuManager::onUpdateCompleted()
         delete m_progressDialog;
         m_progressDialog = nullptr;
     }
+
+    // Show a confirmation message with countdown
+    QMessageBox msgBox(qobject_cast<QWidget*>(parent()));
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setWindowTitle(tr("Mise à jour terminée"));
+    msgBox.setText(tr("Installation réussie !"));
+    msgBox.setInformativeText(tr("La mise à jour a été installée avec succès.\n\n"
+                                 "✅ Nouvelle version installée: v%1\n"
+                                 "💾 Vos données ont été préservées\n"
+                                 "🔄 L'application va se fermer dans 5 secondes\n\n"
+                                 "Cliquez sur OK pour fermer maintenant.")
+                             .arg(m_latestVersion));
+    msgBox.setStandardButtons(QMessageBox::Ok);
+
+    // Create a timer to automatically close after 5 seconds
+    QTimer* timer = new QTimer(&msgBox);
+    int countdown = 5;
     
-    QMessageBox::information(
-        qobject_cast<QWidget*>(parent()),
-        tr("Mise à jour terminée"),
-        tr("La mise à jour a été téléchargée avec succès.\nL'application va maintenant se fermer pour permettre l'installation.")
-    );
+    connect(timer, &QTimer::timeout, [&msgBox, &countdown, timer]() {
+        countdown--;
+        if (countdown > 0) {
+            msgBox.setInformativeText(tr("La mise à jour a été installée avec succès.\n\n"
+                                         "✅ Nouvelle version installée\n"
+                                         "💾 Vos données ont été préservées\n"
+                                         "🔄 L'application va se fermer dans %1 secondes\n\n"
+                                         "Cliquez sur OK pour fermer maintenant.")
+                                     .arg(countdown));
+        } else {
+            timer->stop();
+            msgBox.accept();
+        }
+    });
+    
+    timer->start(1000); // 1 second
+    msgBox.exec();
+
+    // Close the application
+    QApplication::quit();
 }
 
 void UpdateMenuManager::onUpdateFailed(const QString& error)
@@ -257,26 +323,26 @@ void UpdateMenuManager::onUpdateFailed(const QString& error)
     );
 }
 
-// Ajoutez les méthodes qui manquent
+// Add missing methods
 void UpdateMenuManager::checkForUpdatesAuto()
 {
-    // Vérification silencieuse (sans UI)
-    
-    // Déconnecter temporairement les signaux pour éviter d'afficher l'UI
+    // Silent check (without UI)
+
+    // Temporarily disconnect signals to avoid showing UI
     disconnect(m_updateChecker, &UpdateChecker::updateAvailable, 
                this, &UpdateMenuManager::onUpdateAvailable);
     disconnect(m_updateChecker, &UpdateChecker::noUpdateAvailable, 
                this, &UpdateMenuManager::onNoUpdateAvailable);
     disconnect(m_updateChecker, &UpdateChecker::updateCheckFailed, 
                this, &UpdateMenuManager::onUpdateCheckFailed);
-    
-    // Connecter des gestionnaires temporaires
+
+    // Connect temporary handlers
     connect(m_updateChecker, &UpdateChecker::updateAvailable, this, 
         [this](const QString& version, const QString& downloadUrl) {
-            // Reconnexion pour pouvoir utiliser le menu après
+            // Reconnect to be able to use the menu afterwards
             reconnectSignals();
-            
-            // Afficher une notification non-bloquante
+
+            // Show a non-blocking notification
             QWidget* parent = qobject_cast<QWidget*>(this->parent());
             if (parent) {
                 QMessageBox* notification = new QMessageBox(
@@ -294,25 +360,25 @@ void UpdateMenuManager::checkForUpdatesAuto()
     
     connect(m_updateChecker, &UpdateChecker::noUpdateAvailable, this,
         [this]() {
-            // Simplement reconnecter les signaux sans notification
+            // Simply reconnect signals without notification
             reconnectSignals();
         }, Qt::SingleShotConnection);
     
     connect(m_updateChecker, &UpdateChecker::updateCheckFailed, this,
         [this](const QString& error) {
-            // Reconnecter les signaux
+            // Reconnect signals
             reconnectSignals();
-            // Log l'erreur silencieusement
-            qWarning() << "Échec de la vérification automatique:" << error;
+            // Log the error silently
+            qWarning() << "Automatic check failed:" << error;
         }, Qt::SingleShotConnection);
-    
-    // Lancer la vérification silencieuse
+
+    // Start the silent check
     m_updateChecker->checkForUpdates();
 }
 
 void UpdateMenuManager::reconnectSignals()
 {
-    // Reconnecter les signaux standard
+    // Reconnect standard signals
     connect(m_updateChecker, &UpdateChecker::updateAvailable,
             this, &UpdateMenuManager::onUpdateAvailable);
     connect(m_updateChecker, &UpdateChecker::noUpdateAvailable,

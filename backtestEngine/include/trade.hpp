@@ -83,7 +83,7 @@ public:
      * @param offset Décalage optionnel par rapport au prix d'entrée
      * @return true si le passage en break-even a réussi
      */
-    bool setBreakEven(double offset = 0.0, double triggerPrice = 0.0);
+    bool setBreakEven(double price, double triggerPrice = 0.0);
     
     // Getters
     double size() const { return _size; } ///< Taille de la position (+ achat, - vente)
@@ -94,7 +94,7 @@ public:
     Date entryDate() const { return _entryDate; } ///< Date d'entrée
     Date exitDate() const { return _exitDate; } ///< Date de sortie (Date() si encore actif)
     std::string tag() const { return _tag; } ///< Étiquette descriptive
-    
+
     /**
      * @brief Obtient la raison de clôture du trade
      * @return La raison de clôture

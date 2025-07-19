@@ -132,9 +132,9 @@ std::map<std::string, double> Stats::toMap() const {
     // Statistiques des trades
     map["# Trades"] = numTrades;
     map["Win Rate [%]"] = winRatePct;
-    map["# Winning Trades"] = numWinningTrades;
-    map["# Losing Trades"] = numLosingTrades;
-    map["# Neutral Trades"] = numNeutralTrades;
+    map["# Winning Trades"] = numTPTrades;
+    map["# Losing Trades"] = numSLTrades;
+    map["# Neutral Trades"] = numBETrades;
     map["Best Trade [%]"] = bestTradePct;
     map["Worst Trade [%]"] = worstTradePct;
     map["Avg. Trade [%]"] = avgTradePct;
@@ -182,9 +182,9 @@ std::ostream& operator<<(std::ostream& os, const Stats& stats) {
     
     os << "\n-- Trades --\n";
     os << "  Nombre total: " << stats.numTrades << "\n";
-    os << "  Gagnants: " << stats.numWinningTrades << " (" << stats.winRatePct << "%)\n";
-    os << "  Perdants: " << stats.numLosingTrades << "\n";
-    os << "  Neutres: " << stats.numNeutralTrades << "\n";
+    os << "  Gagnants: " << stats.numTPTrades << " (" << stats.winRatePct << "%)\n";
+    os << "  Perdants: " << stats.numSLTrades << "\n";
+    os << "  Neutres: " << stats.numBETrades << "\n";
     os << "  Meilleur: " << stats.bestTradePct << "%\n";
     os << "  Pire: " << stats.worstTradePct << "%\n";
     os << "  Moyen: " << stats.avgTradePct << "%\n";
@@ -286,16 +286,30 @@ Stats computeStats(
     stats.numTrades = static_cast<unsigned int>(n_trades);
     
     // Statistiques des trades (victoires/défaites)
-    std::ptrdiff_t winning_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl > 0; });
-    std::ptrdiff_t losing_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return pl < 0; });
-    std::ptrdiff_t neutral_trades = std::count_if(pl_values.begin(), pl_values.end(), [](double pl) { return std::abs(pl) < 1e-10; });
+    std::ptrdiff_t winning_trades = std::count_if(trades.begin(), trades.end(),
+        [](const auto& trade) { return trade->closeReason() == be::CloseReason::TakeProfit; });
+
+    std::ptrdiff_t losing_trades = std::count_if(trades.begin(), trades.end(),
+        [](const auto& trade) { return trade->closeReason() == be::CloseReason::StopLoss; });
+
+    std::ptrdiff_t neutral_trades = std::count_if(trades.begin(), trades.end(),
+        [](const auto& trade) { return trade->closeReason() == be::CloseReason::BreakEven; });
+
+    std::ptrdiff_t manual_trades = std::count_if(trades.begin(), trades.end(),
+        [](const auto& trade) { return trade->closeReason() == be::CloseReason::ManualClose; });
+
+    std::ptrdiff_t unknown_trades = std::count_if(trades.begin(), trades.end(),
+        [](const auto& trade) { return trade->closeReason() == be::CloseReason::Unknown; });
+
 
     double win_rate = n_trades ? static_cast<double>(winning_trades) / n_trades : NaN;
     
     stats.winRatePct = win_rate * 100;
-    stats.numWinningTrades = static_cast<double>(winning_trades);
-    stats.numLosingTrades = static_cast<double>(losing_trades);
-    stats.numNeutralTrades = static_cast<double>(neutral_trades);
+    stats.numTPTrades = static_cast<double>(winning_trades);
+    stats.numSLTrades = static_cast<double>(losing_trades);
+    stats.numBETrades = static_cast<double>(neutral_trades);
+    stats.numManualTrades = static_cast<double>(manual_trades);
+    stats.numUnknownTrades = static_cast<double>(unknown_trades);
     
     // Meilleurs et pires trades
     if (!return_pct_values.empty()) {
@@ -602,9 +616,9 @@ Stats dummyStats() {
     stats.avgDrawdownDuration = Duration();
     stats.numTrades = 0;
     stats.winRatePct = NaN;
-    stats.numWinningTrades = NaN;
-    stats.numLosingTrades = NaN;
-    stats.numNeutralTrades = NaN;
+    stats.numTPTrades = NaN;
+    stats.numSLTrades = NaN;
+    stats.numBETrades = NaN;
     stats.bestTradePct = NaN;
     stats.worstTradePct = NaN;
     stats.avgTradePct = NaN;

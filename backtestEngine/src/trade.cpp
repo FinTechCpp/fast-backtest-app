@@ -45,7 +45,7 @@ void Trade::close(double portion) {
     Order order = _broker->newOrder(closeSize, 0.0, 0.0, 0.0, 0.0, _tag, 0.0, 0.0, shared_from_this());
 }
 
-bool Trade::setBreakEven(double offset, double triggerPrice) {
+bool Trade::setBreakEven(double price, double triggerPrice) {
     // Ne rien faire si déjà en break-even
     if (_isBreakEven)
         return true;
@@ -62,27 +62,17 @@ bool Trade::setBreakEven(double offset, double triggerPrice) {
     if (triggerPrice > 0) {
         _breakEvenTriggerPrice = triggerPrice;
     }
-    
-    // Calculer le nouveau prix du SL (prix d'entrée avec offset éventuel)
-    double newSlPrice = _entryPrice;
-    
-    // Si un offset est fourni, l'appliquer dans la direction appropriée
-    if (offset != 0.0) {
-        // Pour un long: prix d'entrée + offset positif = légère sécurité
-        // Pour un short: prix d'entrée - offset positif = légère sécurité
-        newSlPrice += isLong() ? offset : -offset;
-    }
-    
+        
     // Vérifier que le nouveau SL est valide (ne déclenche pas immédiatement)
     double currentPrice = _broker->lastPrice();
-    if ((isLong() && currentPrice <= newSlPrice) || 
-        (isShort() && currentPrice >= newSlPrice)) {
+    if ((isLong() && currentPrice <= price) || 
+        (isShort() && currentPrice >= price)) {
         // Le prix actuel déclencherait immédiatement le SL, abandon
         return false;
     }
     
     // Appliquer le nouveau SL
-    sl(newSlPrice);
+    sl(price);
     
     // Marquer comme break-even
     _isBreakEven = true;

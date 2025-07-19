@@ -77,8 +77,12 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
 
         // PnL
         double pnl = trade->pl();
+        be::CloseReason closeReason = trade->closeReason();
         QStandardItem* pnlItem = new QStandardItem(formatNumber(pnl, 2));
-        pnlItem->setForeground(pnl >= 0 ? Qt::darkGreen : Qt::darkRed);
+        pnlItem->setForeground(
+            closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
+            closeReason == be::CloseReason::StopLoss ? Qt::darkRed : (
+            closeReason == be::CloseReason::BreakEven ? Qt::darkBlue : Qt::darkGray)));
         QFont boldFont = pnlItem->font(); // Récupère la police actuelle
         boldFont.setBold(true);           // Active le gras
         pnlItem->setFont(boldFont);       // Applique la police modifiée
@@ -87,7 +91,10 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         // PnL %
         double returnPct = trade->plPercent();
         QStandardItem* pctItem = new QStandardItem(formatNumber(returnPct * 100, 2) + "%");
-        pctItem->setForeground(returnPct >= 0 ? Qt::darkGreen : Qt::darkRed);
+        pctItem->setForeground(
+            closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
+            closeReason == be::CloseReason::StopLoss ? Qt::darkRed : (
+            closeReason == be::CloseReason::BreakEven ? Qt::darkBlue : Qt::darkGray)));
         QFont pctFont = pctItem->font();
         pctFont.setBold(true);
         pctItem->setFont(pctFont);
@@ -138,7 +145,7 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
 
         // Close Reason (raison de clôture)
         QString closeReasonText = "-";
-        QColor textColor = Qt::gray; // Par défaut gris pour Unknown/ManualClose
+        QColor textColor = Qt::darkGray; // Par défaut gris pour Unknown/ManualClose
 
         // Déterminer le texte et la couleur selon le type de clôture
         switch (trade->closeReason()) {
@@ -156,11 +163,11 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
                 break;
             case be::CloseReason::ManualClose:
                 closeReasonText = "Manuel";
-                textColor = Qt::gray;
+                textColor = Qt::darkGray;
                 break;
             default:
                 closeReasonText = "-";
-                textColor = Qt::gray;
+                textColor = Qt::darkGray;
         }
 
         QStandardItem* closeReasonItem = new QStandardItem(closeReasonText);
@@ -582,19 +589,28 @@ void StatsView::initializeMetricDefinitions() {
             },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.winRatePct, 'f', 2)); }
         },
-        {"winning_trades", "Trades gagnants:", "Nombre de trades gagnants", "general",
+        {"winning_trades", "Trades sur take-profit:", "Nombre de trades sur take-profit", "general",
             [](const be::Stats& s) { return MetricStatus::Good; },
-            [](const be::Stats& s) { return QString::number(s.numWinningTrades); }
+            [](const be::Stats& s) { return QString::number(s.numTPTrades); }
         },
-        {"losing_trades", "Trades perdants:", "Nombre de trades perdants", "general",
+        {"losing_trades", "Trades sur stop-loss:", "Nombre de trades sur stop-loss", "general",
             [](const be::Stats& s) { 
-                return s.numLosingTrades <= s.numWinningTrades ? MetricStatus::Neutral : MetricStatus::Bad; 
+                return s.numSLTrades <= s.numTPTrades ? MetricStatus::Neutral : MetricStatus::Bad; 
             },
-            [](const be::Stats& s) { return QString::number(s.numLosingTrades); }
+            [](const be::Stats& s) { return QString::number(s.numSLTrades); }
         },
-        {"neutral_trades", "Trades neutres:", "Nombre de trades neutres", "general",
-            [](const be::Stats& s) { return s.numNeutralTrades <= s.numWinningTrades ? MetricStatus::Neutral : MetricStatus::Bad; },
-            [](const be::Stats& s) { return QString::number(s.numNeutralTrades); }
+        {"BE_trades", "Trades sur break-even:", "Nombre de trades sur break-even", "general",
+            [](const be::Stats& s) { return s.numBETrades <= s.numTPTrades ? MetricStatus::Neutral : MetricStatus::Bad; },
+            [](const be::Stats& s) { return QString::number(s.numBETrades); }
+        },
+        // ajouter les metric : numManualTrades et numUnknownTrades
+        {"manual_trades", "Trades manuels:", "Nombre de trades manuels", "general",
+            [](const be::Stats& s) { return s.numManualTrades > 0 ? MetricStatus::Neutral : MetricStatus::Good; },
+            [](const be::Stats& s) { return QString::number(s.numManualTrades); }
+        },
+        {"unknown_trades", "Trades inconnus:", "Nombre de trades avec raison de clôture inconnue", "general",
+            [](const be::Stats& s) { return s.numUnknownTrades > 0 ? MetricStatus::Bad : MetricStatus::Good; },
+            [](const be::Stats& s) { return QString::number(s.numUnknownTrades); }
         },
         {"best_trade", "Meilleur trade:", "Pourcentage de gain du meilleur trade", "general",
             [](const be::Stats& s) { return MetricStatus::Good; },

@@ -231,6 +231,9 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     
     if (values.contains("break_even_threshold"))
         config.break_even_threshold = values["break_even_threshold"].toDouble();
+
+    if (values.contains("break_even_offset_per_mille"))
+        config.break_even_offset_per_mille = values["break_even_offset_per_mille"].toDouble();
     
     // Perte maximale journalière
     if (values.contains("use_daily_max_loss"))

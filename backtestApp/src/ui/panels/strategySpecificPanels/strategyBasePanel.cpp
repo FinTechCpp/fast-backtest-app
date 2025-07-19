@@ -239,6 +239,17 @@ void StrategyBasePanel::initialize()
     m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     riskLayout->addRow(new QLabel("Seuil Break Even:"), m_widgets["break_even_threshold"]);
 
+    m_widgets["break_even_offset_per_mille"] = new QDoubleSpinBox();
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setDecimals(3);
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setRange(-5.0, 5.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setSingleStep(0.05);
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setValue(0.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setSuffix("‰");
+    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setEnabled(false);
+    m_widgets["break_even_offset_per_mille"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    riskLayout->addRow(new QLabel("Offset Break Even (‰):"), m_widgets["break_even_offset_per_mille"]);
+
+
     riskGroup->setLayout(riskLayout);
     baseLayout->addWidget(riskGroup);
     setLayout(baseLayout);
@@ -447,14 +458,21 @@ void StrategyBasePanel::_toggleRiskControls(bool checked)
     }
 }
 
-void StrategyBasePanel::_toggleBreakEvenControls(bool checked)
-{
+void StrategyBasePanel::_toggleBreakEvenControls(bool checked) {
     if (m_widgets.contains("break_even_threshold")) {
         m_widgets["break_even_threshold"]->setEnabled(checked);
         if (checked)
             m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
+        else
             m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    }
+
+    if (m_widgets.contains("break_even_offset_per_mille")) {
+        m_widgets["break_even_offset_per_mille"]->setEnabled(checked);
+        if (checked)
+            m_widgets["break_even_offset_per_mille"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else
+            m_widgets["break_even_offset_per_mille"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
 }
 

@@ -152,7 +152,7 @@ public:
         else if (signal->action == "MOVE_SL") {
             // Récupérer le prix de trigger depuis le signal
             double triggerPrice = signal->price > 0 ? signal->price : 0.0;
-            bool success = current_trade->setBreakEven(0.0, triggerPrice);
+            bool success = current_trade->setBreakEven(signal->new_sl, triggerPrice);
         }
         else if (trades.empty() && signal->action == "BUY" && signal->quantity > 0) {
             // Process a buy signal

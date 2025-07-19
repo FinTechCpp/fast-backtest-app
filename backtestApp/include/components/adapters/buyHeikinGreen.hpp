@@ -58,7 +58,7 @@ public:
             "async_file_logger",       // Logger name
             "logs/Strategies/BuyHeikinGreen_async.log",      // Log file path
             100 * 1024 * 1024,          // Max file size (100 MB)
-            10                          // Max number of files to keep
+            1
         );
         async_file->set_level(spdlog::level::debug);
 

@@ -154,9 +154,9 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     config.trading_days.clear();
     for (int i = 0; i < 7; ++i) {
         QString key = QString("trading_day_%1").arg(i);
-        if (values.contains(key) && values[key].toBool()) {
+        if (values.contains(key) && values[key].toBool()) 
             config.trading_days.push_back(i);
-        }
+        
     }
     
     // Fixed SL/TP values
@@ -184,6 +184,18 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     
     if (values.contains("tp_sl_ratio"))
         config.tp_sl_ratio = values["tp_sl_ratio"].toDouble();
+    
+    // Paramètres SuperTrend pour TP
+    if (values.contains("use_supertrend_for_tp"))
+        config.use_supertrend_for_tp = values["use_supertrend_for_tp"].toBool();
+    else if (values.contains("tp_method"))
+        config.use_supertrend_for_tp = (values["tp_method"].toInt() == 3); // Index 3 = SuperTrend
+    
+    if (values.contains("tp_supertrend_atr_period"))
+        config.tp_supertrend_atr_period = values["tp_supertrend_atr_period"].toInt();
+    
+    if (values.contains("tp_supertrend_multiplier"))
+        config.tp_supertrend_multiplier = values["tp_supertrend_multiplier"].toDouble();
     
     if (values.contains("atr_period"))
         config.atr_period = values["atr_period"].toInt();
@@ -250,18 +262,12 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
         config.daily_max_profit_percentage = values["daily_max_profit_percentage"].toDouble();
     
     // Calculer le montant de perte maximale journalière basé sur le capital
-    if (config.use_daily_max_loss) {
-        config.daily_max_loss_amount = config.cash * (config.daily_max_loss_percentage / 100.0);
-    } else {
-        config.daily_max_loss_amount = 0.0;
-    }
-    
+    if (config.use_daily_max_loss) config.daily_max_loss_amount = config.cash * (config.daily_max_loss_percentage / 100.0);
+    else config.daily_max_loss_amount = 0.0;
+
     // Calculer le montant de profit maximal journalier basé sur le capital
-    if (config.use_daily_max_profit) {
-        config.daily_max_profit_amount = config.cash * (config.daily_max_profit_percentage / 100.0);
-    } else {
-        config.daily_max_profit_amount = 0.0;
-    }
-    
+    if (config.use_daily_max_profit) config.daily_max_profit_amount = config.cash * (config.daily_max_profit_percentage / 100.0);
+    else config.daily_max_profit_amount = 0.0;
+
     return config;
 }

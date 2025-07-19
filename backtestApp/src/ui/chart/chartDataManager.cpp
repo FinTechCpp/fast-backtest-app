@@ -1,5 +1,6 @@
 #include "ui/chart/chartDataManager.h"
 #include <QDebug>
+#include <iostream>
 
 
 const std::array<ChartDataManager::ChartTypeInfo, static_cast<size_t>(ChartDataManager::ChartType::Count)> ChartDataManager::s_chartTypeData = {{
@@ -134,6 +135,10 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
         aggregatedData.low = m_backtestData->getLow();
         aggregatedData.close = m_backtestData->getClose();
         aggregatedData.volume = m_backtestData->getVolume();
+        // Création du mapping direct (chaque indice correspond à lui-même)
+        aggregatedData.rawIndicesMapping.resize(m_timestampsCache.size());
+        for (size_t i = 0; i < m_timestampsCache.size(); ++i)
+            aggregatedData.rawIndicesMapping[i] = {static_cast<int>(i)};
         aggregatedData.level = AggregationLevel::Raw;
         aggregatedData.isValid = true;
         return;
@@ -189,6 +194,19 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
     
     // Obtenir les indices après sélection
     DoubleArray indices = timestampsMath.result();
+
+    aggregatedData.rawIndicesMapping.clear();
+    int currentGroup = -1;
+    for (int i = 0; i < indices.len; i++) {
+        if (indices[i] != Chart::NoValue) {
+            currentGroup++;
+            aggregatedData.rawIndicesMapping.push_back({});
+        }
+        if (currentGroup >= 0) {
+            // Ajouter cet indice brut au groupe courant
+            aggregatedData.rawIndicesMapping[currentGroup].push_back(i);
+        }
+    }
     
     if (indices.len <= 0) {
         qDebug() << "Agrégation échouée - aucun point sélectionné";
@@ -454,19 +472,56 @@ void ChartDataManager::calculatePivotPoints(int id, const PivotPointsInstance& c
     
     // Structure pour stocker les niveaux calculés
     std::map<int, std::vector<PivotSegment>> levelSegments = TechnicalIndicators::calculatePivotPoints(
-        openPrices,
-        highPrices, 
-        lowPrices, 
-        closePrices, 
-        dates, 
-        config.periodType,
-        config.calculationMethod
+        openPrices, highPrices, lowPrices, closePrices, dates, 
+        config.periodType, config.calculationMethod
     );
     
     // Mettre à jour la structure IndicatorData pour le niveau Raw
     auto& indicatorData = m_aggregatedIndicatorsCache[AggregationLevel::Raw];
     indicatorData.validPivotPointsIds.insert(id);
     indicatorData.pivotPointsSegments[id] = std::move(levelSegments);
+
+    // Pré-calculer les indices pour tous les niveaux d'agrégation existants
+    for (const auto& [level, cache] : m_aggregatedOHLCVCache) {
+        if (level != AggregationLevel::Raw && cache.isValid) {
+            precalculatePivotIndices(id, level);
+        }
+    }
+}
+
+void ChartDataManager::precalculatePivotIndices(int pivotId, AggregationLevel level) {
+    // Vérifier si le pivot existe au niveau Raw
+    auto& rawIndicators = m_aggregatedIndicatorsCache[AggregationLevel::Raw];
+    auto rawPivotIt = rawIndicators.pivotPointsSegments.find(pivotId);
+    if (rawPivotIt == rawIndicators.pivotPointsSegments.end()) return;
+    
+    // Créer une nouvelle entrée pour le niveau agrégé s'il n'existe pas déjà
+    auto& aggIndicators = m_aggregatedIndicatorsCache[level];
+    aggIndicators.validPivotPointsIds.insert(pivotId);
+    
+    // Pour chaque type de niveau de pivot (PP, R1, S1, etc.)
+    for (auto& [levelType, segments] : rawPivotIt->second) {
+        // APPROCHE 1: Modification directe des segments bruts
+        // Cette approche met à jour les segments d'origine
+        for (auto& segment : segments) {
+            // Calculer et stocker directement dans le segment original
+            int aggStartIndex = rawToAggregatedIndex(level, static_cast<int>(segment.rawStartIndex));
+            int aggEndIndex = rawToAggregatedIndex(level, static_cast<int>(segment.rawEndIndex));
+            
+            // Mettre à jour le mapping dans le segment brut
+            segment.aggregatedIndices[level] = {aggStartIndex, aggEndIndex};
+        }
+        
+        // APPROCHE 2: Copier les segments dans le cache agrégé
+        // Cette approche crée des copies pour le niveau agrégé
+        auto& aggSegments = aggIndicators.pivotPointsSegments[pivotId][levelType];
+        aggSegments.clear();
+        
+        for (const auto& segment : segments) {
+            // Ajouter une copie du segment au niveau agrégé
+            aggSegments.push_back(segment);
+        }
+    }
 }
 
 // Méthode utilitaire pour configurer le sélecteur d'agrégation
@@ -576,7 +631,61 @@ void ChartDataManager::setMaxDisplayPoints(int value) {
     }
 }
 
-void ChartDataManager::calculateIndicator(const IndicatorBase &config) {
+int ChartDataManager::rawToAggregatedIndex(AggregationLevel level, int rawIndex) const {
+    // Si pas d'agrégation, l'indice est identique
+    if (level == AggregationLevel::Raw)
+        return rawIndex;
+        
+    // Vérifier que le niveau existe dans le cache
+    auto it = m_aggregatedOHLCVCache.find(level);
+    if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid)
+        return -1;
+        
+    // Rechercher dans le mapping
+    const auto& mapping = it->second.rawIndicesMapping;
+    for (size_t i = 0; i < mapping.size(); ++i) {
+        for (int idx : mapping[i]) {
+            if (idx == rawIndex)
+                return static_cast<int>(i);
+        }
+    }
+    
+    return -1;  // Indice non trouvé
+}
+
+const std::vector<int>& ChartDataManager::getAggregatedToRawIndices(AggregationLevel level, int aggregatedIndex) const {
+    static const std::vector<int> empty;
+    
+    // Cas spécial pour Raw: retourner singleton avec l'indice lui-même
+    if (level == AggregationLevel::Raw) {
+        static std::vector<int> singleIndex;
+        singleIndex = {aggregatedIndex};
+        return singleIndex;
+    }
+    
+    // Vérifier que le niveau et l'indice sont valides
+    auto it = m_aggregatedOHLCVCache.find(level);
+    if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid || 
+        aggregatedIndex < 0 || aggregatedIndex >= static_cast<int>(it->second.rawIndicesMapping.size()))
+        return empty;
+        
+    return it->second.rawIndicesMapping[aggregatedIndex];
+}
+
+int ChartDataManager::aggregatedToFirstRawIndex(AggregationLevel level, int aggregatedIndex) const {
+    // Si pas d'agrégation, l'indice est identique
+    if (level == AggregationLevel::Raw)
+        return aggregatedIndex;
+        
+    // Obtenir tous les indices raw correspondants
+    const auto& rawIndices = getAggregatedToRawIndices(level, aggregatedIndex);
+    
+    // Retourner le premier s'il existe
+    return rawIndices.empty() ? -1 : rawIndices.front();
+}
+
+void ChartDataManager::calculateIndicator(const IndicatorBase &config)
+{
     switch (config.type_) {
     case IndicatorType::RSI: {
         const RSIInstance& rsiConfig = static_cast<const RSIInstance&>(config);
@@ -640,7 +749,7 @@ void ChartDataManager::calculateIndicator(const IndicatorBase &config) {
     // }
 }
 
-ChartDataManager::AggregationLevel ChartDataManager::determineStartingAggregationLevel(const DoubleArray& timestamps) const {
+AggregationLevel ChartDataManager::determineStartingAggregationLevel(const DoubleArray& timestamps) const {
     // Si moins de deux timestamps, impossible de déterminer la période
     if (timestamps.len < 2) {
         return AggregationLevel::Raw;

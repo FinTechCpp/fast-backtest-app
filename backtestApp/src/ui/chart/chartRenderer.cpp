@@ -21,7 +21,7 @@ void ChartRenderer::createOrUpdateChart(
     // Extraire les données selon le niveau d'agrégation
     DoubleArray timestamps, openData, highData, lowData, closeData, volumeData;
     
-    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+    if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes directement
         const auto& backtestData = dataManager.getBacktestData();
         int startIndex = aggregationInfo.startIndex;
@@ -418,7 +418,7 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     if (trades.empty() || !dataManager.hasValidData())
         return;
 
-    if (aggregationInfo.level != ChartDataManager::AggregationLevel::Raw) 
+    if (aggregationInfo.level != AggregationLevel::Raw) 
         return; // Les trades ne sont affichés qu'en mode Raw pour l'instant
 
     // Obtenir le graphique principal
@@ -593,7 +593,7 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     addTPSLSegments(mainChart, tpslbeSegments);
     
     // Taille des symboles
-    int symbolSize = (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) ? 11 : 9;
+    int symbolSize = (aggregationInfo.level == AggregationLevel::Raw) ? 11 : 9;
     
     // Flèches d'entrée
     if (!entryLongArrows.empty())
@@ -633,7 +633,7 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
     const std::vector<double>* rsiData = nullptr;
 
 
-    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+    if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
         const auto& rsiMap = dataManager.getActiveIndicators().rsiValues;
         auto it = rsiMap.find(rsi.id);
@@ -697,7 +697,7 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
     int startIndex = aggregationInfo.startIndex;
     int pointsToShow = aggregationInfo.pointCount;
 
-    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+    if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
         const auto& emaMap = dataManager.getActiveIndicators().emaValues;
         auto it = emaMap.find(ema.id);
@@ -752,7 +752,7 @@ void ChartRenderer::addSupertrendToChart(FinanceChart* chart,
     int startIndex = aggregationInfo.startIndex;
     int pointsToShow = aggregationInfo.pointCount;
 
-    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+    if (aggregationInfo.level == AggregationLevel::Raw) {
         auto it = dataManager.getActiveIndicators().supertrendValues.find(supertrend.id);
         if (it != dataManager.getActiveIndicators().supertrendValues.end()) {
             supertrendValues = &it->second.first;
@@ -825,7 +825,7 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
     int startIndex = aggregationInfo.startIndex;
     int pointsToShow = aggregationInfo.pointCount;
 
-    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+    if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
         const auto& stochasticMap = dataManager.getActiveIndicators().stochasticValues;
         auto it = stochasticMap.find(stochastic.id);
@@ -904,7 +904,7 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     int startIndex = aggregationInfo.startIndex;
     int pointsToShow = aggregationInfo.pointCount;
 
-    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+    if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
         const auto& atrMap = dataManager.getActiveIndicators().atrValues;
         auto it = atrMap.find(atr.id);
@@ -972,7 +972,7 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
     int startIndex = aggregationInfo.startIndex;
     int endIndex = startIndex + aggregationInfo.pointCount - 1;
 
-    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+    if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
         const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsSegments;
         auto it = pivotMap.find(pivotPoints.id);
@@ -1015,15 +1015,28 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
         
         // Parcourir tous les segments pour ce niveau
         for (const auto& segment : segments) {
+
+            // Convertir les indices bruts en indices agrégés
+            // Ultra super pas optimisé mais cela fonctionne, il faut faire le travaille une seul fois
+            // int aggStartIndex = dataManager.rawToAggregatedIndex(aggregationInfo.level, segment.startIndex);
+            // int aggEndIndex = dataManager.rawToAggregatedIndex(aggregationInfo.level, segment.endIndex);
+            // int aggStartIndex = segment.rawStartIndex;
+            // int aggEndIndex = segment.rawEndIndex;
+            auto [aggStartIndex, aggEndIndex] = segment.getIndicesForLevel(aggregationInfo.level);
+
+
+            // Si l'un des indices n'a pas pu être converti, passer au segment suivant
+            if (aggStartIndex < 0 || aggEndIndex < 0) continue;
+
             // Vérifier si le segment est dans la plage visible
-            if (segment.endIndex < static_cast<size_t>(startIndex) || 
-                segment.startIndex > static_cast<size_t>(endIndex)) {
+            if (aggEndIndex < static_cast<int>(startIndex) || 
+                aggStartIndex > static_cast<int>(endIndex)) {
                 continue;  // Segment hors plage visible
             }
             
             // Calculer les indices relatifs pour l'affichage
-            int relativeStart = std::max(static_cast<int>(segment.startIndex) - startIndex, 0);
-            int relativeEnd = std::min(static_cast<int>(segment.endIndex) - startIndex, aggregationInfo.pointCount - 1);
+            int relativeStart = std::max(aggStartIndex - startIndex, 0);
+            int relativeEnd = std::min(aggEndIndex - startIndex, aggregationInfo.pointCount - 1);
             
             // Ignorer les segments avec des valeurs non valides ou nulles
             if (segment.value == 0 || std::isnan(segment.value)) continue;
@@ -1216,7 +1229,7 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
     double xValueStart, xValueEnd;
     
     // Récupérer les timestamps selon le niveau d'agrégation actuel
-    if (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) {
+    if (aggregationInfo.level == AggregationLevel::Raw) {
         // En mode Raw, utiliser directement l'indice pour accéder aux timestamps
         const auto& timestamps = dataManager.getTimestamps();
         int startIndex = aggregationInfo.startIndex;

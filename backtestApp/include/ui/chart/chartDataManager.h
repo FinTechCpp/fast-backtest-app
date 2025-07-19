@@ -33,13 +33,6 @@ public:
         Count         ///< Nombre total de types de graphiques
     };
 
-    enum class AggregationLevel {
-        Raw,         // Données brutes
-        OneMinute,   // 1 minute
-        OneHour,     // 1 heure
-        OneDay,      // 1 jour
-    };
-
     // Structures de données
     struct AggregationInfo {
         AggregationLevel level;    // Le niveau d'agrégation optimal
@@ -55,6 +48,7 @@ public:
         std::vector<double> low;
         std::vector<double> close;
         std::vector<double> volume;
+        std::vector<std::vector<int>> rawIndicesMapping;  // Pour chaque indice agrégé, liste des indices raw correspondants
         AggregationLevel level;
         bool isValid = false;
     };
@@ -133,6 +127,30 @@ public:
 
     int getMaxDisplayPoints() const { return m_maxDisplayPoints; }
     void setMaxDisplayPoints(int value);
+
+    /**
+     * @brief Convertit un indice brut en indice agrégé
+     * @param level Niveau d'agrégation
+     * @param rawIndex Indice dans les données brutes
+     * @return Indice correspondant dans les données agrégées, ou -1 si non trouvé
+     */
+    int rawToAggregatedIndex(AggregationLevel level, int rawIndex) const;
+    
+    /**
+     * @brief Obtient tous les indices bruts pour un indice agrégé donné
+     * @param level Niveau d'agrégation
+     * @param aggregatedIndex Indice dans les données agrégées
+     * @return Vecteur des indices bruts correspondants
+     */
+    const std::vector<int>& getAggregatedToRawIndices(AggregationLevel level, int aggregatedIndex) const;
+    
+    /**
+     * @brief Obtient le premier indice brut pour un indice agrégé donné
+     * @param level Niveau d'agrégation
+     * @param aggregatedIndex Indice dans les données agrégées
+     * @return Premier indice brut correspondant, ou -1 si non trouvé
+     */
+    int aggregatedToFirstRawIndex(AggregationLevel level, int aggregatedIndex) const;
 
     
     void removeAllIndicators();
@@ -220,6 +238,8 @@ private:
     void calculateATR(int id, int period, bool useLogScale = false);
     // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
     void calculatePivotPoints(int id, const PivotPointsInstance& config);
+
+    void precalculatePivotIndices(int pivotId, AggregationLevel level);
 
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;

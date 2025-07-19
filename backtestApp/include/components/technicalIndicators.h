@@ -5,17 +5,40 @@
 #include <algorithm>
 #include <map>
 #include <tuple>
+#include <unordered_map>
+#include <set>
 #include "date.hpp"
 // super pas top, je fais pour avoir PivotPointsInstance::PeriodType pour les points pivots
 #include "ui/chart/indicatorInstances.h"
 
+enum class AggregationLevel {
+    Raw,         // Données brutes
+    OneMinute,   // 1 minute
+    OneHour,     // 1 heure
+    OneDay,      // 1 jour
+};
+
 struct PivotSegment {
-    size_t startIndex;  // Indice de début du segment
-    size_t endIndex;    // Indice de fin du segment (inclus)
+    // a supprimer pour mettre dans le unordered_map
+    size_t rawStartIndex;  // Indice de début du segment
+    size_t rawEndIndex;    // Indice de fin du segment (inclus)
+
+    std::unordered_map<AggregationLevel, std::pair<int, int>> aggregatedIndices;
+
     double value;       // Valeur du niveau pour ce segment
-    
-    PivotSegment(size_t start, size_t end, double val) 
-        : startIndex(start), endIndex(end), value(val) {}
+
+    PivotSegment(size_t start, size_t end, double val)
+        : rawStartIndex(start), rawEndIndex(end), value(val) {}
+
+    // Méthode pour obtenir les indices pour un niveau donné
+    std::pair<int, int> getIndicesForLevel(AggregationLevel level) const {
+        // Si Raw ou si le niveau n'existe pas encore, retourner les indices bruts
+        if (level == AggregationLevel::Raw || 
+            aggregatedIndices.find(level) == aggregatedIndices.end()) {
+            return {static_cast<int>(rawStartIndex), static_cast<int>(rawEndIndex)};
+        }
+        return aggregatedIndices.at(level);
+    }
 };
 
 /**

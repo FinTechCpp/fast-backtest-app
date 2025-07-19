@@ -482,11 +482,11 @@ void ChartDataManager::calculatePivotPoints(int id, const PivotPointsInstance& c
     indicatorData.pivotPointsSegments[id] = std::move(levelSegments);
 
     // Pré-calculer les indices pour tous les niveaux d'agrégation existants
-    for (const auto& [level, cache] : m_aggregatedOHLCVCache) {
-        if (level != AggregationLevel::Raw && cache.isValid) {
-            precalculatePivotIndices(id, level);
-        }
-    }
+    // for (const auto& [level, cache] : m_aggregatedOHLCVCache) {
+    //     if (level != AggregationLevel::Raw && cache.isValid) {
+    //         precalculatePivotIndices(id, level);
+    //     }
+    // }
 }
 
 void ChartDataManager::precalculatePivotIndices(int pivotId, AggregationLevel level) {

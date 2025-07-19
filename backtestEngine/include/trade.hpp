@@ -11,6 +11,13 @@ namespace be {
 class Broker;
 class Order;
 
+enum class CloseReason {
+    Unknown,      // Pas encore déterminé
+    ManualClose,  // Fermeture manuelle (liquidation)
+    StopLoss,     // Fermé par Stop Loss
+    TakeProfit,   // Fermé par Take Profit
+    BreakEven     // Fermé par Stop Loss en Break Even
+};
 
 /**
  * @brief Représentation d'une transaction exécutée
@@ -87,6 +94,15 @@ public:
     Date entryDate() const { return _entryDate; } ///< Date d'entrée
     Date exitDate() const { return _exitDate; } ///< Date de sortie (Date() si encore actif)
     std::string tag() const { return _tag; } ///< Étiquette descriptive
+    
+    /**
+     * @brief Obtient la raison de clôture du trade
+     * @return La raison de clôture
+     */
+    CloseReason closeReason() const { return _closeReason; }
+    
+    // Pour le broker (friend class)
+    void setCloseReason(CloseReason reason) { _closeReason = reason; }
 
     /**
      * @brief Vérifie si le trade est en mode break-even
@@ -211,6 +227,7 @@ private:
     Date _entryDate;                     ///< Date d'entrée
     size_t _exitBar;                     ///< Barre de sortie
     Date _exitDate;                      ///< Date de sortie
+    CloseReason _closeReason = CloseReason::Unknown; ///< Raison de la fermeture du trade
     std::string _tag;                    ///< Étiquette descriptive
     double _commissions;                 ///< Commissions totales payées
     bool _isBreakEven = false;           ///< Indique si le trade est en mode break-even

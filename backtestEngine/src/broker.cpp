@@ -295,6 +295,21 @@ void Broker::processOrders() {
         if (order.parentTrade()) {
             auto trade = order.parentTrade();
             double prevSize = trade->size();
+
+            // Déterminer le type de fermeture (SL ou TP)
+            if (order.limit() > 0.0) {
+                // C'est un ordre limit (TP)
+                trade->setCloseReason(CloseReason::TakeProfit);
+            } else if (order.stop() > 0.0 || 
+                    (order.parentTrade() && *order.parentTrade()->slOrder() == order)) {
+                // C'est un ordre stop (SL)
+                // Si le trade est en break-even, marquer comme tel
+                if (trade->isBreakEven()) {
+                    trade->setCloseReason(CloseReason::BreakEven);
+                } else {
+                    trade->setCloseReason(CloseReason::StopLoss);
+                }
+            }
             
             // Calculer la taille réelle à fermer
             double closeSize = std::copysign(
@@ -521,6 +536,11 @@ void Broker::closeTrade(std::shared_ptr<Trade> trade, double price, size_t barIn
             _orders.erase(orderIt);
         }
     }
+
+    // Si aucune raison de clôture n'a été définie, c'est une fermeture manuelle
+    if (trade->closeReason() == CloseReason::Unknown) {
+        trade->setCloseReason(CloseReason::ManualClose);
+    }
     
     // Apply spread to exit price - opposite direction to entry
     // When closing a long position (selling), we get bid price (price - spread / 2)
@@ -608,11 +628,7 @@ void Broker::finalizeOrders() {
         // Fermer tous les trades restants avec le dernier prix
         std::vector<std::shared_ptr<Trade>> tradesCopy = _trades;
         for (auto& trade : tradesCopy) {
-            try {
-                closeTrade(trade, close, _data->size() - 1);
-            } catch (const std::exception& e) {
-                std::cerr << "ERROR in finalizeOrders/closeTrade: " << e.what() << std::endl;
-            }
+            closeTrade(trade, close, _data->size() - 1);
         }
         
         // Mettre à jour l'equity curve pour la dernière barre

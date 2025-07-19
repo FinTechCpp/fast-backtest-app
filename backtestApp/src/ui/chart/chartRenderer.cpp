@@ -426,10 +426,12 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
         return;
 
     // Constantes pour les couleurs selon résultat
-    const int COLOR_WIN = 0x00AA00;    // Vert
-    const int COLOR_LOSS = 0xCC0000;   // Rouge
+    const int COLOR_TP = 0x00AA00;    // Vert
+    const int COLOR_SL = 0xCC0000;   // Rouge
+    const int COLOR_BE = 0x0000CC; // Bleu
     const int COLOR_NEUTRAL = 0x000000; // Noir
-    
+    const int COLOR_UNKNOWN = 0x808080; // Gris
+
     // Marqueurs carrés pour position exacte
     std::vector<std::pair<double, double>> entryMarkers;
     std::vector<std::pair<double, double>> exitMarkers;
@@ -439,11 +441,13 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     std::vector<std::pair<double, double>> entryShortArrows; // Ventes (flèche rouge vers le bas)
     
     // Flèches de sortie (selon résultat et direction)
-    std::vector<std::pair<double, double>> exitLongWinArrows;    // Sortie achat gagnant
-    std::vector<std::pair<double, double>> exitLongLossArrows;   // Sortie achat perdant
+    std::vector<std::pair<double, double>> exitLongTPArrows;    // Sortie achat gagnant
+    std::vector<std::pair<double, double>> exitLongSLArrows;   // Sortie achat perdante
+    std::vector<std::pair<double, double>> exitLongBEArrows;   // Sortie achat break-even
     std::vector<std::pair<double, double>> exitLongNeutralArrows; // Sortie achat neutre
-    std::vector<std::pair<double, double>> exitShortWinArrows;   // Sortie vente gagnante
-    std::vector<std::pair<double, double>> exitShortLossArrows;  // Sortie vente perdante
+    std::vector<std::pair<double, double>> exitShortTPArrows;   // Sortie vente gagnante
+    std::vector<std::pair<double, double>> exitShortSLArrows;  // Sortie vente perdante
+    std::vector<std::pair<double, double>> exitShortBEArrows;  // Sortie vente break-even
     std::vector<std::pair<double, double>> exitShortNeutralArrows; // Sortie vente neutre
     
     // Préallocation
@@ -452,11 +456,15 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     exitMarkers.reserve(estimatedMarkers);
     entryLongArrows.reserve(estimatedMarkers);
     entryShortArrows.reserve(estimatedMarkers);
-    exitLongWinArrows.reserve(estimatedMarkers/3);
-    exitLongLossArrows.reserve(estimatedMarkers/3);
+
+    exitLongTPArrows.reserve(estimatedMarkers/3);
+    exitLongSLArrows.reserve(estimatedMarkers/3);
+    exitLongBEArrows.reserve(estimatedMarkers/3);
     exitLongNeutralArrows.reserve(estimatedMarkers/3);
-    exitShortWinArrows.reserve(estimatedMarkers/3);
-    exitShortLossArrows.reserve(estimatedMarkers/3);
+
+    exitShortTPArrows.reserve(estimatedMarkers/3);
+    exitShortSLArrows.reserve(estimatedMarkers/3);
+    exitShortBEArrows.reserve(estimatedMarkers/3);
     exitShortNeutralArrows.reserve(estimatedMarkers/3);
 
     std::vector<TPSLBESegment> tpslbeSegments;
@@ -466,12 +474,7 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
         bool isLong = trade->isLong();
         
         // Déterminer le résultat du trade
-        int resultCategory = 0; // 0=neutre, 1=win, 2=loss
-        if (trade->isClosed()) {
-            double pnl = trade->pl();
-            if (pnl > 0) resultCategory = 1;
-            else if (pnl < 0) resultCategory = 2;
-        }
+        be::CloseReason closeReason = trade->closeReason();
 
         // Traiter le point d'entrée
         size_t entryBarIndex = trade->entryBar();
@@ -504,10 +507,12 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
                     double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
                     
                     int color;
-                    if (resultCategory == 1) color = COLOR_WIN;
-                    else if (resultCategory == 2) color = COLOR_LOSS;
-                    else color = COLOR_NEUTRAL;
-                    
+                    if (closeReason == be::CloseReason::TakeProfit) color = COLOR_TP;
+                    else if (closeReason == be::CloseReason::StopLoss) color = COLOR_SL;
+                    else if (closeReason == be::CloseReason::BreakEven) color = COLOR_BE;
+                    else if (closeReason == be::CloseReason::ManualClose) color = COLOR_NEUTRAL;
+                    else color = COLOR_UNKNOWN;
+
                     double tpValue = trade->tp();
                     if (tpValue > 0) {
                         tpslbeSegments.push_back({
@@ -555,20 +560,24 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
                         // Sortie achat: flèche vers le bas AU-DESSUS de la bougie
                         double arrowY = exitCandle.high;
                         
-                        if (resultCategory == 1)
-                            exitLongWinArrows.push_back({relativeExitIndex, arrowY});
-                        else if (resultCategory == 2)
-                            exitLongLossArrows.push_back({relativeExitIndex, arrowY});
+                        if (closeReason == be::CloseReason::TakeProfit)
+                            exitLongTPArrows.push_back({relativeExitIndex, arrowY});
+                        else if (closeReason == be::CloseReason::StopLoss)
+                            exitLongSLArrows.push_back({relativeExitIndex, arrowY});
+                        else if (closeReason == be::CloseReason::BreakEven)
+                            exitLongBEArrows.push_back({relativeExitIndex, arrowY});
                         else
                             exitLongNeutralArrows.push_back({relativeExitIndex, arrowY});
                     } else {
                         // Sortie vente: flèche vers le haut SOUS la bougie
                         double arrowY = exitCandle.low;
-                        
-                        if (resultCategory == 1)
-                            exitShortWinArrows.push_back({relativeExitIndex, arrowY});
-                        else if (resultCategory == 2)
-                            exitShortLossArrows.push_back({relativeExitIndex, arrowY});
+
+                        if (closeReason == be::CloseReason::TakeProfit)
+                            exitShortTPArrows.push_back({relativeExitIndex, arrowY});
+                        else if (closeReason == be::CloseReason::StopLoss)
+                            exitShortSLArrows.push_back({relativeExitIndex, arrowY});
+                        else if (closeReason == be::CloseReason::BreakEven)
+                            exitShortBEArrows.push_back({relativeExitIndex, arrowY});
                         else
                             exitShortNeutralArrows.push_back({relativeExitIndex, arrowY});
                     }
@@ -587,28 +596,27 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     
     // Flèches d'entrée
     if (!entryLongArrows.empty())
-        addMarkers(mainChart, entryLongArrows, "Long Entry", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_WIN, 0, 20); // Flèche verte vers le haut sous la bougie
-    
+        addMarkers(mainChart, entryLongArrows, "Long Entry", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_TP, 0, 20); // Flèche verte vers le haut sous la bougie
     if (!entryShortArrows.empty())
-        addMarkers(mainChart, entryShortArrows, "Short Entry", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_LOSS, 0, -20); // Flèche rouge vers le bas au-dessus
+        addMarkers(mainChart, entryShortArrows, "Short Entry", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_SL, 0, -20); // Flèche rouge vers le bas au-dessus
     
     // Flèches de sortie Long (achat)
-    if (!exitLongWinArrows.empty())
-        addMarkers(mainChart, exitLongWinArrows, "Long Exit Win", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_WIN, 0, -20); // Flèche verte vers le bas au-dessus
-    
-    if (!exitLongLossArrows.empty())
-        addMarkers(mainChart, exitLongLossArrows, "Long Exit Loss", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_LOSS, 0, -20); // Flèche rouge vers le bas au-dessus
-    
+    if (!exitLongTPArrows.empty())
+        addMarkers(mainChart, exitLongTPArrows, "Long Exit Win", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_TP, 0, -20); // Flèche verte vers le bas au-dessus
+    if (!exitLongSLArrows.empty())
+        addMarkers(mainChart, exitLongSLArrows, "Long Exit Loss", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_SL, 0, -20); // Flèche rouge vers le bas au-dessus
+    if (!exitLongBEArrows.empty())
+        addMarkers(mainChart, exitLongBEArrows, "Long Exit Break Even", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_BE, 0, -20); // Flèche bleue vers le bas au-dessus
     if (!exitLongNeutralArrows.empty())
         addMarkers(mainChart, exitLongNeutralArrows, "Long Exit Neutral", Chart::ArrowShape(180, 1, 0.4, 0.4), symbolSize, COLOR_NEUTRAL, 0, -20); // Flèche noire vers le bas au-dessus
     
     // Flèches de sortie Short (vente)
-    if (!exitShortWinArrows.empty())
-        addMarkers(mainChart, exitShortWinArrows, "Short Exit Win", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_WIN, 0, 20); // Flèche verte vers le haut sous la bougie
-    
-    if (!exitShortLossArrows.empty())
-        addMarkers(mainChart, exitShortLossArrows, "Short Exit Loss", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_LOSS, 0, 20); // Flèche rouge vers le haut sous la bougie
-    
+    if (!exitShortTPArrows.empty())
+        addMarkers(mainChart, exitShortTPArrows, "Short Exit Win", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_TP, 0, 20); // Flèche verte vers le haut sous la bougie
+    if (!exitShortSLArrows.empty())
+        addMarkers(mainChart, exitShortSLArrows, "Short Exit Loss", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_SL, 0, 20); // Flèche rouge vers le haut sous la bougie
+    if (!exitShortBEArrows.empty())
+        addMarkers(mainChart, exitShortBEArrows, "Short Exit Break Even", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_BE, 0, 20); // Flèche bleue vers le haut sous la bougie
     if (!exitShortNeutralArrows.empty())
         addMarkers(mainChart, exitShortNeutralArrows, "Short Exit Neutral", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_NEUTRAL, 0, 20); // Flèche noire vers le haut sous la bougie
 }

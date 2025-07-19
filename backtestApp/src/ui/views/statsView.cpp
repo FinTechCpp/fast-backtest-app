@@ -47,7 +47,7 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
     QStringList headers;
     headers << "#" << "Type" << "Taille" << "Prix d'entrée" << "Prix de sortie" 
             << "PnL" << "PnL %" << "Durée" << "Date d'entrée" << "Date de sortie"
-            << "SL initial" << "TP" << "B.E." << "Tag";  // Renommé "SL" en "SL initial" et ajouté "B.E."
+            << "SL initial" << "TP" << "Clôture" << "Tag";
     setHorizontalHeaderLabels(headers);
     
     // Ajouter les nouvelles données
@@ -136,16 +136,39 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         }
         setItem(row, 11, new QStandardItem(tpText));
 
-        // Break-Even status
-        QString beStatus = trade->isBreakEven() ? "Oui" : "-";
-        QStandardItem* beItem = new QStandardItem(beStatus);
-        if (trade->isBreakEven()) {
-            beItem->setForeground(Qt::darkBlue);
-            QFont beFont = beItem->font();
-            beFont.setBold(true);
-            beItem->setFont(beFont);
+        // Close Reason (raison de clôture)
+        QString closeReasonText = "-";
+        QColor textColor = Qt::gray; // Par défaut gris pour Unknown/ManualClose
+
+        // Déterminer le texte et la couleur selon le type de clôture
+        switch (trade->closeReason()) {
+            case be::CloseReason::TakeProfit:
+                closeReasonText = "TP";
+                textColor = Qt::darkGreen;
+                break;
+            case be::CloseReason::StopLoss:
+                closeReasonText = "SL";
+                textColor = Qt::darkRed;
+                break;
+            case be::CloseReason::BreakEven:
+                closeReasonText = "BE";
+                textColor = Qt::darkBlue;
+                break;
+            case be::CloseReason::ManualClose:
+                closeReasonText = "Manuel";
+                textColor = Qt::gray;
+                break;
+            default:
+                closeReasonText = "-";
+                textColor = Qt::gray;
         }
-        setItem(row, 12, beItem);
+
+        QStandardItem* closeReasonItem = new QStandardItem(closeReasonText);
+        closeReasonItem->setForeground(textColor);
+        QFont closeReasonFont = closeReasonItem->font();
+        closeReasonFont.setBold(true);
+        closeReasonItem->setFont(closeReasonFont);
+        setItem(row, 12, closeReasonItem);
         
         // Tag (si disponible)
         QString tag = "-";
@@ -154,30 +177,30 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         }
         setItem(row, 13, new QStandardItem(tag));
 
-        // Appliquer un style spécial si c'est un trade en break-even
-        if (trade->isBreakEven() && std::abs(trade->pl()) < 1) {
-            // Parcourir toutes les cellules de la ligne et appliquer une couleur de fond légère
-            for (int col = 0; col < columnCount(); ++col) {
-                QStandardItem* item = this->item(row, col);
-                if (item) {
-                    item->setData(QColor(220, 240, 255), Qt::BackgroundRole); // Bleu très clair
-                }
+        // Appliquer la couleur de fond selon la raison de clôture
+        QColor rowColor;
+        if (trade->closeReason() == be::CloseReason::TakeProfit) {
+            rowColor = QColor(220, 255, 220); // Vert très clair
+        } else if (trade->closeReason() == be::CloseReason::StopLoss) {
+            rowColor = QColor(255, 220, 220); // Rouge très clair
+        } else if (trade->closeReason() == be::CloseReason::BreakEven) {
+            rowColor = QColor(220, 240, 255); // Bleu très clair
+        } else {
+            // ManualClose ou Unknown
+            if (pnl > 0) {
+                rowColor = QColor(240, 255, 240); // Vert très pâle
+            } else if (pnl < 0) {
+                rowColor = QColor(255, 240, 240); // Rouge très pâle
+            } else {
+                rowColor = QColor(240, 240, 240); // Gris très clair
             }
         }
-        else if (pnl >= 0) {
-            for (int col = 0; col < columnCount(); ++col) {
-                QStandardItem* item = this->item(row, col);
-                if (item) {
-                    item->setData(QColor(220, 255, 220), Qt::BackgroundRole); // Vert très clair
-                }
-            }
-        }
-        else {
-            for (int col = 0; col < columnCount(); ++col) {
-                QStandardItem* item = this->item(row, col);
-                if (item) {
-                    item->setData(QColor(255, 220, 220), Qt::BackgroundRole); // Rouge très clair
-                }
+
+        // Appliquer la couleur à toutes les cellules de la ligne
+        for (int col = 0; col < columnCount(); ++col) {
+            QStandardItem* item = this->item(row, col);
+            if (item) {
+                item->setData(rowColor, Qt::BackgroundRole);
             }
         }
     }
@@ -734,8 +757,8 @@ void StatsView::createTradesTableView() {
     m_tradesTable->setColumnWidth(9, 150);  // Date de sortie
     m_tradesTable->setColumnWidth(10, 100); // Stop Loss initial
     m_tradesTable->setColumnWidth(11, 100); // Take Profit
-    m_tradesTable->setColumnWidth(12, 50);  // Break-Even (nouvelle colonne)
-    m_tradesTable->setColumnWidth(13, 80);  // Tag (déplacé)
+    m_tradesTable->setColumnWidth(12, 70);  // Clôture
+    m_tradesTable->setColumnWidth(13, 80);  // Tag
 
     // Hauteur de la table
     m_tradesTable->setMaximumHeight(1000);  

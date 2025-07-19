@@ -95,7 +95,7 @@ void StrategyBasePanel::initialize()
     
     // Méthode de calcul pour le Take Profit
     m_widgets["tp_method"] = new QComboBox();
-    static_cast<QComboBox*>(m_widgets["tp_method"])->addItems({"Fixe", "ATR", "Ratio SL"});
+    static_cast<QComboBox*>(m_widgets["tp_method"])->addItems({"Fixe", "ATR", "Ratio SL", "SuperTrend"});
     static_cast<QComboBox*>(m_widgets["tp_method"])->setCurrentIndex(0);
     connect(static_cast<QComboBox*>(m_widgets["tp_method"]), 
                      QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -129,6 +129,24 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setEnabled(false);
     m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     tpLayout->addRow(new QLabel("Ratio TP/SL:"), m_widgets["tp_sl_ratio"]);
+    
+    // Paramètres SuperTrend - Période ATR
+    m_widgets["tp_supertrend_atr_period"] = new QSpinBox();
+    static_cast<QSpinBox*>(m_widgets["tp_supertrend_atr_period"])->setRange(1, 100);
+    static_cast<QSpinBox*>(m_widgets["tp_supertrend_atr_period"])->setValue(14);
+    static_cast<QSpinBox*>(m_widgets["tp_supertrend_atr_period"])->setEnabled(false);
+    m_widgets["tp_supertrend_atr_period"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Période ATR SuperTrend:"), m_widgets["tp_supertrend_atr_period"]);
+    
+    // Paramètres SuperTrend - Multiplicateur
+    m_widgets["tp_supertrend_multiplier"] = new QDoubleSpinBox();
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setDecimals(1);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setRange(0.1, 10.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setSingleStep(0.1);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setValue(3.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setEnabled(false);
+    m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Multiplicateur SuperTrend:"), m_widgets["tp_supertrend_multiplier"]);
     
     // TP minimum
     m_widgets["min_take_profit_distance"] = new QDoubleSpinBox();
@@ -294,6 +312,7 @@ QMap<QString, QVariant> StrategyBasePanel::getValues()
         QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
         values["use_atr_for_tp"] = (tpMethod->currentIndex() == 1); // Index 1 = ATR
         values["use_sl_ratio_for_tp"] = (tpMethod->currentIndex() == 2); // Index 2 = Ratio SL
+        values["use_supertrend_for_tp"] = (tpMethod->currentIndex() == 3); // Index 3 = SuperTrend
     }
     
     // Ajouter la liste des jours de trading
@@ -319,7 +338,7 @@ void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
         QVariant value = it.value();
         
         // Ignorer les paramètres calculés use_atr_for_sl et use_atr_for_tp
-        if (key == "use_atr_for_sl" || key == "use_atr_for_tp" || key == "use_minmax_for_sl" || key == "use_sl_ratio_for_tp") {
+        if (key == "use_atr_for_sl" || key == "use_atr_for_tp" || key == "use_minmax_for_sl" || key == "use_sl_ratio_for_tp" || key == "use_supertrend_for_tp") {
             continue;
         }
         
@@ -420,6 +439,7 @@ void StrategyBasePanel::_toggleTpMethod(int index)
     bool isFixed = (index == 0);
     bool isAtr = (index == 1);
     bool isRatio = (index == 2);
+    bool isSupertrend = (index == 3);
     
     if (m_widgets.contains("take_profit_distance")) {
         m_widgets["take_profit_distance"]->setEnabled(isFixed);
@@ -441,6 +461,20 @@ void StrategyBasePanel::_toggleTpMethod(int index)
             m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
         else 
             m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    }
+    if (m_widgets.contains("tp_supertrend_atr_period")) {
+        m_widgets["tp_supertrend_atr_period"]->setEnabled(isSupertrend);
+        if (isSupertrend)
+            m_widgets["tp_supertrend_atr_period"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["tp_supertrend_atr_period"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    }
+    if (m_widgets.contains("tp_supertrend_multiplier")) {
+        m_widgets["tp_supertrend_multiplier"]->setEnabled(isSupertrend);
+        if (isSupertrend)
+            m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     
     // Mettre à jour le statut de la période ATR

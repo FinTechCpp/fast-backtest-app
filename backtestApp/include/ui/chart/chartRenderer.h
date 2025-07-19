@@ -33,22 +33,21 @@ struct ChartConfiguration {
     double yScaleOffset = 0.0;    // Décalage vertical en unités de l'échelle
 };
 
+enum class TPSLBEType {
+    TakeProfit,  // Niveau de Take Profit
+    StopLoss,    // Niveau de Stop Loss
+    BreakEven    // Niveau de Break Even
+};
+
 // Structure pour les segments TP/SL des trades
-struct TPSLSegment {
+struct TPSLBESegment {
     double startX;        // Index du point d'entrée
     double endX;          // Index du point de sortie
     double level;         // Niveau de prix (TP ou SL)
-    bool isTakeProfit;    // true = TP, false = SL
+    TPSLBEType type;     // Type de niveau (TP, SL, BE)
     int color;            // Couleur basée sur le résultat du trade
 };
 
-// il faut merge avec la structure TPSLSegment
-struct TriggerPriceSegment {
-    double startIndex;
-    double endIndex;
-    double price;
-    int color;
-};
 
 
 class ChartRenderer {
@@ -105,7 +104,7 @@ private:
                          const ChartDataManager& dataManager,
                          const ChartDataManager::AggregationInfo& aggregationInfo);
                          
-    void addTriggerPriceSegments(XYChart* chart, const std::vector<TriggerPriceSegment>& segments);
+    // void addTriggerPriceSegments(XYChart* chart, const std::vector<TriggerPriceSegment>& segments);
 
     
     // Méthodes pour l'ajout d'indicateurs
@@ -151,7 +150,7 @@ private:
                    int offsetY = 0);
     
     void addTPSLSegments(XYChart* chart, 
-                        const std::vector<TPSLSegment>& segments);
+                        const std::vector<TPSLBESegment>& segments);
         
     // Données membres
     std::unique_ptr<FinanceChart> m_financeChart;

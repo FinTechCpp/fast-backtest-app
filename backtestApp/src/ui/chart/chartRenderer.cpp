@@ -459,8 +459,8 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     exitShortLossArrows.reserve(estimatedMarkers/3);
     exitShortNeutralArrows.reserve(estimatedMarkers/3);
 
-    std::vector<TPSLSegment> tpslSegments;
-    tpslSegments.reserve(estimatedMarkers * 2);
+    std::vector<TPSLBESegment> tpslbeSegments;
+    tpslbeSegments.reserve(estimatedMarkers * 2);
 
     for (const auto& trade : trades) {
         bool isLong = trade->isLong();
@@ -510,18 +510,27 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
                     
                     double tpValue = trade->tp();
                     if (tpValue > 0) {
-                        tpslSegments.push_back({
+                        tpslbeSegments.push_back({
                             relativeIndex, relativeExitIndex, 
-                            tpValue, true, // true = TP
+                            tpValue, TPSLBEType::TakeProfit,
                             color
                         });
                     }
                     
                     double slValue = (trade->initialSlPrice() > 0) ? trade->initialSlPrice() : trade->sl();
                     if (slValue > 0) {
-                        tpslSegments.push_back({
+                        tpslbeSegments.push_back({
                             relativeIndex, relativeExitIndex,
-                            slValue, false, // false = SL
+                            slValue, TPSLBEType::StopLoss,
+                            color
+                        });
+                    }
+
+                    double beValue = trade->breakEvenTriggerPrice();
+                    if (beValue > 0) {
+                        tpslbeSegments.push_back({
+                            relativeIndex, relativeExitIndex,
+                            beValue, TPSLBEType::BreakEven,
                             color
                         });
                     }
@@ -571,7 +580,7 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
     // Ajouter les marqueurs carrés pour les positions exactes
     addMarkers(mainChart, entryMarkers, "Entry", Chart::SquareSymbol, 7, 0x000000);
     addMarkers(mainChart, exitMarkers, "Exit", Chart::SquareSymbol, 7, 0x000000);
-    addTPSLSegments(mainChart, tpslSegments);
+    addTPSLSegments(mainChart, tpslbeSegments);
     
     // Taille des symboles
     int symbolSize = (aggregationInfo.level == ChartDataManager::AggregationLevel::Raw) ? 11 : 9;
@@ -1126,18 +1135,19 @@ void ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<doubl
     layer->moveFront();
 }
 
-void ChartRenderer::addTPSLSegments(XYChart* chart, const std::vector<TPSLSegment>& segments)
+void ChartRenderer::addTPSLSegments(XYChart* chart, const std::vector<TPSLBESegment>& segments)
 {
     if (segments.empty()) return;
     
     // Créer des vecteurs séparés pour les segments TP et SL
     std::vector<double> tpXData, tpYData;
     std::vector<double> slXData, slYData;
+    std::vector<double> beXData, beYData;
     
     // Parcourir tous les segments et les séparer par type
     for (const auto& segment : segments) {
-        std::vector<double>& xData = segment.isTakeProfit ? tpXData : slXData;
-        std::vector<double>& yData = segment.isTakeProfit ? tpYData : slYData;
+        std::vector<double>& xData = segment.type == TPSLBEType::TakeProfit ? tpXData : (segment.type == TPSLBEType::StopLoss ? slXData : beXData);
+        std::vector<double>& yData = segment.type == TPSLBEType::TakeProfit ? tpYData : (segment.type == TPSLBEType::StopLoss ? slYData : beYData);
         
         // Ajouter le point de départ du segment horizontal
         xData.push_back(segment.startX);
@@ -1178,6 +1188,20 @@ void ChartRenderer::addTPSLSegments(XYChart* chart, const std::vector<TPSLSegmen
         slLayer->setXData(slX);
         slLayer->addDataSet(slY, 0xCC0000, "Stop Loss");
         slLayer->moveFront();
+    }
+
+    // Ajouter les segments de Break Even
+    if (!beXData.empty()) {
+        LineLayer* beLayer = chart->addLineLayer();
+        beLayer->setLineWidth(1);
+        beLayer->setFastLineMode(true);
+
+        DoubleArray beX = ChartDataManager::vectorToDoubleArray(beXData);
+        DoubleArray beY = ChartDataManager::vectorToDoubleArray(beYData);
+
+        beLayer->setXData(beX);
+        beLayer->addDataSet(beY, 0x0000CC, "Break Even");
+        beLayer->moveFront();
     }
 }
 

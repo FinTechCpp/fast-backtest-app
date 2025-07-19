@@ -19,7 +19,8 @@ void registerAllStrategies() {
             // Récupérer les configurations typées directement depuis les panels
             QMap<QString, QVariant> generalParams = app->getGeneralParamsPanel()->getValues();
             StrategyBaseConfig baseConfig = app->getStrategyBasePanel()->getConfig();
-            baseConfig.cash = generalParams.value("cash", 0.0).toDouble();
+            baseConfig.cash = generalParams.value("cash", -1.0).toDouble();
+            baseConfig.leverage_limit = generalParams.value("leverage_limit", -1.0).toDouble();
             BuyHeikinGreenConfig specificConfig = 
                 dynamic_cast<BuyHeikinGreenPanel*>(app->getStrategySpecificPanel())->getConfig();
 

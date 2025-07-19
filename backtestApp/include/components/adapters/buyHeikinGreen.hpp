@@ -154,7 +154,7 @@ public:
             double triggerPrice = signal->price > 0 ? signal->price : 0.0;
             bool success = current_trade->setBreakEven(0.0, triggerPrice);
         }
-        else if (trades.empty() && signal->action == "BUY") {
+        else if (trades.empty() && signal->action == "BUY" && signal->quantity > 0) {
             // Process a buy signal
             buy(
                 signal->quantity,
@@ -167,7 +167,7 @@ public:
                 // signal->tag
             );
         }
-        else if (trades.empty() && signal->action == "SELL") {
+        else if (trades.empty() && signal->action == "SELL" && signal->quantity > 0) {
             // Process a sell signal
             sell(
                 signal->quantity,

@@ -28,10 +28,10 @@ Order Strategy::buy(double size,
                    double tp_points,
                    const std::string& tag) {
     // Validation des paramètres
-    if (size <= 0) {
+    if (size < 0) {
         throw std::invalid_argument("Size must be positive for buy orders");
     }
-    
+
     // Vérifier qu'on ne spécifie pas à la fois sl et sl_points
     if (sl != 0.0 && sl_points != 0.0) {
         throw std::invalid_argument("Cannot specify both sl and sl_points");

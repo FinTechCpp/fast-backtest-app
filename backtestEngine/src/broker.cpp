@@ -324,21 +324,21 @@ void Broker::processOrders() {
             
             // Traitement de la taille proportionnelle
             double size = order.size();
-            if (std::abs(size) < 1.0) {
-                size = std::copysign(
-                    std::floor((marginAvailable() * _leverage * std::abs(size)) / adjustedPriceWithCommission),
-                    size
-                );
+            // if (std::abs(size) < 1.0) {
+            //     size = std::copysign(
+            //         std::floor((marginAvailable() * _leverage * std::abs(size)) / adjustedPriceWithCommission),
+            //         size
+            //     );
                 
-                if (size == 0) {
-                    // Pas assez de marge, annuler l'ordre
-                    auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
-                    if (orderToRemove != _orders.end()) {
-                        _orders.erase(orderToRemove);
-                    }
-                    continue;
-                }
-            }
+            //     if (size == 0) {
+            //         // Pas assez de marge, annuler l'ordre
+            //         auto orderToRemove = std::find(_orders.begin(), _orders.end(), order);
+            //         if (orderToRemove != _orders.end()) {
+            //             _orders.erase(orderToRemove);
+            //         }
+            //         continue;
+            //     }
+            // }
             
             double needSize = size; // Taille nécessaire à ouvrir/fermer
             

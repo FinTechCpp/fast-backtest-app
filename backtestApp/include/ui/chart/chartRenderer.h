@@ -100,7 +100,6 @@ private:
     void addTradeMarkers(FinanceChart *chart, 
                          const DoubleArray &timestamps,
                          int startIndex,
-                         const std::vector<std::shared_ptr<be::Trade>>& trades,
                          const ChartDataManager& dataManager,
                          const ChartDataManager::AggregationInfo& aggregationInfo);
                          

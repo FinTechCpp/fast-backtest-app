@@ -36,7 +36,6 @@ public:
     enum class AggregationLevel {
         Raw,         // Données brutes
         OneMinute,   // 1 minute
-        // ajouter 10 minutes mais pas si evident
         OneHour,     // 1 heure
         OneDay,      // 1 jour
     };
@@ -78,7 +77,6 @@ public:
         std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
-        std::map<int, std::map<int, std::vector<double>>> pivotPointsValues; // ID -> (LevelType -> valeurs)
         std::map<int, std::map<int, std::vector<PivotSegment>>> pivotPointsSegments;
 
         AggregationLevel level;

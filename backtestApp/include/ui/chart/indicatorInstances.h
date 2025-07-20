@@ -116,8 +116,8 @@ struct SuperTrendInstance : public IndicatorBase {
     void setDefaults() override {
         period = 10;
         multiplier = 3.0;
-        upColor = 0x00AA00;
-        downColor = 0xFF0000;
+        upColor = 0xFFA500; // Orange doré
+        downColor = 0x8B008B; // Rose extrêmememnt foncé
     }
 };
 

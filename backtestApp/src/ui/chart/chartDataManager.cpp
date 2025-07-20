@@ -481,118 +481,76 @@ void ChartDataManager::calculatePivotPoints(const PivotPointsInstance& config) {
     // Pré-calculer les indices pour tous les niveaux d'agrégation existants
     for (const auto& [level, cache] : m_aggregatedOHLCVCache) {
         if (level != AggregationLevel::Raw && cache.isValid) {
-            // precalculatePivotIndices(id, level);
+            precalculatePivotIndices(m_pivotPeriods[config.id], level);
         }
     }
 }
 
-// void ChartDataManager::precalculatePivotIndices(int pivotId, AggregationLevel level) {
-//     // Vérifier si le pivot existe au niveau Raw
-//     IndicatorData& rawIndicators = m_aggregatedIndicatorsCache[AggregationLevel::Raw];
-//     auto rawPivotIt = rawIndicators.pivotPeriods.find(pivotId);
-//     if (rawPivotIt == rawIndicators.pivotPeriods.end()) return;
+void ChartDataManager::precalculatePivotIndices(std::vector<PivotPeriod>& periods, AggregationLevel level) {
     
-//     // Créer une nouvelle entrée pour le niveau agrégé
-//     IndicatorData& aggIndicators = m_aggregatedIndicatorsCache[level];
-//     aggIndicators.validPivotPointsIds.insert(pivotId);
+    // Vérifier que le niveau existe dans le cache
+    auto it = m_aggregatedOHLCVCache.find(level);
+    if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid)
+        return;
+
+    const std::vector<std::vector<int>>& mapping = it->second.rawIndicesMapping;
+    if (mapping.empty() || periods.empty())
+        return;
+
+    // Trier les périodes par ordre croissant de leur rawStartIndex
+    // std::sort(periods.begin(), periods.end(), 
+    //     [](const PivotPeriod& a, const PivotPeriod& b) {
+    //         return a.rawStartIndex < b.rawStartIndex;
+    //     });
+
+    // Curseurs pour parcourir le mapping une seule fois
+    size_t mappingIdx = 0;
     
-//     // Vérifier que le niveau existe dans le cache
-//     auto it = m_aggregatedOHLCVCache.find(level);
-//     if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid)
-//         return;
-    
-//     const std::vector<std::vector<int>>& mapping = it->second.rawIndicesMapping;
-//     std::vector<PivotPeriod>& aggPeriods = aggIndicators.pivotPeriods[pivotId];
-    
-//     // Copier les périodes avec leurs niveaux
-//     aggPeriods = rawPivotIt->second;
-    
-//     // la double boucle ne va pas enfiate il faut parcourir le mapping et les PivotPeriods en MEME temps. L'idée sera&it de faire une bouble sur les aggPeriods et de faire l'indice dans le mapping qui s'incremente petit a petit plutot que de repartir au debut (a cause de la boucle for imbriquée)
-//     // Calculer les indices agrégés pour chaque période une seule fois
-//     for (PivotPeriod& period : aggPeriods) {
-//         // Trouver l'indice agrégé de début
-//         int aggStartIndex = -1;
-//         for (size_t i = 0; i < mapping.size(); ++i) {
-//             for (int rawIdx : mapping[i]) {
-//                 if (rawIdx == static_cast<int>(period.rawStartIndex)) {
-//                     aggStartIndex = static_cast<int>(i);
-//                     break;
-//                 }
-//             }
-//             if (aggStartIndex >= 0) break;
-//         }
+    for (PivotPeriod& period : periods) {
+        int aggStartIndex = -1;
+        int aggEndIndex = -1;
+
+        const auto& [rawStartIndex, rawEndIndex] = period.indices[AggregationLevel::Raw];
         
-//         // Trouver l'indice agrégé de fin
-//         int aggEndIndex = -1;
-//         for (size_t i = 0; i < mapping.size(); ++i) {
-//             for (int rawIdx : mapping[i]) {
-//                 if (rawIdx == static_cast<int>(period.rawEndIndex)) {
-//                     aggEndIndex = static_cast<int>(i);
-//                     break;
-//                 }
-//             }
-//             if (aggEndIndex >= 0) break;
-//         }
-        
-//         // Stocker les indices agrégés pour ce niveau d'agrégation
-//         if (aggStartIndex >= 0 && aggEndIndex >= 0) {
-//             period.aggregatedIndices[level] = {aggStartIndex, aggEndIndex};
-//         }
-//     }
-// }
-
-// void ChartDataManager::precalculatePivotIndices(int pivotId, AggregationLevel level) {
-//     // Vérifier si le pivot existe au niveau Raw
-//     IndicatorData& rawIndicators = m_aggregatedIndicatorsCache[AggregationLevel::Raw];
-//     auto rawPivotIt = rawIndicators.pivotPointsSegments.find(pivotId);
-//     if (rawPivotIt == rawIndicators.pivotPointsSegments.end()) return;
-    
-//     // Créer une nouvelle entrée pour le niveau agrégé s'il n'existe pas déjà
-//     auto& aggIndicators = m_aggregatedIndicatorsCache[level];
-//     aggIndicators.validPivotPointsIds.insert(pivotId);
-    
-//     // il faut optimiser le calcule, en effet il n'est surtout pas necessaire de parcourir le mapping des indices plusieurs fois, en effet pour chaque ensemble de segments qui partage le même niveau de pivot ils ont tous les meme entry index et exit index. de plus les niveau sont dans l'ordre croissant donc dès que l'on a fini de faire un ensemble de segments on peut passer au suivant et pas besoin de reparcourir le mapping des indices, juste on avance dans le mapping des indices
-
-//     // si l'algo est bien optimiser on devrait etre capable de parcourir une seul fois le mapping des indices bruts
-
-//     // Vérifier que le niveau existe dans le cache
-//     // auto it = m_aggregatedOHLCVCache.find(level);
-//     // if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid)
-//     //     return -1;
-        
-//     // // Rechercher dans le mapping
-//     // const auto& mapping = it->second.rawIndicesMapping;
-//     // for (size_t i = 0; i < mapping.size(); ++i) {
-//     //     for (int idx : mapping[i]) {
-//     //         if (idx == rawIndex)
-//     //             return static_cast<int>(i);
-//     //     }
-//     // }
-
-//     // Pour chaque type de niveau de pivot (PP, R1, S1, etc.)
-//     for (auto& [levelType, segments] : rawPivotIt->second) {
-//         // APPROCHE 1: Modification directe des segments bruts
-//         // Cette approche met à jour les segments d'origine
-//         for (PivotSegment& segment : segments) {
-//             // Calculer et stocker directement dans le segment original
-//             int aggStartIndex = rawToAggregatedIndex(level, static_cast<int>(segment.rawStartIndex));
-//             int aggEndIndex = rawToAggregatedIndex(level, static_cast<int>(segment.rawEndIndex));
+        // Rechercher l'indice de début
+        while (mappingIdx < mapping.size()) {
+            bool found = false;
+            for (int rawIdx : mapping[mappingIdx]) {
+                if (rawIdx == static_cast<int>(rawStartIndex)) {
+                    aggStartIndex = static_cast<int>(mappingIdx);
+                    found = true;
+                    break;
+                }
+            }
             
-//             // Mettre à jour le mapping dans le segment brut
-//             segment.aggregatedIndices[level] = {aggStartIndex, aggEndIndex};
-//         }
+            if (found) break;
+            mappingIdx++;
+        }
         
-//         // APPROCHE 2: Copier les segments dans le cache agrégé
-//         // Cette approche crée des copies pour le niveau agrégé
-//         auto& aggSegments = aggIndicators.pivotPointsSegments[pivotId][levelType];
-//         aggSegments.clear();
+        // Si on n'a pas trouvé l'indice de début, passer à la période suivante
+        if (aggStartIndex < 0) continue;
+                
+        // Rechercher l'indice de fin à partir du dernier point trouvé
+        while (mappingIdx < mapping.size()) {
+            bool found = false;
+            for (int rawIdx : mapping[mappingIdx]) {
+                if (rawIdx == static_cast<int>(rawEndIndex)) {
+                    aggEndIndex = static_cast<int>(mappingIdx);
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (found) break;
+            mappingIdx++;
+        }
         
-//         for (const PivotSegment& segment : segments) {
-//             // Ajouter une copie du segment au niveau agrégé
-//             aggSegments.push_back(segment);
-//         }
-//     }
-// }
+        // Si les deux indices sont valides, les stocker
+        if (aggStartIndex >= 0 && aggEndIndex >= 0) {
+            period.indices[level] = {aggStartIndex, aggEndIndex};
+        }
+    }
+}
 
 // Méthode utilitaire pour configurer le sélecteur d'agrégation
 bool ChartDataManager::configureAggregationSelector(ArrayMath& math, AggregationLevel level) const {

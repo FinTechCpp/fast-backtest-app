@@ -19,38 +19,11 @@ enum class AggregationLevel {
 };
 
 struct PivotPeriod {
-    // a supprimer pour mettre dans le unordered_map
-    size_t rawStartIndex;  // Indice de début dans les données brutes
-    size_t rawEndIndex;    // Indice de fin dans les données brutes
-
     // Mapping vers les indices agrégés pour différents niveaux d'agrégation
-    std::unordered_map<AggregationLevel, std::pair<int, int>> aggregatedIndices;
+    std::unordered_map<AggregationLevel, std::pair<int, int>> indices;
     
     // Valeurs de tous les niveaux de pivot pour cette période
     std::unordered_map<int, double> levelValues;  // Clé: LevelType (PP, R1, S1, etc.)
-};
-
-struct PivotSegment {
-    // a supprimer pour mettre dans le unordered_map
-    size_t rawStartIndex;  // Indice de début du segment
-    size_t rawEndIndex;    // Indice de fin du segment (inclus)
-
-    std::unordered_map<AggregationLevel, std::pair<int, int>> aggregatedIndices;
-
-    double value;       // Valeur du niveau pour ce segment
-
-    PivotSegment(size_t start, size_t end, double val)
-        : rawStartIndex(start), rawEndIndex(end), value(val) {}
-
-    // Méthode pour obtenir les indices pour un niveau donné
-    std::pair<int, int> getIndicesForLevel(AggregationLevel level) const {
-        // Si Raw ou si le niveau n'existe pas encore, retourner les indices bruts
-        if (level == AggregationLevel::Raw || 
-            aggregatedIndices.find(level) == aggregatedIndices.end()) {
-            return {static_cast<int>(rawStartIndex), static_cast<int>(rawEndIndex)};
-        }
-        return aggregatedIndices.at(level);
-    }
 };
 
 /**

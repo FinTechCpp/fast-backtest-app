@@ -985,17 +985,14 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
     // Parcourir toutes les périodes pivot
     for (const auto& period : pivotPeriods) {
         // Récupérer les indices agrégés pour le niveau d'agrégation actuel
-        auto indicesIt = period.aggregatedIndices.find(currentLevel);
+        auto indicesIt = period.indices.find(currentLevel);
         
         // Si pas d'indices agrégés pour ce niveau, essayer de convertir les indices bruts
         std::pair<int, int> indices;
-        if (indicesIt != period.aggregatedIndices.end()) {
-            indices = indicesIt->second;
-        } 
-        // il faut que les indices pour raw soient dans le aggregatedIndices
-        else if (currentLevel == AggregationLevel::Raw) {
-            indices = {static_cast<int>(period.rawStartIndex), static_cast<int>(period.rawEndIndex)};
-        }
+        if (indicesIt == period.indices.end())
+            continue; // Pas d'indices pour ce niveau
+            
+        indices = indicesIt->second;
         
         int aggStartIndex = indices.first;
         int aggEndIndex = indices.second;

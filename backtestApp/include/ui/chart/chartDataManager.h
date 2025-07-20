@@ -241,7 +241,7 @@ private:
     // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
     void calculatePivotPoints(const PivotPointsInstance& config);
 
-    void precalculatePivotIndices(int pivotId, AggregationLevel level);
+    void precalculatePivotIndices(std::vector<PivotPeriod>& periods, AggregationLevel level);
 
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;

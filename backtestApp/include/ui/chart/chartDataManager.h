@@ -71,8 +71,6 @@ public:
         std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
-        // std::map<int, std::map<int, std::vector<PivotSegment>>> pivotPointsSegments;
-        // std::map<int, std::vector<PivotPeriod>> pivotPeriods; // Pour les périodes de pivots
 
         AggregationLevel level;
         

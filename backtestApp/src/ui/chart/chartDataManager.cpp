@@ -149,22 +149,22 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
     AggregationLevel sourceLevel = AggregationLevel::Raw;
     
     // Ordre hiérarchique des niveaux d'agrégation
-    std::vector<AggregationLevel> levelHierarchy = {
-        AggregationLevel::Raw,
-        AggregationLevel::OneMinute,
-        AggregationLevel::OneHour,
-        AggregationLevel::OneDay
-    };
+    // std::vector<AggregationLevel> levelHierarchy = {
+    //     AggregationLevel::Raw,
+    //     AggregationLevel::OneMinute,
+    //     AggregationLevel::OneHour,
+    //     AggregationLevel::OneDay
+    // };
     
-    // Trouver le niveau le plus élevé disponible qui est inférieur au niveau demandé
-    for (auto it = levelHierarchy.rbegin(); it != levelHierarchy.rend(); ++it) {
-        if (*it < level && 
-            m_aggregatedOHLCVCache.find(*it) != m_aggregatedOHLCVCache.end() && 
-            m_aggregatedOHLCVCache[*it].isValid) {
-            sourceLevel = *it;
-            break;
-        }
-    }
+    // // Trouver le niveau le plus élevé disponible qui est inférieur au niveau demandé
+    // for (auto it = levelHierarchy.rbegin(); it != levelHierarchy.rend(); ++it) {
+    //     if (*it < level && 
+    //         m_aggregatedOHLCVCache.find(*it) != m_aggregatedOHLCVCache.end() && 
+    //         m_aggregatedOHLCVCache[*it].isValid) {
+    //         sourceLevel = *it;
+    //         break;
+    //     }
+    // }
     
     // Si aucun niveau inférieur n'est disponible, on utilise les données brutes
     if (sourceLevel == AggregationLevel::Raw && !m_aggregatedOHLCVCache[sourceLevel].isValid) {
@@ -191,7 +191,10 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
         aggregatedData.isValid = false;
         return;
     }
-    
+
+    timestampsMath.trim(1); // Retirer le premier élément NoValue
+    timestampsMath.insert(DoubleArray(&sourceData.timestamps[0], 1), 0);
+
     // Obtenir les indices après sélection
     DoubleArray indices = timestampsMath.result();
 

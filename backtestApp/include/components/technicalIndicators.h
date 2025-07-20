@@ -18,6 +18,18 @@ enum class AggregationLevel {
     OneDay,      // 1 jour
 };
 
+struct PivotPeriod {
+    // a supprimer pour mettre dans le unordered_map
+    size_t rawStartIndex;  // Indice de début dans les données brutes
+    size_t rawEndIndex;    // Indice de fin dans les données brutes
+
+    // Mapping vers les indices agrégés pour différents niveaux d'agrégation
+    std::unordered_map<AggregationLevel, std::pair<int, int>> aggregatedIndices;
+    
+    // Valeurs de tous les niveaux de pivot pour cette période
+    std::unordered_map<int, double> levelValues;  // Clé: LevelType (PP, R1, S1, etc.)
+};
+
 struct PivotSegment {
     // a supprimer pour mettre dans le unordered_map
     size_t rawStartIndex;  // Indice de début du segment
@@ -145,7 +157,7 @@ public:
         bool useLogScale = false
     );
 
-    static std::map<int, std::vector<PivotSegment>> calculatePivotPoints(
+    static std::vector<PivotPeriod> calculatePivotPoints(
         const std::vector<double>& openData,
         const std::vector<double>& highData,
         const std::vector<double>& lowData,

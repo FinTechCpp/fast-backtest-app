@@ -357,7 +357,7 @@ std::vector<double> TechnicalIndicators::calculateATR(
     return atrValues;
 }
 
-std::map<int, std::vector<PivotSegment>> TechnicalIndicators::calculatePivotPoints(
+std::vector<PivotPeriod> TechnicalIndicators::calculatePivotPoints(
     const std::vector<double>& openData,
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
@@ -369,20 +369,14 @@ std::map<int, std::vector<PivotSegment>> TechnicalIndicators::calculatePivotPoin
     if (openData.empty() || highData.empty() || lowData.empty() || closeData.empty() || dates.empty())
         return {};
 
-    std::map<int, std::vector<PivotSegment>> levelSegments;
+    std::vector<PivotPeriod> pivotPeriods;
 
     // Initialiser tous les vecteurs de niveaux avec des zéros
     size_t dataSize = highData.size();
-    for (int levelType = static_cast<int>(PivotPointsInstance::LevelType::R3); 
-         levelType < static_cast<int>(PivotPointsInstance::LevelType::NumLevels); 
-         levelType++) {
-        levelSegments[levelType] = std::vector<PivotSegment>();
-    }
-    
-    // Déterminer les limites de chaque période
     std::vector<size_t> periodBoundaries;
-    periodBoundaries.push_back(0);  // Commencer par l'index 0
+    periodBoundaries.push_back(0);
     
+    // il faut utiliser les arrayMath pour determiner les indices des nouveau jours, mois etc
     be::Date currentDate = dates[0];
     
     for (size_t i = 1; i < dataSize; ++i) {
@@ -489,23 +483,30 @@ std::map<int, std::vector<PivotSegment>> TechnicalIndicators::calculatePivotPoin
         double mps1 = (pivot + s1) / 2.0;
         double ms1s2 = (s1 + s2) / 2.0;
         double ms2s3 = (s2 + s3) / 2.0;
+
+        // Créer une nouvelle période de pivot
+        PivotPeriod period;
+        period.rawStartIndex = start;
+        period.rawEndIndex = end;
         
         // Stocker un segment unique pour chaque niveau durant cette période
         using LT = PivotPointsInstance::LevelType;
-        levelSegments[static_cast<int>(LT::Pivot)].emplace_back(start, end, pivot);
-        levelSegments[static_cast<int>(LT::R1)].emplace_back(start, end, r1);
-        levelSegments[static_cast<int>(LT::R2)].emplace_back(start, end, r2);
-        levelSegments[static_cast<int>(LT::R3)].emplace_back(start, end, r3);
-        levelSegments[static_cast<int>(LT::S1)].emplace_back(start, end, s1);
-        levelSegments[static_cast<int>(LT::S2)].emplace_back(start, end, s2);
-        levelSegments[static_cast<int>(LT::S3)].emplace_back(start, end, s3);
-        levelSegments[static_cast<int>(LT::M_PR1)].emplace_back(start, end, mpr1);
-        levelSegments[static_cast<int>(LT::M_R1R2)].emplace_back(start, end, mr1r2);
-        levelSegments[static_cast<int>(LT::M_R2R3)].emplace_back(start, end, mr2r3);
-        levelSegments[static_cast<int>(LT::M_PS1)].emplace_back(start, end, mps1);
-        levelSegments[static_cast<int>(LT::M_S1S2)].emplace_back(start, end, ms1s2);
-        levelSegments[static_cast<int>(LT::M_S2S3)].emplace_back(start, end, ms2s3);
+        period.levelValues[static_cast<int>(LT::Pivot)] = pivot;
+        period.levelValues[static_cast<int>(LT::R1)] = r1;
+        period.levelValues[static_cast<int>(LT::R2)] = r2;
+        period.levelValues[static_cast<int>(LT::R3)] = r3;
+        period.levelValues[static_cast<int>(LT::S1)] = s1;
+        period.levelValues[static_cast<int>(LT::S2)] = s2;
+        period.levelValues[static_cast<int>(LT::S3)] = s3;
+        period.levelValues[static_cast<int>(LT::M_PR1)] = mpr1;
+        period.levelValues[static_cast<int>(LT::M_R1R2)] = mr1r2;
+        period.levelValues[static_cast<int>(LT::M_R2R3)] = mr2r3;
+        period.levelValues[static_cast<int>(LT::M_PS1)] = mps1;
+        period.levelValues[static_cast<int>(LT::M_S1S2)] = ms1s2;
+        period.levelValues[static_cast<int>(LT::M_S2S3)] = ms2s3;
+        
+        pivotPeriods.push_back(period);
     }
 
-    return levelSegments;
+    return pivotPeriods;
 }

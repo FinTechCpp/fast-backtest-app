@@ -635,7 +635,7 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
 
     if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
-        const auto& rsiMap = dataManager.getActiveIndicators().rsiValues;
+        const auto& rsiMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).rsiValues;
         auto it = rsiMap.find(rsi.id);
         if (it == rsiMap.end()) return;
         
@@ -652,7 +652,7 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
         }
         else {
             // Fallback aux données brutes si les données agrégées ne sont pas disponibles
-            const auto& rsiMap = dataManager.getActiveIndicators().rsiValues;
+            const auto& rsiMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).rsiValues;
             auto rawIt = rsiMap.find(rsi.id);
             if (rawIt == rsiMap.end()) return;
             
@@ -699,7 +699,7 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
 
     if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
-        const auto& emaMap = dataManager.getActiveIndicators().emaValues;
+        const auto& emaMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).emaValues;
         auto it = emaMap.find(ema.id);
         if (it == emaMap.end()) return;
         
@@ -716,7 +716,7 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
         }
         else {
             // Fallback aux données brutes
-            const auto& emaMap = dataManager.getActiveIndicators().emaValues;
+            const auto& emaMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).emaValues;
             auto rawIt = emaMap.find(ema.id);
             if (rawIt == emaMap.end()) return;
             
@@ -753,8 +753,8 @@ void ChartRenderer::addSupertrendToChart(FinanceChart* chart,
     int pointsToShow = aggregationInfo.pointCount;
 
     if (aggregationInfo.level == AggregationLevel::Raw) {
-        auto it = dataManager.getActiveIndicators().supertrendValues.find(supertrend.id);
-        if (it != dataManager.getActiveIndicators().supertrendValues.end()) {
+        auto it = dataManager.getAggregatedIndicators(AggregationLevel::Raw).supertrendValues.find(supertrend.id);
+        if (it != dataManager.getAggregatedIndicators(AggregationLevel::Raw).supertrendValues.end()) {
             supertrendValues = &it->second.first;
             trendDirections = &it->second.second;
         }
@@ -827,7 +827,7 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
 
     if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
-        const auto& stochasticMap = dataManager.getActiveIndicators().stochasticValues;
+        const auto& stochasticMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).stochasticValues;
         auto it = stochasticMap.find(stochastic.id);
         if (it == stochasticMap.end()) return;
         
@@ -846,7 +846,7 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
         }
         else {
             // Fallback aux données brutes
-            const auto& stochasticMap = dataManager.getActiveIndicators().stochasticValues;
+            const auto& stochasticMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).stochasticValues;
             auto rawIt = stochasticMap.find(stochastic.id);
             if (rawIt == stochasticMap.end()) return;
             
@@ -906,7 +906,7 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
 
     if (aggregationInfo.level == AggregationLevel::Raw) {
         // Utiliser les données brutes
-        const auto& atrMap = dataManager.getActiveIndicators().atrValues;
+        const auto& atrMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).atrValues;
         auto it = atrMap.find(atr.id);
         if (it == atrMap.end()) return;
         
@@ -927,7 +927,7 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
         }
         else {
             // Fallback aux données brutes
-            const auto& atrMap = dataManager.getActiveIndicators().atrValues;
+            const auto& atrMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).atrValues;
             auto rawIt = atrMap.find(atr.id);
             if (rawIt == atrMap.end()) return;
             
@@ -967,83 +967,65 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
                                         const ChartDataManager &dataManager, 
                                         const ChartDataManager::AggregationInfo &aggregationInfo)
 {
-    // 1. Récupérer les données des points pivots depuis le cache
-    const std::map<int, std::vector<PivotSegment>>* pivotSegments = nullptr;
+
+    // Récupérer les données des points pivots depuis le cache
     int startIndex = aggregationInfo.startIndex;
     int endIndex = startIndex + aggregationInfo.pointCount - 1;
+    AggregationLevel currentLevel = aggregationInfo.level;
 
-    if (aggregationInfo.level == AggregationLevel::Raw) {
-        // Utiliser les données brutes
-        const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsSegments;
-        auto it = pivotMap.find(pivotPoints.id);
-        if (it == pivotMap.end()) return;
-        
-        pivotSegments = &(it->second);
-    } 
-    else {
-        // Utiliser les données agrégées
-        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
-        auto it = aggregated.pivotPointsSegments.find(pivotPoints.id);
-        
-        // Vérifier si les données agrégées sont disponibles et valides
-        if (it != aggregated.pivotPointsSegments.end() && aggregated.isPivotPointsValid(pivotPoints.id)) {
-            pivotSegments = &(it->second);
-        }
-        else {
-            // Fallback aux données brutes
-            const auto& pivotMap = dataManager.getActiveIndicators().pivotPointsSegments;
-            auto rawIt = pivotMap.find(pivotPoints.id);
-            if (rawIt == pivotMap.end()) return;
-            
-            pivotSegments = &(rawIt->second);
-        }
+    const std::map<int, std::vector<PivotPeriod>>& pivotPeriodsMap = dataManager.getPivotPeriods();
+    auto it = pivotPeriodsMap.find(pivotPoints.id);
+    if (it == pivotPeriodsMap.end()) {
+        return; // Pas de données pour cet ID de points pivots
     }
-
-    if (!pivotSegments) return;
     
-    // CRÉER TOUS LES SEGMENTS
-    for (const auto& [levelType, style] : pivotPoints.levelStyles) {
-        // Vérifier si ce niveau doit être affiché
-        if (!pivotPoints.isLevelVisible(levelType)) continue;
+    // Récupérer le vecteur de périodes pivot
+    const std::vector<PivotPeriod>& pivotPeriods = it->second;
+
+    // Parcourir toutes les périodes pivot
+    for (const auto& period : pivotPeriods) {
+        // Récupérer les indices agrégés pour le niveau d'agrégation actuel
+        auto indicesIt = period.aggregatedIndices.find(currentLevel);
         
-        // Obtenir les segments pour ce niveau
-        auto levelIt = pivotSegments->find(static_cast<int>(levelType));
-        if (levelIt == pivotSegments->end()) continue;
+        // Si pas d'indices agrégés pour ce niveau, essayer de convertir les indices bruts
+        std::pair<int, int> indices;
+        if (indicesIt != period.aggregatedIndices.end()) {
+            indices = indicesIt->second;
+        } 
+        // il faut que les indices pour raw soient dans le aggregatedIndices
+        else if (currentLevel == AggregationLevel::Raw) {
+            indices = {static_cast<int>(period.rawStartIndex), static_cast<int>(period.rawEndIndex)};
+        }
         
-        const auto& segments = levelIt->second;
-        if (segments.empty()) continue;
+        int aggStartIndex = indices.first;
+        int aggEndIndex = indices.second;
+
+        // Vérifier si la période est visible dans la plage courante
+        if (aggEndIndex < startIndex || aggStartIndex > endIndex) {
+            continue;  // Période hors plage visible
+        }
         
-        // Parcourir tous les segments pour ce niveau
-        for (const auto& segment : segments) {
-
-            // Convertir les indices bruts en indices agrégés
-            // Ultra super pas optimisé mais cela fonctionne, il faut faire le travaille une seul fois
-            // int aggStartIndex = dataManager.rawToAggregatedIndex(aggregationInfo.level, segment.startIndex);
-            // int aggEndIndex = dataManager.rawToAggregatedIndex(aggregationInfo.level, segment.endIndex);
-            // int aggStartIndex = segment.rawStartIndex;
-            // int aggEndIndex = segment.rawEndIndex;
-            auto [aggStartIndex, aggEndIndex] = segment.getIndicesForLevel(aggregationInfo.level);
-
-
-            // Si l'un des indices n'a pas pu être converti, passer au segment suivant
-            if (aggStartIndex < 0 || aggEndIndex < 0) continue;
-
-            // Vérifier si le segment est dans la plage visible
-            if (aggEndIndex < static_cast<int>(startIndex) || 
-                aggStartIndex > static_cast<int>(endIndex)) {
-                continue;  // Segment hors plage visible
-            }
+        // Calculer les indices relatifs pour l'affichage
+        int relativeStart = std::max(aggStartIndex - startIndex, 0);
+        int relativeEnd = std::min(aggEndIndex - startIndex, aggregationInfo.pointCount - 1);
+        
+        // Pour chaque niveau de pivot configuré
+        for (const auto& [levelType, style] : pivotPoints.levelStyles) {
+            // Vérifier si ce niveau doit être affiché
+            if (!pivotPoints.isLevelVisible(levelType)) continue;
             
-            // Calculer les indices relatifs pour l'affichage
-            int relativeStart = std::max(aggStartIndex - startIndex, 0);
-            int relativeEnd = std::min(aggEndIndex - startIndex, aggregationInfo.pointCount - 1);
+            // Récupérer la valeur du niveau pour cette période
+            auto levelIt = period.levelValues.find(static_cast<int>(levelType));
+            if (levelIt == period.levelValues.end()) continue;
             
+            double value = levelIt->second;
+
             // Ignorer les segments avec des valeurs non valides ou nulles
-            if (segment.value == 0 || std::isnan(segment.value)) continue;
+            if (value == 0 || std::isnan(value)) continue;
             
             // Créer un vecteur de points pour tracer la ligne horizontale
             std::vector<double> xData = {static_cast<double>(relativeStart), static_cast<double>(relativeEnd)};
-            std::vector<double> yData = {segment.value, segment.value};
+            std::vector<double> yData = {value, value};
             
             // Convertir en DoubleArray pour ChartDir
             DoubleArray xArray = ChartDataManager::vectorToDoubleArray(xData);

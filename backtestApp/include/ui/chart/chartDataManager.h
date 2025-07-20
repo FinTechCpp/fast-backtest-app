@@ -71,7 +71,8 @@ public:
         std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
-        std::map<int, std::map<int, std::vector<PivotSegment>>> pivotPointsSegments;
+        // std::map<int, std::map<int, std::vector<PivotSegment>>> pivotPointsSegments;
+        // std::map<int, std::vector<PivotPeriod>> pivotPeriods; // Pour les périodes de pivots
 
         AggregationLevel level;
         
@@ -115,8 +116,9 @@ public:
     const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
     const std::vector<std::shared_ptr<be::Trade>>& getTrades() const { return m_trades; }
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_indicators; }
-    const IndicatorData& getActiveIndicators() const { return getAggregatedIndicators(AggregationLevel::Raw); }
+    // const IndicatorData& getActiveIndicators() const { return getAggregatedIndicators(AggregationLevel::Raw); }
     const IndicatorData& getAggregatedIndicators(AggregationLevel level) const;
+    const std::map<int, std::vector<PivotPeriod>>& getPivotPeriods() const { return m_pivotPeriods; }
     bool hasValidData() const;
 
     // methode utilitaires peut etre a deplacer
@@ -237,7 +239,7 @@ private:
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void calculateATR(int id, int period, bool useLogScale = false);
     // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
-    void calculatePivotPoints(int id, const PivotPointsInstance& config);
+    void calculatePivotPoints(const PivotPointsInstance& config);
 
     void precalculatePivotIndices(int pivotId, AggregationLevel level);
 
@@ -251,6 +253,8 @@ private:
     std::vector<double> m_timestampsCache;
     std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregatedOHLCVCache;
     std::unordered_map<AggregationLevel, IndicatorData> m_aggregatedIndicatorsCache;
+    // les points pivots ne s'aggrègent pas comme les autres indicateurs, ils supportent nativement l'aggregation
+    std::map<int, std::vector<PivotPeriod>> m_pivotPeriods;
     HeikinAshiCache m_heikinAshiCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
     EquityData m_equityData;

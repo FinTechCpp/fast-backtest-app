@@ -197,6 +197,24 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     if (values.contains("tp_supertrend_multiplier"))
         config.tp_supertrend_multiplier = values["tp_supertrend_multiplier"].toDouble();
     
+    // Paramètres RL pour TP
+    if (values.contains("use_rl_for_tp"))
+        config.use_rl_for_tp = values["use_rl_for_tp"].toBool();
+    else if (values.contains("tp_method"))
+        config.use_rl_for_tp = (values["tp_method"].toInt() == 4); // Index 4 = RL
+    
+    if (values.contains("rl_model_path"))
+        config.rl_model_path = values["rl_model_path"].toString().toStdString();
+    
+    if (values.contains("rl_lookback_periods"))
+        config.rl_lookback_periods = values["rl_lookback_periods"].toInt();
+    
+    if (values.contains("rl_tp_min_multiplier"))
+        config.rl_tp_min_multiplier = values["rl_tp_min_multiplier"].toDouble();
+    
+    if (values.contains("rl_tp_max_multiplier"))
+        config.rl_tp_max_multiplier = values["rl_tp_max_multiplier"].toDouble();
+    
     if (values.contains("atr_period"))
         config.atr_period = values["atr_period"].toInt();
     

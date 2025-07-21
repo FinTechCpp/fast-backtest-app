@@ -95,7 +95,7 @@ void StrategyBasePanel::initialize()
     
     // Méthode de calcul pour le Take Profit
     m_widgets["tp_method"] = new QComboBox();
-    static_cast<QComboBox*>(m_widgets["tp_method"])->addItems({"Fixe", "ATR", "Ratio SL", "SuperTrend"});
+    static_cast<QComboBox*>(m_widgets["tp_method"])->addItems({"Fixe", "ATR", "Ratio SL", "SuperTrend", "RL"});
     static_cast<QComboBox*>(m_widgets["tp_method"])->setCurrentIndex(0);
     connect(static_cast<QComboBox*>(m_widgets["tp_method"]), 
                      QOverload<int>::of(&QComboBox::currentIndexChanged),
@@ -147,6 +147,34 @@ void StrategyBasePanel::initialize()
     static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setEnabled(false);
     m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     tpLayout->addRow(new QLabel("Multiplicateur SuperTrend:"), m_widgets["tp_supertrend_multiplier"]);
+    
+    // Paramètres RL - Périodes de lookback
+    m_widgets["rl_lookback_periods"] = new QSpinBox();
+    static_cast<QSpinBox*>(m_widgets["rl_lookback_periods"])->setRange(1, 50);
+    static_cast<QSpinBox*>(m_widgets["rl_lookback_periods"])->setValue(2);
+    static_cast<QSpinBox*>(m_widgets["rl_lookback_periods"])->setEnabled(false);
+    m_widgets["rl_lookback_periods"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Périodes lookback RL:"), m_widgets["rl_lookback_periods"]);
+    
+    // Paramètres RL - Multiplicateur minimum
+    m_widgets["rl_tp_min_multiplier"] = new QDoubleSpinBox();
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_min_multiplier"])->setDecimals(1);
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_min_multiplier"])->setRange(0.1, 10.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_min_multiplier"])->setSingleStep(0.1);
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_min_multiplier"])->setValue(0.5);
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_min_multiplier"])->setEnabled(false);
+    m_widgets["rl_tp_min_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("TP Min Multiplier RL:"), m_widgets["rl_tp_min_multiplier"]);
+    
+    // Paramètres RL - Multiplicateur maximum
+    m_widgets["rl_tp_max_multiplier"] = new QDoubleSpinBox();
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_max_multiplier"])->setDecimals(1);
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_max_multiplier"])->setRange(0.1, 20.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_max_multiplier"])->setSingleStep(0.1);
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_max_multiplier"])->setValue(5.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["rl_tp_max_multiplier"])->setEnabled(false);
+    m_widgets["rl_tp_max_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("TP Max Multiplier RL:"), m_widgets["rl_tp_max_multiplier"]);
     
     // TP minimum
     m_widgets["min_take_profit_distance"] = new QDoubleSpinBox();
@@ -299,6 +327,9 @@ QMap<QString, QVariant> StrategyBasePanel::getValues()
         else if (QTimeEdit* timeEdit = qobject_cast<QTimeEdit*>(widget)) {
             values[key] = timeEdit->time().toString("hh:mm:ss");
         }
+        else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
+            values[key] = lineEdit->text();
+        }
     }
     
     // Ajouter les paramètres use_atr_for_sl et use_atr_for_tp basés sur les méthodes sélectionnées
@@ -313,6 +344,7 @@ QMap<QString, QVariant> StrategyBasePanel::getValues()
         values["use_atr_for_tp"] = (tpMethod->currentIndex() == 1); // Index 1 = ATR
         values["use_sl_ratio_for_tp"] = (tpMethod->currentIndex() == 2); // Index 2 = Ratio SL
         values["use_supertrend_for_tp"] = (tpMethod->currentIndex() == 3); // Index 3 = SuperTrend
+        values["use_rl_for_tp"] = (tpMethod->currentIndex() == 4); // Index 4 = RL
     }
     
     // Ajouter la liste des jours de trading
@@ -338,7 +370,7 @@ void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
         QVariant value = it.value();
         
         // Ignorer les paramètres calculés use_atr_for_sl et use_atr_for_tp
-        if (key == "use_atr_for_sl" || key == "use_atr_for_tp" || key == "use_minmax_for_sl" || key == "use_sl_ratio_for_tp" || key == "use_supertrend_for_tp") {
+        if (key == "use_atr_for_sl" || key == "use_atr_for_tp" || key == "use_minmax_for_sl" || key == "use_sl_ratio_for_tp" || key == "use_supertrend_for_tp" || key == "use_rl_for_tp") {
             continue;
         }
         
@@ -362,6 +394,9 @@ void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
                 if (time.isValid()) {
                     timeEdit->setTime(time);
                 }
+            }
+            else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
+                lineEdit->setText(value.toString());
             }
         }
     }
@@ -440,6 +475,7 @@ void StrategyBasePanel::_toggleTpMethod(int index)
     bool isAtr = (index == 1);
     bool isRatio = (index == 2);
     bool isSupertrend = (index == 3);
+    bool isRL = (index == 4);
     
     if (m_widgets.contains("take_profit_distance")) {
         m_widgets["take_profit_distance"]->setEnabled(isFixed);
@@ -475,6 +511,29 @@ void StrategyBasePanel::_toggleTpMethod(int index)
             m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
         else 
             m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    }
+    
+    // RL parameters
+    if (m_widgets.contains("rl_lookback_periods")) {
+        m_widgets["rl_lookback_periods"]->setEnabled(isRL);
+        if (isRL)
+            m_widgets["rl_lookback_periods"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["rl_lookback_periods"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    }
+    if (m_widgets.contains("rl_tp_min_multiplier")) {
+        m_widgets["rl_tp_min_multiplier"]->setEnabled(isRL);
+        if (isRL)
+            m_widgets["rl_tp_min_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["rl_tp_min_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    }
+    if (m_widgets.contains("rl_tp_max_multiplier")) {
+        m_widgets["rl_tp_max_multiplier"]->setEnabled(isRL);
+        if (isRL)
+            m_widgets["rl_tp_max_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else 
+            m_widgets["rl_tp_max_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
     
     // Mettre à jour le statut de la période ATR

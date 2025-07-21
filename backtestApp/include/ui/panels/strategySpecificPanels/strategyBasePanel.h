@@ -10,6 +10,7 @@
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QComboBox>
+#include <QLineEdit>
 #include <QFrame>
 #include <QMap>
 #include <QString>

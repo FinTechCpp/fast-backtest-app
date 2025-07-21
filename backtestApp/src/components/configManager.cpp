@@ -138,6 +138,13 @@ void ConfigManager::setupDefaultValues()
     m_defaultValues["atr_period"] = 14;
     m_defaultValues["stop_loss_atr_multiplier"] = 2.0;
     m_defaultValues["take_profit_atr_multiplier"] = 3.0;
+    
+    // RL parameters for TP
+    m_defaultValues["use_rl_for_tp"] = false;
+    m_defaultValues["rl_model_path"] = "./Models/tp_model.onnx";
+    m_defaultValues["rl_lookback_periods"] = 2;
+    m_defaultValues["rl_tp_min_multiplier"] = 0.5;
+    m_defaultValues["rl_tp_max_multiplier"] = 5.0;
 
     // Specific parameters for BuyHeikinGreen
     m_defaultValues["ema_short_period"] = 150;

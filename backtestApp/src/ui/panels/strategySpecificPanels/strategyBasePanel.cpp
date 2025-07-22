@@ -123,7 +123,7 @@ void StrategyBasePanel::initialize()
     // Paramètres Ratio SL - Multiplicateur TP
     m_widgets["tp_sl_ratio"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setRange(0.1, 10.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setRange(0.1, 100.0);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setSingleStep(0.1);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setValue(2.0);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setEnabled(false);

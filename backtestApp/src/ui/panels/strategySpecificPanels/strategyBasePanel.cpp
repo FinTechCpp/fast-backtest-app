@@ -141,7 +141,7 @@ void StrategyBasePanel::initialize()
     // Paramètres SuperTrend - Multiplicateur
     m_widgets["tp_supertrend_multiplier"] = new QDoubleSpinBox();
     static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setRange(0.1, 10.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setRange(0.1, 100.0);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setSingleStep(0.1);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setValue(3.0);
     static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setEnabled(false);

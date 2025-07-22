@@ -58,8 +58,25 @@ private:
         QPushButton* colorButton;
         QSpinBox* thicknessSpinBox;
         QComboBox* lineStyleComboBox;
+        QPushButton* syncButton; // Nouveau bouton de synchronisation
     };
     
     std::map<int, LevelControls> m_levelControls;  // Map des contrôles par type de niveau
     QTabWidget* m_tabWidget;  // Pour organiser les niveaux en onglets
+    
+    // Structure pour suivre l'état de synchronisation des groupes
+    struct SyncGroup {
+        bool synchronized = false;
+        int color;  // Couleur représentative du groupe
+        std::vector<int> levelTypes; // Les niveaux appartenant à ce groupe
+    };
+
+    std::map<std::string, SyncGroup> m_syncGroups; // Les groupes de synchronisation (R, S, mR, mS)
+    
+    // Méthodes pour la synchronisation
+    void initSyncGroups();
+    void onSyncButtonToggled(int levelType, bool checked);
+    void updateSyncButtonsInGroup(const std::string& groupName);
+    void syncGroupControls(const std::string& groupName, int sourceLevelType);
+    std::string getLevelGroup(int levelType) const;
 };

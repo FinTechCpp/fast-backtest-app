@@ -10,12 +10,150 @@
 PivotPointsDialog::PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, const PivotPointsInstance& pivotPoints)
     : IndicatorDialog<PivotPointsInstance>(parent, "Pivot Points", chartWidget, pivotPoints)
 {
-    // setMinimumWidth(500);
+    initSyncGroups();
     initialize();
 }
 
 PivotPointsDialog::~PivotPointsDialog()
 {
+}
+
+void PivotPointsDialog::initSyncGroups()
+{
+    // Définir les groupes avec des couleurs à contraste élevé
+    m_syncGroups["R"] = {
+        false,
+        0xFF0000,  // Rouge vif pour résistances
+        {
+            static_cast<int>(PivotPointsInstance::LevelType::R1),
+            static_cast<int>(PivotPointsInstance::LevelType::R2),
+            static_cast<int>(PivotPointsInstance::LevelType::R3)
+        }
+    };
+    
+    m_syncGroups["S"] = {
+        false,
+        0x008000,  // Vert foncé pour supports
+        {
+            static_cast<int>(PivotPointsInstance::LevelType::S1),
+            static_cast<int>(PivotPointsInstance::LevelType::S2),
+            static_cast<int>(PivotPointsInstance::LevelType::S3)
+        }
+    };
+    
+    m_syncGroups["mR"] = {
+        false,
+        0xFFA500,  // Orange vif pour niveaux milieux résistances
+        {
+            static_cast<int>(PivotPointsInstance::LevelType::M_PR1),
+            static_cast<int>(PivotPointsInstance::LevelType::M_R1R2),
+            static_cast<int>(PivotPointsInstance::LevelType::M_R2R3)
+        }
+    };
+    
+    m_syncGroups["mS"] = {
+        false,
+        0x0000FF,  // Bleu vif pour niveaux milieux supports
+        {
+            static_cast<int>(PivotPointsInstance::LevelType::M_PS1),
+            static_cast<int>(PivotPointsInstance::LevelType::M_S1S2),
+            static_cast<int>(PivotPointsInstance::LevelType::M_S2S3)
+        }
+    };
+}
+
+std::string PivotPointsDialog::getLevelGroup(int levelType) const
+{
+    for (const auto& [groupName, group] : m_syncGroups) {
+        if (std::find(group.levelTypes.begin(), group.levelTypes.end(), levelType) != group.levelTypes.end()) {
+            return groupName;
+        }
+    }
+    return "";  // Niveau n'appartenant à aucun groupe
+}
+
+void PivotPointsDialog::updateSyncButtonsInGroup(const std::string& groupName)
+{
+    if (m_syncGroups.find(groupName) == m_syncGroups.end()) return;
+    
+    bool synchronized = m_syncGroups[groupName].synchronized;
+    int groupColor = m_syncGroups[groupName].color;
+    
+    // Extraire les composantes RGB de la couleur du groupe
+    int r = (groupColor >> 16) & 0xFF;
+    int g = (groupColor >> 8) & 0xFF;
+    int b = groupColor & 0xFF;
+    
+    // Style commun pour tous les boutons du groupe
+    // Toujours forme circulaire, mais opacité différente selon l'état
+    QString buttonStyle;
+    if (synchronized) {
+        // Couleur pleine quand synchronisé (100% opacité)
+        buttonStyle = QString("QPushButton { background-color: rgb(%1,%2,%3); border: 1px solid darkgray; border-radius: 12px; }")
+                     .arg(r).arg(g).arg(b);
+    } else {
+        // Couleur avec faible opacité quand non synchronisé (20% opacité)
+        buttonStyle = QString("QPushButton { background-color: rgba(%1,%2,%3,20%); border: 1px solid darkgray; border-radius: 12px; }")
+                     .arg(r).arg(g).arg(b);
+    }
+    
+    // Mettre à jour tous les boutons du groupe
+    for (int levelType : m_syncGroups[groupName].levelTypes) {
+        auto it = m_levelControls.find(levelType);
+        if (it != m_levelControls.end()) {
+            it->second.syncButton->blockSignals(true);
+            it->second.syncButton->setChecked(synchronized);
+            it->second.syncButton->setStyleSheet(buttonStyle);
+            it->second.syncButton->blockSignals(false);
+        }
+    }
+}
+
+void PivotPointsDialog::syncGroupControls(const std::string& groupName, int sourceLevelType)
+{
+    if (m_syncGroups.find(groupName) == m_syncGroups.end()) return;
+    
+    // Obtenir les valeurs de référence du niveau source
+    auto sourceIt = m_levelControls.find(sourceLevelType);
+    if (sourceIt == m_levelControls.end()) return;
+    
+    PivotPointsInstance::LevelType sourceType = static_cast<PivotPointsInstance::LevelType>(sourceLevelType);
+    const auto& sourceStyle = m_currentIndicator.levelStyles[sourceType];
+    
+    bool visible = sourceIt->second.visibilityCheckBox->isChecked();
+    int color = sourceStyle.color;
+    int thickness = sourceIt->second.thicknessSpinBox->value();
+    int lineStyleIndex = sourceIt->second.lineStyleComboBox->currentIndex();
+    
+    // Appliquer à tous les niveaux du groupe sauf le niveau source
+    for (int levelType : m_syncGroups[groupName].levelTypes) {
+        if (levelType != sourceLevelType) {
+            auto it = m_levelControls.find(levelType);
+            if (it == m_levelControls.end()) continue;
+            
+            // Mettre à jour l'UI sans déclencher de signaux
+            it->second.visibilityCheckBox->blockSignals(true);
+            it->second.thicknessSpinBox->blockSignals(true);
+            it->second.lineStyleComboBox->blockSignals(true);
+            
+            it->second.visibilityCheckBox->setChecked(visible);
+            updateColorButtonStyle(it->second.colorButton, color);
+            it->second.thicknessSpinBox->setValue(thickness);
+            it->second.lineStyleComboBox->setCurrentIndex(lineStyleIndex);
+            
+            // Mettre à jour les données
+            PivotPointsInstance::LevelType type = static_cast<PivotPointsInstance::LevelType>(levelType);
+            m_currentIndicator.levelStyles[type].visible = visible;
+            m_currentIndicator.levelStyles[type].color = color;
+            m_currentIndicator.levelStyles[type].thickness = thickness;
+            m_currentIndicator.levelStyles[type].lineStyle = static_cast<PivotPointsInstance::LineStyle>(lineStyleIndex);
+            
+            // Réactiver les signaux
+            it->second.visibilityCheckBox->blockSignals(false);
+            it->second.thicknessSpinBox->blockSignals(false);
+            it->second.lineStyleComboBox->blockSignals(false);
+        }
+    }
 }
 
 void PivotPointsDialog::setupUI()
@@ -129,13 +267,83 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, PivotPo
     QComboBox* lineStyleComboBox = createLineStyleComboBox();
     layout->addWidget(lineStyleComboBox, row, 3);
     
+    // Bouton de synchronisation
+    QPushButton* syncButton = new QPushButton();
+    syncButton->setFixedSize(24, 24);
+    syncButton->setCheckable(true);
+    
+    // Créer une icône plus claire de synchronisation
+    QPixmap syncPixmap(20, 20);
+    syncPixmap.fill(Qt::transparent);
+    QPainter painter(&syncPixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+
+    // Fond légèrement grisé pour mieux voir l'icône
+    painter.setPen(Qt::NoPen);
+    painter.setBrush(QColor(240, 240, 240, 80));
+    painter.drawEllipse(1, 1, 18, 18);
+
+    // Dessiner les flèches avec une meilleure séparation
+    painter.setPen(QPen(Qt::black, 1.5));
+
+    // Première flèche circulaire (sens horaire, premier quart de cercle)
+    painter.drawArc(3, 3, 14, 14, 0, 120 * 16);
+    // Pointe de flèche pour l'arc horaire
+    painter.setBrush(Qt::black);
+    QPolygonF arrow1;
+    arrow1 << QPointF(10 + 7*cos(120*M_PI/180), 10 - 7*sin(120*M_PI/180))  // Pointe
+        << QPointF(10 + 5*cos(150*M_PI/180), 10 - 5*sin(150*M_PI/180))  // Côté gauche
+        << QPointF(10 + 5*cos(100*M_PI/180), 10 - 5*sin(100*M_PI/180)); // Côté droit
+    painter.drawPolygon(arrow1);
+
+    // Seconde flèche circulaire (sens anti-horaire, premier quart de cercle)
+    painter.setPen(QPen(Qt::black, 1.5));
+    painter.drawArc(3, 3, 14, 14, 180 * 16, 120 * 16);
+    // Pointe de flèche pour l'arc anti-horaire
+    painter.setBrush(Qt::black);
+    QPolygonF arrow2;
+    arrow2 << QPointF(10 + 7*cos(300*M_PI/180), 10 - 7*sin(300*M_PI/180))  // Pointe
+        << QPointF(10 + 5*cos(330*M_PI/180), 10 - 5*sin(330*M_PI/180))  // Côté gauche
+        << QPointF(10 + 5*cos(280*M_PI/180), 10 - 5*sin(280*M_PI/180)); // Côté droit
+    painter.drawPolygon(arrow2);
+
+    syncButton->setIcon(QIcon(syncPixmap));
+    syncButton->setToolTip("Synchroniser avec les autres niveaux du groupe");
+    layout->addWidget(syncButton, row, 4);
+
+    if (levelType == PivotPointsInstance::LevelType::Pivot) {
+        // pour le point pivot on n'affiche pas le bouton de synchronisation
+        // il faut donc le cacher
+        syncButton->setVisible(false);
+    }
+    
     // Stocker les contrôles pour les utiliser plus tard
     m_levelControls[levelTypeInt] = {
         visibilityCheckBox,
         colorButton,
         thicknessSpinBox,
-        lineStyleComboBox
+        lineStyleComboBox,
+        syncButton  // Ajouter le bouton sync
     };
+    
+    // Appliquer le style initial du bouton sync selon le groupe
+    std::string groupName = getLevelGroup(levelTypeInt);
+    if (!groupName.empty()) {
+        int groupColor = m_syncGroups[groupName].color;
+        int r = (groupColor >> 16) & 0xFF;
+        int g = (groupColor >> 8) & 0xFF;
+        int b = groupColor & 0xFF;
+        
+        // Couleur avec faible opacité par défaut (20%)
+        QString buttonStyle = QString("QPushButton { background-color: rgba(%1,%2,%3,20%); border: 1px solid darkgray; border-radius: 12px; }")
+                             .arg(r).arg(g).arg(b);
+        syncButton->setStyleSheet(buttonStyle);
+        
+        // Tooltip avec la couleur du groupe
+        QString tooltipStyle = QString("QToolTip { color: black; background-color: rgb(%1,%2,%3); border: 1px solid black; }")
+                              .arg(r).arg(g).arg(b);
+        syncButton->setStyleSheet(syncButton->styleSheet() + tooltipStyle);
+    }
 }
 
 QComboBox* PivotPointsDialog::createLineStyleComboBox()
@@ -292,6 +500,11 @@ void PivotPointsDialog::connectSignals()
         connect(controls.lineStyleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [this, levelType](int index) {
             onLevelLineStyleChanged(levelType, index);
         });
+
+        // Bouton de synchronisation
+        connect(controls.syncButton, &QPushButton::toggled, [this, levelType](bool checked) {
+            onSyncButtonToggled(levelType, checked);
+        });
     }
 }
 
@@ -354,6 +567,13 @@ void PivotPointsDialog::onLevelVisibilityChanged(int levelType, bool checked)
 {
     PivotPointsInstance::LevelType type = static_cast<PivotPointsInstance::LevelType>(levelType);
     m_currentIndicator.levelStyles[type].visible = checked;
+
+    // Synchroniser si nécessaire
+    std::string groupName = getLevelGroup(levelType);
+    if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
+        syncGroupControls(groupName, levelType);
+    }
+
     applyChanges();
 }
 
@@ -365,6 +585,13 @@ void PivotPointsDialog::onLevelColorChanged(int levelType)
         int colorValue = colorFromRGB(newColor.red(), newColor.green(), newColor.blue());
         m_currentIndicator.levelStyles[type].color = colorValue;
         updateColorButtonStyle(m_levelControls[levelType].colorButton, colorValue);
+
+        // Synchroniser si nécessaire
+        std::string groupName = getLevelGroup(levelType);
+        if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
+            syncGroupControls(groupName, levelType);
+        }
+
         applyChanges();
     }
 }
@@ -373,6 +600,13 @@ void PivotPointsDialog::onLevelThicknessChanged(int levelType, int value)
 {
     PivotPointsInstance::LevelType type = static_cast<PivotPointsInstance::LevelType>(levelType);
     m_currentIndicator.levelStyles[type].thickness = value;
+
+    // Synchroniser si nécessaire
+    std::string groupName = getLevelGroup(levelType);
+    if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
+        syncGroupControls(groupName, levelType);
+    }
+
     applyChanges();
 }
 
@@ -390,7 +624,33 @@ void PivotPointsDialog::onLevelLineStyleChanged(int levelType, int index)
         case 4: style = PivotPointsInstance::LineStyle::AltDash; break;
         default: style = PivotPointsInstance::LineStyle::Solid; break;
     }
-    
+
     m_currentIndicator.levelStyles[type].lineStyle = style;
+    
+    // Synchroniser si nécessaire
+    std::string groupName = getLevelGroup(levelType);
+    if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
+        syncGroupControls(groupName, levelType);
+    }
+    
     applyChanges();
+}
+
+void PivotPointsDialog::onSyncButtonToggled(int levelType, bool checked)
+{
+    std::string groupName = getLevelGroup(levelType);
+    if (groupName.empty()) return;
+    
+    // Mettre à jour l'état du groupe
+    m_syncGroups[groupName].synchronized = checked;
+    
+    // Mettre à jour l'apparence de tous les boutons du groupe
+    updateSyncButtonsInGroup(groupName);
+    
+    // Si synchronisation activée, synchroniser les contrôles
+    if (checked) {
+        syncGroupControls(groupName, levelType);
+    }
+
+    applyChanges();  // Appliquer les changements immédiatement
 }

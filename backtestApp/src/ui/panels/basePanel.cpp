@@ -279,6 +279,13 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     if (values.contains("daily_max_profit_percentage"))
         config.daily_max_profit_percentage = values["daily_max_profit_percentage"].toDouble();
     
+    // Drawdown maximal journalier
+    if (values.contains("use_daily_max_drawdown"))
+        config.use_daily_max_drawdown = values["use_daily_max_drawdown"].toBool();
+    
+    if (values.contains("daily_max_drawdown_percentage"))
+        config.daily_max_drawdown_percentage = values["daily_max_drawdown_percentage"].toDouble();
+    
     // Calculer le montant de perte maximale journalière basé sur le capital
     if (config.use_daily_max_loss) config.daily_max_loss_amount = config.cash * (config.daily_max_loss_percentage / 100.0);
     else config.daily_max_loss_amount = 0.0;
@@ -286,6 +293,10 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     // Calculer le montant de profit maximal journalier basé sur le capital
     if (config.use_daily_max_profit) config.daily_max_profit_amount = config.cash * (config.daily_max_profit_percentage / 100.0);
     else config.daily_max_profit_amount = 0.0;
+
+    // Calculer le montant de drawdown maximal journalier basé sur le capital
+    if (config.use_daily_max_drawdown) config.daily_max_drawdown_amount = config.cash * (config.daily_max_drawdown_percentage / 100.0);
+    else config.daily_max_drawdown_amount = 0.0;
 
     return config;
 }

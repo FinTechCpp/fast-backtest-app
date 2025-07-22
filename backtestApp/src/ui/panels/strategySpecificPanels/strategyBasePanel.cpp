@@ -249,6 +249,21 @@ void StrategyBasePanel::initialize()
     m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     riskLayout->addRow(new QLabel("Profit max journalier:"), m_widgets["daily_max_profit_percentage"]);
     
+    m_widgets["use_daily_max_drawdown"] = new QCheckBox("Drawdown max journalier");
+    QObject::connect(static_cast<QCheckBox*>(m_widgets["use_daily_max_drawdown"]), 
+                     &QCheckBox::toggled,
+                     this, &StrategyBasePanel::_toggleDailyMaxDrawdownControls);
+    riskLayout->addRow(m_widgets["use_daily_max_drawdown"]);
+    
+    m_widgets["daily_max_drawdown_percentage"] = new QDoubleSpinBox();
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setDecimals(2);
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setRange(0.1, 100.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setValue(3.0);
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setSuffix("%");
+    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setEnabled(false);
+    m_widgets["daily_max_drawdown_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    riskLayout->addRow(new QLabel("Drawdown max journalier:"), m_widgets["daily_max_drawdown_percentage"]);
+    
     m_widgets["use_break_even"] = new QCheckBox("Activer Break Even");
     QObject::connect(static_cast<QCheckBox*>(m_widgets["use_break_even"]), 
                     &QCheckBox::toggled, 
@@ -553,6 +568,17 @@ void StrategyBasePanel::_toggleDailyMaxProfitControls(bool checked)
             m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
         else
             m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    }
+}
+
+void StrategyBasePanel::_toggleDailyMaxDrawdownControls(bool checked)
+{
+    if (m_widgets.contains("daily_max_drawdown_percentage")) {
+        m_widgets["daily_max_drawdown_percentage"]->setEnabled(checked);
+        if (checked)
+            m_widgets["daily_max_drawdown_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
+        else
+            m_widgets["daily_max_drawdown_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
     }
 }
 

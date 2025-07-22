@@ -594,152 +594,136 @@ void HistogramView::createChart(const GroupedData& data)
         qCritical() << "Chart non initialisé dans createChart";
         return;
     }
+
+    // Désactiver les animations pour les grands ensembles de données
+    if (data.categories.size() > 50) {
+        m_chart->setAnimationOptions(QChart::NoAnimation);
+    } else {
+        m_chart->setAnimationOptions(QChart::SeriesAnimations);
+    }
     
     qDebug() << "Début de createChart avec" << data.categories.size() << "catégories";
     
-    try {
-        // CORRECTION Qt 6: Nettoyage sécurisé et COMPLET
-        // Étape 1: Collecter toutes les séries et axes à supprimer
-        QList<QAbstractSeries*> seriesToRemove;
-        QList<QAbstractAxis*> axesToRemove;
+    // CORRECTION Qt 6: Nettoyage sécurisé et COMPLET
+    // Étape 1: Collecter toutes les séries et axes à supprimer
+    QList<QAbstractSeries*> seriesToRemove;
+    QList<QAbstractAxis*> axesToRemove;
+    
+    const auto currentSeries = m_chart->series();
+    for (auto series : currentSeries) {
+        seriesToRemove.append(series);
+    }
+    
+    const auto currentAxes = m_chart->axes();
+    for (auto axis : currentAxes) {
+        axesToRemove.append(axis);
+    }
+    
+    // Étape 2: Supprimer proprement (ordre important!)
+    for (auto series : seriesToRemove) {
+        m_chart->removeSeries(series);
+        // Qt 6: Ne pas appeler delete manuellement
+    }
+    
+    for (auto axis : axesToRemove) {
+        m_chart->removeAxis(axis);
+        // Qt 6: Ne pas appeler delete manuellement
+    }
+    
+    qDebug() << "Nettoyage terminé, création des nouvelles séries...";
+    
+    // CORRECTION Qt 6: Créer la série SANS parent, elle sera adoptée par le chart
+    QStackedBarSeries* barSeries = new QStackedBarSeries();
+    
+    // Créer les BarSets SANS parent explicite
+    QBarSet* gainsSet = new QBarSet("Gains");
+    QBarSet* lossesSet = new QBarSet("Pertes");
+    
+    // Configurer les couleurs
+    gainsSet->setColor(QColor(76, 175, 80));      
+    gainsSet->setBorderColor(QColor(56, 142, 60));
+    
+    lossesSet->setColor(QColor(244, 67, 54));     
+    lossesSet->setBorderColor(QColor(198, 40, 40));
+    
+    // Séparer les données en gains et pertes
+    for (int i = 0; i < data.values.size(); ++i) {
+        double value = data.values[i];
         
-        const auto currentSeries = m_chart->series();
-        for (auto series : currentSeries) {
-            seriesToRemove.append(series);
+        if (value >= 0) {
+            gainsSet->append(value);
+            lossesSet->append(0);  
+        } else {
+            gainsSet->append(0);   
+            lossesSet->append(value);
         }
+    }
+    
+    // CORRECTION Qt 6: Ajouter les sets à la série AVANT d'ajouter au chart
+    barSeries->append(gainsSet);
+    barSeries->append(lossesSet);
+    
+    qDebug() << "Sets ajoutés à la série, ajout au chart...";
+    
+    // CORRECTION Qt 6: Ajouter la série au chart (prend ownership)
+    m_chart->addSeries(barSeries);
+    
+    qDebug() << "Série ajoutée au chart, création des axes...";
+    
+    // CORRECTION Qt 6: Créer les axes APRÈS avoir ajouté la série
+    QBarCategoryAxis* axisX = new QBarCategoryAxis();
+    axisX->append(data.categories);
+    axisX->setTitleText("Période");
+    
+    // Rotation des labels si nécessaire
+    if (data.categories.size() > 10) {
+        axisX->setLabelsAngle(-45);
+    }
+    
+    QValueAxis* axisY = new QValueAxis();
+    axisY->setTitleText("P&L ($)");
+    
+    // Configurer l'échelle Y pour inclure zéro
+    if (!data.values.isEmpty()) {
+        double minValue = *std::min_element(data.values.begin(), data.values.end());
+        double maxValue = *std::max_element(data.values.begin(), data.values.end());
         
-        const auto currentAxes = m_chart->axes();
-        for (auto axis : currentAxes) {
-            axesToRemove.append(axis);
-        }
+        double range = maxValue - minValue;
+        double margin = range > 0 ? range * 0.1 : 100.0; // Marge par défaut si range = 0
         
-        // Étape 2: Supprimer proprement (ordre important!)
-        for (auto series : seriesToRemove) {
-            m_chart->removeSeries(series);
-            // Qt 6: Ne pas appeler delete manuellement
-        }
-        
-        for (auto axis : axesToRemove) {
-            m_chart->removeAxis(axis);
-            // Qt 6: Ne pas appeler delete manuellement
-        }
-        
-        qDebug() << "Nettoyage terminé, création des nouvelles séries...";
-        
-        // CORRECTION Qt 6: Créer la série SANS parent, elle sera adoptée par le chart
-        QStackedBarSeries* barSeries = new QStackedBarSeries();
-        
-        // Créer les BarSets SANS parent explicite
-        QBarSet* gainsSet = new QBarSet("Gains");
-        QBarSet* lossesSet = new QBarSet("Pertes");
-        
-        // Configurer les couleurs
-        gainsSet->setColor(QColor(76, 175, 80));      
-        gainsSet->setBorderColor(QColor(56, 142, 60));
-        
-        lossesSet->setColor(QColor(244, 67, 54));     
-        lossesSet->setBorderColor(QColor(198, 40, 40));
-        
-        // Séparer les données en gains et pertes
-        for (int i = 0; i < data.values.size(); ++i) {
-            double value = data.values[i];
-            
-            if (value >= 0) {
-                gainsSet->append(value);
-                lossesSet->append(0);  
-            } else {
-                gainsSet->append(0);   
-                lossesSet->append(value);
-            }
-        }
-        
-        // CORRECTION Qt 6: Ajouter les sets à la série AVANT d'ajouter au chart
-        barSeries->append(gainsSet);
-        barSeries->append(lossesSet);
-        
-        qDebug() << "Sets ajoutés à la série, ajout au chart...";
-        
-        // CORRECTION Qt 6: Ajouter la série au chart (prend ownership)
-        m_chart->addSeries(barSeries);
-        
-        qDebug() << "Série ajoutée au chart, création des axes...";
-        
-        // CORRECTION Qt 6: Créer les axes APRÈS avoir ajouté la série
-        QBarCategoryAxis* axisX = new QBarCategoryAxis();
-        axisX->append(data.categories);
-        axisX->setTitleText("Période");
-        
-        // Rotation des labels si nécessaire
-        if (data.categories.size() > 10) {
-            axisX->setLabelsAngle(-45);
-        }
-        
-        QValueAxis* axisY = new QValueAxis();
-        axisY->setTitleText("P&L ($)");
-        
-        // Configurer l'échelle Y pour inclure zéro
-        if (!data.values.isEmpty()) {
-            double minValue = *std::min_element(data.values.begin(), data.values.end());
-            double maxValue = *std::max_element(data.values.begin(), data.values.end());
-            
-            double range = maxValue - minValue;
-            double margin = range > 0 ? range * 0.1 : 100.0; // Marge par défaut si range = 0
-            
-            axisY->setRange(minValue - margin, maxValue + margin);
-        }
-        
-        qDebug() << "Axes configurés, ajout au chart...";
-        
-        // CORRECTION Qt 6: Ajouter les axes au chart AVANT d'attacher les séries
-        m_chart->addAxis(axisX, Qt::AlignBottom);
-        m_chart->addAxis(axisY, Qt::AlignLeft);
-        
-        qDebug() << "Axes ajoutés, attachement aux séries...";
-        
-        // CORRECTION Qt 6: Attacher les axes aux séries APRÈS les avoir ajoutés au chart
-        barSeries->attachAxis(axisX);
-        barSeries->attachAxis(axisY);
-        
-        qDebug() << "Axes attachés avec succès";
-        
-        // Configurer le titre
-        QString timeUnit = m_timeUnitCombo->currentText();
-        double totalPnL = std::accumulate(data.values.begin(), data.values.end(), 0.0);
-        
-        m_chart->setTitle(QString("Histogramme P&L par %1 (Total: %2$)")
-                         .arg(timeUnit.toLower())
-                         .arg(QString::number(totalPnL, 'f', 2)));
-        
-        // Configurer l'apparence générale
-        m_chart->setBackgroundRoundness(0);
-        m_chart->legend()->setVisible(true);
-        m_chart->setMargins(QMargins(10, 10, 10, 10));
-        
-        // Configurer les données du tooltip pour le chartView interactif
-        if (m_chartView) {
-            m_chartView->setTooltipData(data.categories, data.values, data.fullDates);
-        }
-        
-        qDebug() << "createChart terminé avec succès";
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Exception dans createChart:" << e.what();
-        // En cas d'erreur, nettoyer proprement
-        if (m_chart) {
-            const auto series = m_chart->series();
-            for (auto s : series) {
-                m_chart->removeSeries(s);
-            }
-        }
-    } catch (...) {
-        qCritical() << "Exception inconnue dans createChart";
-        // En cas d'erreur, nettoyer proprement
-        if (m_chart) {
-            const auto series = m_chart->series();
-            for (auto s : series) {
-                m_chart->removeSeries(s);
-            }
-        }
+        axisY->setRange(minValue - margin, maxValue + margin);
+    }
+    
+    qDebug() << "Axes configurés, ajout au chart...";
+    
+    // CORRECTION Qt 6: Ajouter les axes au chart AVANT d'attacher les séries
+    m_chart->addAxis(axisX, Qt::AlignBottom);
+    m_chart->addAxis(axisY, Qt::AlignLeft);
+    
+    qDebug() << "Axes ajoutés, attachement aux séries...";
+    
+    // CORRECTION Qt 6: Attacher les axes aux séries APRÈS les avoir ajoutés au chart
+    barSeries->attachAxis(axisX);
+    barSeries->attachAxis(axisY);
+    
+    qDebug() << "Axes attachés avec succès";
+    
+    // Configurer le titre
+    QString timeUnit = m_timeUnitCombo->currentText();
+    double totalPnL = std::accumulate(data.values.begin(), data.values.end(), 0.0);
+    
+    m_chart->setTitle(QString("Histogramme P&L par %1 (Total: %2$)")
+                        .arg(timeUnit.toLower())
+                        .arg(QString::number(totalPnL, 'f', 2)));
+    
+    // Configurer l'apparence générale
+    m_chart->setBackgroundRoundness(0);
+    m_chart->legend()->setVisible(true);
+    m_chart->setMargins(QMargins(10, 10, 10, 10));
+    
+    // Configurer les données du tooltip pour le chartView interactif
+    if (m_chartView) {
+        m_chartView->setTooltipData(data.categories, data.values, data.fullDates);
     }
 }
 

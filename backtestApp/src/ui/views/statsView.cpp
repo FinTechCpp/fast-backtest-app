@@ -582,35 +582,28 @@ void StatsView::initializeMetricDefinitions() {
                 return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
             }
         },
-        {"win_rate", "Taux de réussite:", "Pourcentage de trades rentables", "general",
-            [](const be::Stats& s) { 
-                return s.winRatePct > 50 ? MetricStatus::Good : 
-                      (s.winRatePct < 50 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.winRatePct, 'f', 2)); }
-        },
-        {"winning_trades", "Trades sur take-profit:", "Nombre de trades sur take-profit", "general",
+        {"TP_trades", "Trades sur take-profit:", "Nombre de trades sur take-profit", "general",
             [](const be::Stats& s) { return MetricStatus::Good; },
-            [](const be::Stats& s) { return QString::number(s.numTPTrades); }
+            [](const be::Stats& s) { return QString::number(s.numTPTrades) + " (" + QString::number(s.pctTPTrades, 'f', 2) + "%)"; }
         },
-        {"losing_trades", "Trades sur stop-loss:", "Nombre de trades sur stop-loss", "general",
+        {"SL_trades", "Trades sur stop-loss:", "Nombre de trades sur stop-loss", "general",
             [](const be::Stats& s) { 
                 return s.numSLTrades <= s.numTPTrades ? MetricStatus::Neutral : MetricStatus::Bad; 
             },
-            [](const be::Stats& s) { return QString::number(s.numSLTrades); }
+            [](const be::Stats& s) { return QString::number(s.numSLTrades) + " (" + QString::number(s.pctSLTrades, 'f', 2) + "%)"; }
         },
         {"BE_trades", "Trades sur break-even:", "Nombre de trades sur break-even", "general",
             [](const be::Stats& s) { return s.numBETrades <= s.numTPTrades ? MetricStatus::Neutral : MetricStatus::Bad; },
-            [](const be::Stats& s) { return QString::number(s.numBETrades); }
+            [](const be::Stats& s) { return QString::number(s.numBETrades) + " (" + QString::number(s.pctBETrades, 'f', 2) + "%)"; }
         },
         // ajouter les metric : numManualTrades et numUnknownTrades
         {"manual_trades", "Trades manuels:", "Nombre de trades manuels", "general",
             [](const be::Stats& s) { return s.numManualTrades > 0 ? MetricStatus::Neutral : MetricStatus::Good; },
-            [](const be::Stats& s) { return QString::number(s.numManualTrades); }
+            [](const be::Stats& s) { return QString::number(s.numManualTrades) + " (" + QString::number(s.pctManualTrades, 'f', 2) + "%)"; }
         },
         {"unknown_trades", "Trades inconnus:", "Nombre de trades avec raison de clôture inconnue", "general",
             [](const be::Stats& s) { return s.numUnknownTrades > 0 ? MetricStatus::Bad : MetricStatus::Good; },
-            [](const be::Stats& s) { return QString::number(s.numUnknownTrades); }
+            [](const be::Stats& s) { return QString::number(s.numUnknownTrades) + " (" + QString::number(s.pctUnknownTrades, 'f', 2) + "%)"; }
         },
         {"best_trade", "Meilleur trade:", "Pourcentage de gain du meilleur trade", "general",
             [](const be::Stats& s) { return MetricStatus::Good; },

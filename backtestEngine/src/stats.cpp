@@ -131,10 +131,12 @@ std::map<std::string, double> Stats::toMap() const {
     
     // Statistiques des trades
     map["# Trades"] = numTrades;
-    map["Win Rate [%]"] = winRatePct;
-    map["# Winning Trades"] = numTPTrades;
+    map["# Take Profit Trades"] = numTPTrades;
+    map["Take Profit Trades [%]"] = pctTPTrades;
     map["# Losing Trades"] = numSLTrades;
+    map["Losing Trades [%]"] = pctSLTrades;
     map["# Neutral Trades"] = numBETrades;
+    map["Neutral Trades [%]"] = pctBETrades;
     map["Best Trade [%]"] = bestTradePct;
     map["Worst Trade [%]"] = worstTradePct;
     map["Avg. Trade [%]"] = avgTradePct;
@@ -182,9 +184,9 @@ std::ostream& operator<<(std::ostream& os, const Stats& stats) {
     
     os << "\n-- Trades --\n";
     os << "  Nombre total: " << stats.numTrades << "\n";
-    os << "  Gagnants: " << stats.numTPTrades << " (" << stats.winRatePct << "%)\n";
-    os << "  Perdants: " << stats.numSLTrades << "\n";
-    os << "  Neutres: " << stats.numBETrades << "\n";
+    os << "  Gagnants: " << stats.numTPTrades << " (" << stats.pctTPTrades << "%)\n";
+    os << "  Perdants: " << stats.numSLTrades << " (" << stats.pctSLTrades << "%)\n";
+    os << "  Neutres: " << stats.numBETrades << " (" << stats.pctBETrades << "%)\n";
     os << "  Meilleur: " << stats.bestTradePct << "%\n";
     os << "  Pire: " << stats.worstTradePct << "%\n";
     os << "  Moyen: " << stats.avgTradePct << "%\n";
@@ -286,13 +288,13 @@ Stats computeStats(
     stats.numTrades = static_cast<unsigned int>(n_trades);
     
     // Statistiques des trades (victoires/défaites)
-    std::ptrdiff_t winning_trades = std::count_if(trades.begin(), trades.end(),
+    std::ptrdiff_t tp_trades = std::count_if(trades.begin(), trades.end(),
         [](const auto& trade) { return trade->closeReason() == be::CloseReason::TakeProfit; });
 
-    std::ptrdiff_t losing_trades = std::count_if(trades.begin(), trades.end(),
+    std::ptrdiff_t sl_trades = std::count_if(trades.begin(), trades.end(),
         [](const auto& trade) { return trade->closeReason() == be::CloseReason::StopLoss; });
 
-    std::ptrdiff_t neutral_trades = std::count_if(trades.begin(), trades.end(),
+    std::ptrdiff_t be_trades = std::count_if(trades.begin(), trades.end(),
         [](const auto& trade) { return trade->closeReason() == be::CloseReason::BreakEven; });
 
     std::ptrdiff_t manual_trades = std::count_if(trades.begin(), trades.end(),
@@ -302,14 +304,16 @@ Stats computeStats(
         [](const auto& trade) { return trade->closeReason() == be::CloseReason::Unknown; });
 
 
-    double win_rate = n_trades ? static_cast<double>(winning_trades) / n_trades : NaN;
-    
-    stats.winRatePct = win_rate * 100;
-    stats.numTPTrades = static_cast<double>(winning_trades);
-    stats.numSLTrades = static_cast<double>(losing_trades);
-    stats.numBETrades = static_cast<double>(neutral_trades);
+    stats.numTPTrades = static_cast<double>(tp_trades);
+    stats.pctTPTrades = n_trades ? static_cast<double>(tp_trades) / n_trades * 100 : NaN;
+    stats.numSLTrades = static_cast<double>(sl_trades);
+    stats.pctSLTrades = n_trades ? static_cast<double>(sl_trades) / n_trades * 100 : NaN;
+    stats.numBETrades = static_cast<double>(be_trades);
+    stats.pctBETrades = n_trades ? static_cast<double>(be_trades) / n_trades * 100 : NaN;
     stats.numManualTrades = static_cast<double>(manual_trades);
+    stats.pctManualTrades = n_trades ? static_cast<double>(manual_trades) / n_trades * 100 : NaN;
     stats.numUnknownTrades = static_cast<double>(unknown_trades);
+    stats.pctUnknownTrades = n_trades ? static_cast<double>(unknown_trades) / n_trades * 100 : NaN;
     
     // Meilleurs et pires trades
     if (!return_pct_values.empty()) {
@@ -373,7 +377,7 @@ Stats computeStats(
     }
     
     // Kelly Criterion
-    if (win_rate > 0 && !pl_values.empty()) {
+    if (stats.pctTPTrades > 0 && !pl_values.empty()) {
         double avg_win = 0.0;
         double avg_loss = 0.0;
         int win_count = 0;
@@ -393,7 +397,7 @@ Stats computeStats(
         avg_loss = loss_count > 0 ? avg_loss / loss_count : 0;
         
         if (avg_loss > 0) {
-            stats.kellyCriterion = win_rate - (1 - win_rate) / (avg_win / avg_loss);
+            stats.kellyCriterion = stats.pctTPTrades - (1 - stats.pctTPTrades) / (avg_win / avg_loss);
         } else {
             stats.kellyCriterion = NaN;
         }
@@ -615,10 +619,16 @@ Stats dummyStats() {
     stats.maxDrawdownDuration = Duration();
     stats.avgDrawdownDuration = Duration();
     stats.numTrades = 0;
-    stats.winRatePct = NaN;
     stats.numTPTrades = NaN;
+    stats.pctTPTrades = NaN;
     stats.numSLTrades = NaN;
+    stats.pctSLTrades = NaN;
     stats.numBETrades = NaN;
+    stats.pctBETrades = NaN;
+    stats.numManualTrades = NaN;
+    stats.pctManualTrades = NaN;
+    stats.numUnknownTrades = NaN;
+    stats.pctUnknownTrades = NaN;
     stats.bestTradePct = NaN;
     stats.worstTradePct = NaN;
     stats.avgTradePct = NaN;

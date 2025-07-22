@@ -477,10 +477,21 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
         // Déterminer le résultat du trade
         be::CloseReason closeReason = trade->closeReason();
 
-        // Traiter le point d'entrée
+        // Indices pour l'entrée et la sortie
         size_t entryBarIndex = trade->entryBar();
-        if (entryBarIndex >= static_cast<size_t>(startIndex) && 
-            entryBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+        size_t exitBarIndex = trade->isClosed() ? trade->exitBar() : 0;
+        
+        // Vérifier si le trade est visible dans la fenêtre (au moins entrée ou sortie visible)
+        bool entryVisible = (entryBarIndex >= static_cast<size_t>(startIndex) && 
+                            entryBarIndex < static_cast<size_t>(startIndex + timestamps.len));
+        bool exitVisible = trade->isClosed() && (exitBarIndex >= static_cast<size_t>(startIndex) && 
+                           exitBarIndex < static_cast<size_t>(startIndex + timestamps.len));
+                           
+        // Si ni l'entrée ni la sortie n'est visible, ignorer ce trade
+        if (!entryVisible && !exitVisible) continue;
+
+
+        if (entryVisible) {
             double relativeIndex = static_cast<double>(entryBarIndex - startIndex);
             
             // Marqueur carré pour la position d'entrée
@@ -499,56 +510,52 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
                     entryShortArrows.push_back({relativeIndex, arrowY});
                 }
             }
-
-            // Ajouter les segments TP/SL (inchangé)
-            if (trade->isClosed()) {
-                size_t exitBarIndex = trade->exitBar();
-                if (exitBarIndex >= static_cast<size_t>(startIndex) && 
-                    exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
-                    double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
-                    
-                    int color;
-                    if (closeReason == be::CloseReason::TakeProfit) color = COLOR_TP;
-                    else if (closeReason == be::CloseReason::StopLoss) color = COLOR_SL;
-                    else if (closeReason == be::CloseReason::BreakEven) color = COLOR_BE;
-                    else if (closeReason == be::CloseReason::ManualClose) color = COLOR_NEUTRAL;
-                    else color = COLOR_UNKNOWN;
-
-                    double tpValue = trade->tp();
-                    if (tpValue > 0) {
-                        tpslbeSegments.push_back({
-                            relativeIndex, relativeExitIndex, 
-                            tpValue, TPSLBEType::TakeProfit,
-                            color
-                        });
-                    }
-                    
-                    double slValue = (trade->initialSlPrice() > 0) ? trade->initialSlPrice() : trade->sl();
-                    if (slValue > 0) {
-                        tpslbeSegments.push_back({
-                            relativeIndex, relativeExitIndex,
-                            slValue, TPSLBEType::StopLoss,
-                            color
-                        });
-                    }
-
-                    double beValue = trade->breakEvenTriggerPrice();
-                    if (beValue > 0) {
-                        tpslbeSegments.push_back({
-                            relativeIndex, relativeExitIndex,
-                            beValue, TPSLBEType::BreakEven,
-                            color
-                        });
-                    }
-                }
-            }
         }
-        
-        // Traiter le point de sortie (seulement pour les trades fermés)
+
+        // Ajouter les segments TP/SL (inchangé)
         if (trade->isClosed()) {
-            size_t exitBarIndex = trade->exitBar();
-            if (exitBarIndex >= static_cast<size_t>(startIndex) && 
-                exitBarIndex < static_cast<size_t>(startIndex + timestamps.len)) {
+            // Calculer les indices relatifs comme pour les points pivots
+            // en les contraignant aux limites de la fenêtre visible
+            double relativeEntryIndex = static_cast<double>(
+                std::max(int(entryBarIndex) - startIndex, 0));
+            double relativeExitIndex = static_cast<double>(
+                std::min(int(exitBarIndex) - startIndex, aggregationInfo.pointCount - 1));
+        
+            int color;
+            if (closeReason == be::CloseReason::TakeProfit) color = COLOR_TP;
+            else if (closeReason == be::CloseReason::StopLoss) color = COLOR_SL;
+            else if (closeReason == be::CloseReason::BreakEven) color = COLOR_BE;
+            else if (closeReason == be::CloseReason::ManualClose) color = COLOR_NEUTRAL;
+            else color = COLOR_UNKNOWN;
+
+            double tpValue = trade->tp();
+            if (tpValue > 0) {
+                tpslbeSegments.push_back({
+                    relativeEntryIndex, relativeExitIndex, 
+                    tpValue, TPSLBEType::TakeProfit,
+                    color
+                });
+            }
+            
+            double slValue = (trade->initialSlPrice() > 0) ? trade->initialSlPrice() : trade->sl();
+            if (slValue > 0) {
+                tpslbeSegments.push_back({
+                    relativeEntryIndex, relativeExitIndex,
+                    slValue, TPSLBEType::StopLoss,
+                    color
+                });
+            }
+
+            double beValue = trade->breakEvenTriggerPrice();
+            if (beValue > 0) {
+                tpslbeSegments.push_back({
+                    relativeEntryIndex, relativeExitIndex,
+                    beValue, TPSLBEType::BreakEven,
+                    color
+                });
+            }
+
+            if (exitVisible) {
                 double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
                 
                 // Marqueur carré pour la position de sortie

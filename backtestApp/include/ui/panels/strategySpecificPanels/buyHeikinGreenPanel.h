@@ -56,6 +56,7 @@ private slots:
     void onRsiFilterToggled(bool checked);
     void onStochFilterToggled(bool checked);
     void onSupertrendFilterToggled(bool checked);
+    void onPreviousHaCandleRedFilterToggled(bool checked);
 
 private:
     /**

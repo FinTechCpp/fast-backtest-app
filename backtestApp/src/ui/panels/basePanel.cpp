@@ -62,6 +62,9 @@ BuyHeikinGreenConfig BasePanel::convertToConfig<BuyHeikinGreenConfig>(const QMap
     if (values.contains("use_previous_ha_candle_red_filter"))
         config.use_previous_ha_candle_red_filter = values["use_previous_ha_candle_red_filter"].toBool();
     
+    if (values.contains("previous_ha_candle_red_filter_n"))
+        config.previous_ha_candle_red_filter_n = values["previous_ha_candle_red_filter_n"].toInt();
+    
     return config;
 }
 

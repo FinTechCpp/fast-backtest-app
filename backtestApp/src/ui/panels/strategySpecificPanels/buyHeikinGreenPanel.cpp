@@ -177,11 +177,18 @@ void BuyHeikinGreenPanel::initialize()
     QVBoxLayout* otherFiltersLayout = new QVBoxLayout();
     otherFiltersLayout->setContentsMargins(5, 5, 5, 5);
     
-    m_widgets["previous_ha_candle_red_filter_check"] = new QCheckBox("Activer filtre bougie précédente rouge", this);
+    m_widgets["previous_ha_candle_red_filter_check"] = new QCheckBox("Activer filtre précédente(s) bougie(s) rouge(s)", this);
     otherFiltersLayout->addWidget(m_widgets["previous_ha_candle_red_filter_check"]);
-    
+
+    // Paramètres n bougies précédentes
+    m_widgets["previous_ha_candle_red_filter_spin"] = new QSpinBox(this);
+    static_cast<QSpinBox*>(m_widgets["previous_ha_candle_red_filter_spin"])->setRange(1, 100);
+    static_cast<QSpinBox*>(m_widgets["previous_ha_candle_red_filter_spin"])->setValue(2);
+    otherFiltersLayout->addWidget(m_widgets["previous_ha_candle_red_filter_spin"]);
+    connect(static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"]), &QCheckBox::toggled,
+            this, &BuyHeikinGreenPanel::onPreviousHaCandleRedFilterToggled);
     strategyLayout->addLayout(otherFiltersLayout);
-    
+
     // Stretch pour prendre l'espace restant
     strategyLayout->addStretch(1);
     
@@ -191,6 +198,7 @@ void BuyHeikinGreenPanel::initialize()
     onRsiFilterToggled(static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked());
     onStochFilterToggled(static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked());
     onSupertrendFilterToggled(static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->isChecked());
+    onPreviousHaCandleRedFilterToggled(static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->isChecked());
 }
 
 // Les méthodes getValues et setValues restent inchangées
@@ -226,7 +234,7 @@ QMap<QString, QVariant> BuyHeikinGreenPanel::getValues()
     
     // Filtre bougie
     values["use_previous_ha_candle_red_filter"] = static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->isChecked();
-    
+    values["previous_ha_candle_red_filter_n"] = static_cast<QSpinBox*>(m_widgets["previous_ha_candle_red_filter_spin"])->value();
     return values;
 }
 
@@ -302,6 +310,10 @@ void BuyHeikinGreenPanel::setValues(const QMap<QString, QVariant>& values)
         static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->setChecked(
             values["use_previous_ha_candle_red_filter"].toBool());
     }
+    if (values.contains("previous_ha_candle_red_filter_n")) {
+        static_cast<QSpinBox*>(m_widgets["previous_ha_candle_red_filter_spin"])->setValue(
+            values["previous_ha_candle_red_filter_n"].toInt());
+    }
 }
 
 void BuyHeikinGreenPanel::onEmaShortFilterToggled(bool checked) {
@@ -322,6 +334,10 @@ void BuyHeikinGreenPanel::onStochFilterToggled(bool checked) {
 
 void BuyHeikinGreenPanel::onSupertrendFilterToggled(bool checked) {
     _toggleWidgetGroup({"supertrend_period_spin", "supertrend_multiplier_spin"}, checked);
+}
+
+void BuyHeikinGreenPanel::onPreviousHaCandleRedFilterToggled(bool checked) {
+    _toggleWidgetGroup({"previous_ha_candle_red_filter_spin"}, checked);
 }
 
 void BuyHeikinGreenPanel::_toggleWidgetGroup(const QStringList& widgets, bool enabled)

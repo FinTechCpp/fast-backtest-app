@@ -53,6 +53,10 @@ public:
         bool isValid = false;
     };
 
+    struct TradeIndices {
+        std::unordered_map<AggregationLevel, std::pair<int, int>> indices;
+    };
+
     // on pourrait imaginer de refaire cette structure pour par exemple juste prendre le type de l'indicateur
     // par exmeple pour le rsi c'est std::vector<double> rsiValues;
     // pour les points pivots c'est std::map<int, std::vector<double>> pivotPointsValues;
@@ -114,9 +118,9 @@ public:
     const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
     const std::vector<std::shared_ptr<be::Trade>>& getTrades() const { return m_trades; }
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_indicators; }
-    // const IndicatorData& getActiveIndicators() const { return getAggregatedIndicators(AggregationLevel::Raw); }
     const IndicatorData& getAggregatedIndicators(AggregationLevel level) const;
     const std::map<int, std::vector<PivotPeriod>>& getPivotPeriods() const { return m_pivotPeriods; }
+    const std::pair<int, int>* getTradeAggregatedIndices(size_t tradeIndex, AggregationLevel level) const;
     bool hasValidData() const;
 
     // methode utilitaires peut etre a deplacer
@@ -239,7 +243,10 @@ private:
     // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
     void calculatePivotPoints(const PivotPointsInstance& config);
 
+    // deux methode qui utilise la meme logique c'est a factoriser
     void precalculatePivotIndices(std::vector<PivotPeriod>& periods, AggregationLevel level);
+    void precalculateTradeIndices(AggregationLevel level);
+
 
     // Utilitaires internes
     double dateToChartTimestamp(const be::Date& date) const;
@@ -255,6 +262,7 @@ private:
     std::map<int, std::vector<PivotPeriod>> m_pivotPeriods;
     HeikinAshiCache m_heikinAshiCache;
     std::vector<std::shared_ptr<be::Trade>> m_trades;
+    std::vector<TradeIndices> m_tradeIndices; // Indices pour chaque trade
     EquityData m_equityData;
 
     // ID unique global pour tous les types d'indicateurs

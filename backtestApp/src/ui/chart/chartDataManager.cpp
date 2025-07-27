@@ -30,6 +30,22 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
 
 void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
     m_trades = trades;
+    m_tradeIndices.clear();
+    
+    // Si pas de trades, rien à faire
+    if (m_trades.empty()) return;
+
+    // Préallouer le vecteur d'indices
+    m_tradeIndices.resize(m_trades.size());
+
+    // Initialiser les indices raw pour tous les trades
+    for (size_t i = 0; i < m_trades.size(); ++i) {
+        int entryBar = static_cast<int>(m_trades[i]->entryBar());
+        int exitBar = m_trades[i]->isClosed() ? static_cast<int>(m_trades[i]->exitBar()) : entryBar;
+        
+        // Stocker les indices raw
+        m_tradeIndices[i].indices[AggregationLevel::Raw] = {entryBar, exitBar};
+    }
 }
 
 void ChartDataManager::setEquityCurve(const std::vector<double>& equityCurve) {
@@ -270,6 +286,11 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
     
     aggregatedData.level = level;
     aggregatedData.isValid = true;
+
+    // Précalculer les indices des trades pour ce nouveau niveau d'agrégation
+    if (!m_trades.empty() && level != AggregationLevel::Raw) {
+        precalculateTradeIndices(level);
+    }
 }
 
 void ChartDataManager::aggregateIndicators(AggregationLevel level) {
@@ -555,6 +576,87 @@ void ChartDataManager::precalculatePivotIndices(std::vector<PivotPeriod>& period
     }
 }
 
+void ChartDataManager::precalculateTradeIndices(AggregationLevel level) {
+    // Vérifier que le niveau existe dans le cache
+    auto it = m_aggregatedOHLCVCache.find(level);
+    if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid)
+        return;
+    
+    const std::vector<std::vector<int>>& mapping = it->second.rawIndicesMapping;
+    if (mapping.empty() || m_trades.empty())
+        return;
+    
+    // Trier les trades par ordre croissant de leur barre d'entrée pour optimiser la recherche
+    std::vector<size_t> sortedTradeIndices;
+    sortedTradeIndices.reserve(m_trades.size());
+    
+    for (size_t i = 0; i < m_trades.size(); ++i) {
+        sortedTradeIndices.push_back(i);
+    }
+    
+    std::sort(sortedTradeIndices.begin(), sortedTradeIndices.end(),
+        [this](size_t a, size_t b) {
+            return m_trades[a]->entryBar() < m_trades[b]->entryBar();
+        });
+    
+    // Curseur pour parcourir le mapping une seule fois
+    size_t mappingIdx = 0;
+    
+    for (size_t idx : sortedTradeIndices) {
+        const auto& trade = m_trades[idx];
+        
+        int rawEntryBar = static_cast<int>(trade->entryBar());
+        int rawExitBar = trade->isClosed() ? static_cast<int>(trade->exitBar()) : rawEntryBar;
+        
+        int aggEntryIndex = -1;
+        int aggExitIndex = -1;
+        
+        // Rechercher l'indice d'entrée
+        while (mappingIdx < mapping.size()) {
+            bool found = false;
+            for (int rawIdx : mapping[mappingIdx]) {
+                if (rawIdx == rawEntryBar) {
+                    aggEntryIndex = static_cast<int>(mappingIdx);
+                    found = true;
+                    break;
+                }
+            }
+            
+            if (found) break;
+            mappingIdx++;
+        }
+        
+        // Si on n'a pas trouvé l'indice d'entrée, passer au trade suivant
+        if (aggEntryIndex < 0) continue;
+        
+        // Rechercher l'indice de sortie à partir du point d'entrée
+        size_t exitMappingIdx = mappingIdx;
+        while (exitMappingIdx < mapping.size()) {
+            bool found = false;
+            for (int rawIdx : mapping[exitMappingIdx]) {
+                if (rawIdx == rawExitBar) {
+                    aggExitIndex = static_cast<int>(exitMappingIdx);
+                    found = true;
+                    break;
+                }
+            } 
+
+            // Ici on n'incremente pas l'indice sur la sortie au cas ou le trade d'après a sa sortie avant
+            
+            if (found) break;
+            exitMappingIdx++;
+        }
+        
+        // Si on n'a pas trouvé l'indice de sortie, utiliser l'indice d'entrée
+        if (aggExitIndex < 0) {
+            aggExitIndex = aggEntryIndex;
+        }
+        
+        // Stocker les indices pour ce trade et ce niveau d'agrégation
+        m_tradeIndices[idx].indices[level] = {aggEntryIndex, aggExitIndex};
+    }
+}
+
 // Méthode utilitaire pour configurer le sélecteur d'agrégation
 bool ChartDataManager::configureAggregationSelector(ArrayMath& math, AggregationLevel level) const {
     switch (level) {
@@ -829,6 +931,19 @@ const ChartDataManager::IndicatorData &ChartDataManager::getAggregatedIndicators
         return it->second;
 
     return emptyIndicators;
+}
+
+const std::pair<int, int>* ChartDataManager::getTradeAggregatedIndices(size_t tradeIndex, AggregationLevel level) const {
+    if (tradeIndex >= m_tradeIndices.size())
+        return nullptr;
+    
+    const auto& indices = m_tradeIndices[tradeIndex].indices;
+    auto it = indices.find(level);
+    
+    if (it != indices.end())
+        return &(it->second);
+    
+    return nullptr;
 }
 
 bool ChartDataManager::hasValidData() const

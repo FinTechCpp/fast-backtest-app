@@ -201,7 +201,7 @@ void ChartRenderer::createOrUpdateChart(
     
     // 5. Ajouter les trades si disponibles et demandés
     if (config.showTrades) {
-        addTradeMarkers(m_financeChart.get(), timestamps, startIndex, dataManager, aggregationInfo);
+        addTradeMarkers(m_financeChart.get(), timestamps, dataManager, aggregationInfo);
     }
 
     // std::cout << "Avant " << mainChart->getYCoor(20000) << std::endl;
@@ -409,11 +409,11 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart,
 
 void ChartRenderer::addTradeMarkers(FinanceChart *chart, 
                                    const DoubleArray &timestamps,
-                                   int startIndex,
                                    const ChartDataManager& dataManager,
                                    const ChartDataManager::AggregationInfo& aggregationInfo)
 {
     const std::vector<std::shared_ptr<be::Trade>>& trades = dataManager.getTrades();
+    int startIndex = aggregationInfo.startIndex;
 
     if (trades.empty() || !dataManager.hasValidData())
         return;

@@ -99,7 +99,6 @@ private:
     
     void addTradeMarkers(FinanceChart *chart, 
                          const DoubleArray &timestamps,
-                         int startIndex,
                          const ChartDataManager& dataManager,
                          const ChartDataManager::AggregationInfo& aggregationInfo);
                          

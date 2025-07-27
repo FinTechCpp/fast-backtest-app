@@ -97,11 +97,20 @@ private:
                                const DoubleArray &timestamps, 
                                int startIndex);
     
-    void addTradeMarkers(FinanceChart *chart, 
+    void addTradeMarkers(XYChart *mainChart, 
                          const DoubleArray &timestamps,
                          const ChartDataManager& dataManager,
                          const ChartDataManager::AggregationInfo& aggregationInfo);
-                         
+                  
+    void addRawTradeMarkers(XYChart *mainChart, 
+                           const DoubleArray &timestamps,
+                           const ChartDataManager& dataManager,
+                           const ChartDataManager::AggregationInfo& aggregationInfo);
+                           
+    void addAggregatedTradeMarkers(XYChart *mainChart, 
+                                  const DoubleArray &timestamps,
+                                  const ChartDataManager& dataManager,
+                                  const ChartDataManager::AggregationInfo& aggregationInfo);
     // void addTriggerPriceSegments(XYChart* chart, const std::vector<TriggerPriceSegment>& segments);
 
     
@@ -138,7 +147,7 @@ private:
         const ChartDataManager::AggregationInfo& aggregationInfo);
 
     // Utilitaires
-    void addMarkers(XYChart* chart, 
+    ScatterLayer* addMarkers(XYChart* chart, 
                    const std::vector<std::pair<double, double>>& markers, 
                    const char* name, 
                    int symbolType, 

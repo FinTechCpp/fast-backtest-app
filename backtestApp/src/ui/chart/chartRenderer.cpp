@@ -201,7 +201,7 @@ void ChartRenderer::createOrUpdateChart(
     
     // 5. Ajouter les trades si disponibles et demandés
     if (config.showTrades) {
-        addTradeMarkers(m_financeChart.get(), timestamps, dataManager, aggregationInfo);
+        addTradeMarkers(mainChart, timestamps, dataManager, aggregationInfo);
     }
 
     // std::cout << "Avant " << mainChart->getYCoor(20000) << std::endl;
@@ -407,22 +407,37 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart,
     }
 }
 
-void ChartRenderer::addTradeMarkers(FinanceChart *chart, 
-                                   const DoubleArray &timestamps,
-                                   const ChartDataManager& dataManager,
-                                   const ChartDataManager::AggregationInfo& aggregationInfo)
+void ChartRenderer::addTradeMarkers(XYChart *mainChart, 
+                                  const DoubleArray &timestamps,
+                                  const ChartDataManager& dataManager,
+                                  const ChartDataManager::AggregationInfo& aggregationInfo)
+{
+    const std::vector<std::shared_ptr<be::Trade>>& trades = dataManager.getTrades();
+    int startIndex = aggregationInfo.startIndex;
+    AggregationLevel level = aggregationInfo.level;
+
+    if (trades.empty() 
+        || !dataManager.hasValidData()
+        || !mainChart)
+        return;
+
+    // Sélectionner la méthode d'affichage en fonction du niveau d'agrégation
+    if (level == AggregationLevel::Raw) {
+        addRawTradeMarkers(mainChart, timestamps, dataManager, aggregationInfo);
+    } else {
+        addAggregatedTradeMarkers(mainChart, timestamps, dataManager, aggregationInfo);
+    }
+}
+
+void ChartRenderer::addRawTradeMarkers(XYChart *mainChart, 
+                                     const DoubleArray &timestamps,
+                                     const ChartDataManager& dataManager,
+                                     const ChartDataManager::AggregationInfo& aggregationInfo)
 {
     const std::vector<std::shared_ptr<be::Trade>>& trades = dataManager.getTrades();
     int startIndex = aggregationInfo.startIndex;
 
-    if (trades.empty() || !dataManager.hasValidData())
-        return;
-
-    if (aggregationInfo.level != AggregationLevel::Raw) 
-        return; // Les trades ne sont affichés qu'en mode Raw pour l'instant
-
     // Obtenir le graphique principal
-    XYChart* mainChart = (XYChart*)chart->getChart(1);
     if (!mainChart)
         return;
 
@@ -627,6 +642,184 @@ void ChartRenderer::addTradeMarkers(FinanceChart *chart,
         addMarkers(mainChart, exitShortBEArrows, "Short Exit Break Even", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_BE, 0, 20); // Flèche bleue vers le haut sous la bougie
     if (!exitShortNeutralArrows.empty())
         addMarkers(mainChart, exitShortNeutralArrows, "Short Exit Neutral", Chart::ArrowShape(0, 1, 0.4, 0.4), symbolSize, COLOR_NEUTRAL, 0, 20); // Flèche noire vers le haut sous la bougie
+}
+
+void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart, 
+                                            const DoubleArray &timestamps,
+                                            const ChartDataManager& dataManager,
+                                            const ChartDataManager::AggregationInfo& aggregationInfo)
+{
+    const std::vector<std::shared_ptr<be::Trade>>& trades = dataManager.getTrades();
+    int startIndex = aggregationInfo.startIndex;
+    int pointCount = aggregationInfo.pointCount;
+    AggregationLevel level = aggregationInfo.level;
+
+    // Obtenir le graphique principal
+    if (!mainChart)
+        return;
+
+    // Couleurs pour les flèches
+    const int COLOR_LONG = 0x00AA00;    // Vert pour entrées long
+    const int COLOR_SHORT = 0xCC0000;   // Rouge pour entrées short
+
+    // Taille de la fenêtre fixe (nombre de bougies par bucket)
+    const int windowSize = std::max(5, pointCount / 40);
+
+    // Calculer le nombre de fenêtres/buckets nécessaires
+    int numWindows = (pointCount + windowSize - 1) / windowSize; // Arrondi au supérieur
+
+    // Tableaux pour stocker les compteurs par fenêtre
+    std::vector<int> longCountByWindow(numWindows, 0);
+    std::vector<int> shortCountByWindow(numWindows, 0);
+    
+    // Compter les trades par fenêtre fixe
+    for (size_t i = 0; i < trades.size(); ++i) {
+        const auto& trade = trades[i];
+        bool isLong = trade->isLong();
+        
+        // Récupérer l'indice agrégé pour ce trade
+        const std::pair<int, int>* aggregatedIndices = dataManager.getTradeAggregatedIndices(i, level);
+        
+        // Si on n'a pas d'indices agrégés, on passe au trade suivant
+        if (!aggregatedIndices) continue;
+
+        // Extraire l'indice d'entrée agrégé
+        int entryIndex = aggregatedIndices->first;
+        
+        // Vérifier si l'entrée est dans la plage affichée
+        if (entryIndex < startIndex || entryIndex >= startIndex + pointCount)
+            continue;
+            
+        // Calculer l'indice relatif et déterminer la fenêtre correspondante
+        int relativeIndex = entryIndex - startIndex;
+        int windowIndex = relativeIndex / windowSize;
+        
+        // S'assurer que l'indice est valide (par sécurité)
+        if (windowIndex >= 0 && windowIndex < numWindows) {
+            // Incrémenter le compteur pour cette fenêtre
+            if (isLong) {
+                longCountByWindow[windowIndex]++;
+            } else {
+                shortCountByWindow[windowIndex]++;
+            }
+        }
+    }
+    
+    // Créer les marqueurs pour chaque fenêtre avec des trades long
+    std::vector<std::pair<double, double>> longEntryMarkers;
+    std::vector<int> longEntryCounts;
+    
+    for (int i = 0; i < numWindows; i++) {
+        if (longCountByWindow[i] > 0) {
+            // Calculer l'indice du milieu de la fenêtre
+            int windowStartIndex = i * windowSize;
+            int windowEndIndex = std::min(windowStartIndex + windowSize - 1, pointCount - 1);
+            double midIndex = (windowStartIndex + windowEndIndex) / 2.0;
+            
+            // Déterminer la position y (bas de la bougie)
+            double y = 0;
+            
+            // En mode agrégé, utiliser le prix bas de la bougie agrégée au milieu de la fenêtre
+            const auto& aggregatedData = dataManager.getAggregatedData(level);
+            int midRealIndex = startIndex + static_cast<int>(midIndex);
+            if (midRealIndex < static_cast<int>(aggregatedData.low.size())) {
+                y = aggregatedData.low[midRealIndex];
+            }
+            
+            if (y > 0) {
+                longEntryMarkers.push_back({midIndex, y});
+                longEntryCounts.push_back(longCountByWindow[i]);
+            }
+        }
+    }
+    
+    // Ajouter les flèches pour les entrées long
+    if (!longEntryMarkers.empty()) {
+        ScatterLayer* layer = addMarkers(mainChart, longEntryMarkers, "Long Entries", 
+            Chart::ArrowShape(0, 1, 0.4, 0.4), 
+            11, COLOR_LONG, 0, 20);
+            
+        // Ajouter les labels avec le nombre d'entrées
+        if (layer) {
+            for (size_t i = 0; i < longEntryMarkers.size(); i++) {
+                std::string label = std::to_string(longEntryCounts[i]);
+                
+                // Ajouter un label personnalisé au marqueur
+                TextBox* countLabel = layer->addCustomDataLabel(0, static_cast<int>(i), 
+                                                        label.c_str(), 
+                                                        "Arial Bold", 8, 0x000000);
+                
+                // Configurer l'apparence du label
+                countLabel->setAlignment(Chart::Bottom);
+                countLabel->setPos(countLabel->getLeftX(), countLabel->getTopY() + 20);
+                // countLabel->setBackground(0x90FFFFFF, 0x000000);
+                // countLabel->setRoundedCorners(3);
+                // countLabel->setMargin(3);
+                
+                // Ajuster la taille de la police pour les grands nombres
+                if (longEntryCounts[i] > 99)
+                    countLabel->setFontStyle("Arial Bold", 10);
+            }
+        }
+    }
+
+    // Créer les marqueurs pour chaque fenêtre avec des trades short
+    std::vector<std::pair<double, double>> shortEntryMarkers;
+    std::vector<int> shortEntryCounts;
+    
+    for (int i = 0; i < numWindows; i++) {
+        if (shortCountByWindow[i] > 0) {
+            // Calculer l'indice du milieu de la fenêtre
+            int windowStartIndex = i * windowSize;
+            int windowEndIndex = std::min(windowStartIndex + windowSize - 1, pointCount - 1);
+            double midIndex = (windowStartIndex + windowEndIndex) / 2.0;
+            
+            // Déterminer la position y (haut de la bougie)
+            double y = 0;
+            
+            // En mode agrégé, utiliser le prix haut de la bougie agrégée au milieu de la fenêtre
+            const auto& aggregatedData = dataManager.getAggregatedData(level);
+            int midRealIndex = startIndex + static_cast<int>(midIndex);
+            if (midRealIndex < static_cast<int>(aggregatedData.high.size())) {
+                y = aggregatedData.high[midRealIndex];
+            }
+            
+            if (y > 0) {
+                shortEntryMarkers.push_back({midIndex, y});
+                shortEntryCounts.push_back(shortCountByWindow[i]);
+            }
+        }
+    }
+    
+    // Ajouter les flèches pour les entrées short
+    if (!shortEntryMarkers.empty()) {
+        ScatterLayer* layer = addMarkers(mainChart, shortEntryMarkers, "Short Entries", 
+            Chart::ArrowShape(180, 1, 0.4, 0.4), 
+            11, COLOR_SHORT, 0, -20);
+            
+        // Ajouter les labels avec le nombre d'entrées
+        if (layer) {
+            for (size_t i = 0; i < shortEntryMarkers.size(); i++) {
+                std::string label = std::to_string(shortEntryCounts[i]);
+                
+                // Ajouter un label personnalisé au marqueur
+                TextBox* countLabel = layer->addCustomDataLabel(0, static_cast<int>(i), 
+                                                        label.c_str(), 
+                                                        "Arial Bold", 8, 0x000000);
+                
+                // Configurer l'apparence du label
+                countLabel->setAlignment(Chart::Top);
+                countLabel->setPos(countLabel->getLeftX(), countLabel->getTopY() - 20);
+                // countLabel->setBackground(0x90FFFFFF, 0x000000);
+                // countLabel->setRoundedCorners(3);
+                // countLabel->setMargin(3);
+                
+                // Ajuster la taille de la police pour les grands nombres
+                if (shortEntryCounts[i] > 99)
+                    countLabel->setFontStyle("Arial Bold", 10);
+            }
+        }
+    }
 }
 
 void ChartRenderer::addRSIToChart(FinanceChart* chart, 
@@ -1096,10 +1289,10 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
     }
 }
 
-void ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<double, double>> &markers,
+ScatterLayer* ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<double, double>> &markers,
                                const char *name, int symbolType, int symbolSize, int color, int offsetX, int offsetY)
 {
-    if (markers.empty()) return;
+    if (markers.empty()) return nullptr;
 
     std::vector<double> xValues;
     std::vector<double> yValues;
@@ -1122,6 +1315,8 @@ void ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<doubl
         layer->getDataSet(0)->setSymbolOffset(offsetX, offsetY);
 
     layer->moveFront();
+
+    return layer;
 }
 
 void ChartRenderer::addTPSLSegments(XYChart* chart, const std::vector<TPSLBESegment>& segments)

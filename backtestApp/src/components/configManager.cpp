@@ -121,38 +121,39 @@ void ConfigManager::initializeConfig()
 void ConfigManager::setupDefaultValues()
 {
     // Default values for general settings
-    m_defaultValues["symbol"] = "NDX";
-    m_defaultValues["period"] = "10d";
-    m_defaultValues["interval"] = "20secs";
-    m_defaultValues["end_date"] = "30/04/2025";  // Format dd/MM/yyyy
-    m_defaultValues["spread"] = 0.0001;
-    m_defaultValues["cash"] = 100000.0;
-    m_defaultValues["strategy"] = "BuyHeikinGreenBA";
-    m_defaultValues["leverage_limit"] = 20.0;
+    m_defaultValues["symbol"];
+    m_defaultValues["period"];
+    m_defaultValues["interval"];
+    m_defaultValues["end_date"];  // Format dd/MM/yyyy
+    m_defaultValues["spread"];
+    m_defaultValues["cash"];
+    m_defaultValues["strategy"];
+    m_defaultValues["leverage_limit"];
 
     // Default values for base strategy parameters
-    m_defaultValues["stop_loss_distance"] = 20.0;
-    m_defaultValues["take_profit_distance"] = 30.0;
+    m_defaultValues["stop_loss_distance"];
+    m_defaultValues["take_profit_distance"];
     m_defaultValues["use_atr_for_sl"] = false;
     m_defaultValues["use_atr_for_tp"] = false;
-    m_defaultValues["atr_period"] = 14;
-    m_defaultValues["stop_loss_atr_multiplier"] = 2.0;
-    m_defaultValues["take_profit_atr_multiplier"] = 3.0;
+    m_defaultValues["atr_period"];
+    m_defaultValues["stop_loss_atr_multiplier"];
+    m_defaultValues["take_profit_atr_multiplier"];
     
     // RL parameters for TP
     m_defaultValues["use_rl_for_tp"] = false;
     m_defaultValues["rl_model_path"] = "./Models/tp_model.onnx";
-    m_defaultValues["rl_lookback_periods"] = 2;
-    m_defaultValues["rl_tp_min_multiplier"] = 0.5;
-    m_defaultValues["rl_tp_max_multiplier"] = 5.0;
+    m_defaultValues["rl_lookback_periods"];
+    m_defaultValues["rl_tp_min_multiplier"];
+    m_defaultValues["rl_tp_max_multiplier"];
 
     // Specific parameters for BuyHeikinGreen
-    m_defaultValues["ema_short_period"] = 150;
-    m_defaultValues["ema_long_period"] = 198;
-    m_defaultValues["stoch_fastk"] = 10;
-    m_defaultValues["stoch_slowk"] = 7;
-    m_defaultValues["stoch_slowd"] = 3;
-    m_defaultValues["stoch_threshold"] = 20;
+    m_defaultValues["ema_short_period"];
+    m_defaultValues["ema_long_period"];
+    m_defaultValues["stoch_fastk"];
+    m_defaultValues["stoch_slowk"];
+    m_defaultValues["stoch_slowd"];
+    m_defaultValues["stoch_threshold"];
+    m_defaultValues["use_rsi_filter"] = false;
     m_defaultValues["use_ema_short_filter"] = false;
     m_defaultValues["use_ema_long_filter"] = false;
     m_defaultValues["use_stoch_filter"] = false;

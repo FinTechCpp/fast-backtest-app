@@ -24,8 +24,6 @@ void registerAllStrategies() {
             BuyHeikinGreenConfig specificConfig = 
                 dynamic_cast<BuyHeikinGreenPanel*>(app->getStrategySpecificPanel())->getConfig();
 
-
-            // plein de std::cout pour debut les paramettres
             std::cout << baseConfig << std::endl;
             std::cout << specificConfig << std::endl;
             
@@ -40,14 +38,17 @@ void registerAllStrategies() {
         "Sell Heikin Ashi (Red)",
         [](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, App* app) {
             // Récupérer les configurations typées directement depuis les panels
+            QMap<QString, QVariant> generalParams = app->getGeneralParamsPanel()->getValues();
             StrategyBaseConfig baseConfig = app->getStrategyBasePanel()->getConfig();
+            baseConfig.cash = generalParams.value("cash", -1.0).toDouble();
+            baseConfig.leverage_limit = generalParams.value("leverage_limit", -1.0).toDouble();
+            // Utiliser le panel spécifique pour récupérer la configuration
             SellHeikinRedConfig specificConfig = 
                 dynamic_cast<SellHeikinRedPanel*>(app->getStrategySpecificPanel())->getConfig();
 
-            // plein de std::cout pour debut les paramettres
             std::cout << baseConfig << std::endl;
-            // std::cout << specificConfig << std::endl;
-
+            std::cout << specificConfig << std::endl;
+            
             // Création directe de la stratégie
             return std::make_shared<SellHeikinRedAdapter>(broker, data, baseConfig, specificConfig);
         }

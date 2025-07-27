@@ -54,6 +54,11 @@ private slots:
      * @param checked État de la checkbox
      */
     void onEmaShortFilterToggled(bool checked);
+    void onEmaLongFilterToggled(bool checked);
+    void onRsiFilterToggled(bool checked);
+    void onStochFilterToggled(bool checked);
+    void onSupertrendFilterToggled(bool checked);
+    void onPreviousHaCandleGreenFilterToggled(bool checked);
 
 private:
     /**

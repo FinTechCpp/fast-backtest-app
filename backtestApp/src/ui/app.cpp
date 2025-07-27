@@ -102,9 +102,6 @@ void App::initStrategyMap()
 {
     m_strategyMap["BuyHeikinGreenBA"] = "BuyHeikinGreenBA";
     m_strategyMap["SellHeikinRedBA"] = "SellHeikinRedBA";
-    m_strategyMap["BuyTrendFollowingBA"] = "BuyTrendFollowingBA";
-    m_strategyMap["SellTrendFollowingBA"] = "SellTrendFollowingBA";
-    m_strategyMap["CrossEMABA"] = "CrossEMABA";
 }
 
 void App::createControlPanel()
@@ -217,12 +214,9 @@ QWidget* App::createStrategySpecificPanel(const QString& strategy)
 {
     BasePanel* panel = nullptr;
     
-    if (strategy == "BuyHeikinGreenBA") {
-        panel = new BuyHeikinGreenPanel(m_controlPanel);
-    } else if (strategy == "SellHeikinRedBA") {
-        panel = new SellHeikinRedPanel(m_controlPanel);
-    }
-    
+    if (strategy == "BuyHeikinGreenBA") panel = new BuyHeikinGreenPanel(m_controlPanel);
+    else if (strategy == "SellHeikinRedBA") panel = new SellHeikinRedPanel(m_controlPanel);
+
     if (panel) {
         m_strategySpecificPanel = panel;
         panel->initialize();
@@ -352,8 +346,61 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
             indicators.push_back(supertrend);
         }
     }
+    else if (strategyName.contains("SellHeikinRed", Qt::CaseInsensitive)) {
+        // EMA court terme
+        bool use_ema_short = params.value("use_ema_short_filter", false).toBool();
+        if (use_ema_short) {
+            StrategyIndicator ema;
+            ema.type = StrategyIndicator::EMA;
+            ema.params["period"] = params.value("ema_short_period", 150).toDouble();
+            indicators.push_back(ema);
+        }
+        
+        // EMA long terme
+        bool use_ema_long = params.value("use_ema_long_filter", false).toBool();
+        if (use_ema_long) {
+            StrategyIndicator ema;
+            ema.type = StrategyIndicator::EMA;
+            ema.params["period"] = params.value("ema_long_period", 198).toDouble();
+            indicators.push_back(ema);
+        }
+        
+        // RSI
+        bool use_rsi = params.value("use_rsi_filter", false).toBool();
+        if (use_rsi) {
+            StrategyIndicator rsi;
+            rsi.type = StrategyIndicator::RSI;
+            rsi.params["period"] = params.value("rsi_period", 14).toDouble();
+            rsi.params["overboughtLevel"] = params.value("rsi_threshold", 70).toDouble();
+            rsi.params["oversoldLevel"] = 30.0;  // Valeur par défaut
+            indicators.push_back(rsi);
+        }
+        
+        // Stochastique
+        bool use_stoch = params.value("use_stoch_filter", false).toBool();
+        if (use_stoch) {
+            StrategyIndicator stoch;
+            stoch.type = StrategyIndicator::STOCHASTIC;
+            stoch.params["fastKPeriod"] = params.value("stoch_fastk", 10).toDouble();
+            stoch.params["slowKPeriod"] = params.value("stoch_slowk", 7).toDouble();
+            stoch.params["slowDPeriod"] = params.value("stoch_slowd", 3).toDouble();
+            stoch.params["overboughtLevel"] = params.value("stoch_threshold", 80).toDouble();
+            stoch.params["oversoldLevel"] = 20.0;  // Valeur par défaut
+            indicators.push_back(stoch);
+        }
+        
+        // Supertrend
+        bool use_supertrend = params.value("use_supertrend_filter", false).toBool();
+        if (use_supertrend) {
+            StrategyIndicator supertrend;
+            supertrend.type = StrategyIndicator::SUPERTREND;
+            supertrend.params["period"] = params.value("supertrend_atr_period", 10).toDouble();
+            supertrend.params["multiplier"] = params.value("supertrend_multiplier", 3.0).toDouble();
+            indicators.push_back(supertrend);
+        }
+    }
     
-    // Pour SellHeikinRed ou d'autres stratégies, ajouter d'autres conditions ici
+    // Pour d'autres stratégies, ajouter d'autres conditions ici
     
     return indicators;
 }

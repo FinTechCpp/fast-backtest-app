@@ -87,15 +87,15 @@ SellHeikinRedConfig BasePanel::convertToConfig<SellHeikinRedConfig>(const QMap<Q
     if (values.contains("ema_long_period"))
         config.ema_long_period = values["ema_long_period"].toInt();
     
-    // // RSI
-    // if (values.contains("use_rsi_filter"))
-    //     config.use_rsi_filter = values["use_rsi_filter"].toBool();
+    // RSI
+    if (values.contains("use_rsi_filter"))
+        config.use_rsi_filter = values["use_rsi_filter"].toBool();
     
-    // if (values.contains("rsi_period"))
-    //     config.rsi_period = values["rsi_period"].toInt();
+    if (values.contains("rsi_period"))
+        config.rsi_period = values["rsi_period"].toInt();
     
-    // if (values.contains("rsi_threshold"))
-    //     config.rsi_threshold = values["rsi_threshold"].toInt();
+    if (values.contains("rsi_threshold"))
+        config.rsi_threshold = values["rsi_threshold"].toInt();
     
     // Stochastique
     if (values.contains("use_stoch_filter"))
@@ -113,9 +113,22 @@ SellHeikinRedConfig BasePanel::convertToConfig<SellHeikinRedConfig>(const QMap<Q
     if (values.contains("stoch_threshold"))
         config.stoch_threshold = values["stoch_threshold"].toInt();
     
+    // Supertrend
+    if (values.contains("use_supertrend_filter"))
+        config.use_supertrend_filter = values["use_supertrend_filter"].toBool();
+    
+    if (values.contains("supertrend_atr_period"))
+        config.supertrend_atr_period = values["supertrend_atr_period"].toInt();
+    
+    if (values.contains("supertrend_multiplier"))
+        config.supertrend_multiplier = values["supertrend_multiplier"].toDouble();
+    
     // Filtre bougie précédente
     if (values.contains("use_previous_ha_candle_green_filter"))
         config.use_previous_ha_candle_green_filter = values["use_previous_ha_candle_green_filter"].toBool();
+    
+    if (values.contains("previous_ha_candle_green_filter_n"))
+        config.previous_ha_candle_green_filter_n = values["previous_ha_candle_green_filter_n"].toInt();
     
     return config;
 }

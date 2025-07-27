@@ -48,25 +48,27 @@ public:
     ) : be::Strategy(broker, data), strategy_config(shr_config) {
         // Create Strategy instance with the provided configurations
         strategy = std::make_unique<SellHeikinRed>(base_config, shr_config);
-        // strategy->set_log_level(LogLevel::DEBUG);
+        spdlog::drop("async_file_logger"); // Drop the previous logger if it exists
+        auto async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
+            "async_file_logger",       // Logger name
+            "logs/Strategies/SellHeikinRed_async.log",      // Log file path
+            100 * 1024 * 1024,          // Max file size (100 MB)
+            3                            // Max file count (3 files)
+        );
+        async_file->set_level(spdlog::level::debug); // Set log level to DEBUG
 
-        auto log_callback = [](const std::string& message, int level) {
-            LogLevel logLevel = static_cast<LogLevel>(level);
+        auto log_callback = [async_file](const std::string& message, int level) {
+            spdlog::level::level_enum spdlog_level = spdlog::level::info;
             
-            // Get the current timestamp with millisecond precision
-            auto now = std::chrono::system_clock::now();
-            auto time_t_now = std::chrono::system_clock::to_time_t(now);
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                now.time_since_epoch()) % 1000;
-            
-            // Format the timestamp
-            std::stringstream ss;
-            ss << std::put_time(std::localtime(&time_t_now), "%Y-%m-%d %H:%M:%S");
-            ss << "," << std::setw(3) << std::setfill('0') << ms.count();
-            
-            
-            // Display the log message with the timestamp and log level
-            std::cout << ss.str() << " [" << logLevel << "]: " << message << std::endl;
+            switch (level) {
+                case static_cast<int>(LogLevel::DEBUG):   spdlog_level = spdlog::level::debug; break;
+                case static_cast<int>(LogLevel::INFO):    spdlog_level = spdlog::level::info; break;
+                case static_cast<int>(LogLevel::WARNING): spdlog_level = spdlog::level::warn; break;
+                case static_cast<int>(LogLevel::FATAL):   spdlog_level = spdlog::level::err; break;
+                case static_cast<int>(LogLevel::ERROR):   spdlog_level = spdlog::level::err; break;
+            }
+
+            async_file->log(spdlog_level, message);
         };
 
         strategy->set_log_callback(log_callback);
@@ -89,23 +91,6 @@ public:
      * updates the strategy, and processes any generated signals.
      */
     void next() override {
-        // TODO: for the moment, too much use of getData() which returns all backtest data is very slow
-        // especially since we only need the latest candle
-        // Check if a position has been closed since the last candle
-        // const std::vector<be::Trade> closedTrades = getClosedTrades();
-        // if (closedTrades.size() > last_closed_trade_count) {
-        //     be::Trade last_trade = closedTrades.back();
-
-        //     // Check if the trade was closed at the last candle
-        //     if (last_trade.exitDate() == getData()->getDate(-1)) {
-        //         last_trade_closed = true;
-        //         last_trade_pnl = last_trade.pl(); 
-        //     }
-            
-        //     // Update the counter
-        //     last_closed_trade_count = closedTrades.size();
-        // }
-
         // Create a Candle object from the current data
         Candle candle;
         
@@ -135,76 +120,61 @@ public:
         if (current_trade) {
             candle.position.entry_price = current_trade->entryPrice();
             // Calculate take profit price from the trade's TP order
-            if (current_trade->tpOrder()) {
-                candle.position.take_profit_price = current_trade->tpOrder()->limit();
-            }
+            if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
         }
 
-        // Add the P&L of the last closed trade if there is one
-        candle.position.closed_trade_pnl = 0.0;
-        if (last_trade_closed) {
-            candle.position.closed_trade_pnl = last_trade_pnl;
-            last_trade_closed = false;
-            last_trade_pnl = 0.0;
+        // Get a reference to closedTrades instead of a copy
+        const auto& closedTrades = _broker->closedTrades();
+        size_t currentTradeCount = closedTrades.size();
+
+        // Only if new trades have been closed
+        if (currentTradeCount > last_closed_trade_count) {
+            last_closed_trade_count = currentTradeCount;
+            candle.position.closed_trade_pnl = closedTrades.back()->pl();
         }
         
         // Update the strategy signal with the new latest candle by executing strategy logic
         Signal* signal = strategy->update_candle(candle);
 
-
-        if (!signal) {
+        if (!signal) 
             return; // No signal to process
-        }
         
-        // // Process the signal if there is one
-        // if (signal->action == "LIQUIDATE") {
-        //     if (position) {
-        //         position.close();
-        //         std::cout << "Closing position due to LIQUIDATE signal" << std::endl;
-        //     }
-        // }
-        // else if (signal->action == "MOVE_SL") {
-        //     // Déplacer le stop loss
-        //     if (position) {
-        //         // position.updateSl(signal->new_sl);
-        //         std::cout << "Moving stop loss to " << signal->new_sl << std::endl;
-        //     }
-        // }
-        // else if (!position && signal->action == "BUY") {
-        //     // Exécuter un signal d'achat
-        //     buy(
-        //         signal->quantity,
-        //         0,
-        //         0,
-        //         0,
-        //         0,
-        //         signal->stop_loss, 
-        //         signal->take_profit
-        //         // signal->tag
-        //     );
-
-        //     std::cout << "Opening BUY position: Price=" << signal->price 
-        //              << ", Size=" << signal->quantity
-        //              << ", SL=" << signal->stop_loss
-        //              << ", TP=" << signal->take_profit << std::endl;
-        // }
-        // else if (!position && signal->action == "SELL") {
-        //     // Exécuter un signal de vente
-        //     sell(
-        //         signal->quantity,
-        //         0,
-        //         0,
-        //         0,
-        //         0,
-        //         signal->stop_loss, 
-        //         signal->take_profit
-        //         // signal->tag
-        //     );
-
-        //     std::cout << "Opening SELL position: Price=" << signal->price 
-        //              << ", Size=" << signal->quantity
-        //              << ", SL=" << signal->stop_loss
-        //              << ", TP=" << signal->take_profit << std::endl;
-        // }
+        // Process the generated signal
+        if (signal->action == "LIQUIDATE") {
+            for (const auto& trade : trades){
+                trade->close();
+            }
+        }
+        else if (signal->action == "MOVE_SL") {
+            // Retrieve the trigger price from the signal
+            double trigger_price = signal->price > 0 ? signal->price : 0.0;
+            bool success = current_trade->setBreakEven(signal->new_sl, trigger_price);
+        }
+        else if (trades.empty() && signal->action == "SELL" && signal->quantity > 0) {
+            // Process a sell signal
+            sell(
+                signal->quantity,
+                0,
+                0,
+                0,
+                0,
+                signal->stop_loss,
+                signal->take_profit
+                // signal->tag
+            );
+        }
+        else if (!trades.empty() && signal->action == "BUY" && signal->quantity > 0) {
+            // Process a buy signal
+            buy(
+                signal->quantity,
+                0,
+                0,
+                0,
+                0,
+                signal->stop_loss,
+                signal->take_profit
+                // signal->tag
+            );
+        }
     }
 };

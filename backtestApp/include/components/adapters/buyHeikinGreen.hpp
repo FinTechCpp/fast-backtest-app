@@ -120,9 +120,7 @@ public:
         if (current_trade) {
             candle.position.entry_price = current_trade->entryPrice();
             // Calculate take profit price from the trade's TP order
-            if (current_trade->tpOrder()) {
-                candle.position.take_profit_price = current_trade->tpOrder()->limit();
-            }
+            if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
         }
 
         // Get a reference to closedTrades instead of a copy
@@ -132,11 +130,10 @@ public:
         // Only if new trades have been closed
         if (currentTradeCount > last_closed_trade_count) {
             last_closed_trade_count = currentTradeCount;
-
             candle.position.closed_trade_pnl = closedTrades.back()->pl();
         }
-        
-        // Uppdate the strategy signal with the new latest candle by executing strategy logic
+
+        // Update the strategy signal with the new latest candle by executing strategy logic
         Signal* signal = strategy->update_candle(candle);
 
 

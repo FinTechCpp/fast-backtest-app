@@ -751,7 +751,7 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
                 
                 // Configurer l'apparence du label
                 countLabel->setAlignment(Chart::Bottom);
-                countLabel->setPos(countLabel->getLeftX(), countLabel->getTopY() + 20);
+                countLabel->setPos(countLabel->getLeftX(), countLabel->getTopY() + 25);
                 // countLabel->setBackground(0x90FFFFFF, 0x000000);
                 // countLabel->setRoundedCorners(3);
                 // countLabel->setMargin(3);
@@ -809,7 +809,7 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
                 
                 // Configurer l'apparence du label
                 countLabel->setAlignment(Chart::Top);
-                countLabel->setPos(countLabel->getLeftX(), countLabel->getTopY() - 20);
+                countLabel->setPos(countLabel->getLeftX(), countLabel->getTopY() - 25);
                 // countLabel->setBackground(0x90FFFFFF, 0x000000);
                 // countLabel->setRoundedCorners(3);
                 // countLabel->setMargin(3);

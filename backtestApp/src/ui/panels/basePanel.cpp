@@ -230,6 +230,14 @@ StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QSt
     
     if (values.contains("rl_tp_max_multiplier"))
         config.rl_tp_max_multiplier = values["rl_tp_max_multiplier"].toDouble();
+
+    // Paramètres Nth Heikin-Ashi pour TP
+    if (values.contains("use_nth_heikin_ashi_tp"))
+        config.use_nth_heikin_ashi_tp = values["use_nth_heikin_ashi_tp"].toBool();
+    else if (values.contains("tp_method"))
+        config.use_nth_heikin_ashi_tp = (values["tp_method"].toInt() == 5); // Index 5 = Nth Heikin-Ashi
+    if (values.contains("nth_heikin_ashi_count"))
+        config.nth_heikin_ashi_count = values["nth_heikin_ashi_count"].toInt();
     
     if (values.contains("atr_period"))
         config.atr_period = values["atr_period"].toInt();

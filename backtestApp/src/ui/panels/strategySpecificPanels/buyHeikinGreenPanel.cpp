@@ -89,8 +89,14 @@ void BuyHeikinGreenPanel::initialize()
     static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setRange(1, 99);
     static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setValue(30);
     rsiLayout->addWidget(m_widgets["rsi_threshold_spin"], 2, 1);
-    rsiLayout->setColumnStretch(2, 1);
     
+    rsiLayout->addWidget(new QLabel("Périodes d'historique:", this), 3, 0);
+    m_widgets["rsi_history_periods_spin"] = new QSpinBox(this);
+    static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->setRange(1, 20);
+    static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->setValue(3); // Valeur par défaut
+    rsiLayout->addWidget(m_widgets["rsi_history_periods_spin"], 3, 1);
+
+    rsiLayout->setColumnStretch(2, 1);
     strategyLayout->addLayout(rsiLayout);
     
     // Ligne de séparation
@@ -132,8 +138,14 @@ void BuyHeikinGreenPanel::initialize()
     static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setRange(1, 99);
     static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setValue(20);
     stochLayout->addWidget(m_widgets["stoch_threshold_spin"], 4, 1);
-    stochLayout->setColumnStretch(2, 1);
     
+    stochLayout->addWidget(new QLabel("Périodes d'historique:", this), 5, 0);
+    m_widgets["stoch_history_periods_spin"] = new QSpinBox(this);
+    static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->setRange(1, 20);
+    static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->setValue(4); // Valeur par défaut
+    stochLayout->addWidget(m_widgets["stoch_history_periods_spin"], 5, 1);
+
+    stochLayout->setColumnStretch(2, 1);
     strategyLayout->addLayout(stochLayout);
     
     // Ligne de séparation
@@ -219,14 +231,16 @@ QMap<QString, QVariant> BuyHeikinGreenPanel::getValues()
     values["use_rsi_filter"] = static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked();
     values["rsi_period"] = static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->value();
     values["rsi_threshold"] = static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->value();
-    
+    values["rsi_history_periods"] = static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->value();
+
     // Stochastique
     values["use_stoch_filter"] = static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked();
     values["stoch_fastk"] = static_cast<QSpinBox*>(m_widgets["fastk_spin"])->value();
     values["stoch_slowk"] = static_cast<QSpinBox*>(m_widgets["slowk_spin"])->value();
     values["stoch_slowd"] = static_cast<QSpinBox*>(m_widgets["slowd_spin"])->value();
     values["stoch_threshold"] = static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->value();
-    
+    values["stoch_history_periods"] = static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->value();
+
     // Supertrend
     values["use_supertrend_filter"] = static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->isChecked();
     values["supertrend_atr_period"] = static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->value();
@@ -262,35 +276,36 @@ void BuyHeikinGreenPanel::setValues(const QMap<QString, QVariant>& values)
     if (values.contains("use_rsi_filter")) {
         static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->setChecked(values["use_rsi_filter"].toBool());
     }
-    
     if (values.contains("rsi_period")) {
         static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->setValue(values["rsi_period"].toInt());
     }
-    
     if (values.contains("rsi_threshold")) {
         static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setValue(values["rsi_threshold"].toInt());
+    }
+    if (values.contains("rsi_history_periods")) {
+        static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->setValue(values["rsi_history_periods"].toInt());
     }
     
     // Stochastique
     if (values.contains("use_stoch_filter")) {
         static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->setChecked(values["use_stoch_filter"].toBool());
     }
-    
     if (values.contains("stoch_fastk")) {
         static_cast<QSpinBox*>(m_widgets["fastk_spin"])->setValue(values["stoch_fastk"].toInt());
     }
-    
     if (values.contains("stoch_slowk")) {
         static_cast<QSpinBox*>(m_widgets["slowk_spin"])->setValue(values["stoch_slowk"].toInt());
     }
-    
     if (values.contains("stoch_slowd")) {
         static_cast<QSpinBox*>(m_widgets["slowd_spin"])->setValue(values["stoch_slowd"].toInt());
     }
-    
     if (values.contains("stoch_threshold")) {
         static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setValue(values["stoch_threshold"].toInt());
     }
+    if (values.contains("stoch_history_periods")) {
+        static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->setValue(values["stoch_history_periods"].toInt());
+    }
+    
     
     // Supertrend
     if (values.contains("use_supertrend_filter")) {
@@ -325,11 +340,11 @@ void BuyHeikinGreenPanel::onEmaLongFilterToggled(bool checked) {
 }
 
 void BuyHeikinGreenPanel::onRsiFilterToggled(bool checked) {
-    _toggleWidgetGroup({"rsi_period_spin", "rsi_threshold_spin"}, checked);
+    _toggleWidgetGroup({"rsi_period_spin", "rsi_threshold_spin", "rsi_history_periods_spin"}, checked);
 }
 
 void BuyHeikinGreenPanel::onStochFilterToggled(bool checked) {
-    _toggleWidgetGroup({"fastk_spin", "slowk_spin", "slowd_spin", "stoch_threshold_spin"}, checked);
+    _toggleWidgetGroup({"fastk_spin", "slowk_spin", "slowd_spin", "stoch_threshold_spin", "stoch_history_periods_spin"}, checked);
 }
 
 void BuyHeikinGreenPanel::onSupertrendFilterToggled(bool checked) {

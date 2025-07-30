@@ -31,6 +31,9 @@ BuyHeikinGreenConfig BasePanel::convertToConfig<BuyHeikinGreenConfig>(const QMap
     
     if (values.contains("rsi_threshold"))
         config.rsi_threshold = values["rsi_threshold"].toInt();
+
+    if (values.contains("rsi_history_periods"))
+        config.rsi_history_periods = values["rsi_history_periods"].toInt();
     
     // Stochastique
     if (values.contains("use_stoch_filter"))
@@ -47,7 +50,10 @@ BuyHeikinGreenConfig BasePanel::convertToConfig<BuyHeikinGreenConfig>(const QMap
     
     if (values.contains("stoch_threshold"))
         config.stoch_threshold = values["stoch_threshold"].toInt();
-    
+
+    if (values.contains("stoch_history_periods"))
+        config.stoch_history_periods = values["stoch_history_periods"].toInt();
+
     // Supertrend
     if (values.contains("use_supertrend_filter"))
         config.use_supertrend_filter = values["use_supertrend_filter"].toBool();
@@ -90,28 +96,26 @@ SellHeikinRedConfig BasePanel::convertToConfig<SellHeikinRedConfig>(const QMap<Q
     // RSI
     if (values.contains("use_rsi_filter"))
         config.use_rsi_filter = values["use_rsi_filter"].toBool();
-    
     if (values.contains("rsi_period"))
         config.rsi_period = values["rsi_period"].toInt();
-    
     if (values.contains("rsi_threshold"))
         config.rsi_threshold = values["rsi_threshold"].toInt();
+    if (values.contains("rsi_history_periods"))
+        config.rsi_history_periods = values["rsi_history_periods"].toInt();
     
     // Stochastique
     if (values.contains("use_stoch_filter"))
         config.use_stoch_filter = values["use_stoch_filter"].toBool();
-    
     if (values.contains("stoch_fastk"))
         config.stoch_fastk = values["stoch_fastk"].toInt();
-    
     if (values.contains("stoch_slowk"))
         config.stoch_slowk = values["stoch_slowk"].toInt();
-    
     if (values.contains("stoch_slowd"))
         config.stoch_slowd = values["stoch_slowd"].toInt();
-    
     if (values.contains("stoch_threshold"))
         config.stoch_threshold = values["stoch_threshold"].toInt();
+    if (values.contains("stoch_history_periods"))
+        config.stoch_history_periods = values["stoch_history_periods"].toInt();
     
     // Supertrend
     if (values.contains("use_supertrend_filter"))

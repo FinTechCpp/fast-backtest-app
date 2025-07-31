@@ -467,24 +467,24 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
     std::vector<std::pair<double, double>> exitShortNeutralArrows; // Sortie vente neutre
     
     // Préallocation
-    size_t estimatedMarkers = std::min(size_t(100), trades.size() * 2);
+    size_t estimatedMarkers = std::min(size_t(100), trades.size());
     entryMarkers.reserve(estimatedMarkers);
     exitMarkers.reserve(estimatedMarkers);
     entryLongArrows.reserve(estimatedMarkers);
     entryShortArrows.reserve(estimatedMarkers);
 
-    exitLongTPArrows.reserve(estimatedMarkers/3);
-    exitLongSLArrows.reserve(estimatedMarkers/3);
-    exitLongBEArrows.reserve(estimatedMarkers/3);
+    exitLongTPArrows.reserve(estimatedMarkers);
+    exitLongSLArrows.reserve(estimatedMarkers);
+    exitLongBEArrows.reserve(estimatedMarkers);
     exitLongNeutralArrows.reserve(estimatedMarkers/3);
 
-    exitShortTPArrows.reserve(estimatedMarkers/3);
-    exitShortSLArrows.reserve(estimatedMarkers/3);
-    exitShortBEArrows.reserve(estimatedMarkers/3);
+    exitShortTPArrows.reserve(estimatedMarkers);
+    exitShortSLArrows.reserve(estimatedMarkers);
+    exitShortBEArrows.reserve(estimatedMarkers);
     exitShortNeutralArrows.reserve(estimatedMarkers/3);
 
     std::vector<TPSLBESegment> tpslbeSegments;
-    tpslbeSegments.reserve(estimatedMarkers * 2);
+    tpslbeSegments.reserve(estimatedMarkers * 3);
 
     for (const auto& trade : trades) {
         bool isLong = trade->isLong();

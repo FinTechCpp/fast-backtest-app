@@ -17,6 +17,7 @@
 #include <QVariant>
 #include "ui/panels/basePanel.h"
 #include "common.h"
+#include "ui/panels/PropertyBinderFactory.h"
 
 /**
  * @brief Panel pour les paramètres communs à toutes les stratégies
@@ -35,41 +36,35 @@ public:
      */
     StrategyBasePanel(QWidget* parent = nullptr);
     
-    /**
-     * @brief Initialise le contenu du panel
-     */
-    void initialize() override;
-    
-    /**
-     * @brief Récupère les valeurs des widgets du panel
-     * @return Map contenant les valeurs sous forme de QVariant
-     */
+    // Methode a supprimer
     QMap<QString, QVariant> getValues() override;
-    
-    /**
-     * @brief Définit les valeurs des widgets du panel
-     * @param values Map contenant les valeurs à affecter aux widgets
-     */
     void setValues(const QMap<QString, QVariant>& values) override;
 
-    /**
-     * @brief Convertit les valeurs du panel en configuration spécifique à la stratégie
-     * @return Map contenant la configuration de la stratégie
-     */
-    StrategyBaseConfig getConfig() {
-        return convertToConfig<StrategyBaseConfig>(getValues());
-    }
+    StrategyBaseConfig getConfig();
+    void setConfig(const StrategyBaseConfig& config);
 
 
 private slots:
     // Méthodes pour gérer l'interface utilisateur en fonction des checkboxes
-    void _toggleRiskControls(bool checked);
-    void _toggleBreakEvenControls(bool checked);
-    void _toggleDailyMaxLossControls(bool checked);
-    void _toggleDailyMaxProfitControls(bool checked);
-    void _toggleDailyMaxDrawdownControls(bool checked);
+    // void _toggleRiskControls(bool checked);
+    // void _toggleBreakEvenControls(bool checked);
+    // void _toggleDailyMaxLossControls(bool checked);
+    // void _toggleDailyMaxProfitControls(bool checked);
+    // void _toggleDailyMaxDrawdownControls(bool checked);
     void _toggleSlMethod(int index);
     void _toggleTpMethod(int index);
     void _updateAtrPeriodStatus();
+
+private:
+    StrategyBaseConfig m_config;
+    std::vector<std::unique_ptr<PropertyBinder>> m_bindings;
+
+    void setupUI();
+    
+    void initializeBindings();
+    void updateConfigFromWidgets();
+    void updateWidgetsFromConfig();
+    void addBinding(std::unique_ptr<PropertyBinder> binding);
+    void createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets);
 };
 

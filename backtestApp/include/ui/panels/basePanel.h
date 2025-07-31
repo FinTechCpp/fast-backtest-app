@@ -31,7 +31,7 @@ public:
      * @brief Initialise le contenu du panel
      * Cette méthode doit être appelée après la construction pour configurer l'UI
      */
-    virtual void initialize() = 0;
+    virtual void initialize() {}
     
     /**
      * @brief Récupère les valeurs des widgets du panel

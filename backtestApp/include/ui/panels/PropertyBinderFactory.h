@@ -31,5 +31,31 @@ public:
         return std::make_unique<TypedPropertyBinder<QDoubleSpinBox, double>>(widget, property, setter, getter);
     }
 
+    // Créer un binding pour un QTimeEdit et un Time
+    static std::unique_ptr<PropertyBinder> createTimeBinding(QTimeEdit* widget, Time* property) {
+        auto setter = [](QTimeEdit* w, const Time& value) { w->setTime(QTime(value.hour, value.minute, value.second)); };
+        auto getter = [](QTimeEdit* w) -> Time { 
+            QTime qtime = w->time();
+            return Time(qtime.hour(), qtime.minute(), qtime.second());
+        };
+        return std::make_unique<TypedPropertyBinder<QTimeEdit, Time>>(widget, property, setter, getter);
+    }
+
+    // Créer un binding pour un QComboBox et un enum
+    template<typename EnumType>
+    static std::unique_ptr<PropertyBinder> createEnumComboBinding(QComboBox* widget, EnumType* property) {        
+        // Définir comment convertir enum vers QComboBox
+        auto setter = [](QComboBox* w, const EnumType& value) {
+            w->setCurrentIndex(static_cast<int>(value));
+        };
+        
+        // Définir comment convertir QComboBox vers enum
+        auto getter = [](QComboBox* w) -> EnumType {
+            return static_cast<EnumType>(w->currentIndex());
+        };
+        
+        return std::make_unique<TypedPropertyBinder<QComboBox, EnumType>>(widget, property, setter, getter);
+    }
+
     // Ajouter d'autres bindings selon vos besoins...
 };

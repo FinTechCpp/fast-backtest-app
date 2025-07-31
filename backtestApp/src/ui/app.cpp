@@ -123,7 +123,6 @@ void App::createControlPanel()
     
     // Strategy base panel
     m_strategyBasePanel = new StrategyBasePanel(m_controlPanel);
-    m_strategyBasePanel->initialize(); // Appeler initialize() après la création
     m_controlPanelLayout->addWidget(m_strategyBasePanel); // Ajouter directement le panel
     
     // Strategy-specific panel container

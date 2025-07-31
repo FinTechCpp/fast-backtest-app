@@ -33,27 +33,27 @@ public:
         m_widgetGetter(widgetGetter) {}
     
     void updateWidgetFromProperty() override {
-        if (m_widget && m_property) {
-            m_widgetSetter(m_widget, *m_property);
-        }
+        if (!m_widget || !m_property) 
+            return;
+        m_widgetSetter(m_widget, *m_property);
     }
     
     void updatePropertyFromWidget() override {
-        if (m_widget && m_property) {
-            *m_property = m_widgetGetter(m_widget);
-        }
+        if (!m_widget || !m_property) 
+            return;
+        *m_property = m_widgetGetter(m_widget);
     }
     
     void setEnabled(bool enabled) override {
-        if (m_widget) {
-            m_widget->setEnabled(enabled);
-            
-            // Style pour indiquer visuellement si le widget est activé
-            if (enabled) {
-                m_widget->setStyleSheet("");
-            } else {
-                m_widget->setStyleSheet("background-color: #f0f0f0; color: #888888;");
-            }
+        if (!m_widget) return;
+
+        m_widget->setEnabled(enabled);
+        
+        // Style pour indiquer visuellement si le widget est activé
+        if (enabled) {
+            m_widget->setStyleSheet("");
+        } else {
+            m_widget->setStyleSheet("background-color: #f0f0f0; color: #888888;");
         }
     }
 

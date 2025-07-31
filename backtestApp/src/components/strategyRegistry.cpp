@@ -17,10 +17,11 @@ void registerAllStrategies() {
         "Buy Heikin Ashi (Green)",
         [](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, App* app) {
             // Récupérer les configurations typées directement depuis les panels
-            QMap<QString, QVariant> generalParams = app->getGeneralParamsPanel()->getValues();
+            // QMap<QString, QVariant> generalParams = app->getGeneralParamsPanel()->getValues();
+            GeneralParamsConfig generalConfig = app->getGeneralParamsConfig();
             StrategyBaseConfig baseConfig = app->getStrategyBasePanel()->getConfig();
-            baseConfig.cash = generalParams.value("cash", -1.0).toDouble();
-            baseConfig.leverage_limit = generalParams.value("leverage_limit", -1.0).toDouble();
+            baseConfig.cash = generalConfig.cash;
+            baseConfig.leverage_limit = generalConfig.leverage_limit;
             BuyHeikinGreenConfig specificConfig = 
                 dynamic_cast<BuyHeikinGreenPanel*>(app->getStrategySpecificPanel())->getConfig();
 
@@ -38,10 +39,11 @@ void registerAllStrategies() {
         "Sell Heikin Ashi (Red)",
         [](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, App* app) {
             // Récupérer les configurations typées directement depuis les panels
-            QMap<QString, QVariant> generalParams = app->getGeneralParamsPanel()->getValues();
+            // QMap<QString, QVariant> generalParams = app->getGeneralParamsPanel()->getValues();
+            GeneralParamsConfig generalParams = app->getGeneralParamsConfig();
             StrategyBaseConfig baseConfig = app->getStrategyBasePanel()->getConfig();
-            baseConfig.cash = generalParams.value("cash", -1.0).toDouble();
-            baseConfig.leverage_limit = generalParams.value("leverage_limit", -1.0).toDouble();
+            baseConfig.cash = generalParams.cash;
+            baseConfig.leverage_limit = generalParams.leverage_limit;
             // Utiliser le panel spécifique pour récupérer la configuration
             SellHeikinRedConfig specificConfig = 
                 dynamic_cast<SellHeikinRedPanel*>(app->getStrategySpecificPanel())->getConfig();

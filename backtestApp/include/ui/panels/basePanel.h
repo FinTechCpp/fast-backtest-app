@@ -3,6 +3,8 @@
 #include <QGroupBox>
 #include <QMap>
 #include <QVariant>
+#include "ui/panels/PropertyBinderFactory.h"
+
 
 /**
  * @brief Classe de base pour tous les panels de l'application

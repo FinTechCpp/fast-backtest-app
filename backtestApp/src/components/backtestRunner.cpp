@@ -223,44 +223,54 @@ void BacktestWorker::run()
 
     
     // Récupération des paramètres généraux
-    QString strategyName = m_mainWindow->getGeneralParamsPanel()->getValues()["strategy"].toString();
-    QString symbol = m_mainWindow->getGeneralParamsPanel()->getValues().value("symbol", "NDX").toString();
-    QString interval = m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString();
-    QString period = m_mainWindow->getGeneralParamsPanel()->getValues().value("period", "10d").toString();
-    double cash = m_mainWindow->getGeneralParamsPanel()->getValues().value("cash", 100000.0).toDouble();
-    double spread = m_mainWindow->getGeneralParamsPanel()->getValues().value("spread", 0.100).toDouble();
-    double commission = m_mainWindow->getGeneralParamsPanel()->getValues().value("commission", 0.0).toDouble();
-    double leverage_limit = m_mainWindow->getGeneralParamsPanel()->getValues().value("leverage_limit", 20.0).toDouble();
-    bool tradeOnClose = m_mainWindow->getGeneralParamsPanel()->getValues().value("trade_on_close", false).toBool();
-    bool hedging = m_mainWindow->getGeneralParamsPanel()->getValues().value("hedging", false).toBool();
-    bool exclusiveOrders = m_mainWindow->getGeneralParamsPanel()->getValues().value("exclusive_orders", true).toBool();
-    bool finalizeTrades = m_mainWindow->getGeneralParamsPanel()->getValues().value("finalize_trades", true).toBool();
+    // QString strategyName = m_mainWindow->getGeneralParamsPanel()->getValues()["strategy"].toString();
+    // QString symbol = m_mainWindow->getGeneralParamsPanel()->getValues().value("symbol", "NDX").toString();
+    // QString interval = m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString();
+    // QString period = m_mainWindow->getGeneralParamsPanel()->getValues().value("period", "10d").toString();
+    // double cash = m_mainWindow->getGeneralParamsPanel()->getValues().value("cash", 100000.0).toDouble();
+    // double spread = m_mainWindow->getGeneralParamsPanel()->getValues().value("spread", 0.100).toDouble();
+    // double commission = m_mainWindow->getGeneralParamsPanel()->getValues().value("commission", 0.0).toDouble();
+    // double leverage_limit = m_mainWindow->getGeneralParamsPanel()->getValues().value("leverage_limit", 20.0).toDouble();
+    // bool tradeOnClose = m_mainWindow->getGeneralParamsPanel()->getValues().value("trade_on_close", false).toBool();
+    // bool hedging = m_mainWindow->getGeneralParamsPanel()->getValues().value("hedging", false).toBool();
+    // bool exclusiveOrders = m_mainWindow->getGeneralParamsPanel()->getValues().value("exclusive_orders", true).toBool();
+    // bool finalizeTrades = m_mainWindow->getGeneralParamsPanel()->getValues().value("finalize_trades", true).toBool();
+
+    GeneralParamsConfig generalConfig = m_mainWindow->getGeneralParamsConfig();
+
+    generalConfig.commission = 0.0;
+    generalConfig.tradeOnClose = false;
+    generalConfig.hedging = false;
+    generalConfig.exclusiveOrders = true;
+    generalConfig.finalizeTrades = true;
+
+    std::cout << generalConfig << std::endl;
     
     // Récupération et conversion de la date de fin
-    QDateTime endDate;
-    if (m_mainWindow->getGeneralParamsPanel()->getValues().contains("end_date")) {
-        QVariant dateVariant = m_mainWindow->getGeneralParamsPanel()->getValues()["end_date"];
-        if (dateVariant.userType() == QMetaType::QDate) {
-            endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
-        } else if (dateVariant.userType() == QMetaType::QDateTime) {
-            endDate = dateVariant.toDateTime();
-        } else if (dateVariant.userType() == QMetaType::QString) {
-            QString dateStr = dateVariant.toString();
-            QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
+    // QDateTime endDate;
+    // if (m_mainWindow->getGeneralParamsPanel()->getValues().contains("end_date")) {
+    //     QVariant dateVariant = m_mainWindow->getGeneralParamsPanel()->getValues()["end_date"];
+    //     if (dateVariant.userType() == QMetaType::QDate) {
+    //         endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
+    //     } else if (dateVariant.userType() == QMetaType::QDateTime) {
+    //         endDate = dateVariant.toDateTime();
+    //     } else if (dateVariant.userType() == QMetaType::QString) {
+    //         QString dateStr = dateVariant.toString();
+    //         QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
             
-            for (const QString& format : dateFormats) {
-                QDate parsedDate = QDate::fromString(dateStr, format);
-                if (parsedDate.isValid()) {
-                    endDate = QDateTime(parsedDate, QTime(23, 59, 59));
-                    break;
-                }
-            }
-        }
-    }
+    //         for (const QString& format : dateFormats) {
+    //             QDate parsedDate = QDate::fromString(dateStr, format);
+    //             if (parsedDate.isValid()) {
+    //                 endDate = QDateTime(parsedDate, QTime(23, 59, 59));
+    //                 break;
+    //             }
+    //         }
+    //     }
+    // }
     
-    if (!endDate.isValid()) {
-        endDate = QDateTime::currentDateTime();
-    }
+    // if (!endDate.isValid()) {
+    //     endDate = QDateTime::currentDateTime();
+    // }
     
     // TODO : mettre des debug ici pour vérifier les valeurs
     // std::cout << "Paramètres de chargement des données:" << std::endl;
@@ -278,15 +288,15 @@ void BacktestWorker::run()
     // std::cout << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss").toStdString() << std::endl;
     
     
-    auto strategyCreator = StrategyRegistry::getInstance().getCreator(strategyName);
+    auto strategyCreator = StrategyRegistry::getInstance().getCreator(generalConfig.strategyName);
     if (!strategyCreator) {
-        emit error(QString("Stratégie non supportée: %1").arg(strategyName));
+        emit error(QString("Stratégie non supportée: %1").arg(generalConfig.strategyName));
         return;
     }
     
     // Chargement des données avec DataLoader puis conversion en be::Data
-    std::vector<OHLCBar> rawData = DataLoader::loadData(symbol, interval, period, endDate);
-    
+    std::vector<OHLCBar> rawData = DataLoader::loadData(generalConfig.symbol, generalConfig.interval, generalConfig.period, generalConfig.endDate);
+
     if (rawData.empty()) {
         emit error("Aucune donnée chargée");
         return;
@@ -301,6 +311,7 @@ void BacktestWorker::run()
     m_results = std::make_unique<BacktestResults>();
     m_results->data = data;
     m_results->indicators = strategyIndicators;  // Stocker les indicateurs
+    m_results->strategyBaseConfig = m_mainWindow->getStrategyBaseConfig(); // Stocker la configuration de base de la stratégie
     
     qDebug() << "Données disponibles:" << data->size() << "barres";
     qDebug() << "Démarrage du backtest C++...";
@@ -310,20 +321,20 @@ void BacktestWorker::run()
     auto strategyFactory = [strategyCreator, this](std::shared_ptr<be::Broker> b, std::shared_ptr<be::Data> d) {
         return strategyCreator(b, d, m_mainWindow);
     };
-    double margin = 1 / leverage_limit; // Calculer la marge à partir du levier
+    double margin = 1 / generalConfig.leverage_limit; // Calculer la marge à partir du levier
     
     // Créer et exécuter le backtest
     be::Backtest backtest(
         data,               // Données historiques
         strategyFactory,    // Factory de stratégie
-        cash,               // Capital initial
-        spread,             // Spread
-        commission,         // Commission
+        generalConfig.cash,               // Capital initial
+        generalConfig.spread,             // Spread
+        generalConfig.commission,         // Commission
         margin,                // Marge (défaut: 1.0)
-        tradeOnClose,       // Trade à la clôture
-        hedging,            // Hedging
-        exclusiveOrders,    // Ordres exclusifs
-        finalizeTrades      // Finalisation des trades
+        generalConfig.tradeOnClose,       // Trade à la clôture
+        generalConfig.hedging,            // Hedging
+        generalConfig.exclusiveOrders,    // Ordres exclusifs
+        generalConfig.finalizeTrades      // Finalisation des trades
     );
     
     backtest.setProgressCallback([this, &timer](size_t current, size_t total) {
@@ -377,7 +388,7 @@ std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLC
     
     // Detect gaps in the data (where the time between candles exceeds expected interval)
     std::vector<size_t> gapIndices;
-    int expectedIntervalSecs = DataLoader::intervalToSeconds(m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString());
+    int expectedIntervalSecs = DataLoader::intervalToSeconds(m_mainWindow->getGeneralParamsConfig().interval);
     
     // Use 1.5x the expected interval as the threshold for gap detection
     int gapThreshold = expectedIntervalSecs * 1.5;

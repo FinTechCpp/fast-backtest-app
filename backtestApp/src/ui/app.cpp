@@ -16,8 +16,6 @@
 #include "ui/views/histogramView.h"
 #include "components/resultManager.h"
 #include "components/backtestRunner.h"
-#include "ui/panels/strategySpecificPanels/buyHeikinGreenPanel.h"
-#include "ui/panels/strategySpecificPanels/sellHeikinRedPanel.h"
 
 
 App::App() : QMainWindow()
@@ -156,11 +154,8 @@ void App::setupConnections()
 {
     // Connexion du changement de stratégie
     if (m_generalParamsPanel) {
-        QWidget* strategyWidget = m_generalParamsPanel->getWidgetByName("strategy");
-        if (QComboBox* strategyCombo = qobject_cast<QComboBox*>(strategyWidget)) {
-            connect(strategyCombo, QOverload<const QString&>::of(&QComboBox::currentTextChanged),
-                    this, &App::onStrategyChanged);
-        }
+        connect(m_generalParamsPanel, &GeneralParamsPanel::strategyChanged,
+                this, &App::onStrategyChanged);
     }
 
     // Connexion du BacktestRunner
@@ -172,15 +167,8 @@ void App::setupConnections()
     }
 }
 
-void App::updateStrategySpecificPanel()
-{
-    if (!m_generalParamsPanel) return;
-    
-    QComboBox* strategyCombo = qobject_cast<QComboBox*>(
-            m_generalParamsPanel->getWidgetByName("strategy"));
-    if (!strategyCombo) return;
-    
-    QString selectedStrategy = strategyCombo->currentText();
+void App::updateStrategySpecificPanel() {    
+    QString selectedStrategy = m_generalParamsPanel->getConfig().strategyName;
     qInfo() << "Updating strategy-specific panel for:" << selectedStrategy;
     
     // Remove old panel if it exists
@@ -243,158 +231,188 @@ void App::mouseReleaseEvent(QMouseEvent *event)
     emit windowResizeFinished(size());
 }
 
-QMap<QString, QVariant> App::getStrategyConfig() const
-{
-    QMap<QString, QVariant> config;
+// QMap<QString, QVariant> App::getStrategyConfig() const
+// {
+//     QMap<QString, QVariant> config;
     
-    // Récupérer depuis le panel général
-    if (m_generalParamsPanel) {
-        QMap<QString, QVariant> generalValues = m_generalParamsPanel->getValues();
-        config.insert(generalValues);  // Qt 5.15+
-    }
+//     // Récupérer depuis le panel général
+//     if (m_generalParamsPanel) {
+//         QMap<QString, QVariant> generalValues = m_generalParamsPanel->getValues();
+//         config.insert(generalValues);  // Qt 5.15+
+//     }
     
-    // Récupérer depuis le panel de base
-    if (m_strategyBasePanel) {
-        QMap<QString, QVariant> baseValues = m_strategyBasePanel->getValues();
-        config.insert(baseValues);  // Qt 5.15+
-    }
+//     // Récupérer depuis le panel de base
+//     if (m_strategyBasePanel) {
+//         QMap<QString, QVariant> baseValues = m_strategyBasePanel->getValues();
+//         config.insert(baseValues);  // Qt 5.15+
+//     }
     
-    // Récupérer depuis le panel spécifique à la stratégie
-    if (m_strategySpecificPanel) {
-        QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
-        config.insert(specificValues);  // Qt 5.15+
-    }
+//     // Récupérer depuis le panel spécifique à la stratégie
+//     if (m_strategySpecificPanel) {
+//         QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
+//         config.insert(specificValues);  // Qt 5.15+
+//     }
     
-    // Debug pour vérifier
-    qDebug() << "Config récupérée:" << config;
+//     // Debug pour vérifier
+//     qDebug() << "Config récupérée:" << config;
     
-    return config;
+//     return config;
+// }
+
+GeneralParamsConfig App::getGeneralParamsConfig() const {
+    if (m_generalParamsPanel)
+        return m_generalParamsPanel->getConfig();
+    return GeneralParamsConfig();
+}
+
+StrategyBaseConfig App::getStrategyBaseConfig() const {
+    if (m_strategyBasePanel)
+        return m_strategyBasePanel->getConfig();
+    return StrategyBaseConfig();
+}
+
+BuyHeikinGreenConfig App::getBuyHeikinGreenConfig() const {
+    if (m_buyHeikinGreenPanel)
+        return m_buyHeikinGreenPanel->getConfig();
+    return BuyHeikinGreenConfig();
+}
+
+SellHeikinRedConfig App::getSellHeikinRedConfig() const {
+    if (m_sellHeikinRedPanel)
+        return m_sellHeikinRedPanel->getConfig();
+    return SellHeikinRedConfig();
 }
 
 std::vector<StrategyIndicator> App::getIndicatorConfig() const
 {
     // Obtenir les paramètres de stratégie
-    QMap<QString, QVariant> params = this->getStrategyConfig();
+    // QMap<QString, QVariant> params = this->getStrategyConfig();
+    // QMap<QString, QVariant> generalValues = m_generalParamsPanel->getValues();
+    GeneralParamsConfig generalConfig = this->getGeneralParamsConfig();
+    StrategyBaseConfig baseConfig = this->getStrategyBaseConfig();
     std::vector<StrategyIndicator> indicators;
     
     // Extraire ATR si utilisé pour SL ou TP
-    bool use_atr_for_sl = params.value("use_atr_for_sl", false).toBool();
-    bool use_atr_for_tp = params.value("use_atr_for_tp", false).toBool();
-    
-    if (use_atr_for_sl || use_atr_for_tp) {
+    // bool use_atr_for_sl = params.value("use_atr_for_sl", false).toBool();
+    // bool use_atr_for_tp = params.value("use_atr_for_tp", false).toBool();
+
+    if (baseConfig.use_atr_for_sl || baseConfig.use_atr_for_tp) {
         StrategyIndicator atr;
         atr.type = StrategyIndicator::ATR;
-        atr.params["period"] = params.value("atr_period", 14).toDouble();
+        atr.params["period"] = baseConfig.atr_period;
         atr.params["useLogScale"] = 1.0;  // true par défaut
         indicators.push_back(atr);
     }
     
     // Extraire les indicateurs spécifiques à la stratégie
-    QString strategyName = params.value("strategy", "").toString();
+    // QString strategyName = generalValues.value("strategy", "").toString();
+    QString strategyName = generalConfig.strategyName;
     
     if (strategyName.contains("BuyHeikinGreen", Qt::CaseInsensitive)) {
+        QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
         // EMA court terme
-        bool use_ema_short = params.value("use_ema_short_filter", false).toBool();
+        bool use_ema_short = specificValues.value("use_ema_short_filter", false).toBool();
         if (use_ema_short) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = params.value("ema_short_period", 150).toDouble();
+            ema.params["period"] = specificValues.value("ema_short_period", 150).toDouble();
             indicators.push_back(ema);
         }
         
         // EMA long terme
-        bool use_ema_long = params.value("use_ema_long_filter", false).toBool();
+        bool use_ema_long = specificValues.value("use_ema_long_filter", false).toBool();
         if (use_ema_long) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = params.value("ema_long_period", 198).toDouble();
+            ema.params["period"] = specificValues.value("ema_long_period", 198).toDouble();
             indicators.push_back(ema);
         }
         
         // RSI
-        bool use_rsi = params.value("use_rsi_filter", false).toBool();
+        bool use_rsi = specificValues.value("use_rsi_filter", false).toBool();
         if (use_rsi) {
             StrategyIndicator rsi;
             rsi.type = StrategyIndicator::RSI;
-            rsi.params["period"] = params.value("rsi_period", 14).toDouble();
+            rsi.params["period"] = specificValues.value("rsi_period", 14).toDouble();
             rsi.params["overboughtLevel"] = 70.0;  // Valeur par défaut
-            rsi.params["oversoldLevel"] = params.value("rsi_threshold", 30).toDouble();
+            rsi.params["oversoldLevel"] = specificValues.value("rsi_threshold", 30).toDouble();
             indicators.push_back(rsi);
         }
         
         // Stochastique
-        bool use_stoch = params.value("use_stoch_filter", false).toBool();
+        bool use_stoch = specificValues.value("use_stoch_filter", false).toBool();
         if (use_stoch) {
             StrategyIndicator stoch;
             stoch.type = StrategyIndicator::STOCHASTIC;
-            stoch.params["fastKPeriod"] = params.value("stoch_fastk", 10).toDouble();
-            stoch.params["slowKPeriod"] = params.value("stoch_slowk", 7).toDouble();
-            stoch.params["slowDPeriod"] = params.value("stoch_slowd", 3).toDouble();
+            stoch.params["fastKPeriod"] = specificValues.value("stoch_fastk", 10).toDouble();
+            stoch.params["slowKPeriod"] = specificValues.value("stoch_slowk", 7).toDouble();
+            stoch.params["slowDPeriod"] = specificValues.value("stoch_slowd", 3).toDouble();
             stoch.params["overboughtLevel"] = 80.0;  // Valeur par défaut
-            stoch.params["oversoldLevel"] = params.value("stoch_threshold", 20).toDouble();
+            stoch.params["oversoldLevel"] = specificValues.value("stoch_threshold", 20).toDouble();
             indicators.push_back(stoch);
         }
         
         // Supertrend
-        bool use_supertrend = params.value("use_supertrend_filter", false).toBool();
+        bool use_supertrend = specificValues.value("use_supertrend_filter", false).toBool();
         if (use_supertrend) {
             StrategyIndicator supertrend;
             supertrend.type = StrategyIndicator::SUPERTREND;
-            supertrend.params["period"] = params.value("supertrend_atr_period", 10).toDouble();
-            supertrend.params["multiplier"] = params.value("supertrend_multiplier", 3.0).toDouble();
+            supertrend.params["period"] = specificValues.value("supertrend_atr_period", 10).toDouble();
+            supertrend.params["multiplier"] = specificValues.value("supertrend_multiplier", 3.0).toDouble();
             indicators.push_back(supertrend);
         }
     }
     else if (strategyName.contains("SellHeikinRed", Qt::CaseInsensitive)) {
+        QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
         // EMA court terme
-        bool use_ema_short = params.value("use_ema_short_filter", false).toBool();
+        bool use_ema_short = specificValues.value("use_ema_short_filter", false).toBool();
         if (use_ema_short) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = params.value("ema_short_period", 150).toDouble();
+            ema.params["period"] = specificValues.value("ema_short_period", 150).toDouble();
             indicators.push_back(ema);
         }
         
         // EMA long terme
-        bool use_ema_long = params.value("use_ema_long_filter", false).toBool();
+        bool use_ema_long = specificValues.value("use_ema_long_filter", false).toBool();
         if (use_ema_long) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = params.value("ema_long_period", 198).toDouble();
+            ema.params["period"] = specificValues.value("ema_long_period", 198).toDouble();
             indicators.push_back(ema);
         }
         
         // RSI
-        bool use_rsi = params.value("use_rsi_filter", false).toBool();
+        bool use_rsi = specificValues.value("use_rsi_filter", false).toBool();
         if (use_rsi) {
             StrategyIndicator rsi;
             rsi.type = StrategyIndicator::RSI;
-            rsi.params["period"] = params.value("rsi_period", 14).toDouble();
-            rsi.params["overboughtLevel"] = params.value("rsi_threshold", 70).toDouble();
+            rsi.params["period"] = specificValues.value("rsi_period", 14).toDouble();
+            rsi.params["overboughtLevel"] = specificValues.value("rsi_threshold", 70).toDouble();
             rsi.params["oversoldLevel"] = 30.0;  // Valeur par défaut
             indicators.push_back(rsi);
         }
         
         // Stochastique
-        bool use_stoch = params.value("use_stoch_filter", false).toBool();
+        bool use_stoch = specificValues.value("use_stoch_filter", false).toBool();
         if (use_stoch) {
             StrategyIndicator stoch;
             stoch.type = StrategyIndicator::STOCHASTIC;
-            stoch.params["fastKPeriod"] = params.value("stoch_fastk", 10).toDouble();
-            stoch.params["slowKPeriod"] = params.value("stoch_slowk", 7).toDouble();
-            stoch.params["slowDPeriod"] = params.value("stoch_slowd", 3).toDouble();
-            stoch.params["overboughtLevel"] = params.value("stoch_threshold", 80).toDouble();
+            stoch.params["fastKPeriod"] = specificValues.value("stoch_fastk", 10).toDouble();
+            stoch.params["slowKPeriod"] = specificValues.value("stoch_slowk", 7).toDouble();
+            stoch.params["slowDPeriod"] = specificValues.value("stoch_slowd", 3).toDouble();
+            stoch.params["overboughtLevel"] = specificValues.value("stoch_threshold", 80).toDouble();
             stoch.params["oversoldLevel"] = 20.0;  // Valeur par défaut
             indicators.push_back(stoch);
         }
         
         // Supertrend
-        bool use_supertrend = params.value("use_supertrend_filter", false).toBool();
+        bool use_supertrend = specificValues.value("use_supertrend_filter", false).toBool();
         if (use_supertrend) {
             StrategyIndicator supertrend;
             supertrend.type = StrategyIndicator::SUPERTREND;
-            supertrend.params["period"] = params.value("supertrend_atr_period", 10).toDouble();
-            supertrend.params["multiplier"] = params.value("supertrend_multiplier", 3.0).toDouble();
+            supertrend.params["period"] = specificValues.value("supertrend_atr_period", 10).toDouble();
+            supertrend.params["multiplier"] = specificValues.value("supertrend_multiplier", 3.0).toDouble();
             indicators.push_back(supertrend);
         }
     }

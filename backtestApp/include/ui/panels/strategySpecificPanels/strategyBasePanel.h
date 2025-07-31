@@ -17,7 +17,7 @@
 #include <QVariant>
 #include "ui/panels/basePanel.h"
 #include "common.h"
-#include "ui/panels/PropertyBinderFactory.h"
+// #include "ui/panels/PropertyBinderFactory.h"
 
 /**
  * @brief Panel pour les paramètres communs à toutes les stratégies
@@ -36,8 +36,8 @@ public:
      */
     StrategyBasePanel(QWidget* parent = nullptr);
     
-    // Methode a supprimer
-    QMap<QString, QVariant> getValues() override;
+    // Methode a supprimer ya du travaille mais apres c'est fini
+    // QMap<QString, QVariant> getValues() override;
     void setValues(const QMap<QString, QVariant>& values) override;
 
     StrategyBaseConfig getConfig();
@@ -46,11 +46,6 @@ public:
 
 private slots:
     // Méthodes pour gérer l'interface utilisateur en fonction des checkboxes
-    // void _toggleRiskControls(bool checked);
-    // void _toggleBreakEvenControls(bool checked);
-    // void _toggleDailyMaxLossControls(bool checked);
-    // void _toggleDailyMaxProfitControls(bool checked);
-    // void _toggleDailyMaxDrawdownControls(bool checked);
     void _toggleSlMethod(int index);
     void _toggleTpMethod(int index);
     void _updateAtrPeriodStatus();

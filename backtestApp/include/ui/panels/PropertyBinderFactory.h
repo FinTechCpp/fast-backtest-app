@@ -1,12 +1,14 @@
-// PropertyBinderFactory.h
 #pragma once
 
 #include "PropertyBinder.h"
+#include "common.h"
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
 #include <QLineEdit>
 #include <QComboBox>
+#include <QTimeEdit>
+#include <QDateEdit>
 
 class PropertyBinderFactory {
 public:
@@ -55,6 +57,31 @@ public:
         };
         
         return std::make_unique<TypedPropertyBinder<QComboBox, EnumType>>(widget, property, setter, getter);
+    }
+
+    // Créer un binding pour un QComboBox et un QString
+    static std::unique_ptr<PropertyBinder> createStringComboBinding(QComboBox* widget, QString* property) {
+        // Définir comment convertir QString vers QComboBox
+        auto setter = [](QComboBox* w, const QString& value) {
+            int index = w->findText(value);
+            if (index >= 0) {
+                w->setCurrentIndex(index);
+            }
+        };
+        
+        // Définir comment convertir QComboBox vers QString
+        auto getter = [](QComboBox* w) -> QString {
+            return w->currentText();
+        };
+        
+        return std::make_unique<TypedPropertyBinder<QComboBox, QString>>(widget, property, setter, getter);
+    }
+    
+    // Crée un binding pour un QDateEdit et un QDateTime
+    static std::unique_ptr<PropertyBinder> createDateTimeBinding(QDateEdit* widget, QDateTime* property) {
+        auto setter = [](QDateEdit* w, const QDateTime& value) { w->setDate(value.date()); };
+        auto getter = [](QDateEdit* w) -> QDateTime { return QDateTime(w->date(), QTime()); };
+        return std::make_unique<TypedPropertyBinder<QDateEdit, QDateTime>>(widget, property, setter, getter);
     }
 
     // Ajouter d'autres bindings selon vos besoins...

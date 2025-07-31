@@ -636,65 +636,65 @@ void StrategyBasePanel::setupUI()
     _updateAtrPeriodStatus();
 }
 
-QMap<QString, QVariant> StrategyBasePanel::getValues()
-{
-    QMap<QString, QVariant> values;
+// QMap<QString, QVariant> StrategyBasePanel::getValues()
+// {
+//     QMap<QString, QVariant> values;
     
-    for (auto it = m_widgets.begin(); it != m_widgets.end(); ++it) {
-        QWidget* widget = it.value();
-        QString key = it.key();
+//     for (auto it = m_widgets.begin(); it != m_widgets.end(); ++it) {
+//         QWidget* widget = it.value();
+//         QString key = it.key();
         
-        if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
-            values[key] = combo->currentIndex();
-        }
-        else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
-            values[key] = spinBox->value();
-        }
-        else if (QSpinBox* spinBox = qobject_cast<QSpinBox*>(widget)) {
-            values[key] = spinBox->value();
-        }
-        else if (QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget)) {
-            values[key] = checkBox->isChecked();
-        }
-        else if (QTimeEdit* timeEdit = qobject_cast<QTimeEdit*>(widget)) {
-            values[key] = timeEdit->time().toString("hh:mm:ss");
-        }
-        else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-            values[key] = lineEdit->text();
-        }
-    }
+//         if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
+//             values[key] = combo->currentIndex();
+//         }
+//         else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
+//             values[key] = spinBox->value();
+//         }
+//         else if (QSpinBox* spinBox = qobject_cast<QSpinBox*>(widget)) {
+//             values[key] = spinBox->value();
+//         }
+//         else if (QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget)) {
+//             values[key] = checkBox->isChecked();
+//         }
+//         else if (QTimeEdit* timeEdit = qobject_cast<QTimeEdit*>(widget)) {
+//             values[key] = timeEdit->time().toString("hh:mm:ss");
+//         }
+//         else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
+//             values[key] = lineEdit->text();
+//         }
+//     }
     
-    // Ajouter les paramètres use_atr_for_sl et use_atr_for_tp basés sur les méthodes sélectionnées
-    if (m_widgets.contains("sl_method")) {
-        QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
-        values["use_atr_for_sl"] = (slMethod->currentIndex() == 1); // Index 1 = ATR
-        values["use_minmax_for_sl"] = (slMethod->currentIndex() == 2); // Index 2 = Min/Max
-    }
+//     // Ajouter les paramètres use_atr_for_sl et use_atr_for_tp basés sur les méthodes sélectionnées
+//     if (m_widgets.contains("sl_method")) {
+//         QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
+//         values["use_atr_for_sl"] = (slMethod->currentIndex() == 1); // Index 1 = ATR
+//         values["use_minmax_for_sl"] = (slMethod->currentIndex() == 2); // Index 2 = Min/Max
+//     }
     
-    if (m_widgets.contains("tp_method")) {
-        QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
-        values["use_atr_for_tp"] = (tpMethod->currentIndex() == 1); // Index 1 = ATR
-        values["use_sl_ratio_for_tp"] = (tpMethod->currentIndex() == 2); // Index 2 = Ratio SL
-        values["use_supertrend_for_tp"] = (tpMethod->currentIndex() == 3); // Index 3 = SuperTrend
-        values["use_rl_for_tp"] = (tpMethod->currentIndex() == 4); // Index 4 = RL
-        values["use_nth_heikin_ashi_tp"] = (tpMethod->currentIndex() == 5); // Index 5 = Nth Heikin-Ashi
-    }
+//     if (m_widgets.contains("tp_method")) {
+//         QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
+//         values["use_atr_for_tp"] = (tpMethod->currentIndex() == 1); // Index 1 = ATR
+//         values["use_sl_ratio_for_tp"] = (tpMethod->currentIndex() == 2); // Index 2 = Ratio SL
+//         values["use_supertrend_for_tp"] = (tpMethod->currentIndex() == 3); // Index 3 = SuperTrend
+//         values["use_rl_for_tp"] = (tpMethod->currentIndex() == 4); // Index 4 = RL
+//         values["use_nth_heikin_ashi_tp"] = (tpMethod->currentIndex() == 5); // Index 5 = Nth Heikin-Ashi
+//     }
     
-    // Ajouter la liste des jours de trading
-    QVariantList tradingDays;
-    for (int i = 0; i < 7; ++i) {
-        QString key = QString("trading_day_%1").arg(i);
-        if (m_widgets.contains(key)) {
-            QCheckBox* checkBox = static_cast<QCheckBox*>(m_widgets[key]);
-            if (checkBox->isChecked()) {
-                tradingDays.append(i);
-            }
-        }
-    }
-    values["trading_days"] = tradingDays;
+//     // Ajouter la liste des jours de trading
+//     QVariantList tradingDays;
+//     for (int i = 0; i < 7; ++i) {
+//         QString key = QString("trading_day_%1").arg(i);
+//         if (m_widgets.contains(key)) {
+//             QCheckBox* checkBox = static_cast<QCheckBox*>(m_widgets[key]);
+//             if (checkBox->isChecked()) {
+//                 tradingDays.append(i);
+//             }
+//         }
+//     }
+//     values["trading_days"] = tradingDays;
     
-    return values;
-}
+//     return values;
+// }
 
 void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
 {
@@ -868,68 +868,6 @@ void StrategyBasePanel::_toggleTpMethod(int index)
     // Mettre à jour le statut de la période ATR
     _updateAtrPeriodStatus();
 }
-
-// void StrategyBasePanel::_toggleRiskControls(bool checked)
-// {
-//     if (m_widgets.contains("risk_percentage")) {
-//         m_widgets["risk_percentage"]->setEnabled(checked);
-//         if (checked)
-//             m_widgets["risk_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-//         else 
-//             m_widgets["risk_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-//     }
-// }
-
-// void StrategyBasePanel::_toggleBreakEvenControls(bool checked) {
-//     if (m_widgets.contains("break_even_threshold")) {
-//         m_widgets["break_even_threshold"]->setEnabled(checked);
-//         if (checked)
-//             m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-//         else
-//             m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-//     }
-
-//     if (m_widgets.contains("break_even_offset_per_mille")) {
-//         m_widgets["break_even_offset_per_mille"]->setEnabled(checked);
-//         if (checked)
-//             m_widgets["break_even_offset_per_mille"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-//         else
-//             m_widgets["break_even_offset_per_mille"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-//     }
-// }
-
-// void StrategyBasePanel::_toggleDailyMaxLossControls(bool checked)
-// {
-//     if (m_widgets.contains("daily_max_loss_percentage")) {
-//         m_widgets["daily_max_loss_percentage"]->setEnabled(checked);
-//         if (checked)
-//             m_widgets["daily_max_loss_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-//         else
-//             m_widgets["daily_max_loss_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-//     }
-// }
-
-// void StrategyBasePanel::_toggleDailyMaxProfitControls(bool checked)
-// {
-//     if (m_widgets.contains("daily_max_profit_percentage")) {
-//         m_widgets["daily_max_profit_percentage"]->setEnabled(checked);
-//         if (checked)
-//             m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-//         else
-//             m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-//     }
-// }
-
-// void StrategyBasePanel::_toggleDailyMaxDrawdownControls(bool checked)
-// {
-//     if (m_widgets.contains("daily_max_drawdown_percentage")) {
-//         m_widgets["daily_max_drawdown_percentage"]->setEnabled(checked);
-//         if (checked)
-//             m_widgets["daily_max_drawdown_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-//         else
-//             m_widgets["daily_max_drawdown_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-//     }
-// }
 
 void StrategyBasePanel::_updateAtrPeriodStatus()
 {

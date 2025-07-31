@@ -8,6 +8,17 @@
 #include <QFile>
 #include <QDateTime>
 
+template<>
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const StrategyBaseConfig& config);
+template<>
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const GeneralParamsConfig& config);
+
+template<>
+StrategyBaseConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map);
+template<>
+GeneralParamsConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map);
+
+
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
     , m_config(nullptr)
@@ -230,7 +241,7 @@ QMap<QString, QVariant> ConfigManager::getProfile(const QString& profileName) co
         return profileData;
     }
     
-    QString groupName = (profileName == "DEFAULT") ? "DEFAULT" : profileName;
+    QString groupName = profileName;
     
     if (profileName == "DEFAULT" || m_config->childGroups().contains(profileName)) {
         m_config->beginGroup(groupName);
@@ -298,21 +309,21 @@ bool ConfigManager::deleteProfile(const QString& profileName)
     return false;
 }
 
-QMap<QString, QVariant> ConfigManager::getProfileFromUI() const
-{
-    QMap<QString, QVariant> profileData;
+// QMap<QString, QVariant> ConfigManager::getProfileFromUI() const
+// {
+//     QMap<QString, QVariant> profileData;
     
-    if (!m_mainWindow) {
-        qWarning() << "No reference to main application";
-        return profileData;
-    }
+//     if (!m_mainWindow) {
+//         qWarning() << "No reference to main application";
+//         return profileData;
+//     }
 
-    // Retrieve configuration data
-    profileData = m_mainWindow->getStrategyConfig();
+//     // Retrieve configuration data
+//     profileData = m_mainWindow->getStrategyConfig();
 
-    qDebug() << "Data retrieved from UI:" << profileData.size() << "elements";
-    return profileData;
-}
+//     qDebug() << "Data retrieved from UI:" << profileData.size() << "elements";
+//     return profileData;
+// }
 
 bool ConfigManager::applyProfileToUI(const QString& profileName)
 {
@@ -336,6 +347,9 @@ bool ConfigManager::applyProfileToUI(const QString& profileName)
         }
         
         if (m_mainWindow->getStrategyBasePanel()) {
+            // ca marche juste le cash pas vraiment 
+            // StrategyBaseConfig baseConfig = convertQMapToConfig<StrategyBaseConfig>(profileData);
+            // m_mainWindow->getStrategyBasePanel()->setConfig(baseConfig);
             m_mainWindow->getStrategyBasePanel()->setValues(profileData);
         }
         
@@ -360,7 +374,13 @@ bool ConfigManager::applyProfileToUI(const QString& profileName)
 
 bool ConfigManager::saveCurrentProfile(QWidget* parentWidget)
 {
-    QMap<QString, QVariant> currentConfig = getProfileFromUI();
+    // QMap<QString, QVariant> currentConfig = getProfileFromUI();
+
+    QMap<QString, QVariant> currentConfig = convertConfigToQMap(m_mainWindow->getGeneralParamsConfig());
+    currentConfig.insert(convertConfigToQMap(m_mainWindow->getStrategyBaseConfig()));
+    currentConfig.insert(m_mainWindow->getStrategySpecificPanel()->getValues());
+
+
     bool success = saveProfile(m_currentProfile, currentConfig);
     
     if (success && parentWidget) {
@@ -384,7 +404,11 @@ bool ConfigManager::promptCreateNewProfile(QWidget* parentWidget)
                                                "", &ok);
     
     if (ok && !profileName.isEmpty() && profileName != "DEFAULT") {
-        QMap<QString, QVariant> currentConfig = getProfileFromUI();
+        // QMap<QString, QVariant> currentConfig = getProfileFromUI();
+        QMap<QString, QVariant> currentConfig = convertConfigToQMap(m_mainWindow->getGeneralParamsConfig());
+        currentConfig.insert(convertConfigToQMap(m_mainWindow->getStrategyBaseConfig()));
+        currentConfig.insert(m_mainWindow->getStrategySpecificPanel()->getValues());
+
         bool success = saveProfile(profileName, currentConfig);
         
         if (success) {
@@ -602,7 +626,10 @@ bool ConfigManager::exportConfigToFile(QWidget* parentWidget, const QString& pro
     QMap<QString, QVariant> profileData;
     if (targetProfile == m_currentProfile) {
         // If it's the current profile, retrieve values from the UI
-        profileData = getProfileFromUI();
+        // profileData = getProfileFromUI();
+        profileData = convertConfigToQMap(m_mainWindow->getGeneralParamsConfig());
+        profileData.insert(convertConfigToQMap(m_mainWindow->getStrategyBaseConfig()));
+        profileData.insert(m_mainWindow->getStrategySpecificPanel()->getValues());
     } else {
         // Otherwise, retrieve from the saved configuration
         profileData = getProfile(targetProfile);
@@ -689,4 +716,369 @@ void ConfigManager::onProfileChanged(const QString& profileName)
     if (profileName != m_currentProfile) {
         applyProfileToUI(profileName);
     }
+}
+
+// Méthode pour convertir StrategyBaseConfig en QMap
+template<>
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const StrategyBaseConfig& config) {
+    QMap<QString, QVariant> map;
+    
+    // Paramètres de logging
+    map["enable_logging"] = config.enable_logging;
+    
+    // Méthodes SL/TP avec les nouveaux enums
+    map["sl_method"] = static_cast<int>(config.sl_method);
+    map["tp_method"] = static_cast<int>(config.tp_method);
+    
+    // Pour maintenir la compatibilité avec le code existant pendant la transition
+    map["use_atr_for_sl"] = (config.sl_method == StopLossMethod::ATR);
+    map["use_minmax_for_sl"] = (config.sl_method == StopLossMethod::MinMax);
+    map["use_atr_for_tp"] = (config.tp_method == TakeProfitMethod::ATR);
+    map["use_sl_ratio_for_tp"] = (config.tp_method == TakeProfitMethod::SLRatio);
+    map["use_supertrend_for_tp"] = (config.tp_method == TakeProfitMethod::SuperTrend);
+    map["use_rl_for_tp"] = (config.tp_method == TakeProfitMethod::RL);
+    map["use_nth_heikin_ashi_tp"] = (config.tp_method == TakeProfitMethod::NthHeikinAshi);
+    
+    // Paramètres de temps
+    map["trading_from_hour"] = config.trading_from.hour;
+    map["trading_from_minute"] = config.trading_from.minute;
+    map["trading_to_hour"] = config.trading_to.hour;
+    map["trading_to_minute"] = config.trading_to.minute;
+    
+    // Paramètres SL/TP
+    map["stop_loss_distance"] = config.stop_loss_distance;
+    map["take_profit_distance"] = config.take_profit_distance;
+    map["atr_period"] = config.atr_period;
+    map["stop_loss_atr_multiplier"] = config.stop_loss_atr_multiplier;
+    map["take_profit_atr_multiplier"] = config.take_profit_atr_multiplier;
+    map["min_stop_loss_distance"] = config.min_stop_loss_distance;
+    map["min_take_profit_distance"] = config.min_take_profit_distance;
+    
+    // MinMax SL
+    map["sl_minmax_periods"] = config.sl_minmax_periods;
+    map["sl_minmax_delta"] = config.sl_minmax_delta;
+    
+    // TP basé sur SL
+    map["tp_sl_ratio"] = config.tp_sl_ratio;
+    
+    // SuperTrend TP
+    map["tp_supertrend_atr_period"] = config.tp_supertrend_atr_period;
+    map["tp_supertrend_multiplier"] = config.tp_supertrend_multiplier;
+    
+    // RL TP
+    map["rl_model_path"] = QString::fromStdString(config.rl_model_path);
+    map["rl_lookback_periods"] = config.rl_lookback_periods;
+    map["rl_tp_max_multiplier"] = config.rl_tp_max_multiplier;
+    map["rl_tp_min_multiplier"] = config.rl_tp_min_multiplier;
+    
+    // Nth Heikin-Ashi TP
+    map["nth_heikin_ashi_count"] = config.nth_heikin_ashi_count;
+    
+    // Paramètres de gestion de risque
+    map["use_risk_based_sizing"] = config.use_risk_based_sizing;
+    map["risk_percentage"] = config.risk_percentage;
+    map["cash"] = config.cash;
+    map["leverage_limit"] = config.leverage_limit;
+    
+    // Break-even
+    map["use_break_even"] = config.use_break_even;
+    map["break_even_threshold"] = config.break_even_threshold;
+    map["break_even_offset_per_mille"] = config.break_even_offset_per_mille;
+    
+    // Daily max loss
+    map["use_daily_max_loss"] = config.use_daily_max_loss;
+    map["daily_max_loss_percentage"] = config.daily_max_loss_percentage;
+    map["daily_max_loss_amount"] = config.daily_max_loss_amount;
+    
+    // Daily max profit
+    map["use_daily_max_profit"] = config.use_daily_max_profit;
+    map["daily_max_profit_percentage"] = config.daily_max_profit_percentage;
+    map["daily_max_profit_amount"] = config.daily_max_profit_amount;
+    
+    // Daily max drawdown
+    map["use_daily_max_drawdown"] = config.use_daily_max_drawdown;
+    map["daily_max_drawdown_percentage"] = config.daily_max_drawdown_percentage;
+    map["daily_max_drawdown_amount"] = config.daily_max_drawdown_amount;
+    
+    // Trading days
+    QVariantList tradingDays;
+    for (int day : config.trading_days) {
+        tradingDays.append(day);
+    }
+    map["trading_days"] = tradingDays;
+    
+    return map;
+}
+
+template<>
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const GeneralParamsConfig& config) {
+    QMap<QString, QVariant> map;
+
+    /*
+    struct GeneralParamsConfig {
+        QString strategyName;
+        QString symbol;
+        QString interval;
+        QString period;
+        double cash;
+        double spread;
+        double commission;
+        double leverage_limit;
+        bool tradeOnClose;
+        bool hedging;
+        bool exclusiveOrders;
+        bool finalizeTrades;
+    };
+    */
+    
+    // Paramètres généraux
+    map["strategy"] = config.strategyName;
+    map["symbol"] = config.symbol;
+    map["interval"] = config.interval;
+    map["period"] = config.period;
+    map["cash"] = config.cash;
+    map["spread"] = config.spread;
+    map["commission"] = config.commission;
+    map["leverage_limit"] = config.leverage_limit;
+    map["trade_on_close"] = config.tradeOnClose;
+    map["hedging"] = config.hedging;
+    map["exclusive_orders"] = config.exclusiveOrders;
+    map["finalize_trades"] = config.finalizeTrades;
+    map["end_date"] = config.endDate.toString("dd/MM/yyyy");
+
+    return map;
+}
+
+template<>
+GeneralParamsConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map) {
+    GeneralParamsConfig config;
+
+    // Paramètres généraux
+    config.strategyName = map.value("strategy", "").toString();
+    config.symbol = map.value("symbol", "").toString();
+    config.interval = map.value("interval", "").toString();
+    config.period = map.value("period", "").toString();
+    config.cash = map.value("cash", 0.0).toDouble();
+    config.spread = map.value("spread", 0.0).toDouble();
+    config.commission = map.value("commission", 0.0).toDouble();
+    config.leverage_limit = map.value("leverage_limit", 1.0).toDouble();
+    config.tradeOnClose = map.value("trade_on_close", false).toBool();
+    config.hedging = map.value("hedging", false).toBool();
+    config.exclusiveOrders = map.value("exclusive_orders", false).toBool();
+    config.finalizeTrades = map.value("finalize_trades", false).toBool();
+
+    // Date de fin
+    QString endDateStr = map.value("end_date").toString();
+    if (!endDateStr.isEmpty()) {
+        QDateTime endDate = QDateTime::fromString(endDateStr, "dd/MM/yyyy");
+        if (endDate.isValid()) {
+            config.endDate = endDate;
+        }
+    }
+
+    return config;
+}
+
+// Méthode pour convertir QMap en StrategyBaseConfig
+template<>
+StrategyBaseConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map) {
+    StrategyBaseConfig config;
+    
+    // Paramètres de logging
+    if (map.contains("enable_logging"))
+        config.enable_logging = map["enable_logging"].toBool();
+    
+    if (map.contains("logLevel"))
+        config.logLevel = static_cast<LogLevel>(map["logLevel"].toInt());
+    
+    // Méthodes SL/TP
+    if (map.contains("sl_method") && false) {
+        config.sl_method = static_cast<StopLossMethod>(map["sl_method"].toInt());
+    } else {
+        // Compatibilité avec l'ancien format
+        if (map.contains("use_atr_for_sl") && map["use_atr_for_sl"].toBool())
+            config.sl_method = StopLossMethod::ATR;
+        else if (map.contains("use_minmax_for_sl") && map["use_minmax_for_sl"].toBool())
+            config.sl_method = StopLossMethod::MinMax;
+        else
+            config.sl_method = StopLossMethod::Fixed;
+    }
+    
+    if (map.contains("tp_method") && false) {
+        config.tp_method = static_cast<TakeProfitMethod>(map["tp_method"].toInt());
+    } else {
+        // Compatibilité avec l'ancien format
+        if (map.contains("use_atr_for_tp") && map["use_atr_for_tp"].toBool())
+            config.tp_method = TakeProfitMethod::ATR;
+        else if (map.contains("use_sl_ratio_for_tp") && map["use_sl_ratio_for_tp"].toBool())
+            config.tp_method = TakeProfitMethod::SLRatio;
+        else if (map.contains("use_supertrend_for_tp") && map["use_supertrend_for_tp"].toBool())
+            config.tp_method = TakeProfitMethod::SuperTrend;
+        else if (map.contains("use_rl_for_tp") && map["use_rl_for_tp"].toBool())
+            config.tp_method = TakeProfitMethod::RL;
+        else if (map.contains("use_nth_heikin_ashi_tp") && map["use_nth_heikin_ashi_tp"].toBool())
+            config.tp_method = TakeProfitMethod::NthHeikinAshi;
+        else
+            config.tp_method = TakeProfitMethod::Fixed;
+    }
+    
+    // Pour la compatibilité avec le code qui utilise encore ces flags
+    config.use_atr_for_sl = (config.sl_method == StopLossMethod::ATR);
+    config.use_minmax_for_sl = (config.sl_method == StopLossMethod::MinMax);
+    config.use_atr_for_tp = (config.tp_method == TakeProfitMethod::ATR);
+    config.use_sl_ratio_for_tp = (config.tp_method == TakeProfitMethod::SLRatio);
+    config.use_supertrend_for_tp = (config.tp_method == TakeProfitMethod::SuperTrend);
+    config.use_rl_for_tp = (config.tp_method == TakeProfitMethod::RL);
+    config.use_nth_heikin_ashi_tp = (config.tp_method == TakeProfitMethod::NthHeikinAshi);
+    
+    // Paramètres de temps
+    if (map.contains("trading_from")) {
+        QString fromStr = map["trading_from"].toString();
+        QTime fromTime = QTime::fromString(fromStr, "HH:mm:ss");
+        if (fromTime.isValid()) {
+            config.trading_from.hour = fromTime.hour();
+            config.trading_from.minute = fromTime.minute();
+        }
+    } else if (map.contains("trading_from_hour") && map.contains("trading_from_minute")) {
+        config.trading_from.hour = map["trading_from_hour"].toInt();
+        config.trading_from.minute = map["trading_from_minute"].toInt();
+    }
+
+    if (map.contains("trading_to")) {
+        QString toStr = map["trading_to"].toString();
+        QTime toTime = QTime::fromString(toStr, "HH:mm:ss");
+        if (toTime.isValid()) {
+            config.trading_to.hour = toTime.hour();
+            config.trading_to.minute = toTime.minute();
+        }
+    } else if (map.contains("trading_to_hour") && map.contains("trading_to_minute")) {
+        config.trading_to.hour = map["trading_to_hour"].toInt();
+        config.trading_to.minute = map["trading_to_minute"].toInt();
+    }
+    
+    // Paramètres SL/TP
+    if (map.contains("stop_loss_distance"))
+        config.stop_loss_distance = map["stop_loss_distance"].toDouble();
+    
+    if (map.contains("take_profit_distance"))
+        config.take_profit_distance = map["take_profit_distance"].toDouble();
+    
+    if (map.contains("atr_period"))
+        config.atr_period = map["atr_period"].toInt();
+    
+    if (map.contains("stop_loss_atr_multiplier"))
+        config.stop_loss_atr_multiplier = map["stop_loss_atr_multiplier"].toDouble();
+    
+    if (map.contains("take_profit_atr_multiplier"))
+        config.take_profit_atr_multiplier = map["take_profit_atr_multiplier"].toDouble();
+    
+    if (map.contains("min_stop_loss_distance"))
+        config.min_stop_loss_distance = map["min_stop_loss_distance"].toDouble();
+    
+    if (map.contains("min_take_profit_distance"))
+        config.min_take_profit_distance = map["min_take_profit_distance"].toDouble();
+    
+    // MinMax SL Parameters
+    if (map.contains("sl_minmax_periods"))
+        config.sl_minmax_periods = map["sl_minmax_periods"].toInt();
+    
+    if (map.contains("sl_minmax_delta"))
+        config.sl_minmax_delta = map["sl_minmax_delta"].toDouble();
+    
+    // TP based on SL
+    if (map.contains("tp_sl_ratio"))
+        config.tp_sl_ratio = map["tp_sl_ratio"].toDouble();
+    
+    // SuperTrend TP parameters
+    if (map.contains("tp_supertrend_atr_period"))
+        config.tp_supertrend_atr_period = map["tp_supertrend_atr_period"].toInt();
+    
+    if (map.contains("tp_supertrend_multiplier"))
+        config.tp_supertrend_multiplier = map["tp_supertrend_multiplier"].toDouble();
+    
+    // RL (Reinforcement Learning) TP parameters
+    if (map.contains("rl_model_path"))
+        config.rl_model_path = map["rl_model_path"].toString().toStdString();
+    
+    if (map.contains("rl_lookback_periods"))
+        config.rl_lookback_periods = map["rl_lookback_periods"].toInt();
+    
+    if (map.contains("rl_tp_max_multiplier"))
+        config.rl_tp_max_multiplier = map["rl_tp_max_multiplier"].toDouble();
+    
+    if (map.contains("rl_tp_min_multiplier"))
+        config.rl_tp_min_multiplier = map["rl_tp_min_multiplier"].toDouble();
+    
+    // Nth Heikin-Ashi TP
+    if (map.contains("nth_heikin_ashi_count"))
+        config.nth_heikin_ashi_count = map["nth_heikin_ashi_count"].toInt();
+    
+    // Risk management
+    if (map.contains("use_risk_based_sizing"))
+        config.use_risk_based_sizing = map["use_risk_based_sizing"].toBool();
+    
+    if (map.contains("risk_percentage"))
+        config.risk_percentage = map["risk_percentage"].toDouble();
+    
+    if (map.contains("cash"))
+        config.cash = map["cash"].toDouble();
+    
+    if (map.contains("leverage_limit"))
+        config.leverage_limit = map["leverage_limit"].toDouble();
+    
+    // Break-even parameters
+    if (map.contains("use_break_even"))
+        config.use_break_even = map["use_break_even"].toBool();
+    
+    if (map.contains("break_even_threshold"))
+        config.break_even_threshold = map["break_even_threshold"].toDouble();
+    
+    if (map.contains("break_even_offset_per_mille"))
+        config.break_even_offset_per_mille = map["break_even_offset_per_mille"].toDouble();
+    
+    // Daily maximum loss
+    if (map.contains("use_daily_max_loss"))
+        config.use_daily_max_loss = map["use_daily_max_loss"].toBool();
+    
+    if (map.contains("daily_max_loss_percentage"))
+        config.daily_max_loss_percentage = map["daily_max_loss_percentage"].toDouble();
+    
+    if (map.contains("daily_max_loss_amount"))
+        config.daily_max_loss_amount = map["daily_max_loss_amount"].toDouble();
+    
+    // Daily maximum profit
+    if (map.contains("use_daily_max_profit"))
+        config.use_daily_max_profit = map["use_daily_max_profit"].toBool();
+    
+    if (map.contains("daily_max_profit_percentage"))
+        config.daily_max_profit_percentage = map["daily_max_profit_percentage"].toDouble();
+    
+    if (map.contains("daily_max_profit_amount"))
+        config.daily_max_profit_amount = map["daily_max_profit_amount"].toDouble();
+    
+    // Daily maximum drawdown
+    if (map.contains("use_daily_max_drawdown"))
+        config.use_daily_max_drawdown = map["use_daily_max_drawdown"].toBool();
+    
+    if (map.contains("daily_max_drawdown_percentage"))
+        config.daily_max_drawdown_percentage = map["daily_max_drawdown_percentage"].toDouble();
+    
+    if (map.contains("daily_max_drawdown_amount"))
+        config.daily_max_drawdown_amount = map["daily_max_drawdown_amount"].toDouble();
+    
+    // Trading days
+    if (map.contains("trading_days")) {
+        QVariantList days = map["trading_days"].toList();
+        config.trading_days.clear();
+        for (const QVariant& day : days) {
+            config.trading_days.push_back(day.toInt());
+        }
+        
+        // Également mettre à jour le tableau deprecated pour compatibilité
+        for (int i = 0; i < 7 && i < config.trading_days.size(); ++i) {
+            config.trading_days_array[i] = config.trading_days[i];
+        }
+    }
+    
+    return config;
 }

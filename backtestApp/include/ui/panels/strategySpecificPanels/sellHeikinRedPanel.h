@@ -4,7 +4,7 @@
 #include <QSpinBox>
 #include <QLabel>
 #include <QHBoxLayout>
-#include "ui/panels/basePanel.h"
+#include "ui/panels/ConfigPanel.h"
 #include "Strategies/sell_heikin_red.hpp"
 
 /**
@@ -12,32 +12,16 @@
  * 
  * Ce panel contient les paramètres spécifiques à la stratégie SellHeikinRed.
  */
-class SellHeikinRedPanel : public BasePanel
+class SellHeikinRedPanel : public ConfigPanel<SellHeikinRedConfig>
 {
     Q_OBJECT
 
 public:
-    /**
-     * @brief Constructeur
-     * @param parent Pointeur vers le widget parent
-     */
     SellHeikinRedPanel(QWidget* parent = nullptr);
-    
-    SellHeikinRedConfig getConfig();
-    void setConfig(const SellHeikinRedConfig& config);
 
 private:
-    SellHeikinRedConfig m_config;
-    std::vector<std::unique_ptr<PropertyBinder>> m_bindings;
+    QMap<QString, QWidget*> m_widgets;
 
     void setupUI();
-    
     void initializeBindings();
-    void updateConfigFromWidgets();
-    void updateWidgetsFromConfig();
-    void addBinding(std::unique_ptr<PropertyBinder> binding);
-    void createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets);
-    
-    // Anciennes méthodes qui seront remplacées par createDependencyGroup
-    // void _toggleWidgetGroup(const QStringList& widgets, bool enabled);
 };

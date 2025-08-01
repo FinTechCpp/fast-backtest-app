@@ -1,16 +1,16 @@
-// ConfigPanel.h
 #pragma once
 
 #include <QWidget>
+#include <QGroupBox>
 #include <QCheckBox>
 #include <vector>
 #include <memory>
-#include "PropertyBinder.h"
+#include "ui/panels/PropertyBinderFactory.h"
 
 template<typename ConfigType>
-class ConfigPanel : public QWidget {
+class ConfigPanel : public QGroupBox {
 public:
-    ConfigPanel(QWidget* parent = nullptr) : QWidget(parent) {}
+    ConfigPanel(const QString& title, QWidget* parent = nullptr) : QGroupBox(title, parent) {}
     virtual ~ConfigPanel() = default;
     
     // Retourne directement la configuration
@@ -53,11 +53,16 @@ protected:
     
     // Méthode pour créer un groupe de dépendance
     // (widgets qui sont activés/désactivés en fonction d'une case à cocher)
-    void createDependencyGroup(QCheckBox* checkbox, std::vector<PropertyBinder*> dependentBinders) {
-        auto updateFunc = [checkbox, dependentBinders]() {
+    void createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets) {
+        auto updateFunc = [checkbox, dependentWidgets]() {
             bool checked = checkbox->isChecked();
-            for (auto binder : dependentBinders) {
-                binder->setEnabled(checked);
+            for (QWidget* widget : dependentWidgets) {
+                widget->setEnabled(checked);
+                // Mettre à jour le style
+                if (checked)
+                    widget->setStyleSheet("background-color: #ffffff; color: #000000;");
+                else
+                    widget->setStyleSheet("background-color: #f0f0f0; color: #888888;");
             }
         };
         

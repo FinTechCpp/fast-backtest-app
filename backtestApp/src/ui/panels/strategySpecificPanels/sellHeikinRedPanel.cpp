@@ -2,56 +2,10 @@
 #include <QDebug>
 
 SellHeikinRedPanel::SellHeikinRedPanel(QWidget* parent)
-    : BasePanel("Paramètres SellHeikinRed", parent)
+    : ConfigPanel<SellHeikinRedConfig>("Paramètres SellHeikinRed", parent)
 {
     setupUI();
     initializeBindings();
-}
-
-SellHeikinRedConfig SellHeikinRedPanel::getConfig() {
-    updateConfigFromWidgets();
-    return m_config;
-}
-
-void SellHeikinRedPanel::setConfig(const SellHeikinRedConfig& config) {
-    m_config = config;
-    updateWidgetsFromConfig();
-}
-
-void SellHeikinRedPanel::addBinding(std::unique_ptr<PropertyBinder> binding) {
-    m_bindings.push_back(std::move(binding));
-}
-
-void SellHeikinRedPanel::updateWidgetsFromConfig() {
-    for (auto& binding : m_bindings) {
-        binding->updateWidgetFromProperty();
-    }
-}
-
-void SellHeikinRedPanel::updateConfigFromWidgets() {
-    for (auto& binding : m_bindings) {
-        binding->updatePropertyFromWidget();
-    }
-}
-
-void SellHeikinRedPanel::createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets) {
-    auto updateFunc = [checkbox, dependentWidgets]() {
-        bool checked = checkbox->isChecked();
-        for (QWidget* widget : dependentWidgets) {
-            widget->setEnabled(checked);
-            // Mettre à jour le style
-            if (checked)
-                widget->setStyleSheet("background-color: #ffffff; color: #000000;");
-            else
-                widget->setStyleSheet("background-color: #f0f0f0; color: #888888;");
-        }
-    };
-    
-    // Connecter le signal toggled au callback
-    connect(checkbox, &QCheckBox::toggled, this, updateFunc);
-    
-    // Appliquer l'état initial
-    updateFunc();
 }
 
 void SellHeikinRedPanel::initializeBindings() {

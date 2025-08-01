@@ -1,62 +1,11 @@
 #include "ui/panels/strategySpecificPanels/buyHeikinGreenPanel.h"
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGridLayout>
-#include <QFrame>
-#include <QDebug>
+
 
 BuyHeikinGreenPanel::BuyHeikinGreenPanel(QWidget* parent)
-    : BasePanel("Paramètres BuyHeikinGreen", parent)
+    : ConfigPanel<BuyHeikinGreenConfig>("Paramètres BuyHeikinGreen", parent)
 {
     setupUI();
     initializeBindings();
-}
-
-BuyHeikinGreenConfig BuyHeikinGreenPanel::getConfig() {
-    // return convertToConfig<BuyHeikinGreenConfig>(getValues());
-    updateConfigFromWidgets();
-    return m_config;
-}
-
-void BuyHeikinGreenPanel::setConfig(const BuyHeikinGreenConfig &config) {
-    m_config = config;
-    updateWidgetsFromConfig();
-}
-
-void BuyHeikinGreenPanel::addBinding(std::unique_ptr<PropertyBinder> binding) {
-    m_bindings.push_back(std::move(binding));
-}
-
-void BuyHeikinGreenPanel::updateWidgetsFromConfig() {
-    for (auto& binding : m_bindings) {
-        binding->updateWidgetFromProperty();
-    }
-}
-
-void BuyHeikinGreenPanel::updateConfigFromWidgets() {
-    for (auto& binding : m_bindings) {
-        binding->updatePropertyFromWidget();
-    }
-}
-
-void BuyHeikinGreenPanel::createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets) {
-    auto updateFunc = [checkbox, dependentWidgets]() {
-        bool checked = checkbox->isChecked();
-        for (QWidget* widget : dependentWidgets) {
-            widget->setEnabled(checked);
-            // Mettre à jour le style
-            if (checked)
-                widget->setStyleSheet("background-color: #ffffff; color: #000000;");
-            else
-                widget->setStyleSheet("background-color: #f0f0f0; color: #888888;");
-        }
-    };
-    
-    // Connecter le signal toggled au callback
-    connect(checkbox, &QCheckBox::toggled, this, updateFunc);
-    
-    // Appliquer l'état initial
-    updateFunc();
 }
 
 void BuyHeikinGreenPanel::initializeBindings() {
@@ -208,6 +157,8 @@ void BuyHeikinGreenPanel::initializeBindings() {
 
 void BuyHeikinGreenPanel::setupUI()
 {
+    QWidget* parent = qobject_cast<QWidget*>(this);
+
     QVBoxLayout* strategyLayout = new QVBoxLayout(this);
     strategyLayout->setSpacing(10);
     strategyLayout->setContentsMargins(10, 15, 10, 15);

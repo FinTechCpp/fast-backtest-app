@@ -23,14 +23,6 @@ public:
      */
     SellHeikinRedPanel(QWidget* parent = nullptr);
     
-    // DEPRECATED
-    QMap<QString, QVariant> getValues() override;
-    void setValues(const QMap<QString, QVariant>& values) override;
-
-    /**
-     * @brief Récupère la configuration de la stratégie SellHeikinRed
-     * @return Structure SellHeikinRedConfig remplie avec les valeurs du panel
-     */
     SellHeikinRedConfig getConfig();
     void setConfig(const SellHeikinRedConfig& config);
 

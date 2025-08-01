@@ -12,12 +12,19 @@ template<>
 QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const StrategyBaseConfig& config);
 template<>
 QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const GeneralParamsConfig& config);
+template<>
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const BuyHeikinGreenConfig& config);
+template<>
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const SellHeikinRedConfig& config);
 
 template<>
 StrategyBaseConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map);
 template<>
 GeneralParamsConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map);
-
+template<>
+BuyHeikinGreenConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map);
+template<>
+SellHeikinRedConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map);
 
 ConfigManager::ConfigManager(QObject *parent)
     : QObject(parent)
@@ -340,36 +347,28 @@ bool ConfigManager::applyProfileToUI(const QString& profileName)
 
     qDebug() << "Applying profile" << profileName << "to UI";
 
-    try {
-        // Apply values to panels
-        if (m_mainWindow->getGeneralParamsPanel()) {
-            m_mainWindow->getGeneralParamsPanel()->setValues(profileData);
-        }
-        
-        if (m_mainWindow->getStrategyBasePanel()) {
-            // ca marche juste le cash pas vraiment 
-            // StrategyBaseConfig baseConfig = convertQMapToConfig<StrategyBaseConfig>(profileData);
-            // m_mainWindow->getStrategyBasePanel()->setConfig(baseConfig);
-            m_mainWindow->getStrategyBasePanel()->setValues(profileData);
-        }
-        
-        if (m_mainWindow->getStrategySpecificPanel()) {
-            m_mainWindow->getStrategySpecificPanel()->setValues(profileData);
-        }
+    GeneralParamsConfig generalConfig = convertQMapToConfig<GeneralParamsConfig>(profileData);
+    StrategyBaseConfig baseConfig = convertQMapToConfig<StrategyBaseConfig>(profileData);
 
-        // Update current profile
-        m_currentProfile = profileName;
+    BuyHeikinGreenConfig buyConfig = convertQMapToConfig<BuyHeikinGreenConfig>(profileData);
+    SellHeikinRedConfig sellConfig = convertQMapToConfig<SellHeikinRedConfig>(profileData);
+    
 
-        // Emit profile changed signal
-        emit profileChanged(profileName);
+    m_mainWindow->setGeneralParamsConfig(generalConfig);
+    m_mainWindow->setStrategyBaseConfig(baseConfig);
 
-        qInfo() << "Profile" << profileName << "applied successfully";
-        return true;
-        
-    } catch (const std::exception& e) {
-        qCritical() << "Error applying profile:" << e.what();
-        return false;
-    }
+    m_mainWindow->setBuyHeikinGreenConfig(buyConfig);
+    m_mainWindow->setSellHeikinRedConfig(sellConfig);
+
+
+    // Update current profile
+    m_currentProfile = profileName;
+
+    // Emit profile changed signal
+    emit profileChanged(profileName);
+
+    qInfo() << "Profile" << profileName << "applied successfully";
+    return true;
 }
 
 bool ConfigManager::saveCurrentProfile(QWidget* parentWidget)
@@ -378,7 +377,8 @@ bool ConfigManager::saveCurrentProfile(QWidget* parentWidget)
 
     QMap<QString, QVariant> currentConfig = convertConfigToQMap(m_mainWindow->getGeneralParamsConfig());
     currentConfig.insert(convertConfigToQMap(m_mainWindow->getStrategyBaseConfig()));
-    currentConfig.insert(m_mainWindow->getStrategySpecificPanel()->getValues());
+    currentConfig.insert(convertConfigToQMap(m_mainWindow->getBuyHeikinGreenConfig()));
+    currentConfig.insert(convertConfigToQMap(m_mainWindow->getSellHeikinRedConfig()));
 
 
     bool success = saveProfile(m_currentProfile, currentConfig);
@@ -407,7 +407,8 @@ bool ConfigManager::promptCreateNewProfile(QWidget* parentWidget)
         // QMap<QString, QVariant> currentConfig = getProfileFromUI();
         QMap<QString, QVariant> currentConfig = convertConfigToQMap(m_mainWindow->getGeneralParamsConfig());
         currentConfig.insert(convertConfigToQMap(m_mainWindow->getStrategyBaseConfig()));
-        currentConfig.insert(m_mainWindow->getStrategySpecificPanel()->getValues());
+        currentConfig.insert(convertConfigToQMap(m_mainWindow->getBuyHeikinGreenConfig()));
+        currentConfig.insert(convertConfigToQMap(m_mainWindow->getSellHeikinRedConfig()));
 
         bool success = saveProfile(profileName, currentConfig);
         
@@ -629,7 +630,8 @@ bool ConfigManager::exportConfigToFile(QWidget* parentWidget, const QString& pro
         // profileData = getProfileFromUI();
         profileData = convertConfigToQMap(m_mainWindow->getGeneralParamsConfig());
         profileData.insert(convertConfigToQMap(m_mainWindow->getStrategyBaseConfig()));
-        profileData.insert(m_mainWindow->getStrategySpecificPanel()->getValues());
+        profileData.insert(convertConfigToQMap(m_mainWindow->getBuyHeikinGreenConfig()));
+        profileData.insert(convertConfigToQMap(m_mainWindow->getSellHeikinRedConfig()));
     } else {
         // Otherwise, retrieve from the saved configuration
         profileData = getProfile(targetProfile);
@@ -718,7 +720,29 @@ void ConfigManager::onProfileChanged(const QString& profileName)
     }
 }
 
-// Méthode pour convertir StrategyBaseConfig en QMap
+
+template<>
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const GeneralParamsConfig& config) {
+    QMap<QString, QVariant> map;
+    
+    // Paramètres généraux
+    map["strategy_name"] = config.strategyName;
+    map["symbol"] = config.symbol;
+    map["interval"] = config.interval;
+    map["period"] = config.period;
+    map["cash"] = config.cash;
+    map["spread"] = config.spread;
+    map["commission"] = config.commission;
+    map["leverage_limit"] = config.leverage_limit;
+    map["trade_on_close"] = config.tradeOnClose;
+    map["hedging"] = config.hedging;
+    map["exclusive_orders"] = config.exclusiveOrders;
+    map["finalize_trades"] = config.finalizeTrades;
+    map["end_date"] = config.endDate.toString("dd/MM/yyyy");
+
+    return map;
+}
+
 template<>
 QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const StrategyBaseConfig& config) {
     QMap<QString, QVariant> map;
@@ -777,7 +801,7 @@ QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const StrategyBaseCon
     // Paramètres de gestion de risque
     map["use_risk_based_sizing"] = config.use_risk_based_sizing;
     map["risk_percentage"] = config.risk_percentage;
-    map["cash"] = config.cash;
+    // map["cash"] = config.cash;
     map["leverage_limit"] = config.leverage_limit;
     
     // Break-even
@@ -811,40 +835,61 @@ QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const StrategyBaseCon
 }
 
 template<>
-QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const GeneralParamsConfig& config) {
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const BuyHeikinGreenConfig& config) {
     QMap<QString, QVariant> map;
 
-    /*
-    struct GeneralParamsConfig {
-        QString strategyName;
-        QString symbol;
-        QString interval;
-        QString period;
-        double cash;
-        double spread;
-        double commission;
-        double leverage_limit;
-        bool tradeOnClose;
-        bool hedging;
-        bool exclusiveOrders;
-        bool finalizeTrades;
-    };
-    */
-    
-    // Paramètres généraux
-    map["strategy"] = config.strategyName;
-    map["symbol"] = config.symbol;
-    map["interval"] = config.interval;
-    map["period"] = config.period;
-    map["cash"] = config.cash;
-    map["spread"] = config.spread;
-    map["commission"] = config.commission;
-    map["leverage_limit"] = config.leverage_limit;
-    map["trade_on_close"] = config.tradeOnClose;
-    map["hedging"] = config.hedging;
-    map["exclusive_orders"] = config.exclusiveOrders;
-    map["finalize_trades"] = config.finalizeTrades;
-    map["end_date"] = config.endDate.toString("dd/MM/yyyy");
+    // Paramètres spécifiques à BuyHeikinGreen
+    map["bhg_ema_short_period"] = config.ema_short_period;
+    map["bhg_ema_long_period"] = config.ema_long_period;
+    map["bhg_stoch_fastk"] = config.stoch_fastk;
+    map["bhg_stoch_slowk"] = config.stoch_slowk;
+    map["bhg_stoch_slowd"] = config.stoch_slowd;
+    map["bhg_stoch_threshold"] = config.stoch_threshold;
+    map["bhg_rsi_period"] = config.rsi_period;
+    map["bhg_rsi_threshold"] = config.rsi_threshold;
+    map["bhg_supertrend_atr_period"] = config.supertrend_atr_period;
+    map["bhg_supertrend_multiplier"] = config.supertrend_multiplier;
+    map["bhg_previous_ha_candle_red_filter_n"] = config.previous_ha_candle_red_filter_n;
+
+    map["bhg_rsi_history_periods"] = config.rsi_history_periods;
+    map["bhg_stoch_history_periods"] = config.stoch_history_periods;
+
+    map["bhg_use_ema_short_filter"] = config.use_ema_short_filter;
+    map["bhg_use_ema_long_filter"] = config.use_ema_long_filter;
+    map["bhg_use_stoch_filter"] = config.use_stoch_filter;
+    map["bhg_use_rsi_filter"] = config.use_rsi_filter;
+    map["bhg_use_previous_ha_candle_red_filter"] = config.use_previous_ha_candle_red_filter;
+    map["bhg_use_supertrend_filter"] = config.use_supertrend_filter;
+
+    return map;
+}
+
+template<>
+QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const SellHeikinRedConfig& config) {
+    QMap<QString, QVariant> map;
+
+    // Paramètres spécifiques à SellHeikinRed
+    map["shr_ema_short_period"] = config.ema_short_period;
+    map["shr_ema_long_period"] = config.ema_long_period;
+    map["shr_stoch_fastk"] = config.stoch_fastk;
+    map["shr_stoch_slowk"] = config.stoch_slowk;
+    map["shr_stoch_slowd"] = config.stoch_slowd;
+    map["shr_stoch_threshold"] = config.stoch_threshold;
+    map["shr_rsi_period"] = config.rsi_period;
+    map["shr_rsi_threshold"] = config.rsi_threshold;
+    map["shr_supertrend_atr_period"] = config.supertrend_atr_period;
+    map["shr_supertrend_multiplier"] = config.supertrend_multiplier;
+    map["shr_previous_ha_candle_green_filter_n"] = config.previous_ha_candle_green_filter_n;
+
+    map["shr_rsi_history_periods"] = config.rsi_history_periods;
+    map["shr_stoch_history_periods"] = config.stoch_history_periods;
+
+    map["shr_use_ema_short_filter"] = config.use_ema_short_filter;
+    map["shr_use_ema_long_filter"] = config.use_ema_long_filter;
+    map["shr_use_stoch_filter"] = config.use_stoch_filter;
+    map["shr_use_rsi_filter"] = config.use_rsi_filter;
+    map["shr_use_previous_ha_candle_green_filter"] = config.use_previous_ha_candle_green_filter;
+    map["shr_use_supertrend_filter"] = config.use_supertrend_filter;
 
     return map;
 }
@@ -854,18 +899,18 @@ GeneralParamsConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVari
     GeneralParamsConfig config;
 
     // Paramètres généraux
-    config.strategyName = map.value("strategy", "").toString();
-    config.symbol = map.value("symbol", "").toString();
-    config.interval = map.value("interval", "").toString();
-    config.period = map.value("period", "").toString();
-    config.cash = map.value("cash", 0.0).toDouble();
-    config.spread = map.value("spread", 0.0).toDouble();
-    config.commission = map.value("commission", 0.0).toDouble();
-    config.leverage_limit = map.value("leverage_limit", 1.0).toDouble();
-    config.tradeOnClose = map.value("trade_on_close", false).toBool();
-    config.hedging = map.value("hedging", false).toBool();
-    config.exclusiveOrders = map.value("exclusive_orders", false).toBool();
-    config.finalizeTrades = map.value("finalize_trades", false).toBool();
+    config.strategyName = map.value("strategy_name").toString();
+    config.symbol = map.value("symbol").toString();
+    config.interval = map.value("interval").toString();
+    config.period = map.value("period").toString();
+    config.cash = map.value("cash").toDouble();
+    config.spread = map.value("spread").toDouble();
+    config.commission = map.value("commission").toDouble();
+    config.leverage_limit = map.value("leverage_limit").toDouble();
+    config.tradeOnClose = map.value("trade_on_close").toBool();
+    config.hedging = map.value("hedging").toBool();
+    config.exclusiveOrders = map.value("exclusive_orders").toBool();
+    config.finalizeTrades = map.value("finalize_trades").toBool();
 
     // Date de fin
     QString endDateStr = map.value("end_date").toString();
@@ -879,7 +924,6 @@ GeneralParamsConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVari
     return config;
 }
 
-// Méthode pour convertir QMap en StrategyBaseConfig
 template<>
 StrategyBaseConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map) {
     StrategyBaseConfig config;
@@ -1080,5 +1124,69 @@ StrategyBaseConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVaria
         }
     }
     
+    return config;
+}
+
+template<>
+BuyHeikinGreenConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map) {
+    BuyHeikinGreenConfig config;
+
+    // Paramètres spécifiques à BuyHeikinGreen
+    config.ema_short_period = map.value("bhg_ema_short_period").toInt();
+    config.ema_long_period = map.value("bhg_ema_long_period").toInt();
+    config.stoch_fastk = map.value("bhg_stoch_fastk").toInt();
+    config.stoch_slowk = map.value("bhg_stoch_slowk").toInt();
+    config.stoch_slowd = map.value("bhg_stoch_slowd").toInt();
+    config.stoch_threshold = map.value("bhg_stoch_threshold").toInt();
+    config.rsi_period = map.value("bhg_rsi_period").toInt();
+    config.rsi_threshold = map.value("bhg_rsi_threshold").toInt();
+    config.supertrend_atr_period = map.value("bhg_supertrend_atr_period").toInt();
+    config.supertrend_multiplier = map.value("bhg_supertrend_multiplier").toDouble();
+    config.previous_ha_candle_red_filter_n = map.value("bhg_previous_ha_candle_red_filter_n").toInt();
+
+    // Historique RSI et Stoch
+    config.rsi_history_periods = map.value("bhg_rsi_history_periods").toInt();
+    config.stoch_history_periods = map.value("bhg_stoch_history_periods").toInt();
+
+    // Filtres
+    config.use_ema_short_filter = map.value("bhg_use_ema_short_filter", false).toBool();
+    config.use_ema_long_filter = map.value("bhg_use_ema_long_filter", false).toBool();
+    config.use_stoch_filter = map.value("bhg_use_stoch_filter", false).toBool();
+    config.use_rsi_filter = map.value("bhg_use_rsi_filter", false).toBool();
+    config.use_previous_ha_candle_red_filter = map.value("bhg_use_previous_ha_candle_red_filter", false).toBool();
+    config.use_supertrend_filter = map.value("bhg_use_supertrend_filter", false).toBool();
+
+    return config;
+}
+
+template<>
+SellHeikinRedConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVariant>& map) {
+    SellHeikinRedConfig config;
+
+    // Paramètres spécifiques à SellHeikinRed
+    config.ema_short_period = map.value("shr_ema_short_period").toInt();
+    config.ema_long_period = map.value("shr_ema_long_period").toInt();
+    config.stoch_fastk = map.value("shr_stoch_fastk").toInt();
+    config.stoch_slowk = map.value("shr_stoch_slowk").toInt();
+    config.stoch_slowd = map.value("shr_stoch_slowd").toInt();
+    config.stoch_threshold = map.value("shr_stoch_threshold").toInt();
+    config.rsi_period = map.value("shr_rsi_period").toInt();
+    config.rsi_threshold = map.value("shr_rsi_threshold").toInt();
+    config.supertrend_atr_period = map.value("shr_supertrend_atr_period").toInt();
+    config.supertrend_multiplier = map.value("shr_supertrend_multiplier").toDouble();
+    config.previous_ha_candle_green_filter_n = map.value("shr_previous_ha_candle_green_filter_n").toInt();
+
+    // Historique RSI et Stoch
+    config.rsi_history_periods = map.value("shr_rsi_history_periods").toInt();
+    config.stoch_history_periods = map.value("shr_stoch_history_periods").toInt();
+
+    // Filtres
+    config.use_ema_short_filter = map.value("shr_use_ema_short_filter", false).toBool();
+    config.use_ema_long_filter = map.value("shr_use_ema_long_filter", false).toBool();
+    config.use_stoch_filter = map.value("shr_use_stoch_filter", false).toBool();
+    config.use_rsi_filter = map.value("shr_use_rsi_filter", false).toBool();
+    config.use_previous_ha_candle_green_filter = map.value("shr_use_previous_ha_candle_green_filter", false).toBool();
+    config.use_supertrend_filter = map.value("shr_use_supertrend_filter", false).toBool();
+
     return config;
 }

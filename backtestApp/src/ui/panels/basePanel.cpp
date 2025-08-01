@@ -3,328 +3,328 @@
 #include "Strategies/sell_heikin_red.hpp"
 #include "common.h"
 
-template<>
-BuyHeikinGreenConfig BasePanel::convertToConfig<BuyHeikinGreenConfig>(const QMap<QString, QVariant>& values)
-{
-    BuyHeikinGreenConfig config;
+// template<>
+// BuyHeikinGreenConfig BasePanel::convertToConfig<BuyHeikinGreenConfig>(const QMap<QString, QVariant>& values)
+// {
+//     BuyHeikinGreenConfig config;
     
-    // EMA Court
-    if (values.contains("use_ema_short_filter"))
-        config.use_ema_short_filter = values["use_ema_short_filter"].toBool();
+//     // EMA Court
+//     if (values.contains("use_ema_short_filter"))
+//         config.use_ema_short_filter = values["use_ema_short_filter"].toBool();
     
-    if (values.contains("ema_short_period"))
-        config.ema_short_period = values["ema_short_period"].toInt();
+//     if (values.contains("ema_short_period"))
+//         config.ema_short_period = values["ema_short_period"].toInt();
     
-    // EMA Long
-    if (values.contains("use_ema_long_filter"))
-        config.use_ema_long_filter = values["use_ema_long_filter"].toBool();
+//     // EMA Long
+//     if (values.contains("use_ema_long_filter"))
+//         config.use_ema_long_filter = values["use_ema_long_filter"].toBool();
     
-    if (values.contains("ema_long_period"))
-        config.ema_long_period = values["ema_long_period"].toInt();
+//     if (values.contains("ema_long_period"))
+//         config.ema_long_period = values["ema_long_period"].toInt();
     
-    // RSI
-    if (values.contains("use_rsi_filter"))
-        config.use_rsi_filter = values["use_rsi_filter"].toBool();
+//     // RSI
+//     if (values.contains("use_rsi_filter"))
+//         config.use_rsi_filter = values["use_rsi_filter"].toBool();
     
-    if (values.contains("rsi_period"))
-        config.rsi_period = values["rsi_period"].toInt();
+//     if (values.contains("rsi_period"))
+//         config.rsi_period = values["rsi_period"].toInt();
     
-    if (values.contains("rsi_threshold"))
-        config.rsi_threshold = values["rsi_threshold"].toInt();
+//     if (values.contains("rsi_threshold"))
+//         config.rsi_threshold = values["rsi_threshold"].toInt();
 
-    if (values.contains("rsi_history_periods"))
-        config.rsi_history_periods = values["rsi_history_periods"].toInt();
+//     if (values.contains("rsi_history_periods"))
+//         config.rsi_history_periods = values["rsi_history_periods"].toInt();
     
-    // Stochastique
-    if (values.contains("use_stoch_filter"))
-        config.use_stoch_filter = values["use_stoch_filter"].toBool();
+//     // Stochastique
+//     if (values.contains("use_stoch_filter"))
+//         config.use_stoch_filter = values["use_stoch_filter"].toBool();
     
-    if (values.contains("stoch_fastk"))
-        config.stoch_fastk = values["stoch_fastk"].toInt();
+//     if (values.contains("stoch_fastk"))
+//         config.stoch_fastk = values["stoch_fastk"].toInt();
     
-    if (values.contains("stoch_slowk"))
-        config.stoch_slowk = values["stoch_slowk"].toInt();
+//     if (values.contains("stoch_slowk"))
+//         config.stoch_slowk = values["stoch_slowk"].toInt();
     
-    if (values.contains("stoch_slowd"))
-        config.stoch_slowd = values["stoch_slowd"].toInt();
+//     if (values.contains("stoch_slowd"))
+//         config.stoch_slowd = values["stoch_slowd"].toInt();
     
-    if (values.contains("stoch_threshold"))
-        config.stoch_threshold = values["stoch_threshold"].toInt();
+//     if (values.contains("stoch_threshold"))
+//         config.stoch_threshold = values["stoch_threshold"].toInt();
 
-    if (values.contains("stoch_history_periods"))
-        config.stoch_history_periods = values["stoch_history_periods"].toInt();
+//     if (values.contains("stoch_history_periods"))
+//         config.stoch_history_periods = values["stoch_history_periods"].toInt();
 
-    // Supertrend
-    if (values.contains("use_supertrend_filter"))
-        config.use_supertrend_filter = values["use_supertrend_filter"].toBool();
+//     // Supertrend
+//     if (values.contains("use_supertrend_filter"))
+//         config.use_supertrend_filter = values["use_supertrend_filter"].toBool();
     
-    if (values.contains("supertrend_atr_period"))
-        config.supertrend_atr_period = values["supertrend_atr_period"].toInt();
+//     if (values.contains("supertrend_atr_period"))
+//         config.supertrend_atr_period = values["supertrend_atr_period"].toInt();
     
-    if (values.contains("supertrend_multiplier"))
-        config.supertrend_multiplier = values["supertrend_multiplier"].toDouble();
+//     if (values.contains("supertrend_multiplier"))
+//         config.supertrend_multiplier = values["supertrend_multiplier"].toDouble();
     
-    // Filtre bougie précédente
-    if (values.contains("use_previous_ha_candle_red_filter"))
-        config.use_previous_ha_candle_red_filter = values["use_previous_ha_candle_red_filter"].toBool();
+//     // Filtre bougie précédente
+//     if (values.contains("use_previous_ha_candle_red_filter"))
+//         config.use_previous_ha_candle_red_filter = values["use_previous_ha_candle_red_filter"].toBool();
     
-    if (values.contains("previous_ha_candle_red_filter_n"))
-        config.previous_ha_candle_red_filter_n = values["previous_ha_candle_red_filter_n"].toInt();
+//     if (values.contains("previous_ha_candle_red_filter_n"))
+//         config.previous_ha_candle_red_filter_n = values["previous_ha_candle_red_filter_n"].toInt();
     
-    return config;
-}
+//     return config;
+// }
 
-template<>
-SellHeikinRedConfig BasePanel::convertToConfig<SellHeikinRedConfig>(const QMap<QString, QVariant>& values)
-{
-    SellHeikinRedConfig config;
+// template<>
+// SellHeikinRedConfig BasePanel::convertToConfig<SellHeikinRedConfig>(const QMap<QString, QVariant>& values)
+// {
+//     SellHeikinRedConfig config;
     
-    // EMA Court
-    if (values.contains("use_ema_short_filter"))
-        config.use_ema_short_filter = values["use_ema_short_filter"].toBool();
+//     // EMA Court
+//     if (values.contains("use_ema_short_filter"))
+//         config.use_ema_short_filter = values["use_ema_short_filter"].toBool();
     
-    if (values.contains("ema_short_period"))
-        config.ema_short_period = values["ema_short_period"].toInt();
+//     if (values.contains("ema_short_period"))
+//         config.ema_short_period = values["ema_short_period"].toInt();
     
-    // EMA Long
-    if (values.contains("use_ema_long_filter"))
-        config.use_ema_long_filter = values["use_ema_long_filter"].toBool();
+//     // EMA Long
+//     if (values.contains("use_ema_long_filter"))
+//         config.use_ema_long_filter = values["use_ema_long_filter"].toBool();
     
-    if (values.contains("ema_long_period"))
-        config.ema_long_period = values["ema_long_period"].toInt();
+//     if (values.contains("ema_long_period"))
+//         config.ema_long_period = values["ema_long_period"].toInt();
     
-    // RSI
-    if (values.contains("use_rsi_filter"))
-        config.use_rsi_filter = values["use_rsi_filter"].toBool();
-    if (values.contains("rsi_period"))
-        config.rsi_period = values["rsi_period"].toInt();
-    if (values.contains("rsi_threshold"))
-        config.rsi_threshold = values["rsi_threshold"].toInt();
-    if (values.contains("rsi_history_periods"))
-        config.rsi_history_periods = values["rsi_history_periods"].toInt();
+//     // RSI
+//     if (values.contains("use_rsi_filter"))
+//         config.use_rsi_filter = values["use_rsi_filter"].toBool();
+//     if (values.contains("rsi_period"))
+//         config.rsi_period = values["rsi_period"].toInt();
+//     if (values.contains("rsi_threshold"))
+//         config.rsi_threshold = values["rsi_threshold"].toInt();
+//     if (values.contains("rsi_history_periods"))
+//         config.rsi_history_periods = values["rsi_history_periods"].toInt();
     
-    // Stochastique
-    if (values.contains("use_stoch_filter"))
-        config.use_stoch_filter = values["use_stoch_filter"].toBool();
-    if (values.contains("stoch_fastk"))
-        config.stoch_fastk = values["stoch_fastk"].toInt();
-    if (values.contains("stoch_slowk"))
-        config.stoch_slowk = values["stoch_slowk"].toInt();
-    if (values.contains("stoch_slowd"))
-        config.stoch_slowd = values["stoch_slowd"].toInt();
-    if (values.contains("stoch_threshold"))
-        config.stoch_threshold = values["stoch_threshold"].toInt();
-    if (values.contains("stoch_history_periods"))
-        config.stoch_history_periods = values["stoch_history_periods"].toInt();
+//     // Stochastique
+//     if (values.contains("use_stoch_filter"))
+//         config.use_stoch_filter = values["use_stoch_filter"].toBool();
+//     if (values.contains("stoch_fastk"))
+//         config.stoch_fastk = values["stoch_fastk"].toInt();
+//     if (values.contains("stoch_slowk"))
+//         config.stoch_slowk = values["stoch_slowk"].toInt();
+//     if (values.contains("stoch_slowd"))
+//         config.stoch_slowd = values["stoch_slowd"].toInt();
+//     if (values.contains("stoch_threshold"))
+//         config.stoch_threshold = values["stoch_threshold"].toInt();
+//     if (values.contains("stoch_history_periods"))
+//         config.stoch_history_periods = values["stoch_history_periods"].toInt();
     
-    // Supertrend
-    if (values.contains("use_supertrend_filter"))
-        config.use_supertrend_filter = values["use_supertrend_filter"].toBool();
+//     // Supertrend
+//     if (values.contains("use_supertrend_filter"))
+//         config.use_supertrend_filter = values["use_supertrend_filter"].toBool();
     
-    if (values.contains("supertrend_atr_period"))
-        config.supertrend_atr_period = values["supertrend_atr_period"].toInt();
+//     if (values.contains("supertrend_atr_period"))
+//         config.supertrend_atr_period = values["supertrend_atr_period"].toInt();
     
-    if (values.contains("supertrend_multiplier"))
-        config.supertrend_multiplier = values["supertrend_multiplier"].toDouble();
+//     if (values.contains("supertrend_multiplier"))
+//         config.supertrend_multiplier = values["supertrend_multiplier"].toDouble();
     
-    // Filtre bougie précédente
-    if (values.contains("use_previous_ha_candle_green_filter"))
-        config.use_previous_ha_candle_green_filter = values["use_previous_ha_candle_green_filter"].toBool();
+//     // Filtre bougie précédente
+//     if (values.contains("use_previous_ha_candle_green_filter"))
+//         config.use_previous_ha_candle_green_filter = values["use_previous_ha_candle_green_filter"].toBool();
     
-    if (values.contains("previous_ha_candle_green_filter_n"))
-        config.previous_ha_candle_green_filter_n = values["previous_ha_candle_green_filter_n"].toInt();
+//     if (values.contains("previous_ha_candle_green_filter_n"))
+//         config.previous_ha_candle_green_filter_n = values["previous_ha_candle_green_filter_n"].toInt();
     
-    return config;
-}
+//     return config;
+// }
 
-template<>
-StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QString, QVariant>& values)
-{
-    StrategyBaseConfig config;
+// template<>
+// StrategyBaseConfig BasePanel::convertToConfig<StrategyBaseConfig>(const QMap<QString, QVariant>& values)
+// {
+//     StrategyBaseConfig config;
 
-    // Ajoutez cette ligne au début de la fonction
-    if (values.contains("enable_logging"))
-        config.enable_logging = values["enable_logging"].toBool();
-    else
-        config.enable_logging = true; // valeur par défaut
+//     // Ajoutez cette ligne au début de la fonction
+//     if (values.contains("enable_logging"))
+//         config.enable_logging = values["enable_logging"].toBool();
+//     else
+//         config.enable_logging = true; // valeur par défaut
     
-    // Time settings
-    if (values.contains("trading_from"))
-    {
-        QStringList timeParts = values["trading_from"].toString().split(':');
-        if (timeParts.size() == 3)
-        {
-            config.trading_from.hour = timeParts[0].toInt();
-            config.trading_from.minute = timeParts[1].toInt();
-            config.trading_from.second = timeParts[2].toInt();
-        }
-    }
-    if (values.contains("trading_to"))
-    {
-        QStringList timeParts = values["trading_to"].toString().split(':');
-        if (timeParts.size() == 3)
-        {
-            config.trading_to.hour = timeParts[0].toInt();
-            config.trading_to.minute = timeParts[1].toInt();
-            config.trading_to.second = timeParts[2].toInt();
-        }
-    }
+//     // Time settings
+//     if (values.contains("trading_from"))
+//     {
+//         QStringList timeParts = values["trading_from"].toString().split(':');
+//         if (timeParts.size() == 3)
+//         {
+//             config.trading_from.hour = timeParts[0].toInt();
+//             config.trading_from.minute = timeParts[1].toInt();
+//             config.trading_from.second = timeParts[2].toInt();
+//         }
+//     }
+//     if (values.contains("trading_to"))
+//     {
+//         QStringList timeParts = values["trading_to"].toString().split(':');
+//         if (timeParts.size() == 3)
+//         {
+//             config.trading_to.hour = timeParts[0].toInt();
+//             config.trading_to.minute = timeParts[1].toInt();
+//             config.trading_to.second = timeParts[2].toInt();
+//         }
+//     }
 
-    // Trading days
-    config.trading_days.clear();
-    for (int i = 0; i < 7; ++i) {
-        QString key = QString("trading_day_%1").arg(i);
-        if (values.contains(key) && values[key].toBool()) 
-            config.trading_days.push_back(i);
+//     // Trading days
+//     config.trading_days.clear();
+//     for (int i = 0; i < 7; ++i) {
+//         QString key = QString("trading_day_%1").arg(i);
+//         if (values.contains(key) && values[key].toBool()) 
+//             config.trading_days.push_back(i);
         
-    }
+//     }
     
-    // Fixed SL/TP values
-    if (values.contains("take_profit_distance"))
-        config.take_profit_distance = values["take_profit_distance"].toDouble();
-    if (values.contains("stop_loss_distance"))
-        config.stop_loss_distance = values["stop_loss_distance"].toDouble();
+//     // Fixed SL/TP values
+//     if (values.contains("take_profit_distance"))
+//         config.take_profit_distance = values["take_profit_distance"].toDouble();
+//     if (values.contains("stop_loss_distance"))
+//         config.stop_loss_distance = values["stop_loss_distance"].toDouble();
     
-    // Paramètres ATR pour SL et TP
-    if (values.contains("use_atr_for_sl"))
-        config.use_atr_for_sl = values["use_atr_for_sl"].toBool();
-    else if (values.contains("sl_method"))
-        config.use_atr_for_sl = (values["sl_method"].toInt() == 1); // Index 1 = ATR
+//     // Paramètres ATR pour SL et TP
+//     if (values.contains("use_atr_for_sl"))
+//         config.use_atr_for_sl = values["use_atr_for_sl"].toBool();
+//     else if (values.contains("sl_method"))
+//         config.use_atr_for_sl = (values["sl_method"].toInt() == 1); // Index 1 = ATR
     
-    if (values.contains("use_atr_for_tp"))
-        config.use_atr_for_tp = values["use_atr_for_tp"].toBool();
-    else if (values.contains("tp_method"))
-        config.use_atr_for_tp = (values["tp_method"].toInt() == 1); // Index 1 = ATR
+//     if (values.contains("use_atr_for_tp"))
+//         config.use_atr_for_tp = values["use_atr_for_tp"].toBool();
+//     else if (values.contains("tp_method"))
+//         config.use_atr_for_tp = (values["tp_method"].toInt() == 1); // Index 1 = ATR
     
-    // Paramètres Ratio SL pour TP
-    if (values.contains("use_sl_ratio_for_tp"))
-        config.use_sl_ratio_for_tp = values["use_sl_ratio_for_tp"].toBool();
-    else if (values.contains("tp_method"))
-        config.use_sl_ratio_for_tp = (values["tp_method"].toInt() == 2); // Index 2 = Ratio SL
+//     // Paramètres Ratio SL pour TP
+//     if (values.contains("use_sl_ratio_for_tp"))
+//         config.use_sl_ratio_for_tp = values["use_sl_ratio_for_tp"].toBool();
+//     else if (values.contains("tp_method"))
+//         config.use_sl_ratio_for_tp = (values["tp_method"].toInt() == 2); // Index 2 = Ratio SL
     
-    if (values.contains("tp_sl_ratio"))
-        config.tp_sl_ratio = values["tp_sl_ratio"].toDouble();
+//     if (values.contains("tp_sl_ratio"))
+//         config.tp_sl_ratio = values["tp_sl_ratio"].toDouble();
     
-    // Paramètres SuperTrend pour TP
-    if (values.contains("use_supertrend_for_tp"))
-        config.use_supertrend_for_tp = values["use_supertrend_for_tp"].toBool();
-    else if (values.contains("tp_method"))
-        config.use_supertrend_for_tp = (values["tp_method"].toInt() == 3); // Index 3 = SuperTrend
+//     // Paramètres SuperTrend pour TP
+//     if (values.contains("use_supertrend_for_tp"))
+//         config.use_supertrend_for_tp = values["use_supertrend_for_tp"].toBool();
+//     else if (values.contains("tp_method"))
+//         config.use_supertrend_for_tp = (values["tp_method"].toInt() == 3); // Index 3 = SuperTrend
     
-    if (values.contains("tp_supertrend_atr_period"))
-        config.tp_supertrend_atr_period = values["tp_supertrend_atr_period"].toInt();
+//     if (values.contains("tp_supertrend_atr_period"))
+//         config.tp_supertrend_atr_period = values["tp_supertrend_atr_period"].toInt();
     
-    if (values.contains("tp_supertrend_multiplier"))
-        config.tp_supertrend_multiplier = values["tp_supertrend_multiplier"].toDouble();
+//     if (values.contains("tp_supertrend_multiplier"))
+//         config.tp_supertrend_multiplier = values["tp_supertrend_multiplier"].toDouble();
     
-    // Paramètres RL pour TP
-    if (values.contains("use_rl_for_tp"))
-        config.use_rl_for_tp = values["use_rl_for_tp"].toBool();
-    else if (values.contains("tp_method"))
-        config.use_rl_for_tp = (values["tp_method"].toInt() == 4); // Index 4 = RL
+//     // Paramètres RL pour TP
+//     if (values.contains("use_rl_for_tp"))
+//         config.use_rl_for_tp = values["use_rl_for_tp"].toBool();
+//     else if (values.contains("tp_method"))
+//         config.use_rl_for_tp = (values["tp_method"].toInt() == 4); // Index 4 = RL
     
-    if (values.contains("rl_model_path"))
-        config.rl_model_path = values["rl_model_path"].toString().toStdString();
+//     if (values.contains("rl_model_path"))
+//         config.rl_model_path = values["rl_model_path"].toString().toStdString();
     
-    if (values.contains("rl_lookback_periods"))
-        config.rl_lookback_periods = values["rl_lookback_periods"].toInt();
+//     if (values.contains("rl_lookback_periods"))
+//         config.rl_lookback_periods = values["rl_lookback_periods"].toInt();
     
-    if (values.contains("rl_tp_min_multiplier"))
-        config.rl_tp_min_multiplier = values["rl_tp_min_multiplier"].toDouble();
+//     if (values.contains("rl_tp_min_multiplier"))
+//         config.rl_tp_min_multiplier = values["rl_tp_min_multiplier"].toDouble();
     
-    if (values.contains("rl_tp_max_multiplier"))
-        config.rl_tp_max_multiplier = values["rl_tp_max_multiplier"].toDouble();
+//     if (values.contains("rl_tp_max_multiplier"))
+//         config.rl_tp_max_multiplier = values["rl_tp_max_multiplier"].toDouble();
 
-    // Paramètres Nth Heikin-Ashi pour TP
-    if (values.contains("use_nth_heikin_ashi_tp"))
-        config.use_nth_heikin_ashi_tp = values["use_nth_heikin_ashi_tp"].toBool();
-    else if (values.contains("tp_method"))
-        config.use_nth_heikin_ashi_tp = (values["tp_method"].toInt() == 5); // Index 5 = Nth Heikin-Ashi
-    if (values.contains("nth_heikin_ashi_count"))
-        config.nth_heikin_ashi_count = values["nth_heikin_ashi_count"].toInt();
+//     // Paramètres Nth Heikin-Ashi pour TP
+//     if (values.contains("use_nth_heikin_ashi_tp"))
+//         config.use_nth_heikin_ashi_tp = values["use_nth_heikin_ashi_tp"].toBool();
+//     else if (values.contains("tp_method"))
+//         config.use_nth_heikin_ashi_tp = (values["tp_method"].toInt() == 5); // Index 5 = Nth Heikin-Ashi
+//     if (values.contains("nth_heikin_ashi_count"))
+//         config.nth_heikin_ashi_count = values["nth_heikin_ashi_count"].toInt();
     
-    if (values.contains("atr_period"))
-        config.atr_period = values["atr_period"].toInt();
+//     if (values.contains("atr_period"))
+//         config.atr_period = values["atr_period"].toInt();
     
-    if (values.contains("sl_atr_multiplier"))
-        config.stop_loss_atr_multiplier = values["sl_atr_multiplier"].toDouble();
+//     if (values.contains("sl_atr_multiplier"))
+//         config.stop_loss_atr_multiplier = values["sl_atr_multiplier"].toDouble();
     
-    if (values.contains("tp_atr_multiplier"))
-        config.take_profit_atr_multiplier = values["tp_atr_multiplier"].toDouble();
+//     if (values.contains("tp_atr_multiplier"))
+//         config.take_profit_atr_multiplier = values["tp_atr_multiplier"].toDouble();
     
-    if (values.contains("min_stop_loss_distance"))
-        config.min_stop_loss_distance = values["min_stop_loss_distance"].toDouble();
+//     if (values.contains("min_stop_loss_distance"))
+//         config.min_stop_loss_distance = values["min_stop_loss_distance"].toDouble();
     
-    if (values.contains("min_take_profit_distance"))
-        config.min_take_profit_distance = values["min_take_profit_distance"].toDouble();
+//     if (values.contains("min_take_profit_distance"))
+//         config.min_take_profit_distance = values["min_take_profit_distance"].toDouble();
     
-    // Paramètres Min/Max pour SL
-    if (values.contains("use_minmax_for_sl"))
-        config.use_minmax_for_sl = values["use_minmax_for_sl"].toBool();
-    else if (values.contains("sl_method"))
-        config.use_minmax_for_sl = (values["sl_method"].toInt() == 2); // Index 2 = Min/Max
+//     // Paramètres Min/Max pour SL
+//     if (values.contains("use_minmax_for_sl"))
+//         config.use_minmax_for_sl = values["use_minmax_for_sl"].toBool();
+//     else if (values.contains("sl_method"))
+//         config.use_minmax_for_sl = (values["sl_method"].toInt() == 2); // Index 2 = Min/Max
     
-    if (values.contains("sl_minmax_periods"))
-        config.sl_minmax_periods = values["sl_minmax_periods"].toInt();
+//     if (values.contains("sl_minmax_periods"))
+//         config.sl_minmax_periods = values["sl_minmax_periods"].toInt();
     
-    if (values.contains("sl_minmax_delta"))
-        config.sl_minmax_delta = values["sl_minmax_delta"].toDouble();
+//     if (values.contains("sl_minmax_delta"))
+//         config.sl_minmax_delta = values["sl_minmax_delta"].toDouble();
     
-    // Risk management
-    if (values.contains("use_risk_based_sizing"))
-        config.use_risk_based_sizing = values["use_risk_based_sizing"].toBool();
+//     // Risk management
+//     if (values.contains("use_risk_based_sizing"))
+//         config.use_risk_based_sizing = values["use_risk_based_sizing"].toBool();
     
-    if (values.contains("risk_percentage"))
-        config.risk_percentage = values["risk_percentage"].toDouble();
+//     if (values.contains("risk_percentage"))
+//         config.risk_percentage = values["risk_percentage"].toDouble();
     
-    if (values.contains("cash"))
-        config.cash = values["cash"].toDouble();
+//     if (values.contains("cash"))
+//         config.cash = values["cash"].toDouble();
     
-    if (values.contains("leverage_limit"))
-        config.leverage_limit = values["leverage_limit"].toDouble();
+//     if (values.contains("leverage_limit"))
+//         config.leverage_limit = values["leverage_limit"].toDouble();
     
-    // Break-even parameters
-    if (values.contains("use_break_even"))
-        config.use_break_even = values["use_break_even"].toBool();
+//     // Break-even parameters
+//     if (values.contains("use_break_even"))
+//         config.use_break_even = values["use_break_even"].toBool();
     
-    if (values.contains("break_even_threshold"))
-        config.break_even_threshold = values["break_even_threshold"].toDouble();
+//     if (values.contains("break_even_threshold"))
+//         config.break_even_threshold = values["break_even_threshold"].toDouble();
 
-    if (values.contains("break_even_offset_per_mille"))
-        config.break_even_offset_per_mille = values["break_even_offset_per_mille"].toDouble();
+//     if (values.contains("break_even_offset_per_mille"))
+//         config.break_even_offset_per_mille = values["break_even_offset_per_mille"].toDouble();
     
-    // Perte maximale journalière
-    if (values.contains("use_daily_max_loss"))
-        config.use_daily_max_loss = values["use_daily_max_loss"].toBool();
+//     // Perte maximale journalière
+//     if (values.contains("use_daily_max_loss"))
+//         config.use_daily_max_loss = values["use_daily_max_loss"].toBool();
     
-    if (values.contains("daily_max_loss_percentage"))
-        config.daily_max_loss_percentage = values["daily_max_loss_percentage"].toDouble();
+//     if (values.contains("daily_max_loss_percentage"))
+//         config.daily_max_loss_percentage = values["daily_max_loss_percentage"].toDouble();
     
-    // Profit maximal journalier
-    if (values.contains("use_daily_max_profit"))
-        config.use_daily_max_profit = values["use_daily_max_profit"].toBool();
+//     // Profit maximal journalier
+//     if (values.contains("use_daily_max_profit"))
+//         config.use_daily_max_profit = values["use_daily_max_profit"].toBool();
     
-    if (values.contains("daily_max_profit_percentage"))
-        config.daily_max_profit_percentage = values["daily_max_profit_percentage"].toDouble();
+//     if (values.contains("daily_max_profit_percentage"))
+//         config.daily_max_profit_percentage = values["daily_max_profit_percentage"].toDouble();
     
-    // Drawdown maximal journalier
-    if (values.contains("use_daily_max_drawdown"))
-        config.use_daily_max_drawdown = values["use_daily_max_drawdown"].toBool();
+//     // Drawdown maximal journalier
+//     if (values.contains("use_daily_max_drawdown"))
+//         config.use_daily_max_drawdown = values["use_daily_max_drawdown"].toBool();
     
-    if (values.contains("daily_max_drawdown_percentage"))
-        config.daily_max_drawdown_percentage = values["daily_max_drawdown_percentage"].toDouble();
+//     if (values.contains("daily_max_drawdown_percentage"))
+//         config.daily_max_drawdown_percentage = values["daily_max_drawdown_percentage"].toDouble();
     
-    // Calculer le montant de perte maximale journalière basé sur le capital
-    if (config.use_daily_max_loss) config.daily_max_loss_amount = config.cash * (config.daily_max_loss_percentage / 100.0);
-    else config.daily_max_loss_amount = 0.0;
+//     // Calculer le montant de perte maximale journalière basé sur le capital
+//     if (config.use_daily_max_loss) config.daily_max_loss_amount = config.cash * (config.daily_max_loss_percentage / 100.0);
+//     else config.daily_max_loss_amount = 0.0;
 
-    // Calculer le montant de profit maximal journalier basé sur le capital
-    if (config.use_daily_max_profit) config.daily_max_profit_amount = config.cash * (config.daily_max_profit_percentage / 100.0);
-    else config.daily_max_profit_amount = 0.0;
+//     // Calculer le montant de profit maximal journalier basé sur le capital
+//     if (config.use_daily_max_profit) config.daily_max_profit_amount = config.cash * (config.daily_max_profit_percentage / 100.0);
+//     else config.daily_max_profit_amount = 0.0;
 
-    // Calculer le montant de drawdown maximal journalier basé sur le capital
-    if (config.use_daily_max_drawdown) config.daily_max_drawdown_amount = config.cash * (config.daily_max_drawdown_percentage / 100.0);
-    else config.daily_max_drawdown_amount = 0.0;
+//     // Calculer le montant de drawdown maximal journalier basé sur le capital
+//     if (config.use_daily_max_drawdown) config.daily_max_drawdown_amount = config.cash * (config.daily_max_drawdown_percentage / 100.0);
+//     else config.daily_max_drawdown_amount = 0.0;
 
-    return config;
-}
+//     return config;
+// }

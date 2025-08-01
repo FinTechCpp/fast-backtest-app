@@ -69,9 +69,6 @@ public:
      * @param parent Pointeur vers le widget parent
      */
     GeneralParamsPanel(QWidget* parent = nullptr);
-    
-    // DEPRECATED
-    void setValues(const QMap<QString, QVariant>& values) override;
 
     GeneralParamsConfig getConfig();
     void setConfig(const GeneralParamsConfig& config);

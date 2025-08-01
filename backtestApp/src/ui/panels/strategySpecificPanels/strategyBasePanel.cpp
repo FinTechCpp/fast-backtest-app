@@ -696,71 +696,71 @@ void StrategyBasePanel::setupUI()
 //     return values;
 // }
 
-void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
-{
-    for (auto it = values.begin(); it != values.end(); ++it) {
-        QString key = it.key();
-        QVariant value = it.value();
+// void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
+// {
+//     for (auto it = values.begin(); it != values.end(); ++it) {
+//         QString key = it.key();
+//         QVariant value = it.value();
         
-        // Ignorer les paramètres calculés use_atr_for_sl et use_atr_for_tp
-        if (key == "use_atr_for_sl" || key == "use_atr_for_tp" || key == "use_minmax_for_sl" || key == "use_sl_ratio_for_tp" || key == "use_supertrend_for_tp" || key == "use_rl_for_tp" || key == "use_nth_heikin_ashi_tp") {
-            continue;
-        }
+//         // Ignorer les paramètres calculés use_atr_for_sl et use_atr_for_tp
+//         if (key == "use_atr_for_sl" || key == "use_atr_for_tp" || key == "use_minmax_for_sl" || key == "use_sl_ratio_for_tp" || key == "use_supertrend_for_tp" || key == "use_rl_for_tp" || key == "use_nth_heikin_ashi_tp") {
+//             continue;
+//         }
         
-        if (m_widgets.contains(key)) {
-            QWidget* widget = m_widgets[key];
+//         if (m_widgets.contains(key)) {
+//             QWidget* widget = m_widgets[key];
             
-            if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
-                combo->setCurrentIndex(value.toInt());
-            }
-            else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
-                spinBox->setValue(value.toDouble());
-            }
-            else if (QSpinBox* spinBox = qobject_cast<QSpinBox*>(widget)) {
-                spinBox->setValue(value.toInt());
-            }
-            else if (QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget)) {
-                checkBox->setChecked(value.toBool());
-            }
-            else if (QTimeEdit* timeEdit = qobject_cast<QTimeEdit*>(widget)) {
-                QTime time = QTime::fromString(value.toString(), "hh:mm:ss");
-                if (time.isValid()) {
-                    timeEdit->setTime(time);
-                }
-            }
-            else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-                lineEdit->setText(value.toString());
-            }
-        }
-    }
+//             if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
+//                 combo->setCurrentIndex(value.toInt());
+//             }
+//             else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
+//                 spinBox->setValue(value.toDouble());
+//             }
+//             else if (QSpinBox* spinBox = qobject_cast<QSpinBox*>(widget)) {
+//                 spinBox->setValue(value.toInt());
+//             }
+//             else if (QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget)) {
+//                 checkBox->setChecked(value.toBool());
+//             }
+//             else if (QTimeEdit* timeEdit = qobject_cast<QTimeEdit*>(widget)) {
+//                 QTime time = QTime::fromString(value.toString(), "hh:mm:ss");
+//                 if (time.isValid()) {
+//                     timeEdit->setTime(time);
+//                 }
+//             }
+//             else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
+//                 lineEdit->setText(value.toString());
+//             }
+//         }
+//     }
     
-    // Traiter les jours de trading
-    if (values.contains("trading_days")) {
-        QVariantList tradingDays = values["trading_days"].toList();
+//     // Traiter les jours de trading
+//     if (values.contains("trading_days")) {
+//         QVariantList tradingDays = values["trading_days"].toList();
         
-        // Réinitialiser tous les jours
-        for (int i = 0; i < 7; ++i) {
-            QString key = QString("trading_day_%1").arg(i);
-            if (m_widgets.contains(key)) {
-                static_cast<QCheckBox*>(m_widgets[key])->setChecked(false);
-            }
-        }
+//         // Réinitialiser tous les jours
+//         for (int i = 0; i < 7; ++i) {
+//             QString key = QString("trading_day_%1").arg(i);
+//             if (m_widgets.contains(key)) {
+//                 static_cast<QCheckBox*>(m_widgets[key])->setChecked(false);
+//             }
+//         }
         
-        // Activer les jours spécifiés
-        for (const QVariant& day : tradingDays) {
-            int dayIndex = day.toInt();
-            if (dayIndex >= 0 && dayIndex < 7) {
-                QString key = QString("trading_day_%1").arg(dayIndex);
-                if (m_widgets.contains(key)) {
-                    static_cast<QCheckBox*>(m_widgets[key])->setChecked(true);
-                }
-            }
-        }
-    }
+//         // Activer les jours spécifiés
+//         for (const QVariant& day : tradingDays) {
+//             int dayIndex = day.toInt();
+//             if (dayIndex >= 0 && dayIndex < 7) {
+//                 QString key = QString("trading_day_%1").arg(dayIndex);
+//                 if (m_widgets.contains(key)) {
+//                     static_cast<QCheckBox*>(m_widgets[key])->setChecked(true);
+//                 }
+//             }
+//         }
+//     }
     
-    // Mettre à jour l'état ATR après avoir défini toutes les valeurs
-    _updateAtrPeriodStatus();
-}
+//     // Mettre à jour l'état ATR après avoir défini toutes les valeurs
+//     _updateAtrPeriodStatus();
+// }
 
 // Implémentation des slots
 void StrategyBasePanel::_toggleSlMethod(int index)

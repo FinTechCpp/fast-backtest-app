@@ -221,30 +221,14 @@ void BacktestWorker::run()
     QElapsedTimer timer;
     timer.start();
 
-    
-    // Récupération des paramètres généraux
-    // QString strategyName = m_mainWindow->getGeneralParamsPanel()->getValues()["strategy"].toString();
-    // QString symbol = m_mainWindow->getGeneralParamsPanel()->getValues().value("symbol", "NDX").toString();
-    // QString interval = m_mainWindow->getGeneralParamsPanel()->getValues().value("interval", "20secs").toString();
-    // QString period = m_mainWindow->getGeneralParamsPanel()->getValues().value("period", "10d").toString();
-    // double cash = m_mainWindow->getGeneralParamsPanel()->getValues().value("cash", 100000.0).toDouble();
-    // double spread = m_mainWindow->getGeneralParamsPanel()->getValues().value("spread", 0.100).toDouble();
-    // double commission = m_mainWindow->getGeneralParamsPanel()->getValues().value("commission", 0.0).toDouble();
-    // double leverage_limit = m_mainWindow->getGeneralParamsPanel()->getValues().value("leverage_limit", 20.0).toDouble();
-    // bool tradeOnClose = m_mainWindow->getGeneralParamsPanel()->getValues().value("trade_on_close", false).toBool();
-    // bool hedging = m_mainWindow->getGeneralParamsPanel()->getValues().value("hedging", false).toBool();
-    // bool exclusiveOrders = m_mainWindow->getGeneralParamsPanel()->getValues().value("exclusive_orders", true).toBool();
-    // bool finalizeTrades = m_mainWindow->getGeneralParamsPanel()->getValues().value("finalize_trades", true).toBool();
-
     GeneralParamsConfig generalConfig = m_mainWindow->getGeneralParamsConfig();
 
-    generalConfig.commission = 0.0;
-    generalConfig.tradeOnClose = false;
-    generalConfig.hedging = false;
-    generalConfig.exclusiveOrders = true;
-    generalConfig.finalizeTrades = true;
+    // generalConfig.commission = 0.0;
+    // generalConfig.tradeOnClose = false;
+    // generalConfig.hedging = false;
+    // generalConfig.exclusiveOrders = true;
+    // generalConfig.finalizeTrades = true;
 
-    std::cout << generalConfig << std::endl;
     
     // Récupération et conversion de la date de fin
     // QDateTime endDate;
@@ -271,22 +255,7 @@ void BacktestWorker::run()
     // if (!endDate.isValid()) {
     //     endDate = QDateTime::currentDateTime();
     // }
-    
-    // TODO : mettre des debug ici pour vérifier les valeurs
-    // std::cout << "Paramètres de chargement des données:" << std::endl;
-    // std::cout << "- Stratégie:" << strategyName.toStdString() << std::endl;
-    // std::cout << "- Symbole:" << symbol.toStdString() << std::endl;
-    // std::cout << "- Intervalle:" << interval.toStdString() << std::endl;
-    // std::cout << "- Période:" << period.toStdString() << std::endl;
-    // std::cout << "- Capital initial:" << cash << std::endl;
-    // std::cout << "- Spread:" << spread << std::endl;
-    // std::cout << "- Commission:" << commission << std::endl;
-    // std::cout << "- Trade à la clôture:" << (tradeOnClose ? "Oui" : "Non") << std::endl;
-    // std::cout << "- Hedging:" << (hedging ? "Oui" : "Non") << std::endl;
-    // std::cout << "- Ordres exclusifs:" << (exclusiveOrders ? "Oui" : "Non") << std::endl;
-    // std::cout << "- Finalisation des trades:" << (finalizeTrades ? "Oui" : "Non") << std::endl;
-    // std::cout << "- Date de fin:" << endDate.toString("dd/MM/yyyy hh:mm:ss").toStdString() << std::endl;
-    
+
     
     auto strategyCreator = StrategyRegistry::getInstance().getCreator(generalConfig.strategyName);
     if (!strategyCreator) {

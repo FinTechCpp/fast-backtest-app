@@ -18,8 +18,7 @@
 #include "components/backtestRunner.h"
 
 
-App::App() : QMainWindow()
-{
+App::App() : QMainWindow() {
     // Set window properties
     setWindowTitle("Backtest Dashboard C++");
     resize(2100, 1300);
@@ -102,8 +101,7 @@ void App::initStrategyMap()
     m_strategyMap["SellHeikinRedBA"] = "SellHeikinRedBA";
 }
 
-void App::createControlPanel()
-{
+void App::createControlPanel() {
     // Create the control panel widget with fixed width
     m_controlPanel = new QWidget();
     m_controlPanel->setMinimumWidth(100); // Largeur minimale
@@ -116,19 +114,26 @@ void App::createControlPanel()
     
     // General parameters panel
     m_generalParamsPanel = new GeneralParamsPanel(m_controlPanel);
-    m_generalParamsPanel->initialize(); // Appeler initialize() après la création
-    m_controlPanelLayout->addWidget(m_generalParamsPanel); // Ajouter directement le panel
+    m_controlPanelLayout->addWidget(m_generalParamsPanel);
     
     // Strategy base panel
     m_strategyBasePanel = new StrategyBasePanel(m_controlPanel);
-    m_controlPanelLayout->addWidget(m_strategyBasePanel); // Ajouter directement le panel
+    m_controlPanelLayout->addWidget(m_strategyBasePanel);
     
     // Strategy-specific panel container
     m_strategyPanelStack = new QStackedWidget();
     m_controlPanelLayout->addWidget(m_strategyPanelStack);
     
+    // Créer tous les panels de stratégies spécifiques à l'avance
+    m_buyHeikinGreenPanel = new BuyHeikinGreenPanel(m_controlPanel);
+    m_sellHeikinRedPanel = new SellHeikinRedPanel(m_controlPanel);
+    
+    // Ajouter tous les panels au stack
+    m_strategyPanelStack->addWidget(m_buyHeikinGreenPanel);
+    m_strategyPanelStack->addWidget(m_sellHeikinRedPanel);
+    
     // Initialize strategy-specific panels
-    updateStrategySpecificPanel();
+    // updateStrategySpecificPanel();
     
     // Create scroll area and add to splitter
     m_controlPanelScrollArea = new QScrollArea();
@@ -170,48 +175,56 @@ void App::setupConnections()
 void App::updateStrategySpecificPanel() {    
     QString selectedStrategy = m_generalParamsPanel->getConfig().strategyName;
     qInfo() << "Updating strategy-specific panel for:" << selectedStrategy;
-    
-    // Remove old panel if it exists
-    if (m_strategySpecificPanel) {
-        // CORRECTION: Utiliser une méthode correcte pour récupérer le widget
-        // Chercher le widget dans le stack ou le layout
-        for (int i = 0; i < m_strategyPanelStack->count(); ++i) {
-            QWidget* widget = m_strategyPanelStack->widget(i);
-            m_strategyPanelStack->removeWidget(widget);
-            widget->deleteLater();
-        }
-        m_strategySpecificPanel = nullptr;
+
+    // Sélectionner le panel approprié dans le stack
+    if (selectedStrategy == "BuyHeikinGreenBA") {
+        m_strategyPanelStack->setCurrentWidget(m_buyHeikinGreenPanel);
+    } 
+    else if (selectedStrategy == "SellHeikinRedBA") {
+        m_strategyPanelStack->setCurrentWidget(m_sellHeikinRedPanel);
     }
     
-    // Create new panel based on strategy
-    QWidget* strategyWidget = createStrategySpecificPanel(selectedStrategy);
-    if (strategyWidget) {
-        m_strategyPanelStack->addWidget(strategyWidget);
-        m_strategyPanelStack->setCurrentWidget(strategyWidget);
-    }
+    // // Remove old panel if it exists
+    // if (m_strategySpecificPanel) {
+    //     // CORRECTION: Utiliser une méthode correcte pour récupérer le widget
+    //     // Chercher le widget dans le stack ou le layout
+    //     for (int i = 0; i < m_strategyPanelStack->count(); ++i) {
+    //         QWidget* widget = m_strategyPanelStack->widget(i);
+    //         m_strategyPanelStack->removeWidget(widget);
+    //         widget->deleteLater();
+    //     }
+    //     m_strategySpecificPanel = nullptr;
+    // }
     
-    // Load current profile values
-    QMap<QString, QVariant> currentProfile = m_configManager->getProfile(m_configManager->getCurrentProfile());
-    if (m_strategySpecificPanel && !currentProfile.isEmpty()) {
-        m_strategySpecificPanel->setValues(currentProfile);
-    }
+    // // Create new panel based on strategy
+    // QWidget* strategyWidget = createStrategySpecificPanel(selectedStrategy);
+    // if (strategyWidget) {
+    //     m_strategyPanelStack->addWidget(strategyWidget);
+    //     m_strategyPanelStack->setCurrentWidget(strategyWidget);
+    // }
+    
+    // // Load current profile values
+    // QMap<QString, QVariant> currentProfile = m_configManager->getProfile(m_configManager->getCurrentProfile());
+    // if (m_strategySpecificPanel && !currentProfile.isEmpty()) {
+    //     m_strategySpecificPanel->setValues(currentProfile);
+    // }
 }
 
-QWidget* App::createStrategySpecificPanel(const QString& strategy)
-{
-    BasePanel* panel = nullptr;
+// QWidget* App::createStrategySpecificPanel(const QString& strategy)
+// {
+//     BasePanel* panel = nullptr;
     
-    if (strategy == "BuyHeikinGreenBA") panel = new BuyHeikinGreenPanel(m_controlPanel);
-    else if (strategy == "SellHeikinRedBA") panel = new SellHeikinRedPanel(m_controlPanel);
+//     if (strategy == "BuyHeikinGreenBA") panel = new BuyHeikinGreenPanel(m_controlPanel);
+//     else if (strategy == "SellHeikinRedBA") panel = new SellHeikinRedPanel(m_controlPanel);
 
-    if (panel) {
-        m_strategySpecificPanel = panel;
-        panel->initialize();
-        return panel;
-    }
+//     if (panel) {
+//         m_strategySpecificPanel = panel;
+//         panel->initialize();
+//         return panel;
+//     }
     
-    return nullptr;
-}
+//     return nullptr;
+// }
 
 void App::mousePressEvent(QMouseEvent *event)
 {
@@ -283,6 +296,30 @@ SellHeikinRedConfig App::getSellHeikinRedConfig() const {
     return SellHeikinRedConfig();
 }
 
+void App::setGeneralParamsConfig(const GeneralParamsConfig& config) {
+    if (m_generalParamsPanel) {
+        m_generalParamsPanel->setConfig(config);
+    }
+}
+
+void App::setStrategyBaseConfig(const StrategyBaseConfig& config) {
+    if (m_strategyBasePanel) {
+        m_strategyBasePanel->setConfig(config);
+    }
+}
+
+void App::setBuyHeikinGreenConfig(const BuyHeikinGreenConfig& config) {
+    if (m_buyHeikinGreenPanel) {
+        m_buyHeikinGreenPanel->setConfig(config);
+    }
+}
+
+void App::setSellHeikinRedConfig(const SellHeikinRedConfig& config) {
+    if (m_sellHeikinRedPanel) {
+        m_sellHeikinRedPanel->setConfig(config);
+    }
+}
+
 std::vector<StrategyIndicator> App::getIndicatorConfig() const
 {
     // Obtenir les paramètres de stratégie
@@ -309,110 +346,113 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
     QString strategyName = generalConfig.strategyName;
     
     if (strategyName.contains("BuyHeikinGreen", Qt::CaseInsensitive)) {
-        QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
+        // QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
+        BuyHeikinGreenConfig config = getBuyHeikinGreenConfig();
+
         // EMA court terme
-        bool use_ema_short = specificValues.value("use_ema_short_filter", false).toBool();
+        bool use_ema_short = config.use_ema_short_filter;
         if (use_ema_short) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = specificValues.value("ema_short_period", 150).toDouble();
+            ema.params["period"] = config.ema_short_period;
             indicators.push_back(ema);
         }
         
         // EMA long terme
-        bool use_ema_long = specificValues.value("use_ema_long_filter", false).toBool();
+        bool use_ema_long = config.use_ema_long_filter;
         if (use_ema_long) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = specificValues.value("ema_long_period", 198).toDouble();
+            ema.params["period"] = config.ema_long_period;
             indicators.push_back(ema);
         }
         
         // RSI
-        bool use_rsi = specificValues.value("use_rsi_filter", false).toBool();
+        bool use_rsi = config.use_rsi_filter;
         if (use_rsi) {
             StrategyIndicator rsi;
             rsi.type = StrategyIndicator::RSI;
-            rsi.params["period"] = specificValues.value("rsi_period", 14).toDouble();
+            rsi.params["period"] = config.rsi_period;
             rsi.params["overboughtLevel"] = 70.0;  // Valeur par défaut
-            rsi.params["oversoldLevel"] = specificValues.value("rsi_threshold", 30).toDouble();
+            rsi.params["oversoldLevel"] = config.rsi_threshold;
             indicators.push_back(rsi);
         }
         
         // Stochastique
-        bool use_stoch = specificValues.value("use_stoch_filter", false).toBool();
+        bool use_stoch = config.use_stoch_filter;
         if (use_stoch) {
             StrategyIndicator stoch;
             stoch.type = StrategyIndicator::STOCHASTIC;
-            stoch.params["fastKPeriod"] = specificValues.value("stoch_fastk", 10).toDouble();
-            stoch.params["slowKPeriod"] = specificValues.value("stoch_slowk", 7).toDouble();
-            stoch.params["slowDPeriod"] = specificValues.value("stoch_slowd", 3).toDouble();
+            stoch.params["fastKPeriod"] = config.stoch_fastk;
+            stoch.params["slowKPeriod"] = config.stoch_slowk;
+            stoch.params["slowDPeriod"] = config.stoch_slowd;
             stoch.params["overboughtLevel"] = 80.0;  // Valeur par défaut
-            stoch.params["oversoldLevel"] = specificValues.value("stoch_threshold", 20).toDouble();
+            stoch.params["oversoldLevel"] = config.stoch_threshold;
             indicators.push_back(stoch);
         }
         
         // Supertrend
-        bool use_supertrend = specificValues.value("use_supertrend_filter", false).toBool();
+        bool use_supertrend = config.use_supertrend_filter;
         if (use_supertrend) {
             StrategyIndicator supertrend;
             supertrend.type = StrategyIndicator::SUPERTREND;
-            supertrend.params["period"] = specificValues.value("supertrend_atr_period", 10).toDouble();
-            supertrend.params["multiplier"] = specificValues.value("supertrend_multiplier", 3.0).toDouble();
+            supertrend.params["period"] = config.supertrend_atr_period;
+            supertrend.params["multiplier"] = config.supertrend_multiplier;
             indicators.push_back(supertrend);
         }
     }
     else if (strategyName.contains("SellHeikinRed", Qt::CaseInsensitive)) {
-        QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
+        // QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
+        SellHeikinRedConfig config = getSellHeikinRedConfig();
         // EMA court terme
-        bool use_ema_short = specificValues.value("use_ema_short_filter", false).toBool();
+        bool use_ema_short = config.use_ema_short_filter;
         if (use_ema_short) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = specificValues.value("ema_short_period", 150).toDouble();
+            ema.params["period"] = config.ema_short_period;
             indicators.push_back(ema);
         }
         
         // EMA long terme
-        bool use_ema_long = specificValues.value("use_ema_long_filter", false).toBool();
+        bool use_ema_long = config.use_ema_long_filter;
         if (use_ema_long) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = specificValues.value("ema_long_period", 198).toDouble();
+            ema.params["period"] = config.ema_long_period;
             indicators.push_back(ema);
         }
         
         // RSI
-        bool use_rsi = specificValues.value("use_rsi_filter", false).toBool();
+        bool use_rsi = config.use_rsi_filter;
         if (use_rsi) {
             StrategyIndicator rsi;
             rsi.type = StrategyIndicator::RSI;
-            rsi.params["period"] = specificValues.value("rsi_period", 14).toDouble();
-            rsi.params["overboughtLevel"] = specificValues.value("rsi_threshold", 70).toDouble();
+            rsi.params["period"] = config.rsi_period;
+            rsi.params["overboughtLevel"] = config.rsi_threshold;
             rsi.params["oversoldLevel"] = 30.0;  // Valeur par défaut
             indicators.push_back(rsi);
         }
         
         // Stochastique
-        bool use_stoch = specificValues.value("use_stoch_filter", false).toBool();
+        bool use_stoch = config.use_stoch_filter;
         if (use_stoch) {
             StrategyIndicator stoch;
             stoch.type = StrategyIndicator::STOCHASTIC;
-            stoch.params["fastKPeriod"] = specificValues.value("stoch_fastk", 10).toDouble();
-            stoch.params["slowKPeriod"] = specificValues.value("stoch_slowk", 7).toDouble();
-            stoch.params["slowDPeriod"] = specificValues.value("stoch_slowd", 3).toDouble();
-            stoch.params["overboughtLevel"] = specificValues.value("stoch_threshold", 80).toDouble();
+            stoch.params["fastKPeriod"] = config.stoch_fastk;
+            stoch.params["slowKPeriod"] = config.stoch_slowk;
+            stoch.params["slowDPeriod"] = config.stoch_slowd;
+            stoch.params["overboughtLevel"] = config.stoch_threshold;
             stoch.params["oversoldLevel"] = 20.0;  // Valeur par défaut
             indicators.push_back(stoch);
         }
         
         // Supertrend
-        bool use_supertrend = specificValues.value("use_supertrend_filter", false).toBool();
+        bool use_supertrend = config.use_supertrend_filter;
         if (use_supertrend) {
             StrategyIndicator supertrend;
             supertrend.type = StrategyIndicator::SUPERTREND;
-            supertrend.params["period"] = specificValues.value("supertrend_atr_period", 10).toDouble();
-            supertrend.params["multiplier"] = specificValues.value("supertrend_multiplier", 3.0).toDouble();
+            supertrend.params["period"] = config.supertrend_atr_period;
+            supertrend.params["multiplier"] = config.supertrend_multiplier;
             indicators.push_back(supertrend);
         }
     }

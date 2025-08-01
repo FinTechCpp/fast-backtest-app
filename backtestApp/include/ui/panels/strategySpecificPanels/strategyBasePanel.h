@@ -35,10 +35,6 @@ public:
      * @param parent Pointeur vers le widget parent
      */
     StrategyBasePanel(QWidget* parent = nullptr);
-    
-    // Methode a supprimer ya du travaille mais apres c'est fini
-    // QMap<QString, QVariant> getValues() override;
-    void setValues(const QMap<QString, QVariant>& values) override;
 
     StrategyBaseConfig getConfig();
     void setConfig(const StrategyBaseConfig& config);

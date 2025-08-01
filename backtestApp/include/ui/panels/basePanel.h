@@ -29,23 +29,6 @@ public:
      */
     virtual ~BasePanel() = default;
     
-    /**
-     * @brief Initialise le contenu du panel
-     * Cette méthode doit être appelée après la construction pour configurer l'UI
-     */
-    virtual void initialize() {}
-    
-    /**
-     * @brief Récupère les valeurs des widgets du panel
-     */
-    virtual QMap<QString, QVariant> getValues() {
-        return QMap<QString, QVariant>();
-    }
-    
-    /**
-     * @brief Définit les valeurs des widgets du panel
-     */
-    virtual void setValues(const QMap<QString, QVariant>& values) {}
 
 protected:
     /** Map des widgets contenant les contrôles du panel */

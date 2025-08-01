@@ -252,56 +252,56 @@ void GeneralParamsPanel::setupUI()
 //     return values;
 // }
 
-void GeneralParamsPanel::setValues(const QMap<QString, QVariant>& values)
-{
-    for (auto it = values.begin(); it != values.end(); ++it) {
-        QString key = it.key();
-        QVariant value = it.value();
+// void GeneralParamsPanel::setValues(const QMap<QString, QVariant>& values)
+// {
+//     for (auto it = values.begin(); it != values.end(); ++it) {
+//         QString key = it.key();
+//         QVariant value = it.value();
         
-        if (m_widgets.contains(key)) {
-            QWidget* widget = m_widgets[key];
+//         if (m_widgets.contains(key)) {
+//             QWidget* widget = m_widgets[key];
             
-            if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
-                QString text = value.toString();
-                int index = combo->findText(text);
-                if (index >= 0) {
-                    combo->setCurrentIndex(index);
-                }
-            }
-            else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
-                spinBox->setValue(value.toDouble());
-            }
-            else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
-                // Parser correctement la date
-                if (value.typeId() == QMetaType::QString) {
-                    QString dateStr = value.toString();
-                    QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
+//             if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
+//                 QString text = value.toString();
+//                 int index = combo->findText(text);
+//                 if (index >= 0) {
+//                     combo->setCurrentIndex(index);
+//                 }
+//             }
+//             else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
+//                 spinBox->setValue(value.toDouble());
+//             }
+//             else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
+//                 // Parser correctement la date
+//                 if (value.typeId() == QMetaType::QString) {
+//                     QString dateStr = value.toString();
+//                     QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
                     
-                    QDate date;
-                    for (const QString& format : dateFormats) {
-                        date = QDate::fromString(dateStr, format);
-                        if (date.isValid()) {
-                            break;
-                        }
-                    }
+//                     QDate date;
+//                     for (const QString& format : dateFormats) {
+//                         date = QDate::fromString(dateStr, format);
+//                         if (date.isValid()) {
+//                             break;
+//                         }
+//                     }
                     
-                    if (date.isValid()) {
-                        dateEdit->setDate(date);
-                        qDebug() << "Date définie dans le widget:" << key << "=" << date.toString("dd/MM/yyyy");
-                    } else {
-                        qWarning() << "Impossible de parser la date:" << dateStr;
-                    }
-                }
-                else if (value.typeId() == QMetaType::QDate) {
-                    dateEdit->setDate(value.toDate());
-                }
-            }
-            else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-                lineEdit->setText(value.toString());
-            }
-        }
-    }
-}
+//                     if (date.isValid()) {
+//                         dateEdit->setDate(date);
+//                         qDebug() << "Date définie dans le widget:" << key << "=" << date.toString("dd/MM/yyyy");
+//                     } else {
+//                         qWarning() << "Impossible de parser la date:" << dateStr;
+//                     }
+//                 }
+//                 else if (value.typeId() == QMetaType::QDate) {
+//                     dateEdit->setDate(value.toDate());
+//                 }
+//             }
+//             else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
+//                 lineEdit->setText(value.toString());
+//             }
+//         }
+//     }
+// }
 
 void GeneralParamsPanel::onStrategyComboChanged(const QString& strategy) {
     emit strategyChanged(strategy);

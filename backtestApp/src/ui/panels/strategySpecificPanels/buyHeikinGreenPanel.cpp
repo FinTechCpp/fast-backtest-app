@@ -401,118 +401,118 @@ void BuyHeikinGreenPanel::setupUI()
 
 // Les méthodes getValues et setValues restent inchangées
 
-QMap<QString, QVariant> BuyHeikinGreenPanel::getValues()
-{
-    QMap<QString, QVariant> values;
+// QMap<QString, QVariant> BuyHeikinGreenPanel::getValues()
+// {
+//     QMap<QString, QVariant> values;
     
-    // EMA Court
-    values["use_ema_short_filter"] = static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->isChecked();
-    values["ema_short_period"] = static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->value();
+//     // EMA Court
+//     values["use_ema_short_filter"] = static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->isChecked();
+//     values["ema_short_period"] = static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->value();
     
-    // EMA Long
-    values["use_ema_long_filter"] = static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->isChecked();
-    values["ema_long_period"] = static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->value();
+//     // EMA Long
+//     values["use_ema_long_filter"] = static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->isChecked();
+//     values["ema_long_period"] = static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->value();
     
-    // RSI
-    values["use_rsi_filter"] = static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked();
-    values["rsi_period"] = static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->value();
-    values["rsi_threshold"] = static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->value();
-    values["rsi_history_periods"] = static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->value();
+//     // RSI
+//     values["use_rsi_filter"] = static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked();
+//     values["rsi_period"] = static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->value();
+//     values["rsi_threshold"] = static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->value();
+//     values["rsi_history_periods"] = static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->value();
 
-    // Stochastique
-    values["use_stoch_filter"] = static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked();
-    values["stoch_fastk"] = static_cast<QSpinBox*>(m_widgets["fastk_spin"])->value();
-    values["stoch_slowk"] = static_cast<QSpinBox*>(m_widgets["slowk_spin"])->value();
-    values["stoch_slowd"] = static_cast<QSpinBox*>(m_widgets["slowd_spin"])->value();
-    values["stoch_threshold"] = static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->value();
-    values["stoch_history_periods"] = static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->value();
+//     // Stochastique
+//     values["use_stoch_filter"] = static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked();
+//     values["stoch_fastk"] = static_cast<QSpinBox*>(m_widgets["fastk_spin"])->value();
+//     values["stoch_slowk"] = static_cast<QSpinBox*>(m_widgets["slowk_spin"])->value();
+//     values["stoch_slowd"] = static_cast<QSpinBox*>(m_widgets["slowd_spin"])->value();
+//     values["stoch_threshold"] = static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->value();
+//     values["stoch_history_periods"] = static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->value();
 
-    // Supertrend
-    values["use_supertrend_filter"] = static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->isChecked();
-    values["supertrend_atr_period"] = static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->value();
-    values["supertrend_multiplier"] = static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->value();
+//     // Supertrend
+//     values["use_supertrend_filter"] = static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->isChecked();
+//     values["supertrend_atr_period"] = static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->value();
+//     values["supertrend_multiplier"] = static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->value();
     
-    // Filtre bougie
-    values["use_previous_ha_candle_red_filter"] = static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->isChecked();
-    values["previous_ha_candle_red_filter_n"] = static_cast<QSpinBox*>(m_widgets["previous_ha_candle_red_filter_spin"])->value();
-    return values;
-}
+//     // Filtre bougie
+//     values["use_previous_ha_candle_red_filter"] = static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->isChecked();
+//     values["previous_ha_candle_red_filter_n"] = static_cast<QSpinBox*>(m_widgets["previous_ha_candle_red_filter_spin"])->value();
+//     return values;
+// }
 
-void BuyHeikinGreenPanel::setValues(const QMap<QString, QVariant>& values)
-{
-    // EMA Court
-    if (values.contains("use_ema_short_filter")) {
-        static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->setChecked(values["use_ema_short_filter"].toBool());
-    }
+// void BuyHeikinGreenPanel::setValues(const QMap<QString, QVariant>& values)
+// {
+//     // EMA Court
+//     if (values.contains("use_ema_short_filter")) {
+//         static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->setChecked(values["use_ema_short_filter"].toBool());
+//     }
     
-    if (values.contains("ema_short_period")) {
-        static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->setValue(values["ema_short_period"].toInt());
-    }
+//     if (values.contains("ema_short_period")) {
+//         static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->setValue(values["ema_short_period"].toInt());
+//     }
     
-    // EMA Long
-    if (values.contains("use_ema_long_filter")) {
-        static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->setChecked(values["use_ema_long_filter"].toBool());
-    }
+//     // EMA Long
+//     if (values.contains("use_ema_long_filter")) {
+//         static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->setChecked(values["use_ema_long_filter"].toBool());
+//     }
     
-    if (values.contains("ema_long_period")) {
-        static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->setValue(values["ema_long_period"].toInt());
-    }
+//     if (values.contains("ema_long_period")) {
+//         static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->setValue(values["ema_long_period"].toInt());
+//     }
     
-    // RSI
-    if (values.contains("use_rsi_filter")) {
-        static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->setChecked(values["use_rsi_filter"].toBool());
-    }
-    if (values.contains("rsi_period")) {
-        static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->setValue(values["rsi_period"].toInt());
-    }
-    if (values.contains("rsi_threshold")) {
-        static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setValue(values["rsi_threshold"].toInt());
-    }
-    if (values.contains("rsi_history_periods")) {
-        static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->setValue(values["rsi_history_periods"].toInt());
-    }
+//     // RSI
+//     if (values.contains("use_rsi_filter")) {
+//         static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->setChecked(values["use_rsi_filter"].toBool());
+//     }
+//     if (values.contains("rsi_period")) {
+//         static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->setValue(values["rsi_period"].toInt());
+//     }
+//     if (values.contains("rsi_threshold")) {
+//         static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setValue(values["rsi_threshold"].toInt());
+//     }
+//     if (values.contains("rsi_history_periods")) {
+//         static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->setValue(values["rsi_history_periods"].toInt());
+//     }
     
-    // Stochastique
-    if (values.contains("use_stoch_filter")) {
-        static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->setChecked(values["use_stoch_filter"].toBool());
-    }
-    if (values.contains("stoch_fastk")) {
-        static_cast<QSpinBox*>(m_widgets["fastk_spin"])->setValue(values["stoch_fastk"].toInt());
-    }
-    if (values.contains("stoch_slowk")) {
-        static_cast<QSpinBox*>(m_widgets["slowk_spin"])->setValue(values["stoch_slowk"].toInt());
-    }
-    if (values.contains("stoch_slowd")) {
-        static_cast<QSpinBox*>(m_widgets["slowd_spin"])->setValue(values["stoch_slowd"].toInt());
-    }
-    if (values.contains("stoch_threshold")) {
-        static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setValue(values["stoch_threshold"].toInt());
-    }
-    if (values.contains("stoch_history_periods")) {
-        static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->setValue(values["stoch_history_periods"].toInt());
-    }
+//     // Stochastique
+//     if (values.contains("use_stoch_filter")) {
+//         static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->setChecked(values["use_stoch_filter"].toBool());
+//     }
+//     if (values.contains("stoch_fastk")) {
+//         static_cast<QSpinBox*>(m_widgets["fastk_spin"])->setValue(values["stoch_fastk"].toInt());
+//     }
+//     if (values.contains("stoch_slowk")) {
+//         static_cast<QSpinBox*>(m_widgets["slowk_spin"])->setValue(values["stoch_slowk"].toInt());
+//     }
+//     if (values.contains("stoch_slowd")) {
+//         static_cast<QSpinBox*>(m_widgets["slowd_spin"])->setValue(values["stoch_slowd"].toInt());
+//     }
+//     if (values.contains("stoch_threshold")) {
+//         static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setValue(values["stoch_threshold"].toInt());
+//     }
+//     if (values.contains("stoch_history_periods")) {
+//         static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->setValue(values["stoch_history_periods"].toInt());
+//     }
     
     
-    // Supertrend
-    if (values.contains("use_supertrend_filter")) {
-        static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->setChecked(values["use_supertrend_filter"].toBool());
-    }
+//     // Supertrend
+//     if (values.contains("use_supertrend_filter")) {
+//         static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->setChecked(values["use_supertrend_filter"].toBool());
+//     }
     
-    if (values.contains("supertrend_atr_period")) {
-        static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->setValue(values["supertrend_atr_period"].toInt());
-    }
+//     if (values.contains("supertrend_atr_period")) {
+//         static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->setValue(values["supertrend_atr_period"].toInt());
+//     }
     
-    if (values.contains("supertrend_multiplier")) {
-        static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setValue(values["supertrend_multiplier"].toDouble());
-    }
+//     if (values.contains("supertrend_multiplier")) {
+//         static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setValue(values["supertrend_multiplier"].toDouble());
+//     }
     
-    // Filtre bougie
-    if (values.contains("use_previous_ha_candle_red_filter")) {
-        static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->setChecked(
-            values["use_previous_ha_candle_red_filter"].toBool());
-    }
-    if (values.contains("previous_ha_candle_red_filter_n")) {
-        static_cast<QSpinBox*>(m_widgets["previous_ha_candle_red_filter_spin"])->setValue(
-            values["previous_ha_candle_red_filter_n"].toInt());
-    }
-}
+//     // Filtre bougie
+//     if (values.contains("use_previous_ha_candle_red_filter")) {
+//         static_cast<QCheckBox*>(m_widgets["previous_ha_candle_red_filter_check"])->setChecked(
+//             values["use_previous_ha_candle_red_filter"].toBool());
+//     }
+//     if (values.contains("previous_ha_candle_red_filter_n")) {
+//         static_cast<QSpinBox*>(m_widgets["previous_ha_candle_red_filter_spin"])->setValue(
+//             values["previous_ha_candle_red_filter_n"].toInt());
+//     }
+// }

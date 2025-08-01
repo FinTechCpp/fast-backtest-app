@@ -53,11 +53,6 @@ public:
     // Getter pour ConfigManager
     ConfigManager* getConfigManager() const { return m_configManager; }
     
-    // DEPRECATED
-    GeneralParamsPanel* getGeneralParamsPanel() const { return m_generalParamsPanel; }
-    StrategyBasePanel* getStrategyBasePanel() const { return m_strategyBasePanel; }
-    BasePanel* getStrategySpecificPanel() const { return m_strategySpecificPanel; }
-    
     // Getters pour les configurations
     // DEPRECATED
     std::vector<StrategyIndicator> getIndicatorConfig() const;
@@ -66,7 +61,12 @@ public:
     StrategyBaseConfig getStrategyBaseConfig() const;
     BuyHeikinGreenConfig getBuyHeikinGreenConfig() const;
     SellHeikinRedConfig getSellHeikinRedConfig() const;
-    
+
+    void setGeneralParamsConfig(const GeneralParamsConfig& config);
+    void setStrategyBaseConfig(const StrategyBaseConfig& config);
+    void setBuyHeikinGreenConfig(const BuyHeikinGreenConfig& config);
+    void setSellHeikinRedConfig(const SellHeikinRedConfig& config);
+
     // Mise à jour des vues de résultats
     void updateResultViews(BacktestResults* results);
 
@@ -133,7 +133,7 @@ private:
     SellHeikinRedPanel* m_sellHeikinRedPanel = nullptr;
 
     // DEPRECATED
-    BasePanel* m_strategySpecificPanel = nullptr;
+    // BasePanel* m_strategySpecificPanel = nullptr;
     
     // Components
     BacktestRunner* m_backtestRunner;

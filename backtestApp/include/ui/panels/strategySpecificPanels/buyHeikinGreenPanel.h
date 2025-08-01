@@ -25,11 +25,6 @@ public:
      * @param parent Pointeur vers le widget parent
      */
     BuyHeikinGreenPanel(QWidget* parent = nullptr);
-    
-    // DEPRECATED
-    QMap<QString, QVariant> getValues() override;
-    void setValues(const QMap<QString, QVariant>& values) override;
-
 
     BuyHeikinGreenConfig getConfig();
     void setConfig(const BuyHeikinGreenConfig& config);

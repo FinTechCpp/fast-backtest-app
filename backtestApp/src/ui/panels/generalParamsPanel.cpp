@@ -6,57 +6,11 @@
 #include <QDebug>
 
 GeneralParamsPanel::GeneralParamsPanel(QWidget* parent)
-    : BasePanel("Paramètres généraux", parent)
+    : ConfigPanel<GeneralParamsConfig>("Paramètres généraux", parent)
 {
     initStrategyMap();
     setupUI();
     initializeBindings();
-}
-
-GeneralParamsConfig GeneralParamsPanel::getConfig() {
-    updateConfigFromWidgets();
-    return m_config;
-}
-
-void GeneralParamsPanel::setConfig(const GeneralParamsConfig &config) {
-    m_config = config;
-    updateWidgetsFromConfig();
-}
-
-void GeneralParamsPanel::addBinding(std::unique_ptr<PropertyBinder> binding) {
-    m_bindings.push_back(std::move(binding));
-}
-
-void GeneralParamsPanel::updateConfigFromWidgets() {
-    for (const auto& binding : m_bindings) {
-        binding->updatePropertyFromWidget();
-    }
-}
-
-void GeneralParamsPanel::updateWidgetsFromConfig() {
-    for (const auto& binding : m_bindings) {
-        binding->updateWidgetFromProperty();
-    }
-}
-
-void GeneralParamsPanel::createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets) {
-    auto updateFunc = [checkbox, dependentWidgets]() {
-        bool checked = checkbox->isChecked();
-        for (QWidget* widget : dependentWidgets) {
-            widget->setEnabled(checked);
-            // Mettre à jour le style
-            if (checked)
-                widget->setStyleSheet("background-color: #ffffff; color: #000000;");
-            else
-                widget->setStyleSheet("background-color: #f0f0f0; color: #888888;");
-        }
-    };
-    
-    // Connecter le signal toggled au callback
-    connect(checkbox, &QCheckBox::toggled, this, updateFunc);
-    
-    // Appliquer l'état initial
-    updateFunc();
 }
 
 void GeneralParamsPanel::initializeBindings() {
@@ -214,94 +168,6 @@ void GeneralParamsPanel::setupUI()
     static_cast<QDoubleSpinBox*>(m_widgets["leverage_limit"])->setValue(20);
     paramsLayout->addRow(new QLabel("Levier maximal autorisé :", this), m_widgets["leverage_limit"]);
 }
-
-// QMap<QString, QVariant> GeneralParamsPanel::getValues()
-// {
-//     QMap<QString, QVariant> values;
-    
-//     for (auto it = m_widgets.begin(); it != m_widgets.end(); ++it) {
-//         QWidget* widget = it.value();
-//         QString key = it.key();
-        
-//         if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
-//             values[key] = combo->currentText();
-//         }
-//         else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
-//             values[key] = spinBox->value();
-//         }
-//         else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
-//             // Retourner la date sous le bon format
-//             QDate date = dateEdit->date();
-//             QString dateString = date.toString("dd/MM/yyyy");
-//             values[key] = dateString;
-//         }
-//         else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-//             values[key] = lineEdit->text();
-//         }
-//     }
-    
-//     // S'assurer que end_date est correctement extraite
-//     if (m_widgets.contains("end_date")) {
-//         QDateEdit* dateEdit = static_cast<QDateEdit*>(m_widgets["end_date"]);
-//         if (dateEdit) {
-//             QDate date = dateEdit->date();
-//             values["end_date"] = date;
-//         }
-//     }
-    
-//     return values;
-// }
-
-// void GeneralParamsPanel::setValues(const QMap<QString, QVariant>& values)
-// {
-//     for (auto it = values.begin(); it != values.end(); ++it) {
-//         QString key = it.key();
-//         QVariant value = it.value();
-        
-//         if (m_widgets.contains(key)) {
-//             QWidget* widget = m_widgets[key];
-            
-//             if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
-//                 QString text = value.toString();
-//                 int index = combo->findText(text);
-//                 if (index >= 0) {
-//                     combo->setCurrentIndex(index);
-//                 }
-//             }
-//             else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
-//                 spinBox->setValue(value.toDouble());
-//             }
-//             else if (QDateEdit* dateEdit = qobject_cast<QDateEdit*>(widget)) {
-//                 // Parser correctement la date
-//                 if (value.typeId() == QMetaType::QString) {
-//                     QString dateStr = value.toString();
-//                     QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
-                    
-//                     QDate date;
-//                     for (const QString& format : dateFormats) {
-//                         date = QDate::fromString(dateStr, format);
-//                         if (date.isValid()) {
-//                             break;
-//                         }
-//                     }
-                    
-//                     if (date.isValid()) {
-//                         dateEdit->setDate(date);
-//                         qDebug() << "Date définie dans le widget:" << key << "=" << date.toString("dd/MM/yyyy");
-//                     } else {
-//                         qWarning() << "Impossible de parser la date:" << dateStr;
-//                     }
-//                 }
-//                 else if (value.typeId() == QMetaType::QDate) {
-//                     dateEdit->setDate(value.toDate());
-//                 }
-//             }
-//             else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-//                 lineEdit->setText(value.toString());
-//             }
-//         }
-//     }
-// }
 
 void GeneralParamsPanel::onStrategyComboChanged(const QString& strategy) {
     emit strategyChanged(strategy);

@@ -2,69 +2,15 @@
 #include <QDebug>
 
 StrategyBasePanel::StrategyBasePanel(QWidget* parent)
-    : BasePanel("Paramètres de base", parent)
+    : ConfigPanel("Paramètres de base", parent)
 {
     setupUI();
     initializeBindings();
 }
 
-StrategyBaseConfig StrategyBasePanel::getConfig() {
-   updateConfigFromWidgets();
-   return m_config;
-}
-
-void StrategyBasePanel::setConfig(const StrategyBaseConfig& config) {
-   m_config = config;
-   updateWidgetsFromConfig();
-}
-
-void StrategyBasePanel::addBinding(std::unique_ptr<PropertyBinder> binding) {
-    m_bindings.push_back(std::move(binding));
-}
-
 // Met à jour tous les widgets en fonction de la configuration actuelle
 void StrategyBasePanel::updateWidgetsFromConfig() {
-    for (auto& binding : m_bindings) {
-        binding->updateWidgetFromProperty();
-    }
-
-    // Stop Loss method
-    if (m_widgets.contains("sl_method")) {
-        QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
-        if (m_config.use_atr_for_sl)
-            slMethod->setCurrentIndex(1);       // ATR
-        else if (m_config.use_minmax_for_sl)
-            slMethod->setCurrentIndex(2);       // Min/Max
-        else
-            slMethod->setCurrentIndex(0);       // Fixe
-    }
-    
-    // Take Profit method
-    if (m_widgets.contains("tp_method")) {
-        QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
-        if (m_config.use_atr_for_tp)
-            tpMethod->setCurrentIndex(1);       // ATR
-        else if (m_config.use_sl_ratio_for_tp)
-            tpMethod->setCurrentIndex(2);       // Ratio SL
-        else if (m_config.use_supertrend_for_tp)
-            tpMethod->setCurrentIndex(3);       // SuperTrend
-        else if (m_config.use_rl_for_tp)
-            tpMethod->setCurrentIndex(4);       // RL
-        else if (m_config.use_nth_heikin_ashi_tp)
-            tpMethod->setCurrentIndex(5);       // Nth Heikin-Ashi
-        else
-            tpMethod->setCurrentIndex(0);       // Fixe
-    }
-    
-    // Trading days
-    for (int i = 0; i < 7; ++i) {
-        QString key = QString("trading_day_%1").arg(i);
-        if (m_widgets.contains(key)) {
-            QCheckBox* checkBox = static_cast<QCheckBox*>(m_widgets[key]);
-            bool checked = std::find(m_config.trading_days.begin(), m_config.trading_days.end(), i) != m_config.trading_days.end();
-            checkBox->setChecked(checked);
-        }
-    }
+    ConfigPanel<StrategyBaseConfig>::updateWidgetsFromConfig();
 
     // Mettre à jour l'état des widgets en fonction des méthodes sélectionnées
     if (m_widgets.contains("sl_method"))
@@ -74,68 +20,6 @@ void StrategyBasePanel::updateWidgetsFromConfig() {
         _toggleTpMethod(static_cast<QComboBox*>(m_widgets["tp_method"])->currentIndex());
         
     _updateAtrPeriodStatus();
-}
-
-// Met à jour la configuration en fonction des widgets
-void StrategyBasePanel::updateConfigFromWidgets() {
-    for (auto& binding : m_bindings) {
-        binding->updatePropertyFromWidget();
-    }
-
-    // Plus besoin de code spécifique pour sl_method et tp_method si on utilise les enum class dans les config
-    // Stop Loss method
-    if (m_widgets.contains("sl_method")) {
-        QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
-        int methodIndex = slMethod->currentIndex();
-        
-        m_config.use_atr_for_sl = (methodIndex == 1);      // ATR
-        m_config.use_minmax_for_sl = (methodIndex == 2);   // Min/Max
-    }
-    
-    // Take Profit method
-    if (m_widgets.contains("tp_method")) {
-        QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
-        int methodIndex = tpMethod->currentIndex();
-        
-        m_config.use_atr_for_tp = (methodIndex == 1);           // ATR
-        m_config.use_sl_ratio_for_tp = (methodIndex == 2);      // Ratio SL
-        m_config.use_supertrend_for_tp = (methodIndex == 3);    // SuperTrend
-        m_config.use_rl_for_tp = (methodIndex == 4);            // RL
-        m_config.use_nth_heikin_ashi_tp = (methodIndex == 5);   // Nth Heikin-Ashi
-    }
-    
-    // il faudra faire un binding pour toi aussi entre int[] et les widgets
-    // Trading days
-    m_config.trading_days.clear();
-    for (int i = 0; i < 7; ++i) {
-        QString key = QString("trading_day_%1").arg(i);
-        if (m_widgets.contains(key)) {
-            QCheckBox* checkBox = static_cast<QCheckBox*>(m_widgets[key]);
-            if (checkBox->isChecked()) {
-                m_config.trading_days.push_back(i);
-            }
-        }
-    }
-}
-
-void StrategyBasePanel::createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets) {
-    auto updateFunc = [checkbox, dependentWidgets]() {
-        bool checked = checkbox->isChecked();
-        for (QWidget* widget : dependentWidgets) {
-            widget->setEnabled(checked);
-            // Mettre à jour le style
-            if (checked)
-                widget->setStyleSheet("background-color: #ffffff; color: #000000;");
-            else
-                widget->setStyleSheet("background-color: #f0f0f0; color: #888888;");
-        }
-    };
-    
-    // Connecter le signal toggled au callback
-    connect(checkbox, &QCheckBox::toggled, this, updateFunc);
-    
-    // Appliquer l'état initial
-    updateFunc();
 }
 
 void StrategyBasePanel::initializeBindings() {
@@ -334,6 +218,17 @@ void StrategyBasePanel::initializeBindings() {
         static_cast<QCheckBox*>(m_widgets["use_daily_max_drawdown"]),
         {m_widgets["daily_max_drawdown_percentage"]}
     );
+
+    // Trading days - Binding individuel pour chaque élément du tableau
+    for (int i = 0; i < 7; ++i) {
+        QString key = QString("trading_day_%1").arg(i);
+        if (m_widgets.contains(key)) {
+            auto tradingDayBinder = PropertyBinderFactory::createBoolBinding(
+                static_cast<QCheckBox*>(m_widgets[key]), 
+                &m_config.trading_days_array[i]);
+            addBinding(std::move(tradingDayBinder));
+        }
+    }
 }
 
 void StrategyBasePanel::setupUI()
@@ -635,132 +530,6 @@ void StrategyBasePanel::setupUI()
     // Initialiser l'état des widgets
     _updateAtrPeriodStatus();
 }
-
-// QMap<QString, QVariant> StrategyBasePanel::getValues()
-// {
-//     QMap<QString, QVariant> values;
-    
-//     for (auto it = m_widgets.begin(); it != m_widgets.end(); ++it) {
-//         QWidget* widget = it.value();
-//         QString key = it.key();
-        
-//         if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
-//             values[key] = combo->currentIndex();
-//         }
-//         else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
-//             values[key] = spinBox->value();
-//         }
-//         else if (QSpinBox* spinBox = qobject_cast<QSpinBox*>(widget)) {
-//             values[key] = spinBox->value();
-//         }
-//         else if (QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget)) {
-//             values[key] = checkBox->isChecked();
-//         }
-//         else if (QTimeEdit* timeEdit = qobject_cast<QTimeEdit*>(widget)) {
-//             values[key] = timeEdit->time().toString("hh:mm:ss");
-//         }
-//         else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-//             values[key] = lineEdit->text();
-//         }
-//     }
-    
-//     // Ajouter les paramètres use_atr_for_sl et use_atr_for_tp basés sur les méthodes sélectionnées
-//     if (m_widgets.contains("sl_method")) {
-//         QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
-//         values["use_atr_for_sl"] = (slMethod->currentIndex() == 1); // Index 1 = ATR
-//         values["use_minmax_for_sl"] = (slMethod->currentIndex() == 2); // Index 2 = Min/Max
-//     }
-    
-//     if (m_widgets.contains("tp_method")) {
-//         QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
-//         values["use_atr_for_tp"] = (tpMethod->currentIndex() == 1); // Index 1 = ATR
-//         values["use_sl_ratio_for_tp"] = (tpMethod->currentIndex() == 2); // Index 2 = Ratio SL
-//         values["use_supertrend_for_tp"] = (tpMethod->currentIndex() == 3); // Index 3 = SuperTrend
-//         values["use_rl_for_tp"] = (tpMethod->currentIndex() == 4); // Index 4 = RL
-//         values["use_nth_heikin_ashi_tp"] = (tpMethod->currentIndex() == 5); // Index 5 = Nth Heikin-Ashi
-//     }
-    
-//     // Ajouter la liste des jours de trading
-//     QVariantList tradingDays;
-//     for (int i = 0; i < 7; ++i) {
-//         QString key = QString("trading_day_%1").arg(i);
-//         if (m_widgets.contains(key)) {
-//             QCheckBox* checkBox = static_cast<QCheckBox*>(m_widgets[key]);
-//             if (checkBox->isChecked()) {
-//                 tradingDays.append(i);
-//             }
-//         }
-//     }
-//     values["trading_days"] = tradingDays;
-    
-//     return values;
-// }
-
-// void StrategyBasePanel::setValues(const QMap<QString, QVariant>& values)
-// {
-//     for (auto it = values.begin(); it != values.end(); ++it) {
-//         QString key = it.key();
-//         QVariant value = it.value();
-        
-//         // Ignorer les paramètres calculés use_atr_for_sl et use_atr_for_tp
-//         if (key == "use_atr_for_sl" || key == "use_atr_for_tp" || key == "use_minmax_for_sl" || key == "use_sl_ratio_for_tp" || key == "use_supertrend_for_tp" || key == "use_rl_for_tp" || key == "use_nth_heikin_ashi_tp") {
-//             continue;
-//         }
-        
-//         if (m_widgets.contains(key)) {
-//             QWidget* widget = m_widgets[key];
-            
-//             if (QComboBox* combo = qobject_cast<QComboBox*>(widget)) {
-//                 combo->setCurrentIndex(value.toInt());
-//             }
-//             else if (QDoubleSpinBox* spinBox = qobject_cast<QDoubleSpinBox*>(widget)) {
-//                 spinBox->setValue(value.toDouble());
-//             }
-//             else if (QSpinBox* spinBox = qobject_cast<QSpinBox*>(widget)) {
-//                 spinBox->setValue(value.toInt());
-//             }
-//             else if (QCheckBox* checkBox = qobject_cast<QCheckBox*>(widget)) {
-//                 checkBox->setChecked(value.toBool());
-//             }
-//             else if (QTimeEdit* timeEdit = qobject_cast<QTimeEdit*>(widget)) {
-//                 QTime time = QTime::fromString(value.toString(), "hh:mm:ss");
-//                 if (time.isValid()) {
-//                     timeEdit->setTime(time);
-//                 }
-//             }
-//             else if (QLineEdit* lineEdit = qobject_cast<QLineEdit*>(widget)) {
-//                 lineEdit->setText(value.toString());
-//             }
-//         }
-//     }
-    
-//     // Traiter les jours de trading
-//     if (values.contains("trading_days")) {
-//         QVariantList tradingDays = values["trading_days"].toList();
-        
-//         // Réinitialiser tous les jours
-//         for (int i = 0; i < 7; ++i) {
-//             QString key = QString("trading_day_%1").arg(i);
-//             if (m_widgets.contains(key)) {
-//                 static_cast<QCheckBox*>(m_widgets[key])->setChecked(false);
-//             }
-//         }
-        
-//         // Activer les jours spécifiés
-//         for (const QVariant& day : tradingDays) {
-//             int dayIndex = day.toInt();
-//             if (dayIndex >= 0 && dayIndex < 7) {
-//                 QString key = QString("trading_day_%1").arg(dayIndex);
-//                 if (m_widgets.contains(key)) {
-//                     static_cast<QCheckBox*>(m_widgets[key])->setChecked(true);
-//                 }
-//             }
-//         }
-//     }
-    
-//     // Mettre à jour l'état ATR après avoir défini toutes les valeurs
-//     _updateAtrPeriodStatus();
-// }
 
 // Implémentation des slots
 void StrategyBasePanel::_toggleSlMethod(int index)

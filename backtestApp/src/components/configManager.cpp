@@ -826,8 +826,8 @@ QMap<QString, QVariant> ConfigManager::convertConfigToQMap(const StrategyBaseCon
     
     // Trading days
     QVariantList tradingDays;
-    for (int day : config.trading_days) {
-        tradingDays.append(day);
+    for (int i = 0; i < 7; ++i) {
+        tradingDays.append(config.trading_days_array[i]);
     }
     map["trading_days"] = tradingDays;
     
@@ -936,44 +936,13 @@ StrategyBaseConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVaria
         config.logLevel = static_cast<LogLevel>(map["logLevel"].toInt());
     
     // Méthodes SL/TP
-    if (map.contains("sl_method") && false) {
+    if (map.contains("sl_method")) {
         config.sl_method = static_cast<StopLossMethod>(map["sl_method"].toInt());
-    } else {
-        // Compatibilité avec l'ancien format
-        if (map.contains("use_atr_for_sl") && map["use_atr_for_sl"].toBool())
-            config.sl_method = StopLossMethod::ATR;
-        else if (map.contains("use_minmax_for_sl") && map["use_minmax_for_sl"].toBool())
-            config.sl_method = StopLossMethod::MinMax;
-        else
-            config.sl_method = StopLossMethod::Fixed;
     }
     
-    if (map.contains("tp_method") && false) {
+    if (map.contains("tp_method")) {
         config.tp_method = static_cast<TakeProfitMethod>(map["tp_method"].toInt());
-    } else {
-        // Compatibilité avec l'ancien format
-        if (map.contains("use_atr_for_tp") && map["use_atr_for_tp"].toBool())
-            config.tp_method = TakeProfitMethod::ATR;
-        else if (map.contains("use_sl_ratio_for_tp") && map["use_sl_ratio_for_tp"].toBool())
-            config.tp_method = TakeProfitMethod::SLRatio;
-        else if (map.contains("use_supertrend_for_tp") && map["use_supertrend_for_tp"].toBool())
-            config.tp_method = TakeProfitMethod::SuperTrend;
-        else if (map.contains("use_rl_for_tp") && map["use_rl_for_tp"].toBool())
-            config.tp_method = TakeProfitMethod::RL;
-        else if (map.contains("use_nth_heikin_ashi_tp") && map["use_nth_heikin_ashi_tp"].toBool())
-            config.tp_method = TakeProfitMethod::NthHeikinAshi;
-        else
-            config.tp_method = TakeProfitMethod::Fixed;
     }
-    
-    // Pour la compatibilité avec le code qui utilise encore ces flags
-    config.use_atr_for_sl = (config.sl_method == StopLossMethod::ATR);
-    config.use_minmax_for_sl = (config.sl_method == StopLossMethod::MinMax);
-    config.use_atr_for_tp = (config.tp_method == TakeProfitMethod::ATR);
-    config.use_sl_ratio_for_tp = (config.tp_method == TakeProfitMethod::SLRatio);
-    config.use_supertrend_for_tp = (config.tp_method == TakeProfitMethod::SuperTrend);
-    config.use_rl_for_tp = (config.tp_method == TakeProfitMethod::RL);
-    config.use_nth_heikin_ashi_tp = (config.tp_method == TakeProfitMethod::NthHeikinAshi);
     
     // Paramètres de temps
     if (map.contains("trading_from")) {
@@ -1113,14 +1082,14 @@ StrategyBaseConfig ConfigManager::convertQMapToConfig(const QMap<QString, QVaria
     // Trading days
     if (map.contains("trading_days")) {
         QVariantList days = map["trading_days"].toList();
-        config.trading_days.clear();
-        for (const QVariant& day : days) {
-            config.trading_days.push_back(day.toInt());
+        // Initialiser tous les jours à false par défaut
+        for (int i = 0; i < 7; ++i) {
+            config.trading_days_array[i] = false;
         }
         
-        // Également mettre à jour le tableau deprecated pour compatibilité
-        for (int i = 0; i < 7 && i < config.trading_days.size(); ++i) {
-            config.trading_days_array[i] = config.trading_days[i];
+        // Remplir le tableau avec les valeurs lues
+        for (int i = 0; i < days.size() && i < 7; ++i) {
+            config.trading_days_array[i] = days[i].toBool();
         }
     }
     

@@ -12,7 +12,7 @@
 #include <QMap>
 #include <QString>
 #include <QVariant>
-#include "ui/panels/basePanel.h"
+#include "ui/panels/ConfigPanel.h"
 #include <sstream>
 #include <string>
 
@@ -59,7 +59,7 @@ inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& con
  * Ce panel contient les paramètres généraux comme le symbole,
  * la période, l'intervalle, le spread, etc.
  */
-class GeneralParamsPanel : public BasePanel
+class GeneralParamsPanel : public ConfigPanel<GeneralParamsConfig>
 {
     Q_OBJECT
 
@@ -70,9 +70,6 @@ public:
      */
     GeneralParamsPanel(QWidget* parent = nullptr);
 
-    GeneralParamsConfig getConfig();
-    void setConfig(const GeneralParamsConfig& config);
-
 signals:
     void strategyChanged(const QString& strategy);
 private slots:
@@ -80,8 +77,7 @@ private slots:
 
 
 private:
-    GeneralParamsConfig m_config;
-    std::vector<std::unique_ptr<PropertyBinder>> m_bindings;
+    QMap<QString, QWidget*> m_widgets;
 
     // Dictionnaire associant les noms de stratégies à leurs classes
     QMap<QString, QString> m_strategyMap;
@@ -89,13 +85,8 @@ private:
     // Initialisation du dictionnaire des stratégies
     void initStrategyMap();
 
-
     void setupUI();
     
     void initializeBindings();
-    void updateConfigFromWidgets();
-    void updateWidgetsFromConfig();
-    void addBinding(std::unique_ptr<PropertyBinder> binding);
-    void createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets);
 };
 

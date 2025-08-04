@@ -97,10 +97,6 @@ public:
 private:
     App* m_mainWindow;
     
-    // Helper methods for C++ backtesting
-    std::shared_ptr<be::Strategy> createStrategy(std::shared_ptr<be::Broker> broker, 
-                                               std::shared_ptr<be::Data> data,
-                                               const QMap<QString, QVariant>& params);
     // Convert OHLCBar data to be::Data format
     std::shared_ptr<be::Data> convertToBeData(const std::vector<OHLCBar>& bars);
 

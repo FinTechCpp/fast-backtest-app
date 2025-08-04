@@ -4,7 +4,6 @@
 #include "ui/app.h"
 #include "ui/panels/generalParamsPanel.h"
 #include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
-#include "ui/panels/basePanel.h"
 #include "Strategies/buy_heikin_green.hpp"
 #include "components/adapters/buyHeikinGreen.hpp"
 #include <QDebug>
@@ -380,47 +379,3 @@ std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLC
     return data;
 }
 
-std::shared_ptr<be::Strategy> BacktestWorker::createStrategy(
-    std::shared_ptr<be::Broker> broker, 
-    std::shared_ptr<be::Data> data,
-    const QMap<QString, QVariant>& params)
-{
-    // Récupérer le nom de la stratégie
-    QString strategyName = params.value("strategy", "BuyHeikinGreen").toString();
-    
-    // Création de la configuration de base
-    StrategyBaseConfig baseConfig;
-    
-    // Remplir la configuration de base depuis params
-    baseConfig.cash = params.value("cash", 10000.0).toDouble();
-    baseConfig.use_atr_for_sl = params.value("use_atr_for_sl", true).toBool();
-    baseConfig.use_atr_for_tp = params.value("use_atr_for_tp", true).toBool();
-    baseConfig.atr_period = params.value("atr_period", 14).toInt();
-    baseConfig.stop_loss_atr_multiplier = params.value("sl_atr_multiple", 2.0).toDouble();
-    baseConfig.take_profit_atr_multiplier = params.value("tp_atr_multiple", 3.0).toDouble();
-    baseConfig.risk_percentage = params.value("risk_per_trade_pct", 1.0).toDouble();
-    baseConfig.enable_logging = params.value("enable_logging", true).toBool();
-    
-    // Si c'est BuyHeikinGreen, créer un adaptateur spécifique
-    // if (strategyName.contains("BuyHeikinGreen", Qt::CaseInsensitive)) {
-    // Créer la configuration spécifique
-    BuyHeikinGreenConfig bhgConfig;
-    
-    // Remplir la configuration BHG depuis params
-    bhgConfig.use_previous_ha_candle_red_filter = params.value("use_previous_ha_candle_red_filter", true).toBool();
-    bhgConfig.use_ema_short_filter = params.value("use_ema_short_filter", false).toBool();
-    bhgConfig.use_ema_long_filter = params.value("use_ema_long_filter", false).toBool();
-    bhgConfig.use_stoch_filter = params.value("use_stoch_filter", false).toBool();
-    bhgConfig.use_rsi_filter = params.value("use_rsi_filter", false).toBool();
-    bhgConfig.ema_short_period = params.value("ema_short_period", 150).toInt();
-    bhgConfig.ema_long_period = params.value("ema_long_period", 198).toInt();
-    bhgConfig.stoch_fastk = params.value("stoch_fastk", 10).toInt();
-    bhgConfig.stoch_slowk = params.value("stoch_slowk", 7).toInt();
-    bhgConfig.stoch_slowd = params.value("stoch_slowd", 3).toInt();
-    bhgConfig.stoch_threshold = params.value("stoch_threshold", 20).toInt();
-    bhgConfig.rsi_period = params.value("rsi_period", 14).toInt();
-    bhgConfig.rsi_threshold = params.value("rsi_threshold", 30).toInt();
-    
-    // Créer et retourner l'adaptateur
-    return std::make_shared<BuyHeikinGreenAdapter>(broker, data, baseConfig, bhgConfig);
-}

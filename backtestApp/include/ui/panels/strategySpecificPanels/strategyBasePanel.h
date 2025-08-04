@@ -15,9 +15,8 @@
 #include <QMap>
 #include <QString>
 #include <QVariant>
-#include "ui/panels/basePanel.h"
+#include "ui/panels/ConfigPanel.h"
 #include "common.h"
-// #include "ui/panels/PropertyBinderFactory.h"
 
 /**
  * @brief Panel pour les paramètres communs à toutes les stratégies
@@ -25,7 +24,7 @@
  * Ce panel contient les paramètres communs comme le stop loss, le take profit,
  * les heures de trading, la gestion du risque, etc.
  */
-class StrategyBasePanel : public BasePanel
+class StrategyBasePanel : public ConfigPanel<StrategyBaseConfig>
 {
     Q_OBJECT
 
@@ -36,10 +35,6 @@ public:
      */
     StrategyBasePanel(QWidget* parent = nullptr);
 
-    StrategyBaseConfig getConfig();
-    void setConfig(const StrategyBaseConfig& config);
-
-
 private slots:
     // Méthodes pour gérer l'interface utilisateur en fonction des checkboxes
     void _toggleSlMethod(int index);
@@ -47,15 +42,11 @@ private slots:
     void _updateAtrPeriodStatus();
 
 private:
-    StrategyBaseConfig m_config;
-    std::vector<std::unique_ptr<PropertyBinder>> m_bindings;
+    QMap<QString, QWidget*> m_widgets;
 
     void setupUI();
     
     void initializeBindings();
-    void updateConfigFromWidgets();
-    void updateWidgetsFromConfig();
-    void addBinding(std::unique_ptr<PropertyBinder> binding);
-    void createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets);
+    void updateWidgetsFromConfig() override;
 };
 

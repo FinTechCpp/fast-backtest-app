@@ -333,7 +333,7 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
     // bool use_atr_for_sl = params.value("use_atr_for_sl", false).toBool();
     // bool use_atr_for_tp = params.value("use_atr_for_tp", false).toBool();
 
-    if (baseConfig.use_atr_for_sl || baseConfig.use_atr_for_tp) {
+    if (baseConfig.sl_method == StopLossMethod::ATR || baseConfig.tp_method == TakeProfitMethod::ATR) {
         StrategyIndicator atr;
         atr.type = StrategyIndicator::ATR;
         atr.params["period"] = baseConfig.atr_period;

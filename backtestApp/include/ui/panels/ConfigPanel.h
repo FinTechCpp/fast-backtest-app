@@ -38,7 +38,7 @@ protected:
     }
     
     // Met à jour tous les widgets en fonction de la configuration actuelle
-    void updateWidgetsFromConfig() {
+    virtual void updateWidgetsFromConfig() {
         for (auto& binding : m_bindings) {
             binding->updateWidgetFromProperty();
         }

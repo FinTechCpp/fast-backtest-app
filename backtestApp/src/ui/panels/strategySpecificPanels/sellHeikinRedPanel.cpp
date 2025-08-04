@@ -5,153 +5,6 @@ SellHeikinRedPanel::SellHeikinRedPanel(QWidget* parent)
     : ConfigPanel<SellHeikinRedConfig>("Paramètres SellHeikinRed", parent)
 {
     setupUI();
-    initializeBindings();
-}
-
-void SellHeikinRedPanel::initializeBindings() {
-    // EMA Court
-    auto emaShortFilterBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"]), 
-        &m_config.use_ema_short_filter);
-    addBinding(std::move(emaShortFilterBinder));
-    
-    auto emaShortPeriodBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["ema_short_spin"]), 
-        &m_config.ema_short_period);
-    addBinding(std::move(emaShortPeriodBinder));
-    
-    // Création d'un groupe de dépendance pour le filtre EMA Court
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"]),
-        {m_widgets["ema_short_spin"]}
-    );
-    
-    // EMA Long
-    auto emaLongFilterBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"]), 
-        &m_config.use_ema_long_filter);
-    addBinding(std::move(emaLongFilterBinder));
-    
-    auto emaLongPeriodBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["ema_long_spin"]), 
-        &m_config.ema_long_period);
-    addBinding(std::move(emaLongPeriodBinder));
-    
-    // Création d'un groupe de dépendance pour le filtre EMA Long
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"]),
-        {m_widgets["ema_long_spin"]}
-    );
-    
-    // RSI
-    auto rsiFilterBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["rsi_filter_check"]), 
-        &m_config.use_rsi_filter);
-    addBinding(std::move(rsiFilterBinder));
-    
-    auto rsiPeriodBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["rsi_period_spin"]), 
-        &m_config.rsi_period);
-    addBinding(std::move(rsiPeriodBinder));
-    
-    auto rsiThresholdBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"]), 
-        &m_config.rsi_threshold);
-    addBinding(std::move(rsiThresholdBinder));
-    
-    auto rsiHistoryPeriodsBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"]), 
-        &m_config.rsi_history_periods);
-    addBinding(std::move(rsiHistoryPeriodsBinder));
-    
-    // Création d'un groupe de dépendance pour le filtre RSI
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["rsi_filter_check"]),
-        {m_widgets["rsi_period_spin"], 
-         m_widgets["rsi_threshold_spin"], 
-         m_widgets["rsi_history_periods_spin"]}
-    );
-    
-    // Stochastique
-    auto stochFilterBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["stoch_filter_check"]), 
-        &m_config.use_stoch_filter);
-    addBinding(std::move(stochFilterBinder));
-    
-    auto stochFastkBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["fastk_spin"]), 
-        &m_config.stoch_fastk);
-    addBinding(std::move(stochFastkBinder));
-    
-    auto stochSlowkBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["slowk_spin"]), 
-        &m_config.stoch_slowk);
-    addBinding(std::move(stochSlowkBinder));
-    
-    auto stochSlowdBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["slowd_spin"]), 
-        &m_config.stoch_slowd);
-    addBinding(std::move(stochSlowdBinder));
-    
-    auto stochThresholdBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"]), 
-        &m_config.stoch_threshold);
-    addBinding(std::move(stochThresholdBinder));
-    
-    auto stochHistoryPeriodsBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"]), 
-        &m_config.stoch_history_periods);
-    addBinding(std::move(stochHistoryPeriodsBinder));
-    
-    // Création d'un groupe de dépendance pour le filtre Stochastique
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["stoch_filter_check"]),
-        {m_widgets["fastk_spin"], 
-         m_widgets["slowk_spin"], 
-         m_widgets["slowd_spin"], 
-         m_widgets["stoch_threshold_spin"],
-         m_widgets["stoch_history_periods_spin"]}
-    );
-    
-    // SuperTrend
-    auto supertrendFilterBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"]), 
-        &m_config.use_supertrend_filter);
-    addBinding(std::move(supertrendFilterBinder));
-    
-    auto supertrendPeriodBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"]), 
-        &m_config.supertrend_atr_period);
-    addBinding(std::move(supertrendPeriodBinder));
-    
-    auto supertrendMultiplierBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"]), 
-        &m_config.supertrend_multiplier);
-    addBinding(std::move(supertrendMultiplierBinder));
-    
-    // Création d'un groupe de dépendance pour le filtre SuperTrend
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"]),
-        {m_widgets["supertrend_period_spin"], 
-         m_widgets["supertrend_multiplier_spin"]}
-    );
-    
-    // Filtre bougie précédente verte
-    auto previousHaCandleGreenFilterBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["previous_ha_candle_green_filter_check"]), 
-        &m_config.use_previous_ha_candle_green_filter);
-    addBinding(std::move(previousHaCandleGreenFilterBinder));
-    
-    auto previousHaCandleGreenFilterNBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["previous_ha_candle_green_filter_spin"]), 
-        &m_config.previous_ha_candle_green_filter_n);
-    addBinding(std::move(previousHaCandleGreenFilterNBinder));
-    
-    // Création d'un groupe de dépendance pour le filtre bougies précédentes vertes
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["previous_ha_candle_green_filter_check"]),
-        {m_widgets["previous_ha_candle_green_filter_spin"]}
-    );
 }
 
 void SellHeikinRedPanel::setupUI()
@@ -164,19 +17,32 @@ void SellHeikinRedPanel::setupUI()
     QGridLayout* emaShortLayout = new QGridLayout();
     emaShortLayout->setContentsMargins(5, 0, 5, 5);
     
-    m_widgets["ema_short_filter_check"] = new QCheckBox("Activer filtre EMA Court", this);
-    static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->setChecked(true);
-    // connect(static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"]), &QCheckBox::toggled,
-    //         this, &SellHeikinRedPanel::onEmaShortFilterToggled);
-    emaShortLayout->addWidget(m_widgets["ema_short_filter_check"], 0, 0, 1, 2);
+    QCheckBox* emaShortFilterCheck = new QCheckBox("Activer filtre EMA Court", this);
+    emaShortFilterCheck->setChecked(true);
+    emaShortLayout->addWidget(emaShortFilterCheck, 0, 0, 1, 2);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        emaShortFilterCheck, 
+        &m_config.use_ema_short_filter)
+    );
     
     emaShortLayout->addWidget(new QLabel("Période:", this), 1, 0);
-    m_widgets["ema_short_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->setRange(1, 500);
-    static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->setValue(20);
-    emaShortLayout->addWidget(m_widgets["ema_short_spin"], 1, 1);
-    emaShortLayout->setColumnStretch(2, 1);
+    QSpinBox* emaShortSpin = new QSpinBox(this);
+    emaShortSpin->setRange(1, 500);
+    emaShortSpin->setValue(20);
+    emaShortLayout->addWidget(emaShortSpin, 1, 1);
     
+    addBinding(PropertyBinderFactory::createIntBinding(
+        emaShortSpin, 
+        &m_config.ema_short_period)
+    );
+    
+    createDependencyGroup(
+        emaShortFilterCheck,
+        {emaShortSpin}
+    );
+    
+    emaShortLayout->setColumnStretch(2, 1);
     strategyLayout->addLayout(emaShortLayout);
     
     // Ligne de séparation
@@ -189,19 +55,32 @@ void SellHeikinRedPanel::setupUI()
     QGridLayout* emaLongLayout = new QGridLayout();
     emaLongLayout->setContentsMargins(5, 5, 5, 5);
     
-    m_widgets["ema_long_filter_check"] = new QCheckBox("Activer filtre EMA Long", this);
-    static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->setChecked(true);
-    // connect(static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"]), &QCheckBox::toggled,
-    //         this, &SellHeikinRedPanel::onEmaLongFilterToggled);
-    emaLongLayout->addWidget(m_widgets["ema_long_filter_check"], 0, 0, 1, 2);
+    QCheckBox* emaLongFilterCheck = new QCheckBox("Activer filtre EMA Long", this);
+    emaLongFilterCheck->setChecked(true);
+    emaLongLayout->addWidget(emaLongFilterCheck, 0, 0, 1, 2);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        emaLongFilterCheck, 
+        &m_config.use_ema_long_filter)
+    );
     
     emaLongLayout->addWidget(new QLabel("Période:", this), 1, 0);
-    m_widgets["ema_long_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->setRange(1, 500);
-    static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->setValue(200);
-    emaLongLayout->addWidget(m_widgets["ema_long_spin"], 1, 1);
-    emaLongLayout->setColumnStretch(2, 1);
+    QSpinBox* emaLongSpin = new QSpinBox(this);
+    emaLongSpin->setRange(1, 500);
+    emaLongSpin->setValue(200);
+    emaLongLayout->addWidget(emaLongSpin, 1, 1);
     
+    addBinding(PropertyBinderFactory::createIntBinding(
+        emaLongSpin, 
+        &m_config.ema_long_period)
+    );
+    
+    createDependencyGroup(
+        emaLongFilterCheck,
+        {emaLongSpin}
+    );
+    
+    emaLongLayout->setColumnStretch(2, 1);
     strategyLayout->addLayout(emaLongLayout);
     
     // Ligne de séparation
@@ -214,30 +93,53 @@ void SellHeikinRedPanel::setupUI()
     QGridLayout* rsiLayout = new QGridLayout();
     rsiLayout->setContentsMargins(5, 5, 5, 5);
     
-    m_widgets["rsi_filter_check"] = new QCheckBox("Activer filtre RSI", this);
-    static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->setChecked(true);
-    // connect(static_cast<QCheckBox*>(m_widgets["rsi_filter_check"]), &QCheckBox::toggled,
-    //         this, &SellHeikinRedPanel::onRsiFilterToggled);
-    rsiLayout->addWidget(m_widgets["rsi_filter_check"], 0, 0, 1, 2);
+    QCheckBox* rsiFilterCheck = new QCheckBox("Activer filtre RSI", this);
+    rsiFilterCheck->setChecked(true);
+    rsiLayout->addWidget(rsiFilterCheck, 0, 0, 1, 2);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        rsiFilterCheck, 
+        &m_config.use_rsi_filter)
+    );
     
     rsiLayout->addWidget(new QLabel("Période:", this), 1, 0);
-    m_widgets["rsi_period_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->setRange(2, 100);
-    static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->setValue(14);
-    rsiLayout->addWidget(m_widgets["rsi_period_spin"], 1, 1);
+    QSpinBox* rsiPeriodSpin = new QSpinBox(this);
+    rsiPeriodSpin->setRange(2, 100);
+    rsiPeriodSpin->setValue(14);
+    rsiLayout->addWidget(rsiPeriodSpin, 1, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        rsiPeriodSpin, 
+        &m_config.rsi_period)
+    );
     
     rsiLayout->addWidget(new QLabel("Seuil:", this), 2, 0);
-    m_widgets["rsi_threshold_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setRange(1, 99);
-    static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setValue(70);
-    rsiLayout->addWidget(m_widgets["rsi_threshold_spin"], 2, 1);
-
+    QSpinBox* rsiThresholdSpin = new QSpinBox(this);
+    rsiThresholdSpin->setRange(1, 99);
+    rsiThresholdSpin->setValue(70);
+    rsiLayout->addWidget(rsiThresholdSpin, 2, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        rsiThresholdSpin, 
+        &m_config.rsi_threshold)
+    );
+    
     rsiLayout->addWidget(new QLabel("Périodes d'historique:", this), 3, 0);
-    m_widgets["rsi_history_periods_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->setRange(1, 20);
-    static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->setValue(3);
-    rsiLayout->addWidget(m_widgets["rsi_history_periods_spin"], 3, 1);
-
+    QSpinBox* rsiHistoryPeriodsSpin = new QSpinBox(this);
+    rsiHistoryPeriodsSpin->setRange(1, 20);
+    rsiHistoryPeriodsSpin->setValue(3);
+    rsiLayout->addWidget(rsiHistoryPeriodsSpin, 3, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        rsiHistoryPeriodsSpin, 
+        &m_config.rsi_history_periods)
+    );
+    
+    createDependencyGroup(
+        rsiFilterCheck,
+        {rsiPeriodSpin, rsiThresholdSpin, rsiHistoryPeriodsSpin}
+    );
+    
     rsiLayout->setColumnStretch(2, 1);
     strategyLayout->addLayout(rsiLayout);
     
@@ -251,42 +153,75 @@ void SellHeikinRedPanel::setupUI()
     QGridLayout* stochLayout = new QGridLayout();
     stochLayout->setContentsMargins(5, 5, 5, 5);
     
-    m_widgets["stoch_filter_check"] = new QCheckBox("Activer filtre Stochastique", this);
-    static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->setChecked(true);
-    // connect(static_cast<QCheckBox*>(m_widgets["stoch_filter_check"]), &QCheckBox::toggled,
-    //         this, &SellHeikinRedPanel::onStochFilterToggled);
-    stochLayout->addWidget(m_widgets["stoch_filter_check"], 0, 0, 1, 2);
+    QCheckBox* stochFilterCheck = new QCheckBox("Activer filtre Stochastique", this);
+    stochFilterCheck->setChecked(true);
+    stochLayout->addWidget(stochFilterCheck, 0, 0, 1, 2);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        stochFilterCheck, 
+        &m_config.use_stoch_filter)
+    );
     
     stochLayout->addWidget(new QLabel("Fast %K:", this), 1, 0);
-    m_widgets["fastk_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["fastk_spin"])->setRange(1, 100);
-    static_cast<QSpinBox*>(m_widgets["fastk_spin"])->setValue(10);
-    stochLayout->addWidget(m_widgets["fastk_spin"], 1, 1);
+    QSpinBox* fastkSpin = new QSpinBox(this);
+    fastkSpin->setRange(1, 100);
+    fastkSpin->setValue(10);
+    stochLayout->addWidget(fastkSpin, 1, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        fastkSpin, 
+        &m_config.stoch_fastk)
+    );
     
     stochLayout->addWidget(new QLabel("Slow %K:", this), 2, 0);
-    m_widgets["slowk_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["slowk_spin"])->setRange(1, 100);
-    static_cast<QSpinBox*>(m_widgets["slowk_spin"])->setValue(7);
-    stochLayout->addWidget(m_widgets["slowk_spin"], 2, 1);
+    QSpinBox* slowkSpin = new QSpinBox(this);
+    slowkSpin->setRange(1, 100);
+    slowkSpin->setValue(7);
+    stochLayout->addWidget(slowkSpin, 2, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        slowkSpin, 
+        &m_config.stoch_slowk)
+    );
     
     stochLayout->addWidget(new QLabel("Slow %D:", this), 3, 0);
-    m_widgets["slowd_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["slowd_spin"])->setRange(1, 100);
-    static_cast<QSpinBox*>(m_widgets["slowd_spin"])->setValue(3);
-    stochLayout->addWidget(m_widgets["slowd_spin"], 3, 1);
+    QSpinBox* slowdSpin = new QSpinBox(this);
+    slowdSpin->setRange(1, 100);
+    slowdSpin->setValue(3);
+    stochLayout->addWidget(slowdSpin, 3, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        slowdSpin, 
+        &m_config.stoch_slowd)
+    );
     
     stochLayout->addWidget(new QLabel("Seuil:", this), 4, 0);
-    m_widgets["stoch_threshold_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setRange(1, 99);
-    static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setValue(80);
-    stochLayout->addWidget(m_widgets["stoch_threshold_spin"], 4, 1);
-
+    QSpinBox* stochThresholdSpin = new QSpinBox(this);
+    stochThresholdSpin->setRange(1, 99);
+    stochThresholdSpin->setValue(80);
+    stochLayout->addWidget(stochThresholdSpin, 4, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        stochThresholdSpin, 
+        &m_config.stoch_threshold)
+    );
+    
     stochLayout->addWidget(new QLabel("Périodes d'historique:", this), 5, 0);
-    m_widgets["stoch_history_periods_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->setRange(1, 20);
-    static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->setValue(4); // Valeur par défaut
-    stochLayout->addWidget(m_widgets["stoch_history_periods_spin"], 5, 1);
-
+    QSpinBox* stochHistoryPeriodsSpin = new QSpinBox(this);
+    stochHistoryPeriodsSpin->setRange(1, 20);
+    stochHistoryPeriodsSpin->setValue(4); // Valeur par défaut
+    stochLayout->addWidget(stochHistoryPeriodsSpin, 5, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        stochHistoryPeriodsSpin, 
+        &m_config.stoch_history_periods)
+    );
+    
+    createDependencyGroup(
+        stochFilterCheck,
+        {fastkSpin, slowkSpin, slowdSpin, stochThresholdSpin, stochHistoryPeriodsSpin}
+    );
+    
     stochLayout->setColumnStretch(2, 1);
     strategyLayout->addLayout(stochLayout);
     
@@ -300,25 +235,44 @@ void SellHeikinRedPanel::setupUI()
     QGridLayout* supertrendLayout = new QGridLayout();
     supertrendLayout->setContentsMargins(5, 5, 5, 5);
     
-    m_widgets["supertrend_filter_check"] = new QCheckBox("Activer filtre Supertrend", this);
-    // connect(static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"]), &QCheckBox::toggled, this, &SellHeikinRedPanel::onSupertrendFilterToggled);
-    supertrendLayout->addWidget(m_widgets["supertrend_filter_check"], 0, 0, 1, 2);
+    QCheckBox* supertrendFilterCheck = new QCheckBox("Activer filtre Supertrend", this);
+    supertrendLayout->addWidget(supertrendFilterCheck, 0, 0, 1, 2);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        supertrendFilterCheck, 
+        &m_config.use_supertrend_filter)
+    );
     
     supertrendLayout->addWidget(new QLabel("Période:", this), 1, 0);
-    m_widgets["supertrend_period_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->setRange(1, 100);
-    static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->setValue(10);
-    supertrendLayout->addWidget(m_widgets["supertrend_period_spin"], 1, 1);
+    QSpinBox* supertrendPeriodSpin = new QSpinBox(this);
+    supertrendPeriodSpin->setRange(1, 100);
+    supertrendPeriodSpin->setValue(10);
+    supertrendLayout->addWidget(supertrendPeriodSpin, 1, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        supertrendPeriodSpin, 
+        &m_config.supertrend_atr_period)
+    );
     
     supertrendLayout->addWidget(new QLabel("Multiplicateur:", this), 2, 0);
-    m_widgets["supertrend_multiplier_spin"] = new QDoubleSpinBox(this);
-    static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setRange(0.1, 10.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setValue(3.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setSingleStep(0.1);
-    static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setDecimals(1);
-    supertrendLayout->addWidget(m_widgets["supertrend_multiplier_spin"], 2, 1);
-    supertrendLayout->setColumnStretch(2, 1);
+    QDoubleSpinBox* supertrendMultiplierSpin = new QDoubleSpinBox(this);
+    supertrendMultiplierSpin->setRange(0.1, 10.0);
+    supertrendMultiplierSpin->setValue(3.0);
+    supertrendMultiplierSpin->setSingleStep(0.1);
+    supertrendMultiplierSpin->setDecimals(1);
+    supertrendLayout->addWidget(supertrendMultiplierSpin, 2, 1);
     
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        supertrendMultiplierSpin, 
+        &m_config.supertrend_multiplier)
+    );
+    
+    createDependencyGroup(
+        supertrendFilterCheck,
+        {supertrendPeriodSpin, supertrendMultiplierSpin}
+    );
+    
+    supertrendLayout->setColumnStretch(2, 1);
     strategyLayout->addLayout(supertrendLayout);
     
     // Ligne de séparation
@@ -331,186 +285,31 @@ void SellHeikinRedPanel::setupUI()
     QVBoxLayout* otherFiltersLayout = new QVBoxLayout();
     otherFiltersLayout->setContentsMargins(5, 5, 5, 5);
     
-    m_widgets["previous_ha_candle_green_filter_check"] = new QCheckBox("Activer filtre précédente(s) bougie(s) verte(s)", this);
-    otherFiltersLayout->addWidget(m_widgets["previous_ha_candle_green_filter_check"]);
-
-    // Paramètres n bougies précédentes
-    m_widgets["previous_ha_candle_green_filter_spin"] = new QSpinBox(this);
-    static_cast<QSpinBox*>(m_widgets["previous_ha_candle_green_filter_spin"])->setRange(1, 100);
-    static_cast<QSpinBox*>(m_widgets["previous_ha_candle_green_filter_spin"])->setValue(2);
-    otherFiltersLayout->addWidget(m_widgets["previous_ha_candle_green_filter_spin"]);
-    // connect(static_cast<QCheckBox*>(m_widgets["previous_ha_candle_green_filter_check"]), &QCheckBox::toggled,
-    //         this, &SellHeikinRedPanel::onPreviousHaCandleGreenFilterToggled);
+    QCheckBox* previousHaCandleGreenFilterCheck = new QCheckBox("Activer filtre précédente(s) bougie(s) verte(s)", this);
+    otherFiltersLayout->addWidget(previousHaCandleGreenFilterCheck);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        previousHaCandleGreenFilterCheck, 
+        &m_config.use_previous_ha_candle_green_filter)
+    );
+    
+    QSpinBox* previousHaCandleGreenFilterSpin = new QSpinBox(this);
+    previousHaCandleGreenFilterSpin->setRange(1, 100);
+    previousHaCandleGreenFilterSpin->setValue(2);
+    otherFiltersLayout->addWidget(previousHaCandleGreenFilterSpin);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        previousHaCandleGreenFilterSpin, 
+        &m_config.previous_ha_candle_green_filter_n)
+    );
+    
+    createDependencyGroup(
+        previousHaCandleGreenFilterCheck,
+        {previousHaCandleGreenFilterSpin}
+    );
+    
     strategyLayout->addLayout(otherFiltersLayout);
-
+    
     // Stretch pour prendre l'espace restant
     strategyLayout->addStretch(1);
-    
-    // Initialiser l'état des widgets
-    // onEmaShortFilterToggled(static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->isChecked());
-    // onEmaLongFilterToggled(static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->isChecked());
-    // onRsiFilterToggled(static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked());
-    // onStochFilterToggled(static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked());
-    // onSupertrendFilterToggled(static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->isChecked());
-    // onPreviousHaCandleGreenFilterToggled(static_cast<QCheckBox*>(m_widgets["previous_ha_candle_green_filter_check"])->isChecked());
 }
-
-// Les méthodes getValues et setValues restent inchangées
-
-// QMap<QString, QVariant> SellHeikinRedPanel::getValues()
-// {
-//     QMap<QString, QVariant> values;
-    
-//     // EMA Court
-//     values["use_ema_short_filter"] = static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->isChecked();
-//     values["ema_short_period"] = static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->value();
-    
-//     // EMA Long
-//     values["use_ema_long_filter"] = static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->isChecked();
-//     values["ema_long_period"] = static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->value();
-    
-//     // RSI
-//     values["use_rsi_filter"] = static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->isChecked();
-//     values["rsi_period"] = static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->value();
-//     values["rsi_threshold"] = static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->value();
-//     values["rsi_history_periods"] = static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->value();
-    
-//     // Stochastique
-//     values["use_stoch_filter"] = static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->isChecked();
-//     values["stoch_fastk"] = static_cast<QSpinBox*>(m_widgets["fastk_spin"])->value();
-//     values["stoch_slowk"] = static_cast<QSpinBox*>(m_widgets["slowk_spin"])->value();
-//     values["stoch_slowd"] = static_cast<QSpinBox*>(m_widgets["slowd_spin"])->value();
-//     values["stoch_threshold"] = static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->value();
-//     values["stoch_history_periods"] = static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->value();
-    
-//     // Supertrend
-//     values["use_supertrend_filter"] = static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->isChecked();
-//     values["supertrend_atr_period"] = static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->value();
-//     values["supertrend_multiplier"] = static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->value();
-    
-//     // Filtre bougie
-//     values["use_previous_ha_candle_green_filter"] = static_cast<QCheckBox*>(m_widgets["previous_ha_candle_green_filter_check"])->isChecked();
-//     values["previous_ha_candle_green_filter_n"] = static_cast<QSpinBox*>(m_widgets["previous_ha_candle_green_filter_spin"])->value();
-//     return values;
-// }
-
-// void SellHeikinRedPanel::setValues(const QMap<QString, QVariant>& values)
-// {
-//     // EMA Court
-//     if (values.contains("use_ema_short_filter")) {
-//         static_cast<QCheckBox*>(m_widgets["ema_short_filter_check"])->setChecked(values["use_ema_short_filter"].toBool());
-//     }
-    
-//     if (values.contains("ema_short_period")) {
-//         static_cast<QSpinBox*>(m_widgets["ema_short_spin"])->setValue(values["ema_short_period"].toInt());
-//     }
-    
-//     // EMA Long
-//     if (values.contains("use_ema_long_filter")) {
-//         static_cast<QCheckBox*>(m_widgets["ema_long_filter_check"])->setChecked(values["use_ema_long_filter"].toBool());
-//     }
-    
-//     if (values.contains("ema_long_period")) {
-//         static_cast<QSpinBox*>(m_widgets["ema_long_spin"])->setValue(values["ema_long_period"].toInt());
-//     }
-    
-//     // RSI
-//     if (values.contains("use_rsi_filter")) {
-//         static_cast<QCheckBox*>(m_widgets["rsi_filter_check"])->setChecked(values["use_rsi_filter"].toBool());
-//     }
-    
-//     if (values.contains("rsi_period")) {
-//         static_cast<QSpinBox*>(m_widgets["rsi_period_spin"])->setValue(values["rsi_period"].toInt());
-//     }
-    
-//     if (values.contains("rsi_threshold")) {
-//         static_cast<QSpinBox*>(m_widgets["rsi_threshold_spin"])->setValue(values["rsi_threshold"].toInt());
-//     }
-//     if (values.contains("rsi_history_periods")) {
-//         static_cast<QSpinBox*>(m_widgets["rsi_history_periods_spin"])->setValue(values["rsi_history_periods"].toInt());
-//     }
-    
-//     // Stochastique
-//     if (values.contains("use_stoch_filter")) {
-//         static_cast<QCheckBox*>(m_widgets["stoch_filter_check"])->setChecked(values["use_stoch_filter"].toBool());
-//     }
-    
-//     if (values.contains("stoch_fastk")) {
-//         static_cast<QSpinBox*>(m_widgets["fastk_spin"])->setValue(values["stoch_fastk"].toInt());
-//     }
-    
-//     if (values.contains("stoch_slowk")) {
-//         static_cast<QSpinBox*>(m_widgets["slowk_spin"])->setValue(values["stoch_slowk"].toInt());
-//     }
-    
-//     if (values.contains("stoch_slowd")) {
-//         static_cast<QSpinBox*>(m_widgets["slowd_spin"])->setValue(values["stoch_slowd"].toInt());
-//     }
-    
-//     if (values.contains("stoch_threshold")) {
-//         static_cast<QSpinBox*>(m_widgets["stoch_threshold_spin"])->setValue(values["stoch_threshold"].toInt());
-//     }
-//     if (values.contains("stoch_history_periods")) {
-//         static_cast<QSpinBox*>(m_widgets["stoch_history_periods_spin"])->setValue(values["stoch_history_periods"].toInt());
-//     }
-    
-//     // Supertrend
-//     if (values.contains("use_supertrend_filter")) {
-//         static_cast<QCheckBox*>(m_widgets["supertrend_filter_check"])->setChecked(values["use_supertrend_filter"].toBool());
-//     }
-    
-//     if (values.contains("supertrend_atr_period")) {
-//         static_cast<QSpinBox*>(m_widgets["supertrend_period_spin"])->setValue(values["supertrend_atr_period"].toInt());
-//     }
-    
-//     if (values.contains("supertrend_multiplier")) {
-//         static_cast<QDoubleSpinBox*>(m_widgets["supertrend_multiplier_spin"])->setValue(values["supertrend_multiplier"].toDouble());
-//     }
-    
-//     // Filtre bougie
-//     if (values.contains("use_previous_ha_candle_green_filter")) {
-//         static_cast<QCheckBox*>(m_widgets["previous_ha_candle_green_filter_check"])->setChecked(
-//             values["use_previous_ha_candle_green_filter"].toBool());
-//     }
-//     if (values.contains("previous_ha_candle_green_filter_n")) {
-//         static_cast<QSpinBox*>(m_widgets["previous_ha_candle_green_filter_spin"])->setValue(
-//             values["previous_ha_candle_green_filter_n"].toInt());
-//     }
-// }
-
-// void SellHeikinRedPanel::onEmaShortFilterToggled(bool checked) {
-//     _toggleWidgetGroup({"ema_short_spin"}, checked);
-// }
-
-// void SellHeikinRedPanel::onEmaLongFilterToggled(bool checked) {
-//     _toggleWidgetGroup({"ema_long_spin"}, checked);
-// }
-
-// void SellHeikinRedPanel::onRsiFilterToggled(bool checked) {
-//     _toggleWidgetGroup({"rsi_period_spin", "rsi_threshold_spin", "rsi_history_periods_spin"}, checked);
-// }
-
-// void SellHeikinRedPanel::onStochFilterToggled(bool checked) {
-//     _toggleWidgetGroup({"fastk_spin", "slowk_spin", "slowd_spin", "stoch_threshold_spin", "stoch_history_periods_spin"}, checked);
-// }
-
-// void SellHeikinRedPanel::onSupertrendFilterToggled(bool checked) {
-//     _toggleWidgetGroup({"supertrend_period_spin", "supertrend_multiplier_spin"}, checked);
-// }
-
-// void SellHeikinRedPanel::onPreviousHaCandleGreenFilterToggled(bool checked) {
-//     _toggleWidgetGroup({"previous_ha_candle_green_filter_spin"}, checked);
-// }
-
-// void SellHeikinRedPanel::_toggleWidgetGroup(const QStringList& widgets, bool enabled)
-// {
-//     for (const QString& widgetName : widgets) {
-//         if (m_widgets.contains(widgetName)) {
-//             m_widgets[widgetName]->setEnabled(enabled);
-//             if(enabled) 
-//                 m_widgets[widgetName]->setStyleSheet("QSpinBox, QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-//              else 
-//                 m_widgets[widgetName]->setStyleSheet("QSpinBox, QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-//         }
-//     }
-// }

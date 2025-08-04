@@ -21,9 +21,6 @@ public:
     BuyHeikinGreenPanel(QWidget* parent = nullptr);
 
 private:    
-    // QMap<QString, QWidget*> m_widgets;
-
     void setupUI();
-    // void initializeBindings();
 };
 

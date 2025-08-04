@@ -35,18 +35,7 @@ public:
      */
     StrategyBasePanel(QWidget* parent = nullptr);
 
-private slots:
-    // Méthodes pour gérer l'interface utilisateur en fonction des checkboxes
-    void _toggleSlMethod(int index);
-    void _toggleTpMethod(int index);
-    void _updateAtrPeriodStatus();
-
 private:
-    QMap<QString, QWidget*> m_widgets;
-
     void setupUI();
-    
-    void initializeBindings();
-    void updateWidgetsFromConfig() override;
 };
 

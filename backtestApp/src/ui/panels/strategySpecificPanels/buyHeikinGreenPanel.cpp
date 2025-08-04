@@ -20,7 +20,6 @@ void BuyHeikinGreenPanel::setupUI()
     emaShortLayout->setContentsMargins(5, 0, 5, 5);
 
     QCheckBox* emaShortFilterCheck = new QCheckBox("Activer filtre EMA Court", this);
-    emaShortFilterCheck->setChecked(true);
     emaShortLayout->addWidget(emaShortFilterCheck, 0, 0, 1, 2);
 
     addBinding(PropertyBinderFactory::createBoolBinding(
@@ -59,7 +58,6 @@ void BuyHeikinGreenPanel::setupUI()
     emaLongLayout->setContentsMargins(5, 5, 5, 5);
 
     QCheckBox* emaLongFilterCheck = new QCheckBox("Activer filtre EMA Long", this);
-    emaLongFilterCheck->setChecked(true);
     emaLongLayout->addWidget(emaLongFilterCheck, 0, 0, 1, 2);
 
     addBinding(PropertyBinderFactory::createBoolBinding(
@@ -97,7 +95,6 @@ void BuyHeikinGreenPanel::setupUI()
     rsiLayout->setContentsMargins(5, 5, 5, 5);
     
     QCheckBox* rsiFilterCheck = new QCheckBox("Activer filtre RSI", this);
-    rsiFilterCheck->setChecked(true);
     rsiLayout->addWidget(rsiFilterCheck, 0, 0, 1, 2);
     
     addBinding(PropertyBinderFactory::createBoolBinding(
@@ -157,7 +154,6 @@ void BuyHeikinGreenPanel::setupUI()
     stochLayout->setContentsMargins(5, 5, 5, 5);
     
     QCheckBox* stochFilterCheck = new QCheckBox("Activer filtre Stochastique", this);
-    stochFilterCheck->setChecked(true);
     stochLayout->addWidget(stochFilterCheck, 0, 0, 1, 2);
     
     addBinding(PropertyBinderFactory::createBoolBinding(

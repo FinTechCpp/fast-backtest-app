@@ -4,312 +4,128 @@
 StrategyBasePanel::StrategyBasePanel(QWidget* parent)
     : ConfigPanel("Paramètres de base", parent)
 {
-    setupUI();
-    initializeBindings();
-}
-
-// Met à jour tous les widgets en fonction de la configuration actuelle
-void StrategyBasePanel::updateWidgetsFromConfig() {
-    ConfigPanel<StrategyBaseConfig>::updateWidgetsFromConfig();
-
-    // Mettre à jour l'état des widgets en fonction des méthodes sélectionnées
-    if (m_widgets.contains("sl_method"))
-        _toggleSlMethod(static_cast<QComboBox*>(m_widgets["sl_method"])->currentIndex());
-    
-    if (m_widgets.contains("tp_method"))
-        _toggleTpMethod(static_cast<QComboBox*>(m_widgets["tp_method"])->currentIndex());
-        
-    _updateAtrPeriodStatus();
-}
-
-void StrategyBasePanel::initializeBindings() {
-    // Logging
-    auto loggingBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["enable_logging"]), 
-        &m_config.enable_logging);
-    addBinding(std::move(loggingBinder));
-    
-    // Time settings
-    auto tradingFromBinder = PropertyBinderFactory::createTimeBinding(
-        static_cast<QTimeEdit*>(m_widgets["trading_from"]), 
-        &m_config.trading_from);
-    addBinding(std::move(tradingFromBinder));
-    
-    auto tradingToBinder = PropertyBinderFactory::createTimeBinding(
-        static_cast<QTimeEdit*>(m_widgets["trading_to"]), 
-        &m_config.trading_to);
-    addBinding(std::move(tradingToBinder));
-
-    // Binding pour la méthode de Stop Loss
-    auto slMethodBinder = PropertyBinderFactory::createEnumComboBinding<StopLossMethod>(
-        static_cast<QComboBox*>(m_widgets["sl_method"]), 
-        &m_config.sl_method);
-    addBinding(std::move(slMethodBinder));
-    
-    // Binding pour la méthode de Take Profit
-    auto tpMethodBinder = PropertyBinderFactory::createEnumComboBinding<TakeProfitMethod>(
-        static_cast<QComboBox*>(m_widgets["tp_method"]), 
-        &m_config.tp_method);
-    addBinding(std::move(tpMethodBinder));
-    
-    // Fixed SL/TP values
-    auto stopLossDistanceBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"]), 
-        &m_config.stop_loss_distance);
-    addBinding(std::move(stopLossDistanceBinder));
-    
-    auto takeProfitDistanceBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"]), 
-        &m_config.take_profit_distance);
-    addBinding(std::move(takeProfitDistanceBinder));
-    
-    // ATR parameters
-    auto atrPeriodBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["atr_period"]), 
-        &m_config.atr_period);
-    addBinding(std::move(atrPeriodBinder));
-    
-    auto slAtrMultiplierBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"]), 
-        &m_config.stop_loss_atr_multiplier);
-    addBinding(std::move(slAtrMultiplierBinder));
-    
-    auto tpAtrMultiplierBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"]), 
-        &m_config.take_profit_atr_multiplier);
-    addBinding(std::move(tpAtrMultiplierBinder));
-    
-    auto minStopLossDistanceBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["min_stop_loss_distance"]), 
-        &m_config.min_stop_loss_distance);
-    addBinding(std::move(minStopLossDistanceBinder));
-    
-    auto minTakeProfitDistanceBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["min_take_profit_distance"]), 
-        &m_config.min_take_profit_distance);
-    addBinding(std::move(minTakeProfitDistanceBinder));
-    
-    // Min/Max SL parameters
-    auto slMinmaxPeriodsBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"]), 
-        &m_config.sl_minmax_periods);
-    addBinding(std::move(slMinmaxPeriodsBinder));
-    
-    auto slMinmaxDeltaBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"]), 
-        &m_config.sl_minmax_delta);
-    addBinding(std::move(slMinmaxDeltaBinder));
-    
-    // TP based on SL ratio
-    auto tpSlRatioBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"]), 
-        &m_config.tp_sl_ratio);
-    addBinding(std::move(tpSlRatioBinder));
-    
-    // SuperTrend TP parameters
-    auto tpSupertrendAtrPeriodBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["tp_supertrend_atr_period"]), 
-        &m_config.tp_supertrend_atr_period);
-    addBinding(std::move(tpSupertrendAtrPeriodBinder));
-    
-    auto tpSupertrendMultiplierBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"]), 
-        &m_config.tp_supertrend_multiplier);
-    addBinding(std::move(tpSupertrendMultiplierBinder));
-    
-    // RL TP parameters
-    auto rlLookbackPeriodsBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["rl_lookback_periods"]), 
-        &m_config.rl_lookback_periods);
-    addBinding(std::move(rlLookbackPeriodsBinder));
-    
-    // Nth Heikin-Ashi TP parameter
-    auto nthHeikinAshiCountBinder = PropertyBinderFactory::createIntBinding(
-        static_cast<QSpinBox*>(m_widgets["nth_heikin_ashi_count"]), 
-        &m_config.nth_heikin_ashi_count);
-    addBinding(std::move(nthHeikinAshiCountBinder));
-    
-    // Risk management
-    auto useRiskBasedSizingBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["use_risk_based_sizing"]), 
-        &m_config.use_risk_based_sizing);
-    addBinding(std::move(useRiskBasedSizingBinder));
-    
-    auto riskPercentageBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"]), 
-        &m_config.risk_percentage);
-    addBinding(std::move(riskPercentageBinder));
-    
-    // Création d'un groupe de dépendance pour risk_based_sizing
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["use_risk_based_sizing"]),
-        {m_widgets["risk_percentage"]}
-    );
-    
-    // Break-even parameters
-    auto useBreakEvenBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["use_break_even"]), 
-        &m_config.use_break_even);
-    addBinding(std::move(useBreakEvenBinder));
-    
-    auto breakEvenThresholdBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"]), 
-        &m_config.break_even_threshold);
-    addBinding(std::move(breakEvenThresholdBinder));
-    
-    auto breakEvenOffsetBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"]), 
-        &m_config.break_even_offset_per_mille);
-    addBinding(std::move(breakEvenOffsetBinder));
-    
-    // Création d'un groupe de dépendance pour break_even
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["use_break_even"]),
-        {m_widgets["break_even_offset_per_mille"], m_widgets["break_even_threshold"]}
-    );
-    
-    // Daily maximum loss
-    auto useDailyMaxLossBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["use_daily_max_loss"]), 
-        &m_config.use_daily_max_loss);
-    addBinding(std::move(useDailyMaxLossBinder));
-    
-    auto dailyMaxLossPercentageBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"]), 
-        &m_config.daily_max_loss_percentage);
-    addBinding(std::move(dailyMaxLossPercentageBinder));
-    
-    // Création d'un groupe de dépendance pour daily_max_loss
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["use_daily_max_loss"]),
-        {m_widgets["daily_max_loss_percentage"]}
-    );
-    
-    // Daily maximum profit
-    auto useDailyMaxProfitBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["use_daily_max_profit"]), 
-        &m_config.use_daily_max_profit);
-    addBinding(std::move(useDailyMaxProfitBinder));
-    
-    auto dailyMaxProfitPercentageBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"]), 
-        &m_config.daily_max_profit_percentage);
-    addBinding(std::move(dailyMaxProfitPercentageBinder));
-    
-    // Création d'un groupe de dépendance pour daily_max_profit
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["use_daily_max_profit"]),
-        {m_widgets["daily_max_profit_percentage"]}
-    );
-    
-    // Daily maximum drawdown
-    auto useDailyMaxDrawdownBinder = PropertyBinderFactory::createBoolBinding(
-        static_cast<QCheckBox*>(m_widgets["use_daily_max_drawdown"]), 
-        &m_config.use_daily_max_drawdown);
-    addBinding(std::move(useDailyMaxDrawdownBinder));
-    
-    auto dailyMaxDrawdownPercentageBinder = PropertyBinderFactory::createDoubleBinding(
-        static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"]), 
-        &m_config.daily_max_drawdown_percentage);
-    addBinding(std::move(dailyMaxDrawdownPercentageBinder));
-    
-    // Création d'un groupe de dépendance pour daily_max_drawdown
-    createDependencyGroup(
-        static_cast<QCheckBox*>(m_widgets["use_daily_max_drawdown"]),
-        {m_widgets["daily_max_drawdown_percentage"]}
-    );
-
-    // Trading days - Binding individuel pour chaque élément du tableau
+    // Initialiser le tableau des jours de trading (Lun-Ven activés par défaut)
     for (int i = 0; i < 7; ++i) {
-        QString key = QString("trading_day_%1").arg(i);
-        if (m_widgets.contains(key)) {
-            auto tradingDayBinder = PropertyBinderFactory::createBoolBinding(
-                static_cast<QCheckBox*>(m_widgets[key]), 
-                &m_config.trading_days_array[i]);
-            addBinding(std::move(tradingDayBinder));
-        }
+        m_config.trading_days_array[i] = (i < 5); // Jours 0-4 (Lun-Ven) activés
     }
+    
+    setupUI();
 }
 
-void StrategyBasePanel::setupUI()
-{
+void StrategyBasePanel::setupUI() {    
     // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
     QVBoxLayout* baseLayout = new QVBoxLayout(this);
 
     // Section Paramètres avancés
     // Option pour activer/désactiver les logs
-    m_widgets["enable_logging"] = new QCheckBox("Activer la journalisation (logs)");
-    static_cast<QCheckBox*>(m_widgets["enable_logging"])->setChecked(false); // Désactivé par défaut
-    baseLayout->addWidget(m_widgets["enable_logging"]);
+    QCheckBox* enableLoggingCheck = new QCheckBox("Activer la journalisation (logs)", this);
+    enableLoggingCheck->setChecked(false); // Désactivé par défaut
+    baseLayout->addWidget(enableLoggingCheck);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        enableLoggingCheck,
+        &m_config.enable_logging
+    ));
 
     // Section SL/TP
     QGroupBox* slTpGroup = new QGroupBox("Stop Loss et Take Profit", this);
-    QVBoxLayout* slTpLayout = new QVBoxLayout();    
+    QVBoxLayout* slTpLayout = new QVBoxLayout();
+    
     // Période ATR commune (en haut du groupe)
     QFormLayout* atrLayout = new QFormLayout();
-    m_widgets["atr_period"] = new QSpinBox();
-    static_cast<QSpinBox*>(m_widgets["atr_period"])->setRange(1, 1000);
-    static_cast<QSpinBox*>(m_widgets["atr_period"])->setValue(14);
-    static_cast<QSpinBox*>(m_widgets["atr_period"])->setEnabled(false);
-    m_widgets["atr_period"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    atrLayout->addRow(new QLabel("Période ATR:"), m_widgets["atr_period"]);
+    QSpinBox* atrPeriodSpin = new QSpinBox(this);
+    atrPeriodSpin->setRange(1, 1000);
+    atrPeriodSpin->setValue(14);
+    atrPeriodSpin->setEnabled(false);
+    atrPeriodSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    atrLayout->addRow(new QLabel("Période ATR:", this), atrPeriodSpin);
     slTpLayout->addLayout(atrLayout);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        atrPeriodSpin,
+        &m_config.atr_period
+    ));
     
     // Groupe Stop Loss
     QGroupBox* slGroup = new QGroupBox("Stop Loss", slTpGroup);
     QFormLayout* slLayout = new QFormLayout();
     
     // Méthode de calcul pour le Stop Loss
-    m_widgets["sl_method"] = new QComboBox();
-    static_cast<QComboBox*>(m_widgets["sl_method"])->addItems({"Fixe", "ATR", "Min/Max"});
-    static_cast<QComboBox*>(m_widgets["sl_method"])->setCurrentIndex(0);
+    QComboBox* slMethodCombo = new QComboBox(this);
+    slMethodCombo->addItems({"Fixe", "ATR", "Min/Max"});
+    slMethodCombo->setCurrentIndex(0);
+    slLayout->addRow(new QLabel("Méthode:", this), slMethodCombo);
     
-    connect(static_cast<QComboBox*>(m_widgets["sl_method"]), 
-                     QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     this, &StrategyBasePanel::_toggleSlMethod);
-    
-    slLayout->addRow(new QLabel("Méthode:"), m_widgets["sl_method"]);
+    addBinding(PropertyBinderFactory::createEnumComboBinding<StopLossMethod>(
+        slMethodCombo,
+        &m_config.sl_method
+    ));
     
     // Stop Loss Distance (fixe)
-    m_widgets["stop_loss_distance"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setRange(0, 10000);
-    static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setSingleStep(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["stop_loss_distance"])->setValue(20);
-    slLayout->addRow(new QLabel("Distance [pts]:"), m_widgets["stop_loss_distance"]);
+    QDoubleSpinBox* stopLossDistanceSpin = new QDoubleSpinBox(this);
+    stopLossDistanceSpin->setDecimals(2);
+    stopLossDistanceSpin->setRange(0, 10000);
+    stopLossDistanceSpin->setSingleStep(1);
+    stopLossDistanceSpin->setValue(20);
+    slLayout->addRow(new QLabel("Distance [pts]:", this), stopLossDistanceSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        stopLossDistanceSpin,
+        &m_config.stop_loss_distance
+    ));
     
     // Paramètres ATR - Multiplicateur SL
-    m_widgets["sl_atr_multiplier"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setRange(0.1, 1000.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setSingleStep(0.1);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setValue(2.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_atr_multiplier"])->setEnabled(false);
-    m_widgets["sl_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    slLayout->addRow(new QLabel("Multiplicateur ATR SL:"), m_widgets["sl_atr_multiplier"]);
+    QDoubleSpinBox* slAtrMultiplierSpin = new QDoubleSpinBox(this);
+    slAtrMultiplierSpin->setDecimals(1);
+    slAtrMultiplierSpin->setRange(0.1, 1000.0);
+    slAtrMultiplierSpin->setSingleStep(0.1);
+    slAtrMultiplierSpin->setValue(2.0);
+    slAtrMultiplierSpin->setEnabled(false);
+    slAtrMultiplierSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    slLayout->addRow(new QLabel("Multiplicateur ATR SL:", this), slAtrMultiplierSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        slAtrMultiplierSpin,
+        &m_config.stop_loss_atr_multiplier
+    ));
     
     // Paramètres Min/Max SL
-    m_widgets["sl_minmax_periods"] = new QSpinBox();
-    static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setRange(1, 1000);
-    static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setValue(5);
-    static_cast<QSpinBox*>(m_widgets["sl_minmax_periods"])->setEnabled(false);
-    m_widgets["sl_minmax_periods"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    slLayout->addRow(new QLabel("Périodes Min/Max:"), m_widgets["sl_minmax_periods"]);
+    QSpinBox* slMinmaxPeriodsSpin = new QSpinBox(this);
+    slMinmaxPeriodsSpin->setRange(1, 1000);
+    slMinmaxPeriodsSpin->setValue(5);
+    slMinmaxPeriodsSpin->setEnabled(false);
+    slMinmaxPeriodsSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    slLayout->addRow(new QLabel("Périodes Min/Max:", this), slMinmaxPeriodsSpin);
     
-    m_widgets["sl_minmax_delta"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setRange(0.1, 1000.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setValue(5.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["sl_minmax_delta"])->setEnabled(false);
-    m_widgets["sl_minmax_delta"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    slLayout->addRow(new QLabel("Delta Min/Max:"), m_widgets["sl_minmax_delta"]);
+    addBinding(PropertyBinderFactory::createIntBinding(
+        slMinmaxPeriodsSpin,
+        &m_config.sl_minmax_periods
+    ));
+    
+    QDoubleSpinBox* slMinmaxDeltaSpin = new QDoubleSpinBox(this);
+    slMinmaxDeltaSpin->setDecimals(1);
+    slMinmaxDeltaSpin->setRange(0.1, 1000.0);
+    slMinmaxDeltaSpin->setValue(5.0);
+    slMinmaxDeltaSpin->setEnabled(false);
+    slMinmaxDeltaSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    slLayout->addRow(new QLabel("Delta Min/Max:", this), slMinmaxDeltaSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        slMinmaxDeltaSpin,
+        &m_config.sl_minmax_delta
+    ));
     
     // SL minimum
-    m_widgets["min_stop_loss_distance"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["min_stop_loss_distance"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["min_stop_loss_distance"])->setRange(0.1, 1000.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["min_stop_loss_distance"])->setValue(5.0);
-    slLayout->addRow(new QLabel("SL Minimum [pts]:"), m_widgets["min_stop_loss_distance"]);
+    QDoubleSpinBox* minStopLossDistanceSpin = new QDoubleSpinBox(this);
+    minStopLossDistanceSpin->setDecimals(1);
+    minStopLossDistanceSpin->setRange(0.1, 1000.0);
+    minStopLossDistanceSpin->setValue(5.0);
+    slLayout->addRow(new QLabel("SL Minimum [pts]:", this), minStopLossDistanceSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        minStopLossDistanceSpin,
+        &m_config.min_stop_loss_distance
+    ));
     
     slGroup->setLayout(slLayout);
     slTpLayout->addWidget(slGroup);
@@ -319,81 +135,123 @@ void StrategyBasePanel::setupUI()
     QFormLayout* tpLayout = new QFormLayout();
     
     // Méthode de calcul pour le Take Profit
-    m_widgets["tp_method"] = new QComboBox();
-    static_cast<QComboBox*>(m_widgets["tp_method"])->addItems({"Fixe", "ATR", "Ratio SL", "SuperTrend", "RL", "Nth Heikin-Ashi"});
-    static_cast<QComboBox*>(m_widgets["tp_method"])->setCurrentIndex(0);
-    connect(static_cast<QComboBox*>(m_widgets["tp_method"]), 
-                     QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     this, &StrategyBasePanel::_toggleTpMethod);
-    tpLayout->addRow(new QLabel("Méthode:"), m_widgets["tp_method"]);
+    QComboBox* tpMethodCombo = new QComboBox(this);
+    tpMethodCombo->addItems({"Fixe", "ATR", "Ratio SL", "SuperTrend", "RL", "Nth Heikin-Ashi"});
+    tpMethodCombo->setCurrentIndex(0);
+    tpLayout->addRow(new QLabel("Méthode:", this), tpMethodCombo);
+    
+    addBinding(PropertyBinderFactory::createEnumComboBinding<TakeProfitMethod>(
+        tpMethodCombo,
+        &m_config.tp_method
+    ));
     
     // Take Profit Distance (fixe)
-    m_widgets["take_profit_distance"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setRange(0, 10000);
-    static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setSingleStep(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["take_profit_distance"])->setValue(30);
-    tpLayout->addRow(new QLabel("Distance [pts]:"), m_widgets["take_profit_distance"]);
+    QDoubleSpinBox* takeProfitDistanceSpin = new QDoubleSpinBox(this);
+    takeProfitDistanceSpin->setDecimals(2);
+    takeProfitDistanceSpin->setRange(0, 10000);
+    takeProfitDistanceSpin->setSingleStep(1);
+    takeProfitDistanceSpin->setValue(30);
+    tpLayout->addRow(new QLabel("Distance [pts]:", this), takeProfitDistanceSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        takeProfitDistanceSpin,
+        &m_config.take_profit_distance
+    ));
     
     // Paramètres ATR - Multiplicateur TP
-    m_widgets["tp_atr_multiplier"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setRange(0.1, 1000.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setSingleStep(0.1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setValue(3.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_atr_multiplier"])->setEnabled(false);
-    m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Multiplicateur ATR TP:"), m_widgets["tp_atr_multiplier"]);
+    QDoubleSpinBox* tpAtrMultiplierSpin = new QDoubleSpinBox(this);
+    tpAtrMultiplierSpin->setDecimals(1);
+    tpAtrMultiplierSpin->setRange(0.1, 1000.0);
+    tpAtrMultiplierSpin->setSingleStep(0.1);
+    tpAtrMultiplierSpin->setValue(3.0);
+    tpAtrMultiplierSpin->setEnabled(false);
+    tpAtrMultiplierSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Multiplicateur ATR TP:", this), tpAtrMultiplierSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        tpAtrMultiplierSpin,
+        &m_config.take_profit_atr_multiplier
+    ));
     
     // Paramètres Ratio SL - Multiplicateur TP
-    m_widgets["tp_sl_ratio"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setRange(0.1, 100.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setSingleStep(0.1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setValue(2.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_sl_ratio"])->setEnabled(false);
-    m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Ratio TP/SL:"), m_widgets["tp_sl_ratio"]);
+    QDoubleSpinBox* tpSlRatioSpin = new QDoubleSpinBox(this);
+    tpSlRatioSpin->setDecimals(1);
+    tpSlRatioSpin->setRange(0.1, 100.0);
+    tpSlRatioSpin->setSingleStep(0.1);
+    tpSlRatioSpin->setValue(2.0);
+    tpSlRatioSpin->setEnabled(false);
+    tpSlRatioSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Ratio TP/SL:", this), tpSlRatioSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        tpSlRatioSpin,
+        &m_config.tp_sl_ratio
+    ));
     
     // Paramètres SuperTrend - Période ATR
-    m_widgets["tp_supertrend_atr_period"] = new QSpinBox();
-    static_cast<QSpinBox*>(m_widgets["tp_supertrend_atr_period"])->setRange(1, 100);
-    static_cast<QSpinBox*>(m_widgets["tp_supertrend_atr_period"])->setValue(14);
-    static_cast<QSpinBox*>(m_widgets["tp_supertrend_atr_period"])->setEnabled(false);
-    m_widgets["tp_supertrend_atr_period"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Période ATR SuperTrend:"), m_widgets["tp_supertrend_atr_period"]);
+    QSpinBox* tpSupertrendAtrPeriodSpin = new QSpinBox(this);
+    tpSupertrendAtrPeriodSpin->setRange(1, 100);
+    tpSupertrendAtrPeriodSpin->setValue(14);
+    tpSupertrendAtrPeriodSpin->setEnabled(false);
+    tpSupertrendAtrPeriodSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Période ATR SuperTrend:", this), tpSupertrendAtrPeriodSpin);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        tpSupertrendAtrPeriodSpin,
+        &m_config.tp_supertrend_atr_period
+    ));
     
     // Paramètres SuperTrend - Multiplicateur
-    m_widgets["tp_supertrend_multiplier"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setRange(0.1, 100.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setSingleStep(0.1);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setValue(3.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["tp_supertrend_multiplier"])->setEnabled(false);
-    m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Multiplicateur SuperTrend:"), m_widgets["tp_supertrend_multiplier"]);
+    QDoubleSpinBox* tpSupertrendMultiplierSpin = new QDoubleSpinBox(this);
+    tpSupertrendMultiplierSpin->setDecimals(1);
+    tpSupertrendMultiplierSpin->setRange(0.1, 100.0);
+    tpSupertrendMultiplierSpin->setSingleStep(0.1);
+    tpSupertrendMultiplierSpin->setValue(3.0);
+    tpSupertrendMultiplierSpin->setEnabled(false);
+    tpSupertrendMultiplierSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Multiplicateur SuperTrend:", this), tpSupertrendMultiplierSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        tpSupertrendMultiplierSpin,
+        &m_config.tp_supertrend_multiplier
+    ));
     
     // Paramètres RL - Périodes de lookback
-    m_widgets["rl_lookback_periods"] = new QSpinBox();
-    static_cast<QSpinBox*>(m_widgets["rl_lookback_periods"])->setRange(1, 150);
-    static_cast<QSpinBox*>(m_widgets["rl_lookback_periods"])->setEnabled(false);
-    m_widgets["rl_lookback_periods"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Périodes lookback RL:"), m_widgets["rl_lookback_periods"]);
+    QSpinBox* rlLookbackPeriodsSpin = new QSpinBox(this);
+    rlLookbackPeriodsSpin->setRange(1, 150);
+    rlLookbackPeriodsSpin->setEnabled(false);
+    rlLookbackPeriodsSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Périodes lookback RL:", this), rlLookbackPeriodsSpin);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        rlLookbackPeriodsSpin,
+        &m_config.rl_lookback_periods
+    ));
 
     // Paramètres nth Heikin-Ashi - Nombre de bougies opposées
-    m_widgets["nth_heikin_ashi_count"] = new QSpinBox();
-    static_cast<QSpinBox*>(m_widgets["nth_heikin_ashi_count"])->setRange(1, 50);
-    static_cast<QSpinBox*>(m_widgets["nth_heikin_ashi_count"])->setValue(3);
-    static_cast<QSpinBox*>(m_widgets["nth_heikin_ashi_count"])->setEnabled(false);
-    m_widgets["nth_heikin_ashi_count"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Nb bougies Heikin-Ashi:"), m_widgets["nth_heikin_ashi_count"]);
+    QSpinBox* nthHeikinAshiCountSpin = new QSpinBox(this);
+    nthHeikinAshiCountSpin->setRange(1, 50);
+    nthHeikinAshiCountSpin->setValue(3);
+    nthHeikinAshiCountSpin->setEnabled(false);
+    nthHeikinAshiCountSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
+    tpLayout->addRow(new QLabel("Nb bougies Heikin-Ashi:", this), nthHeikinAshiCountSpin);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        nthHeikinAshiCountSpin,
+        &m_config.nth_heikin_ashi_count
+    ));
     
     // TP minimum
-    m_widgets["min_take_profit_distance"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["min_take_profit_distance"])->setDecimals(1);
-    static_cast<QDoubleSpinBox*>(m_widgets["min_take_profit_distance"])->setRange(0.1, 1000.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["min_take_profit_distance"])->setValue(5.0);
-    tpLayout->addRow(new QLabel("TP Minimum [pts]:"), m_widgets["min_take_profit_distance"]);
+    QDoubleSpinBox* minTakeProfitDistanceSpin = new QDoubleSpinBox(this);
+    minTakeProfitDistanceSpin->setDecimals(1);
+    minTakeProfitDistanceSpin->setRange(0.1, 1000.0);
+    minTakeProfitDistanceSpin->setValue(5.0);
+    tpLayout->addRow(new QLabel("TP Minimum [pts]:", this), minTakeProfitDistanceSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        minTakeProfitDistanceSpin,
+        &m_config.min_take_profit_distance
+    ));
     
     tpGroup->setLayout(tpLayout);
     slTpLayout->addWidget(tpGroup);
@@ -401,264 +259,302 @@ void StrategyBasePanel::setupUI()
     slTpGroup->setLayout(slTpLayout);
     baseLayout->addWidget(slTpGroup);
     
+    // Connecter les signaux pour activer/désactiver les widgets en fonction des sélections
+    connect(slMethodCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            [=](int index) {
+                bool isFixed = (index == 0);
+                bool isAtr = (index == 1);
+                bool isMinMax = (index == 2);
+                
+                stopLossDistanceSpin->setEnabled(isFixed);
+                stopLossDistanceSpin->setStyleSheet(isFixed ? 
+                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                slAtrMultiplierSpin->setEnabled(isAtr);
+                slAtrMultiplierSpin->setStyleSheet(isAtr ? 
+                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                slMinmaxPeriodsSpin->setEnabled(isMinMax);
+                slMinmaxPeriodsSpin->setStyleSheet(isMinMax ? 
+                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                slMinmaxDeltaSpin->setEnabled(isMinMax);
+                slMinmaxDeltaSpin->setStyleSheet(isMinMax ? 
+                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                // Mettre à jour le statut de la période ATR
+                bool atrNeeded = isAtr || (tpMethodCombo->currentIndex() == 1);
+                atrPeriodSpin->setEnabled(atrNeeded);
+                atrPeriodSpin->setStyleSheet(atrNeeded ? 
+                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
+            });
+    
+    connect(tpMethodCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            [=](int index) {
+                bool isFixed = (index == 0);
+                bool isAtr = (index == 1);
+                bool isRatio = (index == 2);
+                bool isSupertrend = (index == 3);
+                bool isRL = (index == 4);
+                bool isNthHeikinAshi = (index == 5);
+                
+                takeProfitDistanceSpin->setEnabled(isFixed);
+                takeProfitDistanceSpin->setStyleSheet(isFixed ? 
+                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                tpAtrMultiplierSpin->setEnabled(isAtr);
+                tpAtrMultiplierSpin->setStyleSheet(isAtr ? 
+                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                tpSlRatioSpin->setEnabled(isRatio);
+                tpSlRatioSpin->setStyleSheet(isRatio ? 
+                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                tpSupertrendAtrPeriodSpin->setEnabled(isSupertrend);
+                tpSupertrendAtrPeriodSpin->setStyleSheet(isSupertrend ? 
+                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                tpSupertrendMultiplierSpin->setEnabled(isSupertrend);
+                tpSupertrendMultiplierSpin->setStyleSheet(isSupertrend ? 
+                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                rlLookbackPeriodsSpin->setEnabled(isRL);
+                rlLookbackPeriodsSpin->setStyleSheet(isRL ? 
+                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                nthHeikinAshiCountSpin->setEnabled(isNthHeikinAshi);
+                nthHeikinAshiCountSpin->setStyleSheet(isNthHeikinAshi ? 
+                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
+                
+                // Mettre à jour le statut de la période ATR
+                bool atrNeeded = isAtr || (slMethodCombo->currentIndex() == 1);
+                atrPeriodSpin->setEnabled(atrNeeded);
+                atrPeriodSpin->setStyleSheet(atrNeeded ? 
+                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
+                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
+            });
+    
     // Section Heures de trading
-    QGroupBox* tradingHoursGroup = new QGroupBox("Heures de trading");
+    QGroupBox* tradingHoursGroup = new QGroupBox("Heures de trading", this);
     QFormLayout* tradingHoursLayout = new QFormLayout();
     
-    m_widgets["trading_from"] = new QTimeEdit();
-    static_cast<QTimeEdit*>(m_widgets["trading_from"])->setTime(QTime(15, 30));
-    static_cast<QTimeEdit*>(m_widgets["trading_from"])->setDisplayFormat("hh:mm");
-    tradingHoursLayout->addRow(new QLabel("Heure de début:"), m_widgets["trading_from"]);
+    QTimeEdit* tradingFromTime = new QTimeEdit(this);
+    tradingFromTime->setTime(QTime(15, 30));
+    tradingFromTime->setDisplayFormat("hh:mm");
+    tradingHoursLayout->addRow(new QLabel("Heure de début:", this), tradingFromTime);
     
-    m_widgets["trading_to"] = new QTimeEdit();
-    static_cast<QTimeEdit*>(m_widgets["trading_to"])->setTime(QTime(22, 0));
-    static_cast<QTimeEdit*>(m_widgets["trading_to"])->setDisplayFormat("hh:mm");
-    tradingHoursLayout->addRow(new QLabel("Heure de fin:"), m_widgets["trading_to"]);
+    addBinding(PropertyBinderFactory::createTimeBinding(
+        tradingFromTime,
+        &m_config.trading_from
+    ));
+    
+    QTimeEdit* tradingToTime = new QTimeEdit(this);
+    tradingToTime->setTime(QTime(22, 0));
+    tradingToTime->setDisplayFormat("hh:mm");
+    tradingHoursLayout->addRow(new QLabel("Heure de fin:", this), tradingToTime);
+    
+    addBinding(PropertyBinderFactory::createTimeBinding(
+        tradingToTime,
+        &m_config.trading_to
+    ));
     
     // Jours de trading
-    QWidget* tradingDaysWidget = new QWidget();
+    QWidget* tradingDaysWidget = new QWidget(this);
     QHBoxLayout* tradingDaysLayout = new QHBoxLayout(tradingDaysWidget);
     
     QStringList dayNames = {"Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"};
+    std::vector<QCheckBox*> tradingDayCheckboxes;
+    
     for (int i = 0; i < 7; ++i) {
-        QString key = QString("trading_day_%1").arg(i);
-        m_widgets[key] = new QCheckBox(dayNames[i]);
-        // Par défaut, activer du lundi au vendredi
-        static_cast<QCheckBox*>(m_widgets[key])->setChecked(i < 5);
-        tradingDaysLayout->addWidget(m_widgets[key]);
+        QCheckBox* dayCheckbox = new QCheckBox(dayNames[i], this);
+        dayCheckbox->setChecked(i < 5); // Par défaut, activer du lundi au vendredi
+        tradingDaysLayout->addWidget(dayCheckbox);
+        tradingDayCheckboxes.push_back(dayCheckbox);
+        
+        addBinding(PropertyBinderFactory::createBoolBinding(
+            dayCheckbox,
+            &m_config.trading_days_array[i]
+        ));
     }
     
-    tradingHoursLayout->addRow(new QLabel("Jours de trading:"), tradingDaysWidget);
+    tradingHoursLayout->addRow(new QLabel("Jours de trading:", this), tradingDaysWidget);
     
     tradingHoursGroup->setLayout(tradingHoursLayout);
     baseLayout->addWidget(tradingHoursGroup);
     
     // Section Gestion du risque
-    QGroupBox* riskGroup = new QGroupBox("Gestion du risque");
+    QGroupBox* riskGroup = new QGroupBox("Gestion du risque", this);
     QFormLayout* riskLayout = new QFormLayout();
     
-    m_widgets["use_risk_based_sizing"] = new QCheckBox("Taille basée sur le risque");
-    // QObject::connect(static_cast<QCheckBox*>(m_widgets["use_risk_based_sizing"]), 
-    //                  &QCheckBox::toggled,
-    //                  this, &StrategyBasePanel::_toggleRiskControls);
-    riskLayout->addRow(m_widgets["use_risk_based_sizing"]);
+    // Taille basée sur le risque
+    QCheckBox* useRiskBasedSizingCheck = new QCheckBox("Taille basée sur le risque", this);
+    riskLayout->addRow(useRiskBasedSizingCheck);
     
-    m_widgets["risk_percentage"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setRange(0.1, 100.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setValue(1.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setSuffix("%");
-    static_cast<QDoubleSpinBox*>(m_widgets["risk_percentage"])->setEnabled(false);
-    m_widgets["risk_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    riskLayout->addRow(new QLabel("Risque par trade:"), m_widgets["risk_percentage"]);
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        useRiskBasedSizingCheck,
+        &m_config.use_risk_based_sizing
+    ));
     
-    m_widgets["use_daily_max_loss"] = new QCheckBox("Perte max journalière");
-    // QObject::connect(static_cast<QCheckBox*>(m_widgets["use_daily_max_loss"]), 
-    //                  &QCheckBox::toggled,
-    //                  this, &StrategyBasePanel::_toggleDailyMaxLossControls);
-    riskLayout->addRow(m_widgets["use_daily_max_loss"]);
+    QDoubleSpinBox* riskPercentageSpin = new QDoubleSpinBox(this);
+    riskPercentageSpin->setDecimals(2);
+    riskPercentageSpin->setRange(0.1, 100.0);
+    riskPercentageSpin->setValue(1.0);
+    riskPercentageSpin->setSuffix("%");
+    riskPercentageSpin->setEnabled(false);
+    riskPercentageSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    riskLayout->addRow(new QLabel("Risque par trade:", this), riskPercentageSpin);
     
-    m_widgets["daily_max_loss_percentage"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setRange(0.1, 100.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setValue(2.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setSuffix("%");
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_loss_percentage"])->setEnabled(false);
-    m_widgets["daily_max_loss_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    riskLayout->addRow(new QLabel("Perte max journalière:"), m_widgets["daily_max_loss_percentage"]);
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        riskPercentageSpin,
+        &m_config.risk_percentage
+    ));
     
-    m_widgets["use_daily_max_profit"] = new QCheckBox("Profit max journalier");
-    // QObject::connect(static_cast<QCheckBox*>(m_widgets["use_daily_max_profit"]), 
-    //                  &QCheckBox::toggled,
-    //                  this, &StrategyBasePanel::_toggleDailyMaxProfitControls);
-    riskLayout->addRow(m_widgets["use_daily_max_profit"]);
+    createDependencyGroup(
+        useRiskBasedSizingCheck,
+        {riskPercentageSpin}
+    );
     
-    m_widgets["daily_max_profit_percentage"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setRange(0.1, 100.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setValue(5.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setSuffix("%");
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_profit_percentage"])->setEnabled(false);
-    m_widgets["daily_max_profit_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    riskLayout->addRow(new QLabel("Profit max journalier:"), m_widgets["daily_max_profit_percentage"]);
+    // Perte max journalière
+    QCheckBox* useDailyMaxLossCheck = new QCheckBox("Perte max journalière", this);
+    riskLayout->addRow(useDailyMaxLossCheck);
     
-    m_widgets["use_daily_max_drawdown"] = new QCheckBox("Drawdown max journalier");
-    // QObject::connect(static_cast<QCheckBox*>(m_widgets["use_daily_max_drawdown"]), 
-    //                  &QCheckBox::toggled,
-    //                  this, &StrategyBasePanel::_toggleDailyMaxDrawdownControls);
-    riskLayout->addRow(m_widgets["use_daily_max_drawdown"]);
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        useDailyMaxLossCheck,
+        &m_config.use_daily_max_loss
+    ));
     
-    m_widgets["daily_max_drawdown_percentage"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setRange(0.1, 100.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setValue(3.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setSuffix("%");
-    static_cast<QDoubleSpinBox*>(m_widgets["daily_max_drawdown_percentage"])->setEnabled(false);
-    m_widgets["daily_max_drawdown_percentage"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    riskLayout->addRow(new QLabel("Drawdown max journalier:"), m_widgets["daily_max_drawdown_percentage"]);
+    QDoubleSpinBox* dailyMaxLossPercentageSpin = new QDoubleSpinBox(this);
+    dailyMaxLossPercentageSpin->setDecimals(2);
+    dailyMaxLossPercentageSpin->setRange(0.1, 100.0);
+    dailyMaxLossPercentageSpin->setValue(2.0);
+    dailyMaxLossPercentageSpin->setSuffix("%");
+    dailyMaxLossPercentageSpin->setEnabled(false);
+    dailyMaxLossPercentageSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    riskLayout->addRow(new QLabel("Perte max journalière:", this), dailyMaxLossPercentageSpin);
     
-    m_widgets["use_break_even"] = new QCheckBox("Activer Break Even");
-    // QObject::connect(static_cast<QCheckBox*>(m_widgets["use_break_even"]), 
-    //                 &QCheckBox::toggled, 
-    //                 this, &StrategyBasePanel::_toggleBreakEvenControls);
-    riskLayout->addRow(m_widgets["use_break_even"]);
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        dailyMaxLossPercentageSpin,
+        &m_config.daily_max_loss_percentage
+    ));
     
-    m_widgets["break_even_threshold"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setDecimals(2);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setRange(0.0, 1.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setSingleStep(0.05);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setValue(0.7);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_threshold"])->setEnabled(false);
-    m_widgets["break_even_threshold"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    riskLayout->addRow(new QLabel("Seuil Break Even:"), m_widgets["break_even_threshold"]);
-
-    m_widgets["break_even_offset_per_mille"] = new QDoubleSpinBox();
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setDecimals(3);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setRange(-5.0, 5.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setSingleStep(0.05);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setValue(0.0);
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setSuffix("‰");
-    static_cast<QDoubleSpinBox*>(m_widgets["break_even_offset_per_mille"])->setEnabled(false);
-    m_widgets["break_even_offset_per_mille"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    riskLayout->addRow(new QLabel("Offset Break Even (‰):"), m_widgets["break_even_offset_per_mille"]);
-
-
+    createDependencyGroup(
+        useDailyMaxLossCheck,
+        {dailyMaxLossPercentageSpin}
+    );
+    
+    // Profit max journalier
+    QCheckBox* useDailyMaxProfitCheck = new QCheckBox("Profit max journalier", this);
+    riskLayout->addRow(useDailyMaxProfitCheck);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        useDailyMaxProfitCheck,
+        &m_config.use_daily_max_profit
+    ));
+    
+    QDoubleSpinBox* dailyMaxProfitPercentageSpin = new QDoubleSpinBox(this);
+    dailyMaxProfitPercentageSpin->setDecimals(2);
+    dailyMaxProfitPercentageSpin->setRange(0.1, 100.0);
+    dailyMaxProfitPercentageSpin->setValue(5.0);
+    dailyMaxProfitPercentageSpin->setSuffix("%");
+    dailyMaxProfitPercentageSpin->setEnabled(false);
+    dailyMaxProfitPercentageSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    riskLayout->addRow(new QLabel("Profit max journalier:", this), dailyMaxProfitPercentageSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        dailyMaxProfitPercentageSpin,
+        &m_config.daily_max_profit_percentage
+    ));
+    
+    createDependencyGroup(
+        useDailyMaxProfitCheck,
+        {dailyMaxProfitPercentageSpin}
+    );
+    
+    // Drawdown max journalier
+    QCheckBox* useDailyMaxDrawdownCheck = new QCheckBox("Drawdown max journalier", this);
+    riskLayout->addRow(useDailyMaxDrawdownCheck);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        useDailyMaxDrawdownCheck,
+        &m_config.use_daily_max_drawdown
+    ));
+    
+    QDoubleSpinBox* dailyMaxDrawdownPercentageSpin = new QDoubleSpinBox(this);
+    dailyMaxDrawdownPercentageSpin->setDecimals(2);
+    dailyMaxDrawdownPercentageSpin->setRange(0.1, 100.0);
+    dailyMaxDrawdownPercentageSpin->setValue(3.0);
+    dailyMaxDrawdownPercentageSpin->setSuffix("%");
+    dailyMaxDrawdownPercentageSpin->setEnabled(false);
+    dailyMaxDrawdownPercentageSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    riskLayout->addRow(new QLabel("Drawdown max journalier:", this), dailyMaxDrawdownPercentageSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        dailyMaxDrawdownPercentageSpin,
+        &m_config.daily_max_drawdown_percentage
+    ));
+    
+    createDependencyGroup(
+        useDailyMaxDrawdownCheck,
+        {dailyMaxDrawdownPercentageSpin}
+    );
+    
+    // Break even
+    QCheckBox* useBreakEvenCheck = new QCheckBox("Activer Break Even", this);
+    riskLayout->addRow(useBreakEvenCheck);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        useBreakEvenCheck,
+        &m_config.use_break_even
+    ));
+    
+    QDoubleSpinBox* breakEvenThresholdSpin = new QDoubleSpinBox(this);
+    breakEvenThresholdSpin->setDecimals(2);
+    breakEvenThresholdSpin->setRange(0.0, 1.0);
+    breakEvenThresholdSpin->setSingleStep(0.05);
+    breakEvenThresholdSpin->setValue(0.7);
+    breakEvenThresholdSpin->setEnabled(false);
+    breakEvenThresholdSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    riskLayout->addRow(new QLabel("Seuil Break Even:", this), breakEvenThresholdSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        breakEvenThresholdSpin,
+        &m_config.break_even_threshold
+    ));
+    
+    QDoubleSpinBox* breakEvenOffsetSpin = new QDoubleSpinBox(this);
+    breakEvenOffsetSpin->setDecimals(3);
+    breakEvenOffsetSpin->setRange(-5.0, 5.0);
+    breakEvenOffsetSpin->setSingleStep(0.05);
+    breakEvenOffsetSpin->setValue(0.0);
+    breakEvenOffsetSpin->setSuffix("‰");
+    breakEvenOffsetSpin->setEnabled(false);
+    breakEvenOffsetSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    riskLayout->addRow(new QLabel("Offset Break Even (‰):", this), breakEvenOffsetSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        breakEvenOffsetSpin,
+        &m_config.break_even_offset_per_mille
+    ));
+    
+    createDependencyGroup(
+        useBreakEvenCheck,
+        {breakEvenThresholdSpin, breakEvenOffsetSpin}
+    );
+    
     riskGroup->setLayout(riskLayout);
     baseLayout->addWidget(riskGroup);
+    
     setLayout(baseLayout);
-    
-    // Initialiser l'état des widgets
-    _updateAtrPeriodStatus();
-}
-
-// Implémentation des slots
-void StrategyBasePanel::_toggleSlMethod(int index)
-{
-    bool isFixed = (index == 0);
-    bool isAtr = (index == 1);
-    bool isMinMax = (index == 2);
-    
-    if (m_widgets.contains("stop_loss_distance")) {
-        m_widgets["stop_loss_distance"]->setEnabled(isFixed);
-        if (isFixed)
-            m_widgets["stop_loss_distance"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["stop_loss_distance"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    if (m_widgets.contains("sl_atr_multiplier")) {
-        m_widgets["sl_atr_multiplier"]->setEnabled(isAtr);
-        if (isAtr)
-            m_widgets["sl_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["sl_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    if (m_widgets.contains("sl_minmax_periods")) {
-        m_widgets["sl_minmax_periods"]->setEnabled(isMinMax);
-        if (isMinMax)
-            m_widgets["sl_minmax_periods"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["sl_minmax_periods"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    if (m_widgets.contains("sl_minmax_delta")) {
-        m_widgets["sl_minmax_delta"]->setEnabled(isMinMax);
-        if (isMinMax)
-            m_widgets["sl_minmax_delta"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["sl_minmax_delta"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    
-    // Mettre à jour le statut de la période ATR
-    _updateAtrPeriodStatus();
-}
-
-void StrategyBasePanel::_toggleTpMethod(int index)
-{
-    bool isFixed = (index == 0);
-    bool isAtr = (index == 1);
-    bool isRatio = (index == 2);
-    bool isSupertrend = (index == 3);
-    bool isRL = (index == 4);
-    bool isNthHeikinAshi = (index == 5);
-    
-    if (m_widgets.contains("take_profit_distance")) {
-        m_widgets["take_profit_distance"]->setEnabled(isFixed);
-        if (isFixed)
-            m_widgets["take_profit_distance"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["take_profit_distance"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    if (m_widgets.contains("tp_atr_multiplier")) {
-        m_widgets["tp_atr_multiplier"]->setEnabled(isAtr);
-        if (isAtr)
-            m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["tp_atr_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    if (m_widgets.contains("tp_sl_ratio")) {
-        m_widgets["tp_sl_ratio"]->setEnabled(isRatio);
-        if (isRatio)
-            m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["tp_sl_ratio"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    if (m_widgets.contains("tp_supertrend_atr_period")) {
-        m_widgets["tp_supertrend_atr_period"]->setEnabled(isSupertrend);
-        if (isSupertrend)
-            m_widgets["tp_supertrend_atr_period"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["tp_supertrend_atr_period"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    if (m_widgets.contains("tp_supertrend_multiplier")) {
-        m_widgets["tp_supertrend_multiplier"]->setEnabled(isSupertrend);
-        if (isSupertrend)
-            m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["tp_supertrend_multiplier"]->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    
-    // RL parameters
-    if (m_widgets.contains("rl_lookback_periods")) {
-        m_widgets["rl_lookback_periods"]->setEnabled(isRL);
-        if (isRL)
-            m_widgets["rl_lookback_periods"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["rl_lookback_periods"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-
-    // Nth Heikin-Ashi parameters
-    if (m_widgets.contains("nth_heikin_ashi_count")) {
-        m_widgets["nth_heikin_ashi_count"]->setEnabled(isNthHeikinAshi);
-        if (isNthHeikinAshi)
-            m_widgets["nth_heikin_ashi_count"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
-        else 
-            m_widgets["nth_heikin_ashi_count"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
-    
-    // Mettre à jour le statut de la période ATR
-    _updateAtrPeriodStatus();
-}
-
-void StrategyBasePanel::_updateAtrPeriodStatus()
-{
-    bool atrNeeded = false;
-    
-    // Vérifier si Stop Loss utilise ATR
-    if (m_widgets.contains("sl_method")) {
-        QComboBox* slMethod = static_cast<QComboBox*>(m_widgets["sl_method"]);
-        atrNeeded |= (slMethod->currentIndex() == 1); // Index 1 = ATR
-    }
-    
-    // Vérifier si Take Profit utilise ATR
-    if (m_widgets.contains("tp_method")) {
-        QComboBox* tpMethod = static_cast<QComboBox*>(m_widgets["tp_method"]);
-        atrNeeded |= (tpMethod->currentIndex() == 1); // Index 1 = ATR
-    }
-    
-    if (m_widgets.contains("atr_period")) {
-        m_widgets["atr_period"]->setEnabled(atrNeeded);
-        if (atrNeeded)
-            m_widgets["atr_period"]->setStyleSheet("QSpinBox { background-color: #ffffff; color: #000000; }");
-        else
-            m_widgets["atr_period"]->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    }
 }

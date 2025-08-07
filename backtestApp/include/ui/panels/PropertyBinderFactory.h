@@ -76,6 +76,24 @@ public:
         
         return std::make_unique<TypedPropertyBinder<QComboBox, QString>>(widget, property, setter, getter);
     }
+
+    // Créer un binding pour un QComboBox et un std::string
+    static std::unique_ptr<PropertyBinder> createStringComboBinding(QComboBox* widget, std::string* property) {
+        // Définir comment convertir std::string vers QComboBox
+        auto setter = [](QComboBox* w, const std::string& value) {
+            int index = w->findText(QString::fromStdString(value));
+            if (index >= 0) {
+                w->setCurrentIndex(index);
+            }
+        };
+
+        // Définir comment convertir QComboBox vers std::string
+        auto getter = [](QComboBox* w) -> std::string {
+            return w->currentText().toStdString();
+        };
+
+        return std::make_unique<TypedPropertyBinder<QComboBox, std::string>>(widget, property, setter, getter);
+    }
     
     // Crée un binding pour un QDateEdit et un QDateTime
     static std::unique_ptr<PropertyBinder> createDateTimeBinding(QDateEdit* widget, QDateTime* property) {

@@ -18,10 +18,10 @@
 
 
 struct GeneralParamsConfig {
-    QString strategyName;
-    QString symbol;
-    QString interval;
-    QString period;
+    std::string strategyName;
+    std::string symbol;
+    std::string interval;
+    std::string period;
     QDateTime endDate;
     double cash;
     double spread;
@@ -36,10 +36,10 @@ struct GeneralParamsConfig {
 // surcharge de l'operateur << pour GeneralParamsConfig
 inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& config) {
     os << "GeneralParamsConfig("
-       << "strategyName: " << config.strategyName.toStdString() << ", "
-       << "symbol: " << config.symbol.toStdString() << ", "
-       << "interval: " << config.interval.toStdString() << ", "
-       << "period: " << config.period.toStdString() << ", "
+       << "strategyName: " << config.strategyName << ", "
+       << "symbol: " << config.symbol << ", "
+       << "interval: " << config.interval << ", "
+       << "period: " << config.period << ", "
        << "endDate: " << config.endDate.toString("dd/MM/yyyy").toStdString() << ", "
        << "cash: " << config.cash << ", "
        << "spread: " << config.spread << ", "
@@ -64,10 +64,6 @@ class GeneralParamsPanel : public ConfigPanel<GeneralParamsConfig>
     Q_OBJECT
 
 public:
-    /**
-     * @brief Constructeur
-     * @param parent Pointeur vers le widget parent
-     */
     GeneralParamsPanel(QWidget* parent = nullptr);
 
 signals:
@@ -77,16 +73,9 @@ private slots:
 
 
 private:
-    QMap<QString, QWidget*> m_widgets;
-
-    // Dictionnaire associant les noms de stratégies à leurs classes
     QMap<QString, QString> m_strategyMap;
-    
-    // Initialisation du dictionnaire des stratégies
     void initStrategyMap();
 
     void setupUI();
-    
-    void initializeBindings();
 };
 

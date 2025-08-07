@@ -222,43 +222,10 @@ void BacktestWorker::run()
 
     GeneralParamsConfig generalConfig = m_mainWindow->getGeneralParamsConfig();
 
-    // generalConfig.commission = 0.0;
-    // generalConfig.tradeOnClose = false;
-    // generalConfig.hedging = false;
-    // generalConfig.exclusiveOrders = true;
-    // generalConfig.finalizeTrades = true;
 
-    
-    // Récupération et conversion de la date de fin
-    // QDateTime endDate;
-    // if (m_mainWindow->getGeneralParamsPanel()->getValues().contains("end_date")) {
-    //     QVariant dateVariant = m_mainWindow->getGeneralParamsPanel()->getValues()["end_date"];
-    //     if (dateVariant.userType() == QMetaType::QDate) {
-    //         endDate = QDateTime(dateVariant.toDate(), QTime(23, 59, 59));
-    //     } else if (dateVariant.userType() == QMetaType::QDateTime) {
-    //         endDate = dateVariant.toDateTime();
-    //     } else if (dateVariant.userType() == QMetaType::QString) {
-    //         QString dateStr = dateVariant.toString();
-    //         QStringList dateFormats = {"dd/MM/yyyy", "yyyy-MM-dd", "dd-MM-yyyy"};
-            
-    //         for (const QString& format : dateFormats) {
-    //             QDate parsedDate = QDate::fromString(dateStr, format);
-    //             if (parsedDate.isValid()) {
-    //                 endDate = QDateTime(parsedDate, QTime(23, 59, 59));
-    //                 break;
-    //             }
-    //         }
-    //     }
-    // }
-    
-    // if (!endDate.isValid()) {
-    //     endDate = QDateTime::currentDateTime();
-    // }
-
-    
-    auto strategyCreator = StrategyRegistry::getInstance().getCreator(generalConfig.strategyName);
+    auto strategyCreator = StrategyRegistry::getInstance().getCreator(QString::fromStdString(generalConfig.strategyName));
     if (!strategyCreator) {
-        emit error(QString("Stratégie non supportée: %1").arg(generalConfig.strategyName));
+        emit error(QString("Stratégie non supportée: %1").arg(QString::fromStdString(generalConfig.strategyName)));
         return;
     }
     

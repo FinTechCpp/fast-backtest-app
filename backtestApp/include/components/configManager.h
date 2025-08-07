@@ -2,9 +2,6 @@
 
 #include <QObject>
 #include <QString>
-#include <QMap>
-#include <QVariant>
-#include <QSettings>
 #include <QWidget>
 #include <QMessageBox>
 #include <QInputDialog>
@@ -12,39 +9,14 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QDateTime>
-#include <QComboBox>
-#include <QCheckBox>
-#include <QSpinBox>
-#include <QDoubleSpinBox>
-#include <QTimeEdit>
-#include <QDateEdit>
-#include <QLineEdit>
 #include <QDebug>
-
-/// TRUC A VOIR AVEC CLAUD : IDÉE : NE PAS MAPPER MANUELLEMENT
-/*
-// Exemple conceptuel avec des macros de réflexion (pas du code C++ standard)
-#define SERIALIZABLE_PROPERTY(Type, Name) \
-    private: Type Name##_; \
-    public: Type get##Name() const { return Name##_; } \
-    public: void set##Name(Type value) { Name##_ = value; }
-
-class StrategyBaseConfig {
-    SERIALIZABLE_PROPERTY(bool, EnableLogging)
-    SERIALIZABLE_PROPERTY(double, StopLossDistance)
-    // ...
-};
-
-// Utilisation
-auto json = Serializer::toJson(myConfig); 
-auto config = Serializer::fromJson<StrategyBaseConfig>(json);
-*/
+#include "components/ConfigSerializerCereal.hpp"
 
 // Forward declaration
 class App;
 
 /**
- * @brief Configuration manager for handling and storind backtest parameters
+ * @brief Configuration manager for handling and storing backtest parameters
  */
 class ConfigManager : public QObject
 {
@@ -54,20 +26,11 @@ public:
     ConfigManager(QObject* parent = nullptr);
     ~ConfigManager();
     
-    // Public methods
-    QString getConfigFilePath() const;
-    void initializeConfig();
-    void loadConfig();
-    void saveConfig();
-    
     // Getter for the current profile
     QString getCurrentProfile() const { return m_currentProfile; }
-    
     QStringList listProfiles() const;
-    QMap<QString, QVariant> getProfile(const QString& profileName) const;
 
-
-    // User actions
+    // User actions - public API preserved
     bool saveCurrentProfile(QWidget* parentWidget = nullptr);
     bool promptCreateNewProfile(QWidget* parentWidget = nullptr);
     bool deleteCurrentProfile(QWidget* parentWidget = nullptr);
@@ -75,36 +38,31 @@ public:
     bool exportConfigToFile(QWidget* parentWidget = nullptr, const QString& profileName = "");
     
     // Public methods for slots
-    void updateProfileUI(const QString& selectedProfile);
     void onProfileChanged(const QString& profileName);
-
-    // Convertir une structure typée en QMap pour la sauvegarde
-    template<typename ConfigType>
-    static QMap<QString, QVariant> convertConfigToQMap(const ConfigType& config);
-    
-    // Convertir un QMap en structure typée pour le chargement
-    template<typename ConfigType>
-    static ConfigType convertQMapToConfig(const QMap<QString, QVariant>& map);
-    
 
 signals:
     void profileChanged(const QString& profileName);
     void profileListUpdated();
 
 private:
-    QSettings* m_config;
-    QString m_configFile;
-    QString m_currentProfile;
-    QMap<QString, QVariant> m_defaultValues;
-    App* m_mainWindow;
+    QString m_configDir;         // Directory where profiles are stored
+    QString m_currentProfile;    // Current active profile name
+    App* m_mainWindow;           // Reference to main application window
     
-    void setupDefaultValues();
-
-    // QMap<QString, QVariant> getProfileFromUI() const;
-    bool applyProfileToUI(const QString& profileName);
-
-    // Profile management
+    // Core profile management methods
     bool profileExists(const QString& profileName) const;
-    bool saveProfile(const QString& profileName, const QMap<QString, QVariant>& profileData);
     bool deleteProfile(const QString& profileName);
+    bool applyProfileToUI(const QString& profileName);
+    
+    // Cereal-based serialization methods
+    bool saveProfileToJson(const QString& profileName, const ProfileConfig& config);
+    bool loadProfileFromJson(const QString& profileName, ProfileConfig& config);
+    QString getProfilePath(const QString& profileName) const;
+    
+    // Default profile creation
+    ProfileConfig createDefaultProfile() const;
+    void ensureDefaultProfileExists();
+    
+    // Initialize application directories
+    void initializeDirectories();
 };

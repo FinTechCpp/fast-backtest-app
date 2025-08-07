@@ -105,6 +105,15 @@ public:
         const QString& period = "1m",
         const QDateTime& endDate = QDateTime()
     );
+
+    static std::vector<OHLCBar> loadData(
+        const std::string& symbol = "NDX",
+        const std::string& interval = "10secs",
+        const std::string& period = "1m",
+        const QDateTime& endDate = QDateTime()
+    ) {
+        return loadData(QString::fromStdString(symbol), QString::fromStdString(interval), QString::fromStdString(period), endDate);
+    }
     
     /**
      * @brief Find the CSV file corresponding to the symbol and interval
@@ -113,6 +122,9 @@ public:
      * @return Path to the found file, empty QString if not found
      */
     static QString findDataFile(const QString& symbol, const QString& interval);
+    static QString findDataFile(const std::string& symbol, const std::string& interval) {
+        return findDataFile(QString::fromStdString(symbol), QString::fromStdString(interval));
+    }
     
     /**
      * @brief Find the best base data file for resampling to target interval
@@ -121,6 +133,9 @@ public:
      * @return Path to the best base file, empty QString if not found
      */
     static QString findBestBaseDataFile(const QString& symbol, const QString& interval);
+    static QString findBestBaseDataFile(const std::string& symbol, const std::string& interval) {
+        return findBestBaseDataFile(QString::fromStdString(symbol), QString::fromStdString(interval));
+    }
     
     /**
      * @brief Parse a CSV line into an OHLC bar
@@ -181,6 +196,9 @@ public:
      * @return Number of seconds
      */
     static int intervalToSeconds(const QString& interval);
+    static int intervalToSeconds(const std::string& interval) {
+        return intervalToSeconds(QString::fromStdString(interval));
+    }
     
     /**
      * @brief Set a custom directory for market data

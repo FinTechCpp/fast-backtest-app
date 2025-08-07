@@ -5,3 +5,6 @@
 	path = ThirdParty/Strategies
 	url = https://github.com/FinTechCpp/Strategies.git
 	branch = main
+[submodule "ThirdParty/cereal"]
+	path = ThirdParty/cereal
+	url = https://github.com/USCiLab/cereal.git

@@ -172,9 +172,9 @@ void App::setupConnections()
     }
 }
 
-void App::updateStrategySpecificPanel() {    
-    QString selectedStrategy = m_generalParamsPanel->getConfig().strategyName;
-    qInfo() << "Updating strategy-specific panel for:" << selectedStrategy;
+void App::updateStrategySpecificPanel() {
+    std::string selectedStrategy = m_generalParamsPanel->getConfig().strategyName;
+    qInfo() << "Updating strategy-specific panel for:" << QString::fromStdString(selectedStrategy);
 
     // Sélectionner le panel approprié dans le stack
     if (selectedStrategy == "BuyHeikinGreenBA") {
@@ -343,7 +343,7 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
     
     // Extraire les indicateurs spécifiques à la stratégie
     // QString strategyName = generalValues.value("strategy", "").toString();
-    QString strategyName = generalConfig.strategyName;
+    QString strategyName = QString::fromStdString(generalConfig.strategyName);
     
     if (strategyName.contains("BuyHeikinGreen", Qt::CaseInsensitive)) {
         // QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();

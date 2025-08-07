@@ -24,6 +24,7 @@ target_include_directories(backtestapp
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/backtestEngine/include
         ${CMAKE_SOURCE_DIR}/strategies/include
+        ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include  # Ajoutez cette ligne
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/src
         ${CMAKE_CURRENT_BINARY_DIR}

@@ -130,6 +130,7 @@ find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 
 # git submodules 
 add_subdirectory(ThirdParty/spdlog)
+# include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include)
 add_subdirectory(ThirdParty/Strategies)
 add_subdirectory(ThirdParty/ChartDirector)
 

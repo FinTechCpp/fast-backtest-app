@@ -30,7 +30,8 @@ void ConfigManager::initializeDirectories()
 {
     // Use standard locations for application data
     m_configDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/profiles";
-    
+    // m_configDir = QCoreApplication::applicationDirPath() + "/profiles";
+
     // Create directory if it doesn't exist
     QDir dir;
     if (!dir.exists(m_configDir)) {
@@ -168,6 +169,24 @@ ProfileConfig ConfigManager::createDefaultProfile() const
     config.sellConfig.rsi_threshold = 70;
     
     return config;
+}
+
+bool ConfigManager::openProfilesDirectory() const
+{
+    QDir dir(m_configDir);
+    if (!dir.exists()) {
+        qWarning() << "Profiles directory does not exist:" << m_configDir;
+        return false;
+    }
+    
+    bool success = QDesktopServices::openUrl(QUrl::fromLocalFile(m_configDir));
+    if (success) {
+        qInfo() << "Opened profiles directory:" << m_configDir;
+    } else {
+        qWarning() << "Failed to open profiles directory:" << m_configDir;
+    }
+    
+    return success;
 }
 
 void ConfigManager::ensureDefaultProfileExists()

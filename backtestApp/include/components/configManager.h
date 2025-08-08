@@ -10,7 +10,10 @@
 #include <QStandardPaths>
 #include <QDateTime>
 #include <QDebug>
+#include <QDesktopServices>
+#include <QUrl>
 #include "components/ConfigSerializerCereal.hpp"
+
 
 // Forward declaration
 class App;
@@ -36,6 +39,12 @@ public:
     bool deleteCurrentProfile(QWidget* parentWidget = nullptr);
     bool importConfigFromFile(QWidget* parentWidget = nullptr);
     bool exportConfigToFile(QWidget* parentWidget = nullptr, const QString& profileName = "");
+
+    // Nouvelle méthode pour ouvrir le dossier des profils
+    bool openProfilesDirectory() const;
+    
+    // Getter pour le chemin du dossier des profils
+    QString getProfilesDirectory() const { return m_configDir; }
     
     // Public methods for slots
     void onProfileChanged(const QString& profileName);

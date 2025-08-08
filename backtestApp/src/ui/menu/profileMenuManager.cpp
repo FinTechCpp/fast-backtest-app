@@ -17,6 +17,7 @@ ProfileMenuManager::ProfileMenuManager(App* parent)
     , m_deleteProfileAction(nullptr)
     , m_importAction(nullptr)
     , m_exportAction(nullptr)
+    , m_openDirectoryAction(nullptr)
 {
     qDebug() << "ProfileMenuManager créé";
 }
@@ -45,8 +46,25 @@ void ProfileMenuManager::createProfileMenu(QMenuBar* menuBar)
     m_profileMenu->addSeparator();
     m_profileMenu->addAction(m_importAction);
     m_profileMenu->addAction(m_exportAction);
+
+    // Ajouter un séparateur puis l'action pour ouvrir le dossier
+    m_profileMenu->addSeparator();
+    m_profileMenu->addAction(m_openDirectoryAction);
+    
     
     qDebug() << "Menu Profils créé";
+}
+
+void ProfileMenuManager::onOpenProfilesDirectory()
+{
+    if (m_configManager) {
+        if (!m_configManager->openProfilesDirectory()) {
+            // Afficher un message d'erreur en cas d'échec
+            QMessageBox::warning(m_mainWindow, tr("Erreur"),
+                                tr("Impossible d'ouvrir le dossier des profils.\n"
+                                   "Chemin: %1").arg(m_configManager->getProfilesDirectory()));
+        }
+    }
 }
 
 void ProfileMenuManager::createActions()
@@ -78,6 +96,11 @@ void ProfileMenuManager::createActions()
     m_exportAction = new QAction(tr("&Exporter..."), this);
     m_exportAction->setStatusTip(tr("Exporter la configuration actuelle"));
     connect(m_exportAction, &QAction::triggered, this, &ProfileMenuManager::onExportProfile);
+    
+    // Nouvelle action - Ouvrir le dossier des profils
+    m_openDirectoryAction = new QAction(tr("&Ouvrir le dossier des profils"), this);
+    m_openDirectoryAction->setStatusTip(tr("Ouvrir le dossier contenant les fichiers de profils"));
+    connect(m_openDirectoryAction, &QAction::triggered, this, &ProfileMenuManager::onOpenProfilesDirectory);
 }
 
 void ProfileMenuManager::setConfigManager(ConfigManager* configManager)

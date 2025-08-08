@@ -59,6 +59,7 @@ private slots:
     void onImportProfile();
     void onExportProfile();
     void onLoadProfile();
+    void onOpenProfilesDirectory();
 
 private:
     App* m_mainWindow;
@@ -74,6 +75,8 @@ private:
     QAction* m_deleteProfileAction;
     QAction* m_importAction;
     QAction* m_exportAction;
+    QAction* m_openDirectoryAction;
+
     
     // Actions dynamiques pour les profils
     QMap<QString, QAction*> m_profileActions;

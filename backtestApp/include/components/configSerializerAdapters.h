@@ -16,21 +16,19 @@
 namespace cereal {
     template<class Archive>
     void serialize(Archive & ar, Time & time) {
-        ar(time.hour, time.minute, time.second);
+        ar(cereal::make_nvp("hour", time.hour),
+           cereal::make_nvp("minute", time.minute),
+           cereal::make_nvp("second", time.second));
     }
-
-    // Pour std::array (si trading_days_array est un std::array)
-    // template<class Archive, class T, std::size_t N>
-    // void serialize(Archive & ar, std::array<T, N> & array) {
-    //     for (std::size_t i = 0; i < N; ++i) {
-    //         ar(cereal::make_nvp("item" + std::to_string(i), array[i]));
-    //     }
-    // }
 
     template<class Archive>
     void serialize(Archive & ar, QDateTime & dt) {
-        ar(dt.date().year(), dt.date().month(), dt.date().day(), dt.time().hour(),
-           dt.time().minute(), dt.time().second());
+        ar(cereal::make_nvp("year", dt.date().year()),
+           cereal::make_nvp("month", dt.date().month()),
+           cereal::make_nvp("day", dt.date().day()),
+           cereal::make_nvp("hour", dt.time().hour()),
+           cereal::make_nvp("minute", dt.time().minute()),
+           cereal::make_nvp("second", dt.time().second()));
     }
 
     // Pour QString (adaptateur générique)

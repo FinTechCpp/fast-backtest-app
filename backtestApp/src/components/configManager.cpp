@@ -116,57 +116,57 @@ ProfileConfig ConfigManager::createDefaultProfile() const
     config.version = "1.0";
     config.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate).toStdString();
     
-    // Set default values for general params
-    config.generalParams.strategyName = "HeikinAshi";
-    config.generalParams.symbol = "BTCUSDT";
-    config.generalParams.interval = "1h";
-    config.generalParams.period = "6m";
-    config.generalParams.cash = 10000.0;
-    config.generalParams.spread = 0.0;
-    config.generalParams.commission = 0.0;
-    config.generalParams.leverage_limit = 1.0;
-    config.generalParams.tradeOnClose = false;
-    config.generalParams.hedging = false;
-    config.generalParams.exclusiveOrders = false;
-    config.generalParams.finalizeTrades = false;
+    // // Set default values for general params
+    // config.generalParams.strategyName = "HeikinAshi";
+    // config.generalParams.symbol = "BTCUSDT";
+    // config.generalParams.interval = "1h";
+    // config.generalParams.period = "6m";
+    // config.generalParams.cash = 10000.0;
+    // config.generalParams.spread = 0.0;
+    // config.generalParams.commission = 0.0;
+    // config.generalParams.leverage_limit = 1.0;
+    // config.generalParams.tradeOnClose = false;
+    // config.generalParams.hedging = false;
+    // config.generalParams.exclusiveOrders = false;
+    // config.generalParams.finalizeTrades = false;
     
     // Set default strategy base config
-    config.baseConfig.logLevel = LogLevel::INFO;
-    config.baseConfig.enable_logging = true;
-    config.baseConfig.trading_from.hour = 0;
-    config.baseConfig.trading_from.minute = 0;
-    config.baseConfig.trading_to.hour = 23;
-    config.baseConfig.trading_to.minute = 59;
+    // config.baseConfig.logLevel = LogLevel::INFO;
+    // config.baseConfig.enable_logging = true;
+    // config.baseConfig.trading_from.hour = 0;
+    // config.baseConfig.trading_from.minute = 0;
+    // config.baseConfig.trading_to.hour = 23;
+    // config.baseConfig.trading_to.minute = 59;
     
-    // Set all days to true by default
-    for (int i = 0; i < 7; i++) {
-        config.baseConfig.trading_days_array[i] = true;
-    }
+    // // Set all days to true by default
+    // for (int i = 0; i < 7; i++) {
+    //     config.baseConfig.trading_days_array[i] = true;
+    // }
     
-    config.baseConfig.stop_loss_distance = 100.0;
-    config.baseConfig.take_profit_distance = 200.0;
-    config.baseConfig.sl_method = StopLossMethod::Fixed;
-    config.baseConfig.tp_method = TakeProfitMethod::Fixed;
+    // config.baseConfig.stop_loss_distance = 100.0;
+    // config.baseConfig.take_profit_distance = 200.0;
+    // config.baseConfig.sl_method = StopLossMethod::Fixed;
+    // config.baseConfig.tp_method = TakeProfitMethod::Fixed;
     
     // Set default values for buy/sell strategies
-    // These are just examples, adjust to match your strategy defaults
-    config.buyConfig.ema_short_period = 9;
-    config.buyConfig.ema_long_period = 21;
-    config.buyConfig.stoch_fastk = 14;
-    config.buyConfig.stoch_slowk = 3;
-    config.buyConfig.stoch_slowd = 3;
-    config.buyConfig.stoch_threshold = 20;
-    config.buyConfig.rsi_period = 14;
-    config.buyConfig.rsi_threshold = 30;
+    // // These are just examples, adjust to match your strategy defaults
+    // config.buyConfig.ema_short_period = 9;
+    // config.buyConfig.ema_long_period = 21;
+    // config.buyConfig.stoch_fastk = 14;
+    // config.buyConfig.stoch_slowk = 3;
+    // config.buyConfig.stoch_slowd = 3;
+    // config.buyConfig.stoch_threshold = 20;
+    // config.buyConfig.rsi_period = 14;
+    // config.buyConfig.rsi_threshold = 30;
     
-    config.sellConfig.ema_short_period = 9;
-    config.sellConfig.ema_long_period = 21;
-    config.sellConfig.stoch_fastk = 14;
-    config.sellConfig.stoch_slowk = 3;
-    config.sellConfig.stoch_slowd = 3;
-    config.sellConfig.stoch_threshold = 80;
-    config.sellConfig.rsi_period = 14;
-    config.sellConfig.rsi_threshold = 70;
+    // config.sellConfig.ema_short_period = 9;
+    // config.sellConfig.ema_long_period = 21;
+    // config.sellConfig.stoch_fastk = 14;
+    // config.sellConfig.stoch_slowk = 3;
+    // config.sellConfig.stoch_slowd = 3;
+    // config.sellConfig.stoch_threshold = 80;
+    // config.sellConfig.rsi_period = 14;
+    // config.sellConfig.rsi_threshold = 70;
     
     return config;
 }

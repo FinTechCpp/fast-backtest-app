@@ -4,8 +4,8 @@
 #include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
 #include "ui/panels/strategySpecificPanels/buyHeikinGreenPanel.h"
 #include "ui/panels/strategySpecificPanels/sellHeikinRedPanel.h"
-#include "components/adapters/buyHeikinGreen.hpp"
-#include "components/adapters/sellHeikinRed.hpp"
+#include "components/strategiesAdapters/buyHeikinGreen.hpp"
+#include "components/strategiesAdapters/sellHeikinRed.hpp"
 
 // Fonction d'initialisation des stratégies
 void registerAllStrategies() {

@@ -23,6 +23,9 @@ struct StrategyIndicator {
     std::map<std::string, double> params;  // Indicator parameters
 };
 
+// faire un systeme d'enregistrement des BacktestResults
+// pour pouvoir les charger dans l'interface graphique et comparer les résultats avec une nouvelle execution du backtest
+
 struct BacktestResults {
     std::shared_ptr<be::Data> data;  // Pointer to backtest data
     be::Stats stats;                  // Backtest statistics

@@ -1,6 +1,6 @@
-#include "components/technicalIndicators.h"
+#include "components/Utils/IndicatorMathUtils.h"
 
-std::vector<double> TechnicalIndicators::calculateRSI(const std::vector<double>& closeData, int period)
+std::vector<double> IndicatorMathUtils::calculateRSI(const std::vector<double>& closeData, int period)
 {
     size_t dataSize = closeData.size();
     std::vector<double> rsiValues(dataSize, 0.0);
@@ -61,7 +61,7 @@ std::vector<double> TechnicalIndicators::calculateRSI(const std::vector<double>&
     return rsiValues;
 }
 
-std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>> TechnicalIndicators::calculateHeikinAshi(
+std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::vector<double>> IndicatorMathUtils::calculateHeikinAshi(
     const std::vector<double>& open,
     const std::vector<double>& high,
     const std::vector<double>& low,
@@ -92,7 +92,7 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::v
     return {ha_open, ha_high, ha_low, ha_close};
 }
 
-std::vector<double> TechnicalIndicators::calculateEMA(const std::vector<double>& closeData, int period)
+std::vector<double> IndicatorMathUtils::calculateEMA(const std::vector<double>& closeData, int period)
 {
     size_t dataSize = closeData.size();
     std::vector<double> emaValues(dataSize, 0.0);
@@ -120,7 +120,7 @@ std::vector<double> TechnicalIndicators::calculateEMA(const std::vector<double>&
     return emaValues;
 }
 
-std::tuple<std::vector<double>, std::vector<int>> TechnicalIndicators::calculateSupertrend(
+std::tuple<std::vector<double>, std::vector<int>> IndicatorMathUtils::calculateSupertrend(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
@@ -224,7 +224,7 @@ std::tuple<std::vector<double>, std::vector<int>> TechnicalIndicators::calculate
     return {supertrendValues, trendDirections};
 }
 
-std::tuple<std::vector<double>, std::vector<double>> TechnicalIndicators::calculateStochastic(
+std::tuple<std::vector<double>, std::vector<double>> IndicatorMathUtils::calculateStochastic(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
@@ -305,7 +305,7 @@ std::tuple<std::vector<double>, std::vector<double>> TechnicalIndicators::calcul
     return {kValues, dValues};
 }
 
-std::vector<double> TechnicalIndicators::calculateATR(
+std::vector<double> IndicatorMathUtils::calculateATR(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
@@ -357,7 +357,7 @@ std::vector<double> TechnicalIndicators::calculateATR(
     return atrValues;
 }
 
-std::vector<PivotPeriod> TechnicalIndicators::calculatePivotPoints(
+std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
     const std::vector<double>& openData,
     const std::vector<double>& highData,
     const std::vector<double>& lowData,

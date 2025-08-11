@@ -12,7 +12,7 @@
 #include <QDebug>
 #include <QDesktopServices>
 #include <QUrl>
-#include "components/ConfigSerializerCereal.hpp"
+#include "components/Utils/SerializationUtils.hpp"
 
 
 // Forward declaration
@@ -21,13 +21,13 @@ class App;
 /**
  * @brief Configuration manager for handling and storing backtest parameters
  */
-class ConfigManager : public QObject
+class ProfileManager : public QObject
 {
     Q_OBJECT
 
 public:
-    ConfigManager(QObject* parent = nullptr);
-    ~ConfigManager();
+    ProfileManager(QObject* parent = nullptr);
+    ~ProfileManager();
     
     // Getter for the current profile
     QString getCurrentProfile() const { return m_currentProfile; }

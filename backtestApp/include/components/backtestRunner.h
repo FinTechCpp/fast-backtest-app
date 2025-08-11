@@ -14,7 +14,7 @@
 #include <QString>
 #include <QVariant>
 
-#include "components/dataLoader.h"
+#include "components/Utils/dataLoader.h"
 #include "components/backtestResults.h"
 #include "components/strategyRegistry.h"
 

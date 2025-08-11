@@ -9,7 +9,7 @@
 #include <iostream>
 
 #include "data.hpp"
-#include "components/technicalIndicators.h"
+#include "components/Utils/IndicatorMathUtils.h"
 #include "components/backtestResults.h"
 #include "ui/chart/chartDataManager.h"
 #include "ui/chart/chartRenderer.h"

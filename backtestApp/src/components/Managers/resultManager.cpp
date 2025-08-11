@@ -1,4 +1,4 @@
-#include "components/resultManager.h"
+#include "components/Managers/resultManager.h"
 #include "ui/views/statsView.h"
 #include "ui/views/chartView.h"
 #include "ui/views/histogramView.h"

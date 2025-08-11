@@ -1,4 +1,4 @@
-#include "components/dataLoader.h"
+#include "components/Utils/dataLoader.h"
 #include <QApplication>
 #include <QStandardPaths>
 #include <QRegularExpression>
@@ -854,7 +854,7 @@ QDateTime DataLoader::alignToInterval(const QDateTime& timestamp, int intervalSe
     qint64 epochSeconds = timestamp.toSecsSinceEpoch();
     qint64 alignedSeconds = (epochSeconds / intervalSeconds) * intervalSeconds;
     
-    QDateTime aligned = QDateTime::fromSecsSinceEpoch(alignedSeconds, timestamp.timeSpec());
+    QDateTime aligned = QDateTime::fromSecsSinceEpoch(alignedSeconds, timestamp.timeZone());
     qDebug() << "Aligned timestamp" << timestamp.toString("yyyy-MM-dd hh:mm:ss")
              << "to interval start" << aligned.toString("yyyy-MM-dd hh:mm:ss")
              << "for" << intervalSeconds << "second intervals";

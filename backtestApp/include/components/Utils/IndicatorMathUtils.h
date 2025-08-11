@@ -32,7 +32,7 @@ struct PivotPeriod {
  * This class provides static methods to calculate various technical indicators
  * used in financial analysis.
  */
-class TechnicalIndicators {
+class IndicatorMathUtils {
 public:
     /**
      * @brief Calculates the RSI (Relative Strength Index) indicator

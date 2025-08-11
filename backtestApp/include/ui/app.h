@@ -27,7 +27,7 @@
 
 
 // Forward declarations
-class ConfigManager;
+class ProfileManager;
 class GeneralParamsPanel;
 struct GeneralParamsConfig;
 class StrategyBasePanel;
@@ -50,8 +50,8 @@ public:
     App();
     ~App();
     
-    // Getter pour ConfigManager
-    ConfigManager* getConfigManager() const { return m_configManager; }
+    // Getter pour ProfileManager
+    // ProfileManager* getConfigManager() const { return m_configManager; }
     
     // Getters pour les configurations
     // DEPRECATED
@@ -123,7 +123,7 @@ private:
     QTabWidget* m_resultsTabWidget;
     
     // Managers and Configuration
-    ConfigManager* m_configManager;
+    ProfileManager* m_configManager;
     ResultManager* m_resultManager;
     
     // Panels - SUPPRESSION de ProfilePanel

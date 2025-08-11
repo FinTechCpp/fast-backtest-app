@@ -1,6 +1,6 @@
 #include "ui/menu/profileMenuManager.h"
 #include "ui/app.h"
-#include "components/configManager.h"
+#include "components/Managers/ProfileManager.h"
 #include <QDebug>
 #include <QMessageBox>
 #include <QInputDialog>
@@ -103,16 +103,16 @@ void ProfileMenuManager::createActions()
     connect(m_openDirectoryAction, &QAction::triggered, this, &ProfileMenuManager::onOpenProfilesDirectory);
 }
 
-void ProfileMenuManager::setConfigManager(ConfigManager* configManager)
+void ProfileMenuManager::setConfigManager(ProfileManager* configManager)
 {
     m_configManager = configManager;
     if (m_configManager) {
-        qDebug() << "Connexion du ConfigManager au ProfileMenuManager";
+        qDebug() << "Connexion du ProfileManager au ProfileMenuManager";
         
         // Connecter le signal de changement de profil
-        connect(m_configManager, &ConfigManager::profileChanged,
+        connect(m_configManager, &ProfileManager::profileChanged,
                 this, &ProfileMenuManager::onProfileChanged);
-        connect(m_configManager, &ConfigManager::profileListUpdated,
+        connect(m_configManager, &ProfileManager::profileListUpdated,
                 this, &ProfileMenuManager::updateProfileList);
         
         qDebug() << "Signaux connectés, mise à jour initiale de la liste des profils";
@@ -123,9 +123,9 @@ void ProfileMenuManager::setConfigManager(ConfigManager* configManager)
             updateProfileList();
         });
         
-        qDebug() << "ConfigManager connecté au ProfileMenuManager";
+        qDebug() << "ProfileManager connecté au ProfileMenuManager";
     } else {
-        qWarning() << "ConfigManager null passé à setConfigManager";
+        qWarning() << "ProfileManager null passé à setConfigManager";
     }
 }
 
@@ -134,7 +134,7 @@ void ProfileMenuManager::updateProfileList()
     qDebug() << "updateProfileList() appelé";
     
     if (!m_configManager || !m_loadProfileSubmenu) {
-        qWarning() << "ConfigManager ou LoadProfileSubmenu manquant";
+        qWarning() << "ProfileManager ou LoadProfileSubmenu manquant";
         return;
     }
     

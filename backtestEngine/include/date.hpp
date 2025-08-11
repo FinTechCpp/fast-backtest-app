@@ -9,8 +9,7 @@ namespace be {
 
 class Duration;  // Forward declaration
 
-// TODO : peut etre utiliser chrono pour les durées, et séparer dans un fichier date.cpp 
-
+// On devrait peut etre faire une structure plutot qu'une class ca evite les getter et setter
 /**
  * @brief Représentation d'une date et heure
  *

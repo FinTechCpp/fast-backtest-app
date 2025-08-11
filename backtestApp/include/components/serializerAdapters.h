@@ -12,8 +12,17 @@
 #include "ui/panels/generalParamsPanel.h"
 #include "common.h"
 
-// Adaptateurs pour les types Qt
 namespace cereal {
+    // template<class Archive>
+    // void serialize(Archive & ar, be::Date & date) {
+    //     ar(make_nvp("year", date.year),
+    //        make_nvp("month", date.month),
+    //        make_nvp("day", date.day),
+    //        make_nvp("hour", date.hour),
+    //        make_nvp("minute", date.minute),
+    //        make_nvp("second", date.second));
+    // }
+    
     template<class Archive>
     void serialize(Archive & ar, Time & time) {
         ar(cereal::make_nvp("hour", time.hour),

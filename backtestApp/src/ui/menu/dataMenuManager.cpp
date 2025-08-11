@@ -15,7 +15,7 @@
 #include <QFileInfo>
 #include <QNetworkRequest>
 #include <QDateTime>
-#include "components/dataLoader.h"
+#include "components/Utils/dataLoader.h"
 
 DataMenuManager::DataMenuManager(QObject* parent)
     : QObject(parent)

@@ -4,7 +4,7 @@
 #include <QMessageBox>
 #include <QTime>
 
-#include "components/configManager.h"
+#include "components/Managers/ProfileManager.h"
 #include "components/updateChecker.h"
 #include "ui/panels/generalParamsPanel.h"
 #include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
@@ -14,7 +14,7 @@
 #include "ui/views/statsView.h"
 #include "ui/views/chartView.h"
 #include "ui/views/histogramView.h"
-#include "components/resultManager.h"
+#include "components/Managers/resultManager.h"
 #include "components/backtestRunner.h"
 
 
@@ -27,7 +27,7 @@ App::App() : QMainWindow() {
     initStrategyMap();
     
     // Initialize configuration manager SECOND
-    m_configManager = new ConfigManager(this);
+    m_configManager = new ProfileManager(this);
     
     // Create main layout and central widget THIRD
     m_centralWidget = new QWidget(this);

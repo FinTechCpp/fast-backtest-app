@@ -12,7 +12,7 @@
 #include "trade.hpp"
 #include "chartdir.h"
 #include "ui/chart/indicatorInstances.h"
-#include "components/technicalIndicators.h"
+#include "components/Utils/IndicatorMathUtils.h"
 
 
 // je sais aps trop mais a voir avec claude

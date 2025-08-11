@@ -16,7 +16,7 @@
 #include <iostream>
 #include "ui/app.h"
 #include "components/backtestRunner.h"
-#include "components/dataLoader.h"
+#include "components/Utils/dataLoader.h"
 #include "components/updateChecker.h"
 #include "ui/menu/updateMenuManager.h"
 #include "backtest.hpp"   // For be::* types

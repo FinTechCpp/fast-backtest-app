@@ -8,7 +8,7 @@
 #include <QString>
 
 // Forward declarations
-class ConfigManager;
+class ProfileManager;
 class App;
 
 /**
@@ -35,10 +35,10 @@ public:
     void createProfileMenu(QMenuBar* menuBar);
     
     /**
-     * @brief Initialise le gestionnaire avec le ConfigManager
+     * @brief Initialise le gestionnaire avec le ProfileManager
      * @param configManager Pointeur vers le gestionnaire de configuration
      */
-    void setConfigManager(ConfigManager* configManager);
+    void setConfigManager(ProfileManager* configManager);
     
     /**
      * @brief Met à jour la liste des profils dans le menu
@@ -63,7 +63,7 @@ private slots:
 
 private:
     App* m_mainWindow;
-    ConfigManager* m_configManager;
+    ProfileManager* m_configManager;
     
     // Menu et actions
     QMenu* m_profileMenu;

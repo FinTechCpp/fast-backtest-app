@@ -1,6 +1,4 @@
 #include "components/backtestRunner.h"
-#include "components/configManager.h"
-#include "components/dataLoader.h"
 #include "ui/app.h"
 #include "ui/panels/generalParamsPanel.h"
 #include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
@@ -102,12 +100,6 @@ void BacktestRunner::runBacktest() {
     // Récupérer la configuration depuis l'application
     if (!m_mainWindow) {
         showError("Référence à l'application principale non trouvée");
-        return;
-    }
-    
-    ConfigManager* configManager = m_mainWindow->getConfigManager();
-    if (!configManager) {
-        showError("Gestionnaire de configuration non trouvé");
         return;
     }
     

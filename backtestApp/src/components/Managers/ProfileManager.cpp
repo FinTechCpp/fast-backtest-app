@@ -1,10 +1,10 @@
-#include "components/configManager.h"
+#include "components/Managers/ProfileManager.h"
 #include "ui/app.h"
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QFile>
 
-ConfigManager::ConfigManager(QObject *parent)
+ProfileManager::ProfileManager(QObject *parent)
     : QObject(parent)
     , m_currentProfile("DEFAULT")
     , m_mainWindow(nullptr)
@@ -18,15 +18,15 @@ ConfigManager::ConfigManager(QObject *parent)
     // Ensure DEFAULT profile exists
     ensureDefaultProfileExists();
     
-    qInfo() << "ConfigManager successfully initialized with profile directory:" << m_configDir;
+    qInfo() << "ProfileManager successfully initialized with profile directory:" << m_configDir;
 }
 
-ConfigManager::~ConfigManager()
+ProfileManager::~ProfileManager()
 {
     // Clean-up if needed
 }
 
-void ConfigManager::initializeDirectories()
+void ProfileManager::initializeDirectories()
 {
     // Use standard locations for application data
     m_configDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/profiles";
@@ -40,7 +40,7 @@ void ConfigManager::initializeDirectories()
     }
 }
 
-QStringList ConfigManager::listProfiles() const
+QStringList ProfileManager::listProfiles() const
 {
     QStringList profiles;
     
@@ -65,13 +65,13 @@ QStringList ConfigManager::listProfiles() const
     return profiles;
 }
 
-bool ConfigManager::saveProfileToJson(const QString& profileName, const ProfileConfig& config)
+bool ProfileManager::saveProfileToJson(const QString& profileName, const ProfileConfig& config)
 {
     QString profilePath = getProfilePath(profileName);
-    return ConfigSerializerCereal::saveProfile(profilePath, config);
+    return SerializationUtils::saveToJsonFile(profilePath, config);
 }
 
-bool ConfigManager::loadProfileFromJson(const QString& profileName, ProfileConfig& config)
+bool ProfileManager::loadProfileFromJson(const QString& profileName, ProfileConfig& config)
 {
     QString profilePath = getProfilePath(profileName);
     
@@ -85,21 +85,21 @@ bool ConfigManager::loadProfileFromJson(const QString& profileName, ProfileConfi
         return false;
     }
     
-    return ConfigSerializerCereal::loadProfile(profilePath, config);
+    return SerializationUtils::loadFromJsonFile(profilePath, config);
 }
 
-QString ConfigManager::getProfilePath(const QString& profileName) const
+QString ProfileManager::getProfilePath(const QString& profileName) const
 {
     return m_configDir + "/" + profileName + ".json";
 }
 
-bool ConfigManager::profileExists(const QString& profileName) const
+bool ProfileManager::profileExists(const QString& profileName) const
 {
     QString profilePath = getProfilePath(profileName);
     return QFile::exists(profilePath);
 }
 
-bool ConfigManager::deleteProfile(const QString& profileName)
+bool ProfileManager::deleteProfile(const QString& profileName)
 {
     if (profileName == "DEFAULT") {
         return false;  // Cannot delete DEFAULT profile
@@ -109,69 +109,17 @@ bool ConfigManager::deleteProfile(const QString& profileName)
     return QFile::remove(profilePath);
 }
 
-ProfileConfig ConfigManager::createDefaultProfile() const
+ProfileConfig ProfileManager::createDefaultProfile() const
 {
     ProfileConfig config;
     config.name = "DEFAULT";
     config.version = "1.0";
     config.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate).toStdString();
     
-    // // Set default values for general params
-    // config.generalParams.strategyName = "HeikinAshi";
-    // config.generalParams.symbol = "BTCUSDT";
-    // config.generalParams.interval = "1h";
-    // config.generalParams.period = "6m";
-    // config.generalParams.cash = 10000.0;
-    // config.generalParams.spread = 0.0;
-    // config.generalParams.commission = 0.0;
-    // config.generalParams.leverage_limit = 1.0;
-    // config.generalParams.tradeOnClose = false;
-    // config.generalParams.hedging = false;
-    // config.generalParams.exclusiveOrders = false;
-    // config.generalParams.finalizeTrades = false;
-    
-    // Set default strategy base config
-    // config.baseConfig.logLevel = LogLevel::INFO;
-    // config.baseConfig.enable_logging = true;
-    // config.baseConfig.trading_from.hour = 0;
-    // config.baseConfig.trading_from.minute = 0;
-    // config.baseConfig.trading_to.hour = 23;
-    // config.baseConfig.trading_to.minute = 59;
-    
-    // // Set all days to true by default
-    // for (int i = 0; i < 7; i++) {
-    //     config.baseConfig.trading_days_array[i] = true;
-    // }
-    
-    // config.baseConfig.stop_loss_distance = 100.0;
-    // config.baseConfig.take_profit_distance = 200.0;
-    // config.baseConfig.sl_method = StopLossMethod::Fixed;
-    // config.baseConfig.tp_method = TakeProfitMethod::Fixed;
-    
-    // Set default values for buy/sell strategies
-    // // These are just examples, adjust to match your strategy defaults
-    // config.buyConfig.ema_short_period = 9;
-    // config.buyConfig.ema_long_period = 21;
-    // config.buyConfig.stoch_fastk = 14;
-    // config.buyConfig.stoch_slowk = 3;
-    // config.buyConfig.stoch_slowd = 3;
-    // config.buyConfig.stoch_threshold = 20;
-    // config.buyConfig.rsi_period = 14;
-    // config.buyConfig.rsi_threshold = 30;
-    
-    // config.sellConfig.ema_short_period = 9;
-    // config.sellConfig.ema_long_period = 21;
-    // config.sellConfig.stoch_fastk = 14;
-    // config.sellConfig.stoch_slowk = 3;
-    // config.sellConfig.stoch_slowd = 3;
-    // config.sellConfig.stoch_threshold = 80;
-    // config.sellConfig.rsi_period = 14;
-    // config.sellConfig.rsi_threshold = 70;
-    
     return config;
 }
 
-bool ConfigManager::openProfilesDirectory() const
+bool ProfileManager::openProfilesDirectory() const
 {
     QDir dir(m_configDir);
     if (!dir.exists()) {
@@ -189,7 +137,7 @@ bool ConfigManager::openProfilesDirectory() const
     return success;
 }
 
-void ConfigManager::ensureDefaultProfileExists()
+void ProfileManager::ensureDefaultProfileExists()
 {
     if (!profileExists("DEFAULT")) {
         ProfileConfig defaultConfig = createDefaultProfile();
@@ -198,7 +146,7 @@ void ConfigManager::ensureDefaultProfileExists()
     }
 }
 
-bool ConfigManager::applyProfileToUI(const QString& profileName)
+bool ProfileManager::applyProfileToUI(const QString& profileName)
 {
     if (!m_mainWindow) {
         qWarning() << "MainWindow not defined";
@@ -226,7 +174,7 @@ bool ConfigManager::applyProfileToUI(const QString& profileName)
     return success;
 }
 
-bool ConfigManager::saveCurrentProfile(QWidget* parentWidget)
+bool ProfileManager::saveCurrentProfile(QWidget* parentWidget)
 {
     if (!m_mainWindow) {
         qWarning() << "MainWindow not defined";
@@ -257,7 +205,7 @@ bool ConfigManager::saveCurrentProfile(QWidget* parentWidget)
     return success;
 }
 
-bool ConfigManager::promptCreateNewProfile(QWidget* parentWidget)
+bool ProfileManager::promptCreateNewProfile(QWidget* parentWidget)
 {
     bool ok;
     QString profileName = QInputDialog::getText(parentWidget, 
@@ -307,7 +255,7 @@ bool ConfigManager::promptCreateNewProfile(QWidget* parentWidget)
     return false;
 }
 
-bool ConfigManager::deleteCurrentProfile(QWidget* parentWidget)
+bool ProfileManager::deleteCurrentProfile(QWidget* parentWidget)
 {
     if (m_currentProfile == "DEFAULT") {
         if (parentWidget) {
@@ -348,7 +296,7 @@ bool ConfigManager::deleteCurrentProfile(QWidget* parentWidget)
     return false;
 }
 
-bool ConfigManager::importConfigFromFile(QWidget* parentWidget)
+bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
 {
     QString fileName = QFileDialog::getOpenFileName(parentWidget,
                                                    "Importer une configuration",
@@ -368,7 +316,7 @@ bool ConfigManager::importConfigFromFile(QWidget* parentWidget)
     
     // Try to load the profile configuration from the file
     ProfileConfig importedConfig;
-    bool loadSuccess = ConfigSerializerCereal::loadFromJsonFile(fileName, importedConfig);
+    bool loadSuccess = SerializationUtils::loadFromJsonFile(fileName, importedConfig);
     
     if (!loadSuccess) {
         if (parentWidget) {
@@ -442,7 +390,7 @@ bool ConfigManager::importConfigFromFile(QWidget* parentWidget)
     return success;
 }
 
-bool ConfigManager::exportConfigToFile(QWidget* parentWidget, const QString& profileName)
+bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& profileName)
 {
     QString targetProfile = profileName.isEmpty() ? m_currentProfile : profileName;
 
@@ -483,7 +431,7 @@ bool ConfigManager::exportConfigToFile(QWidget* parentWidget, const QString& pro
     }
     
     // Save the profile to the selected file
-    bool success = ConfigSerializerCereal::saveToJsonFile(fileName, profileConfig);
+    bool success = SerializationUtils::saveToJsonFile(fileName, profileConfig);
     
     if (success) {
         if (parentWidget) {
@@ -500,7 +448,7 @@ bool ConfigManager::exportConfigToFile(QWidget* parentWidget, const QString& pro
     return success;
 }
 
-void ConfigManager::onProfileChanged(const QString& profileName)
+void ProfileManager::onProfileChanged(const QString& profileName)
 {
     if (profileName != m_currentProfile) {
         applyProfileToUI(profileName);

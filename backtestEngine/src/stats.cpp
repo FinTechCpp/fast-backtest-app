@@ -13,6 +13,7 @@ namespace be {
 
 // Valeur NaN pour initialiser les statistiques non calculables
 constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
+constexpr unsigned int NaNUInt = std::numeric_limits<unsigned int>::min(); // Utilisé pour les valeurs entières
 
 // Structure pour stocker les informations sur les drawdowns
 struct DrawdownInfo {
@@ -627,15 +628,15 @@ Stats dummyStats() {
     stats.maxDrawdownDuration = Duration();
     stats.avgDrawdownDuration = Duration();
     stats.numTrades = 0;
-    stats.numTPTrades = NaN;
+    stats.numTPTrades = 0;
     stats.pctTPTrades = NaN;
-    stats.numSLTrades = NaN;
+    stats.numSLTrades = 0;
     stats.pctSLTrades = NaN;
-    stats.numBETrades = NaN;
+    stats.numBETrades = 0;
     stats.pctBETrades = NaN;
-    stats.numManualTrades = NaN;
+    stats.numManualTrades = 0;
     stats.pctManualTrades = NaN;
-    stats.numUnknownTrades = NaN;
+    stats.numUnknownTrades = 0;
     stats.pctUnknownTrades = NaN;
     stats.bestTradePct = NaN;
     stats.worstTradePct = NaN;

@@ -3,7 +3,27 @@
 #include <QDebug>
 #include <QTime>
 #include <QPieSeries>
+#include <QBarSeries>
+#include <QBarSet>
+#include <QBarCategoryAxis>
+#include <QValueAxis>
 #include <QPieSlice>
+
+
+/*
+5. Ajouts supplémentaires pour une visualisation complète
+Voici quelques idées supplémentaires qui pourraient être intégrées:
+
+Equity curve avec bandes de drawdown: Montrer l'évolution du capital avec des zones colorées indiquant les drawdowns
+
+Analyse des jours/heures de trading: Heatmap montrant les performances par jour de semaine/heure de la journée
+
+Timeline des trades: Visualisation chronologique des trades avec des barres colorées pour TP/SL/BE
+
+Carte de performance vs volatilité: Positionnement de votre stratégie par rapport à d'autres dans un graphique risque/rendement
+
+Indicateurs d'amélioration: Des suggestions visuelles sur les aspects à améliorer dans la stratégie
+*/
 
 // Utilitaire pour convertir be::Date en QDateTime
 QDateTime TradesTableModel::dateToQDateTime(const be::Date& date) {
@@ -396,7 +416,6 @@ void StatsView::updateData(BacktestResults* results)
         // Créer les tables si ce n'est pas déjà fait
         if (!m_tablesCreated) {
             createTradesTable();
-            createTradeClosureChart();
             m_tablesCreated = true;
         }
         
@@ -413,10 +432,11 @@ void StatsView::updateData(BacktestResults* results)
         // Mettre à jour les métriques avec l'objet Stats
         populateMetrics(m_currentResults->stats);
 
+        updateTradeClosureChart(m_currentResults->stats);
+
         // Mettre à jour la table des trades
         populateTrades(m_currentResults->stats.trades);
 
-        updateTradeClosureChart(m_currentResults->stats);
 
         qInfo() << "StatsView mise à jour avec succès";
         
@@ -693,6 +713,11 @@ void StatsView::createTradesTable() {
     m_tradesGroup = new QGroupBox("Trades Réalisés");
     m_tradesLayout = new QVBoxLayout(m_tradesGroup);
     
+    // 1. D'abord créer et ajouter le graphique de distribution des rendements
+    
+    // 2. Ensuite créer et ajouter le graphique camembert de clôture des trades
+    createTradeClosureChart();
+
     createTradesTableControls();
     createTradesTableView();
     setupTradesConnections();
@@ -931,7 +956,7 @@ void StatsView::updateTradeClosureChart(const be::Stats& stats) {
         QColor(127, 140, 141), // Gris foncé
         QColor(44, 62, 80)     // Noir
     };
-    int counts[] = {
+    unsigned int counts[] = {
         stats.numTPTrades,
         stats.numSLTrades,
         stats.numBETrades,

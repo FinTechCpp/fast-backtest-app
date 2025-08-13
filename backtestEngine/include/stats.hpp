@@ -57,15 +57,15 @@ struct Stats {
 
     // Statistiques des trades
     unsigned int numTrades = 0;          ///< Nombre total de trades
-    double numTPTrades = 0;         ///< Nombre de trades gagnants
+    unsigned int numTPTrades = 0;         ///< Nombre de trades gagnants
     double pctTPTrades = 0;          ///< Pourcentage de trades gagnants
-    double numSLTrades = 0;          ///< Nombre de trades perdants
+    unsigned int numSLTrades = 0;          ///< Nombre de trades perdants
     double pctSLTrades = 0;          ///< Pourcentage de trades perdants
-    double numBETrades = 0;         ///< Nombre de trades neutres
+    unsigned int numBETrades = 0;         ///< Nombre de trades neutres
     double pctBETrades = 0;          ///< Pourcentage de trades en break-even
-    double numManualTrades = 0;          ///< Nombre de trades manuels
+    unsigned int numManualTrades = 0;          ///< Nombre de trades manuels
     double pctManualTrades = 0;     ///< Pourcentage de trades manuels
-    double numUnknownTrades = 0;         ///< Nombre de trades avec raison de fermeture inconnue
+    unsigned int numUnknownTrades = 0;         ///< Nombre de trades avec raison de fermeture inconnue
     double pctUnknownTrades = 0;    ///< Pourcentage de trades avec raison de fermeture
     double bestTradePct = 0;             ///< Meilleur trade en pourcentage
     double worstTradePct = 0;            ///< Pire trade en pourcentage

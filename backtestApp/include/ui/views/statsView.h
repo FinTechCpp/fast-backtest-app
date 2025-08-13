@@ -14,6 +14,7 @@
 #include <QSplitter>
 #include <QStackedWidget>
 #include <QHeaderView>
+#include <QChartView>
 #include <QVariant>
 #include <memory>
 #include "ui/views/baseView.h"
@@ -195,7 +196,12 @@ private:
     std::vector<be::TradeData> getFilteredTrades(const std::vector<be::TradeData>& allTrades);
 
     // ==================== Membres privés ====================
-    
+        // Graphiques
+    QChartView* m_tradeClosureChartView;
+    void createTradeClosureChart();
+    void updateTradeClosureChart(const be::Stats& stats);
+
+
     // --- Modèles de données ---
     TradesTableModel* m_tradesModel;
     TradesTableModel* m_equityModel;

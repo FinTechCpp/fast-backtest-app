@@ -8,26 +8,6 @@
 #include "stats.hpp"
 #include "common.h"
 
-struct DataReference {
-    // Métadonnées d'identification
-    std::string symbol;         // Symbole traité
-    std::string timeframe;      // Intervalle (1h, 1d, etc.)
-    std::string period;         // Période analysée (1m, 1y, etc.)
-    
-    // Caractéristiques d'identification
-    be::Date firstDate;         // Première date de la série
-    be::Date lastDate;          // Dernière date de la série
-    size_t candleCount;         // Nombre de bougies total
-    
-    // Empreinte numérique (hash) des données
-    std::string dataHash;       // Hash SHA-256 des données OHLCV
-    
-    // Utilitaires
-    bool matchesData(const be::Data& data) const;  // Vérifie si ces données correspondent
-    static DataReference fromData(const be::Data& data, const std::string& symbol,
-                                  const std::string& timeframe, const std::string& period);
-};
-
 // Structure for storing indicators used in the strategy 
 // This is used to display the indicators in the chart after the backtest ends
 struct StrategyIndicator {

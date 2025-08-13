@@ -24,6 +24,7 @@
 #include "sell_heikin_red.hpp"
 #include "ui/panels/strategySpecificPanels/buyHeikinGreenPanel.h"
 #include "ui/panels/strategySpecificPanels/sellHeikinRedPanel.h"
+// #include "ui/menu/BacktestResultMenuManager.h"
 
 
 // Forward declarations
@@ -41,6 +42,8 @@ class BasePanel;
 class ProfileMenuManager;
 class DataMenuManager;
 class UpdateMenuManager;
+class BacktestResultMenuManager;
+class BacktestResultManager;
 
 class App : public QMainWindow
 {
@@ -49,9 +52,6 @@ class App : public QMainWindow
 public:
     App();
     ~App();
-    
-    // Getter pour ProfileManager
-    // ProfileManager* getConfigManager() const { return m_configManager; }
     
     // Getters pour les configurations
     // DEPRECATED
@@ -67,14 +67,9 @@ public:
     void setBuyHeikinGreenConfig(const BuyHeikinGreenConfig& config);
     void setSellHeikinRedConfig(const SellHeikinRedConfig& config);
 
-    // Mise à jour des vues de résultats
-    void updateResultViews(BacktestResults* results);
-
     // Ajout d'accesseurs pour les résultats de backtest
     BacktestResults* getBacktestResults() const { return m_backtestResults.get(); }
     void setBacktestResults(std::unique_ptr<BacktestResults> results);
-
-    UpdateMenuManager* getUpdateMenuManager() const { return m_updateMenuManager; }
 
 private slots:
     void onStrategyChanged(const QString& strategy);
@@ -98,6 +93,9 @@ private:
 
     //Gestionnaire de menu des mises à jour
     UpdateMenuManager* m_updateMenuManager;
+
+    // Gestionnaire de résultats
+    BacktestResultMenuManager* m_backtestResultMenuManager;
 
     void createMenus();
     void createActions();
@@ -124,6 +122,7 @@ private:
     
     // Managers and Configuration
     ProfileManager* m_configManager;
+    BacktestResultManager* m_backtestResultManager;
     ResultManager* m_resultManager;
     
     // Panels - SUPPRESSION de ProfilePanel
@@ -132,8 +131,6 @@ private:
     BuyHeikinGreenPanel* m_buyHeikinGreenPanel = nullptr;
     SellHeikinRedPanel* m_sellHeikinRedPanel = nullptr;
 
-    // DEPRECATED
-    // BasePanel* m_strategySpecificPanel = nullptr;
     
     // Components
     BacktestRunner* m_backtestRunner;

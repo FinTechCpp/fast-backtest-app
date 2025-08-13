@@ -5,6 +5,7 @@
 #include <chrono>
 #include "date.hpp"
 
+
 namespace be {
 
 // Forward declarations
@@ -17,6 +18,32 @@ enum class CloseReason {
     StopLoss,     // Fermé par Stop Loss
     TakeProfit,   // Fermé par Take Profit
     BreakEven     // Fermé par Stop Loss en Break Even
+};
+
+struct TradeData {
+    double size = 0.0;
+    double entryPrice = 0.0;
+    double exitPrice = 0.0;
+    size_t entryBar = 0;
+    size_t exitBar = 0;
+    be::Date entryDate;
+    be::Date exitDate;
+    be::CloseReason closeReason = be::CloseReason::Unknown;
+    std::string tag;
+    double commissions = 0.0;
+    bool isBreakEven = false;
+    double tpPrice = 0.0; // Prix du Take Profit
+    double initialSlPrice = 0.0; // Prix du Stop Loss initialement défini
+    double lastSlPrice = 0.0; // Prix du dernier Stop Loss
+    double breakEvenTriggerPrice = 0.0;
+    double pl = 0.0;
+    double plPercent = 0.0;
+
+
+    // Methode utilitaires
+    bool wasLong() const { return size > 0; }
+    bool wasShort() const { return size < 0; }
+    bool hasBeenClosed() const { return exitPrice > 0; }
 };
 
 /**
@@ -86,41 +113,24 @@ public:
     bool setBreakEven(double price, double triggerPrice = 0.0);
     
     // Getters
-    double size() const { return _size; } ///< Taille de la position (+ achat, - vente)
-    double entryPrice() const { return _entryPrice; } ///< Prix d'entrée
-    double exitPrice() const { return _exitPrice; } ///< Prix de sortie (0 si encore actif)
-    size_t entryBar() const { return _entryBar; } ///< Barre d'entrée
-    size_t exitBar() const { return _exitBar; } ///< Barre de sortie (0 si encore actif)
-    Date entryDate() const { return _entryDate; } ///< Date d'entrée
-    Date exitDate() const { return _exitDate; } ///< Date de sortie (Date() si encore actif)
-    std::string tag() const { return _tag; } ///< Étiquette descriptive
-
-    /**
-     * @brief Obtient la raison de clôture du trade
-     * @return La raison de clôture
-     */
-    CloseReason closeReason() const { return _closeReason; }
-    
-    // Pour le broker (friend class)
-    void setCloseReason(CloseReason reason) { _closeReason = reason; }
-
-    /**
-     * @brief Vérifie si le trade est en mode break-even
-     * @return true si le trade est en break-even
-     */
-    bool isBreakEven() const { return _isBreakEven; }
-
-    /**
-     * @brief Obtient le prix de déclenchement du break-even
-     * @return Prix qui a déclenché le passage en break-even
-     */
-    double breakEvenTriggerPrice() const { return _breakEvenTriggerPrice; }
-    
-    /**
-     * @brief Obtient le prix du Stop Loss initial
-     * @return Prix du SL initial ou 0.0 si aucun SL n'était défini
-     */
-    double initialSlPrice() const { return _initialSlPrice; }
+    TradeData data() { 
+        _updateDynamicData();
+        return _data; 
+    } ///< Retourne les données
+    double size() const { return _data.size; } ///< Taille de la position (+ achat, - vente)
+    double entryPrice() const { return _data.entryPrice; } ///< Prix d'entrée
+    double exitPrice() const { return _data.exitPrice; } ///< Prix de sortie (0 si encore actif)
+    size_t entryBar() const { return _data.entryBar; } ///< Barre d'entrée
+    size_t exitBar() const { return _data.exitBar; } ///< Barre de sortie (0 si encore actif)
+    Date entryDate() const { return _data.entryDate; } ///< Date d'entrée
+    double commissions() const { return _data.commissions; } ///< Commissions payées pour ce trade
+    Date exitDate() const { return _data.exitDate; } ///< Date de sortie (Date() si encore actif)
+    std::string tag() const { return _data.tag; } ///< Étiquette descriptive
+    CloseReason closeReason() const { return _data.closeReason; }
+    void setCloseReason(CloseReason reason) { _data.closeReason = reason; }
+    bool isBreakEven() const { return _data.isBreakEven; }
+    double breakEvenTriggerPrice() const { return _data.breakEvenTriggerPrice; }
+    double initialSlPrice() const { return _data.initialSlPrice; }
 
     /**
      * @brief Calcule le profit/perte actuel ou final de la position
@@ -138,13 +148,6 @@ public:
      * @return Profit/perte en pourcentage (positif = profit, négatif = perte)
      */
     double plPercent() const;
-    
-    /**
-     * @brief Calcule la valeur actuelle de la position
-     * 
-     * @return Valeur absolue (taille × prix actuel)
-     */
-    double value() const;
     
     /**
      * @brief Obtient le prix du Stop Loss actuel
@@ -186,19 +189,19 @@ public:
      * @brief Vérifie si la position est longue (achat)
      * @return true si size > 0, false sinon
      */
-    bool isLong() const { return _size > 0; }
+    bool isLong() const { return _data.size > 0; }
     
     /**
      * @brief Vérifie si la position est courte (vente)
      * @return true si size < 0, false sinon
      */
-    bool isShort() const { return _size < 0; }
+    bool isShort() const { return _data.size < 0; }
     
     /**
      * @brief Vérifie si la position est fermée
      * @return true si exitPrice > 0, false sinon
      */
-    bool isClosed() const { return _exitPrice > 0; }
+    bool isClosed() const { return _data.exitPrice > 0; }
     
     /**
      * @brief Convertit le trade en chaîne de caractères pour le débug et les logs
@@ -220,22 +223,18 @@ public:
     
 private:
     std::shared_ptr<Broker> _broker;     ///< Broker gérant ce trade
-    double _size;                        ///< Taille (positive=long, négative=short)
-    double _entryPrice;                  ///< Prix d'entrée
-    double _exitPrice;                   ///< Prix de sortie (0 si position ouverte)
-    size_t _entryBar;                    ///< Barre d'entrée
-    Date _entryDate;                     ///< Date d'entrée
-    size_t _exitBar;                     ///< Barre de sortie
-    Date _exitDate;                      ///< Date de sortie
-    CloseReason _closeReason = CloseReason::Unknown; ///< Raison de la fermeture du trade
-    std::string _tag;                    ///< Étiquette descriptive
-    double _commissions;                 ///< Commissions totales payées
-    bool _isBreakEven = false;           ///< Indique si le trade est en mode break-even
-    double _initialSlPrice = 0.0;        ///< Prix du SL initial (avant passage en break-even)
-    double _breakEvenTriggerPrice = 0.0; ///< Prix qui a déclenché le passage en break-even
-
+    TradeData _data;                ///< Données du trade (taille, prix, dates, etc.)
     std::shared_ptr<Order> _slOrder;     ///< Ordre de Stop Loss
     std::shared_ptr<Order> _tpOrder;     ///< Ordre de Take Profit
+
+    // c'est dommage on ne peux pas mettre le mot clé const
+    void _updateDynamicData() {
+        _data.lastSlPrice = this->sl();
+        _data.initialSlPrice = this->initialSlPrice();
+        _data.tpPrice = this->tp();
+        _data.pl = this->pl();
+        _data.plPercent = this->plPercent();
+    }
     
     // Méthodes auxiliaires pour que le broker puisse modifier les propriétés du trade
     void setExitPrice(double price);

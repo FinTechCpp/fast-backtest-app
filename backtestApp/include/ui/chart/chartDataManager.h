@@ -105,7 +105,7 @@ public:
 
     // Méthodes pour la gestion des données
     void setBacktestData(const std::shared_ptr<const be::Data>& data);
-    void setTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);
+    void setTrades(const std::vector<be::TradeData>& trades);
     void setEquityCurve(const std::vector<double>& equityCurve);
     void updateHeikinAshiCache();
     AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
@@ -116,7 +116,7 @@ public:
     const EquityData& getEquityData() const { return m_equityData; }
     std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
     const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
-    const std::vector<std::shared_ptr<be::Trade>>& getTrades() const { return m_trades; }
+    const std::vector<be::TradeData>& getTrades() const { return m_trades; }
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_indicators; }
     const IndicatorData& getAggregatedIndicators(AggregationLevel level) const;
     const std::map<int, std::vector<PivotPeriod>>& getPivotPeriods() const { return m_pivotPeriods; }
@@ -261,7 +261,7 @@ private:
     // les points pivots ne s'aggrègent pas comme les autres indicateurs, ils supportent nativement l'aggregation
     std::map<int, std::vector<PivotPeriod>> m_pivotPeriods;
     HeikinAshiCache m_heikinAshiCache;
-    std::vector<std::shared_ptr<be::Trade>> m_trades;
+    std::vector<be::TradeData> m_trades;
     std::vector<TradeIndices> m_tradeIndices; // Indices pour chaque trade
     EquityData m_equityData;
 

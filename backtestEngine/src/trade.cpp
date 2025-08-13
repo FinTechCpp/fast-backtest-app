@@ -16,17 +16,14 @@ Trade::Trade(std::shared_ptr<Broker> broker,
              const Date& entryDate,
              const std::string& tag)
     : _broker(broker),
-      _size(size),
-      _entryPrice(entryPrice),
-      _exitPrice(0.0),  // Pas encore fermé
-      _entryBar(entryBar),
-      _exitBar(0),      // Pas encore fermé
-      _entryDate(entryDate),
-      _exitDate(Date()), // Date de sortie (initialisée à une date par défaut)
-      _tag(tag),
-      _commissions(0.0),
       _slOrder(nullptr),
       _tpOrder(nullptr) {
+
+    _data.size = size;
+    _data.entryPrice = entryPrice;
+    _data.entryBar = entryBar;
+    _data.entryDate = entryDate;
+    _data.tag = tag;
 }
 
 void Trade::close(double portion) {
@@ -36,23 +33,23 @@ void Trade::close(double portion) {
     
     // Calculer la taille à fermer
     double closeSize = std::copysign(
-        std::abs(_size) * portion,
-        -_size  // Signe opposé à la position actuelle
+        std::abs(_data.size) * portion,
+        -_data.size  // Signe opposé à la position actuelle
     );
     
     // Créer un ordre pour fermer la position
     // Notez que nous passons this comme trade parent, le broker gèrera l'association
-    Order order = _broker->newOrder(closeSize, 0.0, 0.0, 0.0, 0.0, _tag, 0.0, 0.0, shared_from_this());
+    Order order = _broker->newOrder(closeSize, 0.0, 0.0, 0.0, 0.0, _data.tag, 0.0, 0.0, shared_from_this());
 }
 
 bool Trade::setBreakEven(double price, double triggerPrice) {
     // Ne rien faire si déjà en break-even
-    if (_isBreakEven)
+    if (_data.isBreakEven)
         return true;
     
     // Sauvegarder le SL initial s'il existe
     if (_slOrder) {
-        _initialSlPrice = _slOrder->stop();
+        _data.initialSlPrice = _slOrder->stop();
     } else {
         // Aucun stop loss défini, impossible de passer en break-even
         return false;
@@ -60,7 +57,7 @@ bool Trade::setBreakEven(double price, double triggerPrice) {
 
     // Enregistrer le prix de déclenchement du break-even
     if (triggerPrice > 0) {
-        _breakEvenTriggerPrice = triggerPrice;
+        _data.breakEvenTriggerPrice = triggerPrice;
     }
         
     // Vérifier que le nouveau SL est valide (ne déclenche pas immédiatement)
@@ -75,24 +72,24 @@ bool Trade::setBreakEven(double price, double triggerPrice) {
     sl(price);
     
     // Marquer comme break-even
-    _isBreakEven = true;
+    _data.isBreakEven = true;
     return true;
 }
 
 double Trade::pl() const {
-    double price = _exitPrice > 0 ? _exitPrice : _broker->lastPrice();
-    return _size * (price - _entryPrice);
+    double price = _data.exitPrice > 0 ? _data.exitPrice : _broker->lastPrice();
+    return _data.size * (price - _data.entryPrice);
 }
 
 double Trade::plPercent() const {
-    double price = _exitPrice > 0 ? _exitPrice : _broker->lastPrice();
-    return std::copysign(1.0, _size) * (price / _entryPrice - 1.0);
+    double price = _data.exitPrice > 0 ? _data.exitPrice : _broker->lastPrice();
+    return std::copysign(1.0, _data.size) * (price / _data.entryPrice - 1.0);
 }
 
-double Trade::value() const {
-    double price = _exitPrice > 0 ? _exitPrice : _broker->lastPrice();
-    return std::abs(_size) * price;
-}
+// double Trade::value() const {
+//     double price = _data.exitPrice > 0 ? _data.exitPrice : _broker->lastPrice();
+//     return std::abs(_data.size) * price;
+// }
 
 double Trade::sl() const {
     return _slOrder ? _slOrder->stop() : 0.0;
@@ -119,8 +116,8 @@ void Trade::sl(double price) {
     // }
 
     // Sauvegarder le prix initial du SL si c'est le premier placement
-    if (!_slOrder && _initialSlPrice == 0.0) {
-        _initialSlPrice = price;
+    if (!_slOrder && _data.initialSlPrice == 0.0) {
+        _data.initialSlPrice = price;
     }
     
     // Annuler l'ordre existant s'il y en a un
@@ -132,7 +129,7 @@ void Trade::sl(double price) {
     // Créer un nouvel ordre SL
     // Comme le broker est ami (friend) de la classe Trade, il peut accéder à _slOrder
     // directement et le modifier
-    Order slOrder = _broker->newOrder(-_size, 0.0, price, 0.0, 0.0, _tag, 0.0, 0.0, shared_from_this());
+    Order slOrder = _broker->newOrder(-_data.size, 0.0, price, 0.0, 0.0, _data.tag, 0.0, 0.0, shared_from_this());
     _slOrder = std::make_shared<Order>(slOrder);
 }
 
@@ -157,7 +154,7 @@ void Trade::tp(double price) {
     }
     
     // Vérifier que le prix est cohérent avec la direction du trade
-    if ((isLong() && price <= _entryPrice) || (isShort() && price >= _entryPrice)) {
+    if ((isLong() && price <= _data.entryPrice) || (isShort() && price >= _data.entryPrice)) {
         throw std::invalid_argument("TP price must be above entry for long trades and below entry for short trades");
     }
     
@@ -168,36 +165,36 @@ void Trade::tp(double price) {
     }
     
     // Créer un nouvel ordre TP avec shared_from_this() comme parent
-    Order tpOrder = _broker->newOrder(-_size, price, 0.0, 0.0, 0.0, _tag, 0.0, 0.0, shared_from_this());
+    Order tpOrder = _broker->newOrder(-_data.size, price, 0.0, 0.0, 0.0, _data.tag, 0.0, 0.0, shared_from_this());
     _tpOrder = std::make_shared<Order>(tpOrder);
 }
 
 // Méthodes auxiliaires pour que le broker puisse modifier les propriétés du trade
 void Trade::setExitPrice(double price) {
-    _exitPrice = price;
+    _data.exitPrice = price;
 }
 
 void Trade::setExitBar(size_t bar) {
-    _exitBar = bar;
+    _data.exitBar = bar;
 }
 
 void Trade::setExitDate(Date date)
 {
-    _exitDate = date;
+    _data.exitDate = date;
 }
 
 void Trade::setSize(double size) {
-    _size = size;
+    _data.size = size;
 }
 
 void Trade::setCommissions(double commissions) {
-    _commissions = commissions;
+    _data.commissions = commissions;
 }
 
 void Trade::setSlOrder(Order order) {
     // Si c'est le premier SL, enregistrer le prix initial
-    if (!_slOrder && _initialSlPrice == 0.0) {
-        _initialSlPrice = order.sl();
+    if (!_slOrder && _data.initialSlPrice == 0.0) {
+        _data.initialSlPrice = order.sl();
     }
 
     _slOrder = std::make_shared<Order>(order);
@@ -209,18 +206,18 @@ void Trade::setTpOrder(Order order) {
 
 std::string Trade::toString() const {
     std::stringstream ss;
-    ss << "<Trade size=" << _size << " time=" << _entryBar << "-";
-    if (_exitBar > 0) {
-        ss << _exitBar;
+    ss << "<Trade size=" << _data.size << " time=" << _data.entryBar << "-";
+    if (_data.exitBar > 0) {
+        ss << _data.exitBar;
     }
-    ss << " price=" << _entryPrice << "-";
-    if (_exitPrice > 0) {
-        ss << _exitPrice;
+    ss << " price=" << _data.entryPrice << "-";
+    if (_data.exitPrice > 0) {
+        ss << _data.exitPrice;
     }
     ss << " pl=" << pl();
-    
-    if (!_tag.empty()) {
-        ss << " tag=" << _tag;
+
+    if (!_data.tag.empty()) {
+        ss << " tag=" << _data.tag;
     }
     ss << ">";
     return ss.str();

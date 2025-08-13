@@ -65,7 +65,7 @@ QStringList ProfileManager::listProfiles() const
     return profiles;
 }
 
-bool ProfileManager::saveProfileToJson(const QString& profileName, const ProfileConfig& config)
+bool ProfileManager::saveProfile(const QString& profileName, const ProfileConfig& config)
 {
     QString profilePath = getProfilePath(profileName);
     return SerializationUtils::saveToJsonFile(profilePath, config);
@@ -79,7 +79,7 @@ bool ProfileManager::loadProfileFromJson(const QString& profileName, ProfileConf
         if (profileName == "DEFAULT") {
             // Create and save default profile
             config = createDefaultProfile();
-            saveProfileToJson("DEFAULT", config);
+            saveProfile("DEFAULT", config);
             return true;
         }
         return false;
@@ -141,7 +141,7 @@ void ProfileManager::ensureDefaultProfileExists()
 {
     if (!profileExists("DEFAULT")) {
         ProfileConfig defaultConfig = createDefaultProfile();
-        saveProfileToJson("DEFAULT", defaultConfig);
+        saveProfile("DEFAULT", defaultConfig);
         qInfo() << "Created DEFAULT profile";
     }
 }
@@ -192,7 +192,7 @@ bool ProfileManager::saveCurrentProfile(QWidget* parentWidget)
     profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
     profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
     
-    bool success = saveProfileToJson(m_currentProfile, profileConfig);
+    bool success = saveProfile(m_currentProfile, profileConfig);
     
     if (success && parentWidget) {
         QMessageBox::information(parentWidget, "Succès", 
@@ -233,7 +233,7 @@ bool ProfileManager::promptCreateNewProfile(QWidget* parentWidget)
         profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
         profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
         
-        bool success = saveProfileToJson(profileName, profileConfig);
+        bool success = saveProfile(profileName, profileConfig);
         
         if (success) {
             m_currentProfile = profileName;
@@ -354,7 +354,7 @@ bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
         if (ok && !newProfileName.isEmpty() && newProfileName != "DEFAULT") {
             targetProfile = newProfileName;
             importedConfig.name = newProfileName.toStdString();
-            success = saveProfileToJson(targetProfile, importedConfig);
+            success = saveProfile(targetProfile, importedConfig);
             
             if (success) {
                 // Switch to the new profile
@@ -367,7 +367,7 @@ bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
     } else if (choice == QMessageBox::Apply) {
         // Replace the current profile
         importedConfig.name = m_currentProfile.toStdString();
-        success = saveProfileToJson(targetProfile, importedConfig);
+        success = saveProfile(targetProfile, importedConfig);
         
         if (success) {
             // Reload configuration into UI

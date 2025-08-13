@@ -101,7 +101,7 @@ std::map<std::string, double> Stats::toMap() const {
     // Valeurs temporelles
     // map["Start"] = start.toString();  // Convertir la date en chaîne de caractères
     // map["End"] = end.toString();      // Convertir la date en chaîne de caractères
-    map["Duration"] = duration.getTotalDays();  // Durée en jours
+    map["Duration"] = duration.toDays();  // Durée en jours
     map["Exposure Time [%]"] = exposureTimePct;
     
     // Valeurs d'équité
@@ -156,7 +156,7 @@ std::ostream& operator<<(std::ostream& os, const Stats& stats) {
     os << "\n-- Période --\n";
     os << "  Début: " << stats.start << "\n";
     os << "  Fin: " << stats.end << "\n";
-    os << "  Durée: " << stats.duration << "\n";
+    os << "  Durée: " << stats.duration.toString() << "\n";
     os << "  Exposition: " << stats.exposureTimePct << "%\n";
     
     os << "\n-- Résultats --\n";
@@ -179,8 +179,8 @@ std::ostream& operator<<(std::ostream& os, const Stats& stats) {
     os << "\n-- Drawdowns --\n";
     os << "  Maximum: " << stats.maxDrawdownPct << "%\n";
     os << "  Moyen: " << stats.avgDrawdownPct << "%\n";
-    os << "  Durée maximale: " << stats.maxDrawdownDuration << "\n";
-    os << "  Durée moyenne: " << stats.avgDrawdownDuration << "\n";
+    os << "  Durée maximale: " << stats.maxDrawdownDuration.toString() << "\n";
+    os << "  Durée moyenne: " << stats.avgDrawdownDuration.toString() << "\n";
     
     os << "\n-- Trades --\n";
     os << "  Nombre total: " << stats.numTrades << "\n";
@@ -190,8 +190,8 @@ std::ostream& operator<<(std::ostream& os, const Stats& stats) {
     os << "  Meilleur: " << stats.bestTradePct << "%\n";
     os << "  Pire: " << stats.worstTradePct << "%\n";
     os << "  Moyen: " << stats.avgTradePct << "%\n";
-    os << "  Durée maximale: " << stats.maxTradeDuration << "\n";
-    os << "  Durée moyenne: " << stats.avgTradeDuration << "\n";
+    os << "  Durée maximale: " << stats.maxTradeDuration.toString() << "\n";
+    os << "  Durée moyenne: " << stats.avgTradeDuration.toString() << "\n";
     os << "  Facteur de profit: " << stats.profitFactor << "\n";
     os << "  Espérance: " << stats.expectancyPct << "%\n";
     os << "  SQN: " << stats.sqn << "\n";
@@ -213,9 +213,17 @@ Stats computeStats(
         return dummyStats();
     }
 
+    // Convertir les trades en TradeData
+    stats.trades.reserve(trades.size());
+    for (const auto& trade : trades) {
+        if (trade) {
+            stats.trades.push_back(trade->data());
+        }
+    }
+
     // Stocker les données brutes pour analyses futures
     stats.equityCurve = equity;          
-    stats.trades = trades;               
+    // stats.trades = trades;               
     
     // Dates de début et fin du backtest
     stats.start = data.at(0).date;  // Première date du dataset
@@ -331,12 +339,12 @@ Stats computeStats(
     if (!tradeDurations.empty()) {
         // Trouver la durée maximale
         stats.maxTradeDuration = *std::max_element(tradeDurations.begin(), tradeDurations.end(),
-            [](const Duration& a, const Duration& b) { return a.getTotalSeconds() < b.getTotalSeconds(); });
-        
+            [](const Duration& a, const Duration& b) { return a.seconds < b.seconds; });
+
         // Calculer la durée moyenne
         double totalSeconds = 0.0;
         for (const auto& dur : tradeDurations) {
-            totalSeconds += dur.getTotalSeconds();
+            totalSeconds += dur.seconds;
         }
         stats.avgTradeDuration = Duration(totalSeconds / tradeDurations.size());
     }
@@ -442,12 +450,12 @@ Stats computeStats(
         // Trouver la durée maximale
         if (!realDurations.empty()) {
             stats.maxDrawdownDuration = *std::max_element(realDurations.begin(), realDurations.end(),
-                [](const Duration& a, const Duration& b) { return a.getTotalSeconds() < b.getTotalSeconds(); });
-            
+                [](const Duration& a, const Duration& b) { return a.seconds < b.seconds; });
+
             // Calculer la durée moyenne
             double totalSeconds = 0.0;
             for (const auto& dur : realDurations) {
-                totalSeconds += dur.getTotalSeconds();
+                totalSeconds += dur.seconds;
             }
             stats.avgDrawdownDuration = Duration(totalSeconds / realDurations.size());
         } else {
@@ -487,7 +495,7 @@ Stats computeStats(
     }
     
     // CAGR (Taux de croissance annuel composé)
-    double years = stats.duration.getTotalYears();
+    double years = stats.duration.toYears();
     if (years > 0) {
         stats.cagrPct = (std::pow(equity.back() / equity.front(), 1.0 / years) - 1) * 100;
     } else {
@@ -643,13 +651,13 @@ Stats dummyStats() {
 }
 
 // Pour la compatibilité avec le code existant
-std::map<std::string, double> computeStatsMap(
-    const std::vector<std::shared_ptr<Trade>>& trades,
-    const std::vector<double>& equity,
-    const Data& data) {
+// std::map<std::string, double> computeStatsMap(
+//     const std::vector<std::shared_ptr<Trade>>& trades,
+//     const std::vector<double>& equity,
+//     const Data& data) {
     
-    Stats stats = computeStats(trades, equity, data);
-    return stats.toMap();
-}
+//     Stats stats = computeStats(trades, equity, data);
+//     return stats.toMap();
+// }
 
 } // namespace be

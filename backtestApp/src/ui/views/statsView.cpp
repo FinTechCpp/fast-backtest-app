@@ -7,12 +7,8 @@
 QDateTime TradesTableModel::dateToQDateTime(const be::Date& date) {
     // Utiliser les getters publics au lieu d'accéder directement aux membres privés
     return QDateTime(
-        QDate(static_cast<int>(date.getYear()), 
-              static_cast<int>(date.getMonth()), 
-              static_cast<int>(date.getDay())),
-        QTime(static_cast<int>(date.getHour()), 
-              static_cast<int>(date.getMinute()), 
-              static_cast<int>(date.getSecond()))
+        QDate(static_cast<int>(date.year), static_cast<int>(date.month), static_cast<int>(date.day)),
+        QTime(static_cast<int>(date.hour), static_cast<int>(date.minute), static_cast<int>(date.second))
     );
 }
 
@@ -31,7 +27,7 @@ void TradesTableModel::clear() {
 }
 
 // Nouvelle implémentation pour travailler avec des be::Trade
-void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>& trades)
+void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
 {
     beginResetModel();
     
@@ -55,29 +51,28 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
     
     for (int row = 0; row < static_cast<int>(trades.size()); ++row) {
         const auto& trade = trades[row];
-        if (!trade) continue;
         
         // # (numéro de trade)
         setItem(row, 0, new QStandardItem(QString::number(row + 1)));
         
         // Type (LONG/SHORT basé sur la taille)
-        QString tradeType = trade->size() > 0 ? "LONG" : "SHORT";
+        QString tradeType = trade.size > 0 ? "LONG" : "SHORT";
         QStandardItem* typeItem = new QStandardItem(tradeType);
-        typeItem->setForeground(trade->size() > 0 ? Qt::darkGreen : Qt::darkRed);
+        typeItem->setForeground(trade.size > 0 ? Qt::darkGreen : Qt::darkRed);
         setItem(row, 1, typeItem);
         
         // Taille (valeur absolue)
-        setItem(row, 2, new QStandardItem(formatNumber(std::abs(trade->size()), 4)));
+        setItem(row, 2, new QStandardItem(formatNumber(std::abs(trade.size), 4)));
 
         // Prix d'entrée
-        setItem(row, 3, new QStandardItem(formatNumber(trade->entryPrice(), 2)));
+        setItem(row, 3, new QStandardItem(formatNumber(trade.entryPrice, 2)));
 
         // Prix de sortie
-        setItem(row, 4, new QStandardItem(formatNumber(trade->exitPrice(), 2)));
+        setItem(row, 4, new QStandardItem(formatNumber(trade.exitPrice, 2)));
 
         // PnL
-        double pnl = trade->pl();
-        be::CloseReason closeReason = trade->closeReason();
+        double pnl = trade.pl;
+        be::CloseReason closeReason = trade.closeReason;
         QStandardItem* pnlItem = new QStandardItem(formatNumber(pnl, 2));
         pnlItem->setForeground(
             closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
@@ -89,7 +84,7 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         setItem(row, 5, pnlItem);
         
         // PnL %
-        double returnPct = trade->plPercent();
+        double returnPct = trade.plPercent;
         QStandardItem* pctItem = new QStandardItem(formatNumber(returnPct * 100, 2) + "%");
         pctItem->setForeground(
             closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
@@ -101,8 +96,8 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         setItem(row, 6, pctItem);
         
         // Durée - calculer à partir des dates
-        QDateTime entryDT = dateToQDateTime(trade->entryDate());
-        QDateTime exitDT = dateToQDateTime(trade->exitDate());
+        QDateTime entryDT = dateToQDateTime(trade.entryDate);
+        QDateTime exitDT = dateToQDateTime(trade.exitDate);
         qint64 durationSecs = entryDT.secsTo(exitDT);
         
         QString durationStr;
@@ -129,17 +124,17 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         
         // Stop Loss (si disponible)
         QString slText = "-";
-        if (trade->initialSlPrice() > 0) {
-            slText = formatNumber(trade->initialSlPrice(), 2);
-        } else if (trade->sl() > 0) {
-            slText = formatNumber(trade->sl(), 2);
+        if (trade.initialSlPrice > 0) {
+            slText = formatNumber(trade.initialSlPrice, 2);
+        } else if (trade.lastSlPrice > 0) {
+            slText = formatNumber(trade.lastSlPrice, 2);
         }
         setItem(row, 10, new QStandardItem(slText));
         
         // Take Profit (si disponible)
         QString tpText = "-";
-        if (trade->tp() > 0) {
-            tpText = formatNumber(trade->tp(), 2);
+        if (trade.tpPrice > 0) {
+            tpText = formatNumber(trade.tpPrice, 2);
         }
         setItem(row, 11, new QStandardItem(tpText));
 
@@ -148,7 +143,7 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         QColor textColor = Qt::darkGray; // Par défaut gris pour Unknown/ManualClose
 
         // Déterminer le texte et la couleur selon le type de clôture
-        switch (trade->closeReason()) {
+        switch (trade.closeReason) {
             case be::CloseReason::TakeProfit:
                 closeReasonText = "TP";
                 textColor = Qt::darkGreen;
@@ -179,18 +174,18 @@ void TradesTableModel::updateData(const std::vector<std::shared_ptr<be::Trade>>&
         
         // Tag (si disponible)
         QString tag = "-";
-        if (!trade->tag().empty()) {
-            tag = QString::fromStdString(trade->tag());
+        if (!trade.tag.empty()) {
+            tag = QString::fromStdString(trade.tag);
         }
         setItem(row, 13, new QStandardItem(tag));
 
         // Appliquer la couleur de fond selon la raison de clôture
         QColor rowColor;
-        if (trade->closeReason() == be::CloseReason::TakeProfit) {
+        if (trade.closeReason == be::CloseReason::TakeProfit) {
             rowColor = QColor(220, 255, 220); // Vert très clair
-        } else if (trade->closeReason() == be::CloseReason::StopLoss) {
+        } else if (trade.closeReason == be::CloseReason::StopLoss) {
             rowColor = QColor(255, 220, 220); // Rouge très clair
-        } else if (trade->closeReason() == be::CloseReason::BreakEven) {
+        } else if (trade.closeReason == be::CloseReason::BreakEven) {
             rowColor = QColor(220, 240, 255); // Bleu très clair
         } else {
             // ManualClose ou Unknown
@@ -807,13 +802,13 @@ void StatsView::setupTradesConnections() {
     });
 }
 
-std::vector<std::shared_ptr<be::Trade>> StatsView::getFilteredTrades(const std::vector<std::shared_ptr<be::Trade>>& allTrades) {
-    std::vector<std::shared_ptr<be::Trade>> filteredTrades = allTrades;
-    
+std::vector<be::TradeData> StatsView::getFilteredTrades(const std::vector<be::TradeData>& allTrades) {
+    std::vector<be::TradeData> filteredTrades = allTrades;
+
     if (m_tradesLimitCombo) {
         int limit = m_tradesLimitCombo->currentData().toInt();
         if (limit > 0 && filteredTrades.size() > static_cast<size_t>(limit)) {
-            filteredTrades = std::vector<std::shared_ptr<be::Trade>>(
+            filteredTrades = std::vector<be::TradeData>(
                 filteredTrades.end() - limit, filteredTrades.end()
             );
         }
@@ -822,7 +817,7 @@ std::vector<std::shared_ptr<be::Trade>> StatsView::getFilteredTrades(const std::
     return filteredTrades;
 }
 
-void StatsView::populateTrades(const std::vector<std::shared_ptr<be::Trade>>& trades)
+void StatsView::populateTrades(const std::vector<be::TradeData>& trades)
 {
     if (!m_tradesModel) { return; }
 

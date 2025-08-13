@@ -21,7 +21,7 @@ namespace be {
 struct Stats {
     // Données brutes pour analyse et visualisation
     std::vector<double> equityCurve;                ///< Courbe d'équité complète
-    std::vector<std::shared_ptr<Trade>> trades;     ///< Liste des trades fermés
+    std::vector<TradeData> trades;     ///< Liste des trades fermés
     
     // Statistiques temporelles
     Date start = Date();                 ///< Indice de la première barre
@@ -57,7 +57,6 @@ struct Stats {
 
     // Statistiques des trades
     unsigned int numTrades = 0;          ///< Nombre total de trades
-    // double winRatePct = 0;               ///< Pourcentage de trades gagnants
     double numTPTrades = 0;         ///< Nombre de trades gagnants
     double pctTPTrades = 0;          ///< Pourcentage de trades gagnants
     double numSLTrades = 0;          ///< Nombre de trades perdants
@@ -119,9 +118,9 @@ Stats dummyStats();
  * @brief Version compatible de computeStats retournant une map
  * @deprecated Utilisez directement computeStats retournant une structure Stats
  */
-std::map<std::string, double> computeStatsMap(
-    const std::vector<std::shared_ptr<Trade>>& trades,
-    const std::vector<double>& equity,
-    const Data& data);
+// std::map<std::string, double> computeStatsMap(
+//     const std::vector<std::shared_ptr<Trade>>& trades,
+//     const std::vector<double>& equity,
+//     const Data& data);
 
 } // namespace be

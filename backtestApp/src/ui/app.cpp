@@ -5,12 +5,14 @@
 #include <QTime>
 
 #include "components/Managers/ProfileManager.h"
+#include "components/Managers/BacktestResultManager.h"
 #include "components/updateChecker.h"
 #include "ui/panels/generalParamsPanel.h"
 #include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
 #include "ui/menu/profileMenuManager.h"
 #include "ui/menu/dataMenuManager.h"
 #include "ui/menu/updateMenuManager.h"
+#include "ui/menu/BacktestResultMenuManager.h"
 #include "ui/views/statsView.h"
 #include "ui/views/chartView.h"
 #include "ui/views/histogramView.h"
@@ -28,7 +30,9 @@ App::App() : QMainWindow() {
     
     // Initialize configuration manager SECOND
     m_configManager = new ProfileManager(this);
-    
+
+    m_backtestResultManager = new BacktestResultManager(this);
+
     // Create main layout and central widget THIRD
     m_centralWidget = new QWidget(this);
     setCentralWidget(m_centralWidget);
@@ -73,6 +77,11 @@ void App::createMenus()
     // Créer le gestionnaire de menu des mises à jour
     m_updateMenuManager = new UpdateMenuManager(this);
     m_updateMenuManager->createUpdateMenu(m_menuBar);
+
+    // Créer le gestionnaire de menu des résultats
+    m_backtestResultMenuManager = new BacktestResultMenuManager(this);
+    m_backtestResultMenuManager->setResultManager(m_backtestResultManager);
+    m_backtestResultMenuManager->createResultMenu(m_menuBar);
 
     // Create Help menu (après le menu Profils)
     m_helpMenu = m_menuBar->addMenu(tr("&Aide"));
@@ -464,13 +473,9 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
 
 void App::setBacktestResults(std::unique_ptr<BacktestResults> results) {
     m_backtestResults = std::move(results);
-    // Mettre à jour les vues avec le nouveau pointeur
-    updateResultViews(m_backtestResults.get());
-}
 
-void App::updateResultViews(BacktestResults* results) {
     if (m_resultManager) {
-        m_resultManager->updateAllViews(results);
+        m_resultManager->updateAllViews(m_backtestResults.get());
     }
 }
 

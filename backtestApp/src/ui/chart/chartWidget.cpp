@@ -353,7 +353,7 @@ bool ChartWidget::removeIndicator(int id) {
 }
 
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {
-    return Chart::chartTime(date.getYear(), date.getMonth(), date.getDay(), date.getHour(), date.getMinute(), date.getSecond());
+    return Chart::chartTime(date.year, date.month, date.day, date.hour, date.minute, date.second);
 }
 
 void ChartWidget::resizeEvent(QResizeEvent* event)

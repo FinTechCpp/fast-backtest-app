@@ -387,27 +387,27 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
             case PivotPointsInstance::PeriodType::FourHour: {
                 // On considère une nouvelle période si l'heure courante est dans {13, 17, 21, 1}
                 // et différente de la précédente (pour éviter de splitter plusieurs fois sur la même heure)
-                int hour = static_cast<int>(date.getHour());
+                int hour = static_cast<int>(date.hour);
                 bool isBoundary = (hour == 13 || hour == 17 || hour == 21 || hour == 1);
-                int prevHour = static_cast<int>(currentDate.getHour());
+                int prevHour = static_cast<int>(currentDate.hour);
                 newPeriod = isBoundary && (hour != prevHour);
                 // On force aussi le split si le jour/mois/année change
                 newPeriod = newPeriod ||
-                            (date.getDay() != currentDate.getDay()) ||
-                            (date.getMonth() != currentDate.getMonth()) ||
-                            (date.getYear() != currentDate.getYear());
+                            (date.day != currentDate.day) ||
+                            (date.month != currentDate.month) ||
+                            (date.year != currentDate.year);
                 break;
             }
             case PivotPointsInstance::PeriodType::Daily:
                 // Nouvelle journée si le jour a changé
-                newPeriod = (date.getDay() != currentDate.getDay() ||
-                             date.getMonth() != currentDate.getMonth() ||
-                             date.getYear() != currentDate.getYear());
+                newPeriod = (date.day != currentDate.day ||
+                             date.month != currentDate.month ||
+                             date.year != currentDate.year);
                 break;
                 
             case PivotPointsInstance::PeriodType::Weekly: {
                 // Nouvelle semaine si la différence de jours > 2 (week-end ou jours fériés)
-                int dayDiff = static_cast<int>(date.getDay() - dates[i-1].getDay());
+                int dayDiff = static_cast<int>(date.day - dates[i-1].day);
                 bool isMonday = (dayDiff > 2);
                 newPeriod = isMonday;
                 break;
@@ -415,8 +415,8 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
                 
             case PivotPointsInstance::PeriodType::Monthly:
                 // Nouveau mois
-                newPeriod = (date.getMonth() != currentDate.getMonth() ||
-                             date.getYear() != currentDate.getYear());
+                newPeriod = (date.month != currentDate.month ||
+                             date.year != currentDate.year);
                 break;
         }
         

@@ -99,12 +99,12 @@ public:
         const be::Candle& currentCandle = getData()->current();
         be::Date current_date = currentCandle.date;
         
-        candle.ohlc.date.year = current_date.getYear();
-        candle.ohlc.date.month = current_date.getMonth();
-        candle.ohlc.date.day = current_date.getDay();
-        candle.ohlc.date.time.hour = current_date.getHour();
-        candle.ohlc.date.time.minute = current_date.getMinute();
-        candle.ohlc.date.time.second = current_date.getSecond();
+        candle.ohlc.date.year = current_date.year;
+        candle.ohlc.date.month = current_date.month;
+        candle.ohlc.date.day = current_date.day;
+        candle.ohlc.date.time.hour = current_date.hour;
+        candle.ohlc.date.time.minute = current_date.minute;
+        candle.ohlc.date.time.second = current_date.second;
         
         // Fill the OHLC values using the new interface
         candle.ohlc.open = currentCandle.open;

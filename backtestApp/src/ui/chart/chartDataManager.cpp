@@ -28,7 +28,7 @@ void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& da
     m_aggregatedIndicatorsCache.clear();
 }
 
-void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>>& trades) {
+void ChartDataManager::setTrades(const std::vector<be::TradeData>& trades) {
     m_trades = trades;
     m_tradeIndices.clear();
     
@@ -40,9 +40,9 @@ void ChartDataManager::setTrades(const std::vector<std::shared_ptr<be::Trade>>& 
 
     // Initialiser les indices raw pour tous les trades
     for (size_t i = 0; i < m_trades.size(); ++i) {
-        int entryBar = static_cast<int>(m_trades[i]->entryBar());
-        int exitBar = m_trades[i]->isClosed() ? static_cast<int>(m_trades[i]->exitBar()) : entryBar;
-        
+        int entryBar = static_cast<int>(m_trades[i].entryBar);
+        int exitBar = m_trades[i].hasBeenClosed() ? static_cast<int>(m_trades[i].exitBar) : entryBar;
+
         // Stocker les indices raw
         m_tradeIndices[i].indices[AggregationLevel::Raw] = {entryBar, exitBar};
     }
@@ -104,7 +104,7 @@ void ChartDataManager::prepareTimestampsCache() {
 }
 
 double ChartDataManager::dateToChartTimestamp(const be::Date& date) const {
-    return Chart::chartTime(date.getYear(), date.getMonth(), date.getDay(), date.getHour(), date.getMinute(), date.getSecond());
+    return Chart::chartTime(date.year, date.month, date.day, date.hour, date.minute, date.second);
 }
 
 void ChartDataManager::updateHeikinAshiCache() {
@@ -596,7 +596,7 @@ void ChartDataManager::precalculateTradeIndices(AggregationLevel level) {
     
     std::sort(sortedTradeIndices.begin(), sortedTradeIndices.end(),
         [this](size_t a, size_t b) {
-            return m_trades[a]->entryBar() < m_trades[b]->entryBar();
+            return m_trades[a].entryBar < m_trades[b].entryBar;
         });
     
     // Curseur pour parcourir le mapping une seule fois
@@ -604,10 +604,10 @@ void ChartDataManager::precalculateTradeIndices(AggregationLevel level) {
     
     for (size_t idx : sortedTradeIndices) {
         const auto& trade = m_trades[idx];
-        
-        int rawEntryBar = static_cast<int>(trade->entryBar());
-        int rawExitBar = trade->isClosed() ? static_cast<int>(trade->exitBar()) : rawEntryBar;
-        
+
+        int rawEntryBar = static_cast<int>(trade.entryBar);
+        int rawExitBar = trade.hasBeenClosed() ? static_cast<int>(trade.exitBar) : rawEntryBar;
+
         int aggEntryIndex = -1;
         int aggExitIndex = -1;
         

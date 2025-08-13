@@ -58,7 +58,7 @@ public:
      * @brief Met à jour les données du modèle avec un vecteur de trades
      * @param trades Les trades à afficher
      */
-    void updateData(const std::vector<std::shared_ptr<be::Trade>>& trades);
+    void updateData(const std::vector<be::TradeData>& trades);
     
     /**
      * @brief Efface toutes les lignes du modèle
@@ -187,13 +187,12 @@ private:
     /**
      * @brief Remplit la table des trades
      */
-    void populateTrades(const std::vector<std::shared_ptr<be::Trade>>& trades);
-    
+    void populateTrades(const std::vector<be::TradeData>& trades);
+
     /**
      * @brief Filtre les trades selon les paramètres actuels
      */
-    std::vector<std::shared_ptr<be::Trade>> getFilteredTrades(
-        const std::vector<std::shared_ptr<be::Trade>>& allTrades);
+    std::vector<be::TradeData> getFilteredTrades(const std::vector<be::TradeData>& allTrades);
 
     // ==================== Membres privés ====================
     

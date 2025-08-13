@@ -10,6 +10,8 @@
 #include "strategy.hpp"
 #include "stats.hpp"
 
+// TODO : ajouter des callback pour l'equity curve : on tient au courant le frontend de l'equity curve pendant le cours de l'execution et ainsi on peut faire un affichage dynamique pendant que le backtest s'execute on voit l'equity curve se racer (pourquoi pas faire de meme pour autres elements du backtest)
+
 namespace be {
 
 /**

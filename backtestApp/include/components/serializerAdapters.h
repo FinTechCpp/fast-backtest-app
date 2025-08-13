@@ -3,6 +3,7 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/memory.hpp>
 #include <cereal/types/array.hpp>
 #include <QDateTime>
 
@@ -12,16 +13,80 @@
 #include "ui/panels/generalParamsPanel.h"
 #include "common.h"
 
+#include "stats.hpp"
+
+
+struct ProfileConfig {
+    std::string name;
+    std::string version;
+    std::string createdAt;
+    GeneralParamsConfig generalParams;
+    StrategyBaseConfig baseConfig;
+    BuyHeikinGreenConfig buyConfig;
+    SellHeikinRedConfig sellConfig;
+
+    template<class Archive>
+    void serialize(Archive & ar) {
+        ar(CEREAL_NVP(name),
+           CEREAL_NVP(version),
+           CEREAL_NVP(createdAt),
+           CEREAL_NVP(generalParams),
+           CEREAL_NVP(baseConfig),
+           CEREAL_NVP(buyConfig),
+           CEREAL_NVP(sellConfig));
+    }
+};
+
+struct BacktestResultConfig {
+    std::string name;
+    std::string version;
+    std::string createdAt;
+    be::Stats stats;
+    // autres params
+
+    template<class Archive>
+    void serialize(Archive & ar) {
+        ar(CEREAL_NVP(name),
+           CEREAL_NVP(version),
+           CEREAL_NVP(createdAt),
+           CEREAL_NVP(stats));
+    }
+};
+
 namespace cereal {
-    // template<class Archive>
-    // void serialize(Archive & ar, be::Date & date) {
-    //     ar(make_nvp("year", date.year),
-    //        make_nvp("month", date.month),
-    //        make_nvp("day", date.day),
-    //        make_nvp("hour", date.hour),
-    //        make_nvp("minute", date.minute),
-    //        make_nvp("second", date.second));
-    // }
+    template<class Archive>
+    void serialize(Archive & ar, be::Duration & duration) {
+        ar(cereal::make_nvp("seconds", duration.seconds));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, be::Date & date) {
+        ar(cereal::make_nvp("year", date.year),
+           cereal::make_nvp("month", date.month),
+           cereal::make_nvp("day", date.day),
+           cereal::make_nvp("hour", date.hour),
+           cereal::make_nvp("minute", date.minute),
+           cereal::make_nvp("second", date.second));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, be::TradeData & trade) {
+        ar(cereal::make_nvp("size", trade.size),
+           cereal::make_nvp("entryPrice", trade.entryPrice),
+           cereal::make_nvp("exitPrice", trade.exitPrice),
+           cereal::make_nvp("entryBar", trade.entryBar),
+           cereal::make_nvp("exitBar", trade.exitBar),
+           cereal::make_nvp("entryDate", trade.entryDate),
+           cereal::make_nvp("exitDate", trade.exitDate),
+           cereal::make_nvp("closeReason", trade.closeReason),
+           cereal::make_nvp("tag", trade.tag),
+           cereal::make_nvp("commissions", trade.commissions),
+           cereal::make_nvp("isBreakEven", trade.isBreakEven),
+           cereal::make_nvp("tpPrice", trade.tpPrice),
+           cereal::make_nvp("initialSLPrice", trade.initialSlPrice),
+           cereal::make_nvp("lastSLPrice", trade.lastSlPrice),
+           cereal::make_nvp("breakEvenTriggerPrice", trade.breakEvenTriggerPrice));
+    }
     
     template<class Archive>
     void serialize(Archive & ar, Time & time) {
@@ -52,6 +117,53 @@ namespace cereal {
         std::string stdStr;
         ar(stdStr);
         str = QString::fromStdString(stdStr);
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, be::Stats & stats) {
+        ar(cereal::make_nvp("equityCurve", stats.equityCurve),
+           cereal::make_nvp("trades", stats.trades),
+           cereal::make_nvp("start", stats.start),
+           cereal::make_nvp("end", stats.end),
+           cereal::make_nvp("duration", stats.duration),
+           cereal::make_nvp("exposureTimePct", stats.exposureTimePct),
+           cereal::make_nvp("equityFinal", stats.equityFinal),
+           cereal::make_nvp("equityPeak", stats.equityPeak),
+           cereal::make_nvp("equityInitial", stats.equityInitial),
+           cereal::make_nvp("returnPct", stats.returnPct),
+           cereal::make_nvp("buyHoldReturnPct", stats.buyHoldReturnPct),
+           cereal::make_nvp("returnAnnPct", stats.returnAnnPct),
+           cereal::make_nvp("volatilityAnnPct", stats.volatilityAnnPct),
+           cereal::make_nvp("cagrPct", stats.cagrPct),
+           cereal::make_nvp("sharpeRatio", stats.sharpeRatio),
+           cereal::make_nvp("sortinoRatio", stats.sortinoRatio),
+           cereal::make_nvp("calmarRatio", stats.calmarRatio),
+           cereal::make_nvp("alphaPct", stats.alphaPct),
+           cereal::make_nvp("beta", stats.beta),
+           cereal::make_nvp("maxDrawdownPct", stats.maxDrawdownPct),
+           cereal::make_nvp("avgDrawdownPct", stats.avgDrawdownPct),
+           cereal::make_nvp("maxDrawdownDuration", stats.maxDrawdownDuration),
+           cereal::make_nvp("avgDrawdownDuration", stats.avgDrawdownDuration),
+           cereal::make_nvp("numTrades", stats.numTrades),
+           cereal::make_nvp("numTPTrades", stats.numTPTrades),
+           cereal::make_nvp("pctTPTrades", stats.pctTPTrades),
+           cereal::make_nvp("numSLTrades", stats.numSLTrades),
+           cereal::make_nvp("pctSLTrades", stats.pctSLTrades),
+           cereal::make_nvp("numBETrades", stats.numBETrades),
+           cereal::make_nvp("pctBETrades", stats.pctBETrades),
+           cereal::make_nvp("numManualTrades", stats.numManualTrades),
+           cereal::make_nvp("pctManualTrades", stats.pctManualTrades),
+           cereal::make_nvp("numUnknownTrades", stats.numUnknownTrades),
+           cereal::make_nvp("pctUnknownTrades", stats.pctUnknownTrades),
+           cereal::make_nvp("bestTradePct", stats.bestTradePct),
+           cereal::make_nvp("worstTradePct", stats.worstTradePct),
+           cereal::make_nvp("avgTradePct", stats.avgTradePct),
+           cereal::make_nvp("maxTradeDuration", stats.maxTradeDuration),
+           cereal::make_nvp("avgTradeDuration", stats.avgTradeDuration),
+           cereal::make_nvp("profitFactor", stats.profitFactor),
+           cereal::make_nvp("expectancyPct", stats.expectancyPct),
+           cereal::make_nvp("sqn", stats.sqn),
+           cereal::make_nvp("kellyCriterion", stats.kellyCriterion));
     }
     
     // Sérialisation pour BuyHeikinGreenConfig

@@ -412,7 +412,7 @@ void ChartRenderer::addTradeMarkers(XYChart *mainChart,
                                   const ChartDataManager& dataManager,
                                   const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    const std::vector<std::shared_ptr<be::Trade>>& trades = dataManager.getTrades();
+    const std::vector<be::TradeData>& trades = dataManager.getTrades();
     int startIndex = aggregationInfo.startIndex;
     AggregationLevel level = aggregationInfo.level;
 
@@ -421,6 +421,7 @@ void ChartRenderer::addTradeMarkers(XYChart *mainChart,
         || !mainChart)
         return;
 
+    // TODO peut etre donner la reference trades au methode suivante pour eviter qu'elles aient besoin de rappeler la methode datamanegr.gettrades()
     // Sélectionner la méthode d'affichage en fonction du niveau d'agrégation
     if (level == AggregationLevel::Raw) {
         addRawTradeMarkers(mainChart, timestamps, dataManager, aggregationInfo);
@@ -434,7 +435,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
                                      const ChartDataManager& dataManager,
                                      const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    const std::vector<std::shared_ptr<be::Trade>>& trades = dataManager.getTrades();
+    const std::vector<be::TradeData>& trades = dataManager.getTrades();
     int startIndex = aggregationInfo.startIndex;
 
     // Obtenir le graphique principal
@@ -487,19 +488,19 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
     tpslbeSegments.reserve(estimatedMarkers * 3);
 
     for (const auto& trade : trades) {
-        bool isLong = trade->isLong();
+        bool isLong = trade.wasLong();
         
         // Déterminer le résultat du trade
-        be::CloseReason closeReason = trade->closeReason();
+        be::CloseReason closeReason = trade.closeReason;
 
         // Indices pour l'entrée et la sortie
-        size_t entryBarIndex = trade->entryBar();
-        size_t exitBarIndex = trade->isClosed() ? trade->exitBar() : 0;
-        
+        size_t entryBarIndex = trade.entryBar;
+        size_t exitBarIndex = trade.hasBeenClosed() ? trade.exitBar : 0;
+
         // Vérifier si le trade est visible dans la fenêtre (au moins entrée ou sortie visible)
         bool entryVisible = (entryBarIndex >= static_cast<size_t>(startIndex) && 
                             entryBarIndex < static_cast<size_t>(startIndex + timestamps.len));
-        bool exitVisible = trade->isClosed() && (exitBarIndex >= static_cast<size_t>(startIndex) && 
+        bool exitVisible = trade.hasBeenClosed() && (exitBarIndex >= static_cast<size_t>(startIndex) && 
                            exitBarIndex < static_cast<size_t>(startIndex + timestamps.len));
                            
         // Si ni l'entrée ni la sortie n'est visible, ignorer ce trade
@@ -510,7 +511,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
             double relativeIndex = static_cast<double>(entryBarIndex - startIndex);
             
             // Marqueur carré pour la position d'entrée
-            entryMarkers.push_back({relativeIndex, trade->entryPrice()});
+            entryMarkers.push_back({relativeIndex, trade.entryPrice});
             
             if (entryBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
                 const be::Candle& entryCandle = dataManager.getBacktestData()->at(entryBarIndex);
@@ -528,7 +529,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
         }
 
         // Ajouter les segments TP/SL (inchangé)
-        if (trade->isClosed()) {
+        if (trade.hasBeenClosed()) {
             // Calculer les indices relatifs comme pour les points pivots
             // en les contraignant aux limites de la fenêtre visible
             double relativeEntryIndex = static_cast<double>(
@@ -543,7 +544,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
             else if (closeReason == be::CloseReason::ManualClose) color = COLOR_NEUTRAL;
             else color = COLOR_UNKNOWN;
 
-            double tpValue = trade->tp();
+            double tpValue = trade.tpPrice;
             if (tpValue > 0) {
                 tpslbeSegments.push_back({
                     relativeEntryIndex, relativeExitIndex, 
@@ -551,8 +552,8 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
                     color
                 });
             }
-            
-            double slValue = (trade->initialSlPrice() > 0) ? trade->initialSlPrice() : trade->sl();
+
+            double slValue = (trade.initialSlPrice > 0) ? trade.initialSlPrice : trade.lastSlPrice;
             if (slValue > 0) {
                 tpslbeSegments.push_back({
                     relativeEntryIndex, relativeExitIndex,
@@ -561,7 +562,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
                 });
             }
 
-            double beValue = trade->breakEvenTriggerPrice();
+            double beValue = trade.breakEvenTriggerPrice;
             if (beValue > 0) {
                 tpslbeSegments.push_back({
                     relativeEntryIndex, relativeExitIndex,
@@ -574,8 +575,8 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
                 double relativeExitIndex = static_cast<double>(exitBarIndex - startIndex);
                 
                 // Marqueur carré pour la position de sortie
-                exitMarkers.push_back({relativeExitIndex, trade->exitPrice()});
-                
+                exitMarkers.push_back({relativeExitIndex, trade.exitPrice});
+
                 if (exitBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
                     const be::Candle& exitCandle = dataManager.getBacktestData()->at(exitBarIndex);
                     
@@ -649,7 +650,7 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
                                             const ChartDataManager& dataManager,
                                             const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    const std::vector<std::shared_ptr<be::Trade>>& trades = dataManager.getTrades();
+    const std::vector<be::TradeData>& trades = dataManager.getTrades();
     int startIndex = aggregationInfo.startIndex;
     int pointCount = aggregationInfo.pointCount;
     AggregationLevel level = aggregationInfo.level;
@@ -675,7 +676,7 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
     // Compter les trades par fenêtre fixe
     for (size_t i = 0; i < trades.size(); ++i) {
         const auto& trade = trades[i];
-        bool isLong = trade->isLong();
+        bool isLong = trade.wasLong();
         
         // Récupérer l'indice agrégé pour ce trade
         const std::pair<int, int>* aggregatedIndices = dataManager.getTradeAggregatedIndices(i, level);

@@ -64,7 +64,7 @@ private:
     bool applyProfileToUI(const QString& profileName);
     
     // Cereal-based serialization methods
-    bool saveProfileToJson(const QString& profileName, const ProfileConfig& config);
+    bool saveProfile(const QString& profileName, const ProfileConfig& config);
     bool loadProfileFromJson(const QString& profileName, ProfileConfig& config);
     QString getProfilePath(const QString& profileName) const;
     

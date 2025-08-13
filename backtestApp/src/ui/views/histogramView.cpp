@@ -392,17 +392,16 @@ std::vector<HistogramView::TradeInfo> HistogramView::extractTradesFromResults(Ba
     
     try {
         // Parcourir tous les trades dans les résultats
-        for (const auto& tradePtr : results->stats.trades) {
-            if (!tradePtr) continue;
+        for (const auto& trade : results->stats.trades) {
             
             TradeInfo info;
             info.exitTime = QDateTime(
-                QDate(tradePtr->exitDate().getYear(), tradePtr->exitDate().getMonth(), tradePtr->exitDate().getDay()),
-                QTime(tradePtr->exitDate().getHour(), tradePtr->exitDate().getMinute(), tradePtr->exitDate().getSecond())
+                QDate(trade.exitDate.year, trade.exitDate.month, trade.exitDate.day),
+                QTime(trade.exitDate.hour, trade.exitDate.minute, trade.exitDate.second)
             );
-            info.pnl = tradePtr->pl();
-            info.isLong = tradePtr->size() > 0;
-            
+            info.pnl = trade.pl;
+            info.isLong = trade.size > 0;
+
             trades.push_back(info);
         }
         

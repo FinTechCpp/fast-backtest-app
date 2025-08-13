@@ -315,8 +315,7 @@ void HistogramView::updateData(BacktestResults* results)
 {
     QTime start = QTime::currentTime();
     
-    // On ignore le pointeur passé, on utilisera celui de l'App
-    Q_UNUSED(results);
+    m_currentResults = results;
     
     qDebug() << "HistogramView::updateData() appelé";
     
@@ -340,10 +339,7 @@ void HistogramView::clear()
 
 void HistogramView::updateHistogram()
 {
-    // Récupérer les résultats depuis l'App
-    BacktestResults* results = m_app ? m_app->getBacktestResults() : nullptr;
-    
-    if (!results || !m_timeUnitCombo) {
+    if (!m_currentResults || !m_timeUnitCombo) {
         qWarning() << "Aucun résultat de backtest ou combo disponible";
         m_chart->setTitle("Aucun trade à afficher");
         return;
@@ -352,7 +348,7 @@ void HistogramView::updateHistogram()
     qDebug() << "Mise à jour de l'histogramme avec les données C++...";
     
     // Extraire les trades directement depuis les résultats C++
-    std::vector<TradeInfo> trades = extractTradesFromResults(results);
+    std::vector<TradeInfo> trades = extractTradesFromResults(m_currentResults);
     
     if (trades.empty()) {
         qWarning() << "Aucun trade trouvé dans les données";
@@ -477,115 +473,6 @@ HistogramView::GroupedData HistogramView::groupDataByTimeUnit(
     
     return result;
 }
-
-// void HistogramView::createChart(const GroupedData& data)
-// {
-//     // Vérifier si des données sont disponibles
-//     if (data.categories.isEmpty() || data.values.isEmpty()) {
-//         qWarning() << "Aucune donnée à afficher dans l'histogramme";
-//         return;
-//     }
-    
-//     // Créer un nouveau graphique s'il n'existe pas
-//     if (!m_chart) {
-//         m_chart = new QChart();
-//         m_chart->setAnimationOptions(QChart::SeriesAnimations);
-//         m_chart->setTheme(QChart::ChartThemeDark);
-        
-//         // Si le ChartView n'existe pas, le créer aussi
-//         if (!m_chartView) {
-//             m_chartView = new InteractiveChartView(m_chart);
-//             m_chartView->setRenderHint(QPainter::Antialiasing);
-            
-//             // Ajouter au layout
-//             if (m_mainLayout) {
-//                 m_mainLayout->addWidget(m_chartView);
-//             }
-//         } else {
-//             m_chartView->setChart(m_chart);
-//         }
-//     } else {
-//         // Nettoyer le graphique existant
-//         m_chart->removeAllSeries();
-//         m_chart->removeAxis(m_chart->axisX());
-//         m_chart->removeAxis(m_chart->axisY());
-//     }
-    
-//     // Préparer les données pour l'histogramme
-//     double maxValue = 0;
-//     double minValue = 0;
-//     QBarSet* positiveSet = new QBarSet("Gains");
-//     QBarSet* negativeSet = new QBarSet("Pertes");
-//     positiveSet->setColor(QColor(0, 180, 0));
-//     negativeSet->setColor(QColor(180, 0, 0));
-    
-//     // Analyser les données pour l'histogramme
-//     for (const double& value : data.values) {
-//         if (value >= 0) {
-//             *positiveSet << value;
-//             *negativeSet << 0;
-//             maxValue = qMax(maxValue, value);
-//         } else {
-//             *positiveSet << 0;
-//             *negativeSet << qAbs(value);  // Valeur absolue pour l'affichage
-//             minValue = qMin(minValue, value);
-//         }
-//     }
-    
-//     // Créer la série de barres
-//     QBarSeries* series = new QBarSeries();
-//     series->append(positiveSet);
-//     series->append(negativeSet);
-//     series->setBarWidth(0.9);
-    
-//     // Configurer l'axe des X
-//     QBarCategoryAxis* axisX = new QBarCategoryAxis();
-//     axisX->append(data.categories);
-//     m_chart->addAxis(axisX, Qt::AlignBottom);
-//     series->attachAxis(axisX);
-    
-//     // Configurer l'axe des Y
-//     QValueAxis* axisY = new QValueAxis();
-//     double range = qMax(maxValue, qAbs(minValue)) * 1.1;  // Ajouter une marge
-//     axisY->setRange(-range * 0.1, range);  // Petite marge en bas
-//     axisY->setTickCount(6);
-//     axisY->setLabelFormat("%.2f");
-//     m_chart->addAxis(axisY, Qt::AlignLeft);
-//     series->attachAxis(axisY);
-    
-//     // Ajouter la série au graphique
-//     m_chart->addSeries(series);
-    
-//     // Titre du graphique
-//     QString timeUnit = m_timeUnitCombo ? m_timeUnitCombo->currentText() : "Période";
-//     m_chart->setTitle(QString("Distribution des profits et pertes par %1").arg(timeUnit));
-    
-//     // Configurer les tooltips
-//     connect(series, &QBarSeries::hovered, [this, &data](bool status, int index, QBarSet* barset) {
-//         if (status && index >= 0 && index < data.categories.size()) {
-//             QString category = data.categories[index];
-//             double value = data.values[index];
-            
-//             // Format pour la tooltip
-//             QString tooltipText;
-//             if (data.fullDates.contains(category)) {
-//                 QDateTime date = data.fullDates[category];
-//                 tooltipText = QString("%1\nP&L: %2")
-//                     .arg(date.toString("dd/MM/yyyy"))
-//                     .arg(value, 0, 'f', 2);
-//             } else {
-//                 tooltipText = QString("%1\nP&L: %2")
-//                     .arg(category)
-//                     .arg(value, 0, 'f', 2);
-//             }
-            
-//             QToolTip::showText(QCursor::pos(), tooltipText);
-//         }
-//     });
-    
-//     // Ajuster la vue
-//     m_chartView->setRubberBand(QChartView::HorizontalRubberBand);
-// }
 
 void HistogramView::createChart(const GroupedData& data)
 {

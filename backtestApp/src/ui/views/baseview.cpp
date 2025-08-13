@@ -1,7 +1,7 @@
 #include "ui/views/baseView.h"
 #include <QDebug>
 
-BaseView::BaseView(QWidget *parent) : QWidget(parent)
+BaseView::BaseView(QWidget *parent) : QWidget(parent), m_currentResults(nullptr)
 {
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);

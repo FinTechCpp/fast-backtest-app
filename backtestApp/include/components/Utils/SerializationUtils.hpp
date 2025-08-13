@@ -11,6 +11,66 @@
 
 class SerializationUtils {
 public:
+    enum class FileFormat {
+        JSON,
+        Binary,
+        Auto // Pour la détection automatique basée sur l'extension
+    };
+
+    static FileFormat detectFormatFromExtension(const QString& filePath) {
+        if (filePath.endsWith(".json", Qt::CaseInsensitive)) {
+            return FileFormat::JSON;
+        } else if (filePath.endsWith(".bin", Qt::CaseInsensitive)) {
+            return FileFormat::Binary;
+        }
+        // Par défaut, utiliser JSON
+        return FileFormat::JSON;
+    }
+
+    static QString getExtensionForFormat(FileFormat format) {
+        switch (format) {
+            case FileFormat::JSON: return ".json";
+            case FileFormat::Binary: return ".bin";
+            default: return ".json"; // Par défaut
+        }
+    }
+
+    template <typename T>
+    static bool saveToFile(const QString& filePath, const T& object, FileFormat format = FileFormat::Auto) {
+        FileFormat actualFormat = format;
+        
+        if (format == FileFormat::Auto) {
+            actualFormat = detectFormatFromExtension(filePath);
+        }
+        
+        switch (actualFormat) {
+            case FileFormat::JSON:
+                return saveToJsonFile(filePath, object);
+            case FileFormat::Binary:
+                return saveToBinaryFile(filePath, object);
+            default:
+                return false;
+        }
+    }
+    
+    template <typename T>
+    static bool loadFromFile(const QString& filePath, T& object, FileFormat format = FileFormat::Auto) {
+        FileFormat actualFormat = format;
+        
+        if (format == FileFormat::Auto) {
+            actualFormat = detectFormatFromExtension(filePath);
+        }
+        
+        switch (actualFormat) {
+            case FileFormat::JSON:
+                return loadFromJsonFile(filePath, object);
+            case FileFormat::Binary:
+                return loadFromBinaryFile(filePath, object);
+            default:
+                return false;
+        }
+    }
+
     template <typename T>
     static bool saveToJsonFile(const QString& filePath, const T& config) {
         try {

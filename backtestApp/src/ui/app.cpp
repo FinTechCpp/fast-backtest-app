@@ -31,7 +31,7 @@ App::App() : QMainWindow() {
     // Initialize configuration manager SECOND
     m_configManager = new ProfileManager(this);
 
-    m_backtestResultManager = new BacktestResultManager(this);
+    m_backtestResultManager = new BacktestResultManager(this, SerializationUtils::FileFormat::Binary);
 
     // Create main layout and central widget THIRD
     m_centralWidget = new QWidget(this);
@@ -192,48 +192,7 @@ void App::updateStrategySpecificPanel() {
     else if (selectedStrategy == "SellHeikinRedBA") {
         m_strategyPanelStack->setCurrentWidget(m_sellHeikinRedPanel);
     }
-    
-    // // Remove old panel if it exists
-    // if (m_strategySpecificPanel) {
-    //     // CORRECTION: Utiliser une méthode correcte pour récupérer le widget
-    //     // Chercher le widget dans le stack ou le layout
-    //     for (int i = 0; i < m_strategyPanelStack->count(); ++i) {
-    //         QWidget* widget = m_strategyPanelStack->widget(i);
-    //         m_strategyPanelStack->removeWidget(widget);
-    //         widget->deleteLater();
-    //     }
-    //     m_strategySpecificPanel = nullptr;
-    // }
-    
-    // // Create new panel based on strategy
-    // QWidget* strategyWidget = createStrategySpecificPanel(selectedStrategy);
-    // if (strategyWidget) {
-    //     m_strategyPanelStack->addWidget(strategyWidget);
-    //     m_strategyPanelStack->setCurrentWidget(strategyWidget);
-    // }
-    
-    // // Load current profile values
-    // QMap<QString, QVariant> currentProfile = m_configManager->getProfile(m_configManager->getCurrentProfile());
-    // if (m_strategySpecificPanel && !currentProfile.isEmpty()) {
-    //     m_strategySpecificPanel->setValues(currentProfile);
-    // }
 }
-
-// QWidget* App::createStrategySpecificPanel(const QString& strategy)
-// {
-//     BasePanel* panel = nullptr;
-    
-//     if (strategy == "BuyHeikinGreenBA") panel = new BuyHeikinGreenPanel(m_controlPanel);
-//     else if (strategy == "SellHeikinRedBA") panel = new SellHeikinRedPanel(m_controlPanel);
-
-//     if (panel) {
-//         m_strategySpecificPanel = panel;
-//         panel->initialize();
-//         return panel;
-//     }
-    
-//     return nullptr;
-// }
 
 void App::mousePressEvent(QMouseEvent *event)
 {
@@ -252,34 +211,6 @@ void App::mouseReleaseEvent(QMouseEvent *event)
     // Emit signal to indicate resize is finished, with the current window size
     emit windowResizeFinished(size());
 }
-
-// QMap<QString, QVariant> App::getStrategyConfig() const
-// {
-//     QMap<QString, QVariant> config;
-    
-//     // Récupérer depuis le panel général
-//     if (m_generalParamsPanel) {
-//         QMap<QString, QVariant> generalValues = m_generalParamsPanel->getValues();
-//         config.insert(generalValues);  // Qt 5.15+
-//     }
-    
-//     // Récupérer depuis le panel de base
-//     if (m_strategyBasePanel) {
-//         QMap<QString, QVariant> baseValues = m_strategyBasePanel->getValues();
-//         config.insert(baseValues);  // Qt 5.15+
-//     }
-    
-//     // Récupérer depuis le panel spécifique à la stratégie
-//     if (m_strategySpecificPanel) {
-//         QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
-//         config.insert(specificValues);  // Qt 5.15+
-//     }
-    
-//     // Debug pour vérifier
-//     qDebug() << "Config récupérée:" << config;
-    
-//     return config;
-// }
 
 GeneralParamsConfig App::getGeneralParamsConfig() const {
     if (m_generalParamsPanel)

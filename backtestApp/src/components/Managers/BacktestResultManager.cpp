@@ -4,8 +4,8 @@
 #include <QFile>
 #include <QInputDialog>
 
-BacktestResultManager::BacktestResultManager(QObject *parent)
-    : QObject(parent)
+BacktestResultManager::BacktestResultManager(QObject *parent, SerializationUtils::FileFormat defaultFormat)
+    : QObject(parent), m_defaultFormat(defaultFormat)
 {
     // Configuration du répertoire des résultats
     initializeDirectories();
@@ -37,46 +37,76 @@ QStringList BacktestResultManager::listBacktestResults() const
     
     // Scan du répertoire pour les fichiers JSON
     QDir dir(m_resultsDir);
-    dir.setNameFilters(QStringList() << "*.json");
+    // dir.setNameFilters(QStringList() << "*.json");
     dir.setFilter(QDir::Files);
     
     foreach (QString file, dir.entryList()) {
-        // Suppression de l'extension .json du nom de fichier
-        QString resultName = file;
-        resultName.chop(5);  // Suppression de ".json"
-        results << resultName;
+        QFileInfo fileInfo(m_resultsDir + "/" + file);
+        QString baseName = fileInfo.completeBaseName(); // Nom sans extension
+        
+        results << baseName;
     }
     
     qDebug() << "Résultats trouvés:" << results;
     return results;
 }
 
-bool BacktestResultManager::saveResult(const QString& resultName, const BacktestResultConfig& config)
+bool BacktestResultManager::saveResult(const QString& resultName, const BacktestResultConfig& config, SerializationUtils::FileFormat format)
 {
-    QString resultPath = getResultPath(resultName);
-    return SerializationUtils::saveToJsonFile(resultPath, config);
+    SerializationUtils::FileFormat actualFormat = (format == SerializationUtils::FileFormat::Auto) ? m_defaultFormat : format;
+    QString resultPath = getResultPath(resultName, actualFormat);
+    
+    return SerializationUtils::saveToFile(resultPath, config, actualFormat);
 }
 
-bool BacktestResultManager::loadResultFromJson(const QString& resultName, BacktestResultConfig& config)
+bool BacktestResultManager::loadResult(const QString& resultName, BacktestResultConfig& config, SerializationUtils::FileFormat format)
 {
-    QString resultPath = getResultPath(resultName);
-    
-    if (!QFile::exists(resultPath)) {
+    if (format == SerializationUtils::FileFormat::Auto) {
+        // Essayer tous les formats possibles
+        for (int i = 0; i < static_cast<int>(SerializationUtils::FileFormat::Auto); i++) {
+            SerializationUtils::FileFormat currentFormat = static_cast<SerializationUtils::FileFormat>(i);
+            QString resultPath = getResultPath(resultName, currentFormat);
+            
+            if (QFile::exists(resultPath)) {
+                return SerializationUtils::loadFromFile(resultPath, config, currentFormat);
+            }
+        }
         return false;
+    } else {
+        QString resultPath = getResultPath(resultName, format);
+        
+        if (!QFile::exists(resultPath)) {
+            return false;
+        }
+        
+        return SerializationUtils::loadFromFile(resultPath, config, format);
     }
+}
+
+QString BacktestResultManager::getResultPath(const QString& resultName, SerializationUtils::FileFormat format) const
+{
+    SerializationUtils::FileFormat actualFormat = (format == SerializationUtils::FileFormat::Auto) ? m_defaultFormat : format;
+    QString extension = SerializationUtils::getExtensionForFormat(actualFormat);
     
-    return SerializationUtils::loadFromJsonFile(resultPath, config);
+    return m_resultsDir + "/" + resultName + extension;
 }
 
-QString BacktestResultManager::getResultPath(const QString& resultName) const
+bool BacktestResultManager::resultExists(const QString& resultName, SerializationUtils::FileFormat format) const
 {
-    return m_resultsDir + "/" + resultName + ".json";
-}
-
-bool BacktestResultManager::resultExists(const QString& resultName) const
-{
-    QString resultPath = getResultPath(resultName);
-    return QFile::exists(resultPath);
+    if (format == SerializationUtils::FileFormat::Auto) {
+        // Vérifier tous les formats possibles
+        for (int i = 0; i < static_cast<int>(SerializationUtils::FileFormat::Auto); i++) {
+            SerializationUtils::FileFormat currentFormat = static_cast<SerializationUtils::FileFormat>(i);
+            QString resultPath = getResultPath(resultName, currentFormat);
+            if (QFile::exists(resultPath)) {
+                return true;
+            }
+        }
+        return false;
+    } else {
+        QString resultPath = getResultPath(resultName, format);
+        return QFile::exists(resultPath);
+    }
 }
 
 bool BacktestResultManager::openBacktestResultsDirectory() const
@@ -97,43 +127,44 @@ bool BacktestResultManager::openBacktestResultsDirectory() const
     return success;
 }
 
-bool BacktestResultManager::saveBacktestResult(const BacktestResultConfig& config, QWidget* parentWidget)
+bool BacktestResultManager::saveBacktestResult(const BacktestResultConfig& config, QWidget* parentWidget, SerializationUtils::FileFormat format)
 {
     QString resultName = QString::fromStdString(config.name);
-    
+    SerializationUtils::FileFormat actualFormat = (format == SerializationUtils::FileFormat::Auto) ? m_defaultFormat : format;
+
     // Vérification si un résultat avec ce nom existe déjà
-    if (resultExists(resultName)) {
+    if (resultExists(resultName, actualFormat)) {
         if (parentWidget) {
             QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
-                                                                      "Résultat existant", 
-                                                                      QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
-                                                                      QMessageBox::Yes | QMessageBox::No,
-                                                                      QMessageBox::No);
+                "Résultat existant", 
+                QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
+                QMessageBox::Yes | QMessageBox::No,
+                QMessageBox::No);
             if (choice != QMessageBox::Yes) {
                 return false;
             }
         }
     }
     
-    bool success = saveResult(resultName, config);
+    bool success = saveResult(resultName, config, actualFormat);
     
     if (success) {
         emit resultListUpdated();
         if (parentWidget) {
             QMessageBox::information(parentWidget, "Succès", 
-                                    QString("Résultat '%1' sauvegardé.").arg(resultName));
+                QString("Résultat '%1' sauvegardé.").arg(resultName));
         }
     } else if (parentWidget) {
         QMessageBox::warning(parentWidget, "Erreur", 
-                            QString("Échec de la sauvegarde du résultat '%1'.").arg(resultName));
+            QString("Échec de la sauvegarde du résultat '%1'.").arg(resultName));
     }
     
     return success;
 }
 
-bool BacktestResultManager::loadBacktestResult(const QString& resultName, BacktestResultConfig& config)
+bool BacktestResultManager::loadBacktestResult(const QString& resultName, BacktestResultConfig& config, SerializationUtils::FileFormat format)
 {
-    bool success = loadResultFromJson(resultName, config);
+    bool success = loadResult(resultName, config, format);
     
     if (!success) {
         qWarning() << "Échec du chargement du résultat:" << resultName;
@@ -144,10 +175,11 @@ bool BacktestResultManager::loadBacktestResult(const QString& resultName, Backte
 
 bool BacktestResultManager::deleteBacktestResult(const QString& resultName, QWidget* parentWidget)
 {
-    if (!resultExists(resultName)) {
+    // Vérifier si le résultat existe dans n'importe quel format
+    if (!resultExists(resultName, SerializationUtils::FileFormat::Auto)) {
         if (parentWidget) {
             QMessageBox::warning(parentWidget, "Erreur", 
-                                QString("Le résultat '%1' n'existe pas.").arg(resultName));
+                QString("Le résultat '%1' n'existe pas.").arg(resultName));
         }
         return false;
     }
@@ -156,25 +188,35 @@ bool BacktestResultManager::deleteBacktestResult(const QString& resultName, QWid
     
     if (parentWidget) {
         confirm = QMessageBox::question(parentWidget,
-                                      "Confirmation",
-                                      QString("Êtes-vous sûr de vouloir supprimer le résultat '%1' ?").arg(resultName),
-                                      QMessageBox::Yes | QMessageBox::No,
-                                      QMessageBox::No);
+            "Confirmation",
+            QString("Êtes-vous sûr de vouloir supprimer le résultat '%1' ?").arg(resultName),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
     }
     
     if (confirm == QMessageBox::Yes) {
-        QString resultPath = getResultPath(resultName);
-        bool success = QFile::remove(resultPath);
+        bool success = true;
+        
+        // Supprimer le résultat dans tous les formats où il existe
+        for (int i = 0; i < static_cast<int>(SerializationUtils::FileFormat::Auto); i++) {
+            SerializationUtils::FileFormat currentFormat = static_cast<SerializationUtils::FileFormat>(i);
+            QString resultPath = getResultPath(resultName, currentFormat);
+            
+            if (QFile::exists(resultPath)) {
+                bool deleteResult = QFile::remove(resultPath);
+                success = success && deleteResult;
+            }
+        }
         
         if (success) {
             emit resultListUpdated();
             if (parentWidget) {
                 QMessageBox::information(parentWidget, "Succès", 
-                                        "Résultat supprimé.");
+                    "Résultat supprimé.");
             }
         } else if (parentWidget) {
             QMessageBox::warning(parentWidget, "Erreur", 
-                                "Échec de la suppression du résultat.");
+                "Échec de la suppression du résultat.");
         }
         
         return success;
@@ -185,10 +227,15 @@ bool BacktestResultManager::deleteBacktestResult(const QString& resultName, QWid
 
 bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
 {
+    // Construire le filtre pour tous les formats supportés
+    QString filterString = "Tous les formats supportés (*.json *.bin);;";
+    filterString += "Fichiers JSON (*.json);;";
+    filterString += "Fichiers binaires (*.bin)";
+    
     QString fileName = QFileDialog::getOpenFileName(parentWidget,
-                                                  "Importer un résultat de backtest",
-                                                  QDir::homePath(),
-                                                  "Fichiers JSON (*.json)");
+        "Importer un résultat de backtest",
+        QDir::homePath(),
+        filterString);
     
     if (fileName.isEmpty()) {
         return false; // Utilisateur a annulé
@@ -201,14 +248,17 @@ bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
         return false;
     }
     
+    // Détecter le format du fichier à partir de son extension
+    SerializationUtils::FileFormat detectedFormat = SerializationUtils::detectFormatFromExtension(fileName);
+    
     // Essai de chargement du résultat depuis le fichier
     BacktestResultConfig importedConfig;
-    bool loadSuccess = SerializationUtils::loadFromJsonFile(fileName, importedConfig);
+    bool loadSuccess = SerializationUtils::loadFromFile(fileName, importedConfig, detectedFormat);
     
     if (!loadSuccess) {
         if (parentWidget) {
             QMessageBox::warning(parentWidget, "Erreur d'importation", 
-                                "Le fichier n'est pas un résultat de backtest valide.");
+                "Le fichier n'est pas un résultat de backtest valide.");
         }
         return false;
     }
@@ -219,10 +269,10 @@ bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
     
     if (parentWidget) {
         resultName = QInputDialog::getText(parentWidget, 
-                                         "Nom du résultat", 
-                                         "Entrez un nom pour ce résultat de backtest:",
-                                         QLineEdit::Normal,
-                                         resultName, &ok);
+            "Nom du résultat", 
+            "Entrez un nom pour ce résultat de backtest:",
+            QLineEdit::Normal,
+            resultName, &ok);
         
         if (!ok || resultName.isEmpty()) {
             return false;
@@ -233,79 +283,99 @@ bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
     importedConfig.name = resultName.toStdString();
     
     // Vérifier si ce nom existe déjà
-    if (resultExists(resultName)) {
+    if (resultExists(resultName, m_defaultFormat)) {
         QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
-                                                                  "Résultat existant", 
-                                                                  QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
-                                                                  QMessageBox::Yes | QMessageBox::No,
-                                                                  QMessageBox::No);
+            "Résultat existant", 
+            QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
         if (choice != QMessageBox::Yes) {
             return false;
         }
     }
     
-    // Sauvegarder le résultat importé
-    bool success = saveResult(resultName, importedConfig);
+    // Sauvegarder le résultat importé dans le format par défaut
+    bool success = saveResult(resultName, importedConfig, m_defaultFormat);
     
     if (success) {
         emit resultListUpdated();
         if (parentWidget) {
             QMessageBox::information(parentWidget, "Import réussi", 
-                                    QString("Résultat importé avec succès sous le nom '%1'.").arg(resultName));
+                QString("Résultat importé avec succès sous le nom '%1'.").arg(resultName));
         }
     } else if (parentWidget) {
         QMessageBox::warning(parentWidget, "Erreur d'importation", 
-                            "Échec de l'importation du résultat.");
+            "Échec de l'importation du résultat.");
     }
     
     return success;
 }
 
-bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWidget* parentWidget)
+bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWidget* parentWidget, SerializationUtils::FileFormat format)
 {
-    if (!resultExists(resultName)) {
+    SerializationUtils::FileFormat actualFormat = (format == SerializationUtils::FileFormat::Auto) ? m_defaultFormat : format;
+    
+    // Vérifier si le résultat existe dans n'importe quel format
+    if (!resultExists(resultName, SerializationUtils::FileFormat::Auto)) {
         if (parentWidget) {
             QMessageBox::warning(parentWidget, "Erreur", 
-                                QString("Le résultat '%1' n'existe pas.").arg(resultName));
+                QString("Le résultat '%1' n'existe pas.").arg(resultName));
         }
         return false;
     }
     
     // Chargement du résultat
     BacktestResultConfig config;
-    if (!loadResultFromJson(resultName, config)) {
+    if (!loadBacktestResult(resultName, config, SerializationUtils::FileFormat::Auto)) {
         if (parentWidget) {
             QMessageBox::warning(parentWidget, "Erreur", 
-                                QString("Impossible de charger le résultat '%1'.").arg(resultName));
+                QString("Impossible de charger le résultat '%1'.").arg(resultName));
         }
         return false;
     }
     
     // Nom de fichier par défaut avec nom du résultat et horodatage
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-    QString defaultFileName = QString("backtest_result_%1_%2.json").arg(resultName).arg(timestamp);
+    QString extension = SerializationUtils::getExtensionForFormat(actualFormat);
+    QString defaultFileName = QString("backtest_result_%1_%2%3").arg(resultName).arg(timestamp).arg(extension);
+    
+    // Construire le filtre pour le format spécifié
+    QString filterString;
+    if (actualFormat == SerializationUtils::FileFormat::JSON) {
+        filterString = "Fichiers JSON (*.json)";
+    } else if (actualFormat == SerializationUtils::FileFormat::Binary) {
+        filterString = "Fichiers binaires (*.bin)";
+    } else {
+        filterString = "Tous les formats supportés (*.json *.bin);;Fichiers JSON (*.json);;Fichiers binaires (*.bin)";
+    }
     
     QString fileName = QFileDialog::getSaveFileName(parentWidget,
-                                                  QString("Exporter le résultat - %1").arg(resultName),
-                                                  QDir::homePath() + "/" + defaultFileName,
-                                                  "Fichiers JSON (*.json)");
+        QString("Exporter le résultat - %1").arg(resultName),
+        QDir::homePath() + "/" + defaultFileName,
+        filterString);
     
     if (fileName.isEmpty()) {
         return false; // Utilisateur a annulé
     }
     
+    // Si l'utilisateur a changé l'extension, détecter le nouveau format
+    SerializationUtils::FileFormat selectedFormat = actualFormat;
+    if (format == SerializationUtils::FileFormat::Auto) {
+        selectedFormat = SerializationUtils::detectFormatFromExtension(fileName);
+    }
+    
     // Sauvegarde du résultat vers le fichier sélectionné
-    bool success = SerializationUtils::saveToJsonFile(fileName, config);
+    bool success = SerializationUtils::saveToFile(fileName, config, selectedFormat);
     
     if (success) {
         if (parentWidget) {
             QMessageBox::information(parentWidget, "Export réussi", 
-                                    QString("Résultat '%1' exporté vers:\n%2").arg(resultName).arg(fileName));
+                QString("Résultat '%1' exporté vers:\n%2").arg(resultName).arg(fileName));
         }
     } else {
         if (parentWidget) {
             QMessageBox::critical(parentWidget, "Erreur d'exportation", 
-                                "Erreur lors de l'écriture du fichier de résultat.");
+                "Erreur lors de l'écriture du fichier de résultat.");
         }
     }
     

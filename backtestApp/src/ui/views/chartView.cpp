@@ -9,9 +9,7 @@
 
 ChartView::ChartView(QWidget* parent)
     : BaseView(parent)
-    , m_cachedResults(nullptr)
     , m_dataExtracted(false)
-    , m_currentResults(nullptr)
     , m_chartPlaceholder(nullptr)
     , m_chartTypeCombo(nullptr)
     , m_settingsTitle(nullptr)
@@ -368,18 +366,13 @@ void ChartView::refreshIndicatorsList() {
 }
 
 void ChartView::updateData(BacktestResults* results) {
+    // TODO c'est a mettre dans la class mere, il faut que l'appel a updateData dasn la class mere fasse la ligne suivante
+    m_currentResults = results;
+    // puis on execute le reste du code que la class mere appel via une methode virtuel pure
+
     QTime start = QTime::currentTime();
 
-    // Retrieve results from the App
-    BacktestResults* appResults = m_app ? m_app->getBacktestResults() : nullptr;
-
-    // Update local references
-    m_currentResults = appResults;
-
-    // Cache the new pointers
-    m_cachedResults = appResults;
-    
-    if (!appResults || !appResults->data) {
+    if (!results || !results->data) {
         clear();
         showPlaceholder("Aucune donnée disponible");
         return;
@@ -443,8 +436,6 @@ void ChartView::showPlaceholder(const QString& message) {
 }
 
 void ChartView::clear() {
-    m_currentResults = nullptr;
-    m_cachedResults = nullptr;
     m_dataExtracted = false;
 
     // Clear the indicators list

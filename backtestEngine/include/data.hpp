@@ -19,9 +19,6 @@ struct Candle {
     double low;
     double close;
     double volume;
-    
-    // Valeurs personnalisées ajoutées dynamiquement
-    std::map<std::string, double> customValues;
 };
 
 /**
@@ -50,6 +47,10 @@ public:
          const std::vector<double>& low,
          const std::vector<double>& close,
          const std::vector<double>& volume = {});
+
+
+    // Attention ce constructeur est assez couteux il est préferable d'utiliser le constructeur à partir des colonnes
+    Data(const std::vector<Candle>& candles);
 
     /**
      * @brief Crée un objet Data à partir de données brutes avec des vecteurs rvalue
@@ -83,15 +84,6 @@ public:
     size_t size() const { return _dates.size(); }
     
     /**
-     * @brief Ajoute une colonne personnalisée à toutes les bougies
-     * 
-     * @param name Nom de la colonne
-     * @param values Valeurs à ajouter
-     * @throws std::invalid_argument Si la taille du vecteur values ne correspond pas
-     */
-    void addColumn(const std::string& name, const std::vector<double>& values);
-    
-    /**
      * @brief Ajoute l'information sur les trous de données
      * 
      * @param gapIndices Indices des bougies après lesquelles il y a un trou
@@ -122,13 +114,7 @@ public:
      * @return Référence constante à la bougie
      * @throws std::out_of_range Si l'index est hors limites
      */
-    const Candle& at(size_t index) const;
-    
-    /**
-     * @brief Retourne une référence au vecteur sous-jacent de bougies
-     * Note: Pour les besoins d'affichage et d'analyse post-backtest uniquement
-     */
-    // const std::vector<Candle>& getAllCandles() const { return _candles; }
+    Candle at(size_t index) const;
     
     /**
      * @brief Récupère tous les vecteurs de données en format brut (pour charting)
@@ -139,14 +125,15 @@ public:
     const std::vector<double>& getLow() const { return _low; }
     const std::vector<double>& getClose() const { return _close; }
     const std::vector<double>& getVolume() const { return _volume; }
-    const std::vector<double>& getCustomColumn(const std::string& name) const {
-        static const std::vector<double> emptyVector; // Vecteur vide statique
-        auto it = _customColumns.find(name);
-        if (it == _customColumns.end()) {
-            return emptyVector;
+    std::vector<Candle> getCandles() const {
+        std::vector<Candle> candles;
+        candles.reserve(_dates.size());
+        for (size_t i = 0; i < _dates.size(); ++i) {
+            candles.emplace_back(Candle{_dates[i], _open[i], _high[i], _low[i], _close[i], _volume[i]});
         }
-        return it->second;
+        return candles;
     }
+
     //----- Méthodes d'itération pour le backtest -----
     
     /**
@@ -181,7 +168,7 @@ public:
      * @return Référence constante à la bougie courante
      * @throws std::runtime_error Si l'on est à la fin des données ou avant le début
      */
-    const Candle& current() const;
+    Candle current() const;
     
     /**
      * @brief Accès à la date courante
@@ -212,25 +199,6 @@ public:
      * @brief Accès au volume courant
      */
     double currentVolume() const;
-
-    /**
-     * @brief Accès à une valeur personnalisée courante
-     * 
-     * @param name Nom de la colonne personnalisée
-     * @return Valeur courante
-     * @throws std::out_of_range Si la colonne n'existe pas
-     */
-    // double currentCustomValue(const std::string& name) const;
-    
-    /**
-     * @brief Accès aux N dernières bougies pour calculer des indicateurs
-     * 
-     * @param n Nombre de bougies à récupérer (incluant la courante)
-     * @return Vecteur des n dernières bougies (la plus récente en dernier)
-     * @throws std::invalid_argument Si n <= 0
-     * @throws std::runtime_error Si n est supérieur à la position actuelle + 1
-     */
-    // std::vector<Candle> lookback(size_t n) const;
     
 private:
     std::vector<Date> _dates;
@@ -239,11 +207,7 @@ private:
     std::vector<double> _low;
     std::vector<double> _close;
     std::vector<double> _volume;
-    std::map<std::string, std::vector<double>> _customColumns;
 
-    mutable Candle _tempCandle;
-
-    // std::vector<Candle> _candles;  // Stockage des bougies
     size_t _position = 0;          // Position courante pour l'itération
     std::vector<bool> _hasGapAfter;  // Indique si un trou existe après chaque bougie
 };

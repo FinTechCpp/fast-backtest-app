@@ -228,6 +228,5 @@ private:
 
     // --- État ---
     bool m_tablesCreated;
-    BacktestResults* m_currentResults;
     App* m_app;  // Référence à l'application principale
 };

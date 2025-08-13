@@ -229,7 +229,6 @@ StatsView::StatsView(QWidget* parent)
     : BaseView(parent),
       m_tradesModel(new TradesTableModel(this)),
       m_tablesCreated(false),
-      m_currentResults(nullptr),
       m_app(nullptr)
 {
     // Trouver l'application parente
@@ -381,20 +380,15 @@ void StatsView::arrangePanels() {
 }
 
 void StatsView::updateData(BacktestResults* results)
-{
-    // Récupérer les résultats depuis l'App
-    BacktestResults* appResults = m_app ? m_app->getBacktestResults() : nullptr;
-    
+{    
     // Stocker les résultats pour les mises à jour ultérieures
-    m_currentResults = appResults;
+    m_currentResults = results;
     
-    if (!appResults) {
+    if (!m_currentResults) {
         qWarning() << "Résultats nuls reçus";
         clear();
         return;
     }
-
-    // std::cout << m_currentResults->stats << std::endl;
 
     try {
         // Créer les tables si ce n'est pas déjà fait
@@ -414,11 +408,11 @@ void StatsView::updateData(BacktestResults* results)
         if (m_generalGroup) m_generalGroup->setVisible(true);
         
         // Mettre à jour les métriques avec l'objet Stats
-        populateMetrics(appResults->stats);
-        
+        populateMetrics(m_currentResults->stats);
+
         // Mettre à jour la table des trades
-        populateTrades(appResults->stats.trades);
-        
+        populateTrades(m_currentResults->stats.trades);
+
         qInfo() << "StatsView mise à jour avec succès";
         
     } catch (const std::exception& e) {

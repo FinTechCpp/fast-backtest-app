@@ -42,14 +42,16 @@ struct BacktestResultConfig {
     std::string version;
     std::string createdAt;
     be::Stats stats;
-    // autres params
+    // c'est vraiment lourd, il faudrait plutot une reference vers des données, ensuite en verifie que les données chargées étaient bien celles de l'enregistrement
+    std::vector<be::Candle> candles;
 
     template<class Archive>
     void serialize(Archive & ar) {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
-           CEREAL_NVP(stats));
+           CEREAL_NVP(stats),
+           CEREAL_NVP(candles));
     }
 };
 
@@ -70,6 +72,16 @@ namespace cereal {
     }
 
     template<class Archive>
+    void serialize(Archive & ar, be::Candle & candle) {
+        ar(cereal::make_nvp("date", candle.date),
+           cereal::make_nvp("open", candle.open),
+           cereal::make_nvp("high", candle.high),
+           cereal::make_nvp("low", candle.low),
+           cereal::make_nvp("close", candle.close),
+           cereal::make_nvp("volume", candle.volume));
+    }
+
+    template<class Archive>
     void serialize(Archive & ar, be::TradeData & trade) {
         ar(cereal::make_nvp("size", trade.size),
            cereal::make_nvp("entryPrice", trade.entryPrice),
@@ -85,7 +97,9 @@ namespace cereal {
            cereal::make_nvp("tpPrice", trade.tpPrice),
            cereal::make_nvp("initialSLPrice", trade.initialSlPrice),
            cereal::make_nvp("lastSLPrice", trade.lastSlPrice),
-           cereal::make_nvp("breakEvenTriggerPrice", trade.breakEvenTriggerPrice));
+           cereal::make_nvp("breakEvenTriggerPrice", trade.breakEvenTriggerPrice),
+           cereal::make_nvp("pl", trade.pl),
+           cereal::make_nvp("plPercent", trade.plPercent));
     }
     
     template<class Archive>

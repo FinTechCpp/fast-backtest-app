@@ -75,9 +75,7 @@ private slots:
 
 private:
     // Cache des données
-    BacktestResults* m_cachedResults;
     bool m_dataExtracted;
-    BacktestResults* m_currentResults;
 
     // UI Components 
     QWidget* m_leftPanel;         // Panneau de gauche (settings)

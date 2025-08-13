@@ -41,6 +41,8 @@ public:
     virtual void clear() = 0;
 
 protected:
+    BacktestResults* m_currentResults;  ///< Pointeur vers les résultats du backtest actuel
+    
     /** Dictionnaire des widgets de la vue */
     QMap<QString, QWidget*> m_widgets;
     

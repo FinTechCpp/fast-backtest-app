@@ -208,6 +208,7 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         BacktestResults* currentResults = m_mainWindow->getBacktestResults();
 
         config.stats = currentResults ? currentResults->stats : be::Stats();
+        config.candles = currentResults ? currentResults->data->getCandles() : std::vector<be::Candle>();
         
         // Sauvegarder le résultat
         m_resultManager->saveBacktestResult(config, m_mainWindow);
@@ -256,8 +257,7 @@ void BacktestResultMenuManager::onLoadResult()
                 std::unique_ptr<BacktestResults> results = std::make_unique<BacktestResults>();
 
                 results->stats = config.stats;
-
-                // biensur il manque les data qui faut que l'utilisateur load,
+                results->data = std::make_shared<be::Data>(config.candles);
 
                 m_mainWindow->setBacktestResults(std::move(results));
 

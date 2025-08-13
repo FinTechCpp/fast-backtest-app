@@ -21,18 +21,22 @@ class BacktestResultManager : public QObject
     Q_OBJECT
 
 public:
-    BacktestResultManager(QObject* parent = nullptr);
+    BacktestResultManager(QObject* parent = nullptr, SerializationUtils::FileFormat defaultFormat = SerializationUtils::FileFormat::JSON);
     ~BacktestResultManager();
     
     // Liste tous les résultats de backtest disponibles
     QStringList listBacktestResults() const;
 
-    // Actions utilisateur
-    bool saveBacktestResult(const BacktestResultConfig& config, QWidget* parentWidget = nullptr);
-    bool loadBacktestResult(const QString& resultName, BacktestResultConfig& config);
+    // Actions utilisateur avec format optionnel
+    bool saveBacktestResult(const BacktestResultConfig& config, QWidget* parentWidget = nullptr, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
+    bool loadBacktestResult(const QString& resultName, BacktestResultConfig& config, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
     bool deleteBacktestResult(const QString& resultName, QWidget* parentWidget = nullptr);
     bool importBacktestResult(QWidget* parentWidget = nullptr);
-    bool exportBacktestResult(const QString& resultName, QWidget* parentWidget = nullptr);
+    bool exportBacktestResult(const QString& resultName, QWidget* parentWidget = nullptr, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
+
+    // Méthode pour définir le format par défaut
+    void setDefaultFormat(SerializationUtils::FileFormat format) { m_defaultFormat = format; }
+    SerializationUtils::FileFormat getDefaultFormat() const { return m_defaultFormat; }
 
     // Méthode pour ouvrir le dossier des résultats
     bool openBacktestResultsDirectory() const;
@@ -45,13 +49,14 @@ signals:
 
 private:
     QString m_resultsDir;         // Répertoire où sont stockés les résultats
-    
+    SerializationUtils::FileFormat m_defaultFormat;
+
     // Méthodes de gestion des fichiers
-    bool resultExists(const QString& resultName) const;
-    bool saveResult(const QString& resultName, const BacktestResultConfig& config);
-    bool loadResultFromJson(const QString& resultName, BacktestResultConfig& config);
-    QString getResultPath(const QString& resultName) const;
-    
+    bool resultExists(const QString& resultName, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto) const;
+    bool saveResult(const QString& resultName, const BacktestResultConfig& config, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
+    bool loadResult(const QString& resultName, BacktestResultConfig& config, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
+    QString getResultPath(const QString& resultName, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto) const;
+
     // Initialiser les répertoires de l'application
     void initializeDirectories();
 };

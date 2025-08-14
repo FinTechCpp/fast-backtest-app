@@ -19,6 +19,7 @@
 #include <memory>
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
+#include "ui/views/Stats/TimeLineWidget.h"
 #include <cmath>
 
 class App;
@@ -201,6 +202,9 @@ private:
     void createTradeClosureChart();
     void updateTradeClosureChart(const be::Stats& stats);
 
+
+    TimelineWidget* m_timelineWidget = nullptr;
+    void createTimelineWidget();
 
     // --- Modèles de données ---
     TradesTableModel* m_tradesModel;

@@ -272,6 +272,9 @@ StatsView::~StatsView()
 void StatsView::setupUI() {
     createScrollAreaAndContent();
     createGroupBoxes();
+
+    createTimelineWidget();
+
     createStatsWidgets();
     createLegend();
     arrangePanels();
@@ -323,7 +326,7 @@ void StatsView::createGroupBoxes() {
 void StatsView::createStatsWidgets() {
     // Map des sections aux layouts correspondants
     static const QMap<QString, QVBoxLayout*> sectionLayouts = {
-        {"time", m_timeLayout},
+        // {"time", m_timeLayout},
         {"performance", m_performanceLayout},
         {"risk", m_riskLayout},
         {"general", m_generalLayout}
@@ -331,6 +334,9 @@ void StatsView::createStatsWidgets() {
     
     // Créer tous les widgets de métriques à partir des définitions
     for (const auto& metric : m_metricDefinitions) {
+
+        if (metric.section == "time") continue;
+
         // Récupérer le layout correspondant à la section
         QVBoxLayout* targetLayout = sectionLayouts.value(metric.section);
         if (!targetLayout) continue;
@@ -675,6 +681,11 @@ void StatsView::initializeMetricDefinitions() {
 void StatsView::populateMetrics(const be::Stats& stats) {
     qDebug() << "Population des métriques avec coloration conditionnelle";
     
+    // Mettre à jour la timeline avec les données du backtest
+    if (m_timelineWidget) {
+        m_timelineWidget->setData(stats.start, stats.end, stats.duration, stats.exposureTimePct);
+    }
+
     for (const auto& metric : m_metricDefinitions) {
         if (m_metricWidgets.contains(metric.key)) {
             QString value = metric.formatValue(stats);
@@ -1017,6 +1028,27 @@ void StatsView::updateTradeClosureChart(const be::Stats& stats) {
     
     legendLayout->addWidget(totalEntry);
     legendLayout->addStretch();
+}
+
+void StatsView::createTimelineWidget() {
+    m_timelineWidget = new TimelineWidget();
+    
+    // Ajouter un titre
+    QVBoxLayout* layout = new QVBoxLayout();
+    layout->setContentsMargins(10, 10, 10, 10);
+    
+    QLabel* titleLabel = new QLabel("Période et exposition du backtest");
+    QFont titleFont = titleLabel->font();
+    titleFont.setBold(true);
+    titleLabel->setFont(titleFont);
+    titleLabel->setAlignment(Qt::AlignCenter);
+    
+    layout->addWidget(titleLabel);
+    layout->addWidget(m_timelineWidget);
+    
+    // Remplacer le layout existant du groupe
+    delete m_timeGroup->layout();
+    m_timeGroup->setLayout(layout);
 }
 
 void StatsView::populateTrades(const std::vector<be::TradeData> &trades)

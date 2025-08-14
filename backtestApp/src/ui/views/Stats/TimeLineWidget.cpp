@@ -1,8 +1,29 @@
 #include "ui/views/Stats/TimeLineWidget.h"
 
+#include <QVBoxLayout>
+#include <QLabel>
+
 TimelineWidget::TimelineWidget(QWidget* parent) : QWidget(parent) {
+
+    // Ajouter un titre
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(10, 10, 10, 10);
+    
+    QLabel* titleLabel = new QLabel("Période et exposition du backtest");
+    QFont titleFont = titleLabel->font();
+    titleFont.setBold(true);
+    titleLabel->setFont(titleFont);
+    titleLabel->setAlignment(Qt::AlignCenter);
+    
+    layout->addWidget(titleLabel);
+
+    // Ajouter un widget d'espacement pour la zone de dessin
+    QWidget* drawArea = new QWidget();
+    drawArea->setMinimumHeight(100); // Hauteur minimale pour le dessin
+    layout->addWidget(drawArea);
+
     // Configuration du widget
-    setMinimumHeight(120);
+    setMinimumHeight(160);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 }
 

@@ -57,7 +57,9 @@ void StatsView::setupUI() {
     createStatsWidgets();
     createLegend();
     // createEquityCurveWidget();
-    createTimelineWidget();
+
+    m_timelineWidget = new TimelineWidget();
+
 
     arrangePanels();
     
@@ -86,12 +88,7 @@ void StatsView::createScrollAreaAndContent() {
     m_statsContentLayout->addWidget(m_statsPlaceholder);
 }
 
-void StatsView::createGroupBoxes() {
-   // Créer les sections de métriques avec des titres plus descriptifs
-    m_timeGroup = new QGroupBox("Période et Exposition");
-    m_timeLayout = new QVBoxLayout(); // Changer en QVBoxLayout pour mettre les métriques en colonne
-    m_timeGroup->setLayout(m_timeLayout);
-    
+void StatsView::createGroupBoxes() {  
     m_performanceGroup = new QGroupBox("Résultats et Performance");
     m_performanceLayout = new QVBoxLayout(); // Changer en QVBoxLayout pour mettre les métriques en colonne
     m_performanceGroup->setLayout(m_performanceLayout);
@@ -108,7 +105,6 @@ void StatsView::createGroupBoxes() {
 void StatsView::createStatsWidgets() {
     // Map des sections aux layouts correspondants
     static const QMap<QString, QVBoxLayout*> sectionLayouts = {
-        // {"time", m_timeLayout},
         {"performance", m_performanceLayout},
         {"risk", m_riskLayout},
         {"general", m_generalLayout}
@@ -198,8 +194,8 @@ void StatsView::arrangePanels() {
     // }
     
     // Ligne 1: Timeline
-    if (m_timeGroup) {
-        m_statsGridLayout->addWidget(m_timeGroup, row, 0, 1, 3);
+    if (m_timelineWidget) {
+        m_statsGridLayout->addWidget(m_timelineWidget, row, 0, 1, 3);
         row++;
     }
     
@@ -689,28 +685,6 @@ void StatsView::createTradeClosureWidget() {
 
 void StatsView::createEquityCurveWidget() {
     m_equityCurveWidget = new EquityCurveWidget();
-}
-
-void StatsView::createTimelineWidget()
-{
-    m_timelineWidget = new TimelineWidget();
-    
-    // Ajouter un titre
-    QVBoxLayout* layout = new QVBoxLayout();
-    layout->setContentsMargins(10, 10, 10, 10);
-    
-    QLabel* titleLabel = new QLabel("Période et exposition du backtest");
-    QFont titleFont = titleLabel->font();
-    titleFont.setBold(true);
-    titleLabel->setFont(titleFont);
-    titleLabel->setAlignment(Qt::AlignCenter);
-    
-    layout->addWidget(titleLabel);
-    layout->addWidget(m_timelineWidget);
-    
-    // Remplacer le layout existant du groupe
-    delete m_timeGroup->layout();
-    m_timeGroup->setLayout(layout);
 }
 
 void StatsView::populateTrades(const std::vector<be::TradeData> &trades)

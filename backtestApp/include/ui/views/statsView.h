@@ -178,7 +178,6 @@ private:
 
     // Timeline
     TimelineWidget* m_timelineWidget = nullptr;
-    void createTimelineWidget();
 
     QWidget* m_legendWidget = nullptr;
 

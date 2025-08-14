@@ -8,6 +8,8 @@
 #include <QBarCategoryAxis>
 #include <QValueAxis>
 #include <QPieSlice>
+#include <QScatterSeries>
+#include <QLineSeries>
 
 
 /*
@@ -25,226 +27,6 @@ Carte de performance vs volatilité: Positionnement de votre stratégie par rapp
 Indicateurs d'amélioration: Des suggestions visuelles sur les aspects à améliorer dans la stratégie
 */
 
-// Utilitaire pour convertir be::Date en QDateTime
-QDateTime TradesTableModel::dateToQDateTime(const be::Date& date) {
-    // Utiliser les getters publics au lieu d'accéder directement aux membres privés
-    return QDateTime(
-        QDate(static_cast<int>(date.year), static_cast<int>(date.month), static_cast<int>(date.day)),
-        QTime(static_cast<int>(date.hour), static_cast<int>(date.minute), static_cast<int>(date.second))
-    );
-}
-
-// Implémentation de TradesTableModel
-TradesTableModel::TradesTableModel(QObject* parent)
-    : QStandardItemModel(parent)
-{
-    // Définir les en-têtes par défaut
-    QStringList headers;
-    headers << "#" << "Date" << "Type" << "Entrée" << "Sortie" << "Dur." << "PnL" << "PnL%" << "SL" << "TP";
-    setHorizontalHeaderLabels(headers);
-}
-
-void TradesTableModel::clear() {
-    removeRows(0, rowCount());
-}
-
-// Nouvelle implémentation pour travailler avec des be::Trade
-void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
-{
-    beginResetModel();
-    
-    // Effacer les données existantes
-    removeRows(0, rowCount());
-    
-    if (trades.empty()) {
-        endResetModel();
-        return;
-    }
-    
-    // Configurer les en-têtes
-    QStringList headers;
-    headers << "#" << "Type" << "Taille" << "Prix d'entrée" << "Prix de sortie" 
-            << "PnL" << "PnL %" << "Durée" << "Date d'entrée" << "Date de sortie"
-            << "SL initial" << "TP" << "Clôture" << "Tag";
-    setHorizontalHeaderLabels(headers);
-    
-    // Ajouter les nouvelles données
-    setRowCount(static_cast<int>(trades.size()));
-    
-    for (int row = 0; row < static_cast<int>(trades.size()); ++row) {
-        const auto& trade = trades[row];
-        
-        // # (numéro de trade)
-        setItem(row, 0, new QStandardItem(QString::number(row + 1)));
-        
-        // Type (LONG/SHORT basé sur la taille)
-        QString tradeType = trade.size > 0 ? "LONG" : "SHORT";
-        QStandardItem* typeItem = new QStandardItem(tradeType);
-        typeItem->setForeground(trade.size > 0 ? Qt::darkGreen : Qt::darkRed);
-        setItem(row, 1, typeItem);
-        
-        // Taille (valeur absolue)
-        setItem(row, 2, new QStandardItem(formatNumber(std::abs(trade.size), 4)));
-
-        // Prix d'entrée
-        setItem(row, 3, new QStandardItem(formatNumber(trade.entryPrice, 2)));
-
-        // Prix de sortie
-        setItem(row, 4, new QStandardItem(formatNumber(trade.exitPrice, 2)));
-
-        // PnL
-        double pnl = trade.pl;
-        be::CloseReason closeReason = trade.closeReason;
-        QStandardItem* pnlItem = new QStandardItem(formatNumber(pnl, 2));
-        pnlItem->setForeground(
-            closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
-            closeReason == be::CloseReason::StopLoss ? Qt::darkRed : (
-            closeReason == be::CloseReason::BreakEven ? Qt::darkBlue : Qt::darkGray)));
-        QFont boldFont = pnlItem->font(); // Récupère la police actuelle
-        boldFont.setBold(true);           // Active le gras
-        pnlItem->setFont(boldFont);       // Applique la police modifiée
-        setItem(row, 5, pnlItem);
-        
-        // PnL %
-        double returnPct = trade.plPercent;
-        QStandardItem* pctItem = new QStandardItem(formatNumber(returnPct * 100, 2) + "%");
-        pctItem->setForeground(
-            closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
-            closeReason == be::CloseReason::StopLoss ? Qt::darkRed : (
-            closeReason == be::CloseReason::BreakEven ? Qt::darkBlue : Qt::darkGray)));
-        QFont pctFont = pctItem->font();
-        pctFont.setBold(true);
-        pctItem->setFont(pctFont);
-        setItem(row, 6, pctItem);
-        
-        // Durée - calculer à partir des dates
-        QDateTime entryDT = dateToQDateTime(trade.entryDate);
-        QDateTime exitDT = dateToQDateTime(trade.exitDate);
-        qint64 durationSecs = entryDT.secsTo(exitDT);
-        
-        QString durationStr;
-        if (durationSecs < 60) {
-            durationStr = QString("%1s").arg(durationSecs);
-        } else if (durationSecs < 3600) {
-            durationStr = QString("%1m %2s").arg(durationSecs / 60).arg(durationSecs % 60);
-        } else if (durationSecs < 86400) {
-            int hours = durationSecs / 3600;
-            int mins = (durationSecs % 3600) / 60;
-            durationStr = QString("%1h %2m").arg(hours).arg(mins);
-        } else {
-            int days = durationSecs / 86400;
-            int hours = (durationSecs % 86400) / 3600;
-            durationStr = QString("%1j %2h").arg(days).arg(hours);
-        }
-        setItem(row, 7, new QStandardItem(durationStr));
-        
-        // Date d'entrée
-        setItem(row, 8, new QStandardItem(formatDateTime(entryDT)));
-        
-        // Date de sortie
-        setItem(row, 9, new QStandardItem(formatDateTime(exitDT)));
-        
-        // Stop Loss (si disponible)
-        QString slText = "-";
-        if (trade.initialSlPrice > 0) {
-            slText = formatNumber(trade.initialSlPrice, 2);
-        } else if (trade.lastSlPrice > 0) {
-            slText = formatNumber(trade.lastSlPrice, 2);
-        }
-        setItem(row, 10, new QStandardItem(slText));
-        
-        // Take Profit (si disponible)
-        QString tpText = "-";
-        if (trade.tpPrice > 0) {
-            tpText = formatNumber(trade.tpPrice, 2);
-        }
-        setItem(row, 11, new QStandardItem(tpText));
-
-        // Close Reason (raison de clôture)
-        QString closeReasonText = "-";
-        QColor textColor = Qt::darkGray; // Par défaut gris pour Unknown/ManualClose
-
-        // Déterminer le texte et la couleur selon le type de clôture
-        switch (trade.closeReason) {
-            case be::CloseReason::TakeProfit:
-                closeReasonText = "TP";
-                textColor = Qt::darkGreen;
-                break;
-            case be::CloseReason::StopLoss:
-                closeReasonText = "SL";
-                textColor = Qt::darkRed;
-                break;
-            case be::CloseReason::BreakEven:
-                closeReasonText = "BE";
-                textColor = Qt::darkBlue;
-                break;
-            case be::CloseReason::ManualClose:
-                closeReasonText = "Manuel";
-                textColor = Qt::darkGray;
-                break;
-            default:
-                closeReasonText = "-";
-                textColor = Qt::darkGray;
-        }
-
-        QStandardItem* closeReasonItem = new QStandardItem(closeReasonText);
-        closeReasonItem->setForeground(textColor);
-        QFont closeReasonFont = closeReasonItem->font();
-        closeReasonFont.setBold(true);
-        closeReasonItem->setFont(closeReasonFont);
-        setItem(row, 12, closeReasonItem);
-        
-        // Tag (si disponible)
-        QString tag = "-";
-        if (!trade.tag.empty()) {
-            tag = QString::fromStdString(trade.tag);
-        }
-        setItem(row, 13, new QStandardItem(tag));
-
-        // Appliquer la couleur de fond selon la raison de clôture
-        QColor rowColor;
-        if (trade.closeReason == be::CloseReason::TakeProfit) {
-            rowColor = QColor(220, 255, 220); // Vert très clair
-        } else if (trade.closeReason == be::CloseReason::StopLoss) {
-            rowColor = QColor(255, 220, 220); // Rouge très clair
-        } else if (trade.closeReason == be::CloseReason::BreakEven) {
-            rowColor = QColor(220, 240, 255); // Bleu très clair
-        } else {
-            // ManualClose ou Unknown
-            if (pnl > 0) {
-                rowColor = QColor(240, 255, 240); // Vert très pâle
-            } else if (pnl < 0) {
-                rowColor = QColor(255, 240, 240); // Rouge très pâle
-            } else {
-                rowColor = QColor(240, 240, 240); // Gris très clair
-            }
-        }
-
-        // Appliquer la couleur à toutes les cellules de la ligne
-        for (int col = 0; col < columnCount(); ++col) {
-            QStandardItem* item = this->item(row, col);
-            if (item) {
-                item->setData(rowColor, Qt::BackgroundRole);
-            }
-        }
-    }
-
-    endResetModel();
-}
-
-// Méthodes utilitaires
-QString TradesTableModel::formatNumber(double value, int precision)
-{
-    return QString::number(value, 'f', precision);
-}
-
-QString TradesTableModel::formatDateTime(const QDateTime& dateTime)
-{
-    if (!dateTime.isValid()) {
-        return "-";
-    }
-    return dateTime.toString("dd/MM hh:mm:ss");
-}
 
 // Implémentation de StatsView
 StatsView::StatsView(QWidget* parent)
@@ -272,11 +54,11 @@ StatsView::~StatsView()
 void StatsView::setupUI() {
     createScrollAreaAndContent();
     createGroupBoxes();
-
-    createTimelineWidget();
-
     createStatsWidgets();
     createLegend();
+    // createEquityCurveWidget();
+    createTimelineWidget();
+
     arrangePanels();
     
     // Configurer le scroll area et l'ajouter au layout principal
@@ -358,6 +140,8 @@ void StatsView::createStatsWidgets() {
 void StatsView::createLegend() {
     // Ajouter une légende pour les couleurs
     QWidget* legendWidget = new QWidget();
+    legendWidget->setProperty("isLegend", true);
+
     QHBoxLayout* legendLayout = new QHBoxLayout(legendWidget);
     
     QLabel* goodLabel = new QLabel("●");
@@ -389,22 +173,65 @@ void StatsView::createLegend() {
     legendLayout->addWidget(naText);
     legendLayout->addStretch();
 
-    m_statsGridLayout->addWidget(legendWidget, 3, 0, 1, 2); // Span sur 2 colonnes
+    // m_statsGridLayout->addWidget(legendWidget, 3, 0, 1, 2); // Span sur 2 colonnes
+    m_legendWidget = legendWidget;
 }
 
 void StatsView::arrangePanels() {
-    // Ajouter m_timeGroup seul sur la première ligne (span sur 3 colonnes)
-    m_statsGridLayout->addWidget(m_timeGroup, 0, 0, 1, 3);          // Première ligne, span sur 3 colonnes
+    // Nettoyer d'abord toutes les positions dans le layout
+    // pour éviter les conflits
+    while (m_statsGridLayout->count()) {
+        QLayoutItem* item = m_statsGridLayout->takeAt(0);
+        if (item) {
+            // Ne pas supprimer le widget, juste l'item
+            delete item;
+        }
+    }
     
-    // Ajouter les 3 autres groupes sur la deuxième ligne
-    m_statsGridLayout->addWidget(m_performanceGroup, 1, 0);         // Deuxième ligne, première colonne
-    m_statsGridLayout->addWidget(m_riskGroup, 1, 1);               // Deuxième ligne, deuxième colonne
-    m_statsGridLayout->addWidget(m_generalGroup, 1, 2);            // Deuxième ligne, troisième colonne
+    // Ajouter les widgets dans l'ordre souhaité
+    int row = 0;
     
-    // Ajouter le placeholder en dessous de la grille (span sur 3 colonnes)
+    // Ligne 0: Equity Curve (tout en haut)
+    // if (m_equityCurveWidget) {
+    //     m_statsGridLayout->addWidget(m_equityCurveWidget, row, 0, 1, 3);
+    //     row++;
+    // }
+    
+    // Ligne 1: Timeline
+    if (m_timeGroup) {
+        m_statsGridLayout->addWidget(m_timeGroup, row, 0, 1, 3);
+        row++;
+    }
+    
+    // Ligne 2: Les trois groupes de métriques
+    if (m_performanceGroup && m_riskGroup && m_generalGroup) {
+        m_statsGridLayout->addWidget(m_performanceGroup, row, 0);
+        m_statsGridLayout->addWidget(m_riskGroup, row, 1);
+        m_statsGridLayout->addWidget(m_generalGroup, row, 2);
+        row++;
+    }
+    
+    // Ligne 3: Légende
+    QLayoutItem* legendItem = nullptr;
+    for (int i = 0; i < m_statsGridLayout->count(); ++i) {
+        QLayoutItem* item = m_statsGridLayout->itemAt(i);
+        if (item && item->widget() && 
+            item->widget()->property("isLegend").toBool()) {
+            legendItem = item;
+            break;
+        }
+    }
+    
+    // Si la légende existe, la placer sur la ligne suivante
+    if (legendItem) {
+        m_statsGridLayout->addWidget(legendItem->widget(), row, 0, 1, 2);
+        row++;
+    }
+    
+    // Ligne 4: Contenu additionnel (placeholder, trades, etc.)
     QWidget* placeholderWidget = new QWidget();
     placeholderWidget->setLayout(m_statsContentLayout);
-    m_statsGridLayout->addWidget(placeholderWidget, 2, 0, 1, 3); // Span sur 3 colonnes
+    m_statsGridLayout->addWidget(placeholderWidget, row, 0, 1, 3);
 }
 
 void StatsView::updateData(BacktestResults* results)
@@ -438,7 +265,8 @@ void StatsView::updateData(BacktestResults* results)
         // Mettre à jour les métriques avec l'objet Stats
         populateMetrics(m_currentResults->stats);
 
-        updateTradeClosureChart(m_currentResults->stats);
+        // m_equityCurveWidget->updateData(m_currentResults->stats);
+        m_tradeClosureWidget->updateData(m_currentResults->stats);
 
         // Mettre à jour la table des trades
         populateTrades(m_currentResults->stats.trades);
@@ -727,7 +555,7 @@ void StatsView::createTradesTable() {
     // 1. D'abord créer et ajouter le graphique de distribution des rendements
     
     // 2. Ensuite créer et ajouter le graphique camembert de clôture des trades
-    createTradeClosureChart();
+    createTradeClosureWidget();
 
     createTradesTableControls();
     createTradesTableView();
@@ -852,185 +680,19 @@ std::vector<be::TradeData> StatsView::getFilteredTrades(const std::vector<be::Tr
     return filteredTrades;
 }
 
-void StatsView::createTradeClosureChart() {
-    // Créer le widget chart
-    m_tradeClosureChartView = new QChartView();
-    m_tradeClosureChartView->setRenderHint(QPainter::Antialiasing);
-    m_tradeClosureChartView->setMinimumHeight(300);
-    m_tradeClosureChartView->setMinimumWidth(300);
-    
-    // Créer un layout horizontal pour contenir le graphique et la légende
-    QWidget* chartContainer = new QWidget();
-    QHBoxLayout* chartLayout = new QHBoxLayout(chartContainer);
-    
-    // Ajouter le chart à gauche
-    chartLayout->addWidget(m_tradeClosureChartView, 3);
-    
-    // Créer un conteneur pour la légende à droite
-    QWidget* legendContainer = new QWidget();
-    QVBoxLayout* legendLayout = new QVBoxLayout(legendContainer);
-    legendLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    
-    // Titre de la légende
-    QLabel* legendTitle = new QLabel("Types de clôture des trades");
-    QFont titleFont = legendTitle->font();
-    titleFont.setBold(true);
-    titleFont.setPointSize(titleFont.pointSize() + 2);
-    legendTitle->setFont(titleFont);
-    legendLayout->addWidget(legendTitle);
-    
-    // Ajouter le conteneur de légende au layout principal
-    chartLayout->addWidget(legendContainer, 1);
+void StatsView::createTradeClosureWidget() {
+    m_tradeClosureWidget = new TradeClosureWidget();
     
     // Ajouter au groupe de trades, près du haut
-    m_tradesLayout->insertWidget(1, chartContainer);
+    m_tradesLayout->insertWidget(1, m_tradeClosureWidget);
 }
 
-void StatsView::updateTradeClosureChart(const be::Stats& stats) {
-    if (!m_tradeClosureChartView) {
-        return;
-    }
-    
-    // Créer une nouvelle série
-    QPieSeries *series = new QPieSeries();
-    
-    // Ajouter les données
-    if (stats.numTPTrades > 0) {
-        QPieSlice *slice = series->append("TP", stats.numTPTrades);
-        slice->setColor(QColor(46, 204, 113)); // Vert
-        slice->setLabelVisible(true);
-    }
-    
-    if (stats.numSLTrades > 0) {
-        QPieSlice *slice = series->append("SL", stats.numSLTrades);
-        slice->setColor(QColor(231, 76, 60)); // Rouge
-        slice->setLabelVisible(true);
-    }
-    
-    if (stats.numBETrades > 0) {
-        QPieSlice *slice = series->append("BE", stats.numBETrades);
-        slice->setColor(QColor(52, 152, 219)); // Bleu
-        slice->setLabelVisible(true);
-    }
-    
-    if (stats.numManualTrades > 0) {
-        QPieSlice *slice = series->append("Manuel", stats.numManualTrades);
-        slice->setColor(QColor(127, 140, 141)); // Gris foncé
-        slice->setLabelVisible(true);
-    }
-    
-    if (stats.numUnknownTrades > 0) {
-        QPieSlice *slice = series->append("Inconnu", stats.numUnknownTrades);
-        slice->setColor(QColor(44, 62, 80)); // Presque noir
-        slice->setLabelVisible(true);
-    }
-    
-    // Ajouter des détails aux étiquettes
-    int totalTrades = stats.numTrades;
-    for (QPieSlice *slice : series->slices()) {
-        int count = slice->value();
-        double percentage = (count * 100.0) / totalTrades;
-        slice->setLabel(QString("%1: %2 (%3%)").arg(slice->label()).arg(count).arg(QString::number(percentage, 'f', 1)));
-    }
-    
-    // Créer le graphique
-    QChart *chart = new QChart();
-    chart->addSeries(series);
-    chart->setTitle("Distribution des clôtures de trades");
-    chart->legend()->setVisible(true);
-    chart->legend()->setAlignment(Qt::AlignBottom);
-    
-    // Animation
-    series->setLabelsVisible(true);
-    series->setLabelsPosition(QPieSlice::LabelOutside);
-    
-    // Mise à jour du graphique
-    m_tradeClosureChartView->setChart(chart);
-    
-    // Recréer la légende détaillée à droite
-    QWidget* legendContainer = qobject_cast<QWidget*>(m_tradeClosureChartView->parent())->layout()->itemAt(1)->widget();
-    QVBoxLayout* legendLayout = qobject_cast<QVBoxLayout*>(legendContainer->layout());
-    
-    // Effacer les anciens widgets de légende (sauf le titre)
-    while (legendLayout->count() > 1) {
-        QLayoutItem* item = legendLayout->takeAt(1);
-        delete item->widget();
-        delete item;
-    }
-    
-    // Ajouter de nouvelles entrées de légende avec des détails
-    QStringList types = {"Take Profit (TP)", "Stop Loss (SL)", "Break Even (BE)", "Manuel", "Inconnu"};
-    QColor colors[] = {
-        QColor(46, 204, 113),  // Vert
-        QColor(231, 76, 60),   // Rouge
-        QColor(52, 152, 219),  // Bleu
-        QColor(127, 140, 141), // Gris foncé
-        QColor(44, 62, 80)     // Noir
-    };
-    unsigned int counts[] = {
-        stats.numTPTrades,
-        stats.numSLTrades,
-        stats.numBETrades,
-        stats.numManualTrades,
-        stats.numUnknownTrades
-    };
-    
-    for (int i = 0; i < 5; i++) {
-        if (counts[i] > 0) {
-            // Créer un widget contenant un indicateur de couleur et des labels
-            QWidget* legendEntry = new QWidget();
-            QHBoxLayout* entryLayout = new QHBoxLayout(legendEntry);
-            entryLayout->setContentsMargins(0, 5, 0, 5);
-            
-            // Indicateur de couleur
-            QLabel* colorIndicator = new QLabel();
-            colorIndicator->setFixedSize(20, 20);
-            colorIndicator->setStyleSheet(QString("background-color: %1; border-radius: 10px;").arg(colors[i].name()));
-            entryLayout->addWidget(colorIndicator);
-            
-            // Description
-            QLabel* description = new QLabel(types[i]);
-            entryLayout->addWidget(description);
-            
-            // Ajouter l'entrée à la légende
-            legendLayout->addWidget(legendEntry);
-            
-            // Ajouter une ligne avec les statistiques détaillées
-            QWidget* statsEntry = new QWidget();
-            QHBoxLayout* statsLayout = new QHBoxLayout(statsEntry);
-            statsLayout->setContentsMargins(25, 0, 0, 10);
-            
-            double percentage = (counts[i] * 100.0) / totalTrades;
-            QLabel* statsLabel = new QLabel(QString("%1 trades (%2%)").arg(counts[i]).arg(QString::number(percentage, 'f', 1)));
-            statsLabel->setStyleSheet("color: #666;");
-            statsLayout->addWidget(statsLabel);
-            
-            legendLayout->addWidget(statsEntry);
-        }
-    }
-    
-    // Ajouter le total
-    QFrame* line = new QFrame();
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    legendLayout->addWidget(line);
-    
-    QWidget* totalEntry = new QWidget();
-    QHBoxLayout* totalLayout = new QHBoxLayout(totalEntry);
-    totalLayout->setContentsMargins(0, 10, 0, 0);
-    
-    QLabel* totalLabel = new QLabel("<b>Total:</b>");
-    totalLayout->addWidget(totalLabel);
-    
-    QLabel* totalCount = new QLabel(QString("<b>%1 trades</b>").arg(totalTrades));
-    totalCount->setAlignment(Qt::AlignRight);
-    totalLayout->addWidget(totalCount);
-    
-    legendLayout->addWidget(totalEntry);
-    legendLayout->addStretch();
+void StatsView::createEquityCurveWidget() {
+    m_equityCurveWidget = new EquityCurveWidget();
 }
 
-void StatsView::createTimelineWidget() {
+void StatsView::createTimelineWidget()
+{
     m_timelineWidget = new TimelineWidget();
     
     // Ajouter un titre
@@ -1106,6 +768,15 @@ void StatsView::clear() {
     // Vider le modèle de trades
     if (m_tradesModel) {
         m_tradesModel->clear();
+    }
+
+    // Réinitialiser les widgets de graphiques
+    // if (m_equityCurveWidget) {
+    //     m_equityCurveWidget->clear();
+    // }
+    
+    if (m_tradeClosureWidget) {
+        m_tradeClosureWidget->clear();
     }
     
     // Gérer la visibilité des composants

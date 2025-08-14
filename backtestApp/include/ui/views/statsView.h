@@ -6,7 +6,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QTableView>
-#include <QStandardItemModel>
 #include <QScrollArea>
 #include <QGroupBox>
 #include <QPushButton>
@@ -20,6 +19,9 @@
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
 #include "ui/views/Stats/TimeLineWidget.h"
+#include "ui/views/Stats/TradeClosureWidget.h"
+#include "ui/views/Stats/EquityCurveWidget.h"
+#include "ui/views/Stats/TradesTableModel.h"
 #include <cmath>
 
 class App;
@@ -42,39 +44,7 @@ struct MetricDefinition {
     std::function<QString(const be::Stats&)> formatValue;
 };
 
-/**
- * @brief Modèle de données pour la table des trades.
- * Gère l'affichage des transactions et leur formatage.
- */
-class TradesTableModel : public QStandardItemModel {
-    Q_OBJECT
 
-public:
-    /**
-     * @brief Constructeur du modèle de table des trades
-     * @param parent Le parent QObject
-     */
-    TradesTableModel(QObject* parent = nullptr);
-    
-    /**
-     * @brief Met à jour les données du modèle avec un vecteur de trades
-     * @param trades Les trades à afficher
-     */
-    void updateData(const std::vector<be::TradeData>& trades);
-    
-    /**
-     * @brief Efface toutes les lignes du modèle
-     */
-    void clear();
-    
-    // Méthodes utilitaires statiques
-    static QString formatNumber(double value, int precision = 2);
-    static QDateTime dateToQDateTime(const be::Date& date);
-    static QString formatDateTime(const QDateTime& dateTime);
-    
-private:
-    static QString formatDuration(const QString& duration);
-};
 
 /**
  * @brief Vue pour afficher les statistiques de backtest et les trades.
@@ -197,14 +167,20 @@ private:
     std::vector<be::TradeData> getFilteredTrades(const std::vector<be::TradeData>& allTrades);
 
     // ==================== Membres privés ====================
-        // Graphiques
-    QChartView* m_tradeClosureChartView;
-    void createTradeClosureChart();
-    void updateTradeClosureChart(const be::Stats& stats);
+    // Graphiques
+    // Trade closure
+    TradeClosureWidget* m_tradeClosureWidget = nullptr;
+    void createTradeClosureWidget();
 
+    // Equity curve
+    EquityCurveWidget* m_equityCurveWidget = nullptr;
+    void createEquityCurveWidget();
 
+    // Timeline
     TimelineWidget* m_timelineWidget = nullptr;
     void createTimelineWidget();
+
+    QWidget* m_legendWidget = nullptr;
 
     // --- Modèles de données ---
     TradesTableModel* m_tradesModel;

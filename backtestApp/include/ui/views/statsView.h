@@ -18,11 +18,12 @@
 #include <memory>
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
-#include "ui/views/Stats/TimeLineWidget.h"
-#include "ui/views/Stats/TradeClosureWidget.h"
 #include "ui/views/Stats/EquityCurveWidget.h"
-#include "ui/views/Stats/TradesTableModel.h"
+#include "ui/views/Stats/TimeLineWidget.h"
 #include "ui/views/Stats/MetricsContainerWidget.h"
+#include "ui/views/Stats/TradeClosureWidget.h"
+#include "ui/views/Stats/TradesTableWidget.h"
+
 
 #include <cmath>
 
@@ -84,59 +85,31 @@ protected:
      */
     void setupUI() override;
 
-private slots:
-    /**
-     * @brief Rafraîchit la table des trades avec les filtres actuels
-     */
-    void refreshTradesTable();
-
 private:
-    // ==================== Mise à jour des données ====================
-    
-    /**
-     * @brief Remplit la table des trades
-     */
-    void populateTrades(const std::vector<be::TradeData>& trades);
-
-    /**
-     * @brief Filtre les trades selon les paramètres actuels
-     */
-    std::vector<be::TradeData> getFilteredTrades(const std::vector<be::TradeData>& allTrades);
-
     // ==================== Membres privés ====================
-    // Graphiques
-    // Trade closure
-    TradeClosureWidget* m_tradeClosureWidget = nullptr;
-
     // Equity curve
     EquityCurveWidget* m_equityCurveWidget = nullptr;
 
     // Timeline
     TimelineWidget* m_timelineWidget = nullptr;
 
-    // Modèle de données pour les trades
+    // Metrics
     MetricsContainerWidget* m_metricsWidget = nullptr;
+    
+    // Trade closure
+    TradeClosureWidget* m_tradeClosureWidget = nullptr;
+
+    // Trades table
+    TradesTableWidget* m_tradesTableWidget = nullptr;
 
 
     QWidget* m_legendWidget = nullptr;
-
-    // --- Modèles de données ---
-    TradesTableModel* m_tradesModel;
-    TradesTableModel* m_equityModel;
     
     // --- UI: Conteneurs principaux ---
     QScrollArea* m_scrollStats;
     QWidget* m_statsContent;
     QVBoxLayout* m_statsContentLayout;
-    QGridLayout* m_statsGridLayout;
-    QLabel* m_statsPlaceholder;
-    
-    // --- UI: Section trades ---
-    QGroupBox* m_tradesGroup;
-    QVBoxLayout* m_tradesLayout;
-    QTableView* m_tradesTable;
-    QComboBox* m_tradesLimitCombo;
-    QPushButton* m_showAllTradesBtn;
+    QVBoxLayout* m_statsLayout;
 
     // --- État ---
     App* m_app;  // Référence à l'application principale

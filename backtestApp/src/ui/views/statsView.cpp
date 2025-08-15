@@ -32,7 +32,6 @@ Indicateurs d'amélioration: Des suggestions visuelles sur les aspects à améli
 // Implémentation de StatsView
 StatsView::StatsView(QWidget* parent)
     : BaseView(parent),
-      m_tradesModel(new TradesTableModel(this)),
       m_app(nullptr)
 {
     // Trouver l'application parente
@@ -61,17 +60,12 @@ void StatsView::setupUI() {
     // Widget de contenu principal
     m_statsContent = new QWidget();
     
-    // Layout principal en grille
-    m_statsGridLayout = new QGridLayout(m_statsContent);
-    m_statsGridLayout->setSpacing(10);
+    // Layout principal
+    m_statsLayout = new QVBoxLayout(m_statsContent);
+    m_statsLayout->setSpacing(10);
     
     // Layout pour le contenu additionnel (trades, etc.)
     m_statsContentLayout = new QVBoxLayout();
-    
-    // Placeholder pour l'état sans données
-    m_statsPlaceholder = new QLabel("Exécutez le backtest pour afficher les statistiques");
-    m_statsPlaceholder->setAlignment(Qt::AlignCenter);
-    m_statsContentLayout->addWidget(m_statsPlaceholder);
 
     // 2. CRÉATION DES GROUPES DE MÉTRIQUES
     // --------------------------------------
@@ -124,130 +118,35 @@ void StatsView::setupUI() {
     
     // 7. CRÉATION DE LA TABLE DES TRADES ET COMPOSANTS ASSOCIÉS
     // --------------------------------------------------------
-    // Groupe pour les trades
-    m_tradesGroup = new QGroupBox("Trades Réalisés");
-    m_tradesLayout = new QVBoxLayout(m_tradesGroup);
-    
     // Widget de répartition des trades (camembert)
     m_tradeClosureWidget = new TradeClosureWidget();
-    m_tradesLayout->addWidget(m_tradeClosureWidget);
-    
-    // Contrôles pour la table des trades
-    QHBoxLayout* tradesControlsLayout = new QHBoxLayout();
-    
-    QLabel* tradesInfoLabel = new QLabel("Trades:");
-    m_tradesLimitCombo = new QComboBox();
-    m_tradesLimitCombo->addItem("50 derniers", 50);
-    m_tradesLimitCombo->addItem("100 derniers", 100);
-    m_tradesLimitCombo->addItem("200 derniers", 200);
-    m_tradesLimitCombo->addItem("Tous", -1);
-    m_tradesLimitCombo->setCurrentIndex(0); // 50 par défaut
-    
-    m_showAllTradesBtn = new QPushButton("Afficher tous les trades");
-    
-    tradesControlsLayout->addWidget(tradesInfoLabel);
-    tradesControlsLayout->addWidget(m_tradesLimitCombo);
-    tradesControlsLayout->addWidget(m_showAllTradesBtn);
-    tradesControlsLayout->addStretch();
+    m_statsContentLayout->addWidget(m_tradeClosureWidget);
 
-    m_tradesLayout->addLayout(tradesControlsLayout);
-    
-    // Table des trades
-    m_tradesTable = new QTableView();
-    m_tradesTable->setModel(m_tradesModel);
-    
-    // Configuration de la table
-    m_tradesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
-    m_tradesTable->setSelectionMode(QAbstractItemView::SingleSelection);
-    m_tradesTable->setAlternatingRowColors(true);
-    m_tradesTable->setSortingEnabled(true);
-    m_tradesTable->verticalHeader()->setVisible(false);
-    
-    // Ajuster les colonnes
-    QHeaderView* header = m_tradesTable->horizontalHeader();
-    header->setStretchLastSection(false);
-    header->setSectionResizeMode(QHeaderView::Interactive);
-    
-    // Définir des largeurs de colonnes
-    m_tradesTable->setColumnWidth(0, 10);   // #
-    m_tradesTable->setColumnWidth(1, 50);   // Type
-    m_tradesTable->setColumnWidth(2, 70);   // Taille
-    m_tradesTable->setColumnWidth(3, 120);  // Prix d'entrée
-    m_tradesTable->setColumnWidth(4, 120);  // Prix de sortie
-    m_tradesTable->setColumnWidth(5, 100);  // PnL
-    m_tradesTable->setColumnWidth(6, 80);   // PnL %
-    m_tradesTable->setColumnWidth(7, 100);  // Durée
-    m_tradesTable->setColumnWidth(8, 150);  // Date d'entrée
-    m_tradesTable->setColumnWidth(9, 150);  // Date de sortie
-    m_tradesTable->setColumnWidth(10, 100); // Stop Loss initial
-    m_tradesTable->setColumnWidth(11, 100); // Take Profit
-    m_tradesTable->setColumnWidth(12, 70);  // Clôture
-    m_tradesTable->setColumnWidth(13, 80);  // Tag
-
-    // Hauteur de la table
-    m_tradesTable->setMaximumHeight(1000);  
-    m_tradesTable->setMinimumHeight(400);
-
-    // Style de la table
-    QString tableStyle = 
-        "QTableView {"
-        "    border: 1px solid #d3d3d3;"
-        "    border-radius: 5px;"
-        "    background-color: #fcfcfc;"
-        "    gridline-color: #e0e0e0;"
-        "}"
-        "QTableView::item {"
-        "    padding: 5px;"
-        "}"
-        "QHeaderView::section {"
-        "    background-color: #f0f0f0;"
-        "    padding: 5px;"
-        "    border: 1px solid #d3d3d3;"
-        "    font-weight: bold;"
-        "}";
-    
-    m_tradesTable->setStyleSheet(tableStyle);
-    m_tradesLayout->addWidget(m_tradesTable);
-    
-    // Connecter les signaux des contrôles de la table
-    connect(m_tradesLimitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &StatsView::refreshTradesTable);
-    connect(m_showAllTradesBtn, &QPushButton::clicked, [this]() {
-        m_tradesLimitCombo->setCurrentIndex(3); // Index pour "Tous"
-        refreshTradesTable();
-    });
-    
-    // Ajouter le groupe de trades au layout principal
-    m_statsContentLayout->addWidget(m_tradesGroup);
-    m_tradesGroup->setVisible(false); // Caché par défaut jusqu'à ce qu'il y ait des données
+    m_tradesTableWidget = new TradesTableWidget();
+    m_tradesTableWidget->clear();
+    m_statsContentLayout->addWidget(m_tradesTableWidget);
     
     // 8. ASSEMBLAGE FINAL DANS LA GRILLE
-    // --------------------------------------
-    int row = 0;
-    
+    // --------------------------------------    
     // Ligne 0: Equity Curve (si activé)
     if (m_equityCurveWidget) {
-        m_statsGridLayout->addWidget(m_equityCurveWidget, row, 0, 1, 3);
-        row++;
+        m_statsLayout->addWidget(m_equityCurveWidget);
     }
     
     // Ligne 1: Timeline
-    m_statsGridLayout->addWidget(m_timelineWidget, row, 0, 1, 3);
-    row++;
+    m_statsLayout->addWidget(m_timelineWidget);
     
     // Ligne 2: Les trois groupes de métriques
-    m_statsGridLayout->addWidget(m_metricsWidget, row, 0, 1, 3);
-    row++;
+    m_statsLayout->addWidget(m_metricsWidget);
     
     // Ligne 3: Légende
-    m_statsGridLayout->addWidget(legendWidget, row, 0, 1, 2);
-    row++;
+    m_statsLayout->addWidget(legendWidget);
     
     // Ligne 4: Contenu additionnel (placeholder, trades, etc.)
     QWidget* placeholderWidget = new QWidget();
     placeholderWidget->setLayout(m_statsContentLayout);
-    m_statsGridLayout->addWidget(placeholderWidget, row, 0, 1, 3);
-    
+    m_statsLayout->addWidget(placeholderWidget);
+
     // 9. FINALISATION
     // --------------------------------------
     // Configurer le scroll area et l'ajouter au layout principal
@@ -266,12 +165,7 @@ void StatsView::updateData(BacktestResults* results)
         return;
     }
 
-    try {
-        // Masquer le placeholder
-        if (m_statsPlaceholder) {
-            m_statsPlaceholder->setVisible(false);
-        }
-        
+    try {        
         // Afficher le widget de métriques
         if (m_metricsWidget) {
             m_metricsWidget->setGroupsVisible(true);
@@ -284,11 +178,15 @@ void StatsView::updateData(BacktestResults* results)
                                      m_currentResults->stats.duration, m_currentResults->stats.exposureTimePct);
         }
 
-        // m_equityCurveWidget->updateData(m_currentResults->stats);
-        m_tradeClosureWidget->updateData(m_currentResults->stats);
+        // Mise à jour des widgets des trades
+        if (m_tradeClosureWidget) {
+            m_tradeClosureWidget->updateData(m_currentResults->stats);
+        }
 
-        // Mettre à jour la table des trades
-        populateTrades(m_currentResults->stats.trades);
+        // Remplacer populateTrades par:
+        if (m_tradesTableWidget) {
+            m_tradesTableWidget->updateData(m_currentResults->stats.trades);
+        }
 
 
         qInfo() << "StatsView mise à jour avec succès";
@@ -298,97 +196,24 @@ void StatsView::updateData(BacktestResults* results)
     }
 }
 
-std::vector<be::TradeData> StatsView::getFilteredTrades(const std::vector<be::TradeData>& allTrades) {
-    std::vector<be::TradeData> filteredTrades = allTrades;
-
-    if (m_tradesLimitCombo) {
-        int limit = m_tradesLimitCombo->currentData().toInt();
-        if (limit > 0 && filteredTrades.size() > static_cast<size_t>(limit)) {
-            filteredTrades = std::vector<be::TradeData>(
-                filteredTrades.end() - limit, filteredTrades.end()
-            );
-        }
-    }
-    
-    return filteredTrades;
-}
-
-void StatsView::populateTrades(const std::vector<be::TradeData> &trades)
-{
-    if (!m_tradesModel) { return; }
-
-    auto filteredTrades = getFilteredTrades(trades);
-    m_tradesModel->updateData(filteredTrades);
-    
-    if (m_showAllTradesBtn) {
-        m_showAllTradesBtn->setText(QString("Afficher tous les trades (%1)").arg(trades.size()));
-    }
-    
-    if (m_tradesGroup) {
-        m_tradesGroup->setVisible(!trades.empty());
-    }
-}
-
-void StatsView::refreshTradesTable() {
-    qDebug() << "StatsView::refreshTradesTable() appelé";
-    
-    if (m_app) {
-        m_currentResults = m_app->getBacktestResults();
-    }
-    
-    if (!m_tradesModel || !m_currentResults) {
-        return;
-    }
-    
-    // Récupérer les trades depuis les résultats
-    const auto& allTrades = m_currentResults->stats.trades;
-    
-    // Utiliser la fonction existante pour filtrer
-    auto filteredTrades = getFilteredTrades(allTrades);
-    
-    // Mettre à jour le modèle
-    m_tradesModel->updateData(filteredTrades);
-    
-    // Mettre à jour le texte du bouton
-    if (m_showAllTradesBtn) {
-        m_showAllTradesBtn->setText(QString("Afficher tous les trades (%1)").arg(allTrades.size()));
-    }
-    
-    qDebug() << "Table des trades mise à jour avec" << filteredTrades.size() << "/" << allTrades.size() << "trades";
-}
-
 void StatsView::clear() {
     qDebug() << "StatsView::clear() appelé";
     
     // Réinitialiser le widget de métriques
     if (m_metricsWidget) {
         m_metricsWidget->clear();
-        m_metricsWidget->setGroupsVisible(false);
     }
-    
-    // Vider le modèle de trades
-    if (m_tradesModel) {
-        m_tradesModel->clear();
-    }
-
-    // Réinitialiser les widgets de graphiques
-    // if (m_equityCurveWidget) {
-    //     m_equityCurveWidget->clear();
-    // }
     
     if (m_tradeClosureWidget) {
         m_tradeClosureWidget->clear();
     }
-    
-    // Gérer la visibilité des composants
-    if (m_statsPlaceholder) {
-        m_statsPlaceholder->setText("Exécutez un backtest pour voir les statistiques");
-        m_statsPlaceholder->setVisible(true);
+
+    if (m_tradesTableWidget) {
+        m_tradesTableWidget->clear();
     }
     
-    // Masquer le groupe des trades
-    if (m_tradesGroup) {
-        m_tradesGroup->setVisible(false);
+    if (m_tradeClosureWidget) {
+        m_tradeClosureWidget->clear();
     }
     
     m_currentResults = nullptr;

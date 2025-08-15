@@ -22,6 +22,8 @@
 #include "ui/views/Stats/TradeClosureWidget.h"
 #include "ui/views/Stats/EquityCurveWidget.h"
 #include "ui/views/Stats/TradesTableModel.h"
+#include "ui/views/Stats/MetricsContainerWidget.h"
+
 #include <cmath>
 
 class App;
@@ -31,18 +33,18 @@ class App;
  * Contient l'identifiant, le libellé, l'infobulle, la section et les fonctions
  * d'évaluation et de formatage de la valeur.
  */
-struct MetricDefinition {
-    QString key;              // Identifiant unique
-    QString label;            // Texte affiché
-    QString tooltip;          // Info-bulle
-    QString section;          // Section ("time", "performance", "risk", "general")
+// struct MetricDefinition {
+//     QString key;              // Identifiant unique
+//     QString label;            // Texte affiché
+//     QString tooltip;          // Info-bulle
+//     QString section;          // Section ("time", "performance", "risk", "general")
     
-    // Fonction pour déterminer le statut (Good/Bad/Neutral) selon la valeur
-    std::function<MetricStatus(const be::Stats&)> getStatus;
+//     // Fonction pour déterminer le statut (Good/Bad/Neutral) selon la valeur
+//     std::function<MetricStatus(const be::Stats&)> getStatus;
     
-    // Fonction pour formatter la valeur
-    std::function<QString(const be::Stats&)> formatValue;
-};
+//     // Fonction pour formatter la valeur
+//     std::function<QString(const be::Stats&)> formatValue;
+// };
 
 
 
@@ -89,72 +91,7 @@ private slots:
     void refreshTradesTable();
 
 private:
-    // ==================== Initialisation ====================
-    
-    /**
-     * @brief Initialise les définitions de métriques
-     */
-    void initializeMetricDefinitions();
-    
-    /**
-     * @brief Crée le scroll area et le conteneur principal
-     */
-    void createScrollAreaAndContent();
-    
-    /**
-     * @brief Crée les groupes de métriques
-     */
-    void createGroupBoxes();
-    
-    /**
-     * @brief Crée les widgets de métriques à partir des définitions
-     */
-    void createStatsWidgets();
-    
-    /**
-     * @brief Crée la légende pour les couleurs
-     */
-    void createLegend();
-    
-    /**
-     * @brief Arrange les panneaux en grille 2x2
-     */
-    void arrangePanels();
-
-    // ==================== Création et gestion des tables ====================
-    
-    /**
-     * @brief Crée la table des trades
-     */
-    void createTradesTable();
-    
-    /**
-     * @brief Crée les contrôles pour la table des trades
-     */
-    void createTradesTableControls();
-    
-    /**
-     * @brief Crée la vue de table des trades
-     */
-    void createTradesTableView();
-    
-    /**
-     * @brief Configure les connexions pour la table des trades
-     */
-    void setupTradesConnections();
-    
-    /**
-     * @brief Crée un widget métrique et l'ajoute au layout
-     */
-    MetricWidget* createMetricWidget(const QString& key, const QString& label, 
-                                    const QString& value, QHBoxLayout* layout);
-
     // ==================== Mise à jour des données ====================
-    
-    /**
-     * @brief Remplit les métriques avec les valeurs de stats
-     */
-    void populateMetrics(const be::Stats& stats);
     
     /**
      * @brief Remplit la table des trades
@@ -170,22 +107,22 @@ private:
     // Graphiques
     // Trade closure
     TradeClosureWidget* m_tradeClosureWidget = nullptr;
-    void createTradeClosureWidget();
 
     // Equity curve
     EquityCurveWidget* m_equityCurveWidget = nullptr;
-    void createEquityCurveWidget();
 
     // Timeline
     TimelineWidget* m_timelineWidget = nullptr;
+
+    // Modèle de données pour les trades
+    MetricsContainerWidget* m_metricsWidget = nullptr;
+
 
     QWidget* m_legendWidget = nullptr;
 
     // --- Modèles de données ---
     TradesTableModel* m_tradesModel;
     TradesTableModel* m_equityModel;
-    std::vector<MetricDefinition> m_metricDefinitions;
-    QMap<QString, MetricWidget*> m_metricWidgets;
     
     // --- UI: Conteneurs principaux ---
     QScrollArea* m_scrollStats;
@@ -193,16 +130,6 @@ private:
     QVBoxLayout* m_statsContentLayout;
     QGridLayout* m_statsGridLayout;
     QLabel* m_statsPlaceholder;
-    
-    // --- UI: Groupes de métriques ---
-    QGroupBox* m_timeGroup;
-    QVBoxLayout* m_timeLayout;
-    QGroupBox* m_performanceGroup;
-    QVBoxLayout* m_performanceLayout;
-    QGroupBox* m_riskGroup;
-    QVBoxLayout* m_riskLayout;
-    QGroupBox* m_generalGroup;
-    QVBoxLayout* m_generalLayout;
     
     // --- UI: Section trades ---
     QGroupBox* m_tradesGroup;
@@ -212,6 +139,5 @@ private:
     QPushButton* m_showAllTradesBtn;
 
     // --- État ---
-    bool m_tablesCreated;
     App* m_app;  // Référence à l'application principale
 };

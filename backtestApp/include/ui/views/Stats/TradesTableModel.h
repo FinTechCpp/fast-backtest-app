@@ -13,21 +13,9 @@ class TradesTableModel : public QStandardItemModel {
     Q_OBJECT
 
 public:
-    /**
-     * @brief Constructeur du modèle de table des trades
-     * @param parent Le parent QObject
-     */
     TradesTableModel(QObject* parent = nullptr);
     
-    /**
-     * @brief Met à jour les données du modèle avec un vecteur de trades
-     * @param trades Les trades à afficher
-     */
     void updateData(const std::vector<be::TradeData>& trades);
-    
-    /**
-     * @brief Efface toutes les lignes du modèle
-     */
     void clear();
     
     // Méthodes utilitaires statiques

@@ -5,6 +5,8 @@
 MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     : QWidget(parent)
 {
+    m_mainLayout = new QVBoxLayout(this);
+
     // Créer les groupes
     m_performanceGroup = new QGroupBox("Résultats et Performance");
     m_performanceLayout = new QVBoxLayout(m_performanceGroup);
@@ -16,11 +18,48 @@ MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     m_generalLayout = new QVBoxLayout(m_generalGroup);
     
     // Layout horizontal pour contenir les trois groupes
-    QHBoxLayout* groupsLayout = new QHBoxLayout(this);
+    QHBoxLayout* groupsLayout = new QHBoxLayout();
     groupsLayout->setContentsMargins(0, 0, 0, 0);
     groupsLayout->addWidget(m_performanceGroup);
     groupsLayout->addWidget(m_riskGroup);
     groupsLayout->addWidget(m_generalGroup);
+    m_mainLayout->addLayout(groupsLayout);
+
+    // Légende pour les statuts des métriques
+    QWidget* legendWidget = new QWidget();
+
+    QHBoxLayout* legendLayout = new QHBoxLayout(legendWidget);
+    
+    QLabel* goodLabel = new QLabel("●");
+    goodLabel->setStyleSheet("QLabel { color: #2ecc71; font-size: 16px; }");
+    QLabel* goodText = new QLabel("Bon");
+    
+    QLabel* neutralLabel = new QLabel("●");
+    neutralLabel->setStyleSheet("QLabel { color: black; font-size: 16px; }");
+    QLabel* neutralText = new QLabel("Neutre");
+    
+    QLabel* badLabel = new QLabel("●");
+    badLabel->setStyleSheet("QLabel { color: #e74c3c; font-size: 16px; }");
+    QLabel* badText = new QLabel("Mauvais");
+    
+    QLabel* naLabel = new QLabel("●");
+    naLabel->setStyleSheet("QLabel { color: #7f8c8d; font-size: 16px; }");
+    QLabel* naText = new QLabel("N/A");
+    
+    legendLayout->addWidget(goodLabel);
+    legendLayout->addWidget(goodText);
+    legendLayout->addSpacing(15);
+    legendLayout->addWidget(neutralLabel);
+    legendLayout->addWidget(neutralText);
+    legendLayout->addSpacing(15);
+    legendLayout->addWidget(badLabel);
+    legendLayout->addWidget(badText);
+    legendLayout->addSpacing(15);
+    legendLayout->addWidget(naLabel);
+    legendLayout->addWidget(naText);
+    legendLayout->addStretch();
+
+    m_mainLayout->addWidget(legendWidget);
     
     // Initialiser les définitions de métriques pour cette section
     initializeMetrics();
@@ -29,9 +68,6 @@ MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     createMetricWidgets(Section::Performance, m_performanceLayout);
     createMetricWidgets(Section::Risk, m_riskLayout);
     createMetricWidgets(Section::General, m_generalLayout);
-
-    // Cacher les groupes par défaut (ils seront affichés quand il y aura des données)
-    setGroupsVisible(false);
 }
 
 void MetricsContainerWidget::createMetricWidgets(Section section, QVBoxLayout* layout) {
@@ -288,7 +324,7 @@ void MetricsContainerWidget::initializeMetrics() {
 }
 
 
-void MetricsContainerWidget::updateMetrics(const be::Stats& stats) {
+void MetricsContainerWidget::updateData(const be::Stats& stats) {
     // Mettre à jour toutes les métriques
     for (auto it = m_metricWidgets.begin(); it != m_metricWidgets.end(); ++it) {
         QString key = it.key();
@@ -314,10 +350,4 @@ void MetricsContainerWidget::clear() {
     for (auto widget : m_metricWidgets) {
         widget->updateValues("N/A", MetricStatus::NA);
     }
-}
-
-void MetricsContainerWidget::setGroupsVisible(bool visible) {
-    m_performanceGroup->setVisible(visible);
-    m_riskGroup->setVisible(visible);
-    m_generalGroup->setVisible(visible);
 }

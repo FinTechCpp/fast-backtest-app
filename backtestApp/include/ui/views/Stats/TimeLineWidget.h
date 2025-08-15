@@ -15,6 +15,7 @@ public:
     explicit TimelineWidget(QWidget* parent = nullptr);
 
     void setData(const be::Date& start, const be::Date& end, const be::Duration& duration, double exposurePercent);
+    void clear();
 
 protected:
     void paintEvent(QPaintEvent* event) override;

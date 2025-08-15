@@ -36,6 +36,15 @@ void TimelineWidget::setData(const be::Date& start, const be::Date& end, const b
     update();
 }
 
+void TimelineWidget::clear() {
+    m_startDate.clear();
+    m_endDate.clear();
+    m_duration.clear();
+    m_exposurePercent = 0.0;
+
+    update();
+}
+
 void TimelineWidget::paintEvent(QPaintEvent* /*event*/) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);

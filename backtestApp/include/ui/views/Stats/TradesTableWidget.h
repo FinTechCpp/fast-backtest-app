@@ -21,9 +21,6 @@ public:
     void updateData(const std::vector<be::TradeData>& trades);
     void clear();
 
-    // Getter pour le GroupBox pour contrôler sa visibilité si nécessaire
-    QGroupBox* groupBox() const { return m_tradesGroup; }
-
 private slots:
     void refreshTable();  // Rafraîchit la table avec les filtres actuels
     void showAllTrades(); // Afficher tous les trades

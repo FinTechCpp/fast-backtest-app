@@ -22,6 +22,7 @@
 #include "ui/views/Stats/TimeLineWidget.h"
 #include "ui/views/Stats/MetricsContainerWidget.h"
 #include "ui/views/Stats/TradeClosureWidget.h"
+#include "ui/views/Stats/TradingHeatmapWidget.h"
 #include "ui/views/Stats/TradesTableWidget.h"
 
 
@@ -87,28 +88,17 @@ protected:
 
 private:
     // ==================== Membres privés ====================
-    // Equity curve
     EquityCurveWidget* m_equityCurveWidget = nullptr;
-
-    // Timeline
     TimelineWidget* m_timelineWidget = nullptr;
-
-    // Metrics
     MetricsContainerWidget* m_metricsWidget = nullptr;
-    
-    // Trade closure
+    TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
     TradeClosureWidget* m_tradeClosureWidget = nullptr;
-
-    // Trades table
     TradesTableWidget* m_tradesTableWidget = nullptr;
 
-
-    QWidget* m_legendWidget = nullptr;
     
     // --- UI: Conteneurs principaux ---
     QScrollArea* m_scrollStats;
     QWidget* m_statsContent;
-    QVBoxLayout* m_statsContentLayout;
     QVBoxLayout* m_statsLayout;
 
     // --- État ---

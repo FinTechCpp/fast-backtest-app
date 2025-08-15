@@ -13,20 +13,12 @@ class MetricsContainerWidget : public QWidget {
     Q_OBJECT
 
 public:
-    // Constructeur qui prend uniquement le titre et la section
     explicit MetricsContainerWidget(QWidget* parent = nullptr);
     
-    // Méthode pour mettre à jour les métriques avec les nouvelles statistiques
-    void updateMetrics(const be::Stats& stats);
-    
-    // Méthode pour réinitialiser toutes les métriques
+    void updateData(const be::Stats& stats);
     void clear();
-    
-    // Permet de contrôler la visibilité des groupes
-    void setGroupsVisible(bool visible);
 
 private:
-    
     enum class Section {
         Performance,
         Risk,
@@ -48,6 +40,8 @@ private:
 
     // Crée les widgets pour une section spécifique
     void createMetricWidgets(Section section, QVBoxLayout* layout);
+
+    QVBoxLayout* m_mainLayout;
     
     // Les trois groupes de métriques
     QGroupBox* m_performanceGroup;
@@ -59,8 +53,6 @@ private:
     
     // Stockage des widgets
     QMap<QString, MetricWidget*> m_metricWidgets;
-
-
     
     // Liste des définitions de métriques pour cette section
     QVector<MetricDefinition> m_metricDefinitions;

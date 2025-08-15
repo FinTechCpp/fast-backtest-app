@@ -49,7 +49,7 @@ void TradesTableWidget::setupUI()
     m_tradesTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tradesTable->setAlternatingRowColors(true);
     m_tradesTable->setSortingEnabled(true);
-    m_tradesTable->verticalHeader()->setVisible(false);
+    // m_tradesTable->verticalHeader()->setVisible(false);
     
     // Ajuster les colonnes
     QHeaderView* header = m_tradesTable->horizontalHeader();
@@ -103,8 +103,8 @@ void TradesTableWidget::setupUI()
     connect(m_showAllTradesBtn, &QPushButton::clicked, 
             this, &TradesTableWidget::showAllTrades);
     
-    // Cacher par défaut jusqu'à ce qu'il y ait des données
-    m_tradesGroup->setVisible(false);
+    // // Cacher par défaut jusqu'à ce qu'il y ait des données
+    // m_tradesGroup->setVisible(false);
 }
 
 void TradesTableWidget::updateData(const std::vector<be::TradeData>& trades)
@@ -126,7 +126,7 @@ void TradesTableWidget::updateData(const std::vector<be::TradeData>& trades)
     }
     
     // Afficher le groupe s'il y a des trades
-    m_tradesGroup->setVisible(!m_allTrades.empty());
+    // m_tradesGroup->setVisible(!m_allTrades.empty());
     
     qDebug() << "Table des trades mise à jour avec" << filteredTrades.size() << "/" << m_allTrades.size() << "trades";
 }
@@ -142,7 +142,7 @@ void TradesTableWidget::clear()
     }
     
     // Cacher le groupe
-    m_tradesGroup->setVisible(false);
+    // m_tradesGroup->setVisible(false);
     
     // Réinitialiser le texte du bouton
     if (m_showAllTradesBtn) {

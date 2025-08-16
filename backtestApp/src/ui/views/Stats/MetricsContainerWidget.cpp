@@ -194,36 +194,36 @@ void MetricsContainerWidget::initializeMetrics() {
             [](const be::Stats& s) { return MetricStatus::Neutral; },
             [](const be::Stats& s) { return QString::fromStdString(s.avgDrawdownDuration.toString()); }
         },
-        {"sharpe_ratio", "Ratio de Sharpe:", "Rendement excédentaire par unité de risque total", Section::Risk,
-            [](const be::Stats& s) {
-                if (std::isnan(s.sharpeRatio)) return MetricStatus::NA;
-                return s.sharpeRatio > 1 ? MetricStatus::Good : 
-                      (s.sharpeRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) {
-                return std::isnan(s.sharpeRatio) ? QString("N/A") : QString::number(s.sharpeRatio, 'f', 2);
-            }
-        },
-        {"sortino_ratio", "Ratio de Sortino:", "Rendement excédentaire par unité de risque négatif", Section::Risk,
-            [](const be::Stats& s) {
-                if (std::isnan(s.sortinoRatio)) return MetricStatus::NA;
-                return s.sortinoRatio > 1 ? MetricStatus::Good : 
-                      (s.sortinoRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) {
-                return std::isnan(s.sortinoRatio) ? QString("N/A") : QString::number(s.sortinoRatio, 'f', 2);
-            }
-        },
-        {"calmar_ratio", "Ratio de Calmar:", "Rendement annualisé divisé par le drawdown maximal", Section::Risk,
-            [](const be::Stats& s) {
-                if (std::isnan(s.calmarRatio)) return MetricStatus::NA;
-                return s.calmarRatio > 1 ? MetricStatus::Good : 
-                      (s.calmarRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) {
-                return std::isnan(s.calmarRatio) ? QString("N/A") : QString::number(s.calmarRatio, 'f', 2);
-            }
-        },
+        // {"sharpe_ratio", "Ratio de Sharpe:", "Rendement excédentaire par unité de risque total", Section::Risk,
+        //     [](const be::Stats& s) {
+        //         if (std::isnan(s.sharpeRatio)) return MetricStatus::NA;
+        //         return s.sharpeRatio > 1 ? MetricStatus::Good : 
+        //             (s.sharpeRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) {
+        //         return std::isnan(s.sharpeRatio) ? QString("N/A") : QString::number(s.sharpeRatio, 'f', 2);
+        //     }
+        // },
+        // {"sortino_ratio", "Ratio de Sortino:", "Rendement excédentaire par unité de risque négatif", Section::Risk,
+        //     [](const be::Stats& s) {
+        //         if (std::isnan(s.sortinoRatio)) return MetricStatus::NA;
+        //         return s.sortinoRatio > 1 ? MetricStatus::Good : 
+        //               (s.sortinoRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) {
+        //         return std::isnan(s.sortinoRatio) ? QString("N/A") : QString::number(s.sortinoRatio, 'f', 2);
+        //     }
+        // },
+        // {"calmar_ratio", "Ratio de Calmar:", "Rendement annualisé divisé par le drawdown maximal", Section::Risk,
+        //     [](const be::Stats& s) {
+        //         if (std::isnan(s.calmarRatio)) return MetricStatus::NA;
+        //         return s.calmarRatio > 1 ? MetricStatus::Good : 
+        //               (s.calmarRatio < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) {
+        //         return std::isnan(s.calmarRatio) ? QString("N/A") : QString::number(s.calmarRatio, 'f', 2);
+        //     }
+        // },
         {"volatility", "Volatilité annualisée:", "Mesure de la variabilité des rendements", Section::Risk,
             [](const be::Stats& s) { 
                 return s.volatilityAnnPct < 10 ? MetricStatus::Good : 
@@ -237,16 +237,16 @@ void MetricsContainerWidget::initializeMetrics() {
         //     [](const be::Stats& s) { return MetricStatus::Neutral; },
         //     [](const be::Stats& s) { return QString::number(s.numTrades); }
         // },
-        {"profit_factor", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)", Section::General,
-            [](const be::Stats& s) {
-                if (std::isnan(s.profitFactor)) return MetricStatus::NA;
-                return s.profitFactor > 1.1 ? MetricStatus::Good : 
-                      (s.profitFactor < 0.9 ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) {
-                return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
-            }
-        },
+        // {"profit_factor", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)", Section::General,
+        //     [](const be::Stats& s) {
+        //         if (std::isnan(s.profitFactor)) return MetricStatus::NA;
+        //         return s.profitFactor > 1.1 ? MetricStatus::Good : 
+        //               (s.profitFactor < 0.9 ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) {
+        //         return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
+        //     }
+        // },
         // {"TP_trades", "Trades sur take-profit:", "Nombre de trades sur take-profit", "general",
         //     [](const be::Stats& s) { return MetricStatus::Good; },
         //     [](const be::Stats& s) { return QString::number(s.pctTPTrades, 'f', 1) + "% (" + QString::number(s.numTPTrades) + ")"; }
@@ -293,33 +293,33 @@ void MetricsContainerWidget::initializeMetrics() {
             [](const be::Stats& s) { return MetricStatus::Neutral; },
             [](const be::Stats& s) { return QString::fromStdString(s.avgTradeDuration.toString()); }
         },
-        {"expectancy", "Espérance:", "Gain moyen attendu par trade", Section::General,
-            [](const be::Stats& s) {
-                return s.expectancyPct > 0 ? MetricStatus::Good : 
-                      (s.expectancyPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.expectancyPct, 'f', 2)); }
-        },
-        {"sqn", "SQN:", "System Quality Number - qualité du système de trading", Section::General,
-            [](const be::Stats& s) {
-                if (std::isnan(s.sqn)) return MetricStatus::NA;
-                return s.sqn > 2 ? MetricStatus::Good : 
-                      (s.sqn < 1 ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) {
-                return std::isnan(s.sqn) ? QString("N/A") : QString::number(s.sqn, 'f', 2);
-            }
-        },
-        {"kelly_criterion", "Critère de Kelly:", "Taille de position optimale selon le critère de Kelly", Section::General,
-            [](const be::Stats& s) {
-                if (std::isnan(s.kellyCriterion)) return MetricStatus::NA;
-                return s.kellyCriterion > 0 ? MetricStatus::Good : 
-                      (s.kellyCriterion < -0.5 ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) {
-                return std::isnan(s.kellyCriterion) ? QString("N/A") : QString::number(s.kellyCriterion, 'f', 2);
-            }
-        }
+        // {"expectancy", "Espérance:", "Gain moyen attendu par trade", Section::General,
+        //     [](const be::Stats& s) {
+        //         return s.expectancyPct > 0 ? MetricStatus::Good : 
+        //               (s.expectancyPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.expectancyPct, 'f', 2)); }
+        // },
+        // {"sqn", "SQN:", "System Quality Number - qualité du système de trading", Section::General,
+        //     [](const be::Stats& s) {
+        //         if (std::isnan(s.sqn)) return MetricStatus::NA;
+        //         return s.sqn > 2 ? MetricStatus::Good : 
+        //               (s.sqn < 1 ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) {
+        //         return std::isnan(s.sqn) ? QString("N/A") : QString::number(s.sqn, 'f', 2);
+        //     }
+        // },
+        // {"kelly_criterion", "Critère de Kelly:", "Taille de position optimale selon le critère de Kelly", Section::General,
+        //     [](const be::Stats& s) {
+        //         if (std::isnan(s.kellyCriterion)) return MetricStatus::NA;
+        //         return s.kellyCriterion > 0 ? MetricStatus::Good : 
+        //               (s.kellyCriterion < -0.5 ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) {
+        //         return std::isnan(s.kellyCriterion) ? QString("N/A") : QString::number(s.kellyCriterion, 'f', 2);
+        //     }
+        // }
     };
 }
 

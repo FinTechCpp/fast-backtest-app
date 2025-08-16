@@ -72,6 +72,9 @@ void StatsView::setupUI() {
     m_timelineWidget = new TimelineWidget();
     m_statsLayout->addWidget(m_timelineWidget);
 
+    m_ratioGaugesWidget = new RatioGaugesContainerWidget();
+    m_statsLayout->addWidget(m_ratioGaugesWidget);
+
     m_metricsWidget = new MetricsContainerWidget();
     m_statsLayout->addWidget(m_metricsWidget);
 
@@ -81,8 +84,8 @@ void StatsView::setupUI() {
     m_tradingHeatmapWidget = new TradingHeatmapWidget();
     m_statsLayout->addWidget(m_tradingHeatmapWidget);
 
-    m_riskReturnMapWidget = new RiskReturnMapWidget();
-    m_statsLayout->addWidget(m_riskReturnMapWidget);
+    // m_riskReturnMapWidget = new RiskReturnMapWidget();
+    // m_statsLayout->addWidget(m_riskReturnMapWidget);
 
     m_tradesTableWidget = new TradesTableWidget();
     m_statsLayout->addWidget(m_tradesTableWidget);
@@ -108,6 +111,7 @@ void StatsView::updateData(BacktestResults* results)
     // m_equityCurveWidget->updateData(m_currentResults->stats);
     m_timelineWidget->setData(m_currentResults->stats.start, m_currentResults->stats.end, m_currentResults->stats.duration, m_currentResults->stats.exposureTimePct);
     m_metricsWidget->updateData(m_currentResults->stats);
+    m_ratioGaugesWidget->updateData(m_currentResults->stats);
     m_tradeClosureWidget->updateData(m_currentResults->stats);
     m_tradingHeatmapWidget->updateData(m_currentResults->stats);
     // m_riskReturnMapWidget->updateData(m_currentResults->stats);
@@ -120,6 +124,7 @@ void StatsView::clear() {
     // m_equityCurveWidget->clear();
     m_timelineWidget->clear();
     m_metricsWidget->clear();
+    m_ratioGaugesWidget->clear();
     m_tradeClosureWidget->clear();
     m_tradingHeatmapWidget->clear();
     // m_riskReturnMapWidget->clear();

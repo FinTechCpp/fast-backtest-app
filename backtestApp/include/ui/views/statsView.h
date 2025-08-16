@@ -23,6 +23,7 @@
 #include "ui/views/Stats/MetricsContainerWidget.h"
 #include "ui/views/Stats/TradeClosureWidget.h"
 #include "ui/views/Stats/TradingHeatmapWidget.h"
+#include "ui/views/Stats/RiskReturnMapWidget.h"
 #include "ui/views/Stats/TradesTableWidget.h"
 
 
@@ -93,6 +94,7 @@ private:
     MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
     TradeClosureWidget* m_tradeClosureWidget = nullptr;
+    RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
 
     

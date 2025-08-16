@@ -282,47 +282,48 @@ void TradingHeatmapWidget::buildHeatmap() {
             int y = topMargin + rowIndex * (adjustedCellSize + CELL_SPACING);
             
             // Vérifier s'il y a des trades pour cette cellule
-            if (m_tradeCountData[h][d] > 0) {
-                double value = m_performanceData[h][d];
-                QColor cellColor = getColorForValue(value);
-                
-                // Ajouter un rectangle avec une bordure fine
-                QGraphicsRectItem* cell = m_scene->addRect(
-                    x, y, adjustedCellSize, adjustedCellSize,
-                    QPen(Qt::black, 0.5), QBrush(cellColor)
-                );
-                
-                // Modifier le tooltip pour inclure la plage horaire
-                QString tooltipText = QString("Jour: %1\nHeure: %2h - %3h\nPnL total: $%4\nTrades: %5")
-                                     .arg(m_dayNames[d])
-                                     .arg(h)
-                                     .arg(h+1)
-                                     .arg(value, 0, 'f', 2)
-                                     .arg(m_tradeCountData[h][d]);
-                cell->setToolTip(tooltipText);
-                
-                // Afficher le nombre de trades dans chaque cellule
-                QGraphicsTextItem* countText = m_scene->addText(QString::number(m_tradeCountData[h][d]));
-                QFont countFont = countText->font();
-                countText->setFont(countFont);
-                
-                // Centrer le texte dans la cellule
-                QRectF textRect = countText->boundingRect();
-                countText->setPos(x + (adjustedCellSize - textRect.width())/2, 
-                                 y + (adjustedCellSize - textRect.height())/2);
-                
-                // Ajuster la couleur du texte pour la lisibilité
-                QColor textColor = QColor::fromHsv(cellColor.hue(), 
-                                                  cellColor.saturation(),
-                                                  cellColor.value() < 128 ? 240 : 30);
-                countText->setDefaultTextColor(textColor);
-            } else {
+            if (m_tradeCountData[h][d] <= 0) {
                 // Cellule grise pour les périodes sans trades
                 m_scene->addRect(
                     x, y, adjustedCellSize, adjustedCellSize,
                     QPen(Qt::black, 0.5), QBrush(QColor(240, 240, 240))
                 );
+                continue;
             }
+            
+            double value = m_performanceData[h][d];
+            QColor cellColor = getColorForValue(value);
+            
+            // Ajouter un rectangle avec une bordure fine
+            QGraphicsRectItem* cell = m_scene->addRect(
+                x, y, adjustedCellSize, adjustedCellSize,
+                QPen(Qt::black, 0.5), QBrush(cellColor)
+            );
+            
+            // Modifier le tooltip pour inclure la plage horaire
+            QString tooltipText = QString("Jour: %1\nHeure: %2h - %3h\nPnL total: $%4\nTrades: %5")
+                                    .arg(m_dayNames[d])
+                                    .arg(h)
+                                    .arg(h+1)
+                                    .arg(value, 0, 'f', 2)
+                                    .arg(m_tradeCountData[h][d]);
+            cell->setToolTip(tooltipText);
+            
+            // Afficher le nombre de trades dans chaque cellule
+            QGraphicsTextItem* countText = m_scene->addText(QString::number(m_tradeCountData[h][d]));
+            QFont countFont = countText->font();
+            countText->setFont(countFont);
+            
+            // Centrer le texte dans la cellule
+            QRectF textRect = countText->boundingRect();
+            countText->setPos(x + (adjustedCellSize - textRect.width())/2, 
+                                y + (adjustedCellSize - textRect.height())/2);
+            
+            // Ajuster la couleur du texte pour la lisibilité
+            QColor textColor = QColor::fromHsv(cellColor.hue(), 
+                                                cellColor.saturation(),
+                                                cellColor.value() < 128 ? 240 : 30);
+            countText->setDefaultTextColor(textColor);
         }
     }
     

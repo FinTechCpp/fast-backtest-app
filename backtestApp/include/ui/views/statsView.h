@@ -26,31 +26,14 @@
 #include "ui/views/Stats/RiskReturnMapWidget.h"
 #include "ui/views/Stats/TradesTableWidget.h"
 #include "ui/views/Stats/RatioGaugesContainerWidget.h"
+#include "ui/views/Stats/PLDistributionWidget.h"
+
 
 
 
 #include <cmath>
 
 class App;
-
-/**
- * @brief Définition d'une métrique qui sera affichée dans la vue des statistiques.
- * Contient l'identifiant, le libellé, l'infobulle, la section et les fonctions
- * d'évaluation et de formatage de la valeur.
- */
-// struct MetricDefinition {
-//     QString key;              // Identifiant unique
-//     QString label;            // Texte affiché
-//     QString tooltip;          // Info-bulle
-//     QString section;          // Section ("time", "performance", "risk", "general")
-    
-//     // Fonction pour déterminer le statut (Good/Bad/Neutral) selon la valeur
-//     std::function<MetricStatus(const be::Stats&)> getStatus;
-    
-//     // Fonction pour formatter la valeur
-//     std::function<QString(const be::Stats&)> formatValue;
-// };
-
 
 
 /**
@@ -96,6 +79,7 @@ private:
     MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
     TradeClosureWidget* m_tradeClosureWidget = nullptr;
+    PLDistributionWidget* m_plDistributionWidget = nullptr;
     RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
     RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;

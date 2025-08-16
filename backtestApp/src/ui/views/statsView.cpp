@@ -81,6 +81,9 @@ void StatsView::setupUI() {
     m_tradeClosureWidget = new TradeClosureWidget();
     m_statsLayout->addWidget(m_tradeClosureWidget);
 
+    m_plDistributionWidget = new PLDistributionWidget();
+    m_statsLayout->addWidget(m_plDistributionWidget);
+
     m_tradingHeatmapWidget = new TradingHeatmapWidget();
     m_statsLayout->addWidget(m_tradingHeatmapWidget);
 
@@ -113,6 +116,7 @@ void StatsView::updateData(BacktestResults* results)
     m_metricsWidget->updateData(m_currentResults->stats);
     m_ratioGaugesWidget->updateData(m_currentResults->stats);
     m_tradeClosureWidget->updateData(m_currentResults->stats);
+    m_plDistributionWidget->updateData(m_currentResults->stats);
     m_tradingHeatmapWidget->updateData(m_currentResults->stats);
     // m_riskReturnMapWidget->updateData(m_currentResults->stats);
     m_tradesTableWidget->updateData(m_currentResults->stats.trades);
@@ -126,6 +130,7 @@ void StatsView::clear() {
     m_metricsWidget->clear();
     m_ratioGaugesWidget->clear();
     m_tradeClosureWidget->clear();
+    m_plDistributionWidget->clear();
     m_tradingHeatmapWidget->clear();
     // m_riskReturnMapWidget->clear();
     m_tradesTableWidget->clear();

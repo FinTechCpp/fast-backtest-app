@@ -178,10 +178,10 @@ void MetricsContainerWidget::initializeMetrics() {
         },
         
         // Section risque
-        {"max_drawdown", "Drawdown maximal:", "Perte maximale depuis un sommet précédent", Section::Risk,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.maxDrawdownPct, 'f', 2)); }
-        },
+        // {"max_drawdown", "Drawdown maximal:", "Perte maximale depuis un sommet précédent", Section::Risk,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.maxDrawdownPct, 'f', 2)); }
+        // },
         {"avg_drawdown", "Drawdown moyen:", "Perte moyenne depuis un sommet précédent", Section::Risk,
             [](const be::Stats& s) { return MetricStatus::Neutral; },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgDrawdownPct, 'f', 2)); }

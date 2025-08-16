@@ -62,17 +62,135 @@ DrawdownInfo computeDrawdownDurationPeaks(const std::vector<double>& dd) {
     return info;
 }
 
+double calculateSkewness(const std::vector<double>& returns) {
+    if (returns.size() < 3) return NaN;
+    
+    double mean = std::accumulate(returns.begin(), returns.end(), 0.0) / returns.size();
+    double sum_cubed_dev = 0.0;
+    double sum_squared_dev = 0.0;
+    
+    for (double r : returns) {
+        double deviation = r - mean;
+        sum_cubed_dev += deviation * deviation * deviation;
+        sum_squared_dev += deviation * deviation;
+    }
+    
+    double variance = sum_squared_dev / returns.size();
+    return sum_cubed_dev / (returns.size() * std::pow(variance, 1.5));
+}
+
+/**
+ * @brief Calcule le ratio de Sortino en utilisant un taux minimal acceptable (MAR)
+ * @param returns Vecteur des rendements
+ * @param excessReturn Rendement excédentaire annualisé
+ * @param mar Taux minimal acceptable (Minimum Acceptable Return)
+ * @param annualFactor Facteur d'annualisation (généralement 252 pour les jours de trading)
+ * @return Ratio de Sortino
+ */
+double calculateSortinoRatio(const std::vector<double>& returns, double excessReturn, 
+                             double mar = 0.0, double annualFactor = 252.0) {
+    if (returns.empty()) return NaN;
+    
+    double sum_squared_downside = 0.0;
+    int total_observations = returns.size();
+    
+    // Calculer la somme des carrés des écarts négatifs par rapport au MAR
+    for (double ret : returns) {
+        if (ret < mar) {
+            double downside = ret - mar;
+            sum_squared_downside += downside * downside;
+        }
+    }
+    
+    // Calculer la déviation à la baisse (downside deviation)
+    // Note: nous divisons par le nombre total d'observations (pas seulement celles sous le MAR)
+    double downside_deviation = std::sqrt(sum_squared_downside / total_observations);
+    
+    // Annualiser la déviation à la baisse
+    double annualized_downside_deviation = downside_deviation * std::sqrt(annualFactor);
+    
+    // Calculer le ratio de Sortino
+    if (annualized_downside_deviation > 1e-10) {
+        return excessReturn / annualized_downside_deviation;
+    } else if (excessReturn > 0) {
+        return std::numeric_limits<double>::infinity(); // Rendement positif sans risque à la baisse
+    } else if (excessReturn < 0) {
+        return -std::numeric_limits<double>::infinity(); // Rendement négatif sans risque à la baisse
+    } else {
+        return 0.0; // Rendement nul sans risque à la baisse
+    }
+}
+
+/**
+ * @brief Calcule le kurtosis d'une série de rendements
+ * @param returns Vecteur des rendements
+ * @return Kurtosis de la distribution
+ */
+double calculateKurtosis(const std::vector<double>& returns) {
+    if (returns.size() < 4) return NaN;
+    
+    double mean = std::accumulate(returns.begin(), returns.end(), 0.0) / returns.size();
+    double sum_fourth_power = 0.0;
+    double sum_squared_dev = 0.0;
+    
+    for (double r : returns) {
+        double deviation = r - mean;
+        double squared_dev = deviation * deviation;
+        sum_squared_dev += squared_dev;
+        sum_fourth_power += squared_dev * squared_dev;
+    }
+    
+    double variance = sum_squared_dev / returns.size();
+    
+    if (variance < 1e-10) return NaN;  // Éviter la division par zéro
+    
+    // Formule de kurtosis (non ajusté)
+    return sum_fourth_power / (returns.size() * variance * variance);
+}
+
+/**
+ * @brief Trouve le prix le plus défavorable rencontré pendant un trade
+ * @param trade Pointeur partagé vers le trade à analyser
+ * @param data Données de marché
+ * @return Prix le plus défavorable pour la direction du trade
+ */
+double findWorstPrice(const std::shared_ptr<be::Trade>& trade, const be::Data& data) {
+    if (!trade || trade->entryBar() >= data.size() || trade->exitBar() >= data.size())
+        return NaN;
+    
+    // Déterminer si c'est un trade long ou short
+    bool isLong = trade->isLong();
+    
+    // Valeur initiale du pire prix
+    double worstPrice = isLong ? std::numeric_limits<double>::max() : std::numeric_limits<double>::lowest();
+    
+    // Parcourir toutes les bougies pendant la durée du trade
+    for (size_t i = trade->entryBar(); i <= trade->exitBar() && i < data.size(); ++i) {
+        const auto& candle = data.at(i);
+        
+        // Pour un trade long, le pire prix est le plus bas
+        if (isLong) {
+            worstPrice = std::min(worstPrice, candle.low);
+        }
+        // Pour un trade short, le pire prix est le plus haut
+        else {
+            worstPrice = std::max(worstPrice, candle.high);
+        }
+    }
+    
+    return worstPrice;
+}
+
 // Calcul de la moyenne géométrique
 double geometricMean(const std::vector<double>& returns) {
     std::vector<double> filled_returns;
     
     // Remplacer les NaN par 0 et ajouter 1
     for (double ret : returns) {
-        if (std::isnan(ret)) {
-            filled_returns.push_back(1.0);
-        } else {
-            filled_returns.push_back(ret + 1.0);
-        }
+        if (std::isnan(ret))
+            continue;
+        
+        filled_returns.push_back(ret + 1.0);
     }
     
     // Vérifier si des valeurs sont négatives ou nulles
@@ -197,6 +315,15 @@ std::ostream& operator<<(std::ostream& os, const Stats& stats) {
     os << "  Espérance: " << stats.expectancyPct << "%\n";
     os << "  SQN: " << stats.sqn << "\n";
     os << "  Critère de Kelly: " << stats.kellyCriterion << "\n";
+
+    os << "\n-- Autres --\n";
+    os << "  Moyenne des erreurs absolues (MAE): " << stats.avgMAE << "\n";
+    os << "  Maximum des erreurs absolues (MAE): " << stats.maxMAE << "\n";
+    os << "  Ulcer Index: " << stats.ulcerIndex << "\n";
+    os << "  Ulcer Performance Index: " << stats.ulcerPerformanceIndex << "\n";
+    os << "  Skewness: " << stats.skewness << "\n";
+    os << "  Kurtosis: " << stats.kurtosis << "\n";
+    os << "  Omega Ratio: " << stats.omegaRatio << "\n";
     
     return os;
 }
@@ -406,14 +533,14 @@ Stats computeStats(
         avg_loss = loss_count > 0 ? avg_loss / loss_count : 0;
         
         if (avg_loss > 0) {
-            stats.kellyCriterion = stats.pctTPTrades - (1 - stats.pctTPTrades) / (avg_win / avg_loss);
+            stats.kellyCriterion = stats.pctTPTrades * 0.01 - (1 - stats.pctTPTrades) / (avg_win / avg_loss);
         } else {
             stats.kellyCriterion = NaN;
         }
     } else {
         stats.kellyCriterion = NaN;
     }
-    
+
     // Drawdown maximum
     double max_dd = 0.0;
     for (double d : dd) {
@@ -515,25 +642,15 @@ Stats computeStats(
     }
     
     // Ratio de Sortino (version simplifiée)
+    const double mar = 0.0;  // Taux minimal acceptable, peut être paramétré
+    const double risk_free_annual = risk_free_rate * annual_trading_days; // Annualiser le taux sans risque
+
     if (!day_returns.empty()) {
-        double sum_squared_downside = 0.0;
-        int downside_count = 0;
+        // Rendement excédentaire déjà calculé pour Sharpe
+        double excess_return = stats.returnAnnPct / 100 - risk_free_rate;
         
-        for (double ret : day_returns) {
-            if (ret < 0) {
-                sum_squared_downside += ret * ret;
-                downside_count++;
-            }
-        }
-        
-        double downside_deviation = downside_count > 0 ? 
-            std::sqrt(sum_squared_downside / downside_count) * std::sqrt(annual_trading_days) : 0;
-            
-        if (downside_deviation > 0) {
-            stats.sortinoRatio = excess_return / downside_deviation;
-        } else {
-            stats.sortinoRatio = NaN;
-        }
+        // Utiliser la nouvelle fonction pour calculer Sortino
+        stats.sortinoRatio = calculateSortinoRatio(day_returns, excess_return, mar, annual_trading_days);
     } else {
         stats.sortinoRatio = NaN;
     }
@@ -593,6 +710,49 @@ Stats computeStats(
         stats.beta = NaN;
         stats.alphaPct = NaN;
     }
+
+
+    // Calculer MAE pour chaque trade
+    std::vector<double> mae_values;
+    for (const auto& trade : trades) {
+        // Trouver le prix le plus défavorable pendant le trade
+        double worst_price = findWorstPrice(trade, data); 
+        double entry_price = trade->entryPrice();
+        double mae = trade->isLong() ? 
+            (worst_price - entry_price) / entry_price : 
+            (entry_price - worst_price) / entry_price;
+        mae_values.push_back(mae);
+    }
+
+    // Statistiques sur MAE
+    stats.avgMAE = std::accumulate(mae_values.begin(), mae_values.end(), 0.0) / mae_values.size() * 100.0;
+    stats.maxMAE = *std::min_element(mae_values.begin(), mae_values.end()) * 100.0;
+    
+    // Ulcer Index - racine carrée de la moyenne du carré des drawdowns
+    double ulcer_sum = 0.0;
+    for (double d : dd) {
+        ulcer_sum += d * d;
+    }
+    stats.ulcerIndex = std::sqrt(ulcer_sum / dd.size()) * 100.0;
+
+    // Ratio de rendement sur Ulcer Index
+    stats.ulcerPerformanceIndex = stats.returnAnnPct / stats.ulcerIndex;
+
+    stats.skewness = calculateSkewness(day_returns);
+    stats.kurtosis = calculateKurtosis(day_returns);
+
+    double threshold = 0.0; // Seuil de rendement (peut être le taux sans risque)
+    double omega_pos = 0.0, omega_neg = 0.0;
+
+    for (double ret : day_returns) {
+        if (ret >= threshold) {
+            omega_pos += (ret - threshold);
+        } else {
+            omega_neg += (threshold - ret);
+        }
+    }
+
+    stats.omegaRatio = omega_neg > 0 ? omega_pos / omega_neg : NaN;
     
     return stats;
 }
@@ -647,6 +807,13 @@ Stats dummyStats() {
     stats.expectancyPct = NaN;
     stats.sqn = NaN;
     stats.kellyCriterion = NaN;
+    stats.avgMAE = NaN;
+    stats.maxMAE = NaN;
+    stats.ulcerIndex = NaN;
+    stats.ulcerPerformanceIndex = NaN;
+    stats.skewness = NaN;
+    stats.kurtosis = NaN;
+    stats.omegaRatio = NaN;
     
     return stats;
 }

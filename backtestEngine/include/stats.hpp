@@ -77,6 +77,15 @@ struct Stats {
     double sqn = 0;                      ///< System Quality Number
     double kellyCriterion = 0;           ///< Critère de Kelly
 
+    double avgMAE = 0;                   ///< Moyenne des erreurs absolues (MAE)
+    double maxMAE = 0;                   ///< Maximum des erreurs absolues (MAE)
+    double ulcerIndex = 0;               ///< Ulcer Index (mesure de la douleur du drawdown)
+    double ulcerPerformanceIndex = 0;    ///< Ratio de performance sur Ulcer Index
+    double skewness = 0;                  ///< Skewness des rendements journaliers
+    double kurtosis = 0;                  ///< Kurtosis des rendements journaliers
+    double omegaRatio = 0;                ///< Omega Ratio (rendement positif/négatif)
+
+
     /**
      * @brief Convertit la structure en map pour compatibilité
      * @return Map associant les noms des statistiques à leurs valeurs

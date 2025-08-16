@@ -320,6 +320,81 @@ void MetricsContainerWidget::initializeMetrics() {
         //         return std::isnan(s.kellyCriterion) ? QString("N/A") : QString::number(s.kellyCriterion, 'f', 2);
         //     }
         // }
+                // Nouvelles métriques de risque
+        {"ulcer_index", "Ulcer Index:", "Mesure de la profondeur et durée des drawdowns", Section::Risk,
+            [](const be::Stats& s) {
+                if (std::isnan(s.ulcerIndex)) return MetricStatus::NA;
+                return s.ulcerIndex < 5.0 ? MetricStatus::Good : 
+                      (s.ulcerIndex > 10.0 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.ulcerIndex) ? QString("N/A") : QString::number(s.ulcerIndex, 'f', 2);
+            }
+        },
+        {"ulcer_performance", "UPI:", "Ratio rendement/Ulcer Index", Section::Risk,
+            [](const be::Stats& s) {
+                if (std::isnan(s.ulcerPerformanceIndex)) return MetricStatus::NA;
+                return s.ulcerPerformanceIndex > 1.0 ? MetricStatus::Good : 
+                      (s.ulcerPerformanceIndex < 0 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.ulcerPerformanceIndex) ? QString("N/A") : QString::number(s.ulcerPerformanceIndex, 'f', 2);
+            }
+        },
+        {"avg_mae", "MAE moyen:", "Perte maximale moyenne pendant les trades", Section::Risk,
+            [](const be::Stats& s) {
+                if (std::isnan(s.avgMAE)) return MetricStatus::NA;
+                return s.avgMAE < 1.0 ? MetricStatus::Good : 
+                      (s.avgMAE > 3.0 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.avgMAE) ? QString("N/A") : QString("%1%").arg(QString::number(s.avgMAE, 'f', 2));
+            }
+        },
+        {"max_mae", "MAE max:", "Pire perte temporaire pendant un trade", Section::Risk,
+            [](const be::Stats& s) {
+                if (std::isnan(s.maxMAE)) return MetricStatus::NA;
+                return s.maxMAE < 2.0 ? MetricStatus::Good : 
+                      (s.maxMAE > 5.0 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.maxMAE) ? QString("N/A") : QString("%1%").arg(QString::number(s.maxMAE, 'f', 2));
+            }
+        },
+        {"skewness", "Skewness:", "Asymétrie de la distribution des rendements", Section::Risk,
+            [](const be::Stats& s) {
+                if (std::isnan(s.skewness)) return MetricStatus::NA;
+                return s.skewness > 0.1 ? MetricStatus::Good : 
+                      (s.skewness < -0.1 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.skewness) ? QString("N/A") : QString::number(s.skewness, 'f', 2);
+            }
+        },
+        {"kurtosis", "Kurtosis:", "Mesure des événements extrêmes dans les rendements", Section::Risk,
+            [](const be::Stats& s) {
+                if (std::isnan(s.kurtosis)) return MetricStatus::NA;
+                // Une distribution normale a un kurtosis de 3, donc on évalue par rapport à ça
+                // Un kurtosis élevé (>3) signifie des queues épaisses (plus d'événements extrêmes)
+                return s.kurtosis < 3.0 ? MetricStatus::Good : 
+                      (s.kurtosis > 5.0 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.kurtosis) ? QString("N/A") : QString::number(s.kurtosis, 'f', 2);
+            }
+        },
+        
+        // Section performance - Ajouter à la fin des métriques de performance
+        {"omega_ratio", "Ratio d'Omega:", "Ratio rendements positifs/négatifs pondérés", Section::Performance,
+            [](const be::Stats& s) {
+                if (std::isnan(s.omegaRatio)) return MetricStatus::NA;
+                return s.omegaRatio > 1.2 ? MetricStatus::Good : 
+                      (s.omegaRatio < 1.0 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.omegaRatio) ? QString("N/A") : QString::number(s.omegaRatio, 'f', 2);
+            }
+        }
     };
 }
 

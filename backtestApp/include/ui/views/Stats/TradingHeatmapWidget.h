@@ -69,5 +69,6 @@ private:
     static constexpr int CELL_SPACING = 1;
     
     // Noms des jours pour l'affichage
-    QStringList m_dayNames{"Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"};
+    // QStringList m_dayNames{"Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"};
+    QStringList m_dayNames{"Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"};
 };

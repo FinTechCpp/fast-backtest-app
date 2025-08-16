@@ -109,15 +109,16 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
         int day = getDayOfWeek(trade.entryDate);
         
         // Vérifier que les indices sont dans la plage
-        if (hour >= 0 && hour < HOURS_IN_DAY && day >= 0 && day < DAYS_IN_WEEK) {
-            // Ajouter la performance du trade
-            m_performanceData[hour][day] += trade.pl;
-            m_tradeCountData[hour][day]++;
-            
-            // Mettre à jour la plage horaire
-            m_minHour = std::min(m_minHour, hour);
-            m_maxHour = std::max(m_maxHour, hour);
-        }
+        if (hour < 0 || hour >= HOURS_IN_DAY || day < 0 || day >= DAYS_IN_WEEK)
+            continue;
+
+        // Ajouter la performance du trade
+        m_performanceData[hour][day] += trade.pl;
+        m_tradeCountData[hour][day]++;
+        
+        // Mettre à jour la plage horaire
+        m_minHour = std::min(m_minHour, hour);
+        m_maxHour = std::max(m_maxHour, hour);
     }
     
     // Assurer un minimum d'espace pour l'affichage (au moins 3h d'amplitude)
@@ -130,18 +131,19 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
     // Trouver les valeurs min/max pour l'échelle de couleur
     for (int h = 0; h < HOURS_IN_DAY; h++) {
         for (int d = 0; d < DAYS_IN_WEEK; d++) {
-            if (m_tradeCountData[h][d] > 0) {
-                // Mettre à jour min/max
-                if (firstValue || m_performanceData[h][d] < m_minValue) {
-                    m_minValue = m_performanceData[h][d];
-                }
-                
-                if (firstValue || m_performanceData[h][d] > m_maxValue) {
-                    m_maxValue = m_performanceData[h][d];
-                }
-                
-                firstValue = false;
+            if (m_tradeCountData[h][d] <= 0)
+                continue; // Pas de trades pour cette heure/jour
+
+            // Mettre à jour min/max
+            if (firstValue || m_performanceData[h][d] < m_minValue) {
+                m_minValue = m_performanceData[h][d];
             }
+            
+            if (firstValue || m_performanceData[h][d] > m_maxValue) {
+                m_maxValue = m_performanceData[h][d];
+            }
+            
+            firstValue = false;
         }
     }
     
@@ -238,6 +240,7 @@ void TradingHeatmapWidget::buildHeatmap() {
         QGraphicsTextItem* dayLabel = m_scene->addText(m_dayNames[d]);
         QFont dayFont = dayLabel->font();
         dayLabel->setFont(dayFont);
+        // dayLabel->setRotation(-45); // Rotation de 45 degrés
         
         // Centrer le texte sur la colonne
         QRectF textRect = dayLabel->boundingRect();

@@ -20,7 +20,8 @@ RatioGaugeWidget::RatioGaugeWidget(QWidget* parent)
       m_addPercentageSign(false),
       m_currentType(RatioType::Custom),
       m_gaugeWidth(400),
-      m_gaugeHeight(30)
+      m_gaugeHeight(30),
+      m_hasValue(false)
 {
     setupUI();
     
@@ -46,7 +47,7 @@ void RatioGaugeWidget::setupUI()
     QHBoxLayout* topLayout = new QHBoxLayout();
     
     // Étiquette pour la valeur actuelle
-    m_valueLabel = new QLabel("0.00");
+    m_valueLabel = new QLabel("N/A");
     QFont valueFont = m_valueLabel->font();
     valueFont.setPointSize(14);
     valueFont.setBold(true);
@@ -140,6 +141,7 @@ void RatioGaugeWidget::setRatioType(RatioType type)
 void RatioGaugeWidget::setValue(double value)
 {
     m_value = value;
+    m_hasValue = true;
     updateGauge();
     updateExplanation();
 }
@@ -169,6 +171,15 @@ void RatioGaugeWidget::setGaugeHeight(int height)
     m_gaugeHeight = height;
     m_gaugeWidget->setMinimumHeight(height);
     updateGauge();
+}
+
+void RatioGaugeWidget::clear()
+{
+    m_value = 0.0;
+    m_hasValue = false;
+    
+    updateGauge();
+    updateExplanation();
 }
 
 void RatioGaugeWidget::resizeEvent(QResizeEvent* event)
@@ -293,7 +304,7 @@ void RatioGaugeWidget::setupProfitFactor()
         {1.25, 1.5, QColor(240, 240, 80), "Rentabilité acceptable"},        // Jaune
         {1.5, 2.0, QColor(150, 200, 80), "Bonne rentabilité"},              // Jaune-vert
         {2.0, 3.0, QColor(92, 184, 92), "Très bonne rentabilité"},         // Vert
-        {3.0, 10.0, QColor(32, 150, 80), "Excellente rentabilité"}         // Vert foncé
+        {3.0, 4.0, QColor(32, 150, 80), "Excellente rentabilité"}         // Vert foncé
     };
     
     QString explanation = 
@@ -389,40 +400,54 @@ void RatioGaugeWidget::updateGauge()
     // Configurer le widget de rendu
     gaugeRenderer->setZones(m_zones);
     gaugeRenderer->setRange(m_minValue, m_maxValue);
-    gaugeRenderer->setValue(m_value);
-    
-    // Mettre à jour l'étiquette de valeur
-    m_valueLabel->setText(QString::number(m_value, 'f', m_precision) + (m_addPercentageSign ? "%" : ""));
 
-    // Trouver la zone actuelle
-    QString currentZoneDesc = "Hors plage";
-    QColor currentColor = QColor(150, 150, 150); // Gris par défaut
-    
-    for (const auto& zone : m_zones) {
-        if (m_value >= zone.minValue && m_value <= zone.maxValue ||
-            (m_value >= zone.maxValue && m_value <= zone.minValue)) {
-            currentZoneDesc = zone.description;
-            currentColor = zone.color;
-            break;
+    // Ne pas afficher le curseur s'il n'y a pas de valeur définie
+    if (m_hasValue) {
+        gaugeRenderer->setValue(m_value);
+        // Mettre à jour l'étiquette de valeur avec la valeur formatée
+        m_valueLabel->setText(QString::number(m_value, 'f', m_precision) + (m_addPercentageSign ? "%" : ""));
+        
+        // Trouver la zone actuelle
+        QString currentZoneDesc = "Unknown";
+        QColor currentColor = QColor(150, 150, 150); // Gris par défaut
+        bool inRange = false;
+        
+        for (const auto& zone : m_zones) {
+            if (m_value >= zone.minValue && m_value <= zone.maxValue ||
+                (m_value >= zone.maxValue && m_value <= zone.minValue)) {
+                currentZoneDesc = zone.description;
+                currentColor = zone.color;
+                inRange = true;
+                break;
+            }
         }
+
+        if (!inRange && m_value < m_minValue) {
+            currentZoneDesc = m_zones.first().description;
+            currentColor = m_zones.first().color;
+        } else if (!inRange && m_value > m_maxValue) {
+            currentZoneDesc = m_zones.last().description;
+            currentColor = m_zones.last().color;
+        }
+
+        // Mettre à jour l'étiquette de zone
+        m_currentZoneLabel->setText(currentZoneDesc);
+
+        // Calculer une couleur de fond éclaircie (luminance augmentée)
+        QColor lighterColor = currentColor.lighter(140); // 140 = +40% plus clair
+        const QString textColor = "#000000";
+
+        // Appliquer fond (la couleur de la zone éclaircie) et texte contrasté, avec un padding pour lisibilité
+        m_currentZoneLabel->setStyleSheet(QString(
+            "color: %1; background-color: %2; padding: 4px 8px; border-radius: 4px;")
+            .arg(textColor, lighterColor.name()));
+        m_currentZoneLabel->setVisible(true);
+    } else {
+        // Réinitialiser l'affichage
+        gaugeRenderer->setShowCursor(false);
+        m_valueLabel->setText("N/A");
+        m_currentZoneLabel->setVisible(false);
     }
-    // Mettre à jour l'étiquette de zone
-    m_currentZoneLabel->setText(currentZoneDesc);
-
-    // Calculer une couleur de fond éclaircie (luminance augmentée)
-    QColor lighterColor = currentColor.lighter(140); // 140 = +40% plus clair
-
-    // Choisir une couleur de texte contrastée selon la luminance de la couleur de fond
-    // const double r = lighterColor.redF();
-    // const double g = lighterColor.greenF();
-    // const double b = lighterColor.blueF();
-    // const double luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    const QString textColor = "#000000";
-
-    // Appliquer fond (la couleur de la zone éclaircie) et texte contrasté, avec un padding pour lisibilité
-    m_currentZoneLabel->setStyleSheet(QString(
-        "color: %1; background-color: %2; padding: 4px 8px; border-radius: 4px;")
-        .arg(textColor, lighterColor.name()));
 
     updateExplanation();
 }

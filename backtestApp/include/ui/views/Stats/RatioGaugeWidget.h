@@ -101,6 +101,11 @@ public:
      */
     void setGaugeHeight(int height);
 
+    /**
+     * @brief Réinitialise le widget et cache le curseur
+     */
+    void clear();
+
 protected:
     /**
      * @brief Événement de redimensionnement
@@ -173,6 +178,7 @@ private:
 private:
     // Données de la jauge
     QVector<GaugeZone> m_zones;      ///< Zones de la jauge
+    bool m_hasValue;
     double m_value;                  ///< Valeur actuelle
     double m_minValue;               ///< Valeur minimale affichable
     double m_maxValue;               ///< Valeur maximale affichable
@@ -197,8 +203,8 @@ class GaugeRenderWidget : public QWidget {
 
 public:
     GaugeRenderWidget(QWidget* parent = nullptr) : QWidget(parent), 
-        m_value(0.0), m_minValue(0.0), m_maxValue(1.0) {}
-    
+        m_value(0.0), m_minValue(0.0), m_maxValue(1.0), m_showCursor(false) {}
+
     void setZones(const QVector<RatioGaugeWidget::GaugeZone>& zones) {
         m_zones = zones;
         update();
@@ -206,12 +212,18 @@ public:
     
     void setValue(double value) {
         m_value = value;
+        m_showCursor = true;
         update();
     }
     
     void setRange(double min, double max) {
         m_minValue = min;
         m_maxValue = max;
+        update();
+    }
+
+    void setShowCursor(bool show) {
+        m_showCursor = show;
         update();
     }
 
@@ -300,26 +312,55 @@ protected:
             painter.drawText(textX, textY, valueStr);
         }
         
-        // Dessiner la valeur actuelle (indicateur sobre)
-        double valuePos = (m_value - m_minValue) / totalRange;
-        valuePos = qBound(0.0, valuePos, 1.0); // Limiter aux bornes
+        if (!m_showCursor || m_zones.isEmpty())
+            return; // Ne pas dessiner le curseur si désactivé ou pas de zones
         
+        // Calculer la position horizontale du curseur
+        double valuePos = (m_value - m_minValue) / totalRange;
+        valuePos = qBound(0.0, valuePos, 1.0);
         int markerX = padding + (int)(valuePos * (width - 2 * padding));
         
-        // Ligne verticale du curseur (plus sobre)
-        QPen cursorPen(QColor(0, 0, 0), 3);
-        painter.setPen(cursorPen);
-        painter.drawLine(markerX, 2, markerX, height - 2);
-        
-        // Indicateur circulaire simple et contrasté
-        painter.setPen(QPen(Qt::black, 1.5));
-        painter.setBrush(QColor(255, 50, 50)); // Rouge vif pour une bonne visibilité
-        painter.drawEllipse(markerX - 5, height / 2 - 5, 10, 10);
-        
-        // Bordure globale de la jauge
-        // painter.setPen(QPen(QColor(80, 80, 80), 1.5));
+        // Paramètres du sablier
+        int sablierWidth = qMin(height / 3, 12); // Largeur du sablier (max 12px)
+        int middleHeight = height / 2;
+
+        // Créer le chemin du sablier
+        QPainterPath sablierPath;
+
+        // Triangle supérieur (base en haut, pointe vers le bas)
+        sablierPath.moveTo(markerX - sablierWidth, 0);  // Coin supérieur gauche
+        sablierPath.lineTo(markerX + sablierWidth, 0);  // Coin supérieur droit
+        sablierPath.lineTo(markerX, middleHeight);                    // Pointe au milieu
+        sablierPath.closeSubpath();
+
+        // Triangle inférieur (base en bas, pointe vers le haut)
+        sablierPath.moveTo(markerX - sablierWidth, height);  // Coin inférieur gauche
+        sablierPath.lineTo(markerX + sablierWidth, height);  // Coin inférieur droit
+        sablierPath.lineTo(markerX, middleHeight);                            // Pointe au milieu
+        sablierPath.closeSubpath();
+
+        // Couleurs neutres qui se détachent bien
+        QColor fillColor = QColor(55, 55, 55, 230);     // Gris foncé avec légère transparence
+        QColor strokeColor = QColor(0, 0, 0);           // Noir pour le contour
+
+        // Dessiner le sablier avec une bordure contrastée
+        painter.setPen(QPen(strokeColor, 2));
+        painter.setBrush(fillColor);
+        painter.drawPath(sablierPath);
+
+        // Ligne verticale centrale pour plus de précision (en blanc pour contraste)
+        // painter.setPen(QPen(Qt::white, 1));
+        // painter.drawLine(markerX, 0, markerX, height);
+
+        // Point central pour l'indication précise de la valeur (en blanc)
+        // painter.setBrush(Qt::white);
+        // painter.setPen(Qt::NoPen);
+        // painter.drawEllipse(markerX - 3, middleHeight - 3, 6, 6);
+
+        // Contour du point central pour plus de netteté
+        // painter.setPen(QPen(Qt::black, 1));
         // painter.setBrush(Qt::NoBrush);
-        // painter.drawRect(0, 0, width - 1, height - 1);
+        // painter.drawEllipse(markerX - 4, middleHeight - 4, 8, 8);
     }
 
 private:
@@ -327,4 +368,5 @@ private:
     double m_value;
     double m_minValue;
     double m_maxValue;
+    bool m_showCursor;
 };

@@ -73,12 +73,12 @@ void RatioGaugesContainerWidget::updateData(const be::Stats& stats)
 void RatioGaugesContainerWidget::clear()
 {
     // Réinitialiser toutes les jauges à zéro
-    m_sharpeGauge->setValue(0.0);
-    m_sortinoGauge->setValue(0.0);
-    m_calmarGauge->setValue(0.0);
-    m_winRateGauge->setValue(0.0);
-    m_profitFactorGauge->setValue(0.0);
-    m_sqnGauge->setValue(0.0);
-    m_maxDrawdownGauge->setValue(0.0);
-    m_kellyGauge->setValue(0.0);
+    m_sharpeGauge->clear();
+    m_sortinoGauge->clear();
+    m_calmarGauge->clear();
+    m_winRateGauge->clear();
+    m_profitFactorGauge->clear();
+    m_sqnGauge->clear();
+    m_maxDrawdownGauge->clear();
+    m_kellyGauge->clear();
 }

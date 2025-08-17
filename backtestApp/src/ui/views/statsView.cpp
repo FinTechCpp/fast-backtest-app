@@ -78,11 +78,20 @@ void StatsView::setupUI() {
     m_metricsWidget = new MetricsContainerWidget();
     m_statsLayout->addWidget(m_metricsWidget);
 
-    m_tradeClosureWidget = new TradeClosureWidget();
-    m_statsLayout->addWidget(m_tradeClosureWidget);
+    QHBoxLayout* tradesClosureLayout = new QHBoxLayout();
+    tradesClosureLayout->setContentsMargins(0, 0, 0, 0);
+    tradesClosureLayout->setSpacing(10);
 
-    m_plDistributionWidget = new PLDistributionWidget();
-    m_statsLayout->addWidget(m_plDistributionWidget);
+    m_tradeClosureWidget = new TradeClosureWidget();
+    m_pnlGaugeWidget = new PnLGaugeWidget();
+
+    tradesClosureLayout->addWidget(m_tradeClosureWidget, /*stretch=*/2);
+    tradesClosureLayout->addWidget(m_pnlGaugeWidget, /*stretch=*/1);
+
+    m_statsLayout->addLayout(tradesClosureLayout);
+
+    // m_plDistributionWidget = new PLDistributionWidget();
+    // m_statsLayout->addWidget(m_plDistributionWidget);
 
     m_tradingHeatmapWidget = new TradingHeatmapWidget();
     m_statsLayout->addWidget(m_tradingHeatmapWidget);
@@ -116,7 +125,8 @@ void StatsView::updateData(BacktestResults* results)
     m_metricsWidget->updateData(m_currentResults->stats);
     m_ratioGaugesWidget->updateData(m_currentResults->stats);
     m_tradeClosureWidget->updateData(m_currentResults->stats);
-    m_plDistributionWidget->updateData(m_currentResults->stats);
+    m_pnlGaugeWidget->updateData(m_currentResults->stats);
+    // m_plDistributionWidget->updateData(m_currentResults->stats);
     m_tradingHeatmapWidget->updateData(m_currentResults->stats);
     // m_riskReturnMapWidget->updateData(m_currentResults->stats);
     m_tradesTableWidget->updateData(m_currentResults->stats.trades);
@@ -130,7 +140,8 @@ void StatsView::clear() {
     m_metricsWidget->clear();
     m_ratioGaugesWidget->clear();
     m_tradeClosureWidget->clear();
-    m_plDistributionWidget->clear();
+    m_pnlGaugeWidget->clear();
+    // m_plDistributionWidget->clear();
     m_tradingHeatmapWidget->clear();
     // m_riskReturnMapWidget->clear();
     m_tradesTableWidget->clear();

@@ -3,9 +3,7 @@
 #include <numeric>
 #include <QGridLayout>
 #include <QLineSeries>
-#include <QScatterSeries>
 #include <QPen>
-#include <QSplineSeries>
 #include <cmath>
 #include <QDebug>
 #include <QtCharts/QChart>
@@ -17,7 +15,16 @@
 #include <QtCharts/QValueAxis>
 
 PLDistributionWidget::PLDistributionWidget(QWidget* parent)
-    : QWidget(parent)
+    : QWidget(parent),
+      m_totalTrades(0),
+      m_avgWin(0.0),
+      m_avgLoss(0.0),
+      m_maxWin(0.0),
+      m_maxLoss(0.0),
+      m_median(0.0),
+      m_chartView(nullptr),
+      m_currentMode(DisplayMode::AllTrades),
+      m_numBins(20)
 {
     setupUI();
 }
@@ -31,8 +38,8 @@ void PLDistributionWidget::setupUI()
     // Layout supérieur avec contrôles
     QHBoxLayout* controlsLayout = new QHBoxLayout();
     
-    QLabel* displayLabel = new QLabel("Afficher:");
-    m_displayModeCombo = new QComboBox();
+    QLabel* displayLabel = new QLabel("Afficher:", this);
+    m_displayModeCombo = new QComboBox(this);
     m_displayModeCombo->addItem("Tous les trades");
     m_displayModeCombo->addItem("Trades gagnants");
     m_displayModeCombo->addItem("Trades perdants");
@@ -43,37 +50,41 @@ void PLDistributionWidget::setupUI()
     
     mainLayout->addLayout(controlsLayout);
     
-    // Création du graphique - utiliser directement QChartView
-    m_chartView = new QChartView(new QChart());  // QChartView prend possession du QChart
-    m_chartView->chart()->setTitle("Distribution des Profits/Pertes par Trade");
-    m_chartView->chart()->setAnimationOptions(QChart::SeriesAnimations);
+    // Création du graphique - IMPORTANT: suivre l'ordre correct pour Qt 6
+    // 1. Créer le chart SANS parent
+    QChart* chart = new QChart();
+    chart->setTitle("Distribution des Profits/Pertes par Trade");
+    chart->setAnimationOptions(QChart::SeriesAnimations);
+    
+    // 2. Créer le chartView avec le chart ET le parent
+    m_chartView = new QChartView(chart, this);
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setMinimumHeight(250);
     
     mainLayout->addWidget(m_chartView);
     
     // Résumé des statistiques
-    m_summaryBox = new QGroupBox("Analyse de la distribution");
+    m_summaryBox = new QGroupBox("Analyse de la distribution", this);
     QGridLayout* statsLayout = new QGridLayout(m_summaryBox);
     
-    statsLayout->addWidget(new QLabel("Gain moyen:"), 0, 0);
-    m_avgWinLabel = new QLabel("N/A");
+    statsLayout->addWidget(new QLabel("Gain moyen:", m_summaryBox), 0, 0);
+    m_avgWinLabel = new QLabel("N/A", m_summaryBox);
     statsLayout->addWidget(m_avgWinLabel, 0, 1);
     
-    statsLayout->addWidget(new QLabel("Perte moyenne:"), 0, 2);
-    m_avgLossLabel = new QLabel("N/A");
+    statsLayout->addWidget(new QLabel("Perte moyenne:", m_summaryBox), 0, 2);
+    m_avgLossLabel = new QLabel("N/A", m_summaryBox);
     statsLayout->addWidget(m_avgLossLabel, 0, 3);
     
-    statsLayout->addWidget(new QLabel("Ratio gain/perte:"), 1, 0);
-    m_ratioLabel = new QLabel("N/A");
+    statsLayout->addWidget(new QLabel("Ratio gain/perte:", m_summaryBox), 1, 0);
+    m_ratioLabel = new QLabel("N/A", m_summaryBox);
     statsLayout->addWidget(m_ratioLabel, 1, 1);
     
-    statsLayout->addWidget(new QLabel("Médiane P&L:"), 1, 2);
-    m_medianLabel = new QLabel("N/A");
+    statsLayout->addWidget(new QLabel("Médiane P&L:", m_summaryBox), 1, 2);
+    m_medianLabel = new QLabel("N/A", m_summaryBox);
     statsLayout->addWidget(m_medianLabel, 1, 3);
     
-    statsLayout->addWidget(new QLabel("Caractéristique:"), 2, 0);
-    m_distributionLabel = new QLabel("N/A");
+    statsLayout->addWidget(new QLabel("Caractéristique:", m_summaryBox), 2, 0);
+    m_distributionLabel = new QLabel("N/A", m_summaryBox);
     m_distributionLabel->setWordWrap(true);
     statsLayout->addWidget(m_distributionLabel, 2, 1, 1, 3);
     
@@ -81,10 +92,7 @@ void PLDistributionWidget::setupUI()
     
     // Connecter le changement de mode d'affichage
     connect(m_displayModeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
-            [this](int index) {
-                m_currentMode = static_cast<DisplayMode>(index);
-                updateChart();
-            });
+            this, &PLDistributionWidget::updateChart);
 }
 
 void PLDistributionWidget::computeStatistics(const std::vector<be::TradeData>& trades)
@@ -95,13 +103,13 @@ void PLDistributionWidget::computeStatistics(const std::vector<be::TradeData>& t
     
     // Extraire les valeurs de PL
     for (const auto& trade : trades) {
-        double plPct = trade.pl;
-        m_plValues.push_back(plPct);
+        double plValue = trade.pl; // Utiliser pl au lieu de plPercent
+        m_plValues.push_back(plValue);
         
-        if (plPct >= 0) {
-            m_positiveValues.push_back(plPct);
-        } else if (plPct < 0) {
-            m_negativeValues.push_back(plPct);
+        if (plValue >= 0) {
+            m_positiveValues.push_back(plValue);
+        } else {
+            m_negativeValues.push_back(plValue);
         }
     }
     
@@ -168,7 +176,7 @@ void PLDistributionWidget::updateChart()
     
     if (dataToShow.empty()) {
         newChart->setTitle(chartTitle + " (pas de données)");
-        m_chartView->setChart(newChart);
+        m_chartView->setChart(newChart); // Le chart précédent sera automatiquement supprimé
         return;
     }
     
@@ -187,63 +195,14 @@ void PLDistributionWidget::updateChart()
     int numBins = m_numBins;
     double binWidth = (maxValue - minValue) / numBins;
     
-    // Préparer deux séries distinctes pour les valeurs positives et négatives
-    QBarSet* positiveBarSet = new QBarSet("Gains");
-    QBarSet* negativeBarSet = new QBarSet("Pertes");
-    
-    // Définir les couleurs
-    positiveBarSet->setColor(QColor(70, 200, 70));  // Vert
-    negativeBarSet->setColor(QColor(200, 70, 70));  // Rouge
-    
-    // Compter les occurrences dans chaque bin pour valeurs positives et négatives
-    std::vector<int> positiveBinCounts(numBins, 0);
-    std::vector<int> negativeBinCounts(numBins, 0);
-    
-    for (double value : dataToShow) {
-        int binIndex = std::min(static_cast<int>((value - minValue) / binWidth), numBins - 1);
-        binIndex = std::max(0, binIndex); // Pour gérer les valeurs en dehors de la plage
-        
-        if (value >= 0) {
-            positiveBinCounts[binIndex]++;
-        } else {
-            negativeBinCounts[binIndex]++;
-        }
-    }
-    
-    // Créer une liste de catégories (étiquettes de l'axe X)
-    QStringList categories;
-    for (int i = 0; i < numBins; ++i) {
-        double binStart = minValue + i * binWidth;
-        if (i % 3 == 0) {  // Espacer les étiquettes pour lisibilité
-            categories << QString::number(binStart, 'f', 1);
-        } else {
-            categories << "";
-        }
-    }
-    
-    // Ajouter les données aux barsets
-    for (int i = 0; i < numBins; ++i) {
-        *positiveBarSet << positiveBinCounts[i];
-        *negativeBarSet << negativeBinCounts[i];
-    }
-    
-    // Utiliser une seule série mais avec des couleurs par barre
-    QBarSeries* series = new QBarSeries();
-    
     // Compter les occurrences dans chaque bin
     std::vector<int> binCounts(numBins, 0);
     std::vector<double> binValues(numBins, 0.0); // Pour stocker la valeur centrale de chaque bin
     
+    // Précalculer les valeurs centrales des bins
     for (int i = 0; i < numBins; ++i) {
         double binStart = minValue + i * binWidth;
-        double binCenter = binStart + binWidth / 2;
-        binValues[i] = binCenter;
-        
-        if (i % 3 == 0) {
-            categories << QString::number(binStart, 'f', 1);
-        } else {
-            categories << "";
-        }
+        binValues[i] = binStart + binWidth / 2; // Valeur centrale
     }
     
     // Compter les occurrences
@@ -253,54 +212,113 @@ void PLDistributionWidget::updateChart()
         binCounts[binIndex]++;
     }
     
-    // Créer une barre pour chaque bin avec couleur selon sa valeur
+    // Créer les étiquettes pour l'axe X
+    QStringList categories;
     for (int i = 0; i < numBins; ++i) {
-        QBarSet* barSet = new QBarSet(QString::number(binValues[i], 'f', 1));
-        *barSet << binCounts[i];
-        
-        // Couleur selon valeur positive/négative
-        if (binValues[i] < 0) {
-            barSet->setColor(QColor(200, 70, 70));  // Rouge
+        double binStart = minValue + i * binWidth;
+        if (i % 3 == 0) { // N'afficher qu'une étiquette sur trois pour la lisibilité
+            categories << QString::number(binStart, 'f', 1);
         } else {
-            barSet->setColor(QColor(70, 200, 70));  // Vert
+            categories << "";
         }
-        
-        series->append(barSet);
     }
     
-    // Ajouter la série au graphique
+    // IMPORTANT: Utiliser l'approche de HistogramView pour Qt 6
+    // 1. Créer une série pour les barres positives et une pour les barres négatives
+    QBarSeries* series = new QBarSeries();
+    
+    // 2. Créer deux ensembles de barres (un pour les valeurs positives, un pour les négatives)
+    QBarSet* positiveSet = new QBarSet("Valeurs positives");
+    QBarSet* negativeSet = new QBarSet("Valeurs négatives");
+    
+    positiveSet->setColor(QColor(70, 200, 70));  // Vert
+    negativeSet->setColor(QColor(200, 70, 70));  // Rouge
+    
+    // 3. Remplir les ensembles
+    for (int i = 0; i < numBins; ++i) {
+        if (binValues[i] >= 0) {
+            *positiveSet << binCounts[i];
+            *negativeSet << 0;
+        } else {
+            *positiveSet << 0;
+            *negativeSet << binCounts[i];
+        }
+    }
+    
+    // 4. Ajouter les ensembles à la série
+    series->append(positiveSet);
+    series->append(negativeSet);
+    
+    // 5. Ajouter la série au graphique
     newChart->addSeries(series);
     
-    // Créer un axe des catégories
+    // 6. Créer et configurer les axes
     QBarCategoryAxis* axisX = new QBarCategoryAxis();
     axisX->append(categories);
     axisX->setTitleText("Profit/Perte");
-    newChart->addAxis(axisX, Qt::AlignBottom);
-    series->attachAxis(axisX);
     
-    // Créer l'axe des valeurs
     QValueAxis* axisY = new QValueAxis();
     int maxCount = *std::max_element(binCounts.begin(), binCounts.end());
     axisY->setRange(0, maxCount * 1.1);
     axisY->setTitleText("Fréquence");
+    
+    // 7. Ajouter les axes au graphique AVANT d'attacher les séries
+    newChart->addAxis(axisX, Qt::AlignBottom);
     newChart->addAxis(axisY, Qt::AlignLeft);
+    
+    // 8. Attacher les séries aux axes
+    series->attachAxis(axisX);
     series->attachAxis(axisY);
     
-    // Configurer la légende pour ne pas montrer tous les barsets
-    newChart->legend()->setVisible(false);
+    // Ajouter des lignes pour la moyenne et la médiane (comme dans HistogramView)
+    double mean = std::accumulate(dataToShow.begin(), dataToShow.end(), 0.0) / dataToShow.size();
+    int meanBin = std::min(std::max(0, static_cast<int>((mean - minValue) / binWidth)), numBins - 1);
     
-    // Installer le nouveau graphique
+    // QLineSeries* meanLine = new QLineSeries();
+    // meanLine->setName("Moyenne");
+    // meanLine->append(meanBin + 0.5, 0);
+    // meanLine->append(meanBin + 0.5, maxCount * 1.1);
+    // meanLine->setPen(QPen(Qt::blue, 2, Qt::DashLine));
+    
+    // // Ajouter la ligne de moyenne au graphique
+    // newChart->addSeries(meanLine);
+    // meanLine->attachAxis(axisX);
+    // meanLine->attachAxis(axisY);
+    
+    // Ajouter une ligne pour la médiane
+    // int medianBin = std::min(std::max(0, static_cast<int>((m_median - minValue) / binWidth)), numBins - 1);
+    
+    // QLineSeries* medianLine = new QLineSeries();
+    // medianLine->setName("Médiane");
+    // medianLine->append(medianBin + 0.5, 0);
+    // medianLine->append(medianBin + 0.5, maxCount * 1.1);
+    // medianLine->setPen(QPen(Qt::darkGreen, 2, Qt::DotLine));
+    
+    // // Ajouter la ligne de médiane au graphique
+    // newChart->addSeries(medianLine);
+    // medianLine->attachAxis(axisX);
+    // medianLine->attachAxis(axisY);
+    
+    // Configurer la légende
+    newChart->legend()->setVisible(true);
+    newChart->legend()->setAlignment(Qt::AlignBottom);
+    
+    // Remplacer l'ancien graphique par le nouveau
     m_chartView->setChart(newChart);
+    
+    // Mettre à jour les statistiques affichées
+    updateSummary();
 }
+
 void PLDistributionWidget::updateSummary()
 {
     // Mettre à jour les labels de statistiques
-    m_avgWinLabel->setText(QString("%1%").arg(m_avgWin, 0, 'f', 2));
-    m_avgLossLabel->setText(QString("%1%").arg(m_avgLoss, 0, 'f', 2));
+    m_avgWinLabel->setText(QString("%1").arg(m_avgWin, 0, 'f', 2));
+    m_avgLossLabel->setText(QString("%1").arg(m_avgLoss, 0, 'f', 2));
     
     double gainLossRatio = m_avgLoss != 0 ? std::abs(m_avgWin / m_avgLoss) : 0;
     m_ratioLabel->setText(QString("%1").arg(gainLossRatio, 0, 'f', 2));
-    m_medianLabel->setText(QString("%1%").arg(m_median, 0, 'f', 2));
+    m_medianLabel->setText(QString("%1").arg(m_median, 0, 'f', 2));
     
     // Analyse de la distribution
     QString distributionAnalysis;
@@ -320,7 +338,8 @@ void PLDistributionWidget::updateSummary()
         }
         
         double variance = sumSquared / m_plValues.size();
-        double skewness = sumCubed / (m_plValues.size() * std::pow(std::sqrt(variance), 3));
+        double skewness = variance > 0 ? 
+            sumCubed / (m_plValues.size() * std::pow(std::sqrt(variance), 3)) : 0;
         
         if (skewness > 0.5) {
             distributionAnalysis = "Distribution asymétrique positive: quelques grands gagnants.";
@@ -352,7 +371,6 @@ void PLDistributionWidget::updateData(const be::Stats& stats)
     
     computeStatistics(stats.trades);
     updateChart();
-    updateSummary();
 }
 
 void PLDistributionWidget::clear()
@@ -362,9 +380,12 @@ void PLDistributionWidget::clear()
     m_negativeValues.clear();
     m_totalTrades = 0;
     
-    m_chartView->chart()->removeAllSeries();
-    m_chartView->chart()->setTitle("Distribution des Profits/Pertes par Trade (pas de données)");
+    // Créer un nouveau graphique vide
+    QChart* newChart = new QChart();
+    newChart->setTitle("Distribution des Profits/Pertes par Trade (pas de données)");
+    m_chartView->setChart(newChart);
     
+    // Réinitialiser les labels
     m_avgWinLabel->setText("N/A");
     m_avgLossLabel->setText("N/A");
     m_ratioLabel->setText("N/A");

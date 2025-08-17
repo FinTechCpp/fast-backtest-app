@@ -27,6 +27,7 @@
 #include "ui/views/Stats/TradesTableWidget.h"
 #include "ui/views/Stats/RatioGaugesContainerWidget.h"
 #include "ui/views/Stats/PLDistributionWidget.h"
+#include "ui/views/Stats/PnLGaugeWidget.h"
 
 
 
@@ -79,6 +80,7 @@ private:
     MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
     TradeClosureWidget* m_tradeClosureWidget = nullptr;
+    PnLGaugeWidget* m_pnlGaugeWidget;
     PLDistributionWidget* m_plDistributionWidget = nullptr;
     RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
     RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;

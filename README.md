@@ -55,11 +55,11 @@ This approach ensures both fast execution for backtests and flexibility for stra
 Clone the repository and go to the project root:
 
 ```bash
-git clone https://github.com/hugoMiCode/fast-backtest-app
+git clone https://github.com/FinTechCpp/fast-backtest-app
 cd fast-backtest-app
 # initialize submodules
-git submodule init
-git submodule update
+git submodule update --init --recursive
+git lfs pull
 ```
 
 ## Usage
@@ -91,6 +91,7 @@ sudo apt install -y build-essential git curl wget
 
 # Install required graphics libraries for Qt
 sudo apt install -y libgl1-mesa-dev libglu1-mesa-dev
+sudo apt install -y libxcb-cursor0 libxcb-cursor-dev
 ```
 
 ### Step 2: Install CMake 4.0.3
@@ -130,9 +131,11 @@ chmod +x qt-unified-linux-x64-4.6.1-online.run
 
 **Qt installer instructions:**
 1. Create a Qt account (free for personal use)
-2. Select **Qt 6.8.3**
-3. Check **Desktop gcc 64-bit**
-4. Install in the default directory: `~/Qt/`
+2. Select **Custom installation**
+3. Select **Qt 6.8.3**
+4. Check the fields such as the screenshot following:
+5. ![Qt Installer Selection](images/qt_installer_config.png)
+6. Install in the default directory: `~/Qt/`
 
 ### Step 5: Permanent PATH configuration
 

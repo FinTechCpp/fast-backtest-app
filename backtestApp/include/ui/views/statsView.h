@@ -30,8 +30,6 @@
 #include "ui/views/Stats/PnLGaugeWidget.h"
 
 
-
-
 #include <cmath>
 
 class App;

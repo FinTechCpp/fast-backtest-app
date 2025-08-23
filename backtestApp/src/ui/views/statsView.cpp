@@ -21,11 +21,11 @@ Equity curve avec bandes de drawdown: Montrer l'évolution du capital avec des z
 
 Analyse des jours/heures de trading: Heatmap montrant les performances par jour de semaine/heure de la journée
 
-Timeline des trades: Visualisation chronologique des trades avec des barres colorées pour TP/SL/BE
-
 Carte de performance vs volatilité: Positionnement de votre stratégie par rapport à d'autres dans un graphique risque/rendement
 
 Indicateurs d'amélioration: Des suggestions visuelles sur les aspects à améliorer dans la stratégie
+
+Widget d'analyse global : affiche seulement les statistiques critiques (celles qui ne sont pas bonnes) cela permet de montrer a l'utilisateur les faiblaisses de la stratégie. cela permet de ne pas passer a coté d'un red flag : par exemple si tout est vert mais par exemple un sharp ratio extremement mauvais : on le montrera a l'utilisateur comme un voyant rouge sur une voiture pour dire qu'il y a un probleme.
 */
 
 

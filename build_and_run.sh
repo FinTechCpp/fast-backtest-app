@@ -16,7 +16,6 @@ cd "$SCRIPT_DIR"
 DEBUG=0
 CLEAN=0
 RUN_APP=1
-APP_NAME="backtestapp"  # Default application
 
 for arg in "$@"
 do
@@ -33,23 +32,19 @@ do
         RUN_APP=0
         shift
         ;;
-        --backtest-app)
-        APP_NAME="backtestapp"
-        shift
-        ;;
         --help|-h)
         echo "Usage: $0 [OPTIONS]"
         echo ""
         echo "Options:"
-        echo "  --debug         Compiler en mode debug"
-        echo "  --clean         Nettoyer le dossier build avant compilation"
-        echo "  --no-run        Ne pas exécuter l'application après compilation"
-        echo "  --backtest-app  Compiler et exécuter l'application de backtest (défaut)"
-        echo "  --help, -h      Afficher cette aide"
+        echo "  --debug         Compile in debug mode"
+        echo "  --clean         Clean the build directory before compilation"
+        echo "  --no-run        Do not run the application after compilation"
+        echo "  --backtest-app  Compile and run the backtest application (default)"
+        echo "  --help, -h      Display this help"
         echo ""
-        echo "Exemples:"
-        echo "  $0                     # Compile et lance l'app de backtest"
-        echo "  $0 --clean --no-run   # Nettoie et compile sans lancer"
+        echo "Examples:"
+        echo "  $0                     # Compile and run the backtest app"
+        echo "  $0 --clean --no-run   # Clean and compile without running"
         exit 0
         ;;
     esac
@@ -57,17 +52,17 @@ done
 
 # Function to display step messages
 show_step() {
-    echo -e "${BLUE}${BOLD}[ÉTAPE]${NC} $1"
+    echo -e "${BLUE}${BOLD}[STEP]${NC} $1"
 }
 
 # Function to display success messages
 show_success() {
-    echo -e "${GREEN}${BOLD}[SUCCÈS]${NC} $1"
+    echo -e "${GREEN}${BOLD}[SUCCESS]${NC} $1"
 }
 
 # Function to display error messages
 show_error() {
-    echo -e "${RED}${BOLD}[ERREUR]${NC} $1"
+    echo -e "${RED}${BOLD}[ERROR]${NC} $1"
 }
 
 # Clean the build directory if requested
@@ -90,7 +85,7 @@ if [ $DEBUG -eq 1 ]; then
     CMAKE_ARGS="$CMAKE_ARGS -DBUILD_WITH_DEBUG=ON"
 fi
 
-cmake $CMAKE_ARGS .. || { show_error "Échec de la configuration CMake"; exit 1; }
+cmake $CMAKE_ARGS .. || { show_error "Failed to configure CMake"; exit 1; }
 
 # Compile the project
 show_step "Compiling project with all available cores..."
@@ -121,7 +116,6 @@ if [ $RUN_APP -eq 1 ]; then
         echo "Check that the path is correct and that the compilation was successful."
         echo "vailable applications:"
         echo "  - Backtest App: ./build/backtestApp/backtestapp"
-        echo "  - IG Command App: ./build/bin/ig_cmd_app"
         exit 1
     fi
 fi

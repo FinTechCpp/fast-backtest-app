@@ -1,22 +1,21 @@
 #pragma once
 
-#include <QWidget>
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QMap>
 #include <QString>
 #include <QHBoxLayout>
 #include "ui/metricWidget.h"
-#include "stats.hpp"
+#include "ui/views/Stats/StatsBaseWidget.h"
 
-class MetricsContainerWidget : public QWidget {
+class MetricsContainerWidget : public StatsBaseWidget {
     Q_OBJECT
 
 public:
     explicit MetricsContainerWidget(QWidget* parent = nullptr);
-    
-    void updateData(const be::Stats& stats);
-    void clear();
+
+    void updateContent(const be::Stats& stats) override;
+    void clear() override;
 
 private:
     enum class Section {

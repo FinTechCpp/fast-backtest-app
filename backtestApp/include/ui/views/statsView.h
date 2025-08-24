@@ -78,11 +78,13 @@ private:
     MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
     TradeClosureWidget* m_tradeClosureWidget = nullptr;
-    PnLGaugeWidget* m_pnlGaugeWidget;
+    PnLGaugeWidget* m_pnlGaugeWidget = nullptr;
     PLDistributionWidget* m_plDistributionWidget = nullptr;
     RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
     RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
+
+    std::vector<StatsBaseWidget*> m_statsWidgets;
 
     
     // --- UI: Conteneurs principaux ---

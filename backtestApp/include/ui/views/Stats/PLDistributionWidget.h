@@ -13,7 +13,7 @@
 #include <QGroupBox>
 #include <QPushButton>
 #include <QComboBox>
-#include "stats.hpp"
+#include "ui/views/Stats/StatsBaseWidget.h"
 
 
 class PLDistributionWidget : public QWidget {

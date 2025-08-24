@@ -3,7 +3,7 @@
 #include <QHeaderView>
 
 TradesTableWidget::TradesTableWidget(QWidget* parent)
-    : QWidget(parent),
+    : StatsBaseWidget(parent),
       m_tradesModel(new TradesTableModel(this))
 {
     setupUI();
@@ -107,11 +107,11 @@ void TradesTableWidget::setupUI()
     // m_tradesGroup->setVisible(false);
 }
 
-void TradesTableWidget::updateData(const std::vector<be::TradeData>& trades)
+void TradesTableWidget::updateContent(const be::Stats& stats)
 {
     // Stocker toutes les trades
-    m_allTrades = trades;
-    
+    m_allTrades = stats.trades;
+
     // Appliquer les filtres actuels
     auto filteredTrades = getFilteredTrades(m_allTrades);
     

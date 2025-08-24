@@ -7,19 +7,19 @@
 #include <QPainter>
 #include <QPainterPath>
 #include <QLinearGradient>
-#include "stats.hpp"
+#include "ui/views/Stats/StatsBaseWidget.h"
 
 class VerticalGaugeRenderWidget;
 
-class PnLGaugeWidget : public QWidget {
+class PnLGaugeWidget : public StatsBaseWidget {
     Q_OBJECT
     
 public:
     explicit PnLGaugeWidget(QWidget* parent = nullptr);
     ~PnLGaugeWidget();
-    
-    void updateData(const be::Stats& stats);
-    void clear();
+
+    void updateContent(const be::Stats& stats) override;
+    void clear() override;
     
 private:
     void setupUI();

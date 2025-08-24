@@ -1,35 +1,22 @@
 #pragma once
 
-#include <QWidget>
 #include <QVBoxLayout>
 #include <QScrollArea>
 #include <QVector>
 #include "ui/views/Stats/RatioGaugeWidget.h"
-#include "stats.hpp"
+#include "ui/views/Stats/StatsBaseWidget.h"
 
 /**
  * @brief Widget conteneur pour afficher plusieurs jauges de ratios
  */
-class RatioGaugesContainerWidget : public QWidget {
+class RatioGaugesContainerWidget : public StatsBaseWidget {
     Q_OBJECT
 
 public:
-    /**
-     * @brief Constructeur
-     * @param parent Widget parent
-     */
     explicit RatioGaugesContainerWidget(QWidget* parent = nullptr);
     
-    /**
-     * @brief Mettre à jour les données avec les statistiques du backtest
-     * @param stats Statistiques calculées
-     */
-    void updateData(const be::Stats& stats);
-    
-    /**
-     * @brief Effacer toutes les données et réinitialiser l'affichage
-     */
-    void clear();
+    void updateContent(const be::Stats& stats) override;
+    void clear() override;
 
 private:
     QVBoxLayout* m_mainLayout;

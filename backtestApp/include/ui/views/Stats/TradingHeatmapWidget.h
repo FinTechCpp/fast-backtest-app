@@ -13,17 +13,16 @@
 #include <QResizeEvent>
 #include <QMap>
 
-#include "stats.hpp"
+#include "ui/views/Stats/StatsBaseWidget.h"
 
-class TradingHeatmapWidget : public QWidget {
+class TradingHeatmapWidget : public StatsBaseWidget {
     Q_OBJECT
 
 public:
     explicit TradingHeatmapWidget(QWidget* parent = nullptr);
     
-    // API pour mettre à jour et effacer les données
-    void updateData(const be::Stats& stats);
-    void clear();
+    void updateContent(const be::Stats& stats) override;
+    void clear() override;
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

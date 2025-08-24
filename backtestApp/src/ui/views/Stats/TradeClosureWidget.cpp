@@ -5,7 +5,7 @@
 #include <QDebug>
 
 TradeClosureWidget::TradeClosureWidget(QWidget* parent)
-    : QWidget(parent), m_chartView(new QChartView()), m_legendContainer(new QWidget())
+    : StatsBaseWidget(parent), m_chartView(new QChartView()), m_legendContainer(new QWidget())
 {
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setMinimumHeight(300);
@@ -34,7 +34,7 @@ TradeClosureWidget::TradeClosureWidget(QWidget* parent)
     mainLayout->addWidget(m_legendContainer, 1);
 }
 
-void TradeClosureWidget::updateData(const be::Stats& stats) {
+void TradeClosureWidget::updateContent(const be::Stats& stats) {
     if (!m_chartView) {
         return;
     }

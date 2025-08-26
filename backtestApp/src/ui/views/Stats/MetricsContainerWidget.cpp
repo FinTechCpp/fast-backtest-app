@@ -3,7 +3,7 @@
 #include <QDebug>
 
 MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
-    : QWidget(parent)
+    : StatsBaseWidget(parent)
 {
     m_mainLayout = new QVBoxLayout(this);
 
@@ -399,7 +399,7 @@ void MetricsContainerWidget::initializeMetrics() {
 }
 
 
-void MetricsContainerWidget::updateData(const be::Stats& stats) {
+void MetricsContainerWidget::updateContent(const be::Stats& stats) {
     // Mettre à jour toutes les métriques
     for (auto it = m_metricWidgets.begin(); it != m_metricWidgets.end(); ++it) {
         QString key = it.key();

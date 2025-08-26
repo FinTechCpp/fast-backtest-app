@@ -8,7 +8,7 @@
 #include <cmath>
 
 MonthlyPerformanceWidget::MonthlyPerformanceWidget(QWidget* parent)
-    : QWidget(parent),
+    : StatsBaseWidget(parent),
       m_minYear(0),
       m_maxYear(0),
       m_minValue(0.0),
@@ -358,7 +358,7 @@ void MonthlyPerformanceWidget::buildHeatmap()
     m_groupBox->setTitle(QString("Performance Mensuelle par Année (%1 - %2)").arg(m_minYear).arg(m_maxYear));
 }
 
-void MonthlyPerformanceWidget::updateData(const be::Stats& stats)
+void MonthlyPerformanceWidget::updateContent(const be::Stats& stats)
 {
     if (stats.trades.empty()) {
         clear();

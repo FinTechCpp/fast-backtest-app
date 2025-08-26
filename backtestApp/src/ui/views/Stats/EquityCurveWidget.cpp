@@ -6,7 +6,7 @@
 #include <QChart>
 
 EquityCurveWidget::EquityCurveWidget(QWidget* parent)
-    : QWidget(parent), m_chartView(new QChartView())
+    : StatsBaseWidget(parent), m_chartView(new QChartView())
 {
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setMinimumHeight(250);
@@ -29,7 +29,7 @@ EquityCurveWidget::EquityCurveWidget(QWidget* parent)
     m_chartView->setChart(emptyChart);
 }
 
-void EquityCurveWidget::updateData(const be::Stats& stats) {
+void EquityCurveWidget::updateContent(const be::Stats& stats) {
     if (stats.equityCurve.empty()) {
         qDebug() << "Equity curve vide, impossible d'afficher le graphique";
         return;

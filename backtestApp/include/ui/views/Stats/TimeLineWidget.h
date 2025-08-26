@@ -1,21 +1,21 @@
 #pragma once
 
-#include <QWidget>
 #include <QPainter>
 #include <QColor>
 #include <QDateTime>
 
 #include "date.hpp"
+#include "ui/views/Stats/StatsBaseWidget.h"
 
 
-class TimelineWidget : public QWidget {
+class TimelineWidget : public StatsBaseWidget {
     Q_OBJECT
 
 public:
     explicit TimelineWidget(QWidget* parent = nullptr);
 
-    void setData(const be::Date& start, const be::Date& end, const be::Duration& duration, double exposurePercent);
-    void clear();
+    void updateContent(const be::Stats& stats) override;
+    void clear() override;
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -24,7 +24,7 @@ private:
     QString m_startDate;
     QString m_endDate;
     QString m_duration;
-    double m_exposurePercent = 0.0;
+    double m_exposureTimePct = 0.0;
     
     // Couleurs
     QColor m_timelineColor = QColor(200, 200, 200);        // Gris clair pour la timeline

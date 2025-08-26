@@ -4,7 +4,7 @@
 #include <QDebug>
 
 RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
-    : QWidget(parent)
+    : StatsBaseWidget(parent)
 {
     // Layout principal
     m_mainLayout = new QVBoxLayout(this);
@@ -57,7 +57,7 @@ RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
     setMinimumHeight(500);
 }
 
-void RatioGaugesContainerWidget::updateData(const be::Stats& stats)
+void RatioGaugesContainerWidget::updateContent(const be::Stats& stats)
 {
     // Mettre à jour chaque jauge avec les valeurs des statistiques
     m_sharpeGauge->setValue(stats.sharpeRatio);

@@ -9,7 +9,7 @@
 // ===============================
 
 PnLGaugeWidget::PnLGaugeWidget(QWidget* parent)
-    : QWidget(parent),
+    : StatsBaseWidget(parent),
       m_tpAvg(0.0),
       m_tpMax(0.0),
       m_tpMedian(0.0),
@@ -75,7 +75,7 @@ void PnLGaugeWidget::setupUI()
     m_mainLayout->addLayout(m_contentLayout);
 }
 
-void PnLGaugeWidget::updateData(const be::Stats& stats)
+void PnLGaugeWidget::updateContent(const be::Stats& stats)
 {
     if (stats.trades.empty()) {
         clear();

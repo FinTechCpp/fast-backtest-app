@@ -8,7 +8,7 @@
 #include <cmath> // Pour std::fabs
 
 TradingHeatmapWidget::TradingHeatmapWidget(QWidget* parent)
-    : QWidget(parent),
+    : StatsBaseWidget(parent),
       m_minValue(0.0),
       m_maxValue(0.0),
       m_minHour(24),    // Initialiser à une valeur extrême
@@ -413,7 +413,7 @@ bool TradingHeatmapWidget::eventFilter(QObject* watched, QEvent* event) {
     return QWidget::eventFilter(watched, event);
 }
 
-void TradingHeatmapWidget::updateData(const be::Stats& stats) {
+void TradingHeatmapWidget::updateContent(const be::Stats& stats) {
     if (stats.trades.empty()) {
         return;
     }

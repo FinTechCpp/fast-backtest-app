@@ -111,6 +111,19 @@ void StatsView::setupUI() {
     // Configurer le scroll area et l'ajouter au layout principal
     m_scrollStats->setWidget(m_statsContent);
     m_mainLayout->addWidget(m_scrollStats);
+
+    // 4. STOCKAGE DES WIDGETS POUR MISES À JOUR/RESET
+    // m_statsWidgets.push_back(m_equityCurveWidget);
+    m_statsWidgets.push_back(m_timelineWidget);
+    m_statsWidgets.push_back(m_metricsWidget);
+    m_statsWidgets.push_back(m_ratioGaugesWidget);
+    m_statsWidgets.push_back(m_tradeClosureWidget);
+    m_statsWidgets.push_back(m_pnlGaugeWidget);
+    // m_statsWidgets.push_back(m_plDistributionWidget);
+    m_statsWidgets.push_back(m_tradingHeatmapWidget);
+    // m_statsWidgets.push_back(m_riskReturnMapWidget);
+    m_statsWidgets.push_back(m_tradesTableWidget);
+    m_statsWidgets.push_back(m_monthlyPerformanceWidget);
 }
 
 void StatsView::updateData(BacktestResults* results)
@@ -122,36 +135,19 @@ void StatsView::updateData(BacktestResults* results)
         qWarning() << "Résultats nuls reçus";
         clear();
         return;
-    }  
+    }
 
-    // m_equityCurveWidget->updateData(m_currentResults->stats);
-    m_timelineWidget->setData(m_currentResults->stats.start, m_currentResults->stats.end, m_currentResults->stats.duration, m_currentResults->stats.exposureTimePct);
-    m_metricsWidget->updateData(m_currentResults->stats);
-    m_ratioGaugesWidget->updateData(m_currentResults->stats);
-    m_tradeClosureWidget->updateData(m_currentResults->stats);
-    m_pnlGaugeWidget->updateData(m_currentResults->stats);
-    // m_plDistributionWidget->updateData(m_currentResults->stats);
-    m_tradingHeatmapWidget->updateData(m_currentResults->stats);
-    // m_riskReturnMapWidget->updateData(m_currentResults->stats);
-    m_tradesTableWidget->updateData(m_currentResults->stats.trades);
-    m_monthlyPerformanceWidget->updateData(m_currentResults->stats);
-
+    for (auto widget : m_statsWidgets) {
+        widget->updateContent(m_currentResults->stats);
+    }
 }
 
 void StatsView::clear() {
     qDebug() << "StatsView::clear() appelé";
-    
-    // m_equityCurveWidget->clear();
-    m_timelineWidget->clear();
-    m_metricsWidget->clear();
-    m_ratioGaugesWidget->clear();
-    m_tradeClosureWidget->clear();
-    m_pnlGaugeWidget->clear();
-    // m_plDistributionWidget->clear();
-    m_tradingHeatmapWidget->clear();
-    // m_riskReturnMapWidget->clear();
-    m_tradesTableWidget->clear();
-    m_monthlyPerformanceWidget->clear();
+
+    for (auto widget : m_statsWidgets) {
+        widget->clear();
+    }
     
     m_currentResults = nullptr;
 }

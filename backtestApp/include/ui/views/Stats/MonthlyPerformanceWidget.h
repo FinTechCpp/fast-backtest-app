@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QWidget>
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QGraphicsScene>
@@ -11,18 +10,18 @@
 #include <QPaintEvent>
 #include <QResizeEvent>
 #include <QGraphicsTextItem>
-#include "stats.hpp"
+#include "ui/views/Stats/StatsBaseWidget.h"
 
-class MonthlyPerformanceWidget : public QWidget {
+class MonthlyPerformanceWidget : public StatsBaseWidget {
     Q_OBJECT
     
 public:
     explicit MonthlyPerformanceWidget(QWidget* parent = nullptr);
     ~MonthlyPerformanceWidget();
     
-    void updateData(const be::Stats& stats);
-    void clear();
-    
+    void updateContent(const be::Stats& stats) override;
+    void clear() override;
+
 protected:
     void resizeEvent(QResizeEvent* event) override;
     bool eventFilter(QObject* watched, QEvent* event) override;

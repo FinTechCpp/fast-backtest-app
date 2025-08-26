@@ -3,7 +3,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
-TimelineWidget::TimelineWidget(QWidget* parent) : QWidget(parent) {
+TimelineWidget::TimelineWidget(QWidget* parent) : StatsBaseWidget(parent) {
 
     // Ajouter un titre
     QVBoxLayout* layout = new QVBoxLayout(this);
@@ -27,11 +27,11 @@ TimelineWidget::TimelineWidget(QWidget* parent) : QWidget(parent) {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Minimum);
 }
 
-void TimelineWidget::setData(const be::Date& start, const be::Date& end, const be::Duration& duration, double exposurePercent) {
-    m_startDate = QString::fromStdString(start.toString());
-    m_endDate = QString::fromStdString(end.toString());
-    m_duration = QString::fromStdString(duration.toString());
-    m_exposurePercent = std::min(100.0, std::max(0.0, exposurePercent));
+void TimelineWidget::updateContent(const be::Stats& stats) {
+    m_startDate = QString::fromStdString(stats.start.toString());
+    m_endDate = QString::fromStdString(stats.end.toString());
+    m_duration = QString::fromStdString(stats.duration.toString());
+    m_exposureTimePct = std::min(100.0, std::max(0.0, stats.exposureTimePct));
 
     update();
 }
@@ -40,7 +40,7 @@ void TimelineWidget::clear() {
     m_startDate.clear();
     m_endDate.clear();
     m_duration.clear();
-    m_exposurePercent = 0.0;
+    m_exposureTimePct = 0.0;
 
     update();
 }
@@ -71,12 +71,12 @@ void TimelineWidget::paintEvent(QPaintEvent* /*event*/) {
     painter.drawRoundedRect(timelineRect, m_timelineRadius, m_timelineRadius);
     
     // Dessiner la partie "exposure time" (partie bleue)
-    if (m_exposurePercent > 0.0) {
+    if (m_exposureTimePct > 0.0) {
         QBrush exposureBrush(m_exposureColor);
         painter.setBrush(exposureBrush);
         
         // Calculer la largeur en fonction du pourcentage
-        int exposureWidth = static_cast<int>(timelineWidth * m_exposurePercent / 100.0);
+        int exposureWidth = static_cast<int>(timelineWidth * m_exposureTimePct / 100.0);
         QRectF exposureRect(marginX, timelineY, exposureWidth, m_timelineHeight);
         painter.drawRoundedRect(exposureRect, m_timelineRadius, m_timelineRadius);
     }
@@ -127,7 +127,7 @@ void TimelineWidget::paintEvent(QPaintEvent* /*event*/) {
     exposureFont.setPointSize(exposureFont.pointSize() - 1);
     painter.setFont(exposureFont);
     
-    QString exposureText = QString("Exposition en marché: %1%").arg(QString::number(m_exposurePercent, 'f', 2));
+    QString exposureText = QString("Exposition en marché: %1%").arg(QString::number(m_exposureTimePct, 'f', 2));
     // Utiliser toute la largeur du widget pour permettre le centrage
     painter.drawText(QRectF(0, timelineY + m_timelineHeight + 40, width, 20),
                     Qt::AlignHCenter, exposureText);

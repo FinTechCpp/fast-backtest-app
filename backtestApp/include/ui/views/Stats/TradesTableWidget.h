@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QWidget>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QTableView>
@@ -9,17 +8,16 @@
 #include <QLabel>
 #include <QGroupBox>
 #include "ui/views/Stats/TradesTableModel.h"
-#include "stats.hpp"
+#include "ui/views/Stats/StatsBaseWidget.h"
 
-class TradesTableWidget : public QWidget {
+class TradesTableWidget : public StatsBaseWidget {
     Q_OBJECT
 
 public:
     explicit TradesTableWidget(QWidget* parent = nullptr);
     
-    // API simple pour mettre à jour et effacer les données
-    void updateData(const std::vector<be::TradeData>& trades);
-    void clear();
+    void updateContent(const be::Stats& stats) override;
+    void clear() override;
 
 private slots:
     void refreshTable();  // Rafraîchit la table avec les filtres actuels

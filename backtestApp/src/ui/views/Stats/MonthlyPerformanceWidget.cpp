@@ -30,7 +30,7 @@ MonthlyPerformanceWidget::MonthlyPerformanceWidget(QWidget* parent)
     m_scene = new QGraphicsScene(this);
     m_view = new QGraphicsView(m_scene);
     m_view->setRenderHint(QPainter::Antialiasing, true);
-    m_view->setMinimumHeight(350);
+    m_view->setMinimumHeight(250);
     m_view->setMinimumWidth(750);  // Plus large pour accommoder la légende
     m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -197,16 +197,16 @@ void MonthlyPerformanceWidget::buildHeatmap()
     }
     
     // Ajouter un titre
-    QGraphicsTextItem* titleText = m_scene->addText(
-        QString("Distribution de %1 trades (%2 $)")
-            .arg(totalTrades)
-            .arg(totalPerformance, 0, 'f', 2)
-    );
-    QFont titleFont = titleText->font();
-    titleFont.setPointSize(10);
-    // titleFont.setBold(true);
-    titleText->setFont(titleFont);
-    titleText->setPos(leftMargin + 100, 5);
+    // QGraphicsTextItem* titleText = m_scene->addText(
+    //     QString("Distribution de %1 trades (%2 $)")
+    //         .arg(totalTrades)
+    //         .arg(totalPerformance, 0, 'f', 2)
+    // );
+    // QFont titleFont = titleText->font();
+    // titleFont.setPointSize(10);
+    // // titleFont.setBold(true);
+    // titleText->setFont(titleFont);
+    // titleText->setPos(leftMargin + 100, 5);
     
     // Dessiner les labels des mois (en haut)
     for (int m = 0; m < MONTHS_IN_YEAR; m++) {
@@ -303,7 +303,7 @@ void MonthlyPerformanceWidget::buildHeatmap()
     QFont legendTitleFont = legendTitle->font();
     // legendTitleFont.setBold(true);
     legendTitle->setFont(legendTitleFont);
-    legendTitle->setPos(legendX, legendY - 25);
+    legendTitle->setPos(legendX, 10);
     
     // Gradient vertical pour la légende
     QLinearGradient gradient(0, legendY + legendHeight, 0, legendY);
@@ -324,27 +324,27 @@ void MonthlyPerformanceWidget::buildHeatmap()
     QGraphicsTextItem* maxText = m_scene->addText(QString("%1 $").arg(m_maxValue, 0, 'f', 2));
     QFont valueFont = maxText->font();
     maxText->setFont(valueFont);
-    maxText->setPos(legendX + legendWidth + 5, legendY);
+    maxText->setPos(legendX + legendWidth + 5, legendY - maxText->boundingRect().height()/2);
     
     // Quart positif
     QGraphicsTextItem* quarterPosText = m_scene->addText(QString("%1 $").arg(m_maxValue/2, 0, 'f', 2));
     quarterPosText->setFont(valueFont);
-    quarterPosText->setPos(legendX + legendWidth + 5, legendY + legendHeight/4);
+    quarterPosText->setPos(legendX + legendWidth + 5, legendY + legendHeight/4 - quarterPosText->boundingRect().height()/2);
     
     // Zéro (milieu)
     QGraphicsTextItem* zeroText = m_scene->addText("0 $");
     zeroText->setFont(valueFont);
-    zeroText->setPos(legendX + legendWidth + 5, legendY + legendHeight/2);
+    zeroText->setPos(legendX + legendWidth + 5, legendY + legendHeight/2 - zeroText->boundingRect().height()/2);
     
     // Quart négatif
     QGraphicsTextItem* quarterNegText = m_scene->addText(QString("%1 $").arg(m_minValue/2, 0, 'f', 2));
     quarterNegText->setFont(valueFont);
-    quarterNegText->setPos(legendX + legendWidth + 5, legendY + 3*legendHeight/4);
+    quarterNegText->setPos(legendX + legendWidth + 5, legendY + 3*legendHeight/4 - quarterNegText->boundingRect().height()/2);
     
     // Minimum (en bas)
     QGraphicsTextItem* minText = m_scene->addText(QString("%1 $").arg(m_minValue, 0, 'f', 2));
     minText->setFont(valueFont);
-    minText->setPos(legendX + legendWidth + 5, legendY + legendHeight);
+    minText->setPos(legendX + legendWidth + 5, legendY + legendHeight - minText->boundingRect().height()/2);
     
     // Ajuster la taille de la scène pour inclure tout le contenu
     QRectF boundingRect = m_scene->itemsBoundingRect();

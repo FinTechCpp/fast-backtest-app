@@ -11,8 +11,8 @@ TradingHeatmapWidget::TradingHeatmapWidget(QWidget* parent)
     : StatsBaseWidget(parent),
       m_minValue(0.0),
       m_maxValue(0.0),
-      m_minHour(24),    // Initialiser à une valeur extrême
-      m_maxHour(0)      // Initialiser à une valeur minimale
+      m_minHour(24),
+      m_maxHour(0)
 {
     // Initialiser les données
     m_performanceData.resize(HOURS_IN_DAY);
@@ -34,39 +34,25 @@ TradingHeatmapWidget::TradingHeatmapWidget(QWidget* parent)
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->addWidget(m_groupBox);
     
-    // Layout interne - Utiliser QHBoxLayout au lieu de QVBoxLayout pour mettre la légende à droite
-    QHBoxLayout* groupLayout = new QHBoxLayout(m_groupBox);
-    groupLayout->setContentsMargins(5, 15, 5, 5); // Réduire les marges pour maximiser l'espace
+    // Layout interne - Utiliser un seul QVBoxLayout puisque nous n'avons qu'une seule vue
+    QVBoxLayout* groupLayout = new QVBoxLayout(m_groupBox);
+    groupLayout->setContentsMargins(5, 15, 5, 5);
     
-    // Layout vertical pour le contenu principal (graphique + explication)
-    QVBoxLayout* mainContentLayout = new QVBoxLayout();
-    groupLayout->addLayout(mainContentLayout, 1); // Priorité d'expansion plus élevée pour le contenu principal
-    
-    // Créer la scène et la vue pour la heatmap
+    // Créer la scène et la vue pour la heatmap (une seule scène qui contiendra tout)
     m_scene = new QGraphicsScene(this);
     m_view = new QGraphicsView(m_scene);
     m_view->setRenderHint(QPainter::Antialiasing, true);
     m_view->setMinimumHeight(400);
-    m_view->setMinimumWidth(700);
+    m_view->setMinimumWidth(850); // Plus large pour accommoder la légende
     m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_view->setAlignment(Qt::AlignCenter);
     
-    // Ajouter la vue de la heatmap au layout principal
-    mainContentLayout->addWidget(m_view, 1);
+    // Ajouter la vue au layout
+    groupLayout->addWidget(m_view);
     
-    // Créer la scène et la vue pour la légende
-    m_legendScene = new QGraphicsScene(this);
-    m_legendView = new QGraphicsView(m_legendScene);
-    m_legendView->setRenderHint(QPainter::Antialiasing, true);
-    m_legendView->setMinimumWidth(150);  // Largeur minimale pour la légende
-    m_legendView->setMinimumHeight(400); // Hauteur minimale pour la légende
-    m_legendView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_legendView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_legendView->setAlignment(Qt::AlignCenter);
-    
-    // Ajouter la légende à droite de la heatmap
-    groupLayout->addWidget(m_legendView);
+    // Installer un filtre d'événements pour gérer le redimensionnement
+    m_view->viewport()->installEventFilter(this);
 }
 
 int TradingHeatmapWidget::getDayOfWeek(const be::Date& date) {
@@ -207,9 +193,8 @@ QColor TradingHeatmapWidget::getColorForValue(double value) {
 }
 
 void TradingHeatmapWidget::buildHeatmap() {
-    // Effacer les scènes
+    // Effacer la scène
     m_scene->clear();
-    m_legendScene->clear();
     
     // Calculer le nombre d'heures à afficher
     int numHoursToShow = m_maxHour - m_minHour + 1;
@@ -229,18 +214,11 @@ void TradingHeatmapWidget::buildHeatmap() {
         }
     }
     
-    QGraphicsTextItem* titleText = m_scene->addText(QString("Distribution des %1 trades par heure et jour").arg(totalTrades));
-    QFont titleFont = titleText->font();
-    titleFont.setPointSize(10);
-    titleText->setFont(titleFont);
-    titleText->setPos(leftMargin + 100, 5);
-    
     // Dessiner les labels des jours (en haut)
     for (int d = 0; d < DAYS_IN_WEEK; d++) {
         QGraphicsTextItem* dayLabel = m_scene->addText(m_dayNames[d]);
         QFont dayFont = dayLabel->font();
         dayLabel->setFont(dayFont);
-        // dayLabel->setRotation(-45); // Rotation de 45 degrés
         
         // Centrer le texte sur la colonne
         QRectF textRect = dayLabel->boundingRect();
@@ -248,7 +226,7 @@ void TradingHeatmapWidget::buildHeatmap() {
                         (adjustedCellSize - textRect.width())/2, topMargin - 25);
     }
     
-    // NOUVEAU: Dessiner les bordures d'heures aux limites des cellules
+    // Dessiner les bordures d'heures aux limites des cellules
     for (int h = m_minHour; h <= m_maxHour + 1; h++) {  // +1 pour ajouter la dernière limite
         int rowIndex = h - m_minHour;
         
@@ -327,26 +305,22 @@ void TradingHeatmapWidget::buildHeatmap() {
         }
     }
     
-    // Ajuster la vue pour afficher toute la scène
-    QRectF boundingRect = m_scene->itemsBoundingRect();
-    m_scene->setSceneRect(boundingRect);
-    m_view->fitInView(boundingRect, Qt::KeepAspectRatio);
-    m_view->centerOn(boundingRect.center());
+    // *** LÉGENDE VERTICALE DANS LE MÊME CANVAS ***
     
-    // *** NOUVELLE LÉGENDE VERTICALE À DROITE ***
-    // Comme elle est maintenant dans son propre widget à droite, ajustons ses dimensions
+    // Position de départ de la légende (à droite de la heatmap avec une marge fixe)
+    int heatmapRightX = leftMargin + DAYS_IN_WEEK * (adjustedCellSize + CELL_SPACING);
+    int fixedMargin = 40; // Marge fixe entre la heatmap et la légende
     
-    // Dimensions de la légende
-    const int legendHeight = 350;
-    const int legendWidth = 30;
-    const int legendX = 30;
-    const int legendY = 50;
+    int legendX = heatmapRightX + fixedMargin;
+    int legendY = topMargin;
+    int legendWidth = 30;
+    int legendHeight = numHoursToShow * (adjustedCellSize + CELL_SPACING) - CELL_SPACING;
     
     // Titre de la légende
-    QGraphicsTextItem* legendTitle = m_legendScene->addText("PnL cumulé ($)");
+    QGraphicsTextItem* legendTitle = m_scene->addText("PnL ($)");
     QFont legendTitleFont = legendTitle->font();
     legendTitle->setFont(legendTitleFont);
-    legendTitle->setPos(legendX, 10);
+    legendTitle->setPos(legendX, legendY - 25);
     
     // Gradient vertical (de bas en haut)
     QLinearGradient gradient(0, legendY + legendHeight, 0, legendY);
@@ -359,49 +333,49 @@ void TradingHeatmapWidget::buildHeatmap() {
     gradient.setColorAt(1.0, getColorForValue(m_maxValue));        // Vert pour max
     
     // Rectangle du gradient avec bordure
-    m_legendScene->addRect(legendX, legendY, legendWidth, legendHeight, 
-                          QPen(Qt::black, 1), QBrush(gradient));
+    m_scene->addRect(legendX, legendY, legendWidth, legendHeight, 
+                    QPen(Qt::black, 1), QBrush(gradient));
     
     // Labels des valeurs à droite du rectangle
     
     // Maximum (en haut)
-    QGraphicsTextItem* maxText = m_legendScene->addText(QString("$%1").arg(m_maxValue, 0, 'f', 2));
+    QGraphicsTextItem* maxText = m_scene->addText(QString("$%1").arg(m_maxValue, 0, 'f', 2));
     QFont valueFont = maxText->font();
     maxText->setFont(valueFont);
     maxText->setPos(legendX + legendWidth + 5, legendY - maxText->boundingRect().height()/2);
     
     // Quart positif
-    QGraphicsTextItem* quarterPosText = m_legendScene->addText(QString("$%1").arg(m_maxValue/2, 0, 'f', 2));
+    QGraphicsTextItem* quarterPosText = m_scene->addText(QString("$%1").arg(m_maxValue/2, 0, 'f', 2));
     quarterPosText->setFont(valueFont);
     quarterPosText->setPos(legendX + legendWidth + 5, 
                           legendY + legendHeight/4 - quarterPosText->boundingRect().height()/2);
     
     // Zéro (milieu)
-    QGraphicsTextItem* zeroText = m_legendScene->addText("$0.00");
+    QGraphicsTextItem* zeroText = m_scene->addText("$0.00");
     zeroText->setFont(valueFont);
     zeroText->setPos(legendX + legendWidth + 5, 
                     legendY + legendHeight/2 - zeroText->boundingRect().height()/2);
     
     // Quart négatif
-    QGraphicsTextItem* quarterNegText = m_legendScene->addText(QString("$%1").arg(m_minValue/2, 0, 'f', 2));
+    QGraphicsTextItem* quarterNegText = m_scene->addText(QString("$%1").arg(m_minValue/2, 0, 'f', 2));
     quarterNegText->setFont(valueFont);
     quarterNegText->setPos(legendX + legendWidth + 5, 
                           legendY + 3*legendHeight/4 - quarterNegText->boundingRect().height()/2);
     
     // Minimum (en bas)
-    QGraphicsTextItem* minText = m_legendScene->addText(QString("$%1").arg(m_minValue, 0, 'f', 2));
+    QGraphicsTextItem* minText = m_scene->addText(QString("$%1").arg(m_minValue, 0, 'f', 2));
     minText->setFont(valueFont);
     minText->setPos(legendX + legendWidth + 5, 
                    legendY + legendHeight - minText->boundingRect().height()/2);
     
-    // Ajuster la scène de légende et la vue
-    m_legendScene->setSceneRect(m_legendScene->itemsBoundingRect());
-    m_legendView->fitInView(m_legendScene->sceneRect(), Qt::KeepAspectRatio);
+    // Ajuster la vue pour afficher toute la scène
+    QRectF boundingRect = m_scene->itemsBoundingRect();
+    m_scene->setSceneRect(boundingRect);
+    m_view->fitInView(boundingRect, Qt::KeepAspectRatio);
+    m_view->centerOn(boundingRect.center());
     
     // Mettre à jour le titre du groupe box
     m_groupBox->setTitle("Analyse du PnL cumulé par Heure et Jour");
-    
-    m_view->viewport()->installEventFilter(this);
 }
 
 bool TradingHeatmapWidget::eventFilter(QObject* watched, QEvent* event) {
@@ -438,9 +412,8 @@ void TradingHeatmapWidget::clear() {
         }
     }
     
-    // Effacer les scènes
+    // Effacer la scène
     m_scene->clear();
-    m_legendScene->clear();
 }
 
 void TradingHeatmapWidget::resizeEvent(QResizeEvent* event) {
@@ -451,13 +424,6 @@ void TradingHeatmapWidget::resizeEvent(QResizeEvent* event) {
         QRectF bounds = m_scene->itemsBoundingRect();
         if (!bounds.isEmpty()) {
             m_view->fitInView(bounds, Qt::KeepAspectRatio);
-        }
-    }
-    
-    if (m_legendScene && !m_legendScene->items().isEmpty()) {
-        QRectF legendBounds = m_legendScene->sceneRect();
-        if (!legendBounds.isEmpty()) {
-            m_legendView->fitInView(legendBounds, Qt::KeepAspectRatio);
         }
     }
 }

@@ -51,10 +51,6 @@ private:
     QVector<QVector<double>> m_performanceData; // [heure][jour] -> performance moyenne (%)
     QVector<QVector<int>> m_tradeCountData;     // [heure][jour] -> nombre de trades
     
-    // Composants pour la légende
-    QGraphicsScene* m_legendScene;
-    QGraphicsView* m_legendView;
-    
     // Valeurs min/max pour le gradient de couleur
     double m_minValue;
     double m_maxValue;

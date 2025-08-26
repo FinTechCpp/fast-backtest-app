@@ -39,11 +39,9 @@ do
         echo "  --debug         Compile in debug mode"
         echo "  --clean         Clean the build directory before compilation"
         echo "  --no-run        Do not run the application after compilation"
-        echo "  --backtest-app  Compile and run the backtest application (default)"
         echo "  --help, -h      Display this help"
         echo ""
         echo "Examples:"
-        echo "  $0                     # Compile and run the backtest app"
         echo "  $0 --clean --no-run   # Clean and compile without running"
         exit 0
         ;;
@@ -103,7 +101,6 @@ APP_DISPLAY_NAME="Backtest App"
 
 # Display a message on how to launch the application
 echo -e "${YELLOW}${BOLD}[INFO]${NC} Application path: ${BOLD}./build${APP_PATH:1}${NC}"
-echo -e "${YELLOW}${BOLD}[INFO]${NC} Selected application: ${BOLD}$APP_DISPLAY_NAME${NC}"
 
 # Launch the application if requested
 if [ $RUN_APP -eq 1 ]; then
@@ -114,8 +111,6 @@ if [ $RUN_APP -eq 1 ]; then
     else
         show_error "Executable not found: $APP_PATH"
         echo "Check that the path is correct and that the compilation was successful."
-        echo "vailable applications:"
-        echo "  - Backtest App: ./build/backtestApp/backtestapp"
         exit 1
     fi
 fi

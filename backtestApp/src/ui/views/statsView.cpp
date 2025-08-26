@@ -96,6 +96,10 @@ void StatsView::setupUI() {
     m_tradingHeatmapWidget = new TradingHeatmapWidget();
     m_statsLayout->addWidget(m_tradingHeatmapWidget);
 
+    m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
+    m_statsLayout->addWidget(m_monthlyPerformanceWidget);
+
+
     // m_riskReturnMapWidget = new RiskReturnMapWidget();
     // m_statsLayout->addWidget(m_riskReturnMapWidget);
 
@@ -130,6 +134,8 @@ void StatsView::updateData(BacktestResults* results)
     m_tradingHeatmapWidget->updateData(m_currentResults->stats);
     // m_riskReturnMapWidget->updateData(m_currentResults->stats);
     m_tradesTableWidget->updateData(m_currentResults->stats.trades);
+    m_monthlyPerformanceWidget->updateData(m_currentResults->stats);
+
 }
 
 void StatsView::clear() {
@@ -145,6 +151,7 @@ void StatsView::clear() {
     m_tradingHeatmapWidget->clear();
     // m_riskReturnMapWidget->clear();
     m_tradesTableWidget->clear();
+    m_monthlyPerformanceWidget->clear();
     
     m_currentResults = nullptr;
 }

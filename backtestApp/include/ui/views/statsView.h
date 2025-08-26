@@ -28,6 +28,8 @@
 #include "ui/views/Stats/RatioGaugesContainerWidget.h"
 #include "ui/views/Stats/PLDistributionWidget.h"
 #include "ui/views/Stats/PnLGaugeWidget.h"
+#include "ui/views/Stats/MonthlyPerformanceWidget.h"
+
 
 
 #include <cmath>
@@ -83,6 +85,7 @@ private:
     RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
     RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
+    MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
 
     
     // --- UI: Conteneurs principaux ---

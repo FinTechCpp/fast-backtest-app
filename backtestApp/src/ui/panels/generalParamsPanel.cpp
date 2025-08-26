@@ -41,7 +41,7 @@ void GeneralParamsPanel::setupUI()
     
     // Symbole
     QComboBox* symbolCombo = new QComboBox(this);
-    symbolCombo->addItems({"NDX", "EUR"});
+    symbolCombo->addItems({"NDX", "EUR", "SPX"});
     paramsLayout->addRow(new QLabel("Symbole:", this), symbolCombo);
     
     // Binding pour le symbole

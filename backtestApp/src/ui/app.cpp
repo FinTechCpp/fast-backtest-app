@@ -65,25 +65,25 @@ void App::createMenus()
     // Get the menu bar (QMainWindow creates one automatically)
     m_menuBar = menuBar();
 
-    // Créer le gestionnaire de menu des profils
+    // Create the profile menu manager
     m_profileMenuManager = new ProfileMenuManager(this);
     m_profileMenuManager->setConfigManager(m_configManager);
     m_profileMenuManager->createProfileMenu(m_menuBar);
 
-    // Créer le gestionnaire de menu des données
+    // Create the data menu manager
     m_dataMenuManager = new DataMenuManager(this);
     m_dataMenuManager->createDataMenu(m_menuBar);
 
-    // Créer le gestionnaire de menu des mises à jour
+    // Create the update menu manager
     m_updateMenuManager = new UpdateMenuManager(this);
     m_updateMenuManager->createUpdateMenu(m_menuBar);
 
-    // Créer le gestionnaire de menu des résultats
+    // Create the results menu manager
     m_backtestResultMenuManager = new BacktestResultMenuManager(this);
     m_backtestResultMenuManager->setResultManager(m_backtestResultManager);
     m_backtestResultMenuManager->createResultMenu(m_menuBar);
 
-    // Create Help menu (après le menu Profils)
+    // Create Help menu (after the Profile menu)
     m_helpMenu = m_menuBar->addMenu(tr("&Aide"));
     m_helpMenu->addAction(m_aboutAction);
 }
@@ -113,7 +113,7 @@ void App::initStrategyMap()
 void App::createControlPanel() {
     // Create the control panel widget with fixed width
     m_controlPanel = new QWidget();
-    m_controlPanel->setMinimumWidth(100); // Largeur minimale
+    m_controlPanel->setMinimumWidth(100); // Minimum width
     m_controlPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_controlPanelLayout = new QVBoxLayout(m_controlPanel);
     
@@ -133,11 +133,11 @@ void App::createControlPanel() {
     m_strategyPanelStack = new QStackedWidget();
     m_controlPanelLayout->addWidget(m_strategyPanelStack);
     
-    // Créer tous les panels de stratégies spécifiques à l'avance
+    // Create all strategy-specific panels in advance
     m_buyHeikinGreenPanel = new BuyHeikinGreenPanel(m_controlPanel);
     m_sellHeikinRedPanel = new SellHeikinRedPanel(m_controlPanel);
     
-    // Ajouter tous les panels au stack
+    // Add all panels to the stack
     m_strategyPanelStack->addWidget(m_buyHeikinGreenPanel);
     m_strategyPanelStack->addWidget(m_sellHeikinRedPanel);
     
@@ -151,28 +151,28 @@ void App::createControlPanel() {
     m_controlPanelScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_splitter->addWidget(m_controlPanelScrollArea);
 
-    qInfo() << "Panneau de contrôle créé sans ProfilePanel (maintenant dans le menu)";
+    qInfo() << "Control panel created without ProfilePanel (now in the menu)";
 }
 
 void App::createResultsArea()
 {    
-    // Créer le gestionnaire de résultats en passant 'this' comme QObject parent
+    // Create the results manager by passing 'this' as the QObject parent
     m_resultManager = new ResultManager(this);
     
-    // Ajouter au splitter
+    // Add to splitter
     m_splitter->addWidget(m_resultManager);
-    m_splitter->setSizes({200, 800}); // Largeur du panneau de contrôle : largeur des résultats
+    m_splitter->setSizes({200, 800}); // Control panel width : results width
 }
 
 void App::setupConnections()
 {
-    // Connexion du changement de stratégie
+    // Connect strategy change
     if (m_generalParamsPanel) {
         connect(m_generalParamsPanel, &GeneralParamsPanel::strategyChanged,
                 this, &App::onStrategyChanged);
     }
 
-    // Connexion du BacktestRunner
+    // Connect BacktestRunner
     if (m_backtestRunner) {
         connect(m_backtestRunner, &BacktestRunner::backtestCompleted,
                 this, &App::onBacktestCompleted);
@@ -185,7 +185,7 @@ void App::updateStrategySpecificPanel() {
     std::string selectedStrategy = m_generalParamsPanel->getConfig().strategyName;
     qInfo() << "Updating strategy-specific panel for:" << QString::fromStdString(selectedStrategy);
 
-    // Sélectionner le panel approprié dans le stack
+    // Select the appropriate panel in the stack
     if (selectedStrategy == "BuyHeikinGreenBA") {
         m_strategyPanelStack->setCurrentWidget(m_buyHeikinGreenPanel);
     } 
@@ -262,14 +262,31 @@ void App::setSellHeikinRedConfig(const SellHeikinRedConfig& config) {
 
 std::vector<StrategyIndicator> App::getIndicatorConfig() const
 {
-    // Obtenir les paramètres de stratégie
+    // Get strategy parameters
     // QMap<QString, QVariant> params = this->getStrategyConfig();
     // QMap<QString, QVariant> generalValues = m_generalParamsPanel->getValues();
     GeneralParamsConfig generalConfig = this->getGeneralParamsConfig();
     StrategyBaseConfig baseConfig = this->getStrategyBaseConfig();
     std::vector<StrategyIndicator> indicators;
     
-    // Extraire ATR si utilisé pour SL ou TP
+    // Lambda function to check if an indicator with the same type and parameters already exists
+    auto indicatorExists = [&indicators](StrategyIndicator::Type type, const std::map<std::string, double>& params) {
+        for (const auto& existingIndicator : indicators) {
+            if (existingIndicator.type == type && existingIndicator.params == params) {
+                return true;
+            }
+        }
+        return false;
+    };
+    
+    // Lambda function to add indicator only if it doesn't already exist
+    auto addUniqueIndicator = [&indicators, &indicatorExists](const StrategyIndicator& indicator) {
+        if (!indicatorExists(indicator.type, indicator.params)) {
+            indicators.push_back(indicator);
+        }
+    };
+    
+    // Extract ATR if used for SL or TP
     // bool use_atr_for_sl = params.value("use_atr_for_sl", false).toBool();
     // bool use_atr_for_tp = params.value("use_atr_for_tp", false).toBool();
 
@@ -277,11 +294,11 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
         StrategyIndicator atr;
         atr.type = StrategyIndicator::ATR;
         atr.params["period"] = baseConfig.atr_period;
-        atr.params["useLogScale"] = 1.0;  // true par défaut
-        indicators.push_back(atr);
+        atr.params["useLogScale"] = 1.0;  // true by default
+        addUniqueIndicator(atr);
     }
-    
-    // Extraire les indicateurs spécifiques à la stratégie
+
+    // Extract strategy-specific indicators
     // QString strategyName = generalValues.value("strategy", "").toString();
     QString strategyName = QString::fromStdString(generalConfig.strategyName);
     
@@ -289,22 +306,22 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
         // QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
         BuyHeikinGreenConfig config = getBuyHeikinGreenConfig();
 
-        // EMA court terme
+        // EMA short term
         bool use_ema_short = config.use_ema_short_filter;
         if (use_ema_short) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
             ema.params["period"] = config.ema_short_period;
-            indicators.push_back(ema);
+            addUniqueIndicator(ema);
         }
-        
-        // EMA long terme
+
+        // EMA long term
         bool use_ema_long = config.use_ema_long_filter;
         if (use_ema_long) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
             ema.params["period"] = config.ema_long_period;
-            indicators.push_back(ema);
+            addUniqueIndicator(ema);
         }
         
         // RSI
@@ -313,12 +330,12 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
             StrategyIndicator rsi;
             rsi.type = StrategyIndicator::RSI;
             rsi.params["period"] = config.rsi_period;
-            rsi.params["overboughtLevel"] = 70.0;  // Valeur par défaut
+            rsi.params["overboughtLevel"] = 70.0;  // Default value
             rsi.params["oversoldLevel"] = config.rsi_threshold;
-            indicators.push_back(rsi);
+            addUniqueIndicator(rsi);
         }
-        
-        // Stochastique
+
+        // Stochastic
         bool use_stoch = config.use_stoch_filter;
         if (use_stoch) {
             StrategyIndicator stoch;
@@ -326,9 +343,9 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
             stoch.params["fastKPeriod"] = config.stoch_fastk;
             stoch.params["slowKPeriod"] = config.stoch_slowk;
             stoch.params["slowDPeriod"] = config.stoch_slowd;
-            stoch.params["overboughtLevel"] = 80.0;  // Valeur par défaut
+            stoch.params["overboughtLevel"] = 80.0;  // Default value
             stoch.params["oversoldLevel"] = config.stoch_threshold;
-            indicators.push_back(stoch);
+            addUniqueIndicator(stoch);
         }
         
         // Supertrend
@@ -338,28 +355,38 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
             supertrend.type = StrategyIndicator::SUPERTREND;
             supertrend.params["period"] = config.supertrend_atr_period;
             supertrend.params["multiplier"] = config.supertrend_multiplier;
-            indicators.push_back(supertrend);
+            addUniqueIndicator(supertrend);
+        }
+        
+        // ATR Filter
+        bool use_atr_filter = config.use_atr_filter;
+        if (use_atr_filter) {
+            StrategyIndicator atr;
+            atr.type = StrategyIndicator::ATR;
+            atr.params["period"] = config.atr_filter_period;
+            atr.params["useLogScale"] = 1.0;  // Use ATRLog as specified
+            addUniqueIndicator(atr);
         }
     }
     else if (strategyName.contains("SellHeikinRed", Qt::CaseInsensitive)) {
         // QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
         SellHeikinRedConfig config = getSellHeikinRedConfig();
-        // EMA court terme
+        // EMA short term
         bool use_ema_short = config.use_ema_short_filter;
         if (use_ema_short) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
             ema.params["period"] = config.ema_short_period;
-            indicators.push_back(ema);
+            addUniqueIndicator(ema);
         }
-        
-        // EMA long terme
+
+        // EMA long term
         bool use_ema_long = config.use_ema_long_filter;
         if (use_ema_long) {
             StrategyIndicator ema;
             ema.type = StrategyIndicator::EMA;
             ema.params["period"] = config.ema_long_period;
-            indicators.push_back(ema);
+            addUniqueIndicator(ema);
         }
         
         // RSI
@@ -369,11 +396,11 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
             rsi.type = StrategyIndicator::RSI;
             rsi.params["period"] = config.rsi_period;
             rsi.params["overboughtLevel"] = config.rsi_threshold;
-            rsi.params["oversoldLevel"] = 30.0;  // Valeur par défaut
-            indicators.push_back(rsi);
+            rsi.params["oversoldLevel"] = 30.0;  // Default value
+            addUniqueIndicator(rsi);
         }
-        
-        // Stochastique
+
+        // Stochastic
         bool use_stoch = config.use_stoch_filter;
         if (use_stoch) {
             StrategyIndicator stoch;
@@ -382,8 +409,8 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
             stoch.params["slowKPeriod"] = config.stoch_slowk;
             stoch.params["slowDPeriod"] = config.stoch_slowd;
             stoch.params["overboughtLevel"] = config.stoch_threshold;
-            stoch.params["oversoldLevel"] = 20.0;  // Valeur par défaut
-            indicators.push_back(stoch);
+            stoch.params["oversoldLevel"] = 20.0;  // Default value
+            addUniqueIndicator(stoch);
         }
         
         // Supertrend
@@ -393,12 +420,12 @@ std::vector<StrategyIndicator> App::getIndicatorConfig() const
             supertrend.type = StrategyIndicator::SUPERTREND;
             supertrend.params["period"] = config.supertrend_atr_period;
             supertrend.params["multiplier"] = config.supertrend_multiplier;
-            indicators.push_back(supertrend);
+            addUniqueIndicator(supertrend);
         }
     }
-    
-    // Pour d'autres stratégies, ajouter d'autres conditions ici
-    
+
+    // For other strategies, add more conditions here
+
     return indicators;
 }
 
@@ -438,5 +465,5 @@ void App::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
     
-    qDebug() << "Taille de la fenêtre:" << size().width() << "x" << size().height();
+    qDebug() << "Window size:" << size().width() << "x" << size().height();
 }

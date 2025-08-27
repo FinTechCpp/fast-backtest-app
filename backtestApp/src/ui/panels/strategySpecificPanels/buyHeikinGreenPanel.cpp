@@ -149,6 +149,67 @@ void BuyHeikinGreenPanel::setupUI()
     line3->setFrameShadow(QFrame::Sunken);
     strategyLayout->addWidget(line3);
     
+    // SECTION ATR FILTER
+    QGridLayout* atrLayout = new QGridLayout();
+    atrLayout->setContentsMargins(5, 5, 5, 5);
+    
+    QCheckBox* atrFilterCheck = new QCheckBox("Activer filtre ATR", this);
+    atrLayout->addWidget(atrFilterCheck, 0, 0, 1, 2);
+    
+    addBinding(PropertyBinderFactory::createBoolBinding(
+        atrFilterCheck, 
+        &m_config.use_atr_filter)
+    );
+    
+    atrLayout->addWidget(new QLabel("Période:", this), 1, 0);
+    QSpinBox* atrPeriodSpin = new QSpinBox(this);
+    atrPeriodSpin->setRange(1, 500);
+    atrPeriodSpin->setValue(14);
+    atrLayout->addWidget(atrPeriodSpin, 1, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        atrPeriodSpin, 
+        &m_config.atr_filter_period)
+    );
+    
+    atrLayout->addWidget(new QLabel("Seuil:", this), 2, 0);
+    QDoubleSpinBox* atrThresholdSpin = new QDoubleSpinBox(this);
+    atrThresholdSpin->setRange(0.01, 100.0);
+    atrThresholdSpin->setSingleStep(0.1);
+    atrThresholdSpin->setDecimals(2);
+    atrThresholdSpin->setValue(0.5);
+    atrLayout->addWidget(atrThresholdSpin, 2, 1);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        atrThresholdSpin, 
+        &m_config.atr_threshold)
+    );
+    
+    atrLayout->addWidget(new QLabel("Périodes d'historique:", this), 3, 0);
+    QSpinBox* atrHistoryPeriodsSpin = new QSpinBox(this);
+    atrHistoryPeriodsSpin->setRange(1, 50);
+    atrHistoryPeriodsSpin->setValue(1);
+    atrLayout->addWidget(atrHistoryPeriodsSpin, 3, 1);
+    
+    addBinding(PropertyBinderFactory::createIntBinding(
+        atrHistoryPeriodsSpin, 
+        &m_config.atr_history_periods)
+    );
+
+    createDependencyGroup(
+        atrFilterCheck,
+        {atrPeriodSpin, atrThresholdSpin, atrHistoryPeriodsSpin}
+    );
+
+    atrLayout->setColumnStretch(2, 1);
+    strategyLayout->addLayout(atrLayout);
+    
+    // Ligne de séparation
+    QFrame* line4 = new QFrame(this);
+    line4->setFrameShape(QFrame::HLine);
+    line4->setFrameShadow(QFrame::Sunken);
+    strategyLayout->addWidget(line4);
+    
     // SECTION STOCHASTIQUE
     QGridLayout* stochLayout = new QGridLayout();
     stochLayout->setContentsMargins(5, 5, 5, 5);
@@ -225,10 +286,10 @@ void BuyHeikinGreenPanel::setupUI()
     strategyLayout->addLayout(stochLayout);
     
     // Ligne de séparation
-    QFrame* line4 = new QFrame(this);
-    line4->setFrameShape(QFrame::HLine);
-    line4->setFrameShadow(QFrame::Sunken);
-    strategyLayout->addWidget(line4);
+    QFrame* line5 = new QFrame(this);
+    line5->setFrameShape(QFrame::HLine);
+    line5->setFrameShadow(QFrame::Sunken);
+    strategyLayout->addWidget(line5);
     
     // SECTION SUPERTREND
     QGridLayout* supertrendLayout = new QGridLayout();
@@ -275,10 +336,10 @@ void BuyHeikinGreenPanel::setupUI()
     strategyLayout->addLayout(supertrendLayout);
     
     // Ligne de séparation
-    QFrame* line5 = new QFrame(this);
-    line5->setFrameShape(QFrame::HLine);
-    line5->setFrameShadow(QFrame::Sunken);
-    strategyLayout->addWidget(line5);
+    QFrame* line6 = new QFrame(this);
+    line6->setFrameShape(QFrame::HLine);
+    line6->setFrameShadow(QFrame::Sunken);
+    strategyLayout->addWidget(line6);
     
     // SECTION AUTRES FILTRES
     QVBoxLayout* otherFiltersLayout = new QVBoxLayout();

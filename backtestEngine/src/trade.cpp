@@ -83,7 +83,7 @@ double Trade::pl() const {
 
 double Trade::plPercent() const {
     double price = _data.exitPrice > 0 ? _data.exitPrice : _broker->lastPrice();
-    return std::copysign(1.0, _data.size) * (price / _data.entryPrice - 1.0);
+    return std::copysign(1.0, _data.size) * (price / _data.entryPrice - 1.0) * 100.f;
 }
 
 // double Trade::value() const {

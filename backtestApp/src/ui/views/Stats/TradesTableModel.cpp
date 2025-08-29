@@ -82,7 +82,7 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
         
         // PnL %
         double returnPct = trade.plPercent;
-        QStandardItem* pctItem = new QStandardItem(formatNumber(returnPct * 100, 2) + "%");
+        QStandardItem* pctItem = new QStandardItem(formatNumber(returnPct, 2) + "%");
         pctItem->setForeground(
             closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
             closeReason == be::CloseReason::StopLoss ? Qt::darkRed : (

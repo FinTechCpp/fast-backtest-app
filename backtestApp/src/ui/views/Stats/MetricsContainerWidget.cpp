@@ -270,14 +270,14 @@ void MetricsContainerWidget::initializeMetrics() {
         //     [](const be::Stats& s) { return s.numUnknownTrades > 0 ? MetricStatus::Bad : MetricStatus::Good; },
         //     [](const be::Stats& s) { return QString::number(s.pctUnknownTrades, 'f', 1) + "% (" + QString::number(s.numUnknownTrades) + ")"; }
         // },
-        {"best_trade", "Meilleur trade:", "Pourcentage de gain du meilleur trade", Section::General,
-            [](const be::Stats& s) { return MetricStatus::Good; },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.bestTradePct, 'f', 2)); }
-        },
-        {"worst_trade", "Pire trade:", "Pourcentage de perte du pire trade", Section::General,
-            [](const be::Stats& s) { return MetricStatus::Bad; },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.worstTradePct, 'f', 2)); }
-        },
+        // {"best_trade", "Meilleur trade:", "Pourcentage de gain du meilleur trade", Section::General,
+        //     [](const be::Stats& s) { return MetricStatus::Good; },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.bestTradePct, 'f', 2)); }
+        // },
+        // {"worst_trade", "Pire trade:", "Pourcentage de perte du pire trade", Section::General,
+        //     [](const be::Stats& s) { return MetricStatus::Bad; },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.worstTradePct, 'f', 2)); }
+        // },
         {"avg_trade", "Trade moyen:", "Rendement moyen par trade", Section::General,
             [](const be::Stats& s) {
                 return s.avgTradePct > 0 ? MetricStatus::Good : 

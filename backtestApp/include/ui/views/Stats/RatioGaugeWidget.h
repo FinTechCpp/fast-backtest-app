@@ -253,7 +253,8 @@ protected:
             
             // Dessiner le rectangle de la zone
             QRect zoneRect(startX, 0, endX - startX, height);
-            painter.fillRect(zoneRect, zone.color);
+            QColor lighterColor = zone.color.lighter(130);
+            painter.fillRect(zoneRect, lighterColor);
 
             startX = endX; // Mettre à jour le début pour la prochaine zone
         }

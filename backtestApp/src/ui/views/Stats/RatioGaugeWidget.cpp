@@ -434,7 +434,7 @@ void RatioGaugeWidget::updateGauge()
         m_currentZoneLabel->setText(currentZoneDesc);
 
         // Calculer une couleur de fond éclaircie (luminance augmentée)
-        QColor lighterColor = currentColor.lighter(140); // 140 = +40% plus clair
+        QColor lighterColor = currentColor.lighter(135); // 140 = +40% plus clair
         const QString textColor = "#000000";
 
         // Appliquer fond (la couleur de la zone éclaircie) et texte contrasté, avec un padding pour lisibilité

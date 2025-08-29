@@ -453,15 +453,15 @@ Stats computeStats(
 
     // Best and worst trades
     if (!return_pct_values.empty()) {
-        stats.bestTradePct = *std::max_element(return_pct_values.begin(), return_pct_values.end()) * 100;
-        stats.worstTradePct = *std::min_element(return_pct_values.begin(), return_pct_values.end()) * 100;
+        stats.bestTradePct = *std::max_element(return_pct_values.begin(), return_pct_values.end());
+        stats.worstTradePct = *std::min_element(return_pct_values.begin(), return_pct_values.end());
     } else {
         stats.bestTradePct = NaN;
         stats.worstTradePct = NaN;
     }
 
     // Average return per trade
-    stats.avgTradePct = geometricMean(return_pct_values) * 100;
+    stats.avgTradePct = geometricMean(return_pct_values);
 
     // Trade durations
     if (!tradeDurations.empty()) {
@@ -491,7 +491,7 @@ Stats computeStats(
     // Expectancy (expected gain)
     if (!return_pct_values.empty()) {
         double sum_returns = std::accumulate(return_pct_values.begin(), return_pct_values.end(), 0.0);
-        stats.expectancyPct = (sum_returns / return_pct_values.size()) * 100;
+        stats.expectancyPct = (sum_returns / return_pct_values.size());
     } else {
         stats.expectancyPct = NaN;
     }

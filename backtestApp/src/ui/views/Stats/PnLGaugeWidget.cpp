@@ -84,8 +84,10 @@ void PnLGaugeWidget::updateContent(const be::Stats& stats)
     
     // Collecter les PL des trades en fonction de leur raison de fermeture
     std::vector<double> tpPLs;
+    std::vector<double> tpPLsPrc;
     std::vector<double> slPLs;
-    
+    std::vector<double> slPLsPrc;
+
     const be::TradeData* bestTrade = nullptr;
     const be::TradeData* worstTrade = nullptr;
     
@@ -101,8 +103,10 @@ void PnLGaugeWidget::updateContent(const be::Stats& stats)
         // Collecter les données par type de trade
         if (trade.closeReason == be::CloseReason::TakeProfit) {
             tpPLs.push_back(trade.pl);
+            tpPLsPrc.push_back(trade.plPercent);
         } else if (trade.closeReason == be::CloseReason::StopLoss) {
             slPLs.push_back(trade.pl);
+            slPLsPrc.push_back(trade.plPercent);
         }
     }
     
@@ -112,44 +116,64 @@ void PnLGaugeWidget::updateContent(const be::Stats& stats)
     
     // Calcul des statistiques pour les trades gagnants (TP)
     if (!tpPLs.empty()) {
-        m_tpAvg = std::accumulate(tpPLs.begin(), tpPLs.end(), 0.0) / tpPLs.size();
+        m_tpAvg = std::accumulate(tpPLs.begin(), tpPLs.end(), 0.0) / double(tpPLs.size());
+        m_tpAvgPrc = std::accumulate(tpPLsPrc.begin(), tpPLsPrc.end(), 0.0) / double(tpPLsPrc.size());
         m_tpMax = *std::max_element(tpPLs.begin(), tpPLs.end());
-        
+        m_tpMaxPrc = *std::max_element(tpPLsPrc.begin(), tpPLsPrc.end());
+
         // Calculer la médiane des trades TP
         std::vector<double> sortedTpPLs = tpPLs;
+        std::vector<double> sortedTpPLsPrc = tpPLsPrc;
         std::sort(sortedTpPLs.begin(), sortedTpPLs.end());
-        
+        std::sort(sortedTpPLsPrc.begin(), sortedTpPLsPrc.end());
+
         if (sortedTpPLs.size() % 2 == 0) {
             m_tpMedian = (sortedTpPLs[sortedTpPLs.size() / 2 - 1] + 
                          sortedTpPLs[sortedTpPLs.size() / 2]) / 2.0;
+            m_tpMedianPrc = (sortedTpPLsPrc[sortedTpPLsPrc.size() / 2 - 1] + 
+                            sortedTpPLsPrc[sortedTpPLsPrc.size() / 2]) / 2.0;
         } else {
             m_tpMedian = sortedTpPLs[sortedTpPLs.size() / 2];
+            m_tpMedianPrc = sortedTpPLsPrc[sortedTpPLsPrc.size() / 2];
         }
     } else {
         m_tpAvg = 0.0;
+        m_tpAvgPrc = 0.0;
         m_tpMax = 0.0;
+        m_tpMaxPrc = 0.0;
         m_tpMedian = 0.0;
+        m_tpMedianPrc = 0.0;
     }
     
     // Calcul des statistiques pour les trades perdants (SL)
     if (!slPLs.empty()) {
         m_slAvg = std::accumulate(slPLs.begin(), slPLs.end(), 0.0) / slPLs.size();
+        m_slAvgPrc = std::accumulate(slPLsPrc.begin(), slPLsPrc.end(), 0.0) / slPLsPrc.size();
         m_slMin = *std::min_element(slPLs.begin(), slPLs.end());
-        
+        m_slMinPrc = *std::min_element(slPLsPrc.begin(), slPLsPrc.end());
+
         // Calculer la médiane des trades SL
         std::vector<double> sortedSlPLs = slPLs;
+        std::vector<double> sortedSlPLsPrc = slPLsPrc;
         std::sort(sortedSlPLs.begin(), sortedSlPLs.end());
-        
+        std::sort(sortedSlPLsPrc.begin(), sortedSlPLsPrc.end());
+
         if (sortedSlPLs.size() % 2 == 0) {
             m_slMedian = (sortedSlPLs[sortedSlPLs.size() / 2 - 1] + 
                          sortedSlPLs[sortedSlPLs.size() / 2]) / 2.0;
+            m_slMedianPrc = (sortedSlPLsPrc[sortedSlPLsPrc.size() / 2 - 1] + 
+                            sortedSlPLsPrc[sortedSlPLsPrc.size() / 2]) / 2.0;
         } else {
             m_slMedian = sortedSlPLs[sortedSlPLs.size() / 2];
+            m_slMedianPrc = sortedSlPLsPrc[sortedSlPLsPrc.size() / 2];
         }
     } else {
         m_slAvg = 0.0;
+        m_slAvgPrc = 0.0;
         m_slMin = 0.0;
+        m_slMinPrc = 0.0;
         m_slMedian = 0.0;
+        m_slMedianPrc = 0.0;
     }
     
     // Informations détaillées sur les meilleurs/pires trades
@@ -170,8 +194,8 @@ void PnLGaugeWidget::updateContent(const be::Stats& stats)
     }
     
     // Mettre à jour la jauge
-    m_gaugeWidget->setValues(m_tpAvg, m_tpMax, m_tpMedian, m_slAvg, m_slMin, m_slMedian);
-    
+    m_gaugeWidget->setValues(m_tpAvg, m_tpMax, m_tpMedian, m_slAvg, m_slMin, m_slMedian,
+                        m_tpAvgPrc, m_tpMaxPrc, m_tpMedianPrc, m_slAvgPrc, m_slMinPrc, m_slMedianPrc);    
     // Mettre à jour les labels
     updateLabels();
 }
@@ -254,7 +278,13 @@ VerticalGaugeRenderWidget::VerticalGaugeRenderWidget(QWidget* parent)
       m_tpMedian(0.0),
       m_slAvg(0.0),
       m_slMin(0.0),
-      m_slMedian(0.0)
+      m_slMedian(0.0),
+      m_tpAvgPrc(0.0),
+      m_tpMaxPrc(0.0),
+      m_tpMedianPrc(0.0),
+      m_slAvgPrc(0.0),
+      m_slMinPrc(0.0),
+      m_slMedianPrc(0.0)
 {
     // Initialiser les couleurs
     m_tpAvgColor = QColor(0, 150, 0);       // Vert foncé
@@ -267,13 +297,15 @@ VerticalGaugeRenderWidget::VerticalGaugeRenderWidget(QWidget* parent)
     m_medianSlColor = QColor(100, 0, 0);    // Rouge foncé
     
     // Définir la taille et la politique de taille - plus large pour inclure la légende
-    setMinimumSize(150, 300);  // Augmenté de 40 à 150 pour avoir de l'espace pour la légende
-    setMaximumWidth(180);      // Augmenté de 60 à 180
+    setMinimumSize(220, 300);  // Augmenté de 40 à 150 pour avoir de l'espace pour la légende
+    setMaximumWidth(240);      // Augmenté de 60 à 180
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 }
 
 void VerticalGaugeRenderWidget::setValues(double tpAvg, double tpMax, double tpMedian,
-                                        double slAvg, double slMin, double slMedian)
+                                        double slAvg, double slMin, double slMedian,
+                                        double tpAvgPrc, double tpMaxPrc, double tpMedianPrc,
+                                        double slAvgPrc, double slMinPrc, double slMedianPrc)
 {
     m_tpAvg = tpAvg;
     m_tpMax = tpMax;
@@ -281,6 +313,14 @@ void VerticalGaugeRenderWidget::setValues(double tpAvg, double tpMax, double tpM
     m_slAvg = slAvg;
     m_slMin = slMin;
     m_slMedian = slMedian;
+    
+    m_tpAvgPrc = tpAvgPrc;
+    m_tpMaxPrc = tpMaxPrc;
+    m_tpMedianPrc = tpMedianPrc;
+    m_slAvgPrc = slAvgPrc;
+    m_slMinPrc = slMinPrc;
+    m_slMedianPrc = slMedianPrc;
+    
     update();
 }
 
@@ -292,6 +332,14 @@ void VerticalGaugeRenderWidget::clear()
     m_slAvg = 0.0;
     m_slMin = 0.0;
     m_slMedian = 0.0;
+    
+    m_tpAvgPrc = 0.0;
+    m_tpMaxPrc = 0.0;
+    m_tpMedianPrc = 0.0;
+    m_slAvgPrc = 0.0;
+    m_slMinPrc = 0.0;
+    m_slMedianPrc = 0.0;
+    
     update();
 }
 
@@ -315,7 +363,8 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
     int w = width();
     int h = height();
     int gaugeWidth = 45;        // Largeur fixe pour la jauge
-    int gaugeX = 15;            // Position X fixe, décalée du bord gauche
+    int leftLegendSpace = 60;   // Espace pour les légendes à gauche
+    int gaugeX = leftLegendSpace + 5;  // Position X de la jauge (décalée pour avoir de l'espace à gauche)
     int padding = 15;           // Marge en haut et en bas
     int legendPadding = 10;     // Espace entre la jauge et le début de la légende
     
@@ -389,11 +438,13 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
     // Configuration de la police pour les étiquettes
     painter.setPen(m_textColor);
     QFont valueFont = painter.font();
-    valueFont.setPointSize(11);
+    valueFont.setPointSize(11); // Réduire légèrement la taille de police pour les deux séries d'étiquettes
     painter.setFont(valueFont);
     
-    int legendX = gaugeX + gaugeWidth + legendPadding;
-    int textWidth = w - legendX - 5; // Largeur disponible pour le texte
+    // Définir les positions X pour les légendes
+    int leftLegendX = 5;                         // Légendes de gauche (pourcentages)
+    int rightLegendX = gaugeX + gaugeWidth + legendPadding; // Légendes de droite (valeurs absolues)
+    int textWidth = 55;                          // Largeur des zones de texte
     
     // Hauteur standard d'une étiquette
     const int labelHeight = 20;
@@ -424,40 +475,77 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
         slAvgLabelY -= adjustment; // Déplacer la moyenne vers le haut
     }
     
-    // --- DESSIN DES ÉTIQUETTES AVEC LES POSITIONS AJUSTÉES ---
-
-    // Étiquettes pour la partie TP (trades gagnants)
+    // --- DESSIN DES ÉTIQUETTES POURCENTAGE (GAUCHE) ---
+    
+    // Étiquettes pourcentage pour la partie TP (trades gagnants)
     if (m_tpMax > 0) {
-        QRect maxRect(legendX, tpMaxLabelY, textWidth, labelHeight);
+        QRect maxPrcRect(leftLegendX, tpMaxLabelY, textWidth, labelHeight);
         painter.setPen(m_tpMaxColor.darker(150));
-        painter.drawText(maxRect, Qt::AlignLeft | Qt::AlignVCenter, 
-                       QString("Max: %1").arg(m_tpMax, 0, 'f', 1));
+        painter.drawText(maxPrcRect, Qt::AlignRight | Qt::AlignVCenter, 
+                      QString("%1%").arg(m_tpMaxPrc, 0, 'f', 2));
     }
     
     if (m_tpAvg > 0) {
-        QRect avgRect(legendX, tpAvgLabelY, textWidth, labelHeight);
+        QRect avgPrcRect(leftLegendX, tpAvgLabelY, textWidth, labelHeight);
         painter.setPen(m_tpAvgColor.darker(120));
-        painter.drawText(avgRect, Qt::AlignLeft | Qt::AlignVCenter, 
-                       QString("Moy: %1").arg(m_tpAvg, 0, 'f', 1));
+        painter.drawText(avgPrcRect, Qt::AlignRight | Qt::AlignVCenter, 
+                      QString("%1%").arg(m_tpAvgPrc, 0, 'f', 2));
     }
     
-    // Étiquette du zéro
-    QRect zeroRect(legendX, zeroY - labelHeight/2, textWidth, labelHeight);
+    // Étiquette du zéro (côté gauche)
+    QRect zeroPrcRect(leftLegendX, zeroY - labelHeight/2, textWidth, labelHeight);
+    painter.setPen(m_textColor);
+    painter.drawText(zeroPrcRect, Qt::AlignRight | Qt::AlignVCenter, "0%");
+    
+    // Étiquettes pourcentage pour la partie SL (trades perdants)
+    if (m_slAvg < 0) {
+        QRect avgPrcRect(leftLegendX, slAvgLabelY, textWidth, labelHeight);
+        painter.setPen(m_slAvgColor.darker(120));
+        painter.drawText(avgPrcRect, Qt::AlignRight | Qt::AlignVCenter, 
+                      QString("%1%").arg(m_slAvgPrc, 0, 'f', 2));
+    }
+    
+    if (m_slMin < 0) {
+        QRect minPrcRect(leftLegendX, slMinLabelY, textWidth, labelHeight);
+        painter.setPen(m_slMinColor.darker(150));
+        painter.drawText(minPrcRect, Qt::AlignRight | Qt::AlignVCenter, 
+                      QString("%1%").arg(m_slMinPrc, 0, 'f', 2));
+    }
+    
+    // --- DESSIN DES ÉTIQUETTES VALEURS ABSOLUES (DROITE) ---
+    
+    // Étiquettes pour la partie TP (trades gagnants)
+    if (m_tpMax > 0) {
+        QRect maxRect(rightLegendX, tpMaxLabelY, textWidth, labelHeight);
+        painter.setPen(m_tpMaxColor.darker(150));
+        painter.drawText(maxRect, Qt::AlignLeft | Qt::AlignVCenter, 
+                       QString("%1").arg(m_tpMax, 0, 'f', 1));
+    }
+    
+    if (m_tpAvg > 0) {
+        QRect avgRect(rightLegendX, tpAvgLabelY, textWidth, labelHeight);
+        painter.setPen(m_tpAvgColor.darker(120));
+        painter.drawText(avgRect, Qt::AlignLeft | Qt::AlignVCenter, 
+                       QString("%1").arg(m_tpAvg, 0, 'f', 1));
+    }
+    
+    // Étiquette du zéro (côté droit)
+    QRect zeroRect(rightLegendX, zeroY - labelHeight/2, textWidth, labelHeight);
     painter.setPen(m_textColor);
     painter.drawText(zeroRect, Qt::AlignLeft | Qt::AlignVCenter, "0");
     
     // Étiquettes pour la partie SL (trades perdants)
     if (m_slAvg < 0) {
-        QRect avgRect(legendX, slAvgLabelY, textWidth, labelHeight);
+        QRect avgRect(rightLegendX, slAvgLabelY, textWidth, labelHeight);
         painter.setPen(m_slAvgColor.darker(120));
         painter.drawText(avgRect, Qt::AlignLeft | Qt::AlignVCenter, 
-                       QString("Moy: %1").arg(m_slAvg, 0, 'f', 1));
+                       QString("%1").arg(m_slAvg, 0, 'f', 1));
     }
     
     if (m_slMin < 0) {
-        QRect minRect(legendX, slMinLabelY, textWidth, labelHeight);
+        QRect minRect(rightLegendX, slMinLabelY, textWidth, labelHeight);
         painter.setPen(m_slMinColor.darker(150));
         painter.drawText(minRect, Qt::AlignLeft | Qt::AlignVCenter, 
-                       QString("Min: %1").arg(m_slMin, 0, 'f', 1));
+                       QString("%1").arg(m_slMin, 0, 'f', 1));
     }
 }

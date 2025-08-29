@@ -323,24 +323,29 @@ void MonthlyPerformanceWidget::buildHeatmap()
     // Maximum (en haut)
     QGraphicsTextItem* maxText = m_scene->addText(QString("%1 $").arg(m_maxValue, 0, 'f', 2));
     QFont valueFont = maxText->font();
+    valueFont.setPointSize(14);
     maxText->setFont(valueFont);
     maxText->setPos(legendX + legendWidth + 5, legendY - maxText->boundingRect().height()/2);
     
     // Quart positif
-    QGraphicsTextItem* quarterPosText = m_scene->addText(QString("%1 $").arg(m_maxValue/2, 0, 'f', 2));
-    quarterPosText->setFont(valueFont);
-    quarterPosText->setPos(legendX + legendWidth + 5, legendY + legendHeight/4 - quarterPosText->boundingRect().height()/2);
-    
+    if (m_maxYear - m_minYear > 1) {
+        QGraphicsTextItem* quarterPosText = m_scene->addText(QString("%1 $").arg(m_maxValue/2, 0, 'f', 2));
+        quarterPosText->setFont(valueFont);
+        quarterPosText->setPos(legendX + legendWidth + 5, legendY + legendHeight/4 - quarterPosText->boundingRect().height()/2);
+    }
+
     // Zéro (milieu)
     QGraphicsTextItem* zeroText = m_scene->addText("0 $");
     zeroText->setFont(valueFont);
     zeroText->setPos(legendX + legendWidth + 5, legendY + legendHeight/2 - zeroText->boundingRect().height()/2);
     
     // Quart négatif
-    QGraphicsTextItem* quarterNegText = m_scene->addText(QString("%1 $").arg(m_minValue/2, 0, 'f', 2));
-    quarterNegText->setFont(valueFont);
-    quarterNegText->setPos(legendX + legendWidth + 5, legendY + 3*legendHeight/4 - quarterNegText->boundingRect().height()/2);
-    
+    if (m_minYear - m_maxYear < -1) {
+        QGraphicsTextItem* quarterNegText = m_scene->addText(QString("%1 $").arg(m_minValue/2, 0, 'f', 2));
+        quarterNegText->setFont(valueFont);
+        quarterNegText->setPos(legendX + legendWidth + 5, legendY + 3*legendHeight/4 - quarterNegText->boundingRect().height()/2);
+    }
+
     // Minimum (en bas)
     QGraphicsTextItem* minText = m_scene->addText(QString("%1 $").arg(m_minValue, 0, 'f', 2));
     minText->setFont(valueFont);

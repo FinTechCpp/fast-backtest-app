@@ -38,11 +38,18 @@ private:
     
     // Valeurs calculées
     double m_tpAvg;     // Moyenne des TP
+    double m_tpAvgPrc;  // Moyenne des TP en %
     double m_tpMax;     // Maximum des TP
+    double m_tpMaxPrc;  // Maximum des TP en %
     double m_tpMedian;  // Médiane des TP
+    double m_tpMedianPrc;  // Médiane des TP en %
+
     double m_slAvg;     // Moyenne des SL
+    double m_slAvgPrc;  // Moyenne des SL en %
     double m_slMin;     // Minimum des SL
+    double m_slMinPrc;  // Minimum des SL en %
     double m_slMedian;  // Médiane des SL
+    double m_slMedianPrc;  // Médiane des SL en %
     int m_tpCount;      // Nombre de trades TP
     int m_slCount;      // Nombre de trades SL
     
@@ -64,7 +71,10 @@ public:
     
     // Configuration des valeurs
     void setValues(double tpAvg, double tpMax, double tpMedian,
-                  double slAvg, double slMin, double slMedian);
+                double slAvg, double slMin, double slMedian,
+                double tpAvgPrc = 0.0, double tpMaxPrc = 0.0, double tpMedianPrc = 0.0,
+                double slAvgPrc = 0.0, double slMinPrc = 0.0, double slMedianPrc = 0.0);
+
     void clear();
     
 protected:
@@ -76,11 +86,18 @@ private:
     
     // Valeurs à afficher
     double m_tpAvg;     // Moyenne des trades gagnants
+    double m_tpAvgPrc;  // Moyenne des trades gagnants en %
     double m_tpMax;     // Maximum des trades gagnants
+    double m_tpMaxPrc;  // Maximum des trades gagnants en %
     double m_tpMedian;  // Médiane des trades gagnants
+    double m_tpMedianPrc;  // Médiane des trades gagnants en %
+
     double m_slAvg;     // Moyenne des trades perdants
+    double m_slAvgPrc;  // Moyenne des trades perdants en %
     double m_slMin;     // Minimum des trades perdants
+    double m_slMinPrc;  // Minimum des trades perdants en %
     double m_slMedian;  // Médiane des trades perdants
+    double m_slMedianPrc;  // Médiane des trades perdants en %
     
     // Couleurs
     QColor m_tpAvgColor;    // Vert foncé pour la moyenne des TP

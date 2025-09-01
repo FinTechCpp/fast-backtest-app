@@ -37,6 +37,7 @@ struct Stats {
     // Statistiques de rendement
     double returnPct = 0;                ///< Rendement total en pourcentage
     double buyHoldReturnPct = 0;         ///< Rendement d'une stratégie buy & hold
+    double buyHoldCagrPct = 0;           ///< CAGR d'une stratégie buy & hold
     double returnAnnPct = 0;             ///< Rendement annualisé en pourcentage
     double volatilityAnnPct = 0;         ///< Volatilité annualisée en pourcentage
     double cagrPct = 0;                  ///< Taux de croissance annuel composé

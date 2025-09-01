@@ -148,6 +148,7 @@ namespace cereal {
            cereal::make_nvp("equityInitial", stats.equityInitial),
            cereal::make_nvp("returnPct", stats.returnPct),
            cereal::make_nvp("buyHoldReturnPct", stats.buyHoldReturnPct),
+           cereal::make_nvp("buyHoldCagrPct", stats.buyHoldCagrPct),
            cereal::make_nvp("returnAnnPct", stats.returnAnnPct),
            cereal::make_nvp("volatilityAnnPct", stats.volatilityAnnPct),
            cereal::make_nvp("cagrPct", stats.cagrPct),

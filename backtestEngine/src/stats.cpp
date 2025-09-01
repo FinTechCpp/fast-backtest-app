@@ -13,7 +13,6 @@ namespace be {
 
 // NaN value for uninitialized non-computable statistics
 constexpr double NaN = std::numeric_limits<double>::quiet_NaN();
-constexpr unsigned int NaNUInt = std::numeric_limits<unsigned int>::min(); // Used for integer values
 
 // Structure for storing drawdown information
 struct DrawdownInfo {
@@ -147,6 +146,87 @@ double calculateKurtosis(const std::vector<double>& returns) {
     return sum_fourth_power / (returns.size() * variance * variance);
 }
 
+std::tuple<double, double> calculateBetaAlpha(
+    const std::vector<double>& equity,
+    const Data& data, // remplace par ton type réel
+    double rf_annual,                       // taux sans risque annuel (décimal, ex 0.02)
+    int periods_per_year)                   // fréquence (252=quotidien, 12=mensuel, ...)
+{
+    // 1) aligner la fenêtre commune
+    size_t n_prices = std::min(equity.size(), data.size());
+    if (n_prices < 2) {
+        return {NaN, NaN};
+    }
+
+    // 2) calculer rendements ARITHMÉTIQUES périodiques alignés
+    std::vector<double> equity_ret; equity_ret.reserve(n_prices - 1);
+    std::vector<double> market_ret; market_ret.reserve(n_prices - 1);
+
+    for (size_t i = 1; i < n_prices; ++i) {
+        double p0 = equity[i-1], p1 = equity[i];
+        double m0 = data.at(i-1).close, m1 = data.at(i).close;
+
+        if (std::abs(p0) < 1e-15 || std::abs(m0) < 1e-15) continue; // protéger division
+        double re = p1 / p0 - 1.0; // rendement arithmétique
+        double rm = m1 / m0 - 1.0;
+
+        if (std::isfinite(re) && std::isfinite(rm)) {
+            equity_ret.push_back(re);
+            market_ret.push_back(rm);
+        }
+    }
+
+    size_t m = std::min(equity_ret.size(), market_ret.size());
+    if (m < 2) {
+        return {NaN, NaN};
+    }
+
+    // 3) garder uniquement la sous-série alignée
+    equity_ret.resize(m);
+    market_ret.resize(m);
+
+    // 4) moyennes (arithmétiques) périodiques
+    double mean_e = std::accumulate(equity_ret.begin(), equity_ret.end(), 0.0) / static_cast<double>(m);
+    double mean_m = std::accumulate(market_ret.begin(), market_ret.end(), 0.0) / static_cast<double>(m);
+
+    // 5) covariance (échantillonnale) et variance du marché (échantillonnale)
+    double cov_em = 0.0;
+    double var_m = 0.0;
+    for (size_t i = 0; i < m; ++i) {
+        double de = equity_ret[i] - mean_e;
+        double dm = market_ret[i] - mean_m;
+        cov_em += de * dm;
+        var_m  += dm * dm;
+    }
+    if (m > 1) {
+        cov_em /= static_cast<double>(m - 1);
+        var_m  /= static_cast<double>(m - 1);
+    } else {
+        return {NaN, NaN};
+    }
+
+    if (!(var_m > 0.0)) { // var_m <= 0 ou NaN
+        return {NaN, NaN};
+    }
+
+    // 6) beta
+    double beta = cov_em / var_m;
+
+    // 7) taux sans risque périodique (cohérent avec fréquence)
+    double rf_periodic = std::pow(1.0 + rf_annual, 1.0 / static_cast<double>(periods_per_year)) - 1.0;
+
+    // 8) alpha périodique (CAPM sur excès de rendements)
+    double alpha_periodic = (mean_e - rf_periodic) - beta * (mean_m - rf_periodic);
+
+    // 9) annualiser l'alpha (approche linéaire usuelle)
+    double alpha_annual = alpha_periodic * static_cast<double>(periods_per_year);
+
+    // 10) stocker en pourcentage annualisé (convention utilisée pour stats.alphaPct)
+    double alphaPct = alpha_annual * 100.0;
+
+    return {beta, alphaPct};
+}
+
 /**
  * @brief Finds the worst price encountered during a trade
  * @param trade Shared pointer to the trade to analyze
@@ -184,6 +264,7 @@ double findWorstPrice(const std::shared_ptr<be::Trade>& trade, const be::Data& d
 // Calculates the geometric mean of a series of returns
 double geometricMean(const std::vector<double>& returns) {
     std::vector<double> filled_returns;
+    filled_returns.reserve(returns.size());
 
     // Replace NaN with 0 and add 1
     for (double ret : returns) {
@@ -231,6 +312,7 @@ std::map<std::string, double> Stats::toMap() const {
     // Performance values
     map["Return [%]"] = returnPct;
     map["Buy & Hold Return [%]"] = buyHoldReturnPct;
+    map["Buy & Hold CAGR [%]"] = buyHoldCagrPct;
     map["Return (Ann.) [%]"] = returnAnnPct;
     map["Volatility (Ann.) [%]"] = volatilityAnnPct;
     map["CAGR [%]"] = cagrPct;
@@ -284,6 +366,7 @@ std::ostream& operator<<(std::ostream& os, const Stats& stats) {
     os << "  Équité initiale: " << stats.equityInitial << "\n";
     os << "  Rendement: " << stats.returnPct << "%\n";
     os << "  Buy & Hold: " << stats.buyHoldReturnPct << "%\n";
+    os << "  Buy & Hold CAGR: " << stats.buyHoldCagrPct << "%\n";
     os << "  Rendement annualisé: " << stats.returnAnnPct << "%\n";
     os << "  CAGR: " << stats.cagrPct << "%\n";
     
@@ -351,7 +434,6 @@ Stats computeStats(
 
     // Store raw data for future analysis
     stats.equityCurve = equity;
-    // stats.trades = trades;
 
     // Start and end dates of the backtest
     stats.start = data.at(0).date;  // First date of the dataset
@@ -399,9 +481,16 @@ Stats computeStats(
 
     // Buy & Hold return - Use at() to access data
     size_t first_trading_bar = 1;  // Simplified compared to _indicator_warmup_nbars
-    double initial_price = data.at(first_trading_bar).close;  // Modified
+    double initial_price = data.at(first_trading_bar).open;  // Modified
     double final_price = data.at(data.size() - 1).close;      // Modified
     stats.buyHoldReturnPct = (final_price - initial_price) / initial_price * 100;
+
+    double years_total = stats.duration.toYears();
+    if (years_total > 0 && initial_price > 0.0) {
+        stats.buyHoldCagrPct = (std::pow(final_price / initial_price, 1.0 / years_total) - 1.0) * 100.0;
+    } else {
+        stats.buyHoldCagrPct = NaN;
+    }
 
     // Extract trade data
     std::vector<double> pl_values;
@@ -593,31 +682,33 @@ Stats computeStats(
     }
 
     // Calculate daily returns (simplified)
-    std::vector<double> day_returns;
+    std::vector<double> returns;
     for (size_t i = 1; i < equity.size(); ++i) {
-        day_returns.push_back(equity[i] / equity[i-1] - 1.0);
+        returns.push_back(equity[i] / equity[i-1] - 1.0);
     }
 
     // Geometric mean of daily returns
-    double gmean_day_return = geometricMean(day_returns);
+    double arith_mean_return = std::accumulate(returns.begin(), returns.end(), 0.0) / returns.size();
 
     // Annual trading days
-    const double annual_trading_days = 252;  // Trading days per year (standard)
+    double periodsPerYear = 252.0; // fallback
+    if (years_total > 0.0 && !returns.empty()) {
+        periodsPerYear = static_cast<double>(returns.size()) / years_total;
+    }
 
     // Annualized return
-    stats.returnAnnPct = (std::pow(1 + gmean_day_return, annual_trading_days) - 1) * 100;
+    stats.returnAnnPct = (std::pow(1 + arith_mean_return, periodsPerYear) - 1) * 100;
 
     // Annualized volatility
-    if (!day_returns.empty()) {
+    if (!returns.empty()) {
         double variance = 0.0;
-        double mean_return = std::accumulate(day_returns.begin(), day_returns.end(), 0.0) / day_returns.size();
         
-        for (double ret : day_returns) {
-            variance += (ret - mean_return) * (ret - mean_return);
+        for (double ret : returns) {
+            variance += (ret - arith_mean_return) * (ret - arith_mean_return);
         }
         
-        variance = day_returns.size() > 1 ? variance / (day_returns.size() - 1) : 0;
-        stats.volatilityAnnPct = std::sqrt(variance * annual_trading_days) * 100;
+        variance = returns.size() > 1 ? variance / (returns.size() - 1) : 0;
+        stats.volatilityAnnPct = std::sqrt(variance * periodsPerYear) * 100.0;
     } else {
         stats.volatilityAnnPct = NaN;
     }
@@ -633,7 +724,7 @@ Stats computeStats(
     // Sharpe Ratio
     const double risk_free_rate = 0.0;  // Risk-free rate (omitted parameter)
     double excess_return = stats.returnAnnPct / 100 - risk_free_rate;
-    double volatility = stats.volatilityAnnPct / 100;
+    double volatility = stats.volatilityAnnPct / 100.0;
     
     if (volatility > 1e-6) {
         stats.sharpeRatio = excess_return / volatility;
@@ -643,14 +734,14 @@ Stats computeStats(
 
     // Sortino Ratio
     const double mar = 0.0;  // Minimum acceptable return, can be parameterized
-    const double risk_free_annual = risk_free_rate * annual_trading_days; // Annualize the risk-free rate
+    const double risk_free_annual = risk_free_rate * periodsPerYear; // Annualize the risk-free rate
 
-    if (!day_returns.empty()) {
+    if (!returns.empty()) {
         // Excess return already calculated for Sharpe
         double excess_return = stats.returnAnnPct / 100 - risk_free_rate;
 
         // Use the new function to calculate Sortino
-        stats.sortinoRatio = calculateSortinoRatio(day_returns, excess_return, mar, annual_trading_days);
+        stats.sortinoRatio = calculateSortinoRatio(returns, excess_return, mar, periodsPerYear);
     } else {
         stats.sortinoRatio = NaN;
     }
@@ -663,54 +754,9 @@ Stats computeStats(
     }
 
     // Calculate beta and alpha (CAPM model)
-    std::vector<double> equity_log_returns;
-    std::vector<double> market_log_returns;
-
-    // Calculate log returns for equity and market
-    for (size_t i = 1; i < equity.size(); ++i) {
-        equity_log_returns.push_back(std::log(equity[i] / equity[i-1]));
-    }
-
-    for (size_t i = 1; i < data.size(); ++i) {
-        market_log_returns.push_back(std::log(data.at(i).close / data.at(i-1).close));  
-    }
-
-    // Calculate beta only if we have enough data
-    if (equity_log_returns.size() > 1 && market_log_returns.size() > 1) {
-        // Calculate means
-        double equity_mean = std::accumulate(equity_log_returns.begin(), equity_log_returns.end(), 0.0) / equity_log_returns.size();
-        double market_mean = std::accumulate(market_log_returns.begin(), market_log_returns.end(), 0.0) / market_log_returns.size();
-
-        // Calculate covariance matrix elements
-        double cov_em = 0.0;  // Covariance equity-market
-        double var_m = 0.0;   // Market variance
-
-        size_t n = std::min(equity_log_returns.size(), market_log_returns.size());
-        for (size_t i = 0; i < n; ++i) {
-            cov_em += (equity_log_returns[i] - equity_mean) * (market_log_returns[i] - market_mean);
-            var_m += (market_log_returns[i] - market_mean) * (market_log_returns[i] - market_mean);
-        }
-
-        // Avoid division by zero
-        if (n > 1 && var_m > 0) {
-            cov_em /= (n - 1);
-            var_m /= (n - 1);
-
-            // Calculate beta
-            stats.beta = cov_em / var_m;
-
-            // Calculate alpha (CAPM)
-            const double risk_free_rate = 0.0;  // Risk-free rate (omitted parameter)
-            stats.alphaPct = stats.returnPct - risk_free_rate * 100 - stats.beta * (stats.buyHoldReturnPct - risk_free_rate * 100);
-        } else {
-            stats.beta = NaN;
-            stats.alphaPct = NaN;
-        }
-    } else {
-        stats.beta = NaN;
-        stats.alphaPct = NaN;
-    }
-
+    std::tuple<double, double> beta_alpha = calculateBetaAlpha(equity, data, risk_free_rate, periodsPerYear);
+    stats.beta = std::get<0>(beta_alpha);
+    stats.alphaPct = std::get<1>(beta_alpha);
 
     // Calculate MAE for each trade
     std::vector<double> mae_values;
@@ -743,13 +789,13 @@ Stats computeStats(
     // Return on Ulcer Index
     stats.ulcerPerformanceIndex = stats.returnAnnPct / stats.ulcerIndex;
 
-    stats.skewness = calculateSkewness(day_returns);
-    stats.kurtosis = calculateKurtosis(day_returns);
+    stats.skewness = calculateSkewness(returns);
+    stats.kurtosis = calculateKurtosis(returns);
 
     double threshold = 0.0; // Return threshold (could be risk-free rate)
     double omega_pos = 0.0, omega_neg = 0.0;
 
-    for (double ret : day_returns) {
+    for (double ret : returns) {
         if (ret >= threshold) {
             omega_pos += (ret - threshold);
         } else {
@@ -780,6 +826,7 @@ Stats dummyStats() {
     stats.equityInitial = NaN;
     stats.returnPct = NaN;
     stats.buyHoldReturnPct = NaN;
+    stats.buyHoldCagrPct = NaN;
     stats.returnAnnPct = NaN;
     stats.volatilityAnnPct = NaN;
     stats.cagrPct = NaN;

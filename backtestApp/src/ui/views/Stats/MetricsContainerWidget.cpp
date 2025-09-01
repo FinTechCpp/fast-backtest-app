@@ -140,10 +140,16 @@ void MetricsContainerWidget::initializeMetrics() {
         },
         {"buy_hold_return", "Buy & Hold:", "Rendement d'une stratégie passive d'achat et maintien", Section::Performance,
             [](const be::Stats& s) { 
-                return s.buyHoldReturnPct > 0 ? MetricStatus::Good : 
-                      (s.buyHoldReturnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
+                return MetricStatus::Neutral; 
             },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.buyHoldReturnPct, 'f', 2)); }
+        },
+        {
+            "buy_hold_cagr", "Buy & Hold CAGR:", "CAGR d'une stratégie passive d'achat et maintien", Section::Performance,
+            [](const be::Stats& s) {
+                return MetricStatus::Neutral;
+            },
+            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.buyHoldCagrPct, 'f', 2)); }
         },
         {"return_ann", "Rendement annualisé:", "Rendement annuel équivalent", Section::Performance,
             [](const be::Stats& s) { 

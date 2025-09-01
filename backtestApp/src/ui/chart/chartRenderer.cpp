@@ -1484,12 +1484,17 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
     // Texte pour deltaY (à droite du rectangle)
     char bufferY[50];
     
-    // Ajouter le % de variation pour le deltaY si applicable
-    if (yValueStart != 0) {
-        double percentChange = (deltaY / yValueStart) * 100.0;
-        sprintf(bufferY, "%+.2f \n(%.2f%%)", deltaY, percentChange);
+    // Calculer le pourcentage de variation en évitant la division par zéro
+    double percentChange = std::numeric_limits<double>::quiet_NaN();
+    if (std::isfinite(yValueStart) && std::abs(yValueStart) > 1e-12) {
+        percentChange = (deltaY / std::abs(yValueStart)) * 100.0;
+    }
+
+    // Formatter selon si on a un pourcentage valide
+    if (std::isnan(percentChange)) {
+        snprintf(bufferY, sizeof(bufferY), "%+.2f", deltaY);
     } else {
-        sprintf(bufferY, "%.5f", deltaY);
+        snprintf(bufferY, sizeof(bufferY), "%+.2f \n(%.2f%%)", deltaY, percentChange);
     }
 
     // Dessiner le rectangle entre les deux points

@@ -13,6 +13,9 @@
 #include <QGroupBox>
 #include <QString>
 
+class GaugeRenderWidget;
+class FillGaugeRenderWidget;
+
 /**
  * @brief Widget affichant une jauge pour visualiser un ratio financier
  * 
@@ -35,33 +38,10 @@ public:
     };
 
     /**
-     * @brief Types de ratios financiers prédéfinis
-     */
-    enum class RatioType {
-        Sharpe,     ///< Ratio de Sharpe
-        Sortino,    ///< Ratio de Sortino
-        Calmar,     ///< Ratio de Calmar
-        WinRate,    ///< Pourcentage de trades gagnants
-        ProfitFactor,///< Facteur de profit
-        Kelly,      ///< Critère de Kelly
-        MaxDrawdown,///< Drawdown maximal
-        SQN,        ///< System Quality Number
-        Custom      ///< Ratio personnalisé
-    };
-
-    /**
      * @brief Constructeur
      * @param parent Widget parent
      */
-    explicit RatioGaugeWidget(RatioType type, QWidget* parent = nullptr);
-
-    /**
-     * @brief Définir les zones de la jauge manuellement
-     * @param zones Liste des zones à afficher
-     * @param title Titre du ratio
-     * @param explanation Explication générale du ratio
-     */
-    void setZones(const QVector<GaugeZone>& zones, const QString& title, const QString& explanation);
+    explicit RatioGaugeWidget(const QVector<GaugeZone>& zones, const QString& title, const QString& explanation, QWidget* parent = nullptr);
 
     /**
      * @brief Définir la valeur actuelle du ratio
@@ -81,12 +61,6 @@ public:
      * @param addPercentageSign Indique si le signe % doit être ajouté
      */
     void setValueFormat(unsigned int precision, bool addPercentageSign);
-
-    /**
-     * @brief Définir la hauteur de la jauge
-     * @param height Hauteur souhaitée en pixels
-     */
-    void setGaugeHeight(int height);
 
     /**
      * @brief Réinitialise le widget et cache le curseur
@@ -122,46 +96,6 @@ private:
      */
     void updateExplanation();
 
-    /**
-     * @brief Configurer les zones pour le ratio de Sharpe
-     */
-    void setupSharpeRatio();
-
-    /**
-     * @brief Configurer les zones pour le ratio de Sortino
-     */
-    void setupSortinoRatio();
-
-    /**
-     * @brief Configurer les zones pour le ratio de Calmar
-     */
-    void setupCalmarRatio();
-
-    /**
-     * @brief Configurer les zones pour le taux de réussite (Win Rate)
-     */
-    void setupWinRate();
-
-    /**
-     * @brief Configurer les zones pour le facteur de profit
-     */
-    void setupProfitFactor();
-
-    /**
-     * @brief Configurer les zones pour le critère de Kelly
-     */
-    void setupKelly();
-
-    /**
-     * @brief Configurer les zones pour le drawdown maximal
-     */
-    void setupMaxDrawdown();
-
-    /**
-     * @brief Configurer les zones pour le SQN (System Quality Number)
-     */
-    void setupSQN();
-
 private:
     // Données de la jauge
     QVector<GaugeZone> m_zones;      ///< Zones de la jauge
@@ -171,12 +105,12 @@ private:
     double m_maxValue;               ///< Valeur maximale affichable
     unsigned int m_precision;        ///< Précision pour l'affichage des valeurs
     bool m_addPercentageSign;        ///< Indique si le signe % doit être ajouté à la valeur
-    RatioType m_currentType;         ///< Type de ratio actuel
 
     // Widgets UI
+    QGridLayout* m_mainLayout;  ///< Layout principal
     QLabel* m_metricNameLabel;       ///< Étiquette pour le nom de la métrique
     QString m_metricTitle;           ///< Titre de la métrique
-    QWidget* m_gaugeWidget;          ///< Widget de la jauge
+    FillGaugeRenderWidget* m_gaugeWidget;          ///< Widget de la jauge
     QLabel* m_valueLabel;            ///< Étiquette pour la valeur
     QString m_baseExplanation;       ///< Texte explicatif de base
     int m_gaugeHeight;               ///< Hauteur de la jauge
@@ -397,14 +331,14 @@ protected:
         int h = height();
         
         // Définir les dimensions et positions principales
-        int gaugeHeight = h * 0.7;         // 70% de la hauteur pour la gauge et les tirets
-        int barHeight = gaugeHeight * 0.5;  // Barre de remplissage = 50% de la hauteur du fond
-        int labelHeight = h - gaugeHeight;  // 30% pour les labels
+        int gaugeHeight = h * 0.5;         // 50% de la hauteur pour la gauge et les tirets
+        int barHeight = gaugeHeight * 0.4;  // Barre de remplissage = 50% de la hauteur du fond
+        int labelHeight = h - gaugeHeight;  // 50% pour les labels
         
         int gaugeY = 0;                     // Gauge commence en haut
         int barY = gaugeY + (gaugeHeight - barHeight) / 2; // Barre centrée dans la gauge
         int tickY = gaugeY + gaugeHeight;    // Position Y des tirets (sous la gauge)
-        int labelY = tickY + 3;              // Position Y des labels (sous les tirets)
+        int labelY = tickY;              // Position Y des labels (sous les tirets)
         
         // Rectangle pour la gauge complète
         QRect gaugeRect(0, gaugeY, w, gaugeHeight);
@@ -445,19 +379,19 @@ protected:
         
         if (fillWidth > 0) {
             QRect fillRect(0, barY, fillWidth, barHeight);
-            QColor fillColor(40, 40, 40, 200);  // Noir semi-transparent
+            QColor fillColor(50, 50, 50);  // Noir semi-transparent
             painter.fillRect(fillRect, fillColor);
             
             // Bordure subtile pour la barre
-            painter.setPen(QPen(QColor(20, 20, 20), 1));
-            painter.drawRect(fillRect);
+            // painter.setPen(QPen(QColor(20, 20, 20), 1));
+            // painter.drawRect(fillRect);
         }
         
         // 3. DESSINER LES GRADUATIONS ET LABELS
-        painter.setPen(QPen(QColor(60, 60, 60), 1));
+        painter.setPen(QPen(QColor(20, 20, 20), 1));
         
         QFont tickFont = painter.font();
-        tickFont.setPointSizeF(tickFont.pointSizeF() * 0.85); // Police plus petite pour les labels
+        tickFont.setPointSizeF(tickFont.pointSizeF());
         painter.setFont(tickFont);
         
         // Nombre de graduations principales
@@ -469,7 +403,7 @@ protected:
             int x = qRound(ratio * w);
             
             // Tiret de graduation
-            painter.drawLine(x, tickY - tickLength, x, tickY);
+            painter.drawLine(x, tickY, x, tickY + tickLength);
             
             // Label de valeur
             double tickValue = m_minValue + (ratio * totalRange);

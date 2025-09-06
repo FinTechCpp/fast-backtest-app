@@ -141,12 +141,12 @@ RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
 
     // Ajouter les jauges au layout en grille
     gridLayout->addWidget(m_profitFactorGauge, 0, 0);
-    gridLayout->addWidget(m_winRateGauge, 0, 1);
-    gridLayout->addWidget(m_sharpeGauge, 1, 0);
-    gridLayout->addWidget(m_sortinoGauge, 1, 1);
-    gridLayout->addWidget(m_calmarGauge, 2, 0);
+    gridLayout->addWidget(m_winRateGauge, 1, 0);
+    gridLayout->addWidget(m_maxDrawdownGauge, 2, 0);
+    gridLayout->addWidget(m_sharpeGauge, 3, 0);
+    gridLayout->addWidget(m_sortinoGauge, 0, 1);
+    gridLayout->addWidget(m_calmarGauge, 1, 1);
     gridLayout->addWidget(m_sqnGauge, 2, 1);
-    gridLayout->addWidget(m_maxDrawdownGauge, 3, 0);
     gridLayout->addWidget(m_kellyGauge, 3, 1);
 
     // Définir les tailles

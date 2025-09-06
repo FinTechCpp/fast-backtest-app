@@ -45,6 +45,7 @@ private:
     // Structures de données pour les performances
     QMap<int, QMap<int, double>> m_performanceData;  // [année][mois] -> performance
     QMap<int, QMap<int, int>> m_tradeCountData;      // [année][mois] -> nombre de trades
+    QMap<int, QMap<int, double>> m_squaredSumData;   // [année][mois] -> somme des carrés des performances
     
     // Années min et max pour déterminer la plage d'affichage
     int m_minYear;

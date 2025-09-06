@@ -17,14 +17,17 @@ TradingHeatmapWidget::TradingHeatmapWidget(QWidget* parent)
     // Initialiser les données
     m_performanceData.resize(HOURS_IN_DAY);
     m_tradeCountData.resize(HOURS_IN_DAY);
+    m_squaredSumData.resize(HOURS_IN_DAY);
     
     for (int h = 0; h < HOURS_IN_DAY; h++) {
         m_performanceData[h].resize(DAYS_IN_WEEK);
         m_tradeCountData[h].resize(DAYS_IN_WEEK);
+        m_squaredSumData[h].resize(DAYS_IN_WEEK);
         
         for (int d = 0; d < DAYS_IN_WEEK; d++) {
             m_performanceData[h][d] = 0.0;
             m_tradeCountData[h][d] = 0;
+            m_squaredSumData[h][d] = 0.0;
         }
     }
     
@@ -78,6 +81,7 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
         for (int d = 0; d < DAYS_IN_WEEK; d++) {
             m_performanceData[h][d] = 0.0;
             m_tradeCountData[h][d] = 0;
+            m_squaredSumData[h][d] = 0.0;
         }
     }
     
@@ -101,6 +105,7 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
         // Ajouter la performance du trade
         m_performanceData[hour][day] += trade.pl;
         m_tradeCountData[hour][day]++;
+        m_squaredSumData[hour][day] += trade.pl * trade.pl; // Pour l'écart-type
         
         // Mettre à jour la plage horaire
         m_minHour = std::min(m_minHour, hour);
@@ -120,13 +125,16 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
             if (m_tradeCountData[h][d] <= 0)
                 continue; // Pas de trades pour cette heure/jour
 
+            // Calculer la performance moyenne
+            double expectation = m_performanceData[h][d] / m_tradeCountData[h][d];
+
             // Mettre à jour min/max
-            if (firstValue || m_performanceData[h][d] < m_minValue) {
-                m_minValue = m_performanceData[h][d];
+            if (firstValue || expectation < m_minValue) {
+                m_minValue = expectation;
             }
-            
-            if (firstValue || m_performanceData[h][d] > m_maxValue) {
-                m_maxValue = m_performanceData[h][d];
+
+            if (firstValue || expectation > m_maxValue) {
+                m_maxValue = expectation;
             }
             
             firstValue = false;
@@ -144,11 +152,6 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
         m_minValue = -1.0;
         m_maxValue = 1.0;
     }
-    
-    // Assurer une petite marge pour mieux visualiser les différences
-    double margin = (m_maxValue - m_minValue) * 0.05;  // Réduire la marge à 5%
-    m_minValue -= margin;
-    m_maxValue += margin;
 }
 
 QColor TradingHeatmapWidget::getColorForValue(double value) {
@@ -268,40 +271,73 @@ void TradingHeatmapWidget::buildHeatmap() {
                 );
                 continue;
             }
+
+            // Calculer l'espérance et la variance
+            int count = m_tradeCountData[h][d];
+            double totalPnL = m_performanceData[h][d];
+            double expectation = totalPnL / count; // Espérance
             
-            double value = m_performanceData[h][d];
-            QColor cellColor = getColorForValue(value);
+            // Variance = E[X²] - (E[X])²
+            double meanOfSquares = m_squaredSumData[h][d] / count;
+            double variance = meanOfSquares - (expectation * expectation);
+            double stddev = variance > 0 ? std::sqrt(variance) : 0.0; // Écart-type
+            
+            QColor cellColor = getColorForValue(expectation);
             
             // Ajouter un rectangle avec une bordure fine
             QGraphicsRectItem* cell = m_scene->addRect(
                 x, y, adjustedCellSize, adjustedCellSize,
                 QPen(Qt::black, 0.5), QBrush(cellColor)
             );
-            
-            // Modifier le tooltip pour inclure la plage horaire
-            QString tooltipText = QString("Jour: %1\nHeure: %2h - %3h\nPnL total: $%4\nTrades: %5")
+
+            // Modifier le tooltip pour inclure espérance et écart-type
+            QString tooltipText = QString("Jour: %1\nHeure: %2h - %3h\nEspérance: %4 €\nÉcart-type: %5 €\nTrades: %6")
                                     .arg(m_dayNames[d])
                                     .arg(h)
                                     .arg(h+1)
-                                    .arg(value, 0, 'f', 2)
-                                    .arg(m_tradeCountData[h][d]);
+                                    .arg(expectation, 0, 'f', 2)
+                                    .arg(stddev, 0, 'f', 2)
+                                    .arg(count);
             cell->setToolTip(tooltipText);
-            
-            // Afficher le nombre de trades dans chaque cellule
-            QGraphicsTextItem* countText = m_scene->addText(QString::number(m_tradeCountData[h][d]));
-            QFont countFont = countText->font();
-            countText->setFont(countFont);
-            
-            // Centrer le texte dans la cellule
-            QRectF textRect = countText->boundingRect();
-            countText->setPos(x + (adjustedCellSize - textRect.width())/2, 
-                                y + (adjustedCellSize - textRect.height())/2);
+
+            // Afficher l'espérance et l'écart-type dans la cellule
+            // Format: E=XX.XX
+            //         V=XX.XX
+            QString expText = QString("%1").arg(expectation, 0, 'f', 2);
+            QGraphicsTextItem* expTextItem = m_scene->addText(expText);
+            QFont expFont = expTextItem->font();
+            expFont.setPointSize(10); // Taille de police plus grande pour l'espérance
+            expFont.setBold(true);
+            expTextItem->setFont(expFont);
+
+            QString stddevText = QString("%1").arg(stddev, 0, 'f', 0);
+            QGraphicsTextItem* stddevTextItem = m_scene->addText(stddevText);
+            QFont stddevFont = stddevTextItem->font();
+            stddevFont.setPointSize(8); // Taille de police plus petite pour l'écart-type
+            stddevTextItem->setFont(stddevFont);
+
+            // Centrer les textes dans la cellule
+            QRectF expRect = expTextItem->boundingRect();
+            QRectF stddevRect = stddevTextItem->boundingRect();
+
+            // Positionner l'espérance au milieu-haut
+            expTextItem->setPos(
+                x + (adjustedCellSize - expRect.width())/2,
+                y + adjustedCellSize * 0.25 - expRect.height()/2
+            );
+
+            // Positionner l'écart-type au milieu-bas
+            stddevTextItem->setPos(
+                x + (adjustedCellSize - stddevRect.width())/2,
+                y + adjustedCellSize * 0.75 - stddevRect.height()/2
+            );
             
             // Ajuster la couleur du texte pour la lisibilité
             QColor textColor = QColor::fromHsv(cellColor.hue(), 
-                                                cellColor.saturation(),
-                                                cellColor.value() < 128 ? 240 : 30);
-            countText->setDefaultTextColor(textColor);
+                                              cellColor.saturation(),
+                                              cellColor.value() < 128 ? 240 : 30);
+            expTextItem->setDefaultTextColor(textColor);
+            stddevTextItem->setDefaultTextColor(textColor);
         }
     }
     
@@ -317,10 +353,10 @@ void TradingHeatmapWidget::buildHeatmap() {
     int legendHeight = numHoursToShow * (adjustedCellSize + CELL_SPACING) - CELL_SPACING;
     
     // Titre de la légende
-    QGraphicsTextItem* legendTitle = m_scene->addText("PnL ($)");
+    QGraphicsTextItem* legendTitle = m_scene->addText("E/σ (€)");
     QFont legendTitleFont = legendTitle->font();
     legendTitle->setFont(legendTitleFont);
-    legendTitle->setPos(legendX, legendY - 25);
+    legendTitle->setPos(legendX, legendY - 35);
     
     // Gradient vertical (de bas en haut)
     QLinearGradient gradient(0, legendY + legendHeight, 0, legendY);
@@ -339,31 +375,31 @@ void TradingHeatmapWidget::buildHeatmap() {
     // Labels des valeurs à droite du rectangle
     
     // Maximum (en haut)
-    QGraphicsTextItem* maxText = m_scene->addText(QString("$%1").arg(m_maxValue, 0, 'f', 2));
+    QGraphicsTextItem* maxText = m_scene->addText(QString("%1 €").arg(m_maxValue, 0, 'f', 2));
     QFont valueFont = maxText->font();
     maxText->setFont(valueFont);
     maxText->setPos(legendX + legendWidth + 5, legendY - maxText->boundingRect().height()/2);
     
     // Quart positif
-    QGraphicsTextItem* quarterPosText = m_scene->addText(QString("$%1").arg(m_maxValue/2, 0, 'f', 2));
+    QGraphicsTextItem* quarterPosText = m_scene->addText(QString("%1 €").arg(m_maxValue/2, 0, 'f', 2));
     quarterPosText->setFont(valueFont);
     quarterPosText->setPos(legendX + legendWidth + 5, 
                           legendY + legendHeight/4 - quarterPosText->boundingRect().height()/2);
     
     // Zéro (milieu)
-    QGraphicsTextItem* zeroText = m_scene->addText("$0.00");
+    QGraphicsTextItem* zeroText = m_scene->addText("0 €");
     zeroText->setFont(valueFont);
     zeroText->setPos(legendX + legendWidth + 5, 
                     legendY + legendHeight/2 - zeroText->boundingRect().height()/2);
     
     // Quart négatif
-    QGraphicsTextItem* quarterNegText = m_scene->addText(QString("$%1").arg(m_minValue/2, 0, 'f', 2));
+    QGraphicsTextItem* quarterNegText = m_scene->addText(QString("%1 €").arg(m_minValue/2, 0, 'f', 2));
     quarterNegText->setFont(valueFont);
     quarterNegText->setPos(legendX + legendWidth + 5, 
                           legendY + 3*legendHeight/4 - quarterNegText->boundingRect().height()/2);
     
     // Minimum (en bas)
-    QGraphicsTextItem* minText = m_scene->addText(QString("$%1").arg(m_minValue, 0, 'f', 2));
+    QGraphicsTextItem* minText = m_scene->addText(QString("%1 €").arg(m_minValue, 0, 'f', 2));
     minText->setFont(valueFont);
     minText->setPos(legendX + legendWidth + 5, 
                    legendY + legendHeight - minText->boundingRect().height()/2);
@@ -375,7 +411,7 @@ void TradingHeatmapWidget::buildHeatmap() {
     m_view->centerOn(boundingRect.center());
     
     // Mettre à jour le titre du groupe box
-    m_groupBox->setTitle("Analyse du PnL cumulé par Heure et Jour");
+    m_groupBox->setTitle("Analyse de l'Espérance de PnL par Heure et Jour");
 }
 
 bool TradingHeatmapWidget::eventFilter(QObject* watched, QEvent* event) {
@@ -409,6 +445,7 @@ void TradingHeatmapWidget::clear() {
         for (int d = 0; d < DAYS_IN_WEEK; d++) {
             m_performanceData[h][d] = 0.0;
             m_tradeCountData[h][d] = 0;
+            m_squaredSumData[h][d] = 0.0;
         }
     }
     

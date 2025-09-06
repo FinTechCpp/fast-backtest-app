@@ -50,6 +50,7 @@ private:
     // Données pour la heatmap
     QVector<QVector<double>> m_performanceData; // [heure][jour] -> performance moyenne (%)
     QVector<QVector<int>> m_tradeCountData;     // [heure][jour] -> nombre de trades
+    QVector<QVector<double>> m_squaredSumData;   // [heure][jour] -> somme des carrés des performances
     
     // Valeurs min/max pour le gradient de couleur
     double m_minValue;

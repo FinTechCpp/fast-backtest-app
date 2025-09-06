@@ -75,9 +75,9 @@ void RatioGaugeWidget::setupUI()
     m_mainLayout->addWidget(m_gaugeWidget,    0, 2);
 
     // Proportions précises: 10% / 5% / 85%
-    m_mainLayout->setColumnStretch(0, 20);  // 10%
-    m_mainLayout->setColumnStretch(1, 8);  // 5%
-    m_mainLayout->setColumnStretch(2, 72); // 85%
+    m_mainLayout->setColumnStretch(0, 24);
+    m_mainLayout->setColumnStretch(1, 8);
+    m_mainLayout->setColumnStretch(2, 68);
 }
 
 void RatioGaugeWidget::setValue(double value)

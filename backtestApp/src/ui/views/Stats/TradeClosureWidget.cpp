@@ -5,11 +5,11 @@
 #include <QDebug>
 
 TradeClosureWidget::TradeClosureWidget(QWidget* parent)
-    : StatsBaseWidget(parent), m_chartView(new QChartView()), m_legendContainer(new QWidget())
+    : StatsBaseWidget(parent), m_chartView(new QChartView())
 {
     m_chartView->setRenderHint(QPainter::Antialiasing);
-    m_chartView->setMinimumHeight(300);
-    m_chartView->setMinimumWidth(300);
+    m_chartView->setMinimumHeight(350);
+    m_chartView->setMinimumWidth(350);
     
     // Créer un layout horizontal pour contenir le graphique et la légende
     QHBoxLayout* mainLayout = new QHBoxLayout(this);
@@ -19,19 +19,19 @@ TradeClosureWidget::TradeClosureWidget(QWidget* parent)
     mainLayout->addWidget(m_chartView, 3);
     
     // Configurer la légende à droite
-    m_legendLayout = new QVBoxLayout(m_legendContainer);
-    m_legendLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+    // m_legendLayout = new QVBoxLayout(m_legendContainer);
+    // m_legendLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     
-    // Titre de la légende
-    QLabel* legendTitle = new QLabel("Types de clôture des trades");
-    QFont titleFont = legendTitle->font();
-    titleFont.setBold(true);
-    titleFont.setPointSize(titleFont.pointSize() + 2);
-    legendTitle->setFont(titleFont);
-    m_legendLayout->addWidget(legendTitle);
+    // // Titre de la légende
+    // QLabel* legendTitle = new QLabel("Types de clôture des trades");
+    // QFont titleFont = legendTitle->font();
+    // titleFont.setBold(true);
+    // titleFont.setPointSize(titleFont.pointSize() + 2);
+    // legendTitle->setFont(titleFont);
+    // m_legendLayout->addWidget(legendTitle);
     
     // Ajouter le conteneur de légende au layout principal
-    mainLayout->addWidget(m_legendContainer, 1);
+    // mainLayout->addWidget(m_legendContainer, 1);
 }
 
 void TradeClosureWidget::updateContent(const be::Stats& stats) {
@@ -78,15 +78,18 @@ void TradeClosureWidget::updateContent(const be::Stats& stats) {
     for (QPieSlice *slice : series->slices()) {
         int count = slice->value();
         double percentage = (count * 100.0) / totalTrades;
-        slice->setLabel(QString("%1: %2 (%3%)").arg(slice->label()).arg(count).arg(QString::number(percentage, 'f', 1)));
+        slice->setLabel(QString("%1: %2 (%3%)").arg(slice->label()).arg(QString::number(percentage, 'f', 1)).arg(count));
+        slice->setLabelFont(QFont("Arial", 12));
+        slice->setLabelColor(Qt::black); // Set label color to black
     }
     
     // Créer le graphique
     QChart *chart = new QChart();
     chart->addSeries(series);
-    chart->setTitle("Distribution des clôtures de trades");
+    // chart->setTitle("Distribution des clôtures de trades");
     chart->legend()->setVisible(true);
     chart->legend()->setAlignment(Qt::AlignBottom);
+    chart->legend()->setFont(QFont("Arial", 11));
     
     // Animation
     series->setLabelsVisible(true);
@@ -94,18 +97,23 @@ void TradeClosureWidget::updateContent(const be::Stats& stats) {
     
     // Mise à jour du graphique
     m_chartView->setChart(chart);
+
+    // Options avancées pour la lisibilité du graphique
+    chart->setBackgroundVisible(false);
+    chart->setMargins(QMargins(10, 10, 10, 10));
+    // chart->layout()->setContentsMargins(0, 0, 0, 0);
     
     // Mettre à jour la légende détaillée
-    updateLegend(stats);
+    // updateLegend(stats);
 }
 
 void TradeClosureWidget::updateLegend(const be::Stats& stats) {
     // Effacer les anciens widgets de légende (sauf le titre)
-    while (m_legendLayout->count() > 1) {
-        QLayoutItem* item = m_legendLayout->takeAt(1);
-        delete item->widget();
-        delete item;
-    }
+    // while (m_legendLayout->count() > 1) {
+    //     QLayoutItem* item = m_legendLayout->takeAt(1);
+    //     delete item->widget();
+    //     delete item;
+    // }
     
     // Ajouter de nouvelles entrées de légende avec des détails
     QStringList types = {"Take Profit (TP)", "Stop Loss (SL)", "Break Even (BE)", "Manuel", "Inconnu"};

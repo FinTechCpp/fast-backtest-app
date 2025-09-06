@@ -11,7 +11,7 @@
 #include <QDebug>
 #include <QResizeEvent>
 
-RatioGaugeWidget::RatioGaugeWidget(QWidget* parent)
+RatioGaugeWidget::RatioGaugeWidget(RatioType type, QWidget* parent)
     : QWidget(parent),
       m_value(0.0),
       m_minValue(0.0),
@@ -19,89 +19,14 @@ RatioGaugeWidget::RatioGaugeWidget(QWidget* parent)
       m_precision(2),
       m_addPercentageSign(false),
       m_currentType(RatioType::Custom),
-      m_gaugeWidth(400),
-      m_gaugeHeight(30),
+      m_gaugeHeight(20),
       m_hasValue(false)
 {
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    setMinimumHeight(80);
+    // setMinimumWidth(m_gaugeWidth);
     setupUI();
     
-    // Configuration par défaut (Sharpe Ratio)
-    setRatioType(RatioType::Sharpe);
-}
-
-void RatioGaugeWidget::setupUI()
-{
-    // Layout principal
-    QVBoxLayout* mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    
-    // GroupBox principal
-    m_groupBox = new QGroupBox("Ratio");
-    mainLayout->addWidget(m_groupBox);
-    
-    // Layout interne
-    QVBoxLayout* groupLayout = new QVBoxLayout(m_groupBox);
-    groupLayout->setSpacing(10);
-    
-    // Section supérieure avec valeur et zone actuelle
-    QHBoxLayout* topLayout = new QHBoxLayout();
-    
-    // Étiquette pour la valeur actuelle
-    m_valueLabel = new QLabel("N/A");
-    QFont valueFont = m_valueLabel->font();
-    valueFont.setPointSize(14);
-    valueFont.setBold(true);
-    m_valueLabel->setFont(valueFont);
-    m_valueLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-    
-    // Étiquette pour la description de la zone actuelle
-    m_currentZoneLabel = new QLabel("Zone");
-    QFont zoneFont = m_currentZoneLabel->font();
-    zoneFont.setBold(true);
-    m_currentZoneLabel->setFont(zoneFont);
-    m_currentZoneLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    
-    topLayout->addWidget(m_valueLabel);
-    topLayout->addStretch();
-    topLayout->addWidget(m_currentZoneLabel);
-    
-    groupLayout->addLayout(topLayout);
-    
-    // Widget personnalisé pour la jauge
-    m_gaugeWidget = new QWidget();
-    m_gaugeWidget->setMinimumHeight(m_gaugeHeight);
-    m_gaugeWidget->setMinimumWidth(m_gaugeWidth);
-    m_gaugeWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    groupLayout->addWidget(m_gaugeWidget);
-    
-    // Connecter les signaux pour le redessinage
-    connect(this, &RatioGaugeWidget::objectNameChanged, this, [this]() {
-        updateGauge();
-    });
-}
-
-void RatioGaugeWidget::setZones(const QVector<GaugeZone>& zones, const QString& title, const QString& explanation)
-{
-    if (zones.isEmpty()) {
-        qWarning() << "Tentative de définition de zones vides pour la jauge";
-        return;
-    }
-    
-    m_zones = zones;
-    m_groupBox->setTitle(title);
-    m_baseExplanation = explanation;
-    
-    // Déterminer les valeurs min/max
-    m_minValue = m_zones.first().minValue;
-    m_maxValue = m_zones.last().maxValue;
-    
-    // Mettre à jour l'affichage
-    updateGauge();
-    updateExplanation();
-}
-
-void RatioGaugeWidget::setRatioType(RatioType type)
-{
     m_currentType = type;
     
     switch (type) {
@@ -138,6 +63,70 @@ void RatioGaugeWidget::setRatioType(RatioType type)
     updateGauge();
 }
 
+void RatioGaugeWidget::setupUI()
+{
+    // Layout principal
+    QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(5, 5, 5, 5);
+    
+    // Section supérieure avec nom de la métrique, valeur et zone actuelle
+    QHBoxLayout* topLayout = new QHBoxLayout();
+    
+    // Étiquette pour le nom de la métrique
+    m_metricNameLabel = new QLabel("Ratio");
+    QFont nameFont = m_metricNameLabel->font();
+    nameFont.setPointSize(14);
+    m_metricNameLabel->setFont(nameFont);
+    m_metricNameLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    
+    // Étiquette pour la valeur actuelle
+    m_valueLabel = new QLabel("N/A");
+    QFont valueFont = m_valueLabel->font();
+    valueFont.setPointSize(14);
+    m_valueLabel->setFont(valueFont);
+    m_valueLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+    
+    // Widget personnalisé pour la jauge
+    m_gaugeWidget = new GaugeRenderWidget(this);
+    m_gaugeWidget->setFixedHeight(m_gaugeHeight);
+    m_gaugeWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    topLayout->addWidget(m_metricNameLabel);
+    topLayout->addWidget(m_valueLabel);
+    // topLayout->addStretch();
+    topLayout->addWidget(m_gaugeWidget);
+
+    mainLayout->addLayout(topLayout);
+    
+    // Connecter les signaux pour le redessinage
+    connect(this, &RatioGaugeWidget::objectNameChanged, this, [this]() {
+        updateGauge();
+    });
+}
+
+void RatioGaugeWidget::setZones(const QVector<GaugeZone>& zones, const QString& title, const QString& explanation)
+{
+    if (zones.isEmpty()) {
+        qWarning() << "Tentative de définition de zones vides pour la jauge";
+        return;
+    }
+    
+    m_zones = zones;
+    m_metricTitle = title;
+    m_baseExplanation = explanation;
+    
+    // Mettre à jour le nom de la métrique affiché
+    m_metricNameLabel->setText(title + ": ");
+    
+    // Déterminer les valeurs min/max
+    m_minValue = m_zones.first().minValue;
+    m_maxValue = m_zones.last().maxValue;
+    
+    // Mettre à jour l'affichage
+    updateGauge();
+    updateExplanation();
+}
+
 void RatioGaugeWidget::setValue(double value)
 {
     m_value = value;
@@ -156,13 +145,6 @@ void RatioGaugeWidget::setValueFormat(unsigned int precision, bool addPercentage
     m_precision = precision;
     m_addPercentageSign = addPercentageSign;
     
-    updateGauge();
-}
-
-void RatioGaugeWidget::setGaugeWidth(int width)
-{
-    m_gaugeWidth = width;
-    m_gaugeWidget->setMinimumWidth(width);
     updateGauge();
 }
 
@@ -213,9 +195,11 @@ void RatioGaugeWidget::updateExplanation()
 
     QString tooltipText = m_baseExplanation + zoneExplanation;
 
-    // Appliquer le tooltip au groupe box et au widget de jauge
-    m_groupBox->setToolTip(tooltipText);
+    // Appliquer le tooltip aux widgets principaux
+    this->setToolTip(tooltipText);
     m_gaugeWidget->setToolTip(tooltipText);
+    m_metricNameLabel->setToolTip(tooltipText);
+    m_valueLabel->setToolTip(tooltipText);
 }
 
 // Configuration des différents types de ratios
@@ -384,14 +368,12 @@ void RatioGaugeWidget::updateGauge()
         
         // Créer le nouveau widget de rendu
         gaugeRenderer = new GaugeRenderWidget(this);
-        gaugeRenderer->setMinimumHeight(m_gaugeHeight);
-        gaugeRenderer->setMinimumWidth(m_gaugeWidth);
         gaugeRenderer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         
         // Remplacer dans le layout
-        QLayoutItem* item = m_groupBox->layout()->takeAt(1);
-        delete item;
-        static_cast<QVBoxLayout*>(m_groupBox->layout())->insertWidget(1, gaugeRenderer);
+        // QLayoutItem* item = m_groupBox->layout()->takeAt(1);
+        // delete item;
+        // static_cast<QVBoxLayout*>(m_groupBox->layout())->insertWidget(1, gaugeRenderer);
         
         // Mettre à jour la référence
         m_gaugeWidget = gaugeRenderer;
@@ -404,7 +386,7 @@ void RatioGaugeWidget::updateGauge()
     // Ne pas afficher le curseur s'il n'y a pas de valeur définie
     if (m_hasValue) {
         gaugeRenderer->setValue(m_value);
-        // Mettre à jour l'étiquette de valeur avec la valeur formatée
+        // Mettre à jour uniquement la valeur, pas le nom de la métrique
         m_valueLabel->setText(QString::number(m_value, 'f', m_precision) + (m_addPercentageSign ? "%" : ""));
         
         // Trouver la zone actuelle
@@ -431,22 +413,22 @@ void RatioGaugeWidget::updateGauge()
         }
 
         // Mettre à jour l'étiquette de zone
-        m_currentZoneLabel->setText(currentZoneDesc);
+        // m_currentZoneLabel->setText(currentZoneDesc);
 
-        // Calculer une couleur de fond éclaircie (luminance augmentée)
-        QColor lighterColor = currentColor.lighter(135); // 140 = +40% plus clair
-        const QString textColor = "#000000";
+        // // Calculer une couleur de fond éclaircie (luminance augmentée)
+        // QColor lighterColor = currentColor.lighter(135); // 140 = +40% plus clair
+        // const QString textColor = "#000000";
 
-        // Appliquer fond (la couleur de la zone éclaircie) et texte contrasté, avec un padding pour lisibilité
-        m_currentZoneLabel->setStyleSheet(QString(
-            "color: %1; background-color: %2; padding: 4px 8px; border-radius: 4px;")
-            .arg(textColor, lighterColor.name()));
-        m_currentZoneLabel->setVisible(true);
+        // // Appliquer fond (la couleur de la zone éclaircie) et texte contrasté, avec un padding pour lisibilité
+        // m_currentZoneLabel->setStyleSheet(QString(
+        //     "color: %1; background-color: %2; padding: 4px 8px; border-radius: 4px;")
+        //     .arg(textColor, lighterColor.name()));
+        // m_currentZoneLabel->setVisible(true);
     } else {
         // Réinitialiser l'affichage
-        gaugeRenderer->setShowCursor(false);
-        m_valueLabel->setText("N/A");
-        m_currentZoneLabel->setVisible(false);
+        // gaugeRenderer->setShowCursor(false);
+        // m_valueLabel->setText("N/A");
+        // m_currentZoneLabel->setVisible(false);
     }
 
     updateExplanation();

@@ -19,30 +19,15 @@ RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
     gridLayout->setSpacing(15);
     
     // Créer les jauges
-    m_sharpeGauge = new RatioGaugeWidget();
-    m_sharpeGauge->setRatioType(RatioGaugeWidget::RatioType::Sharpe);
-    
-    m_sortinoGauge = new RatioGaugeWidget();
-    m_sortinoGauge->setRatioType(RatioGaugeWidget::RatioType::Sortino);
-    
-    m_calmarGauge = new RatioGaugeWidget();
-    m_calmarGauge->setRatioType(RatioGaugeWidget::RatioType::Calmar);
-    
-    m_winRateGauge = new RatioGaugeWidget();
-    m_winRateGauge->setRatioType(RatioGaugeWidget::RatioType::WinRate);
-    
-    m_profitFactorGauge = new RatioGaugeWidget();
-    m_profitFactorGauge->setRatioType(RatioGaugeWidget::RatioType::ProfitFactor);
-    
-    m_sqnGauge = new RatioGaugeWidget();
-    m_sqnGauge->setRatioType(RatioGaugeWidget::RatioType::SQN);
-    
-    m_maxDrawdownGauge = new RatioGaugeWidget();
-    m_maxDrawdownGauge->setRatioType(RatioGaugeWidget::RatioType::MaxDrawdown);
-    
-    m_kellyGauge = new RatioGaugeWidget();
-    m_kellyGauge->setRatioType(RatioGaugeWidget::RatioType::Kelly);
-    
+    m_sharpeGauge = new RatioGaugeWidget(RatioGaugeWidget::RatioType::Sharpe);
+    m_sortinoGauge = new RatioGaugeWidget(RatioGaugeWidget::RatioType::Sortino);
+    m_calmarGauge = new RatioGaugeWidget(RatioGaugeWidget::RatioType::Calmar);
+    m_winRateGauge = new RatioGaugeWidget(RatioGaugeWidget::RatioType::WinRate);
+    m_profitFactorGauge = new RatioGaugeWidget(RatioGaugeWidget::RatioType::ProfitFactor);
+    m_sqnGauge = new RatioGaugeWidget(RatioGaugeWidget::RatioType::SQN);    
+    m_maxDrawdownGauge = new RatioGaugeWidget(RatioGaugeWidget::RatioType::MaxDrawdown);
+    m_kellyGauge = new RatioGaugeWidget(RatioGaugeWidget::RatioType::Kelly);
+
     // Ajouter les jauges au layout en grille
     gridLayout->addWidget(m_profitFactorGauge, 0, 0);
     gridLayout->addWidget(m_winRateGauge, 0, 1);

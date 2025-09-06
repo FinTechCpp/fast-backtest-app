@@ -53,7 +53,7 @@ public:
      * @brief Constructeur
      * @param parent Widget parent
      */
-    explicit RatioGaugeWidget(QWidget* parent = nullptr);
+    explicit RatioGaugeWidget(RatioType type, QWidget* parent = nullptr);
 
     /**
      * @brief Définir les zones de la jauge manuellement
@@ -62,12 +62,6 @@ public:
      * @param explanation Explication générale du ratio
      */
     void setZones(const QVector<GaugeZone>& zones, const QString& title, const QString& explanation);
-
-    /**
-     * @brief Configurer la jauge pour un type de ratio prédéfini
-     * @param type Type de ratio à afficher
-     */
-    void setRatioType(RatioType type);
 
     /**
      * @brief Définir la valeur actuelle du ratio
@@ -87,13 +81,6 @@ public:
      * @param addPercentageSign Indique si le signe % doit être ajouté
      */
     void setValueFormat(unsigned int precision, bool addPercentageSign);
-
-
-    /**
-     * @brief Définir la largeur de la jauge
-     * @param width Largeur souhaitée en pixels
-     */
-    void setGaugeWidth(int width);
 
     /**
      * @brief Définir la hauteur de la jauge
@@ -187,12 +174,11 @@ private:
     RatioType m_currentType;         ///< Type de ratio actuel
 
     // Widgets UI
-    QGroupBox* m_groupBox;           ///< Boîte de groupe principale
+    QLabel* m_metricNameLabel;       ///< Étiquette pour le nom de la métrique
+    QString m_metricTitle;           ///< Titre de la métrique
     QWidget* m_gaugeWidget;          ///< Widget de la jauge
     QLabel* m_valueLabel;            ///< Étiquette pour la valeur
-    QLabel* m_currentZoneLabel;      ///< Description de la zone actuelle
     QString m_baseExplanation;       ///< Texte explicatif de base
-    int m_gaugeWidth;                ///< Largeur de la jauge
     int m_gaugeHeight;               ///< Hauteur de la jauge
 };
 
@@ -362,6 +348,7 @@ protected:
         // painter.setPen(QPen(Qt::black, 1));
         // painter.setBrush(Qt::NoBrush);
         // painter.drawEllipse(markerX - 4, middleHeight - 4, 8, 8);
+
     }
 
 private:
@@ -370,4 +357,157 @@ private:
     double m_minValue;
     double m_maxValue;
     bool m_showCursor;
+};
+
+// FillGaugeRenderWidget.h - à ajouter dans le fichier d'en-tête RatioGaugeWidget.h ou dans son propre fichier
+
+class FillGaugeRenderWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    FillGaugeRenderWidget(QWidget* parent = nullptr)
+        : QWidget(parent), m_value(0.0), m_minValue(0.0), m_maxValue(1.0) 
+    {
+        setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        setMinimumHeight(65); // Hauteur minimale pour accommoder les labels en dessous
+    }
+
+    void setZones(const QVector<RatioGaugeWidget::GaugeZone>& zones) {
+        m_zones = zones;
+        update();
+    }
+    
+    void setValue(double value) {
+        m_value = value;
+        update();
+    }
+    
+    void setRange(double min, double max) {
+        m_minValue = min;
+        m_maxValue = max;
+        update();
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override {
+        QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
+        
+        int w = width();
+        int h = height();
+        
+        // Définir les dimensions et positions principales
+        int gaugeHeight = h * 0.7;         // 70% de la hauteur pour la gauge et les tirets
+        int barHeight = gaugeHeight * 0.5;  // Barre de remplissage = 50% de la hauteur du fond
+        int labelHeight = h - gaugeHeight;  // 30% pour les labels
+        
+        int gaugeY = 0;                     // Gauge commence en haut
+        int barY = gaugeY + (gaugeHeight - barHeight) / 2; // Barre centrée dans la gauge
+        int tickY = gaugeY + gaugeHeight;    // Position Y des tirets (sous la gauge)
+        int labelY = tickY + 3;              // Position Y des labels (sous les tirets)
+        
+        // Rectangle pour la gauge complète
+        QRect gaugeRect(0, gaugeY, w, gaugeHeight);
+        
+        if (m_zones.isEmpty()) return;
+        
+        // 1. DESSINER LE FOND DE ZONES COLORÉES
+        double totalRange = m_maxValue - m_minValue;
+        int startX = 0;
+        
+        for (const auto& zone : m_zones) {
+            double zoneStart = (zone.minValue - m_minValue) / totalRange;
+            double zoneEnd = (zone.maxValue - m_minValue) / totalRange;
+            zoneStart = qBound(0.0, zoneStart, 1.0);
+            zoneEnd = qBound(0.0, zoneEnd, 1.0);
+            
+            int zoneStartX = qRound(zoneStart * w);
+            int zoneEndX = qRound(zoneEnd * w);
+            int zoneWidth = zoneEndX - zoneStartX;
+            
+            if (zoneWidth > 0) {
+                QRect zoneRect(zoneStartX, gaugeY, zoneWidth, gaugeHeight);
+                QColor zoneColor = zone.color.lighter(115); // Légèrement plus clair
+                painter.fillRect(zoneRect, zoneColor);
+                
+                // Bordure fine entre les zones
+                painter.setPen(QPen(QColor(220, 220, 220), 1));
+                painter.drawLine(zoneEndX, gaugeY, zoneEndX, gaugeY + gaugeHeight);
+            }
+            
+            startX = zoneEndX;
+        }
+        
+        // 2. DESSINER LA BARRE DE REMPLISSAGE NOIRE
+        double fillRatio = (m_value - m_minValue) / totalRange;
+        fillRatio = qBound(0.0, fillRatio, 1.0);
+        int fillWidth = qRound(fillRatio * w);
+        
+        if (fillWidth > 0) {
+            QRect fillRect(0, barY, fillWidth, barHeight);
+            QColor fillColor(40, 40, 40, 200);  // Noir semi-transparent
+            painter.fillRect(fillRect, fillColor);
+            
+            // Bordure subtile pour la barre
+            painter.setPen(QPen(QColor(20, 20, 20), 1));
+            painter.drawRect(fillRect);
+        }
+        
+        // 3. DESSINER LES GRADUATIONS ET LABELS
+        painter.setPen(QPen(QColor(60, 60, 60), 1));
+        
+        QFont tickFont = painter.font();
+        tickFont.setPointSizeF(tickFont.pointSizeF() * 0.85); // Police plus petite pour les labels
+        painter.setFont(tickFont);
+        
+        // Nombre de graduations principales
+        const int numTicks = 5; // Réduit pour plus de lisibilité
+        int tickLength = 5;
+        
+        for (int i = 0; i <= numTicks; i++) {
+            double ratio = (double)i / numTicks;
+            int x = qRound(ratio * w);
+            
+            // Tiret de graduation
+            painter.drawLine(x, tickY - tickLength, x, tickY);
+            
+            // Label de valeur
+            double tickValue = m_minValue + (ratio * totalRange);
+            QString valueStr = QString::number(tickValue, 'f', 1);
+            QFontMetrics fm = painter.fontMetrics();
+            int textWidth = fm.horizontalAdvance(valueStr);
+            
+            // Ajuster position X pour éviter débordement
+            int textX;
+            if (i == 0) {
+                textX = x;
+            } else if (i == numTicks) {
+                textX = x - textWidth;
+            } else {
+                textX = x - textWidth/2;
+            }
+            
+            painter.drawText(textX, labelY + fm.height(), valueStr);
+        }
+        
+        // 4. AJOUTER DES GRADUATIONS INTERMÉDIAIRES (optionnel)
+        painter.setPen(QPen(QColor(120, 120, 120), 0.5, Qt::DotLine));
+        for (int i = 1; i < numTicks * 2; i += 2) {
+            double ratio = (double)i / (numTicks * 2);
+            int x = qRound(ratio * w);
+            
+            // Tiret intermédiaire plus court
+            painter.drawLine(x, tickY - tickLength/2, x, tickY);
+        }
+        
+        // 5. BORDURE DE LA JAUGE COMPLÈTE
+        painter.setPen(QPen(QColor(100, 100, 100), 1));
+        painter.drawRect(0, gaugeY, w, gaugeHeight);
+    }
+
+private:
+    QVector<RatioGaugeWidget::GaugeZone> m_zones;
+    double m_value;
+    double m_minValue;
+    double m_maxValue;
 };

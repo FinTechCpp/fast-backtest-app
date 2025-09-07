@@ -42,8 +42,9 @@ private:
     QColor getColorForValue(double value);
 
     // Composants d'interface
-    QGroupBox* m_groupBox;
+    // QGroupBox* m_groupBox;
     QVBoxLayout* m_mainLayout;
+    QLabel* m_titleLabel;
     QGraphicsScene* m_scene;
     QGraphicsView* m_view;
     
@@ -62,7 +63,7 @@ private:
     static constexpr int HOURS_IN_DAY = 24;
     static constexpr int DAYS_IN_WEEK = 7;
     static constexpr int CELL_SIZE = 40;
-    static constexpr int CELL_SPACING = 1;
+    static constexpr int CELL_SPACING = 0;
     
     // Noms des jours pour l'affichage
     // QStringList m_dayNames{"Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"};

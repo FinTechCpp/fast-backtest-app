@@ -18,9 +18,10 @@ public:
     void clear() override;
     
 private:
+    QLabel* m_titleLabel;
     QChartView* m_chartView;
-    QWidget* m_legendContainer;
-    QVBoxLayout* m_legendLayout;
+    // QWidget* m_legendContainer;
+    // QVBoxLayout* m_legendLayout;
     
-    void updateLegend(const be::Stats& stats);
+    // void updateLegend(const be::Stats& stats);
 };

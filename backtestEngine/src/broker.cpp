@@ -301,7 +301,8 @@ void Broker::processOrders() {
                 // C'est un ordre limit (TP)
                 trade->setCloseReason(CloseReason::TakeProfit);
             } else if (order.stop() > 0.0 || 
-                    (order.parentTrade() && *order.parentTrade()->slOrder() == order)) {
+                    (order.parentTrade() && order.parentTrade()->slOrder() && 
+                     *order.parentTrade()->slOrder() == order)) {
                 // C'est un ordre stop (SL)
                 // Si le trade est en break-even, marquer comme tel
                 if (trade->isBreakEven()) {

@@ -63,7 +63,7 @@ void StrategyBasePanel::setupUI() {
     
     // Stop Loss Distance (fixe)
     QDoubleSpinBox* stopLossDistanceSpin = new QDoubleSpinBox(this);
-    stopLossDistanceSpin->setDecimals(2);
+    stopLossDistanceSpin->setDecimals(4);
     stopLossDistanceSpin->setRange(0, 10000);
     stopLossDistanceSpin->setSingleStep(1);
     stopLossDistanceSpin->setValue(20);
@@ -76,7 +76,7 @@ void StrategyBasePanel::setupUI() {
     
     // Paramètres ATR - Multiplicateur SL
     QDoubleSpinBox* slAtrMultiplierSpin = new QDoubleSpinBox(this);
-    slAtrMultiplierSpin->setDecimals(1);
+    slAtrMultiplierSpin->setDecimals(2);
     slAtrMultiplierSpin->setRange(0.1, 1000.0);
     slAtrMultiplierSpin->setSingleStep(0.1);
     slAtrMultiplierSpin->setValue(2.0);
@@ -103,8 +103,8 @@ void StrategyBasePanel::setupUI() {
     ));
     
     QDoubleSpinBox* slMinmaxDeltaSpin = new QDoubleSpinBox(this);
-    slMinmaxDeltaSpin->setDecimals(1);
-    slMinmaxDeltaSpin->setRange(0.1, 1000.0);
+    slMinmaxDeltaSpin->setDecimals(2);
+    slMinmaxDeltaSpin->setRange(0, 1000.0);
     slMinmaxDeltaSpin->setValue(5.0);
     slMinmaxDeltaSpin->setEnabled(false);
     slMinmaxDeltaSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
@@ -117,8 +117,8 @@ void StrategyBasePanel::setupUI() {
     
     // SL minimum
     QDoubleSpinBox* minStopLossDistanceSpin = new QDoubleSpinBox(this);
-    minStopLossDistanceSpin->setDecimals(1);
-    minStopLossDistanceSpin->setRange(0.1, 1000.0);
+    minStopLossDistanceSpin->setDecimals(4);
+    minStopLossDistanceSpin->setRange(0, 1000.0);
     minStopLossDistanceSpin->setValue(5.0);
     slLayout->addRow(new QLabel("SL Minimum [pts]:", this), minStopLossDistanceSpin);
     
@@ -147,7 +147,7 @@ void StrategyBasePanel::setupUI() {
     
     // Take Profit Distance (fixe)
     QDoubleSpinBox* takeProfitDistanceSpin = new QDoubleSpinBox(this);
-    takeProfitDistanceSpin->setDecimals(2);
+    takeProfitDistanceSpin->setDecimals(4);
     takeProfitDistanceSpin->setRange(0, 10000);
     takeProfitDistanceSpin->setSingleStep(1);
     takeProfitDistanceSpin->setValue(30);
@@ -160,8 +160,8 @@ void StrategyBasePanel::setupUI() {
     
     // Paramètres ATR - Multiplicateur TP
     QDoubleSpinBox* tpAtrMultiplierSpin = new QDoubleSpinBox(this);
-    tpAtrMultiplierSpin->setDecimals(1);
-    tpAtrMultiplierSpin->setRange(0.1, 1000.0);
+    tpAtrMultiplierSpin->setDecimals(2);
+    tpAtrMultiplierSpin->setRange(0, 1000.0);
     tpAtrMultiplierSpin->setSingleStep(0.1);
     tpAtrMultiplierSpin->setValue(3.0);
     tpAtrMultiplierSpin->setEnabled(false);
@@ -175,7 +175,7 @@ void StrategyBasePanel::setupUI() {
     
     // Paramètres Ratio SL - Multiplicateur TP
     QDoubleSpinBox* tpSlRatioSpin = new QDoubleSpinBox(this);
-    tpSlRatioSpin->setDecimals(1);
+    tpSlRatioSpin->setDecimals(2);
     tpSlRatioSpin->setRange(0.1, 100.0);
     tpSlRatioSpin->setSingleStep(0.1);
     tpSlRatioSpin->setValue(2.0);
@@ -244,7 +244,7 @@ void StrategyBasePanel::setupUI() {
     // TP minimum
     QDoubleSpinBox* minTakeProfitDistanceSpin = new QDoubleSpinBox(this);
     minTakeProfitDistanceSpin->setDecimals(1);
-    minTakeProfitDistanceSpin->setRange(0.1, 1000.0);
+    minTakeProfitDistanceSpin->setRange(0, 1000.0);
     minTakeProfitDistanceSpin->setValue(5.0);
     tpLayout->addRow(new QLabel("TP Minimum [pts]:", this), minTakeProfitDistanceSpin);
     

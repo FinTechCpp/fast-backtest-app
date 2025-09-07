@@ -79,7 +79,7 @@ void GeneralParamsPanel::setupUI()
     
     // Date de fin
     QDateEdit* dateEdit = new QDateEdit(this);
-    dateEdit->setDate(QDate(2025, 7, 17));
+    dateEdit->setDate(QDate(2025, 8, 30));
     dateEdit->setCalendarPopup(true);
     paramsLayout->addRow(new QLabel("Date de fin:", this), dateEdit);
     

@@ -1607,8 +1607,23 @@ void ChartRenderer::trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea
                             // Si deux datasets, c'est probablement une plage
                             value = layer->getDataSet(0)->getValue(xIndex);
                             double value2 = layer->getDataSet(1)->getValue(xIndex);
-                            name = name + ": " + c->formatValue((std::min)(value, value2), "{value|P3}");
-                            name = name + " - " + c->formatValue((std::max)(value, value2), "{value|P3}");
+                            double minVal = (std::min)(value, value2);
+                            double maxVal = (std::max)(value, value2);
+                            
+                            // Choisir le format en fonction des valeurs pour une meilleure précision
+                            std::string valueFormat;
+                            if (std::abs(minVal) < 0.001 || std::abs(maxVal) < 0.001) {
+                                valueFormat = "{value|P8}";  // 8 décimales pour les très petites valeurs
+                            } else if (std::abs(minVal) < 0.01 || std::abs(maxVal) < 0.01) {
+                                valueFormat = "{value|P6}";  // 6 décimales pour les petites valeurs  
+                            } else if (std::abs(minVal) < 0.1 || std::abs(maxVal) < 0.1) {
+                                valueFormat = "{value|P4}";  // 4 décimales pour les valeurs moyennes
+                            } else {
+                                valueFormat = "{value|P3}";  // 3 décimales par défaut
+                            }
+                            
+                            name = name + ": " + c->formatValue(minVal, valueFormat.c_str());
+                            name = name + " - " + c->formatValue(maxVal, valueFormat.c_str());
                         } else {
                             // Cas spécial: volume (3 datasets pour up/down/flat)
                             if (dataSetCount == 3) {
@@ -1617,7 +1632,19 @@ void ChartRenderer::trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea
                                     )->getValue(xIndex) + layer->getDataSet(2)->getValue(xIndex);
                             }
                             
-                            name = name + ": " + c->formatValue(value, "{value|P3}") + unitChar;
+                            // Choisir le format en fonction de la valeur pour une meilleure précision
+                            std::string valueFormat;
+                            if (std::abs(value) < 0.001) {
+                                valueFormat = "{value|P8}";  // 8 décimales pour les très petites valeurs
+                            } else if (std::abs(value) < 0.01) {
+                                valueFormat = "{value|P6}";  // 6 décimales pour les petites valeurs  
+                            } else if (std::abs(value) < 0.1) {
+                                valueFormat = "{value|P4}";  // 4 décimales pour les valeurs moyennes
+                            } else {
+                                valueFormat = "{value|P3}";  // 3 décimales par défaut
+                            }
+                            
+                            name = name + ": " + c->formatValue(value, valueFormat.c_str()) + unitChar;
                         }
                         
                         // Construction de l'entrée de légende

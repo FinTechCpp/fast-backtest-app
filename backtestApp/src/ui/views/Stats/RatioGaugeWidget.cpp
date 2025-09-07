@@ -18,8 +18,11 @@ RatioGaugeWidget::RatioGaugeWidget(const QVector<GaugeZone>& zones, const QStrin
       m_maxValue(1.0),
       m_precision(2),
       m_addPercentageSign(false),
-      m_gaugeHeight(40),
-      m_hasValue(false)
+      m_gaugeHeight(50),
+      m_hasValue(false),
+      m_fillDirection(FillDirection::LeftToRight),
+      m_referenceValue(NAN),
+      m_showReference(false)
 {
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     setMinimumHeight(50);
@@ -75,7 +78,7 @@ void RatioGaugeWidget::setupUI()
     m_mainLayout->addWidget(m_gaugeWidget,    0, 2);
 
     // Proportions précises: 10% / 5% / 85%
-    m_mainLayout->setColumnStretch(0, 24);
+    m_mainLayout->setColumnStretch(0, 12);
     m_mainLayout->setColumnStretch(1, 8);
     m_mainLayout->setColumnStretch(2, 68);
 }
@@ -98,6 +101,25 @@ void RatioGaugeWidget::setValueFormat(unsigned int precision, bool addPercentage
     m_precision = precision;
     m_addPercentageSign = addPercentageSign;
     
+    updateGauge();
+}
+
+void RatioGaugeWidget::setReferenceValue(double referenceValue)
+{
+    m_referenceValue = referenceValue;
+    m_showReference = !std::isnan(referenceValue);
+    updateGauge();
+}
+
+void RatioGaugeWidget::showReference(bool show)
+{
+    m_showReference = show;
+    updateGauge();
+}
+
+void RatioGaugeWidget::setFillDirection(FillDirection direction)
+{
+    m_fillDirection = direction;
     updateGauge();
 }
 
@@ -162,6 +184,9 @@ void RatioGaugeWidget::updateGauge()
     // Configurer le widget de rendu
     m_gaugeWidget->setZones(m_zones);
     m_gaugeWidget->setRange(m_minValue, m_maxValue);
+    m_gaugeWidget->setFillDirection(m_fillDirection);
+    m_gaugeWidget->setReferenceValue(m_referenceValue);
+    m_gaugeWidget->showReference(m_showReference);
 
     // Ne pas afficher le curseur s'il n'y a pas de valeur définie
     if (m_hasValue) {
@@ -171,14 +196,14 @@ void RatioGaugeWidget::updateGauge()
         
         // Trouver la zone actuelle
         QString currentZoneDesc = "Unknown";
-        QColor currentColor = QColor(150, 150, 150); // Gris par défaut
+        QColor valueColor = QColor(0, 0, 0);
         bool inRange = false;
         
         for (const auto& zone : m_zones) {
             if (m_value >= zone.minValue && m_value <= zone.maxValue ||
                 (m_value >= zone.maxValue && m_value <= zone.minValue)) {
                 currentZoneDesc = zone.description;
-                currentColor = zone.color;
+                valueColor = zone.labelColor;
                 inRange = true;
                 break;
             }
@@ -186,11 +211,16 @@ void RatioGaugeWidget::updateGauge()
 
         if (!inRange && m_value < m_minValue) {
             currentZoneDesc = m_zones.first().description;
-            currentColor = m_zones.first().color;
+            valueColor = m_zones.first().labelColor;
         } else if (!inRange && m_value > m_maxValue) {
             currentZoneDesc = m_zones.last().description;
-            currentColor = m_zones.last().color;
+            valueColor = m_zones.last().labelColor;
         }
+
+        m_valueLabel->setStyleSheet(QString("color: rgb(%1, %2, %3);")
+                .arg(valueColor.red())
+                .arg(valueColor.green())
+                .arg(valueColor.blue()));
     } else {
         // Réinitialiser l'affichage
         // m_gaugeWidget->setShowCursor(false);

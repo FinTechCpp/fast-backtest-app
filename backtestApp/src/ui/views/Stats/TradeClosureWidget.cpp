@@ -16,22 +16,7 @@ TradeClosureWidget::TradeClosureWidget(QWidget* parent)
     mainLayout->setContentsMargins(0, 0, 0, 0);
     
     // Ajouter le chart à gauche
-    mainLayout->addWidget(m_chartView, 3);
-    
-    // Configurer la légende à droite
-    // m_legendLayout = new QVBoxLayout(m_legendContainer);
-    // m_legendLayout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    
-    // // Titre de la légende
-    // QLabel* legendTitle = new QLabel("Types de clôture des trades");
-    // QFont titleFont = legendTitle->font();
-    // titleFont.setBold(true);
-    // titleFont.setPointSize(titleFont.pointSize() + 2);
-    // legendTitle->setFont(titleFont);
-    // m_legendLayout->addWidget(legendTitle);
-    
-    // Ajouter le conteneur de légende au layout principal
-    // mainLayout->addWidget(m_legendContainer, 1);
+    mainLayout->addWidget(m_chartView);
 }
 
 void TradeClosureWidget::updateContent(const be::Stats& stats) {
@@ -78,7 +63,7 @@ void TradeClosureWidget::updateContent(const be::Stats& stats) {
     for (QPieSlice *slice : series->slices()) {
         int count = slice->value();
         double percentage = (count * 100.0) / totalTrades;
-        slice->setLabel(QString("%1: %2 (%3%)").arg(slice->label()).arg(QString::number(percentage, 'f', 1)).arg(count));
+        slice->setLabel(QString("%1: %2% (%3)").arg(slice->label()).arg(QString::number(percentage, 'f', 1)).arg(count));
         slice->setLabelFont(QFont("Arial", 12));
         slice->setLabelColor(Qt::black); // Set label color to black
     }
@@ -102,19 +87,9 @@ void TradeClosureWidget::updateContent(const be::Stats& stats) {
     chart->setBackgroundVisible(false);
     chart->setMargins(QMargins(10, 10, 10, 10));
     // chart->layout()->setContentsMargins(0, 0, 0, 0);
-    
-    // Mettre à jour la légende détaillée
-    // updateLegend(stats);
 }
 
-void TradeClosureWidget::updateLegend(const be::Stats& stats) {
-    // Effacer les anciens widgets de légende (sauf le titre)
-    // while (m_legendLayout->count() > 1) {
-    //     QLayoutItem* item = m_legendLayout->takeAt(1);
-    //     delete item->widget();
-    //     delete item;
-    // }
-    
+void TradeClosureWidget::updateLegend(const be::Stats& stats) {    
     // Ajouter de nouvelles entrées de légende avec des détails
     QStringList types = {"Take Profit (TP)", "Stop Loss (SL)", "Break Even (BE)", "Manuel", "Inconnu"};
     QColor colors[] = {
@@ -135,37 +110,38 @@ void TradeClosureWidget::updateLegend(const be::Stats& stats) {
     int totalTrades = stats.numTrades;
     
     for (int i = 0; i < 5; i++) {
-        if (counts[i] > 0) {
-            // Créer un widget contenant un indicateur de couleur et des labels
-            QWidget* legendEntry = new QWidget();
-            QHBoxLayout* entryLayout = new QHBoxLayout(legendEntry);
-            entryLayout->setContentsMargins(0, 5, 0, 5);
-            
-            // Indicateur de couleur
-            QLabel* colorIndicator = new QLabel();
-            colorIndicator->setFixedSize(20, 20);
-            colorIndicator->setStyleSheet(QString("background-color: %1; border-radius: 10px;").arg(colors[i].name()));
-            entryLayout->addWidget(colorIndicator);
-            
-            // Description
-            QLabel* description = new QLabel(types[i]);
-            entryLayout->addWidget(description);
-            
-            // Ajouter l'entrée à la légende
-            m_legendLayout->addWidget(legendEntry);
-            
-            // Ajouter une ligne avec les statistiques détaillées
-            QWidget* statsEntry = new QWidget();
-            QHBoxLayout* statsLayout = new QHBoxLayout(statsEntry);
-            statsLayout->setContentsMargins(25, 0, 0, 10);
-            
-            double percentage = (counts[i] * 100.0) / totalTrades;
-            QLabel* statsLabel = new QLabel(QString("%1 trades (%2%)").arg(counts[i]).arg(QString::number(percentage, 'f', 1)));
-            statsLabel->setStyleSheet("color: #666;");
-            statsLayout->addWidget(statsLabel);
-            
-            m_legendLayout->addWidget(statsEntry);
-        }
+        if (counts[i] <= 0)
+            continue;
+
+        // Créer un widget contenant un indicateur de couleur et des labels
+        QWidget* legendEntry = new QWidget();
+        QHBoxLayout* entryLayout = new QHBoxLayout(legendEntry);
+        entryLayout->setContentsMargins(0, 5, 0, 5);
+        
+        // Indicateur de couleur
+        QLabel* colorIndicator = new QLabel();
+        colorIndicator->setFixedSize(20, 20);
+        colorIndicator->setStyleSheet(QString("background-color: %1; border-radius: 10px;").arg(colors[i].name()));
+        entryLayout->addWidget(colorIndicator);
+        
+        // Description
+        QLabel* description = new QLabel(types[i]);
+        entryLayout->addWidget(description);
+        
+        // Ajouter l'entrée à la légende
+        m_legendLayout->addWidget(legendEntry);
+        
+        // Ajouter une ligne avec les statistiques détaillées
+        QWidget* statsEntry = new QWidget();
+        QHBoxLayout* statsLayout = new QHBoxLayout(statsEntry);
+        statsLayout->setContentsMargins(25, 0, 0, 10);
+        
+        double percentage = (counts[i] * 100.0) / totalTrades;
+        QLabel* statsLabel = new QLabel(QString("%1 trades (%2%)").arg(counts[i]).arg(QString::number(percentage, 'f', 1)));
+        statsLabel->setStyleSheet("color: #666;");
+        statsLayout->addWidget(statsLabel);
+        
+        m_legendLayout->addWidget(statsEntry);
     }
     
     // Ajouter le total

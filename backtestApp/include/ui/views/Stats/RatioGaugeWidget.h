@@ -16,6 +16,11 @@
 class GaugeRenderWidget;
 class FillGaugeRenderWidget;
 
+enum class FillDirection {
+    LeftToRight,
+    RightToLeft
+};
+
 /**
  * @brief Widget affichant une jauge pour visualiser un ratio financier
  * 
@@ -34,6 +39,7 @@ public:
         double minValue;     ///< Valeur minimale de la zone
         double maxValue;     ///< Valeur maximale de la zone
         QColor color;        ///< Couleur de la zone
+        QColor labelColor;   ///< Couleur du texte dans cette zone
         QString description; ///< Description textuelle de la zone
     };
 
@@ -61,6 +67,15 @@ public:
      * @param addPercentageSign Indique si le signe % doit être ajouté
      */
     void setValueFormat(unsigned int precision, bool addPercentageSign);
+
+    // Nouveau: Définir la valeur de référence
+    void setReferenceValue(double referenceValue);
+
+    // Nouveau: Activer/désactiver la barre de référence
+    void showReference(bool show);
+
+    // Nouveau: Définir la direction de remplissage
+    void setFillDirection(FillDirection direction);
 
     /**
      * @brief Réinitialise le widget et cache le curseur
@@ -105,6 +120,9 @@ private:
     double m_maxValue;               ///< Valeur maximale affichable
     unsigned int m_precision;        ///< Précision pour l'affichage des valeurs
     bool m_addPercentageSign;        ///< Indique si le signe % doit être ajouté à la valeur
+    double m_referenceValue;   // NOUVEAU: Valeur de référence
+    bool m_showReference;      // NOUVEAU: Afficher la ligne de référence?
+    FillDirection m_fillDirection; // NOUVEAU: Direction de remplissage
 
     // Widgets UI
     QGridLayout* m_mainLayout;  ///< Layout principal
@@ -300,7 +318,13 @@ class FillGaugeRenderWidget : public QWidget {
 
 public:
     FillGaugeRenderWidget(QWidget* parent = nullptr)
-        : QWidget(parent), m_value(0.0), m_minValue(0.0), m_maxValue(1.0) 
+        : QWidget(parent), 
+          m_value(0.0), 
+          m_minValue(0.0), 
+          m_maxValue(1.0),
+          m_referenceValue(std::numeric_limits<double>::quiet_NaN()), // Valeur de référence (NaN = pas de référence)
+          m_showReference(false),
+          m_fillDirection(FillDirection::LeftToRight) // Par défaut: remplissage de gauche à droite
     {
         setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
         setMinimumHeight(65); // Hauteur minimale pour accommoder les labels en dessous
@@ -322,6 +346,25 @@ public:
         update();
     }
 
+    // Nouveau: Définir la valeur de référence
+    void setReferenceValue(double referenceValue) {
+        m_referenceValue = referenceValue;
+        m_showReference = !std::isnan(referenceValue);
+        update();
+    }
+
+    // Nouveau: Activer/désactiver la barre de référence
+    void showReference(bool show) {
+        m_showReference = show;
+        update();
+    }
+
+    // Nouveau: Définir la direction de remplissage
+    void setFillDirection(FillDirection direction) {
+        m_fillDirection = direction;
+        update();
+    }
+
 protected:
     void paintEvent(QPaintEvent*) override {
         QPainter painter(this);
@@ -331,10 +374,10 @@ protected:
         int h = height();
         
         // Définir les dimensions et positions principales
-        int gaugeHeight = h * 0.5;         // 50% de la hauteur pour la gauge et les tirets
-        int barHeight = gaugeHeight * 0.4;  // Barre de remplissage = 50% de la hauteur du fond
-        int labelHeight = h - gaugeHeight;  // 50% pour les labels
-        
+        int gaugeHeight = h * 0.55;         // 55% de la hauteur pour la gauge et les tirets
+        int barHeight = gaugeHeight * 0.3;  // Barre de remplissage = 35% de la hauteur du fond
+        int labelHeight = h - gaugeHeight;  // 45% pour les labels
+
         int gaugeY = 0;                     // Gauge commence en haut
         int barY = gaugeY + (gaugeHeight - barHeight) / 2; // Barre centrée dans la gauge
         int tickY = gaugeY + gaugeHeight;    // Position Y des tirets (sous la gauge)
@@ -374,20 +417,35 @@ protected:
         
         // 2. DESSINER LA BARRE DE REMPLISSAGE NOIRE
         double fillRatio = (m_value - m_minValue) / totalRange;
-        fillRatio = qBound(0.0, fillRatio, 1.0);
-        int fillWidth = qRound(fillRatio * w);
         
-        if (fillWidth > 0) {
-            QRect fillRect(0, barY, fillWidth, barHeight);
-            QColor fillColor(50, 50, 50);  // Noir semi-transparent
-            painter.fillRect(fillRect, fillColor);
-            
-            // Bordure subtile pour la barre
-            // painter.setPen(QPen(QColor(20, 20, 20), 1));
-            // painter.drawRect(fillRect);
+        QRect fillRect;
+        
+        // Dessiner la barre selon la direction choisie
+        if (m_fillDirection == FillDirection::LeftToRight) {
+            fillRatio = qBound(0.0, fillRatio, 1.0);
+            int fillWidth = qRound(fillRatio * w);
+            fillRect = QRect(0, barY, fillWidth, barHeight);
+        } else {
+            fillRatio = qBound(0.0, 1 - fillRatio, 1.0);
+            int fillWidth = qRound(fillRatio * w);
+            fillRect = QRect(w - fillWidth, barY, fillWidth, barHeight);
         }
         
-        // 3. DESSINER LES GRADUATIONS ET LABELS
+        QColor fillColor(30, 30, 30);  // Noir semi-transparent
+        painter.fillRect(fillRect, fillColor);
+        
+        // 3. DESSINER LA BARRE DE RÉFÉRENCE (NOUVEAU)
+        if (m_showReference && m_referenceValue >= m_minValue && m_referenceValue <= m_maxValue) {
+            double refRatio = (m_referenceValue - m_minValue) / totalRange;
+            refRatio = qBound(0.0, refRatio, 1.0);
+            int refX = qRound(refRatio * w);
+            
+            // Dessiner une ligne verticale pour la référence
+            painter.setPen(QPen(QColor(0, 0, 0), 2)); // Ligne noire de 2px
+            painter.fillRect(QRect(refX - 1, gaugeY, 3, gaugeHeight), QColor(0, 0, 0));
+        }
+        
+        // 4. DESSINER LES GRADUATIONS ET LABELS
         painter.setPen(QPen(QColor(20, 20, 20), 1));
         
         QFont tickFont = painter.font();
@@ -424,7 +482,7 @@ protected:
             painter.drawText(textX, labelY + fm.height(), valueStr);
         }
         
-        // 4. AJOUTER DES GRADUATIONS INTERMÉDIAIRES (optionnel)
+        // 5. AJOUTER DES GRADUATIONS INTERMÉDIAIRES (optionnel)
         painter.setPen(QPen(QColor(120, 120, 120), 0.5, Qt::DotLine));
         for (int i = 1; i < numTicks * 2; i += 2) {
             double ratio = (double)i / (numTicks * 2);
@@ -434,7 +492,7 @@ protected:
             painter.drawLine(x, tickY - tickLength/2, x, tickY);
         }
         
-        // 5. BORDURE DE LA JAUGE COMPLÈTE
+        // 6. BORDURE DE LA JAUGE COMPLÈTE
         painter.setPen(QPen(QColor(100, 100, 100), 1));
         painter.drawRect(0, gaugeY, w, gaugeHeight);
     }
@@ -444,4 +502,7 @@ private:
     double m_value;
     double m_minValue;
     double m_maxValue;
+    double m_referenceValue;   // NOUVEAU: Valeur de référence
+    bool m_showReference;      // NOUVEAU: Afficher la ligne de référence?
+    FillDirection m_fillDirection; // NOUVEAU: Direction de remplissage
 };

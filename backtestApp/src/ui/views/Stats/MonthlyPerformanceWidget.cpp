@@ -91,18 +91,16 @@ void MonthlyPerformanceWidget::analyzeTradesByMonthAndYear(const std::vector<be:
         for (auto monthIt = yearIt.value().begin(); monthIt != yearIt.value().end(); ++monthIt) {
             int year = yearIt.key();
             int month = monthIt.key();
-            int count = m_tradeCountData[year][month];
             
-            if (count > 0) {
-                double expectation = monthIt.value() / count;  // Calculer l'espérance
-                
-                if (firstValue) {
-                    m_minValue = m_maxValue = expectation;
-                    firstValue = false;
-                } else {
-                    m_minValue = std::min(m_minValue, expectation);
-                    m_maxValue = std::max(m_maxValue, expectation);
-                }
+            // Utiliser le PnL total, pas l'espérance
+            double monthlyTotal = monthIt.value();
+            
+            if (firstValue) {
+                m_minValue = m_maxValue = monthlyTotal;
+                firstValue = false;
+            } else {
+                m_minValue = std::min(m_minValue, monthlyTotal);
+                m_maxValue = std::max(m_maxValue, monthlyTotal);
             }
         }
     }
@@ -117,11 +115,6 @@ void MonthlyPerformanceWidget::analyzeTradesByMonthAndYear(const std::vector<be:
         m_minValue = -1.0;
         m_maxValue = 1.0;
     }
-    
-    // Ajouter une petite marge pour la visualisation
-    double margin = (m_maxValue - m_minValue) * 0.05;
-    m_minValue -= margin;
-    m_maxValue += margin;
 }
 
 QColor MonthlyPerformanceWidget::getColorForValue(double value)
@@ -269,12 +262,13 @@ void MonthlyPerformanceWidget::buildHeatmap()
             double totalPnL = m_performanceData[year][month];
             double squaredSum = m_squaredSumData[year][month];
             
+            double monthlyTotal = totalPnL;
             double expectation = totalPnL / count;  // Espérance (moyenne)
             double variance = (squaredSum / count) - (expectation * expectation);  // Variance
             double stdDev = variance > 0 ? std::sqrt(variance) : 0;  // Écart-type
             
             // Utiliser l'espérance pour déterminer la couleur
-            QColor cellColor = getColorForValue(expectation);
+            QColor cellColor = getColorForValue(monthlyTotal);
 
             // Ajouter un rectangle avec une bordure fine
             QGraphicsRectItem* cell = m_scene->addRect(
@@ -283,30 +277,31 @@ void MonthlyPerformanceWidget::buildHeatmap()
             );
             
             // Ajouter un tooltip plus détaillé
-            QString tooltipText = QString("%1 %2\nEspérance: %3 €\nÉcart-type: %4 €\nTrades: %5")
-                                   .arg(m_monthNames[m])
-                                   .arg(year)
-                                   .arg(expectation, 0, 'f', 2)
-                                   .arg(stdDev, 0, 'f', 2)
-                                   .arg(count);
+            QString tooltipText = QString("%1 %2\nTotal: %3 €\nMoyenne: %4 €\nÉcart-type: %5 €\nTrades: %6")
+                                .arg(m_monthNames[m])
+                                .arg(year)
+                                .arg(monthlyTotal, 0, 'f', 2)
+                                .arg(expectation, 0, 'f', 2)
+                                .arg(stdDev, 0, 'f', 2)
+                                .arg(count);
             cell->setToolTip(tooltipText);
             
-            // Afficher l'espérance dans chaque cellule (en grand)
-            QGraphicsTextItem* expText = m_scene->addText(QString("%1").arg(expectation, 0, 'f', 2));
-            QFont expFont = expText->font();
-            expFont.setBold(true);
-            expFont.setPointSize(std::min(10, adjustedCellSize / 5));  // Taille adaptative
-            expText->setFont(expFont);
+            // Afficher le PnL total dans la cellule
+            QGraphicsTextItem* totalText = m_scene->addText(QString("%1").arg(monthlyTotal, 0, 'f', 0));
+            QFont totalFont = totalText->font();
+            totalFont.setBold(true);
+            totalFont.setPointSize(std::min(10, adjustedCellSize / 5));
+            totalText->setFont(totalFont);
             
             // Afficher l'écart-type en dessous (en plus petit)
             QGraphicsTextItem* stdText = m_scene->addText(QString("%1").arg(stdDev, 0, 'f', 0));
             QFont stdFont = stdText->font();
-            stdFont.setPointSize(std::max(6, expFont.pointSize() - 2));  // Plus petit que l'espérance
+            stdFont.setPointSize(std::max(6, totalFont.pointSize() - 2));  // Plus petit que l'espérance
             stdText->setFont(stdFont);
             
             // Centrer et positionner l'espérance en haut de la cellule
-            QRectF expRect = expText->boundingRect();
-            expText->setPos(x + (adjustedCellSize - expRect.width())/2, 
+            QRectF expRect = totalText->boundingRect();
+            totalText->setPos(x + (adjustedCellSize - expRect.width())/2, 
                            y_pos + adjustedCellSize * 0.25 - expRect.height()/2);
             
             // Positionner l'écart-type en bas de la cellule
@@ -318,7 +313,7 @@ void MonthlyPerformanceWidget::buildHeatmap()
             QColor textColor = QColor::fromHsv(cellColor.hue(), 
                                               cellColor.saturation(),
                                               cellColor.value() < 128 ? 240 : 30);
-            expText->setDefaultTextColor(textColor);
+            totalText->setDefaultTextColor(textColor);
             stdText->setDefaultTextColor(textColor);
         }
     }
@@ -331,7 +326,7 @@ void MonthlyPerformanceWidget::buildHeatmap()
     int legendHeight = yearCount * (adjustedCellSize + CELL_SPACING) - 20;
     
     // Titre de la légende
-    QGraphicsTextItem* legendTitle = m_scene->addText("E/σ (€)");
+    QGraphicsTextItem* legendTitle = m_scene->addText("PnL Mensuel (€)");
     QFont legendTitleFont = legendTitle->font();
     // legendTitleFont.setBold(true);
     legendTitle->setFont(legendTitleFont);

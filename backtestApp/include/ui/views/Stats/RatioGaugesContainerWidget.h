@@ -25,6 +25,7 @@ private:
     QVBoxLayout* m_gaugesLayout;
     
     // Jauges individuelles
+    RatioGaugeWidget* m_exposureTimeGauge;
     RatioGaugeWidget* m_sharpeGauge;
     RatioGaugeWidget* m_sortinoGauge;
     RatioGaugeWidget* m_calmarGauge;

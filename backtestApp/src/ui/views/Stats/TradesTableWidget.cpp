@@ -32,9 +32,77 @@ void TradesTableWidget::setupUI()
     m_tradesLimitCombo->setCurrentIndex(0); // 50 par défaut
     
     m_showAllTradesBtn = new QPushButton("Afficher tous les trades");
+
+    // NOUVEAU: Bouton de filtrage par close reason
+    m_filterBtn = new QPushButton("Filtres");
+    m_filterBtn->setIcon(QIcon::fromTheme("view-filter", QIcon(":/icons/filter.png")));
+    
+    // Créer le menu de filtres
+    m_filterMenu = new QMenu(this);
+    
+    // Créer les actions pour chaque close reason
+    QAction* tpAction = new QAction("Trades sur TP", this);
+    tpAction->setCheckable(true);
+    tpAction->setChecked(false);
+    tpAction->setData(static_cast<int>(be::CloseReason::TakeProfit));
+    
+    QAction* slAction = new QAction("Trades sur SL", this);
+    slAction->setCheckable(true);
+    slAction->setChecked(false);
+    slAction->setData(static_cast<int>(be::CloseReason::StopLoss));
+    
+    QAction* beAction = new QAction("Trades sur BE", this);
+    beAction->setCheckable(true);
+    beAction->setChecked(false);
+    beAction->setData(static_cast<int>(be::CloseReason::BreakEven));
+    
+    QAction* manualAction = new QAction("Trades manuels", this);
+    manualAction->setCheckable(true);
+    manualAction->setChecked(false);
+    manualAction->setData(static_cast<int>(be::CloseReason::ManualClose));
+    
+    QAction* unknownAction = new QAction("Trades indéterminés", this);
+    unknownAction->setCheckable(true);
+    unknownAction->setChecked(false);
+    unknownAction->setData(static_cast<int>(be::CloseReason::Unknown));
+
+    // Ajouter les actions au menu
+    m_filterMenu->addAction(tpAction);
+    m_filterMenu->addAction(slAction);
+    m_filterMenu->addAction(beAction);
+    m_filterMenu->addAction(manualAction);
+    m_filterMenu->addAction(unknownAction);
+
+    // Ajouter un séparateur
+    m_filterMenu->addSeparator();
+
+    // Ajouter une action pour réinitialiser les filtres
+    QAction* clearAction = new QAction("Clear", this);
+    m_filterMenu->addAction(clearAction);
+
+    // Associer le menu au bouton
+    m_filterBtn->setMenu(m_filterMenu);
+    
+    // Initialiser les filtres (tous activés par défaut)
+    m_closeReasonFilters[be::CloseReason::TakeProfit] = false;
+    m_closeReasonFilters[be::CloseReason::StopLoss] = false;
+    m_closeReasonFilters[be::CloseReason::BreakEven] = false;
+    m_closeReasonFilters[be::CloseReason::ManualClose] = false;
+    m_closeReasonFilters[be::CloseReason::Unknown] = false;
+
+    // Connecter les actions
+    connect(tpAction, &QAction::toggled, this, &TradesTableWidget::toggleCloseReasonFilter);
+    connect(slAction, &QAction::toggled, this, &TradesTableWidget::toggleCloseReasonFilter);
+    connect(beAction, &QAction::toggled, this, &TradesTableWidget::toggleCloseReasonFilter);
+    connect(manualAction, &QAction::toggled, this, &TradesTableWidget::toggleCloseReasonFilter);
+    connect(unknownAction, &QAction::toggled, this, &TradesTableWidget::toggleCloseReasonFilter);
+    connect(clearAction, &QAction::triggered, this, &TradesTableWidget::clearFilters);
+    
+    
     
     tradesControlsLayout->addWidget(tradesInfoLabel);
     tradesControlsLayout->addWidget(m_tradesLimitCombo);
+    tradesControlsLayout->addWidget(m_filterBtn); // Ajouter le bouton de filtre
     tradesControlsLayout->addWidget(m_showAllTradesBtn);
     tradesControlsLayout->addStretch();
 
@@ -49,7 +117,7 @@ void TradesTableWidget::setupUI()
     m_tradesTable->setSelectionMode(QAbstractItemView::SingleSelection);
     m_tradesTable->setAlternatingRowColors(true);
     m_tradesTable->setSortingEnabled(true);
-    // m_tradesTable->verticalHeader()->setVisible(false);
+    m_tradesTable->verticalHeader()->setVisible(false);
     
     // Ajuster les colonnes
     QHeaderView* header = m_tradesTable->horizontalHeader();
@@ -57,8 +125,8 @@ void TradesTableWidget::setupUI()
     header->setSectionResizeMode(QHeaderView::Interactive);
     
     // Définir des largeurs de colonnes
-    m_tradesTable->setColumnWidth(0, 10);   // #
-    m_tradesTable->setColumnWidth(1, 50);   // Type
+    m_tradesTable->setColumnWidth(0, 60);   // id
+    m_tradesTable->setColumnWidth(1, 60);   // Type
     m_tradesTable->setColumnWidth(2, 70);   // Taille
     m_tradesTable->setColumnWidth(3, 120);  // Prix d'entrée
     m_tradesTable->setColumnWidth(4, 120);  // Prix de sortie
@@ -116,7 +184,7 @@ void TradesTableWidget::updateContent(const be::Stats& stats)
     m_allTrades = stats.trades;
 
     // Appliquer les filtres actuels
-    auto filteredTrades = getFilteredTrades(m_allTrades);
+    std::vector<be::TradeData> filteredTrades = getFilteredTrades(m_allTrades);
     
     // Mettre à jour le modèle avec les trades filtrées
     if (m_tradesModel) {
@@ -177,10 +245,28 @@ void TradesTableWidget::showAllTrades()
     }
 }
 
-std::vector<be::TradeData> TradesTableWidget::getFilteredTrades(const std::vector<be::TradeData>& allTrades)
-{
-    std::vector<be::TradeData> filteredTrades = allTrades;
+std::vector<be::TradeData> TradesTableWidget::getFilteredTrades(const std::vector<be::TradeData>& allTrades) {
+    std::vector<be::TradeData> filteredTrades;
 
+    // Vérifier si au moins un filtre est actif
+    bool anyFilterActive = false;
+    for (bool active : m_closeReasonFilters.values()) {
+        if (active) { anyFilterActive = true; break; }
+    }
+
+    if (anyFilterActive) {
+        // Ajouter uniquement les trades correspondant aux filtres actifs
+        for (const auto& trade : allTrades) {
+            if (m_closeReasonFilters.value(trade.closeReason, false)) {
+                filteredTrades.push_back(trade);
+            }
+        }
+    } else {
+        // Aucun filtre actif : tout afficher
+        filteredTrades = allTrades;
+    }
+
+    // Appliquer la limite d'affichage
     if (m_tradesLimitCombo) {
         int limit = m_tradesLimitCombo->currentData().toInt();
         if (limit > 0 && filteredTrades.size() > static_cast<size_t>(limit)) {
@@ -189,7 +275,7 @@ std::vector<be::TradeData> TradesTableWidget::getFilteredTrades(const std::vecto
             );
         }
     }
-    
+
     return filteredTrades;
 }
 
@@ -210,5 +296,49 @@ void TradesTableWidget::onTradeRowClicked(const QModelIndex& index)
         
         // Émettre le signal avec les données du trade
         emit tradeClicked(trade);
+    }
+}
+
+void TradesTableWidget::toggleCloseReasonFilter(bool checked)
+{
+    QAction* action = qobject_cast<QAction*>(sender());
+    if (!action) return;
+    
+    be::CloseReason reason = static_cast<be::CloseReason>(action->data().toInt());
+    m_closeReasonFilters[reason] = checked;
+    
+    // Mettre à jour le texte du bouton de filtre
+    updateFilterButtonText();
+    
+    // Rafraîchir la table
+    refreshTable();
+}
+
+void TradesTableWidget::clearFilters()
+{
+    // Désactiver tous les filtres
+    for (auto& key : m_closeReasonFilters.keys()) {
+        m_closeReasonFilters[key] = false;
+    }
+    // Décoche toutes les actions du menu
+    for (QAction* action : m_filterMenu->actions()) {
+        if (action->isCheckable()) {
+            action->setChecked(false);
+        }
+    }
+    updateFilterButtonText();
+    refreshTable();
+}
+
+void TradesTableWidget::updateFilterButtonText()
+{
+    int activeFilters = 0;
+    for (bool isActive : m_closeReasonFilters.values()) {
+        if (isActive) activeFilters++;
+    }
+    if (activeFilters == 0) {
+        m_filterBtn->setText("Filtres (désactivés)");
+    } else {
+        m_filterBtn->setText(QString("Filtres (%1)").arg(activeFilters));
     }
 }

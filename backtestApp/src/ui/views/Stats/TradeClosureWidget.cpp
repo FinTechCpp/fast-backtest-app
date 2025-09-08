@@ -24,6 +24,9 @@ TradeClosureWidget::TradeClosureWidget(QWidget* parent)
     
     // Ajouter le chart à gauche
     mainLayout->addWidget(m_chartView);
+
+    setAttribute(Qt::WA_TranslucentBackground);
+    setStyleSheet("background: transparent;");
 }
 
 void TradeClosureWidget::updateContent(const be::Stats& stats) {

@@ -70,6 +70,14 @@ struct Duration {
     }
     
     double seconds;  // Stockage interne en secondes
+
+    // operateurs de comparaison
+    bool operator==(const Duration& other) const { return seconds == other.seconds; }
+    bool operator!=(const Duration& other) const { return !(*this == other); }
+    bool operator<(const Duration& other) const { return seconds < other.seconds; }
+    bool operator<=(const Duration& other) const { return seconds <= other.seconds; }
+    bool operator>(const Duration& other) const { return seconds > other.seconds; }
+    bool operator>=(const Duration& other) const { return seconds >= other.seconds; }
 };
 
 

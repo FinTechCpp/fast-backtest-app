@@ -58,6 +58,10 @@ TradingHeatmapWidget::TradingHeatmapWidget(QWidget* parent)
     
     // Installer un filtre d'événements pour gérer le redimensionnement
     m_view->viewport()->installEventFilter(this);
+
+
+    setAttribute(Qt::WA_TranslucentBackground);
+    setStyleSheet("background: transparent;");
 }
 
 int TradingHeatmapWidget::getDayOfWeek(const be::Date& date) {
@@ -93,6 +97,11 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
     m_minHour = 24;
     m_maxHour = 0;
     bool firstValue = true;
+
+    // Initialiser notre tableau de jours actifs
+    m_activeDays.clear();
+    m_activeDays.resize(DAYS_IN_WEEK, false);
+    m_activeDayIndices.clear();
     
     // Analyser chaque trade
     for (const auto& trade : trades) {
@@ -105,6 +114,7 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
             continue;
 
         // Ajouter la performance du trade
+        m_activeDays[day] = true;
         m_performanceData[hour][day] += trade.pl;
         m_tradeCountData[hour][day]++;
         m_squaredSumData[hour][day] += trade.pl * trade.pl; // Pour l'écart-type
@@ -112,6 +122,13 @@ void TradingHeatmapWidget::analyzeTradesByTimeAndDay(const std::vector<be::Trade
         // Mettre à jour la plage horaire
         m_minHour = std::min(m_minHour, hour);
         m_maxHour = std::max(m_maxHour, hour);
+    }
+
+    // Construire le mapping des jours actifs
+    for (int d = 0; d < DAYS_IN_WEEK; d++) {
+        if (m_activeDays[d]) {
+            m_activeDayIndices.push_back(d);
+        }
     }
     
     // Assurer un minimum d'espace pour l'affichage (au moins 3h d'amplitude)
@@ -220,14 +237,15 @@ void TradingHeatmapWidget::buildHeatmap() {
     }
     
     // Dessiner les labels des jours (en haut)
-    for (int d = 0; d < DAYS_IN_WEEK; d++) {
+    for (size_t i = 0; i < m_activeDayIndices.size(); i++) {
+        int d = m_activeDayIndices[i];
         QGraphicsTextItem* dayLabel = m_scene->addText(m_dayNames[d]);
         QFont dayFont = dayLabel->font();
         dayLabel->setFont(dayFont);
         
         // Centrer le texte sur la colonne
         QRectF textRect = dayLabel->boundingRect();
-        dayLabel->setPos(leftMargin + d * (adjustedCellSize + CELL_SPACING) + 
+        dayLabel->setPos(leftMargin + i * (adjustedCellSize + CELL_SPACING) + 
                         (adjustedCellSize - textRect.width())/2, topMargin - 25);
     }
     
@@ -250,9 +268,11 @@ void TradingHeatmapWidget::buildHeatmap() {
     // Dessiner la heatmap - seulement pour la plage pertinente
     for (int h = m_minHour; h <= m_maxHour; h++) {
         int rowIndex = h - m_minHour;
-        for (int d = 0; d < DAYS_IN_WEEK; d++) {
+        for (size_t i = 0; i < m_activeDayIndices.size(); i++) {
+            int d = m_activeDayIndices[i];
+
             // Position de la cellule
-            int x = leftMargin + d * (adjustedCellSize + CELL_SPACING);
+            int x = leftMargin + i * (adjustedCellSize + CELL_SPACING);
             int y = topMargin + rowIndex * (adjustedCellSize + CELL_SPACING);
             
             // Vérifier s'il y a des trades pour cette cellule
@@ -337,7 +357,7 @@ void TradingHeatmapWidget::buildHeatmap() {
     // *** LÉGENDE VERTICALE DANS LE MÊME CANVAS ***
     
     // Position de départ de la légende (à droite de la heatmap avec une marge fixe)
-    int heatmapRightX = leftMargin + DAYS_IN_WEEK * (adjustedCellSize + CELL_SPACING);
+    int heatmapRightX = leftMargin + m_activeDayIndices.size() * (adjustedCellSize + CELL_SPACING);
     int fixedMargin = 40; // Marge fixe entre la heatmap et la légende
     
     int legendX = heatmapRightX + fixedMargin;
@@ -438,6 +458,9 @@ void TradingHeatmapWidget::clear() {
             m_squaredSumData[h][d] = 0.0;
         }
     }
+
+    m_activeDays.clear();
+    m_activeDayIndices.clear();
     
     // Effacer la scène
     m_scene->clear();

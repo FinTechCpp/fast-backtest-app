@@ -7,6 +7,7 @@
 #include <QComboBox>
 #include <QLabel>
 #include <QGroupBox>
+#include <QMenu>
 #include "ui/views/Stats/TradesTableModel.h"
 #include "ui/views/Stats/StatsBaseWidget.h"
 
@@ -27,6 +28,10 @@ private slots:
     void showAllTrades(); // Afficher tous les trades
     void onTradeRowClicked(const QModelIndex& index);
 
+    void toggleCloseReasonFilter(bool checked);
+    void clearFilters();
+    void updateFilterButtonText();
+
 private:
     // Configuration de l'interface
     void setupUI();
@@ -46,4 +51,8 @@ private:
 
     // Données
     std::vector<be::TradeData> m_allTrades;
+
+    QPushButton* m_filterBtn;
+    QMenu* m_filterMenu;
+    QMap<be::CloseReason, bool> m_closeReasonFilters; // Stocke l'état des filtres
 };

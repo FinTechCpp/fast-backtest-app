@@ -68,4 +68,6 @@ private:
     // Noms des jours pour l'affichage
     // QStringList m_dayNames{"Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"};
     QStringList m_dayNames{"Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"};
+    QVector<bool> m_activeDays; // Indique quels jours ont des trades
+    QVector<int> m_activeDayIndices; // Indices des jours actifs pour l'affichage
 };

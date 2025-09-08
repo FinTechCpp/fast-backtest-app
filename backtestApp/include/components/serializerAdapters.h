@@ -85,7 +85,8 @@ namespace cereal {
 
     template<class Archive>
     void serialize(Archive & ar, be::TradeData & trade) {
-        ar(cereal::make_nvp("size", trade.size),
+        ar(cereal::make_nvp("id", trade.id),
+           cereal::make_nvp("size", trade.size),
            cereal::make_nvp("entryPrice", trade.entryPrice),
            cereal::make_nvp("exitPrice", trade.exitPrice),
            cereal::make_nvp("entryBar", trade.entryBar),

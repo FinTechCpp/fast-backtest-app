@@ -15,7 +15,7 @@ TradesTableModel::TradesTableModel(QObject* parent)
 {
     // Définir les en-têtes par défaut
     QStringList headers;
-    headers << "#" << "Date" << "Type" << "Entrée" << "Sortie" << "Dur." << "PnL" << "PnL%" << "SL" << "TP";
+    headers << "Id" << "Date" << "Type" << "Entrée" << "Sortie" << "Dur." << "PnL" << "PnL%" << "SL" << "TP";
     setHorizontalHeaderLabels(headers);
 }
 
@@ -38,7 +38,7 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
     
     // Configurer les en-têtes
     QStringList headers;
-    headers << "#" << "Type" << "Taille" << "Prix d'entrée" << "Prix de sortie" 
+    headers << "Id" << "Type" << "Taille" << "Prix d'entrée" << "Prix de sortie" 
             << "PnL" << "PnL %" << "Durée" << "Date d'entrée" << "Date de sortie"
             << "SL initial" << "TP" << "Clôture" << "Tag";
     setHorizontalHeaderLabels(headers);
@@ -49,8 +49,8 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
     for (int row = 0; row < static_cast<int>(trades.size()); ++row) {
         const auto& trade = trades[row];
         
-        // # (numéro de trade)
-        setItem(row, 0, new QStandardItem(QString::number(row + 1)));
+        // Id (numéro de trade)
+        setItem(row, 0, new PctItem(QString::number(trade.id), trade.id));
         
         // Type (LONG/SHORT basé sur la taille)
         QString tradeType = trade.size > 0 ? "LONG" : "SHORT";
@@ -59,18 +59,18 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
         setItem(row, 1, typeItem);
         
         // Taille (valeur absolue)
-        setItem(row, 2, new QStandardItem(formatNumber(std::abs(trade.size), 4)));
+        setItem(row, 2, new PctItem(formatNumber(std::abs(trade.size), 1), trade.size));
 
         // Prix d'entrée
-        setItem(row, 3, new QStandardItem(formatNumber(trade.entryPrice, 2)));
+        setItem(row, 3, new PctItem(formatNumber(trade.entryPrice, 2), trade.entryPrice));
 
         // Prix de sortie
-        setItem(row, 4, new QStandardItem(formatNumber(trade.exitPrice, 2)));
+        setItem(row, 4, new PctItem(formatNumber(trade.exitPrice, 2), trade.exitPrice));
 
         // PnL
         double pnl = trade.pl;
         be::CloseReason closeReason = trade.closeReason;
-        QStandardItem* pnlItem = new QStandardItem(formatNumber(pnl, 2));
+        PctItem* pnlItem = new PctItem(formatNumber(pnl, 2), pnl);
         pnlItem->setForeground(
             closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
             closeReason == be::CloseReason::StopLoss ? Qt::darkRed : (
@@ -81,8 +81,7 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
         setItem(row, 5, pnlItem);
         
         // PnL %
-        double returnPct = trade.plPercent;
-        QStandardItem* pctItem = new QStandardItem(formatNumber(returnPct, 2) + "%");
+        PctItem* pctItem = new PctItem(formatNumber(trade.plPercent, 2) + "%", trade.plPercent);
         pctItem->setForeground(
             closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
             closeReason == be::CloseReason::StopLoss ? Qt::darkRed : (
@@ -95,30 +94,16 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
         // Durée - calculer à partir des dates
         QDateTime entryDT = dateToQDateTime(trade.entryDate);
         QDateTime exitDT = dateToQDateTime(trade.exitDate);
-        qint64 durationSecs = entryDT.secsTo(exitDT);
-        
-        QString durationStr;
-        if (durationSecs < 60) {
-            durationStr = QString("%1s").arg(durationSecs);
-        } else if (durationSecs < 3600) {
-            durationStr = QString("%1m %2s").arg(durationSecs / 60).arg(durationSecs % 60);
-        } else if (durationSecs < 86400) {
-            int hours = durationSecs / 3600;
-            int mins = (durationSecs % 3600) / 60;
-            durationStr = QString("%1h %2m").arg(hours).arg(mins);
-        } else {
-            int days = durationSecs / 86400;
-            int hours = (durationSecs % 86400) / 3600;
-            durationStr = QString("%1j %2h").arg(days).arg(hours);
-        }
-        setItem(row, 7, new QStandardItem(durationStr));
-        
+        be::Duration duration = trade.exitDate - trade.entryDate;
+                
+        setItem(row, 7, new PctItem(QString::fromStdString(duration.toString()), duration.seconds));
+
         // Date d'entrée
-        setItem(row, 8, new QStandardItem(formatDateTime(entryDT)));
+        setItem(row, 8, new PctItem(formatDateTime(entryDT), static_cast<double>(entryDT.toSecsSinceEpoch())));
         
         // Date de sortie
-        setItem(row, 9, new QStandardItem(formatDateTime(exitDT)));
-        
+        setItem(row, 9, new PctItem(formatDateTime(exitDT), static_cast<double>(exitDT.toSecsSinceEpoch())));
+
         // Stop Loss (si disponible)
         QString slText = "-";
         if (trade.initialSlPrice > 0) {

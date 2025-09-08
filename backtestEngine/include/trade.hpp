@@ -21,6 +21,7 @@ enum class CloseReason {
 };
 
 struct TradeData {
+    int id = -1; // Identifiant unique du trade
     double size = 0.0;
     double entryPrice = 0.0;
     double exitPrice = 0.0;

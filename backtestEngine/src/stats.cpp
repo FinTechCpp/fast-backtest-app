@@ -426,9 +426,10 @@ Stats computeStats(
 
     // Convert trades to TradeData
     stats.trades.reserve(trades.size());
-    for (const auto& trade : trades) {
-        if (trade) {
-            stats.trades.push_back(trade->data());
+    for (int i = 0; i < trades.size(); ++i) {
+        if (trades[i]) {
+            stats.trades.push_back(trades[i]->data());
+            stats.trades.back().id = i; // Assign unique ID
         }
     }
 

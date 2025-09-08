@@ -84,17 +84,17 @@ void StatsView::setupUI() {
 
     m_tradeClosureWidget = new TradeClosureWidget();
     m_pnlGaugeWidget = new PnLGaugeWidget();
+    m_tradingHeatmapWidget = new TradingHeatmapWidget();
 
     tradesClosureLayout->addWidget(m_tradeClosureWidget, /*stretch=*/2);
     tradesClosureLayout->addWidget(m_pnlGaugeWidget, /*stretch=*/1);
+    tradesClosureLayout->addWidget(m_tradingHeatmapWidget, /*stretch=*/2);
 
     m_statsLayout->addLayout(tradesClosureLayout);
 
     // m_plDistributionWidget = new PLDistributionWidget();
     // m_statsLayout->addWidget(m_plDistributionWidget);
 
-    m_tradingHeatmapWidget = new TradingHeatmapWidget();
-    m_statsLayout->addWidget(m_tradingHeatmapWidget);
 
     m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
     m_statsLayout->addWidget(m_monthlyPerformanceWidget);

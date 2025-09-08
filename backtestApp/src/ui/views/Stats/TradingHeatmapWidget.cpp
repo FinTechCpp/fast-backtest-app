@@ -32,27 +32,29 @@ TradingHeatmapWidget::TradingHeatmapWidget(QWidget* parent)
     }
     
     // Créer le groupe box principal
-    m_groupBox = new QGroupBox("Analyse des Performances par Heure et Jour");
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
-    m_mainLayout->addWidget(m_groupBox);
-    
-    // Layout interne - Utiliser un seul QVBoxLayout puisque nous n'avons qu'une seule vue
-    QVBoxLayout* groupLayout = new QVBoxLayout(m_groupBox);
-    groupLayout->setContentsMargins(5, 15, 5, 5);
+
+    m_titleLabel = new QLabel("Analyse des Performances par Heure et Jour");
+    QFont titleFont = m_titleLabel->font();
+    titleFont.setBold(true);
+    m_titleLabel->setFont(titleFont);
+    m_titleLabel->setAlignment(Qt::AlignCenter);
+    m_mainLayout->addWidget(m_titleLabel);
+
     
     // Créer la scène et la vue pour la heatmap (une seule scène qui contiendra tout)
     m_scene = new QGraphicsScene(this);
     m_view = new QGraphicsView(m_scene);
     m_view->setRenderHint(QPainter::Antialiasing, true);
     m_view->setMinimumHeight(400);
-    m_view->setMinimumWidth(850); // Plus large pour accommoder la légende
+    m_view->setMinimumWidth(600); // Plus large pour accommoder la légende
     m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_view->setAlignment(Qt::AlignCenter);
     
     // Ajouter la vue au layout
-    groupLayout->addWidget(m_view);
+    m_mainLayout->addWidget(m_view);
     
     // Installer un filtre d'événements pour gérer le redimensionnement
     m_view->viewport()->installEventFilter(this);
@@ -267,7 +269,7 @@ void TradingHeatmapWidget::buildHeatmap() {
                 // Cellule grise pour les périodes sans trades
                 m_scene->addRect(
                     x, y, adjustedCellSize, adjustedCellSize,
-                    QPen(Qt::black, 0.5), QBrush(QColor(240, 240, 240))
+                    QPen(Qt::NoPen), QBrush(QColor(240, 240, 240))
                 );
                 continue;
             }
@@ -287,7 +289,7 @@ void TradingHeatmapWidget::buildHeatmap() {
             // Ajouter un rectangle avec une bordure fine
             QGraphicsRectItem* cell = m_scene->addRect(
                 x, y, adjustedCellSize, adjustedCellSize,
-                QPen(Qt::black, 0.5), QBrush(cellColor)
+                QPen(Qt::NoPen), QBrush(cellColor)
             );
 
             // Modifier le tooltip pour inclure espérance et écart-type
@@ -303,7 +305,7 @@ void TradingHeatmapWidget::buildHeatmap() {
             // Afficher l'espérance et l'écart-type dans la cellule
             // Format: E=XX.XX
             //         V=XX.XX
-            QString expText = QString("%1").arg(expectation, 0, 'f', 2);
+            QString expText = QString("%1").arg(expectation, 0, 'f', 1);
             QGraphicsTextItem* expTextItem = m_scene->addText(expText);
             QFont expFont = expTextItem->font();
             expFont.setPointSize(10); // Taille de police plus grande pour l'espérance
@@ -409,9 +411,6 @@ void TradingHeatmapWidget::buildHeatmap() {
     m_scene->setSceneRect(boundingRect);
     m_view->fitInView(boundingRect, Qt::KeepAspectRatio);
     m_view->centerOn(boundingRect.center());
-    
-    // Mettre à jour le titre du groupe box
-    m_groupBox->setTitle("Analyse de l'Espérance de PnL par Heure et Jour");
 }
 
 bool TradingHeatmapWidget::eventFilter(QObject* watched, QEvent* event) {

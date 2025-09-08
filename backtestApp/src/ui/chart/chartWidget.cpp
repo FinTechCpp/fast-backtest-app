@@ -352,6 +352,78 @@ bool ChartWidget::removeIndicator(int id) {
     return true;
 }
 
+void ChartWidget::zoomToTrade(const be::TradeData& trade)
+{
+    if (!m_dataManager.hasValidData() || !m_chartViewer) {
+        qDebug() << "Impossible de zoomer: données non valides ou viewer non initialisé";
+        return;
+    }
+    
+    // Convertir les dates du trade en timestamps pour le graphique
+    double entryTimestamp = dateToChartTimestamp(trade.entryDate);
+    double exitTimestamp = dateToChartTimestamp(trade.exitDate);
+    
+    qDebug() << "Zoom sur trade - Entrée timestamp:" << entryTimestamp 
+             << "Sortie timestamp:" << exitTimestamp;
+    
+    // Obtenir tous les timestamps pour calculer les indices
+    const std::vector<double>& timestamps = m_dataManager.getTimestamps();
+    
+    if (timestamps.empty()) {
+        qDebug() << "Aucun timestamp disponible pour le zoom";
+        return;
+    }
+    
+    // Trouver les indices correspondant aux timestamps d'entrée et de sortie
+    int entryIndex = -1;
+    int exitIndex = -1;
+    
+    for (int i = 0; i < static_cast<int>(timestamps.size()); ++i) {
+        if (entryIndex == -1 && timestamps[i] >= entryTimestamp) {
+            entryIndex = i;
+        }
+        if (timestamps[i] >= exitTimestamp) {
+            exitIndex = i;
+            break;
+        }
+    }
+    
+    // Si nous n'avons pas trouvé l'index d'entrée, prendre le premier
+    if (entryIndex == -1) entryIndex = 0;
+    
+    // Si nous n'avons pas trouvé l'index de sortie, prendre le dernier
+    if (exitIndex == -1) exitIndex = static_cast<int>(timestamps.size()) - 1;
+    
+    // Ajouter une marge autour du trade (20% de la durée du trade de chaque côté)
+    int tradeDuration = exitIndex - entryIndex;
+    int margin = std::max(10, tradeDuration / 5); // Au minimum 10 points de marge
+    
+    int startIndex = std::max(0, entryIndex - margin);
+    int endIndex = std::min(static_cast<int>(timestamps.size()) - 1, exitIndex + margin);
+    
+    // Calculer les proportions du viewport
+    double totalPoints = static_cast<double>(timestamps.size());
+    double viewPortLeft = static_cast<double>(startIndex) / totalPoints;
+    double viewPortWidth = static_cast<double>(endIndex - startIndex + 1) / totalPoints;
+    
+    // S'assurer que la largeur du viewport ne dépasse pas 1.0
+    if (viewPortLeft + viewPortWidth > 1.0) {
+        viewPortWidth = 1.0 - viewPortLeft;
+    }
+    
+    qDebug() << "Zoom calculé - Index entrée:" << entryIndex 
+             << "Index sortie:" << exitIndex
+             << "ViewPort left:" << viewPortLeft
+             << "ViewPort width:" << viewPortWidth;
+    
+    // Appliquer le zoom
+    m_chartViewer->setViewPortLeft(viewPortLeft);
+    m_chartViewer->setViewPortWidth(viewPortWidth);
+    
+    // Mettre à jour l'affichage
+    updateChartDisplay(ViewPortMode::USE_CURRENT);
+}
+
 double ChartWidget::dateToChartTimestamp(const be::Date& date) {
     return Chart::chartTime(date.year, date.month, date.day, date.hour, date.minute, date.second);
 }

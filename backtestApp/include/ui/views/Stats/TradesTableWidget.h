@@ -19,9 +19,13 @@ public:
     void updateContent(const be::Stats& stats) override;
     void clear() override;
 
+signals:
+    void tradeClicked(const be::TradeData& trade);
+
 private slots:
     void refreshTable();  // Rafraîchit la table avec les filtres actuels
     void showAllTrades(); // Afficher tous les trades
+    void onTradeRowClicked(const QModelIndex& index);
 
 private:
     // Configuration de l'interface

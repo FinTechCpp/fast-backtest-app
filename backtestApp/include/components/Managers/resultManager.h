@@ -31,6 +31,9 @@ public:
     void setCurrentTab(int index);
     QTabWidget* getTabWidget() const { return m_tabWidget; }
 
+public slots:
+    void onTradeClicked(const be::TradeData& trade);
+
 protected:
     void resizeEvent(QResizeEvent* event) override;
 

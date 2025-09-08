@@ -105,6 +105,10 @@ void StatsView::setupUI() {
 
     m_tradesTableWidget = new TradesTableWidget();
     m_statsLayout->addWidget(m_tradesTableWidget);
+    
+    // Connecter le signal du clic sur trade
+    connect(m_tradesTableWidget, &TradesTableWidget::tradeClicked,
+            this, &StatsView::tradeClicked);
 
     // 3. FINALISATION
     // --------------------------------------

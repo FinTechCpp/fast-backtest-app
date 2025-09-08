@@ -73,8 +73,8 @@ void TradesTableWidget::setupUI()
     m_tradesTable->setColumnWidth(13, 80);  // Tag
 
     // Hauteur de la table
-    m_tradesTable->setMaximumHeight(1000);  
-    m_tradesTable->setMinimumHeight(400);
+    m_tradesTable->setMaximumHeight(1600);  
+    m_tradesTable->setMinimumHeight(800);
 
     // Style de la table
     QString tableStyle = 
@@ -102,6 +102,9 @@ void TradesTableWidget::setupUI()
             this, &TradesTableWidget::refreshTable);
     connect(m_showAllTradesBtn, &QPushButton::clicked, 
             this, &TradesTableWidget::showAllTrades);
+    
+    // Connecter le signal de clic sur les lignes du tableau
+    connect(m_tradesTable, &QTableView::clicked, this, &TradesTableWidget::onTradeRowClicked);
     
     // // Cacher par défaut jusqu'à ce qu'il y ait des données
     // m_tradesGroup->setVisible(false);
@@ -188,4 +191,24 @@ std::vector<be::TradeData> TradesTableWidget::getFilteredTrades(const std::vecto
     }
     
     return filteredTrades;
+}
+
+void TradesTableWidget::onTradeRowClicked(const QModelIndex& index)
+{
+    if (!index.isValid()) {
+        return;
+    }
+    
+    // Obtenir les trades filtrés actuellement affichés
+    std::vector<be::TradeData> filteredTrades = getFilteredTrades(m_allTrades);
+    
+    int row = index.row();
+    if (row >= 0 && row < static_cast<int>(filteredTrades.size())) {
+        const be::TradeData& trade = filteredTrades[row];
+        qDebug() << "Trade cliqué - Entrée:" << trade.entryDate.toString().c_str() 
+                 << "Sortie:" << trade.exitDate.toString().c_str();
+        
+        // Émettre le signal avec les données du trade
+        emit tradeClicked(trade);
+    }
 }

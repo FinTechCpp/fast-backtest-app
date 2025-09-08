@@ -53,6 +53,9 @@ public:
     // Implémentation des méthodes virtuelles de BaseView
     void updateData(BacktestResults* results) override;
     void clear() override;
+    
+    // Méthode pour zoomer sur un trade spécifique
+    void zoomToTrade(const be::TradeData& trade);
 
 protected:
     void setupUI() override;

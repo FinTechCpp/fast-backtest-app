@@ -44,6 +44,9 @@ class App;
 class StatsView : public BaseView {
     Q_OBJECT
 
+signals:
+    void tradeClicked(const be::TradeData& trade);
+
 public:
     /**
      * @brief Constructeur de la vue des statistiques

@@ -165,6 +165,12 @@ void ResultManager::setupConnections()
     connect(m_tabWidget, &QTabWidget::currentChanged,
             this, &ResultManager::onTabChanged);
     
+    // Connecter le signal de clic sur trade
+    if (m_statsView) {
+        connect(m_statsView, &StatsView::tradeClicked,
+                this, &ResultManager::onTradeClicked);
+    }
+    
     // Créer un timer pour surveiller les redimensionnements
     QTimer* resizeTimer = new QTimer(this);
     resizeTimer->setSingleShot(true);
@@ -174,4 +180,28 @@ void ResultManager::setupConnections()
     m_resizeTimer = resizeTimer;
     
     qDebug() << "Connexions établies";
+}
+
+void ResultManager::onTradeClicked(const be::TradeData& trade)
+{
+    qDebug() << "Trade cliqué dans ResultManager - Entrée:" << trade.entryDate.toString().c_str() 
+             << "Sortie:" << trade.exitDate.toString().c_str();
+    
+    // Changer vers l'onglet Chart (index 1, car Stats est à l'index 0)
+    int chartTabIndex = -1;
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        if (m_tabWidget->widget(i) == m_chartView) {
+            chartTabIndex = i;
+            break;
+        }
+    }
+    
+    if (chartTabIndex >= 0) {
+        m_tabWidget->setCurrentIndex(chartTabIndex);
+        
+        // Demander à ChartView de zoomer sur ce trade
+        if (m_chartView) {
+            m_chartView->zoomToTrade(trade);
+        }
+    }
 }

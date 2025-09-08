@@ -56,6 +56,9 @@ public:
 
     void setMaxDisplayPoints(int value);
     int getMaxDisplayPoints() const;
+    
+    // Méthode pour zoomer sur un trade spécifique
+    void zoomToTrade(const be::TradeData& trade);
 
     template<typename T>
     int addIndicator(T&& config) {

@@ -445,6 +445,21 @@ void ChartView::clear() {
     showPlaceholder("Exécutez un backtest pour afficher les graphiques");
 }
 
+void ChartView::zoomToTrade(const be::TradeData& trade) {
+    qDebug() << "ChartView::zoomToTrade appelé pour trade avec entrée:" << trade.entryDate.toString().c_str();
+    
+    if (!m_chartWidget) {
+        qDebug() << "Impossible de zoomer: ChartWidget non initialisé";
+        return;
+    }
+    
+    // S'assurer que le widget de graphique est visible
+    showChartWidget();
+    
+    // Déléguer le zoom au ChartWidget
+    m_chartWidget->zoomToTrade(trade);
+}
+
 void ChartView::onRulerToolToggled(bool checked) {
     if (m_chartWidget) {
         m_chartWidget->setRulerToolEnabled(checked);

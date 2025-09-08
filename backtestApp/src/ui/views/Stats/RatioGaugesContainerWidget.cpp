@@ -95,9 +95,9 @@ RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
     //     {0.7, 1.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                       // Vert foncé
     // };
     QVector<RatioGaugeWidget::GaugeZone> winRateZones = {
-        {0.0, 0.2, DarkGray, Red, "Non rentable"},                     // Rouge
-        {0.2, 0.5, MediumGray, Black, "Rentabilité moyenne"},          // Gris clair
-        {0.5, 1.0, LightGray, Green, "Bonne rentabilité"}         // Gris très clair
+        {0.0, 20, DarkGray, Red, "Non rentable"},                     // Rouge
+        {20, 50, MediumGray, Black, "Rentabilité moyenne"},          // Gris clair
+        {50, 100, LightGray, Green, "Bonne rentabilité"}         // Gris très clair
     };
 
     QString winRateExplanation =
@@ -105,6 +105,7 @@ RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
         "Bien qu'important, il doit être évalué en conjonction avec le ratio de profit/perte, "
         "car une stratégie avec un faible taux de réussite peut être profitable si les gains sont importants par rapport aux pertes.";
     m_winRateGauge = new RatioGaugeWidget(winRateZones, "Taux de Réussite", winRateExplanation);
+    m_winRateGauge->setValueFormat(1, true); // Afficher en pourcentage avec 1 décimale
 
 
     // QVector<RatioGaugeWidget::GaugeZone> profitFactorZones = {
@@ -180,10 +181,10 @@ RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
     m_sqnGauge = new RatioGaugeWidget(sqnZones, "SQN", sqnExplanation);
 
     // Ajouter les jauges au layout en grille
-    gridLayout->addWidget(m_exposureTimeGauge, 0, 0);
-    gridLayout->addWidget(m_profitFactorGauge, 1, 0);
-    gridLayout->addWidget(m_winRateGauge, 2, 0);
-    gridLayout->addWidget(m_maxDrawdownGauge, 3, 0);
+    gridLayout->addWidget(m_profitFactorGauge, 0, 0);
+    gridLayout->addWidget(m_winRateGauge, 1, 0);
+    gridLayout->addWidget(m_maxDrawdownGauge, 2, 0);
+    gridLayout->addWidget(m_exposureTimeGauge, 3, 0);
     // gridLayout->addWidget(m_sharpeGauge, 4, 0);
     // gridLayout->addWidget(m_sortinoGauge, 0, 1);
     // gridLayout->addWidget(m_calmarGauge, 1, 1);
@@ -201,7 +202,7 @@ void RatioGaugesContainerWidget::updateContent(const be::Stats& stats)
     m_sharpeGauge->setValue(stats.sharpeRatio);
     m_sortinoGauge->setValue(stats.sortinoRatio);
     m_calmarGauge->setValue(stats.calmarRatio);
-    m_winRateGauge->setValue(stats.pctTPTrades * 0.01); // Convertir entre 0-1
+    m_winRateGauge->setValue(stats.pctTPTrades); // Convertir entre 0-1
     m_profitFactorGauge->setValue(stats.profitFactor);
     m_sqnGauge->setValue(stats.sqn);
     m_maxDrawdownGauge->setValue(std::abs(stats.maxDrawdownPct));

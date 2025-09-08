@@ -438,7 +438,7 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
     // Configuration de la police pour les étiquettes
     painter.setPen(m_textColor);
     QFont valueFont = painter.font();
-    valueFont.setPointSize(11); // Réduire légèrement la taille de police pour les deux séries d'étiquettes
+    valueFont.setPointSize(13); // Réduire légèrement la taille de police pour les deux séries d'étiquettes
     painter.setFont(valueFont);
     
     // Définir les positions X pour les légendes

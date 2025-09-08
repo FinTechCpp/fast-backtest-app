@@ -29,6 +29,7 @@
 #include "ui/views/Stats/PLDistributionWidget.h"
 #include "ui/views/Stats/PnLGaugeWidget.h"
 #include "ui/views/Stats/MonthlyPerformanceWidget.h"
+#include "ui/views/Stats/DrawdownComparisonWidget.h"
 
 
 
@@ -78,6 +79,7 @@ protected:
 
 private:
     // ==================== Membres privés ====================
+    DrawdownComparisonWidget* m_drawdownComparisonWidget = nullptr;
     EquityCurveWidget* m_equityCurveWidget = nullptr;
     TimelineWidget* m_timelineWidget = nullptr;
     MetricsContainerWidget* m_metricsWidget = nullptr;

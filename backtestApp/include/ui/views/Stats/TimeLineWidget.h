@@ -28,8 +28,8 @@ private:
     
     // Couleurs
     QColor m_timelineColor = QColor(200, 200, 200);        // Gris clair pour la timeline
-    QColor m_exposureColor = QColor(52, 152, 219, 180);    // Bleu semi-transparent pour l'exposition
-    QColor m_textColor = QColor(70, 70, 70);               // Gris foncé pour le texte
+    QColor m_exposureColor = QColor(90, 90, 90);    // Gris foncé pour l'exposition
+    QColor m_textColor = QColor(20, 20, 20);               // Gris foncé pour le texte
     
     // Dimensions
     int m_timelineHeight = 12;                             // Hauteur de la barre de timeline

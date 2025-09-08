@@ -8,6 +8,9 @@ MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     m_mainLayout = new QVBoxLayout(this);
 
     // Créer les groupes
+    m_summaryGroup = new QGroupBox("Résumé du Backtest");
+    m_summaryLayout = new QVBoxLayout(m_summaryGroup);
+
     m_performanceGroup = new QGroupBox("Résultats et Performance");
     m_performanceLayout = new QVBoxLayout(m_performanceGroup);
     
@@ -20,6 +23,7 @@ MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     // Layout horizontal pour contenir les trois groupes
     QHBoxLayout* groupsLayout = new QHBoxLayout();
     groupsLayout->setContentsMargins(0, 0, 0, 0);
+    groupsLayout->addWidget(m_summaryGroup);
     groupsLayout->addWidget(m_performanceGroup);
     groupsLayout->addWidget(m_riskGroup);
     groupsLayout->addWidget(m_generalGroup);
@@ -65,6 +69,7 @@ MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     initializeMetrics();
     
     // Créer les widgets pour chaque section
+    createMetricWidgets(Section::Summary, m_summaryLayout);
     createMetricWidgets(Section::Performance, m_performanceLayout);
     createMetricWidgets(Section::Risk, m_riskLayout);
     createMetricWidgets(Section::General, m_generalLayout);
@@ -98,6 +103,75 @@ void MetricsContainerWidget::createMetricWidgets(Section section, QVBoxLayout* l
 
 void MetricsContainerWidget::initializeMetrics() {
     m_metricDefinitions = {
+        // Section résumé
+        {"profit_factor_summary", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)", Section::Summary,
+            [](const be::Stats& s) {
+                if (std::isnan(s.profitFactor)) return MetricStatus::NA;
+                return s.profitFactor > 1.1 ? MetricStatus::Good : 
+                      (s.profitFactor < 0.9 ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) {
+                return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
+            }
+        },
+        {"TP_trades_summary", "Trades sur take-profit:", "Nombre de trades sur take-profit", Section::Summary,
+            [](const be::Stats& s) { return MetricStatus::Good; },
+            [](const be::Stats& s) { return QString::number(s.pctTPTrades, 'f', 1) + "% (" + QString::number(s.numTPTrades) + ")"; }
+        },
+        {"BE_trades_summary", "Trades sur break-even:", "Nombre de trades sur break-even", Section::Summary,
+            [](const be::Stats& s) { return s.numBETrades <= s.numTPTrades ? MetricStatus::Neutral : MetricStatus::Bad; },
+            [](const be::Stats& s) { return QString::number(s.pctBETrades, 'f', 1) + "% (" + QString::number(s.numBETrades) + ")"; }
+        },
+        {"equity_final_summary", "Capital final:", "Montant final du capital", Section::Summary,
+            [](const be::Stats& s) { 
+                return s.equityFinal > s.equityInitial ? MetricStatus::Good : 
+                      (s.equityFinal < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
+            },
+            [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityFinal, 'f', 2)); }
+        },
+        // {"equity_peak_summary", "Capital maximal:", "Montant maximal atteint par le capital", Section::Summary,
+        //     [](const be::Stats& s) { 
+        //         return s.equityPeak > s.equityInitial ? MetricStatus::Good : 
+        //         (s.equityPeak < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityPeak, 'f', 2)); }
+        // },
+        // {"total_return_summary", "Rendement total:", "Pourcentage de gain/perte sur l'ensemble du backtest", Section::Summary,
+        //     [](const be::Stats& s) { 
+        //         return s.returnPct > 0 ? MetricStatus::Good : 
+        //               (s.returnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.returnPct, 'f', 2)); }
+        // },
+        {"max_drawdown_summary", "Drawdown maximal:", "Perte maximale depuis un sommet précédent", Section::Summary,
+            [](const be::Stats& s) { return MetricStatus::Neutral; },
+            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.maxDrawdownPct, 'f', 2)); }
+        },
+        {"avg_drawdown_summary", "Drawdown moyen:", "Perte moyenne depuis un sommet précédent", Section::Summary,
+            [](const be::Stats& s) { return MetricStatus::Neutral; },
+            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgDrawdownPct, 'f', 2)); }
+        },
+        {"max_drawdown_duration_summary", "Durée DD max:", "Durée de la plus longue période de drawdown", Section::Summary,
+            [](const be::Stats& s) { return MetricStatus::Neutral; },
+            [](const be::Stats& s) { return QString::fromStdString(s.maxDrawdownDuration.toString()); }
+        },
+        {"avg_drawdown_duration_summary", "Durée DD moyenne:", "Durée moyenne des périodes de drawdown", Section::Summary,
+            [](const be::Stats& s) { return MetricStatus::Neutral; },
+            [](const be::Stats& s) { return QString::fromStdString(s.avgDrawdownDuration.toString()); }
+        },
+        {"total_trades_summary", "Nombre de trades:", "Nombre total de transactions effectuées", Section::Summary,
+            [](const be::Stats& s) { return MetricStatus::Neutral; },
+            [](const be::Stats& s) { return QString::number(s.numTrades); }
+        },
+        {"best_trade_summary", "Meilleur trade:", "Pourcentage de gain du meilleur trade", Section::Summary,
+            [](const be::Stats& s) { return MetricStatus::Good; },
+            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.bestTradePct, 'f', 2)); }
+        },
+        {"worst_trade_summary", "Pire trade:", "Pourcentage de perte du pire trade", Section::Summary,
+            [](const be::Stats& s) { return MetricStatus::Bad; },
+            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.worstTradePct, 'f', 2)); }
+        },
+
         // Section temporelle
         // {"start", "Début:", "Date de début du backtest", "time",
         //     [](const be::Stats& s) { return MetricStatus::Neutral; },
@@ -144,8 +218,7 @@ void MetricsContainerWidget::initializeMetrics() {
             },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.buyHoldReturnPct, 'f', 2)); }
         },
-        {
-            "buy_hold_cagr", "Buy & Hold CAGR:", "CAGR d'une stratégie passive d'achat et maintien", Section::Performance,
+        {"buy_hold_cagr", "Buy & Hold CAGR:", "CAGR d'une stratégie passive d'achat et maintien", Section::Performance,
             [](const be::Stats& s) {
                 return MetricStatus::Neutral;
             },

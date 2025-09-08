@@ -78,17 +78,20 @@ void StatsView::setupUI() {
     m_metricsWidget = new MetricsContainerWidget();
     m_statsLayout->addWidget(m_metricsWidget);
 
+    
     QHBoxLayout* tradesClosureLayout = new QHBoxLayout();
     tradesClosureLayout->setContentsMargins(0, 0, 0, 0);
     tradesClosureLayout->setSpacing(10);
-
+    
     m_tradeClosureWidget = new TradeClosureWidget();
     m_pnlGaugeWidget = new PnLGaugeWidget();
     m_tradingHeatmapWidget = new TradingHeatmapWidget();
-
+    // m_drawdownComparisonWidget = new DrawdownComparisonWidget();
+    
     tradesClosureLayout->addWidget(m_tradeClosureWidget, /*stretch=*/2);
     tradesClosureLayout->addWidget(m_pnlGaugeWidget, /*stretch=*/1);
     tradesClosureLayout->addWidget(m_tradingHeatmapWidget, /*stretch=*/2);
+    // tradesClosureLayout->addWidget(m_drawdownComparisonWidget, /*stretch=*/2);
 
     m_statsLayout->addLayout(tradesClosureLayout);
 
@@ -122,6 +125,7 @@ void StatsView::setupUI() {
     m_statsWidgets.push_back(m_metricsWidget);
     m_statsWidgets.push_back(m_ratioGaugesWidget);
     m_statsWidgets.push_back(m_tradeClosureWidget);
+    // m_statsWidgets.push_back(m_drawdownComparisonWidget);
     m_statsWidgets.push_back(m_pnlGaugeWidget);
     // m_statsWidgets.push_back(m_plDistributionWidget);
     m_statsWidgets.push_back(m_tradingHeatmapWidget);

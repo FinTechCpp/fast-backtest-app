@@ -88,14 +88,15 @@ void TimelineWidget::paintEvent(QPaintEvent* /*event*/) {
     painter.setBrush(Qt::white);
     
     // Début de timeline (cercle)
-    painter.drawEllipse(QPointF(marginX, timelineY + m_timelineHeight/2), markerSize/2, markerSize/2);
+    // painter.drawEllipse(QPointF(marginX, timelineY + m_timelineHeight/2), markerSize/2, markerSize/2);
     
     // Fin de timeline (cercle)
-    painter.drawEllipse(QPointF(marginX + timelineWidth, timelineY + m_timelineHeight/2), markerSize/2, markerSize/2);
+    // painter.drawEllipse(QPointF(marginX + timelineWidth, timelineY + m_timelineHeight/2), markerSize/2, markerSize/2);
     
     // Ajouter les dates de début et fin
     QFont dateFont = painter.font();
     dateFont.setBold(true);
+    dateFont.setPointSize(12);
     painter.setFont(dateFont);
     painter.setPen(m_textColor);
     

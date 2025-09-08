@@ -238,15 +238,6 @@ void TradingHeatmapWidget::buildHeatmap() {
         // Position Y de la limite
         int y = topMargin + rowIndex * (adjustedCellSize + CELL_SPACING);
         
-        // Ajouter une ligne horizontale fine (optionnel, pour visualiser la limite)
-        if (h <= m_maxHour) {
-            QGraphicsLineItem* line = m_scene->addLine(
-                leftMargin - 5, y, 
-                leftMargin + DAYS_IN_WEEK * (adjustedCellSize + CELL_SPACING), y,
-                QPen(Qt::gray, 0.5, Qt::DotLine)
-            );
-        }
-        
         // Ajouter le label d'heure à gauche
         QGraphicsTextItem* hourLabel = m_scene->addText(QString::number(h) + "h");
         QFont hourFont = hourLabel->font();

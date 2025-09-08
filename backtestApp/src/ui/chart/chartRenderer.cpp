@@ -90,7 +90,7 @@ void ChartRenderer::createOrUpdateChart(
     // Déterminer l'index de début pour les données visibles
     int startIndex = aggregationInfo.startIndex;
 
-    int subChartsTotalHeight = 0;
+    int subChartsTotalHeight = 30;
     
     // 1. Ajouter la courbe d'équité en haut si disponible et demandée
     if (config.showEquity) {

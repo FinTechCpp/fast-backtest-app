@@ -94,7 +94,7 @@ void ChartRenderer::createOrUpdateChart(
     
     // 1. Ajouter la courbe d'équité en haut si disponible et demandée
     if (config.showEquity) {
-        addEquityCurveSection(m_financeChart.get(), dataManager, timestamps, startIndex);
+        addEquityCurveSection(m_financeChart.get(), dataManager, timestamps, startIndex, config);
         subChartsTotalHeight += config.equityHeight;
     }
 
@@ -247,13 +247,12 @@ void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled,
 void ChartRenderer::addEquityCurveSection(FinanceChart *chart, 
                                          const ChartDataManager& dataManager, 
                                          const DoubleArray &timestamps, 
-                                         int startIndex)
+                                         int startIndex,
+                                        struct ChartConfiguration config)
 {
     const auto& equityData = dataManager.getEquityData();
     if (equityData.equity_values.empty() || timestamps.len == 0)
         return;
-
-    int equityHeight = 120;
     
     // Obtenir la plage de temps visible
     double visibleStartTime = timestamps[0];
@@ -314,7 +313,7 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart,
     DoubleArray equityValues = ChartDataManager::vectorToDoubleArray(interpolatedValues);
     
     // Ajouter l'indicateur pour l'equity curve
-    XYChart* equityChart = chart->addIndicator(equityHeight);
+    XYChart* equityChart = chart->addIndicator(config.equityHeight);
     
     // Configuration du titre et des libellés
     equityChart->xAxis()->setColors(Chart::Transparent);

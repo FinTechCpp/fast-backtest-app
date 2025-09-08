@@ -95,7 +95,8 @@ private:
     void addEquityCurveSection(FinanceChart *chart, 
                                const ChartDataManager& dataManager, 
                                const DoubleArray &timestamps, 
-                               int startIndex);
+                               int startIndex,
+                               struct ChartConfiguration config);
     
     void addTradeMarkers(XYChart *mainChart, 
                          const DoubleArray &timestamps,

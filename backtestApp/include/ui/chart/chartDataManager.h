@@ -41,16 +41,28 @@ public:
         bool isValid = false;      // Indicateur de validité
     };
 
-    struct AggregatedOHLCV {
-        std::vector<double> timestamps;
+    // faire de l'heritage pour stocker ohlcv isvalid
+    struct OHLC {
         std::vector<double> open;
         std::vector<double> high;
         std::vector<double> low;
         std::vector<double> close;
-        std::vector<double> volume;
-        std::vector<std::vector<int>> rawIndicesMapping;  // Pour chaque indice agrégé, liste des indices raw correspondants
-        AggregationLevel level;
         bool isValid = false;
+    };
+
+    struct AggregatedOHLCV : OHLC {
+        std::vector<double> timestamps, volume;
+        std::vector<std::vector<size_t>> rawIndicesMapping;  // Pour chaque indice agrégé, liste des indices raw correspondants
+        /*
+        Exemple :
+        Raw data indices:    0, 1, 2, 3, 4, 5, 6, 7, 8
+        Aggregated (1min):    0, 1, 2
+        rawIndicesMapping:  [[0,1,2],[3,4,5],[6,7,8]]
+        0 -> [0,1,2]
+        1 -> [3,4,5]
+        2 -> [6,7,8]
+        Dans la bougie agrégée 0, on a les bougies raw 0,1,2 etc.
+        */
     };
 
     struct TradeIndices {
@@ -87,14 +99,6 @@ public:
         bool isPivotPointsValid(int id) const { return validPivotPointsIds.find(id) != validPivotPointsIds.end(); }
     };
 
-    struct HeikinAshiCache {
-        std::vector<double> open;
-        std::vector<double> high;
-        std::vector<double> low;
-        std::vector<double> close;
-        bool isValid = false;
-    };
-
     struct EquityData {
         std::vector<double> timestamps;
         std::vector<double> equity_values;
@@ -104,24 +108,20 @@ public:
     ~ChartDataManager();
 
     // Méthodes pour la gestion des données
-    void setBacktestData(const std::shared_ptr<const be::Data>& data);
-    void setTrades(const std::vector<be::TradeData>& trades);
-    void setEquityCurve(const std::vector<double>& equityCurve);
-    void updateHeikinAshiCache();
+    void setData(const std::shared_ptr<const be::Data>& data, const std::vector<be::TradeData>& trades, const std::vector<double>& equityCurve);
     AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
     
     // Accesseurs
-    const std::vector<double>& getTimestamps() const { return m_timestampsCache; }
-    const HeikinAshiCache& getHeikinAshiCache() const { return m_heikinAshiCache; }
-    const EquityData& getEquityData() const { return m_equityData; }
-    std::shared_ptr<const be::Data> getBacktestData() const { return m_backtestData; }
-    const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const;
+    const AggregatedOHLCV& getAggregatedData(AggregationLevel level) const { return m_aggregatedOHLCVCache[static_cast<size_t>(level)];}
     const std::vector<be::TradeData>& getTrades() const { return m_trades; }
+    const EquityData& getEquityData() const { return m_equityData; }
+    const OHLC& getHeikinAshiCache() const { return m_heikinAshiCache; }
+    const std::vector<double>& getTimestamps() const { return m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].timestamps; }
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_indicators; }
-    const IndicatorData& getAggregatedIndicators(AggregationLevel level) const;
+    const IndicatorData& getAggregatedIndicators(AggregationLevel level) const { return m_aggregatedIndicatorsCache[static_cast<size_t>(level)]; }
     const std::map<int, std::vector<PivotPeriod>>& getPivotPeriods() const { return m_pivotPeriods; }
     const std::pair<int, int>* getTradeAggregatedIndices(size_t tradeIndex, AggregationLevel level) const;
-    bool hasValidData() const;
+    bool hasRawData() const { return m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid; }
 
     // methode utilitaires peut etre a deplacer
     static std::string aggregationLevelToString(AggregationLevel level);
@@ -138,7 +138,7 @@ public:
      * @param rawIndex Indice dans les données brutes
      * @return Indice correspondant dans les données agrégées, ou -1 si non trouvé
      */
-    int rawToAggregatedIndex(AggregationLevel level, int rawIndex) const;
+    size_t rawToAggregatedIndex(AggregationLevel level, size_t rawIndex) const;
     
     /**
      * @brief Obtient tous les indices bruts pour un indice agrégé donné
@@ -146,7 +146,7 @@ public:
      * @param aggregatedIndex Indice dans les données agrégées
      * @return Vecteur des indices bruts correspondants
      */
-    const std::vector<int>& getAggregatedToRawIndices(AggregationLevel level, int aggregatedIndex) const;
+    const std::vector<size_t>& getAggregatedToRawIndices(AggregationLevel level, size_t aggregatedIndex) const;
     
     /**
      * @brief Obtient le premier indice brut pour un indice agrégé donné
@@ -227,12 +227,12 @@ private:
         const char* name;
     };
 
-    void prepareTimestampsCache();
     bool configureAggregationSelector(ArrayMath& math, AggregationLevel level) const;
     void aggregateOHLCV(AggregationLevel level);
     void aggregateIndicators(AggregationLevel level);
     std::vector<double> aggregateVector(const std::vector<double>& data, AggregationLevel level, int aggregateMethod) const;
     std::vector<int> aggregateVector(const std::vector<int>& data, AggregationLevel level, int aggregateMethod) const;
+    void updateHeikinAshiCache();
 
     void calculateIndicator(const IndicatorBase& config);
     void calculateRSI(int id, int period);
@@ -254,13 +254,13 @@ private:
     AggregationLevel determineStartingAggregationLevel(const DoubleArray& timestamps) const;
     
     // Données
-    std::shared_ptr<const be::Data> m_backtestData;
-    std::vector<double> m_timestampsCache;
-    std::unordered_map<AggregationLevel, AggregatedOHLCV> m_aggregatedOHLCVCache;
-    std::unordered_map<AggregationLevel, IndicatorData> m_aggregatedIndicatorsCache;
+    // std::shared_ptr<const be::Data> m_backtestData; // a supprimer c'est a mettre dans AggregatedOHLCV
+    std::vector<be::Date> m_datesCache; // idem a mettre dans AggregatedOHLCV Temporaire
+    std::array<AggregatedOHLCV, static_cast<size_t>(AggregationLevel::Count)> m_aggregatedOHLCVCache;
+    std::array<IndicatorData, static_cast<size_t>(AggregationLevel::Count)> m_aggregatedIndicatorsCache;
     // les points pivots ne s'aggrègent pas comme les autres indicateurs, ils supportent nativement l'aggregation
     std::map<int, std::vector<PivotPeriod>> m_pivotPeriods;
-    HeikinAshiCache m_heikinAshiCache;
+    OHLC m_heikinAshiCache;
     std::vector<be::TradeData> m_trades;
     std::vector<TradeIndices> m_tradeIndices; // Indices pour chaque trade
     EquityData m_equityData;

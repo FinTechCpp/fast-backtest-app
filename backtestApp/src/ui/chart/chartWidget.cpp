@@ -62,9 +62,7 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
         return;
     }
 
-    m_dataManager.setBacktestData(results->data);
-    m_dataManager.setEquityCurve(results->stats.equityCurve);
-    m_dataManager.setTrades(results->stats.trades);
+    m_dataManager.setData(results->data, results->stats.trades, results->stats.equityCurve);
 
     updateChartDisplay(ViewPortMode::FULL_CHART);
 }
@@ -87,18 +85,11 @@ void ChartWidget::setChartType(ChartDataManager::ChartType chartType)
 
     m_config.chartType = chartType;
 
-    // Si nous passons en mode HeikinAshi et que le cache n'est pas valide, le recalculer
-    if (chartType == ChartDataManager::ChartType::HeikinAshi && !m_dataManager.getHeikinAshiCache().isValid && m_dataManager.hasValidData()) {
-        m_dataManager.updateHeikinAshiCache();
-    }
-
-    // Si nous avons déjà des données, mettre à jour le graphique
-    if (m_dataManager.hasValidData())
-        updateChartDisplay(ViewPortMode::USE_CURRENT);
+    updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
 bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
-    if (!m_dataManager.hasValidData() || !m_chartViewer) {
+    if (!m_dataManager.hasRawData() || !m_chartViewer) {
         return false;
     }
 
@@ -315,7 +306,7 @@ void ChartWidget::setMaxDisplayPoints(int value) {
     
     // Si la valeur a changé, mettre à jour le graphique et émettre le signal
     if (oldValue != m_dataManager.getMaxDisplayPoints()) {
-        if (m_dataManager.hasValidData()) {
+        if (m_dataManager.hasRawData()) {
             updateChartDisplay(ViewPortMode::USE_CURRENT);
         }
         emit maxDisplayPointsChanged(m_dataManager.getMaxDisplayPoints());
@@ -346,7 +337,7 @@ bool ChartWidget::removeIndicator(int id) {
 
     emit indicatorRemoved(id);
 
-    if (m_dataManager.hasValidData())
+    if (m_dataManager.hasRawData())
         updateChartDisplay(ViewPortMode::USE_CURRENT);
 
     return true;
@@ -354,7 +345,7 @@ bool ChartWidget::removeIndicator(int id) {
 
 void ChartWidget::zoomToTrade(const be::TradeData& trade)
 {
-    if (!m_dataManager.hasValidData() || !m_chartViewer) {
+    if (!m_dataManager.hasRawData() || !m_chartViewer) {
         qDebug() << "Impossible de zoomer: données non valides ou viewer non initialisé";
         return;
     }
@@ -439,7 +430,7 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
         m_config.chartHeight = newSize.height() - 20;
         
         // Mettre à jour le graphique seulement si nécessaire
-        if (m_dataManager.hasValidData() && m_chartViewer) {
+        if (m_dataManager.hasRawData() && m_chartViewer) {
             // Sauvegarder l'état actuel du viewport
             double currentLeft = m_chartViewer->getViewPortLeft();
             double currentWidth = m_chartViewer->getViewPortWidth();
@@ -457,6 +448,6 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
 void ChartWidget::removeAllIndicators() {
     m_dataManager.removeAllIndicators();
 
-    if (m_dataManager.hasValidData())
+    if (m_dataManager.hasRawData())
         updateChartDisplay(ViewPortMode::USE_CURRENT);
 }

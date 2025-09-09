@@ -62,14 +62,14 @@ public:
 
     template<typename T>
     int addIndicator(T&& config) {
-        if (!m_dataManager.hasValidData()) return -1; 
+        if (!m_dataManager.hasRawData()) return -1; 
 
         QString displayName = config.getDisplayName();
         int id = m_dataManager.addIndicator(std::move(config));
 
         emit indicatorAdded(id, displayName);
 
-        if (m_dataManager.hasValidData() && m_chartViewer)
+        if (m_dataManager.hasRawData() && m_chartViewer)
             updateChartDisplay(ViewPortMode::USE_CURRENT);
 
         return id;
@@ -87,7 +87,7 @@ public:
 
         emit indicatorChanged(config.id, config.getDisplayName());
 
-        if (m_dataManager.hasValidData() && m_chartViewer)
+        if (m_dataManager.hasRawData() && m_chartViewer)
             updateChartDisplay(ViewPortMode::USE_CURRENT);
 
         return true;

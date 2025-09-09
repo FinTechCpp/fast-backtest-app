@@ -193,10 +193,20 @@ void ChartView::setupUI()
     m_chartWidget = new ChartWidget();
     m_chartWidget->setVisible(false); // Initially hidden
 
+    // m_chartWidget2 = new ChartWidget();
+    // m_chartWidget2->setVisible(false); // Initially hidden
+
     connect(m_chartWidget, &ChartWidget::indicatorAdded, this, &ChartView::onIndicatorAdded);
     connect(m_chartWidget, &ChartWidget::indicatorChanged, this, &ChartView::onIndicatorChanged);
     connect(m_chartWidget, &ChartWidget::indicatorRemoved, this, &ChartView::onIndicatorRemoved);
     connect(m_chartWidget, &ChartWidget::maxDisplayPointsChanged, this, &ChartView::onMaxDisplayPointsChanged);
+
+    // Ajoute les deux charts dans un layout horizontal pour la comparaison
+    // QHBoxLayout* chartsLayout = new QHBoxLayout();
+    // chartsLayout->setContentsMargins(0, 0, 0, 0);
+    // chartsLayout->setSpacing(0);
+    // chartsLayout->addWidget(m_chartWidget);
+    // chartsLayout->addWidget(m_chartWidget2);
 
     // Add the widgets to the right panel layout
     rightPanelLayout->addWidget(m_chartPlaceholder);
@@ -379,12 +389,14 @@ void ChartView::updateData(BacktestResults* results) {
     }
 
     m_chartWidget->setBacktestResults(results);
+    // m_chartWidget2->setBacktestResults(results); // il faudra ajouter un autre BacktestResults si on veut comparer deux backtests
 
     m_dataExtracted = true;
     
     // Define the chart type
     QString chartType = m_chartTypeCombo->currentData().toString();
     m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
+    // m_chartWidget2->setChartType(m_chartWidget2->stringToChartType(chartType)); // Synchronise le type
 
     // Show the chart widget and hide the placeholder
     showChartWidget();
@@ -422,6 +434,10 @@ void ChartView::showChartWidget() {
     if (m_chartWidget) {
         m_chartWidget->setVisible(true);
     }
+
+    // if (m_chartWidget2) {
+    //     m_chartWidget2->setVisible(true);
+    // }
 }
 
 void ChartView::showPlaceholder(const QString& message) {

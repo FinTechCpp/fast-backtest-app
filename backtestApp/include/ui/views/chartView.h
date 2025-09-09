@@ -99,6 +99,7 @@ private:
 
     App* m_app;                   // Référence à l'application principale
     ChartWidget* m_chartWidget;   // Widget du graphique
+    // ChartWidget* m_chartWidget2;   // Widget du graphique pour la comparaison verticale
 
     QSlider* m_aggregationSlider;
     QLabel* m_aggregationLabel;

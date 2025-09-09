@@ -16,6 +16,7 @@ enum class AggregationLevel {
     OneMinute,   // 1 minute
     OneHour,     // 1 heure
     OneDay,      // 1 jour
+    Count        // Nombre total de niveaux d'agrégation
 };
 
 struct PivotPeriod {

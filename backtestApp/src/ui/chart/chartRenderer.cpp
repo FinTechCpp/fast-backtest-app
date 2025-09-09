@@ -20,41 +20,60 @@ void ChartRenderer::createOrUpdateChart(
 {
     // Extraire les données selon le niveau d'agrégation
     DoubleArray timestamps, openData, highData, lowData, closeData, volumeData;
-    
-    if (aggregationInfo.level == AggregationLevel::Raw) {
-        // Utiliser les données brutes directement
-        const auto& backtestData = dataManager.getBacktestData();
-        int startIndex = aggregationInfo.startIndex;
-        int pointCount = aggregationInfo.pointCount;
-        
-        timestamps = DoubleArray(&dataManager.getTimestamps()[startIndex], pointCount);
-        volumeData = DoubleArray(&backtestData->getVolume()[startIndex], pointCount);
-        
-        // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
-        if (config.chartType == ChartDataManager::ChartType::HeikinAshi) {
+
+    {
+        const auto& data = dataManager.getAggregatedData(aggregationInfo.level);
+        size_t startIdx = aggregationInfo.startIndex;
+        size_t count = aggregationInfo.pointCount;
+
+        timestamps = DoubleArray(&data.timestamps[startIdx], count);
+        volumeData = DoubleArray(&data.volume[startIdx], count);
+
+        if (aggregationInfo.level == AggregationLevel::Raw && config.chartType == ChartDataManager::ChartType::HeikinAshi) {
             const auto& heikinAshiCache = dataManager.getHeikinAshiCache();
-            
-            openData = DoubleArray(&heikinAshiCache.open[startIndex], pointCount);
-            highData = DoubleArray(&heikinAshiCache.high[startIndex], pointCount);
-            lowData = DoubleArray(&heikinAshiCache.low[startIndex], pointCount);
-            closeData = DoubleArray(&heikinAshiCache.close[startIndex], pointCount);
+            openData = DoubleArray(&heikinAshiCache.open[startIdx], count);
+            highData = DoubleArray(&heikinAshiCache.high[startIdx], count);
+            lowData = DoubleArray(&heikinAshiCache.low[startIdx], count);
+            closeData = DoubleArray(&heikinAshiCache.close[startIdx], count);
         } else {
-            openData = DoubleArray(&backtestData->getOpen()[startIndex], pointCount);
-            highData = DoubleArray(&backtestData->getHigh()[startIndex], pointCount);
-            lowData = DoubleArray(&backtestData->getLow()[startIndex], pointCount);
-            closeData = DoubleArray(&backtestData->getClose()[startIndex], pointCount);
+            openData = DoubleArray(&data.open[startIdx], count);
+            highData = DoubleArray(&data.high[startIdx], count);
+            lowData = DoubleArray(&data.low[startIdx], count);
+            closeData = DoubleArray(&data.close[startIdx], count);
         }
-    } else {
-        // Utiliser les données agrégées
-        const auto& aggregated = dataManager.getAggregatedData(aggregationInfo.level);
-        
-        timestamps = DoubleArray(&aggregated.timestamps[aggregationInfo.startIndex], aggregationInfo.pointCount);
-        openData = DoubleArray(&aggregated.open[aggregationInfo.startIndex], aggregationInfo.pointCount);
-        highData = DoubleArray(&aggregated.high[aggregationInfo.startIndex], aggregationInfo.pointCount);
-        lowData = DoubleArray(&aggregated.low[aggregationInfo.startIndex], aggregationInfo.pointCount);
-        closeData = DoubleArray(&aggregated.close[aggregationInfo.startIndex], aggregationInfo.pointCount);
-        volumeData = DoubleArray(&aggregated.volume[aggregationInfo.startIndex], aggregationInfo.pointCount);
     }
+    
+    // if (aggregationInfo.level == AggregationLevel::Raw && config.chartType == ChartDataManager::ChartType::HeikinAshi) {
+    //     // Utiliser les données brutes directement
+    //     const auto& backtestData = dataManager.getBacktestData();        
+    //     timestamps = DoubleArray(&dataManager.getTimestamps()[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //     volumeData = DoubleArray(&backtestData->getVolume()[aggregationInfo.startIndex], aggregationInfo.pointCount);
+        
+    //     // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
+    //     if (config.chartType == ChartDataManager::ChartType::HeikinAshi) {
+    //         const auto& heikinAshiCache = dataManager.getHeikinAshiCache();
+            
+    //         openData = DoubleArray(&heikinAshiCache.open[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //         highData = DoubleArray(&heikinAshiCache.high[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //         lowData = DoubleArray(&heikinAshiCache.low[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //         closeData = DoubleArray(&heikinAshiCache.close[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //     } else {
+    //         openData = DoubleArray(&backtestData->getOpen()[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //         highData = DoubleArray(&backtestData->getHigh()[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //         lowData = DoubleArray(&backtestData->getLow()[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //         closeData = DoubleArray(&backtestData->getClose()[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //     }
+    // } else {
+    //     // Utiliser les données agrégées
+    //     const auto& aggregated = dataManager.getAggregatedData(aggregationInfo.level);
+        
+    //     timestamps = DoubleArray(&aggregated.timestamps[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //     openData = DoubleArray(&aggregated.open[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //     highData = DoubleArray(&aggregated.high[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //     lowData = DoubleArray(&aggregated.low[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //     closeData = DoubleArray(&aggregated.close[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    //     volumeData = DoubleArray(&aggregated.volume[aggregationInfo.startIndex], aggregationInfo.pointCount);
+    // }
     
     // Créer un nouveau graphique
     m_financeChart = std::make_unique<FinanceChart>(config.chartWidth);
@@ -115,7 +134,7 @@ void ChartRenderer::createOrUpdateChart(
     // 2. Ajouter le graphique principal
     int mainChartHeight = std::max(300, config.chartHeight - subChartsTotalHeight);
     XYChart* mainChart = m_financeChart->addMainChart(mainChartHeight);
-    
+
     // Personnaliser l'affichage des grilles
     mainChart->xAxis()->setWidth(2);  // Axe plus épais
     mainChart->xAxis()->setTickLength(4, 2);  // Ticks plus visibles
@@ -416,7 +435,7 @@ void ChartRenderer::addTradeMarkers(XYChart *mainChart,
     AggregationLevel level = aggregationInfo.level;
 
     if (trades.empty() 
-        || !dataManager.hasValidData()
+        || !dataManager.hasRawData()
         || !mainChart)
         return;
 
@@ -511,17 +530,17 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
             
             // Marqueur carré pour la position d'entrée
             entryMarkers.push_back({relativeIndex, trade.entryPrice});
-            
-            if (entryBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
-                const be::Candle& entryCandle = dataManager.getBacktestData()->at(entryBarIndex);
-                
+
+            const auto& data = dataManager.getAggregatedData(AggregationLevel::Raw);
+            if (entryBarIndex < data.timestamps.size()) {
+
                 if (isLong) {
                     // Achat: flèche vers le haut SOUS la bougie
-                    double arrowY = entryCandle.low;
+                    double arrowY = data.low[entryBarIndex];
                     entryLongArrows.push_back({relativeIndex, arrowY});
                 } else {
                     // Vente: flèche vers le bas AU-DESSUS de la bougie
-                    double arrowY = entryCandle.high;
+                    double arrowY = data.high[entryBarIndex];
                     entryShortArrows.push_back({relativeIndex, arrowY});
                 }
             }
@@ -576,13 +595,14 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
                 // Marqueur carré pour la position de sortie
                 exitMarkers.push_back({relativeExitIndex, trade.exitPrice});
 
-                if (exitBarIndex < static_cast<int>(dataManager.getBacktestData()->size())) {
-                    const be::Candle& exitCandle = dataManager.getBacktestData()->at(exitBarIndex);
+                const auto& data = dataManager.getAggregatedData(AggregationLevel::Raw);
+
+                if (exitBarIndex < static_cast<int>(data.timestamps.size())) {
                     
                     if (isLong) {
                         // Sortie achat: flèche vers le bas AU-DESSUS de la bougie
-                        double arrowY = exitCandle.high;
-                        
+                        double arrowY = data.high[exitBarIndex];
+
                         if (closeReason == be::CloseReason::TakeProfit)
                             exitLongTPArrows.push_back({relativeExitIndex, arrowY});
                         else if (closeReason == be::CloseReason::StopLoss)
@@ -593,7 +613,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
                             exitLongNeutralArrows.push_back({relativeExitIndex, arrowY});
                     } else {
                         // Sortie vente: flèche vers le haut SOUS la bougie
-                        double arrowY = exitCandle.low;
+                        double arrowY = data.low[exitBarIndex];
 
                         if (closeReason == be::CloseReason::TakeProfit)
                             exitShortTPArrows.push_back({relativeExitIndex, arrowY});

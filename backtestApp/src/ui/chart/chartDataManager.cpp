@@ -16,25 +16,41 @@ ChartDataManager::ChartDataManager() {
 ChartDataManager::~ChartDataManager() {
 }
 
-void ChartDataManager::setBacktestData(const std::shared_ptr<const be::Data>& data) {
-    m_backtestData = data;
-    
+void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, const std::vector<be::TradeData>& trades, const std::vector<double>& equityCurve) {
     if (!data) return;
 
-    prepareTimestampsCache();
+    m_aggregatedOHLCVCache.fill(AggregatedOHLCV());
+    {
+        const std::vector<be::Date>& dates = data->getDates();
+        m_datesCache = dates;
+
+        std::vector<double>& rawTimestamps = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].timestamps;
+        std::vector<std::vector<size_t>> oneToOneMapping = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].rawIndicesMapping;
+
+        rawTimestamps.reserve(dates.size());
+        oneToOneMapping.resize(dates.size());
+
+        for (size_t i = 0; i < dates.size(); ++i) {
+            rawTimestamps.push_back(dateToChartTimestamp(dates[i]));
+            oneToOneMapping[i] = {i};
+        }
+    }
+    m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].open = data->getOpen();
+    m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].high = data->getHigh();
+    m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].low = data->getLow();
+    m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].close = data->getClose();
+    m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].volume = data->getVolume();
+    m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid = true; // Les données brutes sont toujours valides
+
     updateHeikinAshiCache();
     
-    m_aggregatedOHLCVCache.clear();
-    m_aggregatedIndicatorsCache.clear();
-}
+    m_aggregatedIndicatorsCache.fill(IndicatorData());
 
-void ChartDataManager::setTrades(const std::vector<be::TradeData>& trades) {
+
+
     m_trades = trades;
     m_tradeIndices.clear();
     
-    // Si pas de trades, rien à faire
-    if (m_trades.empty()) return;
-
     // Préallouer le vecteur d'indices
     m_tradeIndices.resize(m_trades.size());
 
@@ -46,13 +62,13 @@ void ChartDataManager::setTrades(const std::vector<be::TradeData>& trades) {
         // Stocker les indices raw
         m_tradeIndices[i].indices[AggregationLevel::Raw] = {entryBar, exitBar};
     }
-}
-
-void ChartDataManager::setEquityCurve(const std::vector<double>& equityCurve) {
-    if (equityCurve.empty() || !m_backtestData) return;
+    
+    
+    
+    if (equityCurve.empty()) return;
     
     size_t numPoints = equityCurve.size();
-    size_t numBars = m_backtestData->size();
+    size_t numBars = data->size();
     
     // Réinitialiser les données d'équité
     m_equityData = EquityData();
@@ -68,7 +84,7 @@ void ChartDataManager::setEquityCurve(const std::vector<double>& equityCurve) {
     double lastValue = equityCurve[0];
     
     // Toujours ajouter le premier point
-    m_equityData.timestamps.push_back(dateToChartTimestamp(m_backtestData->at(0).date));
+    m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(0).date));
     m_equityData.equity_values.push_back(lastValue);
     
     // Parcourir le reste des points
@@ -77,29 +93,10 @@ void ChartDataManager::setEquityCurve(const std::vector<double>& equityCurve) {
         
         // Si la valeur a changé ou si c'est le dernier point, l'ajouter
         if (std::abs(currentValue - lastValue) > 1e-10 || i == numPoints - 1) {
-            m_equityData.timestamps.push_back(dateToChartTimestamp(m_backtestData->at(i).date));
+            m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(i).date));
             m_equityData.equity_values.push_back(currentValue);
             lastValue = currentValue;
         }
-    }
-}
-
-void ChartDataManager::prepareTimestampsCache() {
-    if (!m_backtestData || m_backtestData->size() == 0) {
-        m_timestampsCache.clear();
-        return;
-    }
-    
-    const auto& dates = m_backtestData->getDates();
-    size_t dataSize = dates.size();
-    
-    // Réserver la capacité et convertir toutes les dates en timestamps
-    m_timestampsCache.clear();
-    m_timestampsCache.reserve(dataSize);
-    
-    for (const auto& date : dates) {
-        double timestamp = dateToChartTimestamp(date);
-        m_timestampsCache.push_back(timestamp);
     }
 }
 
@@ -108,17 +105,16 @@ double ChartDataManager::dateToChartTimestamp(const be::Date& date) const {
 }
 
 void ChartDataManager::updateHeikinAshiCache() {
-    if (!hasValidData()) {
-        qWarning() << "Tentative de mise à jour du cache Heikin-Ashi avec des données vides";
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid) {
         m_heikinAshiCache.isValid = false;
         return;
     }
 
     std::tie(m_heikinAshiCache.open, m_heikinAshiCache.high, m_heikinAshiCache.low, m_heikinAshiCache.close) = IndicatorMathUtils::calculateHeikinAshi(
-        m_backtestData->getOpen(), 
-        m_backtestData->getHigh(), 
-        m_backtestData->getLow(),
-        m_backtestData->getClose()
+        m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].open,
+        m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].high,
+        m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].low,
+        m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].close
     );
     
     m_heikinAshiCache.isValid = true;
@@ -128,35 +124,15 @@ void ChartDataManager::updateHeikinAshiCache() {
 // et eviter de modifier les données originales, et une pour les stocker dans le cache
 void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
     // Si déjà en cache et valide, ne rien faire
-    if (m_aggregatedOHLCVCache.find(level) != m_aggregatedOHLCVCache.end() && 
-        m_aggregatedOHLCVCache[level].isValid) {
+    if (m_aggregatedOHLCVCache[static_cast<size_t>(level)].isValid)
         return;
-    }
         
     // Créer un nouvel enregistrement dans le cache
-    AggregatedOHLCV& aggregatedData = m_aggregatedOHLCVCache[level];
+    AggregatedOHLCV& aggregatedData = m_aggregatedOHLCVCache[static_cast<size_t>(level)];
     
     // Vérifier qu'on a des données à agréger
-    if (m_timestampsCache.empty() || !m_backtestData) {
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid) {
         aggregatedData.isValid = false;
-        return;
-    }
-
-    // Pour le cas Raw, copier les données originales
-    if (level == AggregationLevel::Raw) {
-        // Créer des copies des données brutes dans les vecteurs
-        aggregatedData.timestamps = m_timestampsCache;
-        aggregatedData.open = m_backtestData->getOpen();
-        aggregatedData.high = m_backtestData->getHigh();
-        aggregatedData.low = m_backtestData->getLow();
-        aggregatedData.close = m_backtestData->getClose();
-        aggregatedData.volume = m_backtestData->getVolume();
-        // Création du mapping direct (chaque indice correspond à lui-même)
-        aggregatedData.rawIndicesMapping.resize(m_timestampsCache.size());
-        for (size_t i = 0; i < m_timestampsCache.size(); ++i)
-            aggregatedData.rawIndicesMapping[i] = {static_cast<int>(i)};
-        aggregatedData.level = AggregationLevel::Raw;
-        aggregatedData.isValid = true;
         return;
     }
 
@@ -183,13 +159,13 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
     // }
     
     // Si aucun niveau inférieur n'est disponible, on utilise les données brutes
-    if (sourceLevel == AggregationLevel::Raw && !m_aggregatedOHLCVCache[sourceLevel].isValid) {
+    if (sourceLevel == AggregationLevel::Raw && !m_aggregatedOHLCVCache[0].isValid) {
         // Calculer le niveau Raw s'il n'est pas déjà calculé
         aggregateOHLCV(AggregationLevel::Raw);
     }
     
     // Obtenir les données source
-    const AggregatedOHLCV& sourceData = m_aggregatedOHLCVCache[sourceLevel];
+    const AggregatedOHLCV& sourceData = m_aggregatedOHLCVCache[0];
     
     // premier copy pour travailler sur les données
     // Faire des copies des données source pour l'agrégation
@@ -284,7 +260,7 @@ void ChartDataManager::aggregateOHLCV(AggregationLevel level) {
         aggregatedData.volume[i] = volume[i];
     }
     
-    aggregatedData.level = level;
+    // aggregatedData.level = level;
     aggregatedData.isValid = true;
 
     // Précalculer les indices des trades pour ce nouveau niveau d'agrégation
@@ -297,17 +273,14 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     if (level == AggregationLevel::Raw) return;
 
     // il faut peut etre faire ca aussi dans aggregateOHLCV
-    // S'assurer que le cache pour ce niveau existe
-    if (m_aggregatedIndicatorsCache.find(level) == m_aggregatedIndicatorsCache.end())
-        m_aggregatedIndicatorsCache[level].level = level;
-    
-    IndicatorData& aggregated = m_aggregatedIndicatorsCache[level];
+
+    IndicatorData& aggregated = m_aggregatedIndicatorsCache[static_cast<size_t>(level)];
 
     // il faut trouvé le niveau d'agrégation source comme pour les OHLCV
     // pour l'instant on ne gère que le niveau Raw
 
 
-    for (const auto& [id, values] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].rsiValues) {
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].rsiValues) {
         if (!aggregated.isRsiValid(id)) {
             // Agréger les RSI
             std::vector<double> rsiData = aggregateVector(values, level, Chart::AggregateLast);
@@ -319,7 +292,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 
     // EMA
-    for (const auto& [id, values] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].emaValues) {
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].emaValues) {
         if (!aggregated.isEmaValid(id)) {
             std::vector<double> emaData = aggregateVector(values, level, Chart::AggregateLast);
             if (!emaData.empty()) {
@@ -330,7 +303,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 
     // Supertrend
-    for (const auto& [id, valuesPair] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].supertrendValues) {
+    for (const auto& [id, valuesPair] : m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].supertrendValues) {
         if (!aggregated.isSupertrendValid(id)) {
             const auto& [supertrendValues, trendDirections] = valuesPair;
             std::vector<double> supertrendData = aggregateVector(supertrendValues, level, Chart::AggregateLast);
@@ -347,7 +320,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 
     // Stochastic
-    for (const auto& [id, values] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].stochasticValues) {
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].stochasticValues) {
         if (!aggregated.isStochasticValid(id)) {
             const auto& [kValues, dValues] = values;
             std::vector<double> kData = aggregateVector(kValues, level, Chart::AggregateLast);
@@ -364,7 +337,7 @@ void ChartDataManager::aggregateIndicators(AggregationLevel level) {
     }
 
     // ATR
-    for (const auto& [id, values] : m_aggregatedIndicatorsCache[AggregationLevel::Raw].atrValues) {
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].atrValues) {
         if (!aggregated.isAtrValid(id)) {
             std::vector<double> atrData = aggregateVector(values, level, Chart::AggregateLast);
             if (!atrData.empty()) {
@@ -379,7 +352,7 @@ std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> 
     if (level == AggregationLevel::Raw)
         return data;
 
-    std::vector<double> timestamps = m_timestampsCache;
+    std::vector<double> timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].timestamps;
     std::vector<double> dataCopy = data;
 
     ArrayMath timestampsMath(DoubleArray(timestamps.data(), timestamps.size()));
@@ -408,91 +381,91 @@ std::vector<int> ChartDataManager::aggregateVector(const std::vector<int>& data,
 
 void ChartDataManager::calculateRSI(int id, int period) {
     // Vérifier si les données nécessaires sont disponibles
-    if (!hasValidData() || period < 2) return;
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid || period < 2) return;
 
     // Obtenir les prix de clôture
-    const std::vector<double>& closePrices = m_backtestData->getClose();
+    const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].close;
 
     std::vector<double> rsiValues = IndicatorMathUtils::calculateRSI(closePrices, period);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_aggregatedIndicatorsCache[AggregationLevel::Raw].rsiValues[id] = std::move(rsiValues);
+    m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].rsiValues[id] = std::move(rsiValues);
 }
 
 void ChartDataManager::calculateEMA(int id, int period) {
     // Vérifier si les données nécessaires sont disponibles
-    if (!hasValidData() || period < 2) return;
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid || period < 2) return;
 
     // Obtenir les prix de clôture
-    const std::vector<double>& closePrices = m_backtestData->getClose();
+    const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].close;
 
     std::vector<double> emaValues = IndicatorMathUtils::calculateEMA(closePrices, period);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_aggregatedIndicatorsCache[AggregationLevel::Raw].emaValues[id] = std::move(emaValues);
+    m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].emaValues[id] = std::move(emaValues);
 }
 
 void ChartDataManager::calculateSupertrend(int id, int period, double multiplier) {
     // Vérifier si les données nécessaires sont disponibles
-    if (!hasValidData() || period < 2) return;
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid || period < 2) return;
 
     // Obtenir les prix
-    const std::vector<double>& highPrices = m_backtestData->getHigh();
-    const std::vector<double>& lowPrices = m_backtestData->getLow();
-    const std::vector<double>& closePrices = m_backtestData->getClose();
+    const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].high;
+    const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].low;
+    const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].close;
 
     std::vector<double> supertrendValues;
     std::vector<int> trendDirections;
     std::tie(supertrendValues, trendDirections) = IndicatorMathUtils::calculateSupertrend(highPrices, lowPrices, closePrices, period, multiplier);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_aggregatedIndicatorsCache[AggregationLevel::Raw].supertrendValues[id] = std::make_pair(std::move(supertrendValues), std::move(trendDirections));
+    m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].supertrendValues[id] = std::make_pair(std::move(supertrendValues), std::move(trendDirections));
 }
 
 void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod) {
     // Vérifier si les données nécessaires sont disponibles
-    if (!hasValidData() || fastKPeriod < 2 || slowKPeriod < 2 || slowDPeriod < 2) return;
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid || fastKPeriod < 2 || slowKPeriod < 2 || slowDPeriod < 2) return;
 
     // Obtenir les prix
-    const std::vector<double>& highPrices = m_backtestData->getHigh();
-    const std::vector<double>& lowPrices = m_backtestData->getLow();
-    const std::vector<double>& closePrices = m_backtestData->getClose();
+    const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].high;
+    const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].low;
+    const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].close;
 
     auto [stochasticKValues, stochasticDValues] = IndicatorMathUtils::calculateStochastic(
         highPrices, lowPrices, closePrices, fastKPeriod, slowKPeriod, slowDPeriod
     );
 
     // Mettre à jour le cache des indicateurs actifs
-    m_aggregatedIndicatorsCache[AggregationLevel::Raw].stochasticValues[id] = {
+    m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].stochasticValues[id] = {
         std::move(stochasticKValues), std::move(stochasticDValues)
     };
 }
 
 void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
     // Vérifier si les données nécessaires sont disponibles
-    if (!hasValidData() || period < 2) return;
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid || period < 2) return;
 
     // Obtenir les prix
-    const std::vector<double>& highPrices = m_backtestData->getHigh();
-    const std::vector<double>& lowPrices = m_backtestData->getLow();
-    const std::vector<double>& closePrices = m_backtestData->getClose();
+    const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].high;
+    const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].low;
+    const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].close;
 
     std::vector<double> atrValues = IndicatorMathUtils::calculateATR(highPrices, lowPrices, closePrices, period, useLogScale);
 
     // Mettre à jour le cache des indicateurs actifs
-    m_aggregatedIndicatorsCache[AggregationLevel::Raw].atrValues[id] = std::move(atrValues);
+    m_aggregatedIndicatorsCache[static_cast<size_t>(AggregationLevel::Raw)].atrValues[id] = std::move(atrValues);
 }
 
 void ChartDataManager::calculatePivotPoints(const PivotPointsInstance& config) {
     // Vérifier si les données nécessaires sont disponibles
-    if (!hasValidData()) return;
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid) return;
     
     // Obtenir les prix
-    std::vector<be::Date> dates = m_backtestData->getDates();
-    std::vector<double> openPrices = m_backtestData->getOpen();
-    std::vector<double> highPrices = m_backtestData->getHigh();
-    std::vector<double> lowPrices = m_backtestData->getLow();
-    std::vector<double> closePrices = m_backtestData->getClose();
+    std::vector<be::Date> dates = m_datesCache;
+    std::vector<double> openPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].open;
+    std::vector<double> highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].high;
+    std::vector<double> lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].low;
+    std::vector<double> closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].close;
     
     // Structure pour stocker les niveaux calculés
     std::vector<PivotPeriod> levelSegments = IndicatorMathUtils::calculatePivotPoints(
@@ -503,21 +476,22 @@ void ChartDataManager::calculatePivotPoints(const PivotPointsInstance& config) {
     m_pivotPeriods[config.id] = std::move(levelSegments);
 
     // Pré-calculer les indices pour tous les niveaux d'agrégation existants
-    for (const auto& [level, cache] : m_aggregatedOHLCVCache) {
-        if (level != AggregationLevel::Raw && cache.isValid) {
-            precalculatePivotIndices(m_pivotPeriods[config.id], level);
-        }
+    for (size_t i = 0; i < m_aggregatedOHLCVCache.size(); ++i) {
+        if (i == static_cast<size_t>(AggregationLevel::Raw) || !m_aggregatedOHLCVCache[i].isValid) 
+            continue;
+
+        precalculatePivotIndices(m_pivotPeriods[config.id], static_cast<AggregationLevel>(i));
     }
 }
 
 void ChartDataManager::precalculatePivotIndices(std::vector<PivotPeriod>& periods, AggregationLevel level) {
     
     // Vérifier que le niveau existe dans le cache
-    auto it = m_aggregatedOHLCVCache.find(level);
-    if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid)
+    const AggregatedOHLCV& aggData = m_aggregatedOHLCVCache[static_cast<size_t>(level)];
+    if (!aggData.isValid)
         return;
 
-    const std::vector<std::vector<int>>& mapping = it->second.rawIndicesMapping;
+    const std::vector<std::vector<size_t>>& mapping = aggData.rawIndicesMapping;
     if (mapping.empty() || periods.empty())
         return;
 
@@ -578,11 +552,11 @@ void ChartDataManager::precalculatePivotIndices(std::vector<PivotPeriod>& period
 
 void ChartDataManager::precalculateTradeIndices(AggregationLevel level) {
     // Vérifier que le niveau existe dans le cache
-    auto it = m_aggregatedOHLCVCache.find(level);
-    if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid)
+    const AggregatedOHLCV& aggData = m_aggregatedOHLCVCache[static_cast<size_t>(level)];
+    if (!aggData.isValid)
         return;
-    
-    const std::vector<std::vector<int>>& mapping = it->second.rawIndicesMapping;
+
+    const std::vector<std::vector<size_t>>& mapping = aggData.rawIndicesMapping;
     if (mapping.empty() || m_trades.empty())
         return;
     
@@ -680,7 +654,7 @@ bool ChartDataManager::configureAggregationSelector(ArrayMath& math, Aggregation
 ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(const DoubleArray& timestamps) {
     AggregationInfo result;
     result.level = AggregationLevel::Raw;
-    result.startIndex = findClosestIndex(m_timestampsCache, timestamps[0]);
+    result.startIndex = findClosestIndex(m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].timestamps, timestamps[0]);
     result.pointCount = timestamps.len;
     result.isValid = true;
 
@@ -689,35 +663,26 @@ ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(co
     // Déterminer le niveau d'agrégation de départ en fonction de la période des données
     AggregationLevel startLevel = determineStartingAggregationLevel(timestamps);
 
-    // Liste ordonnée des niveaux d'agrégation disponibles
-    std::vector<AggregationLevel> aggregationLevels = {
-        AggregationLevel::Raw,
-        AggregationLevel::OneMinute,
-        AggregationLevel::OneHour,
-        AggregationLevel::OneDay,
-    };
-
     // Trouver l'indice du niveau de départ dans notre liste
     size_t startIdx = 0;
-    for (size_t i = 0; i < aggregationLevels.size(); i++) {
-        if (aggregationLevels[i] == startLevel) {
+    for (size_t i = 0; i < static_cast<size_t>(AggregationLevel::Count); i++) {
+        if (i == static_cast<size_t>(startLevel)) {
             startIdx = i;
             break;
         }
     }
 
     // Parcourir les niveaux d'agrégation à partir du niveau de départ
-    for (size_t i = startIdx + 1; i < aggregationLevels.size(); i++) {
-        AggregationLevel level = aggregationLevels[i];
+    for (size_t i = startIdx + 1; i < static_cast<size_t>(AggregationLevel::Count); i++) {
+        AggregationLevel level = static_cast<AggregationLevel>(i);
 
-        auto it = m_aggregatedOHLCVCache.find(level);
-        if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid) {
+        if (!m_aggregatedOHLCVCache[i].isValid) {
             aggregateOHLCV(level);
         }
 
         aggregateIndicators(level);
 
-        const AggregatedOHLCV& aggregatedData = m_aggregatedOHLCVCache[level];
+        const AggregatedOHLCV& aggregatedData = m_aggregatedOHLCVCache[i];
         if (!aggregatedData.isValid) continue;
 
         // Extraire les timestamps de début et de fin de l'intervalle à afficher
@@ -741,12 +706,11 @@ ChartDataManager::AggregationInfo ChartDataManager::getOptimalAggregationInfo(co
     }
 
     // Si aucun niveau ne convient, utiliser le plus élevé disponible
-    AggregationLevel highestLevel = AggregationLevel::OneDay;
-    auto it = m_aggregatedOHLCVCache.find(highestLevel);
-    if (it != m_aggregatedOHLCVCache.end() && it->second.isValid) {
-        result.level = highestLevel;
+    size_t highestLevel = static_cast<size_t>(static_cast<int>(AggregationLevel::Count) - 1);
+    if (m_aggregatedOHLCVCache[highestLevel].isValid) {
+        result.level = static_cast<AggregationLevel>(highestLevel);
         result.startIndex = 0;
-        result.pointCount = it->second.timestamps.size();
+        result.pointCount = m_aggregatedOHLCVCache[highestLevel].timestamps.size();
     }
 
     return result;
@@ -759,50 +723,60 @@ void ChartDataManager::setMaxDisplayPoints(int value) {
     if (m_maxDisplayPoints != value) {
         m_maxDisplayPoints = value;
         // Invalider les caches d'agrégation pour forcer leur recalcul
-        m_aggregatedOHLCVCache.clear();
-        m_aggregatedIndicatorsCache.clear();
+        m_aggregatedOHLCVCache.fill(AggregatedOHLCV());
+        m_aggregatedIndicatorsCache.fill(IndicatorData());
     }
 }
 
-int ChartDataManager::rawToAggregatedIndex(AggregationLevel level, int rawIndex) const {
+size_t ChartDataManager::rawToAggregatedIndex(AggregationLevel level, size_t rawIndex) const {
     // Si pas d'agrégation, l'indice est identique
     if (level == AggregationLevel::Raw)
         return rawIndex;
         
     // Vérifier que le niveau existe dans le cache
-    auto it = m_aggregatedOHLCVCache.find(level);
-    if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid)
-        return -1;
+    const AggregatedOHLCV& aggData = m_aggregatedOHLCVCache[static_cast<size_t>(level)];
+    if (aggData.rawIndicesMapping.empty() || !aggData.isValid)
+        return static_cast<size_t>(-1);
         
-    // Rechercher dans le mapping
-    const auto& mapping = it->second.rawIndicesMapping;
-    for (size_t i = 0; i < mapping.size(); ++i) {
-        for (int idx : mapping[i]) {
-            if (idx == rawIndex)
-                return static_cast<int>(i);
-        }
-    }
+    // // Rechercher dans le mapping
+    // const auto& mapping = aggData.rawIndicesMapping;
+    // for (size_t i = 0; i < mapping.size(); ++i) {
+    //     for (size_t idx : mapping[i]) {
+    //         if (idx == rawIndex)
+    //             return static_cast<int>(i);
+    //     }
+    // }
     
-    return -1;  // Indice non trouvé
+    // return -1;  // Indice non trouvé
+
+    const auto& mapping = aggData.rawIndicesMapping;
+    for (size_t i = 0; i < mapping.size(); ++i) {
+        if (mapping[i].empty())
+            continue;
+        // On regarde le dernier indice du groupe
+        size_t lastIdx = mapping[i].back();
+        if (rawIndex <= lastIdx)
+            return i;
+    }
+    return static_cast<size_t>(-1); // Indice non trouvé
 }
 
-const std::vector<int>& ChartDataManager::getAggregatedToRawIndices(AggregationLevel level, int aggregatedIndex) const {
-    static const std::vector<int> empty;
+const std::vector<size_t>& ChartDataManager::getAggregatedToRawIndices(AggregationLevel level, size_t aggregatedIndex) const {
+    static const std::vector<size_t> empty;
     
     // Cas spécial pour Raw: retourner singleton avec l'indice lui-même
     if (level == AggregationLevel::Raw) {
-        static std::vector<int> singleIndex;
+        static std::vector<size_t> singleIndex;
         singleIndex = {aggregatedIndex};
         return singleIndex;
     }
     
     // Vérifier que le niveau et l'indice sont valides
-    auto it = m_aggregatedOHLCVCache.find(level);
-    if (it == m_aggregatedOHLCVCache.end() || !it->second.isValid || 
-        aggregatedIndex < 0 || aggregatedIndex >= static_cast<int>(it->second.rawIndicesMapping.size()))
+    const AggregatedOHLCV& aggData = m_aggregatedOHLCVCache[static_cast<size_t>(level)];
+    if (!aggData.isValid || aggregatedIndex >= static_cast<size_t>(aggData.rawIndicesMapping.size()))
         return empty;
         
-    return it->second.rawIndicesMapping[aggregatedIndex];
+    return aggData.rawIndicesMapping[aggregatedIndex];
 }
 
 int ChartDataManager::aggregatedToFirstRawIndex(AggregationLevel level, int aggregatedIndex) const {
@@ -819,59 +793,41 @@ int ChartDataManager::aggregatedToFirstRawIndex(AggregationLevel level, int aggr
 
 void ChartDataManager::calculateIndicator(const IndicatorBase &config)
 {
-    switch (config.type_) {
-    case IndicatorType::RSI: {
-        const RSIInstance& rsiConfig = static_cast<const RSIInstance&>(config);
-        calculateRSI(rsiConfig.id, rsiConfig.period);
-
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
-            aggregated.validRsiIds.erase(rsiConfig.id);
-        break;
+    if (const RSIInstance* rsiConfig = dynamic_cast<const RSIInstance*>(&config)) {
+        calculateRSI(rsiConfig->id, rsiConfig->period);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validRsiIds.erase(rsiConfig->id);
+        return;
     }
-    case IndicatorType::EMA: {
-        const EMAInstance& emaConfig = static_cast<const EMAInstance&>(config);
-        calculateEMA(emaConfig.id, emaConfig.period);
-
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
-            aggregated.validEmaIds.erase(emaConfig.id);
-        break;
+    if (const EMAInstance* emaConfig = dynamic_cast<const EMAInstance*>(&config)) {
+        calculateEMA(emaConfig->id, emaConfig->period);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validEmaIds.erase(emaConfig->id);
+        return;
     }
-    case IndicatorType::SUPERTREND: {
-        const SuperTrendInstance& supertrendConfig = static_cast<const SuperTrendInstance&>(config);
-        calculateSupertrend(supertrendConfig.id, supertrendConfig.period, supertrendConfig.multiplier);
-
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
-            aggregated.validSupertrendIds.erase(supertrendConfig.id);
-        break;
+    if (const SuperTrendInstance* supertrendConfig = dynamic_cast<const SuperTrendInstance*>(&config)) {
+        calculateSupertrend(supertrendConfig->id, supertrendConfig->period, supertrendConfig->multiplier);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validSupertrendIds.erase(supertrendConfig->id);
+        return;
     }
-    case IndicatorType::STOCHASTIC: {
-        const StochasticInstance& stochasticConfig = static_cast<const StochasticInstance&>(config);
-        calculateStochastic(stochasticConfig.id, stochasticConfig.fastKPeriod, stochasticConfig.slowKPeriod, stochasticConfig.slowDPeriod);
-
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
-            aggregated.validStochasticIds.erase(stochasticConfig.id);
-        break;
+    if (const StochasticInstance* stochasticConfig = dynamic_cast<const StochasticInstance*>(&config)) {
+        calculateStochastic(stochasticConfig->id, stochasticConfig->fastKPeriod, stochasticConfig->slowKPeriod, stochasticConfig->slowDPeriod);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validStochasticIds.erase(stochasticConfig->id);
+        return;
     }
-    case IndicatorType::ATR: {
-        const ATRInstance& atrConfig = static_cast<const ATRInstance&>(config);
-        calculateATR(atrConfig.id, atrConfig.period, atrConfig.useLogScale);
-
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
-            aggregated.validAtrIds.erase(atrConfig.id);
-        break;
+    if (const ATRInstance* atrConfig = dynamic_cast<const ATRInstance*>(&config)) {
+        calculateATR(atrConfig->id, atrConfig->period, atrConfig->useLogScale);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validAtrIds.erase(atrConfig->id);
+        return;
     }
-    case IndicatorType::PivotPoints: {
-        const PivotPointsInstance& pivotConfig = static_cast<const PivotPointsInstance&>(config);
-        calculatePivotPoints(pivotConfig);
-
-        for (auto& [level, aggregated] : m_aggregatedIndicatorsCache)
-            aggregated.validPivotPointsIds.erase(pivotConfig.id);
-        break;
-    }
-    // Ajouter d'autres types d'indicateurs ici
-    default:
-        // qWarning() << "Type d'indicateur non supporté:" << static_cast<int>(config.type);
-        break;
+    if (const PivotPointsInstance* pivotConfig = dynamic_cast<const PivotPointsInstance*>(&config)) {
+        calculatePivotPoints(*pivotConfig);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validPivotPointsIds.erase(pivotConfig->id);
+        return;
     }
 
     // // Synchroniser avec tous les niveaux d'agrégation existants dans le cache
@@ -924,15 +880,6 @@ size_t ChartDataManager::findClosestIndex(const std::vector<double>& values, dou
     }
 }
 
-const ChartDataManager::IndicatorData &ChartDataManager::getAggregatedIndicators(AggregationLevel level) const {
-    static IndicatorData emptyIndicators;
-    auto it = m_aggregatedIndicatorsCache.find(level);
-    if (it != m_aggregatedIndicatorsCache.end())
-        return it->second;
-
-    return emptyIndicators;
-}
-
 const std::pair<int, int>* ChartDataManager::getTradeAggregatedIndices(size_t tradeIndex, AggregationLevel level) const {
     if (tradeIndex >= m_tradeIndices.size())
         return nullptr;
@@ -944,24 +891,6 @@ const std::pair<int, int>* ChartDataManager::getTradeAggregatedIndices(size_t tr
         return &(it->second);
     
     return nullptr;
-}
-
-bool ChartDataManager::hasValidData() const
-{
-    if (!m_backtestData)
-        return false;
-
-    const std::vector<double>& open = m_backtestData->getOpen();
-    const std::vector<double>& high = m_backtestData->getHigh();
-    const std::vector<double>& low = m_backtestData->getLow();
-    const std::vector<double>& close = m_backtestData->getClose();
-
-    size_t size = open.size();
-    return size > 0 &&
-           high.size() == size &&
-           low.size() == size &&
-           close.size() == size &&
-           m_timestampsCache.size() == size;
 }
 
 std::string ChartDataManager::aggregationLevelToString(AggregationLevel level) {
@@ -997,16 +926,6 @@ DoubleArray ChartDataManager::vectorToDoubleArray(const std::vector<double>& vec
     if (vec.empty())
         return DoubleArray(nullptr, 0);
     return DoubleArray(vec.data(), static_cast<int>(vec.size()));
-}
-
-
-const ChartDataManager::AggregatedOHLCV& ChartDataManager::getAggregatedData(AggregationLevel level) const {
-    static AggregatedOHLCV emptyOHLCV;
-    auto it = m_aggregatedOHLCVCache.find(level);
-    if (it != m_aggregatedOHLCVCache.end()) {
-        return it->second;
-    }
-    return emptyOHLCV; // Retourner une référence à une structure vide si non trouvée
 }
 
 void ChartDataManager::removeAllIndicators() {

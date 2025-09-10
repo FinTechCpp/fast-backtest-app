@@ -223,7 +223,7 @@ void ChartView::setupUI()
     if (m_app) 
         connect(m_app, &App::windowResizeStarted, m_chartWidget, [this]() {
             m_chartWidget->setResizing(true);
-        }); 
+        });
 }
 
 void ChartView::setupIndicatorControls() {

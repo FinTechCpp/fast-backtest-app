@@ -37,7 +37,7 @@ public:
     struct AggregationInfo {
         AggregationLevel level;    // Le niveau d'agrégation optimal
         size_t startIndex;         // L'indice de début dans les données mises en cache
-        int pointCount;            // Le nombre de points à extraire
+        size_t pointCount;         // Le nombre de points à extraire
         bool isValid = false;      // Indicateur de validité
     };
 
@@ -63,10 +63,6 @@ public:
         2 -> [6,7,8]
         Dans la bougie agrégée 0, on a les bougies raw 0,1,2 etc.
         */
-    };
-
-    struct TradeIndices {
-        std::unordered_map<AggregationLevel, std::pair<int, int>> indices;
     };
 
     // on pourrait imaginer de refaire cette structure pour par exemple juste prendre le type de l'indicateur
@@ -120,7 +116,7 @@ public:
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_indicators; }
     const IndicatorData& getAggregatedIndicators(AggregationLevel level) const { return m_aggregatedIndicatorsCache[static_cast<size_t>(level)]; }
     const std::map<int, std::vector<PivotPeriod>>& getPivotPeriods() const { return m_pivotPeriods; }
-    const std::pair<int, int>* getTradeAggregatedIndices(size_t tradeIndex, AggregationLevel level) const;
+    std::optional<std::pair<size_t, size_t>> getTradeAggregatedIndices(size_t tradeIndex, AggregationLevel level) const;
     bool hasRawData() const { return m_aggregatedOHLCVCache[static_cast<size_t>(AggregationLevel::Raw)].isValid; }
 
     // methode utilitaires peut etre a deplacer
@@ -138,7 +134,7 @@ public:
      * @param rawIndex Indice dans les données brutes
      * @return Indice correspondant dans les données agrégées, ou -1 si non trouvé
      */
-    size_t rawToAggregatedIndex(AggregationLevel level, size_t rawIndex) const;
+    std::optional<size_t> rawToAggregatedIndex(AggregationLevel level, size_t rawIndex) const;
     
     /**
      * @brief Obtient tous les indices bruts pour un indice agrégé donné
@@ -262,7 +258,7 @@ private:
     std::map<int, std::vector<PivotPeriod>> m_pivotPeriods;
     OHLC m_heikinAshiCache;
     std::vector<be::TradeData> m_trades;
-    std::vector<TradeIndices> m_tradeIndices; // Indices pour chaque trade
+    std::vector<std::array<std::pair<size_t, size_t>, static_cast<size_t>(AggregationLevel::Count)>> m_tradeIndices; // Indices pour chaque trade
     EquityData m_equityData;
 
     // ID unique global pour tous les types d'indicateurs

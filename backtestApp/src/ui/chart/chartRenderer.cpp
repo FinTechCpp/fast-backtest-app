@@ -553,7 +553,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
             double relativeEntryIndex = static_cast<double>(
                 std::max(int(entryBarIndex) - startIndex, 0));
             double relativeExitIndex = static_cast<double>(
-                std::min(int(exitBarIndex) - startIndex, aggregationInfo.pointCount - 1));
+                std::min(exitBarIndex - startIndex, aggregationInfo.pointCount - 1));
         
             int color;
             if (closeReason == be::CloseReason::TakeProfit) color = COLOR_TP;
@@ -670,8 +670,8 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
                                             const ChartDataManager::AggregationInfo& aggregationInfo)
 {
     const std::vector<be::TradeData>& trades = dataManager.getTrades();
-    int startIndex = aggregationInfo.startIndex;
-    int pointCount = aggregationInfo.pointCount;
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointCount = aggregationInfo.pointCount;
     AggregationLevel level = aggregationInfo.level;
 
     // Obtenir le graphique principal
@@ -683,14 +683,14 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
     const int COLOR_SHORT = 0xCC0000;   // Rouge pour entrées short
 
     // Taille de la fenêtre fixe (nombre de bougies par bucket)
-    const int windowSize = std::max(5, pointCount / 40);
+    const size_t windowSize = std::max(static_cast<size_t>(5), pointCount / 40);
 
     // Calculer le nombre de fenêtres/buckets nécessaires
-    int numWindows = (pointCount + windowSize - 1) / windowSize; // Arrondi au supérieur
+    size_t numWindows = (pointCount + windowSize - 1) / windowSize; // Arrondi au supérieur
 
     // Tableaux pour stocker les compteurs par fenêtre
-    std::vector<int> longCountByWindow(numWindows, 0);
-    std::vector<int> shortCountByWindow(numWindows, 0);
+    std::vector<size_t> longCountByWindow(numWindows, 0);
+    std::vector<size_t> shortCountByWindow(numWindows, 0);
     
     // Compter les trades par fenêtre fixe
     for (size_t i = 0; i < trades.size(); ++i) {
@@ -698,22 +698,22 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
         bool isLong = trade.wasLong();
         
         // Récupérer l'indice agrégé pour ce trade
-        const std::pair<int, int>* aggregatedIndices = dataManager.getTradeAggregatedIndices(i, level);
-        
+        std::optional<std::pair<size_t, size_t>> aggregatedIndices = dataManager.getTradeAggregatedIndices(i, level);
+
         // Si on n'a pas d'indices agrégés, on passe au trade suivant
         if (!aggregatedIndices) continue;
 
         // Extraire l'indice d'entrée agrégé
-        int entryIndex = aggregatedIndices->first;
+        size_t entryIndex = aggregatedIndices->first;
         
         // Vérifier si l'entrée est dans la plage affichée
         if (entryIndex < startIndex || entryIndex >= startIndex + pointCount)
             continue;
             
         // Calculer l'indice relatif et déterminer la fenêtre correspondante
-        int relativeIndex = entryIndex - startIndex;
+        int relativeIndex = static_cast<int>(entryIndex) - static_cast<int>(startIndex);
         int windowIndex = relativeIndex / windowSize;
-        
+
         // S'assurer que l'indice est valide (par sécurité)
         if (windowIndex >= 0 && windowIndex < numWindows) {
             // Incrémenter le compteur pour cette fenêtre
@@ -847,49 +847,27 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
                                 const ChartDataManager& dataManager, 
                                 const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    int startIndex = aggregationInfo.startIndex;
-    int pointsToShow = aggregationInfo.pointCount;
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
+
+    // Utiliser les données agrégées
+    const auto& rsiMap = dataManager.getAggregatedIndicators(aggregationInfo.level).rsiValues;
+    auto it = rsiMap.find(rsi.id);
     
-    const std::vector<double>* rsiData = nullptr;
+    // Vérifier si les données agrégées sont disponibles
+    if (it == rsiMap.end()) return;
 
+    const std::vector<double>& rsiData = it->second;
 
-    if (aggregationInfo.level == AggregationLevel::Raw) {
-        // Utiliser les données brutes
-        const auto& rsiMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).rsiValues;
-        auto it = rsiMap.find(rsi.id);
-        if (it == rsiMap.end()) return;
-        
-        rsiData = &(it->second);
-    } 
-    else {
-        // Utiliser les données agrégées
-        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
-        auto it = aggregated.rsiValues.find(rsi.id);
-        
-        // Vérifier si les données agrégées sont disponibles et valides
-        if (it != aggregated.rsiValues.end() && aggregated.isRsiValid(rsi.id)) {
-            rsiData = &(it->second);
-        }
-        else {
-            // Fallback aux données brutes si les données agrégées ne sont pas disponibles
-            const auto& rsiMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).rsiValues;
-            auto rawIt = rsiMap.find(rsi.id);
-            if (rawIt == rsiMap.end()) return;
-            
-            rsiData = &(rawIt->second);
-        }
-    }
-
-    if (!rsiData || startIndex >= (int)rsiData->size()) return;
+    if (rsiData.empty() || startIndex >= rsiData.size()) return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)rsiData->size());
-    int actualPoints = endIndex - startIndex;
-
-    if (actualPoints <= 0) return;
+    size_t endIndex = std::min(startIndex + pointsToShow, rsiData.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
 
     // Extraire les données RSI visibles du cache
-    DoubleArray rsiArray(&(*rsiData)[startIndex], actualPoints);
+    DoubleArray rsiArray(&rsiData[startIndex], actualPoints);
 
     // Ajouter le graphique d'indicateur
     XYChart* c = chart->addIndicator(rsi.height);
@@ -913,47 +891,27 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
                                 const ChartDataManager::AggregationInfo& aggregationInfo)
 {
     // Déterminer quelle source de données utiliser
-    const std::vector<double>* emaData = nullptr;
-    int startIndex = aggregationInfo.startIndex;
-    int pointsToShow = aggregationInfo.pointCount;
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
 
-    if (aggregationInfo.level == AggregationLevel::Raw) {
-        // Utiliser les données brutes
-        const auto& emaMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).emaValues;
-        auto it = emaMap.find(ema.id);
-        if (it == emaMap.end()) return;
-        
-        emaData = &(it->second);
-    } 
-    else {
-        // Utiliser les données agrégées
-        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
-        auto it = aggregated.emaValues.find(ema.id);
-        
-        // Vérifier si les données agrégées sont disponibles et valides
-        if (it != aggregated.emaValues.end() && aggregated.isEmaValid(ema.id)) {
-            emaData = &(it->second);
-        }
-        else {
-            // Fallback aux données brutes
-            const auto& emaMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).emaValues;
-            auto rawIt = emaMap.find(ema.id);
-            if (rawIt == emaMap.end()) return;
-            
-            emaData = &(rawIt->second);
-        }
-    }
+    // Utiliser les données agrégées
+    const auto& emaMap = dataManager.getAggregatedIndicators(aggregationInfo.level).emaValues;
+    auto it = emaMap.find(ema.id);
 
-    if (startIndex >= (int)emaData->size()) return;
+    // Vérifier si les données agrégées sont disponibles
+    if (it == emaMap.end()) return;
+
+    const std::vector<double>& emaData = it->second;
+
+    if (emaData.empty() || startIndex >= emaData.size()) return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)emaData->size());
-    int actualPoints = endIndex - startIndex;
-
-    if (actualPoints <= 0) return;
+    size_t endIndex = std::min(startIndex + pointsToShow, emaData.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
 
     // Extraire les données EMA visibles du cache
-    DoubleArray emaArray(&(*emaData)[startIndex], actualPoints);
+    DoubleArray emaArray(&emaData[startIndex], actualPoints);
 
     // Configurer et ajouter l'EMA directement sur le graphique principal
     char buffer[1024];
@@ -967,48 +925,35 @@ void ChartRenderer::addSupertrendToChart(FinanceChart* chart,
                                       const ChartDataManager& dataManager, 
                                       const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    const std::vector<double>* supertrendValues = nullptr;
-    const std::vector<int>* trendDirections = nullptr;
-    int startIndex = aggregationInfo.startIndex;
-    int pointsToShow = aggregationInfo.pointCount;
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
 
-    if (aggregationInfo.level == AggregationLevel::Raw) {
-        auto it = dataManager.getAggregatedIndicators(AggregationLevel::Raw).supertrendValues.find(supertrend.id);
-        if (it != dataManager.getAggregatedIndicators(AggregationLevel::Raw).supertrendValues.end()) {
-            supertrendValues = &it->second.first;
-            trendDirections = &it->second.second;
-        }
-    } else {
-        const auto& aggregatedIndicators = dataManager.getAggregatedIndicators(aggregationInfo.level);
-        if (aggregatedIndicators.isSupertrendValid(supertrend.id)) {
-            auto it = aggregatedIndicators.supertrendValues.find(supertrend.id);
-            if (it != aggregatedIndicators.supertrendValues.end()) {
-                supertrendValues = &it->second.first;
-                trendDirections = &it->second.second;
-            }
-        }
-    }
+    const auto& superTrendMap = dataManager.getAggregatedIndicators(aggregationInfo.level).supertrendValues;
+    auto it = superTrendMap.find(supertrend.id);
 
-    if (!supertrendValues || !trendDirections || startIndex >= (int)supertrendValues->size())
+    if (it == superTrendMap.end()) return;
+
+    const std::pair<std::vector<double>, std::vector<int>>& supertrendData = it->second;
+
+    if (supertrendData.first.empty() || startIndex >= supertrendData.first.size())
         return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)supertrendValues->size());
-    int actualPoints = endIndex - startIndex;
+    size_t endIndex = std::min(startIndex + pointsToShow, supertrendData.first.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
 
-    if (actualPoints <= 0)
-        return;
 
     // Extraire les données visibles du cache
     std::vector<double> upValues(actualPoints, Chart::NoValue);
     std::vector<double> downValues(actualPoints, Chart::NoValue);
 
-    for (int i = 0; i < actualPoints; ++i) {
-        int index = startIndex + i;
-        if ((*trendDirections)[index] == 1) {
-            upValues[i] = (*supertrendValues)[index];
-        } else if ((*trendDirections)[index] == -1) {
-            downValues[i] = (*supertrendValues)[index];
+    for (size_t i = 0; i < actualPoints; ++i) {
+        size_t index = startIndex + i;
+        if ((supertrendData.second)[index] == 1) {
+            upValues[i] = (supertrendData.first)[index];
+        } else if ((supertrendData.second)[index] == -1) {
+            downValues[i] = (supertrendData.first)[index];
         }
     }
 
@@ -1023,13 +968,11 @@ void ChartRenderer::addSupertrendToChart(FinanceChart* chart,
     XYChart* mainChart = (XYChart*)chart->getChart(1);
     
     // Lignes haussières (en vert)
-    LineLayer* upLayer = chart->addLineIndicator2(mainChart, upArray, supertrend.upColor, 
-                                               buffer);
+    LineLayer* upLayer = chart->addLineIndicator2(mainChart, upArray, supertrend.upColor, buffer);
     upLayer->setLineWidth(1);
     
     // Lignes baissières (en rouge)
-    LineLayer* downLayer = chart->addLineIndicator2(mainChart, downArray, supertrend.downColor, 
-                                                 "");
+    LineLayer* downLayer = chart->addLineIndicator2(mainChart, downArray, supertrend.downColor, "");
     downLayer->setLineWidth(1);
 }
 
@@ -1039,54 +982,29 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
                                        const ChartDataManager& dataManager, 
                                        const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    const std::vector<double>* kValues = nullptr;
-    const std::vector<double>* dValues = nullptr;
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
 
-    int startIndex = aggregationInfo.startIndex;
-    int pointsToShow = aggregationInfo.pointCount;
+    // Utiliser les données agrégées
+    const auto& stochMap = dataManager.getAggregatedIndicators(aggregationInfo.level).stochasticValues;
+    auto it = stochMap.find(stochastic.id);
+    
+    // Vérifier si les données agrégées sont disponibles et valides
+    if (it == stochMap.end()) return;
 
-    if (aggregationInfo.level == AggregationLevel::Raw) {
-        // Utiliser les données brutes
-        const auto& stochasticMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).stochasticValues;
-        auto it = stochasticMap.find(stochastic.id);
-        if (it == stochasticMap.end()) return;
-        
-        kValues = &(it->second.first);
-        dValues = &(it->second.second);
-    }
-    else {
-        // Utiliser les données agrégées
-        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
-        auto it = aggregated.stochasticValues.find(stochastic.id);
-        
-        // Vérifier si les données agrégées sont disponibles et valides
-        if (it != aggregated.stochasticValues.end() && aggregated.isStochasticValid(stochastic.id)) {
-            kValues = &(it->second.first);
-            dValues = &(it->second.second);
-        }
-        else {
-            // Fallback aux données brutes
-            const auto& stochasticMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).stochasticValues;
-            auto rawIt = stochasticMap.find(stochastic.id);
-            if (rawIt == stochasticMap.end()) return;
-            
-            kValues = &(rawIt->second.first);
-            dValues = &(rawIt->second.second);
-        }
-    }
+    const std::pair<std::vector<double>, std::vector<double>>& stochData = it->second;
 
-    if (startIndex >= (int)kValues->size() || startIndex >= (int)dValues->size()) return;
+    if (stochData.first.empty() || startIndex >= stochData.first.size()) return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)kValues->size());
-    int actualPoints = endIndex - startIndex;
-
-    if (actualPoints <= 0) return;
+    size_t endIndex = std::min(startIndex + pointsToShow, stochData.first.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
 
     // Extraire les données Stochastic visibles du cache
-    DoubleArray kArray(&(*kValues)[startIndex], actualPoints);
-    DoubleArray dArray(&(*dValues)[startIndex], actualPoints);
-    
+    DoubleArray kArray(&stochData.first[startIndex], actualPoints);
+    DoubleArray dArray(&stochData.second[startIndex], actualPoints);
+
     // Ajouter le graphique d'indicateur
     XYChart* c = chart->addIndicator(stochastic.height);
     
@@ -1120,53 +1038,27 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
                                 const ChartDataManager& dataManager, 
                                 const ChartDataManager::AggregationInfo& aggregationInfo)
 {
-    const std::vector<double>* atrData = nullptr;
-    int startIndex = aggregationInfo.startIndex;
-    int pointsToShow = aggregationInfo.pointCount;
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
 
-    if (aggregationInfo.level == AggregationLevel::Raw) {
-        // Utiliser les données brutes
-        const auto& atrMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).atrValues;
-        auto it = atrMap.find(atr.id);
-        if (it == atrMap.end()) return;
-        
-        atrData = &(it->second);
-        startIndex = aggregationInfo.startIndex;
-        pointsToShow = aggregationInfo.pointCount;
-    } 
-    else {
-        // Utiliser les données agrégées
-        const auto& aggregated = dataManager.getAggregatedIndicators(aggregationInfo.level);
-        auto it = aggregated.atrValues.find(atr.id);
-        
-        // Vérifier si les données agrégées sont disponibles et valides
-        if (it != aggregated.atrValues.end() && aggregated.isAtrValid(atr.id)) {
-            atrData = &(it->second);
-            startIndex = aggregationInfo.startIndex;
-            pointsToShow = aggregationInfo.pointCount;
-        }
-        else {
-            // Fallback aux données brutes
-            const auto& atrMap = dataManager.getAggregatedIndicators(AggregationLevel::Raw).atrValues;
-            auto rawIt = atrMap.find(atr.id);
-            if (rawIt == atrMap.end()) return;
-            
-            atrData = &(rawIt->second);
-            startIndex = aggregationInfo.startIndex;
-            pointsToShow = aggregationInfo.pointCount;
-        }
-    }
+    // Utiliser les données agrégées
+    const auto& atrMap = dataManager.getAggregatedIndicators(aggregationInfo.level).atrValues;
+    auto it = atrMap.find(atr.id);
+    
+    // Vérifier si les données agrégées sont disponibles et valides
+    if (it == atrMap.end()) return;
 
-    if (startIndex >= (int)atrData->size()) return;
+    const std::vector<double>& atrData = it->second;
+
+    if (atrData.empty() || startIndex >= atrData.size()) return;
 
     // Limiter le nombre de points à afficher
-    int endIndex = std::min(startIndex + pointsToShow, (int)atrData->size());
-    int actualPoints = endIndex - startIndex;
-
-    if (actualPoints <= 0) return;
+    size_t endIndex = std::min(startIndex + pointsToShow, atrData.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
 
     // Extraire les données ATR visibles du cache
-    DoubleArray atrArray(&(*atrData)[startIndex], actualPoints);
+    DoubleArray atrArray(&atrData[startIndex], actualPoints);
 
     // Ajouter le graphique d'indicateur
     XYChart* c = chart->addIndicator(atr.height);
@@ -1178,7 +1070,7 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     layer->setFastLineMode(true);
 
     // Configurer l'échelle de l'axe Y
-    double maxATR = *std::max_element(atrData->begin() + startIndex, atrData->begin() + endIndex);
+    double maxATR = *std::max_element(atrData.begin() + startIndex, atrData.begin() + endIndex);
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
 }
 
@@ -1189,8 +1081,8 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
 {
 
     // Récupérer les données des points pivots depuis le cache
-    int startIndex = aggregationInfo.startIndex;
-    int endIndex = startIndex + aggregationInfo.pointCount - 1;
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t endIndex = startIndex + aggregationInfo.pointCount - 1;
     AggregationLevel currentLevel = aggregationInfo.level;
 
     const std::map<int, std::vector<PivotPeriod>>& pivotPeriodsMap = dataManager.getPivotPeriods();
@@ -1205,17 +1097,10 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
     // Parcourir toutes les périodes pivot
     for (const auto& period : pivotPeriods) {
         // Récupérer les indices agrégés pour le niveau d'agrégation actuel
-        auto indicesIt = period.indices.find(currentLevel);
-        
-        // Si pas d'indices agrégés pour ce niveau, essayer de convertir les indices bruts
-        std::pair<int, int> indices;
-        if (indicesIt == period.indices.end())
-            continue; // Pas d'indices pour ce niveau
-            
-        indices = indicesIt->second;
-        
-        int aggStartIndex = indices.first;
-        int aggEndIndex = indices.second;
+        const std::pair<size_t, size_t>& indices = period.indices[static_cast<size_t>(currentLevel)];
+
+        size_t aggStartIndex = indices.first;
+        size_t aggEndIndex = indices.second;
 
         // Vérifier si la période est visible dans la plage courante
         if (aggEndIndex < startIndex || aggStartIndex > endIndex) {
@@ -1223,8 +1108,8 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
         }
         
         // Calculer les indices relatifs pour l'affichage
-        int relativeStart = std::max(aggStartIndex - startIndex, 0);
-        int relativeEnd = std::min(aggEndIndex - startIndex, aggregationInfo.pointCount - 1);
+        size_t relativeStart = aggStartIndex < startIndex ? 0 : aggStartIndex - startIndex;
+        size_t relativeEnd = std::min(aggEndIndex - startIndex, aggregationInfo.pointCount);
         
         // Pour chaque niveau de pivot configuré
         for (const auto& [levelType, style] : pivotPoints.levelStyles) {
@@ -1232,11 +1117,8 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
             if (!pivotPoints.isLevelVisible(levelType)) continue;
             
             // Récupérer la valeur du niveau pour cette période
-            auto levelIt = period.levelValues.find(static_cast<int>(levelType));
-            if (levelIt == period.levelValues.end()) continue;
+            double value = period.levelValues[static_cast<size_t>(levelType)];
             
-            double value = levelIt->second;
-
             // Ignorer les segments avec des valeurs non valides ou nulles
             if (value == 0 || std::isnan(value)) continue;
             

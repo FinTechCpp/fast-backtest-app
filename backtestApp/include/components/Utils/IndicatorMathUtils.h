@@ -21,10 +21,10 @@ enum class AggregationLevel {
 
 struct PivotPeriod {
     // Mapping vers les indices agrégés pour différents niveaux d'agrégation
-    std::unordered_map<AggregationLevel, std::pair<int, int>> indices;
+    std::array<std::pair<size_t, size_t>, static_cast<size_t>(AggregationLevel::Count)> indices; // Indices bruts pour chaque niveau d'agrégation
     
     // Valeurs de tous les niveaux de pivot pour cette période
-    std::unordered_map<int, double> levelValues;  // Clé: LevelType (PP, R1, S1, etc.)
+    std::array<double, static_cast<size_t>(PivotPointsInstance::LevelType::NumLevels)> levelValues;
 };
 
 /**

@@ -56,11 +56,11 @@ void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, cons
 
     // Initialiser les indices raw pour tous les trades
     for (size_t i = 0; i < m_trades.size(); ++i) {
-        int entryBar = static_cast<int>(m_trades[i].entryBar);
-        int exitBar = m_trades[i].hasBeenClosed() ? static_cast<int>(m_trades[i].exitBar) : entryBar;
+        size_t entryBar = m_trades[i].entryBar;
+        size_t exitBar = m_trades[i].hasBeenClosed() ? m_trades[i].exitBar : entryBar;
 
         // Stocker les indices raw
-        m_tradeIndices[i].indices[AggregationLevel::Raw] = {entryBar, exitBar};
+        m_tradeIndices[i][static_cast<size_t>(AggregationLevel::Raw)] = {entryBar, exitBar};
     }
     
     
@@ -505,23 +505,24 @@ void ChartDataManager::precalculatePivotIndices(std::vector<PivotPeriod>& period
     size_t mappingIdx = 0;
     
     for (PivotPeriod& period : periods) {
-        int aggStartIndex = -1;
-        int aggEndIndex = -1;
+        size_t aggStartIndex;
+        size_t aggEndIndex;
 
-        const auto& [rawStartIndex, rawEndIndex] = period.indices[AggregationLevel::Raw];
-        
+        const std::pair<size_t, size_t>& rawIndices = period.indices[static_cast<size_t>(AggregationLevel::Raw)];
+
         // Rechercher l'indice de début
         while (mappingIdx < mapping.size()) {
-            bool found = false;
-            for (int rawIdx : mapping[mappingIdx]) {
-                if (rawIdx == static_cast<int>(rawStartIndex)) {
-                    aggStartIndex = static_cast<int>(mappingIdx);
-                    found = true;
-                    break;
-                }
+            if (mapping[mappingIdx].empty()) {
+                mappingIdx++;
+                continue;
             }
-            
-            if (found) break;
+
+            size_t lastIdx = mapping[mappingIdx].back();
+            if (rawIndices.first <= lastIdx) {
+                aggStartIndex = mappingIdx;
+                break;
+            }
+
             mappingIdx++;
         }
         
@@ -530,22 +531,23 @@ void ChartDataManager::precalculatePivotIndices(std::vector<PivotPeriod>& period
                 
         // Rechercher l'indice de fin à partir du dernier point trouvé
         while (mappingIdx < mapping.size()) {
-            bool found = false;
-            for (int rawIdx : mapping[mappingIdx]) {
-                if (rawIdx == static_cast<int>(rawEndIndex)) {
-                    aggEndIndex = static_cast<int>(mappingIdx);
-                    found = true;
-                    break;
-                }
+            if (mapping[mappingIdx].empty()) {
+                mappingIdx++;
+                continue;
             }
-            
-            if (found) break;
+
+            size_t lastIdx = mapping[mappingIdx].back();
+            if (rawIndices.second <= lastIdx) {
+                aggEndIndex = mappingIdx;
+                break;
+            }
+
             mappingIdx++;
         }
         
         // Si les deux indices sont valides, les stocker
         if (aggStartIndex >= 0 && aggEndIndex >= 0) {
-            period.indices[level] = {aggStartIndex, aggEndIndex};
+            period.indices[static_cast<size_t>(level)] = {aggStartIndex, aggEndIndex};
         }
     }
 }
@@ -627,7 +629,7 @@ void ChartDataManager::precalculateTradeIndices(AggregationLevel level) {
         }
         
         // Stocker les indices pour ce trade et ce niveau d'agrégation
-        m_tradeIndices[idx].indices[level] = {aggEntryIndex, aggExitIndex};
+        m_tradeIndices[idx][static_cast<size_t>(level)] = {aggEntryIndex, aggExitIndex};
     }
 }
 
@@ -728,7 +730,7 @@ void ChartDataManager::setMaxDisplayPoints(int value) {
     }
 }
 
-size_t ChartDataManager::rawToAggregatedIndex(AggregationLevel level, size_t rawIndex) const {
+std::optional<size_t> ChartDataManager::rawToAggregatedIndex(AggregationLevel level, size_t rawIndex) const {
     // Si pas d'agrégation, l'indice est identique
     if (level == AggregationLevel::Raw)
         return rawIndex;
@@ -736,18 +738,7 @@ size_t ChartDataManager::rawToAggregatedIndex(AggregationLevel level, size_t raw
     // Vérifier que le niveau existe dans le cache
     const AggregatedOHLCV& aggData = m_aggregatedOHLCVCache[static_cast<size_t>(level)];
     if (aggData.rawIndicesMapping.empty() || !aggData.isValid)
-        return static_cast<size_t>(-1);
-        
-    // // Rechercher dans le mapping
-    // const auto& mapping = aggData.rawIndicesMapping;
-    // for (size_t i = 0; i < mapping.size(); ++i) {
-    //     for (size_t idx : mapping[i]) {
-    //         if (idx == rawIndex)
-    //             return static_cast<int>(i);
-    //     }
-    // }
-    
-    // return -1;  // Indice non trouvé
+        return std::nullopt;
 
     const auto& mapping = aggData.rawIndicesMapping;
     for (size_t i = 0; i < mapping.size(); ++i) {
@@ -758,7 +749,7 @@ size_t ChartDataManager::rawToAggregatedIndex(AggregationLevel level, size_t raw
         if (rawIndex <= lastIdx)
             return i;
     }
-    return static_cast<size_t>(-1); // Indice non trouvé
+    return std::nullopt;
 }
 
 const std::vector<size_t>& ChartDataManager::getAggregatedToRawIndices(AggregationLevel level, size_t aggregatedIndex) const {
@@ -880,18 +871,13 @@ size_t ChartDataManager::findClosestIndex(const std::vector<double>& values, dou
     }
 }
 
-const std::pair<int, int>* ChartDataManager::getTradeAggregatedIndices(size_t tradeIndex, AggregationLevel level) const {
+std::optional<std::pair<size_t, size_t>> ChartDataManager::getTradeAggregatedIndices(size_t tradeIndex, AggregationLevel level) const {
     if (tradeIndex >= m_tradeIndices.size())
-        return nullptr;
-    
-    const auto& indices = m_tradeIndices[tradeIndex].indices;
-    auto it = indices.find(level);
-    
-    if (it != indices.end())
-        return &(it->second);
-    
-    return nullptr;
+        return std::nullopt;
+
+    return m_tradeIndices[tradeIndex][static_cast<size_t>(level)];
 }
+
 
 std::string ChartDataManager::aggregationLevelToString(AggregationLevel level) {
     switch (level) {

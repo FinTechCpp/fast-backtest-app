@@ -486,7 +486,7 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
 
         // Créer une nouvelle période de pivot
         PivotPeriod period;
-        period.indices[AggregationLevel::Raw] = {static_cast<int>(start), static_cast<int>(end)};
+        period.indices[static_cast<size_t>(AggregationLevel::Raw)] = {static_cast<int>(start), static_cast<int>(end)};
         
         // Stocker un segment unique pour chaque niveau durant cette période
         using LT = PivotPointsInstance::LevelType;

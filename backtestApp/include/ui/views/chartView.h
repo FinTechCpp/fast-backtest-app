@@ -27,7 +27,7 @@
 #include <map>
 
 #include "ui/views/baseView.h"
-#include "ui/chart/chartWidget.h"
+#include "ui/chart/chartControlPanel.h"
 
 #include "ui/dialogs/rsiDialog.h"
 #include "ui/dialogs/emaDialog.h"
@@ -60,56 +60,21 @@ public:
 protected:
     void setupUI() override;
 
-private slots:
-    void onChartTypeChanged(int index);
-    void onAddIndicatorClicked();
-    void onIndicatorTypeSelected(int index);
-    void onEditIndicator(int id);
-    void onRemoveIndicator(int id);
-    void onRulerToolToggled(bool checked); 
-
-    void onIndicatorAdded(int id, const QString& name);
-    void onIndicatorChanged(int id, const QString& name);
-    void onIndicatorRemoved(int id);
-    
-    void refreshIndicatorsList();
-    void onAggregationSliderChanged(int value);
-    void onMaxDisplayPointsChanged(int value);
-
 private:
     // Cache des données
     bool m_dataExtracted;
 
     // UI Components 
-    QWidget* m_leftPanel;         // Panneau de gauche (settings)
+    ChartControlPanel* m_leftPanel;         // Panneau de gauche (settings)
     QWidget* m_rightPanel;        // Panneau de droite (chart)
     QLabel* m_chartPlaceholder;
-    QLabel* m_settingsTitle;      // Titre du panneau
-    QComboBox* m_chartTypeCombo;  // Combo box pour le type de bougie
-    QCheckBox* m_rulerToolCheckBox; // Checkbox pour l'outil règle
-    
-    // Composants pour les indicateurs
-    QPushButton* m_addIndicatorButton;
-    QComboBox* m_indicatorTypeCombo;
-    QGroupBox* m_indicatorsGroup;
-    QVBoxLayout* m_indicatorsLayout;
-    QMap<int, QPushButton*> m_editButtons;    // Map des boutons d'édition par ID d'indicateur
-    QMap<int, QPushButton*> m_removeButtons;  // Map des boutons de suppression par ID d'indicateur
-    QMap<int, QLabel*> m_indicatorLabels;     // Map des libellés d'indicateurs par ID
 
     App* m_app;                   // Référence à l'application principale
     ChartWidget* m_chartWidget;   // Widget du graphique
     // ChartWidget* m_chartWidget2;   // Widget du graphique pour la comparaison verticale
-
-    QSlider* m_aggregationSlider;
-    QLabel* m_aggregationLabel;
     
-    bool hasValidData() const;
     void showPlaceholder(const QString& message);
     void showChartWidget();
-    void setupIndicatorControls();
-    void createIndicatorWidgets(int id, const QString& name);
-    void configureStrategyIndicators(const std::vector<StrategyIndicator>& indicators);
     
     template<typename IndicatorType, typename DialogType>
     bool tryOpenDialog(int id) {

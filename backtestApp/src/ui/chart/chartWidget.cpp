@@ -301,20 +301,15 @@ void ChartWidget::onMouseReleased(QMouseEvent *event)
 }
 
 void ChartWidget::setMaxDisplayPoints(int value) {
-    int oldValue = m_dataManager.getMaxDisplayPoints();
-    m_dataManager.setMaxDisplayPoints(value);
-    
-    // Si la valeur a changé, mettre à jour le graphique et émettre le signal
-    if (oldValue != m_dataManager.getMaxDisplayPoints()) {
-        if (m_dataManager.hasRawData()) {
-            updateChartDisplay(ViewPortMode::USE_CURRENT);
-        }
-        emit maxDisplayPointsChanged(m_dataManager.getMaxDisplayPoints());
-    }
-}
+    if (value == m_dataManager.getMaxDisplayPoints())
+        return;
 
-int ChartWidget::getMaxDisplayPoints() const {
-    return m_dataManager.getMaxDisplayPoints();
+    m_dataManager.setMaxDisplayPoints(value);
+
+    if (m_dataManager.hasRawData())
+        updateChartDisplay(ViewPortMode::USE_CURRENT);
+
+    emit maxDisplayPointsChanged(m_dataManager.getMaxDisplayPoints());
 }
 
 void ChartWidget::setRulerToolEnabled(bool enabled)

@@ -55,7 +55,6 @@ public:
     void setRulerToolEnabled(bool enabled); // remplacer par un slot
 
     void setMaxDisplayPoints(int value);
-    int getMaxDisplayPoints() const;
     
     // Méthode pour zoomer sur un trade spécifique
     void zoomToTrade(const be::TradeData& trade);

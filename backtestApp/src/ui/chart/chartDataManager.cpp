@@ -722,12 +722,11 @@ void ChartDataManager::setMaxDisplayPoints(int value) {
     if (value < 100) value = 100; // Valeur minimale pour éviter les problèmes
     if (value > 100000) value = 100000; // Limiter à la valeur maximale spécifiée
     
-    if (m_maxDisplayPoints != value) {
-        m_maxDisplayPoints = value;
-        // Invalider les caches d'agrégation pour forcer leur recalcul
-        m_aggregatedOHLCVCache.fill(AggregatedOHLCV());
-        m_aggregatedIndicatorsCache.fill(IndicatorData());
-    }
+    if (m_maxDisplayPoints == value) 
+        return; // Pas de changement
+        
+    m_maxDisplayPoints = value;
+
 }
 
 std::optional<size_t> ChartDataManager::rawToAggregatedIndex(AggregationLevel level, size_t rawIndex) const {

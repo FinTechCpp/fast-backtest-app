@@ -52,7 +52,7 @@ void ChartView::setupUI()
     m_rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Layout pour le panneau droit
-    QVBoxLayout* rightPanelLayout = new QVBoxLayout(m_rightPanel);
+    QHBoxLayout* rightPanelLayout = new QHBoxLayout(m_rightPanel);
     rightPanelLayout->setContentsMargins(0, 0, 0, 0);
     rightPanelLayout->setSpacing(0);
 
@@ -71,7 +71,23 @@ void ChartView::setupUI()
 
     // Widget de graphique
     m_chartWidget = new ChartWidget();
+    // m_chartWidget2 = new ChartWidget(); // Pour comparaison verticale
     m_chartWidget->setVisible(false);
+    // m_chartWidget2->setVisible(false);
+
+    // // Configurer la synchronisation entre les deux widgets
+    // m_chartWidget->setSyncPartner(m_chartWidget2);
+    // m_chartWidget2->setSyncPartner(m_chartWidget);
+
+    // // Connecter les signaux pour la synchronisation
+    // connect(m_chartWidget, &ChartWidget::aggregationChanged, 
+    //         m_chartWidget2, &ChartWidget::setCurrentAggregation);
+    // connect(m_chartWidget2, &ChartWidget::aggregationChanged, 
+    //         m_chartWidget, &ChartWidget::setCurrentAggregation);
+    // connect(m_chartWidget, &ChartWidget::viewportChanged, 
+    //         m_chartWidget2, &ChartWidget::setViewport);
+    // connect(m_chartWidget2, &ChartWidget::viewportChanged, 
+    //         m_chartWidget, &ChartWidget::setViewport);
 
     // Associer le widget de graphique au panneau de contrôle
     m_leftPanel->setChartWidget(m_chartWidget);
@@ -79,19 +95,23 @@ void ChartView::setupUI()
     // Connecter les signaux du panneau de contrôle
     connect(m_leftPanel, &ChartControlPanel::chartTypeChanged, [this](const QString& chartType) {
         m_chartWidget->setChartType(chart::stringToChartType(chartType.toStdString()));
+        // m_chartWidget2->setChartType(chart::stringToChartType(chartType.toStdString()));
     });
     
     connect(m_leftPanel, &ChartControlPanel::rulerToolToggled, [this](bool checked) {
         m_chartWidget->setRulerToolEnabled(checked);
+        // m_chartWidget2->setRulerToolEnabled(checked);
     });
     
     connect(m_leftPanel, &ChartControlPanel::aggregationValueChanged, [this](int value) {
         m_chartWidget->setMaxDisplayPoints(value);
+        // m_chartWidget2->setMaxDisplayPoints(value);
     });
 
     // Ajouter les widgets au layout du panneau droit
     rightPanelLayout->addWidget(m_chartPlaceholder);
     rightPanelLayout->addWidget(m_chartWidget);
+    // rightPanelLayout->addWidget(m_chartWidget2);
 
     // Ajouter les composants au layout horizontal
     horizontalLayout->addWidget(m_leftPanel);
@@ -119,6 +139,7 @@ void ChartView::updateData(BacktestResults* results) {
     }
 
     m_chartWidget->setBacktestResults(results);
+    // m_chartWidget2->setBacktestResults(results); // Pour comparaison verticale
     m_dataExtracted = true;
     
     // Afficher le widget de graphique
@@ -136,20 +157,15 @@ void ChartView::updateData(BacktestResults* results) {
 }
 
 void ChartView::showChartWidget() {
-    if (m_chartPlaceholder) {
-        m_chartPlaceholder->setVisible(false);
-    }
-    
-    if (m_chartWidget) {
-        m_chartWidget->setVisible(true);
-    }
+    if (m_chartPlaceholder) m_chartPlaceholder->setVisible(false);
+    if (m_chartWidget) m_chartWidget->setVisible(true);
+    if (m_chartWidget2) m_chartWidget2->setVisible(true);
 }
 
 void ChartView::showPlaceholder(const QString& message) {
-    if (m_chartWidget) {
-        m_chartWidget->setVisible(false);
-    }
-    
+    if (m_chartWidget) m_chartWidget->setVisible(false);
+    if (m_chartWidget2) m_chartWidget2->setVisible(false);
+
     if (m_chartPlaceholder) {
         m_chartPlaceholder->setText(message);
         m_chartPlaceholder->setVisible(true);
@@ -175,4 +191,6 @@ void ChartView::zoomToTrade(const be::TradeData& trade) {
     
     // Déléguer le zoom au ChartWidget
     m_chartWidget->zoomToTrade(trade);
+    // Je ne sais pas comment cela peut reagir avec deux graphiques mais je pense qu'il faut zoomer par rapport au graph1 et le deux suivra
+    // m_chartWidget2->zoomToTrade(trade); // Pour comparaison verticale 
 }

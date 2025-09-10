@@ -71,7 +71,7 @@ private:
 
     App* m_app;                   // Référence à l'application principale
     ChartWidget* m_chartWidget;   // Widget du graphique
-    // ChartWidget* m_chartWidget2;   // Widget du graphique pour la comparaison verticale
+    ChartWidget* m_chartWidget2;   // Widget du graphique pour la comparaison verticale
     
     void showPlaceholder(const QString& message);
     void showChartWidget();

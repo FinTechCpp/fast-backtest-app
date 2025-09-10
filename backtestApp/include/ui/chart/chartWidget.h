@@ -37,7 +37,6 @@ public:
 
     // Configuration et contrôle du graphique
     void setChartType(chart::ChartType chartType); // remplacer par un slot
-    chart::ChartType getChartType() const { return m_config.chartType; }
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
 
     void removeAllIndicators();
@@ -52,6 +51,12 @@ public:
     
     // Méthode pour zoomer sur un trade spécifique
     void zoomToTrade(const be::TradeData& trade);
+
+    // Méthodes pour la synchronisation
+    const chart::AggregationInfo& getCurrentAggregation() const { return m_currentAggregation; }
+    void setCurrentAggregation(const chart::AggregationInfo& aggregation);
+    void setSyncPartner(ChartWidget* partner) { m_syncPartner = partner; }
+    void setViewport(double left, double width);
 
     template<typename T>
     int addIndicator(T&& config) {
@@ -90,7 +95,7 @@ public:
     
 signals:
     void chartCreated();
-    void viewPortChanged();
+    void viewportChanged(double left, double width);
     void mouseOverPoint(double timestamp, double price);
 
     void indicatorAdded(int id, const QString& displayName);
@@ -98,6 +103,7 @@ signals:
     void indicatorRemoved(int id);
 
     void maxDisplayPointsChanged(int value);
+    void aggregationChanged(const chart::AggregationInfo& aggregation);
     
 protected:
     void resizeEvent(QResizeEvent* event) override;
@@ -120,13 +126,11 @@ private:
     ChartRenderer m_renderer;
     chart::AggregationInfo m_currentAggregation;
     chart::ChartConfiguration m_config;
+    ChartWidget* m_syncPartner = nullptr;
 
     // ======== Méthodes privées ========
     // 1. Traitement et conversion des données
     double dateToChartTimestamp(const be::Date& date);
-    void prepareTimestampsCache();
-    DoubleArray vectorToDoubleArray(const std::vector<double>& vec);
-
 
     bool updateChartDisplay(ViewPortMode mode = ViewPortMode::FULL_CHART);
 
@@ -142,7 +146,6 @@ private:
     bool m_rulerFirstPointSelected;    // Si le premier point a été sélectionné
     double m_rulerStartX;              // Coordonnée X du point de départ
     double m_rulerStartY;              // Coordonnée Y du point de départ
-
 
     bool m_yAxisZoomMode = false;
     int m_yAxisZoomStartY = 0;

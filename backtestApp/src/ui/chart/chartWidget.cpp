@@ -78,9 +78,8 @@ void ChartWidget::setChartType(chart::ChartType chartType)
 }
 
 bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
-    if (!m_dataManager.hasRawData() || !m_chartViewer) {
+    if (!m_dataManager.hasRawData() || !m_chartViewer)
         return false;
-    }
 
     // Déterminer les indices de début et fin basés sur le viewport
     int startIndex = 0;
@@ -101,7 +100,17 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
         pointsToShow = endIndex - startIndex + 1;
     }
 
-    m_currentAggregation = m_dataManager.getOptimalAggregationInfo(DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow));
+    chart::AggregationInfo newAggregation = m_dataManager.getOptimalAggregationInfo(
+        DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow)
+    );
+
+    // Si l'agrégation a changé, mettre à jour et émettre le signal
+    if (newAggregation != m_currentAggregation) {
+        m_currentAggregation = newAggregation;
+        
+        // Émettre le signal pour synchroniser l'autre widget si nécessaire
+        emit aggregationChanged(m_currentAggregation);
+    }
 
     m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation);
 
@@ -113,8 +122,15 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
     return true;
 }
 
-void ChartWidget::onViewPortChanged()
-{
+void ChartWidget::onViewPortChanged() {
+    if (m_chartViewer) {
+        double left = m_chartViewer->getViewPortLeft();
+        double width = m_chartViewer->getViewPortWidth();
+        
+        // Émettre le signal de changement de viewport
+        emit viewportChanged(left, width);
+    }
+
     updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
@@ -399,7 +415,40 @@ void ChartWidget::zoomToTrade(const be::TradeData& trade)
     updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
-double ChartWidget::dateToChartTimestamp(const be::Date& date) {
+void ChartWidget::setCurrentAggregation(const chart::AggregationInfo& aggregation) {
+    // Seulement si l'agrégation est différente
+    if (m_currentAggregation.level == aggregation.level && 
+        m_currentAggregation.startIndex == aggregation.startIndex && 
+        m_currentAggregation.pointCount == aggregation.pointCount) {
+        return;
+    }
+
+    m_currentAggregation = aggregation;
+    
+    // Ne pas émettre le signal si on vient du partenaire pour éviter les boucles infinies
+    if (sender() != m_syncPartner) {
+        emit aggregationChanged(m_currentAggregation);
+    }
+    
+    // Mettre à jour le graphique si nécessaire
+    if (m_dataManager.hasRawData() && m_chartViewer) {
+        m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation);
+    }
+}
+
+void ChartWidget::setViewport(double left, double width) {
+    if (m_chartViewer && (sender() == m_syncPartner)) {
+        m_chartViewer->setViewPortLeft(left);
+        m_chartViewer->setViewPortWidth(width);
+    
+        // Ne pas appeler updateChartDisplay directement pour éviter la boucle
+        // Le signal viewPortChanged du QChartViewer sera émis et connecté à onViewPortChanged
+        return;
+    }
+}
+
+double ChartWidget::dateToChartTimestamp(const be::Date &date)
+{
     return Chart::chartTime(date.year, date.month, date.day, date.hour, date.minute, date.second);
 }
 

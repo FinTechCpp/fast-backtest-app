@@ -54,6 +54,12 @@ namespace chart {
         size_t pointCount;         // Le nombre de points à extraire
         bool isValid = false;      // Indicateur de validité
     };
+    inline bool operator==(const AggregationInfo& a, const AggregationInfo& b) {
+        return a.level == b.level && a.startIndex == b.startIndex && a.pointCount == b.pointCount && a.isValid == b.isValid;
+    }
+    inline bool operator!=(const AggregationInfo& a, const AggregationInfo& b) {
+        return !(a == b);
+    }
 
     // faire de l'heritage pour stocker ohlcv isvalid
     struct OHLC {

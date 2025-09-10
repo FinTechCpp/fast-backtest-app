@@ -42,7 +42,7 @@ protected:
 
 private:
     // Méthodes utilitaires
-    void setupLevelControls(QGridLayout* layout, int row, PivotPointsInstance::LevelType levelType, const QString& labelText);
+    void setupLevelControls(QGridLayout* layout, int row, chart::pivotpoints::LevelType levelType, const QString& labelText);
     QComboBox* createLineStyleComboBox();
     void updateLevelControlsState();
     

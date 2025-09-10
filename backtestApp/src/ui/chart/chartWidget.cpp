@@ -67,18 +67,7 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
     updateChartDisplay(ViewPortMode::FULL_CHART);
 }
 
-// mouais vrm pas terrible on pourrait directement utiliser les méthodes de ChartDataManager
-QString ChartWidget::chartTypeToString(ChartDataManager::ChartType type)
-{
-    return QString::fromStdString(ChartDataManager::chartTypeToString(type));
-}
-
-ChartDataManager::ChartType ChartWidget::stringToChartType(const QString &typeStr)
-{
-    return ChartDataManager::stringToChartType(typeStr.toStdString());
-}
-
-void ChartWidget::setChartType(ChartDataManager::ChartType chartType)
+void ChartWidget::setChartType(chart::ChartType chartType)
 {
     if (m_config.chartType == chartType)
         return; // Pas de changement, rien à faire
@@ -317,14 +306,14 @@ void ChartWidget::setRulerToolEnabled(bool enabled)
     m_rulerToolEnabled = enabled;
     
     // Si l'outil est désactivé, réinitialiser l'état
-    if (!enabled) {
-        m_rulerFirstPointSelected = false;
-        
-        // Mettre à jour le graphique pour supprimer la règle
-        if (m_chartViewer && m_chartViewer->getChart()) {
-            m_chartViewer->updateDisplay();
-        }
-    }
+    if (enabled) 
+        return;
+
+    m_rulerFirstPointSelected = false;
+    
+    // Mettre à jour le graphique pour supprimer la règle
+    if (m_chartViewer && m_chartViewer->getChart())
+        m_chartViewer->updateDisplay();
 }
 
 bool ChartWidget::removeIndicator(int id) {

@@ -357,19 +357,19 @@ std::vector<double> IndicatorMathUtils::calculateATR(
     return atrValues;
 }
 
-std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
+std::vector<chart::pivotpoints::PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
     const std::vector<double>& openData,
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     const std::vector<be::Date>& dates,
-    PivotPointsInstance::PeriodType periodType,
-    PivotPointsInstance::CalculationMethod calcMethod
+    chart::pivotpoints::PeriodType periodType,
+    chart::pivotpoints::CalculationMethod calcMethod
 ) {
     if (openData.empty() || highData.empty() || lowData.empty() || closeData.empty() || dates.empty())
         return {};
 
-    std::vector<PivotPeriod> pivotPeriods;
+    std::vector<chart::pivotpoints::PivotPeriod> pivotPeriods;
 
     // Initialiser tous les vecteurs de niveaux avec des zéros
     size_t dataSize = highData.size();
@@ -384,7 +384,7 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
         
         bool newPeriod = false;
         switch (periodType) {
-            case PivotPointsInstance::PeriodType::FourHour: {
+            case chart::pivotpoints::PeriodType::FourHour: {
                 // On considère une nouvelle période si l'heure courante est dans {13, 17, 21, 1}
                 // et différente de la précédente (pour éviter de splitter plusieurs fois sur la même heure)
                 int hour = static_cast<int>(date.hour);
@@ -398,14 +398,14 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
                             (date.year != currentDate.year);
                 break;
             }
-            case PivotPointsInstance::PeriodType::Daily:
+            case chart::pivotpoints::PeriodType::Daily:
                 // Nouvelle journée si le jour a changé
                 newPeriod = (date.day != currentDate.day ||
                              date.month != currentDate.month ||
                              date.year != currentDate.year);
                 break;
                 
-            case PivotPointsInstance::PeriodType::Weekly: {
+            case chart::pivotpoints::PeriodType::Weekly: {
                 // Nouvelle semaine si la différence de jours > 2 (week-end ou jours fériés)
                 int dayDiff = static_cast<int>(date.day - dates[i-1].day);
                 bool isMonday = (dayDiff > 2);
@@ -413,7 +413,7 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
                 break;
             }
                 
-            case PivotPointsInstance::PeriodType::Monthly:
+            case chart::pivotpoints::PeriodType::Monthly:
                 // Nouveau mois
                 newPeriod = (date.month != currentDate.month ||
                              date.year != currentDate.year);
@@ -433,7 +433,7 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
         size_t end = periodBoundaries[i+1] - 1;
         
         // Si première période incomplète (sauf pour quotidien)
-        if (i == 0 && periodType != PivotPointsInstance::PeriodType::Daily) {
+        if (i == 0 && periodType != chart::pivotpoints::PeriodType::Daily) {
             continue;
         }
         
@@ -457,13 +457,13 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
         // Le reste du calcul des points pivots reste inchangé
         double pivot;
         switch (calcMethod) {
-            case PivotPointsInstance::CalculationMethod::OHLC:
+            case chart::pivotpoints::CalculationMethod::OHLC:
                 pivot = (high + low + close + open) / 4.0;
                 break;
-            case PivotPointsInstance::CalculationMethod::HL0:
+            case chart::pivotpoints::CalculationMethod::HL0:
                 pivot = (high + low + open) / 3.0;
                 break;
-            case PivotPointsInstance::CalculationMethod::HLC:
+            case chart::pivotpoints::CalculationMethod::HLC:
             default:
                 pivot = (high + low + close) / 3.0;
                 break;
@@ -485,11 +485,11 @@ std::vector<PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
         double ms2s3 = (s2 + s3) / 2.0;
 
         // Créer une nouvelle période de pivot
-        PivotPeriod period;
-        period.indices[static_cast<size_t>(AggregationLevel::Raw)] = {static_cast<int>(start), static_cast<int>(end)};
+        chart::pivotpoints::PivotPeriod period;
+        period.indices[static_cast<size_t>(chart::AggregationLevel::Raw)] = {static_cast<int>(start), static_cast<int>(end)};
         
         // Stocker un segment unique pour chaque niveau durant cette période
-        using LT = PivotPointsInstance::LevelType;
+        using LT = chart::pivotpoints::LevelType;
         period.levelValues[static_cast<int>(LT::Pivot)] = pivot;
         period.levelValues[static_cast<int>(LT::R1)] = r1;
         period.levelValues[static_cast<int>(LT::R2)] = r2;

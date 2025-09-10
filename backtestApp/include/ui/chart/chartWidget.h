@@ -27,7 +27,6 @@ class ChartWidget : public QWidget
     Q_OBJECT
 
 public:
-    
     // ======== Constructeurs et destructeur ========
     explicit ChartWidget(QWidget* parent = nullptr);
     ~ChartWidget() override;
@@ -37,15 +36,11 @@ public:
     void setBacktestResults(const BacktestResults* results);
 
     // Configuration et contrôle du graphique
-    void setChartType(ChartDataManager::ChartType chartType); // remplacer par un slot
-    ChartDataManager::ChartType getChartType() const { return m_config.chartType; }
+    void setChartType(chart::ChartType chartType); // remplacer par un slot
+    chart::ChartType getChartType() const { return m_config.chartType; }
     const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
 
     void removeAllIndicators();
-    
-    // Conversion de ChartType 
-    static QString chartTypeToString(ChartDataManager::ChartType type);
-    static ChartDataManager::ChartType stringToChartType(const QString& typeStr);
 
     // Resize et gestion de la vue
     void setResizing(bool isResizing) { m_isResizing = isResizing; }
@@ -53,7 +48,6 @@ public:
     
     // Méthode pour activer/désactiver l'outil règle
     void setRulerToolEnabled(bool enabled); // remplacer par un slot
-
     void setMaxDisplayPoints(int value);
     
     // Méthode pour zoomer sur un trade spécifique
@@ -124,8 +118,8 @@ private:
 
     ChartDataManager m_dataManager;
     ChartRenderer m_renderer;
-    ChartDataManager::AggregationInfo m_currentAggregation;
-    ChartConfiguration m_config;
+    chart::AggregationInfo m_currentAggregation;
+    chart::ChartConfiguration m_config;
 
     // ======== Méthodes privées ========
     // 1. Traitement et conversion des données

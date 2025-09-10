@@ -15,8 +15,8 @@ ChartRenderer::~ChartRenderer() {
 void ChartRenderer::createOrUpdateChart(
     QChartViewer* viewer,
     const ChartDataManager& dataManager,
-    const ChartConfiguration& config,
-    const ChartDataManager::AggregationInfo& aggregationInfo)
+    const chart::ChartConfiguration& config,
+    const chart::AggregationInfo& aggregationInfo)
 {
     // Extraire les données selon le niveau d'agrégation
     DoubleArray timestamps, openData, highData, lowData, closeData, volumeData;
@@ -29,7 +29,7 @@ void ChartRenderer::createOrUpdateChart(
         timestamps = DoubleArray(&data.timestamps[startIdx], count);
         volumeData = DoubleArray(&data.volume[startIdx], count);
 
-        if (aggregationInfo.level == AggregationLevel::Raw && config.chartType == ChartDataManager::ChartType::HeikinAshi) {
+        if (aggregationInfo.level == chart::AggregationLevel::Raw && config.chartType == chart::ChartType::HeikinAshi) {
             const auto& heikinAshiCache = dataManager.getHeikinAshiCache();
             openData = DoubleArray(&heikinAshiCache.open[startIdx], count);
             highData = DoubleArray(&heikinAshiCache.high[startIdx], count);
@@ -43,7 +43,7 @@ void ChartRenderer::createOrUpdateChart(
         }
     }
     
-    // if (aggregationInfo.level == AggregationLevel::Raw && config.chartType == ChartDataManager::ChartType::HeikinAshi) {
+    // if (aggregationInfo.level == chart::AggregationLevel::Raw && config.chartType == ChartDataManager::ChartType::HeikinAshi) {
     //     // Utiliser les données brutes directement
     //     const auto& backtestData = dataManager.getBacktestData();        
     //     timestamps = DoubleArray(&dataManager.getTimestamps()[aggregationInfo.startIndex], aggregationInfo.pointCount);
@@ -100,10 +100,9 @@ void ChartRenderer::createOrUpdateChart(
     m_financeChart->setPlotAreaBorder(Chart::Transparent, 0);
 
     // Ajouter le titre du graphique
-    std::string chartTypeStr = dataManager.chartTypeToString(config.chartType);
-    std::string aggregationStr = dataManager.aggregationLevelToString(aggregationInfo.level);
-    std::string title = "Graphique de trading (" + chartTypeStr + ", " + aggregationStr + ") - " + 
-                       std::to_string(timestamps.len) + " points";
+    std::string chartTypeStr = chart::chartTypeToString(config.chartType);
+    std::string aggregationStr = chart::aggregationLevelToString(aggregationInfo.level);
+    std::string title = "Graphique de trading (" + chartTypeStr + ", " + aggregationStr + ") - " + std::to_string(timestamps.len) + " points";
     m_financeChart->addTitle(title.c_str());
     
     // Déterminer l'index de début pour les données visibles
@@ -113,7 +112,7 @@ void ChartRenderer::createOrUpdateChart(
     
     // 1. Ajouter la courbe d'équité en haut si disponible et demandée
     if (config.showEquity) {
-        addEquityCurveSection(m_financeChart.get(), dataManager, timestamps, startIndex, config);
+        addEquityCurveSection(m_financeChart.get(), dataManager, timestamps, startIndex, config.equityHeight);
         subChartsTotalHeight += config.equityHeight;
     }
 
@@ -154,15 +153,15 @@ void ChartRenderer::createOrUpdateChart(
     }
  
     // Ajouter le type de graphique approprié selon le type actuel
-    if (config.chartType == ChartDataManager::ChartType::CandleStick || 
-        config.chartType == ChartDataManager::ChartType::HeikinAshi) {
+    if (config.chartType == chart::ChartType::CandleStick || 
+        config.chartType == chart::ChartType::HeikinAshi) {
         CandleStickLayer* candleStickLayer = m_financeChart->addCandleStick(0x0d9901, 0xF30000); // Vert/Rouge pour les bougies
         candleStickLayer->setColors(0x0d9901, 0x0d9901, 0xF30000, 0xF30000);
         candleStickLayer->setDataWidth(50);
         candleStickLayer->setDataGap(0.1); // Espace entre les bougies
-    } else if (config.chartType == ChartDataManager::ChartType::OHLC) {
+    } else if (config.chartType == chart::ChartType::OHLC) {
         m_financeChart->addHLOC(0x00CC00, 0xFF3333); // Vert/Rouge pour les barres OHLC
-    } else if (config.chartType == ChartDataManager::ChartType::Close) {
+    } else if (config.chartType == chart::ChartType::Close) {
         m_financeChart->addCloseLine(0x000088); // Ligne bleue pour le prix de clôture
     }
     
@@ -239,7 +238,7 @@ void ChartRenderer::createOrUpdateChart(
 
 void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 
     bool rulerFirstPointSelected, int rulerStartX, int rulerStartY, 
-    const ChartDataManager &dataManager, const ChartDataManager::AggregationInfo &aggregationInfo)
+    const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)
 {
     int mouseX = viewer->getPlotAreaMouseX();
     int mouseY = viewer->getPlotAreaMouseY();
@@ -263,11 +262,7 @@ void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled,
     }
 }
 
-void ChartRenderer::addEquityCurveSection(FinanceChart *chart, 
-                                         const ChartDataManager& dataManager, 
-                                         const DoubleArray &timestamps, 
-                                         int startIndex,
-                                        struct ChartConfiguration config)
+void ChartRenderer::addEquityCurveSection(FinanceChart *chart, const ChartDataManager& dataManager, const DoubleArray &timestamps, int startIndex, int equityHeight)
 {
     const auto& equityData = dataManager.getEquityData();
     if (equityData.equity_values.empty() || timestamps.len == 0)
@@ -332,7 +327,7 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart,
     DoubleArray equityValues = ChartDataManager::vectorToDoubleArray(interpolatedValues);
     
     // Ajouter l'indicateur pour l'equity curve
-    XYChart* equityChart = chart->addIndicator(config.equityHeight);
+    XYChart* equityChart = chart->addIndicator(equityHeight);
     
     // Configuration du titre et des libellés
     equityChart->xAxis()->setColors(Chart::Transparent);
@@ -428,11 +423,11 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart,
 void ChartRenderer::addTradeMarkers(XYChart *mainChart, 
                                   const DoubleArray &timestamps,
                                   const ChartDataManager& dataManager,
-                                  const ChartDataManager::AggregationInfo& aggregationInfo)
+                                  const chart::AggregationInfo& aggregationInfo)
 {
     const std::vector<be::TradeData>& trades = dataManager.getTrades();
     int startIndex = aggregationInfo.startIndex;
-    AggregationLevel level = aggregationInfo.level;
+    chart::AggregationLevel level = aggregationInfo.level;
 
     if (trades.empty() 
         || !dataManager.hasRawData()
@@ -441,7 +436,7 @@ void ChartRenderer::addTradeMarkers(XYChart *mainChart,
 
     // TODO peut etre donner la reference trades au methode suivante pour eviter qu'elles aient besoin de rappeler la methode datamanegr.gettrades()
     // Sélectionner la méthode d'affichage en fonction du niveau d'agrégation
-    if (level == AggregationLevel::Raw) {
+    if (level == chart::AggregationLevel::Raw) {
         addRawTradeMarkers(mainChart, timestamps, dataManager, aggregationInfo);
     } else {
         addAggregatedTradeMarkers(mainChart, timestamps, dataManager, aggregationInfo);
@@ -451,7 +446,7 @@ void ChartRenderer::addTradeMarkers(XYChart *mainChart,
 void ChartRenderer::addRawTradeMarkers(XYChart *mainChart, 
                                      const DoubleArray &timestamps,
                                      const ChartDataManager& dataManager,
-                                     const ChartDataManager::AggregationInfo& aggregationInfo)
+                                     const chart::AggregationInfo& aggregationInfo)
 {
     const std::vector<be::TradeData>& trades = dataManager.getTrades();
     int startIndex = aggregationInfo.startIndex;
@@ -531,7 +526,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
             // Marqueur carré pour la position d'entrée
             entryMarkers.push_back({relativeIndex, trade.entryPrice});
 
-            const auto& data = dataManager.getAggregatedData(AggregationLevel::Raw);
+            const auto& data = dataManager.getAggregatedData(chart::AggregationLevel::Raw);
             if (entryBarIndex < data.timestamps.size()) {
 
                 if (isLong) {
@@ -595,7 +590,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
                 // Marqueur carré pour la position de sortie
                 exitMarkers.push_back({relativeExitIndex, trade.exitPrice});
 
-                const auto& data = dataManager.getAggregatedData(AggregationLevel::Raw);
+                const auto& data = dataManager.getAggregatedData(chart::AggregationLevel::Raw);
 
                 if (exitBarIndex < static_cast<int>(data.timestamps.size())) {
                     
@@ -635,7 +630,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
     addTPSLSegments(mainChart, tpslbeSegments);
     
     // Taille des symboles
-    int symbolSize = (aggregationInfo.level == AggregationLevel::Raw) ? 11 : 9;
+    int symbolSize = (aggregationInfo.level == chart::AggregationLevel::Raw) ? 11 : 9;
     
     // Flèches d'entrée
     if (!entryLongArrows.empty())
@@ -667,12 +662,12 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
 void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart, 
                                             const DoubleArray &timestamps,
                                             const ChartDataManager& dataManager,
-                                            const ChartDataManager::AggregationInfo& aggregationInfo)
+                                            const chart::AggregationInfo& aggregationInfo)
 {
     const std::vector<be::TradeData>& trades = dataManager.getTrades();
     size_t startIndex = aggregationInfo.startIndex;
     size_t pointCount = aggregationInfo.pointCount;
-    AggregationLevel level = aggregationInfo.level;
+    chart::AggregationLevel level = aggregationInfo.level;
 
     // Obtenir le graphique principal
     if (!mainChart)
@@ -845,7 +840,7 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
 void ChartRenderer::addRSIToChart(FinanceChart* chart, 
                                 const RSIInstance& rsi, 
                                 const ChartDataManager& dataManager, 
-                                const ChartDataManager::AggregationInfo& aggregationInfo)
+                                const chart::AggregationInfo& aggregationInfo)
 {
     size_t startIndex = aggregationInfo.startIndex;
     size_t pointsToShow = aggregationInfo.pointCount;
@@ -888,7 +883,7 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
 void ChartRenderer::addEMAToChart(FinanceChart* chart, 
                                 const EMAInstance& ema, 
                                 const ChartDataManager& dataManager, 
-                                const ChartDataManager::AggregationInfo& aggregationInfo)
+                                const chart::AggregationInfo& aggregationInfo)
 {
     // Déterminer quelle source de données utiliser
     size_t startIndex = aggregationInfo.startIndex;
@@ -923,7 +918,7 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
 void ChartRenderer::addSupertrendToChart(FinanceChart* chart, 
                                       const SuperTrendInstance& supertrend, 
                                       const ChartDataManager& dataManager, 
-                                      const ChartDataManager::AggregationInfo& aggregationInfo)
+                                      const chart::AggregationInfo& aggregationInfo)
 {
     size_t startIndex = aggregationInfo.startIndex;
     size_t pointsToShow = aggregationInfo.pointCount;
@@ -980,7 +975,7 @@ void ChartRenderer::addSupertrendToChart(FinanceChart* chart,
 void ChartRenderer::addStochasticToChart(FinanceChart* chart, 
                                        const StochasticInstance& stochastic, 
                                        const ChartDataManager& dataManager, 
-                                       const ChartDataManager::AggregationInfo& aggregationInfo)
+                                       const chart::AggregationInfo& aggregationInfo)
 {
     size_t startIndex = aggregationInfo.startIndex;
     size_t pointsToShow = aggregationInfo.pointCount;
@@ -1036,7 +1031,7 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
 void ChartRenderer::addATRToChart(FinanceChart* chart, 
                                 const ATRInstance& atr, 
                                 const ChartDataManager& dataManager, 
-                                const ChartDataManager::AggregationInfo& aggregationInfo)
+                                const chart::AggregationInfo& aggregationInfo)
 {
     size_t startIndex = aggregationInfo.startIndex;
     size_t pointsToShow = aggregationInfo.pointCount;
@@ -1077,22 +1072,21 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
 void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, 
                                         const PivotPointsInstance &pivotPoints, 
                                         const ChartDataManager &dataManager, 
-                                        const ChartDataManager::AggregationInfo &aggregationInfo)
+                                        const chart::AggregationInfo &aggregationInfo)
 {
 
     // Récupérer les données des points pivots depuis le cache
     size_t startIndex = aggregationInfo.startIndex;
     size_t endIndex = startIndex + aggregationInfo.pointCount - 1;
-    AggregationLevel currentLevel = aggregationInfo.level;
+    chart::AggregationLevel currentLevel = aggregationInfo.level;
 
-    const std::map<int, std::vector<PivotPeriod>>& pivotPeriodsMap = dataManager.getPivotPeriods();
+    const std::map<int, std::vector<chart::pivotpoints::PivotPeriod>>& pivotPeriodsMap = dataManager.getPivotPeriods();
     auto it = pivotPeriodsMap.find(pivotPoints.id);
-    if (it == pivotPeriodsMap.end()) {
+    if (it == pivotPeriodsMap.end())
         return; // Pas de données pour cet ID de points pivots
-    }
     
     // Récupérer le vecteur de périodes pivot
-    const std::vector<PivotPeriod>& pivotPeriods = it->second;
+    const std::vector<chart::pivotpoints::PivotPeriod>& pivotPeriods = it->second;
 
     // Parcourir toutes les périodes pivot
     for (const auto& period : pivotPeriods) {
@@ -1138,16 +1132,16 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
             // Définir le style de ligne en fonction du style de LineStyle
             int dashPatternColor;
             switch (style.lineStyle) {
-                case PivotPointsInstance::LineStyle::Dash:
+                case chart::pivotpoints::LineStyle::Dash:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::DashLine);
                     break;
-                case PivotPointsInstance::LineStyle::Dot:
+                case chart::pivotpoints::LineStyle::Dot:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::DotLine);
                     break;
-                case PivotPointsInstance::LineStyle::DotDash:
+                case chart::pivotpoints::LineStyle::DotDash:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::DotDashLine);
                     break;
-                case PivotPointsInstance::LineStyle::AltDash:
+                case chart::pivotpoints::LineStyle::AltDash:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::AltDashLine);
                     break;
                 default: // LineStyle::Solid
@@ -1165,10 +1159,10 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
 
                 QString periodSuffix;
                 switch (pivotPoints.periodType) {
-                    case PivotPointsInstance::PeriodType::FourHour: periodSuffix = "4H"; break;
-                    case PivotPointsInstance::PeriodType::Daily: periodSuffix = "J"; break;
-                    case PivotPointsInstance::PeriodType::Weekly: periodSuffix = "S"; break;
-                    case PivotPointsInstance::PeriodType::Monthly: periodSuffix = "M"; break;
+                    case chart::pivotpoints::PeriodType::FourHour: periodSuffix = "4H"; break;
+                    case chart::pivotpoints::PeriodType::Daily: periodSuffix = "J"; break;
+                    case chart::pivotpoints::PeriodType::Weekly: periodSuffix = "S"; break;
+                    case chart::pivotpoints::PeriodType::Monthly: periodSuffix = "M"; break;
                 }
 
                 // Formater l'étiquette selon le format spécifié ou le format par défaut
@@ -1293,7 +1287,7 @@ void ChartRenderer::addTPSLSegments(XYChart* chart, const std::vector<TPSLBESegm
 
 void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, int endY, DrawArea* d, 
                              const ChartDataManager& dataManager, 
-                             const ChartDataManager::AggregationInfo& aggregationInfo)
+                             const chart::AggregationInfo& aggregationInfo)
 {
     // Vérifier que le chart est valide et qu'il y a au moins un graphique
     if (!m || m->getChartCount() == 0) return;
@@ -1312,7 +1306,7 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
     double xValueStart, xValueEnd;
     
     // Récupérer les timestamps selon le niveau d'agrégation actuel
-    if (aggregationInfo.level == AggregationLevel::Raw) {
+    if (aggregationInfo.level == chart::AggregationLevel::Raw) {
         // En mode Raw, utiliser directement l'indice pour accéder aux timestamps
         const auto& timestamps = dataManager.getTimestamps();
         int startIndex = aggregationInfo.startIndex;

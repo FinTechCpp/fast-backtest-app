@@ -11,43 +11,10 @@
 #include "chartDataManager.h"
 #include "trade.hpp"
 
+#include "ui/chart/chartTypes.h"
+
 // Prédéclarations de classes
 class ChartDataManager;
-
-
-
-// Structure pour la configuration du graphique
-struct ChartConfiguration {
-    ChartDataManager::ChartType chartType = ChartDataManager::ChartType::CandleStick;
-    int chartWidth = 1200; // il faut que ce soit adaptatif
-    int chartHeight = 1000;
-    int equityHeight = 180; // inclue dans la taille du graphique principal
-    // int volumeHeight = 100;
-    bool showTrades = true;
-    bool showEquity = true;
-
-    // Propriétés pour le mode d'échelle Y fixe
-    bool fixedYScale = false;     // Indique si on utilise une échelle Y fixe
-    double yScaleMin = 0.0;       // Valeur minimale de l'échelle Y
-    double yScaleMax = 0.0;       // Valeur maximale de l'échelle Y
-    double yScaleOffset = 0.0;    // Décalage vertical en unités de l'échelle
-};
-
-enum class TPSLBEType {
-    TakeProfit,  // Niveau de Take Profit
-    StopLoss,    // Niveau de Stop Loss
-    BreakEven    // Niveau de Break Even
-};
-
-// Structure pour les segments TP/SL des trades
-struct TPSLBESegment {
-    double startX;        // Index du point d'entrée
-    double endX;          // Index du point de sortie
-    double level;         // Niveau de prix (TP ou SL)
-    TPSLBEType type;     // Type de niveau (TP, SL, BE)
-    int color;            // Couleur basée sur le résultat du trade
-};
-
 
 
 class ChartRenderer {
@@ -59,8 +26,8 @@ public:
     void createOrUpdateChart(
         QChartViewer* viewer,
         const ChartDataManager& dataManager,
-        const ChartConfiguration& config,
-        const ChartDataManager::AggregationInfo& aggregationInfo
+        const chart::ChartConfiguration& config,
+        const chart::AggregationInfo& aggregationInfo
     );
 
     void updateDynamicLayer(QChartViewer* viewer, 
@@ -68,7 +35,7 @@ public:
                         bool rulerFirstPointSelected,
                         int rulerStartX, int rulerStartY, 
                         const ChartDataManager& dataManager,
-                        const ChartDataManager::AggregationInfo& aggregationInfo);
+                        const chart::AggregationInfo& aggregationInfo);
 
     double getYAxisMin() const {
         return m_lastYMin;
@@ -83,10 +50,25 @@ public:
     }
     
 private:
+    enum class TPSLBEType {
+        TakeProfit,  // Niveau de Take Profit
+        StopLoss,    // Niveau de Stop Loss
+        BreakEven    // Niveau de Break Even
+    };
+
+    // Structure pour les segments TP/SL des trades
+    struct TPSLBESegment {
+        double startX;        // Index du point d'entrée
+        double endX;          // Index du point de sortie
+        double level;         // Niveau de prix (TP ou SL)
+        TPSLBEType type;     // Type de niveau (TP, SL, BE)
+        int color;            // Couleur basée sur le résultat du trade
+    };
+
     // Méthode pour dessiner la règle
     void drawRuler(MultiChart* m, int startX, int startY, int endX, int endY, DrawArea* d,
                    const ChartDataManager& dataManager,
-                   const ChartDataManager::AggregationInfo& aggregationInfo);
+                   const chart::AggregationInfo& aggregationInfo);
     
     // Méthode pour le tracking de la souris
     void trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea* d);
@@ -96,22 +78,22 @@ private:
                                const ChartDataManager& dataManager, 
                                const DoubleArray &timestamps, 
                                int startIndex,
-                               struct ChartConfiguration config);
+                               int equityHeight);
     
     void addTradeMarkers(XYChart *mainChart, 
                          const DoubleArray &timestamps,
                          const ChartDataManager& dataManager,
-                         const ChartDataManager::AggregationInfo& aggregationInfo);
+                         const chart::AggregationInfo& aggregationInfo);
                   
     void addRawTradeMarkers(XYChart *mainChart, 
                            const DoubleArray &timestamps,
                            const ChartDataManager& dataManager,
-                           const ChartDataManager::AggregationInfo& aggregationInfo);
+                           const chart::AggregationInfo& aggregationInfo);
                            
     void addAggregatedTradeMarkers(XYChart *mainChart, 
                                   const DoubleArray &timestamps,
                                   const ChartDataManager& dataManager,
-                                  const ChartDataManager::AggregationInfo& aggregationInfo);
+                                  const chart::AggregationInfo& aggregationInfo);
     // void addTriggerPriceSegments(XYChart* chart, const std::vector<TriggerPriceSegment>& segments);
 
     
@@ -119,33 +101,33 @@ private:
     void addRSIToChart(FinanceChart* chart, 
         const RSIInstance& rsi, 
         const ChartDataManager& dataManager, 
-        const ChartDataManager::AggregationInfo& aggregationInfo);
+        const chart::AggregationInfo& aggregationInfo);
 
     void addEMAToChart(FinanceChart* chart, 
         const EMAInstance& ema, 
         const ChartDataManager& dataManager, 
-        const ChartDataManager::AggregationInfo& aggregationInfo);
+        const chart::AggregationInfo& aggregationInfo);
 
         // Ajouter dans la classe ChartRenderer:
     void addSupertrendToChart(FinanceChart* chart, 
         const SuperTrendInstance& supertrend, 
         const ChartDataManager& dataManager, 
-        const ChartDataManager::AggregationInfo& aggregationInfo);
+        const chart::AggregationInfo& aggregationInfo);
 
     void addStochasticToChart(FinanceChart* chart, 
         const StochasticInstance& stochastic, 
         const ChartDataManager& dataManager, 
-        const ChartDataManager::AggregationInfo& aggregationInfo);
+        const chart::AggregationInfo& aggregationInfo);
 
     void addATRToChart(FinanceChart* chart, 
         const ATRInstance& atr, 
         const ChartDataManager& dataManager, 
-        const ChartDataManager::AggregationInfo& aggregationInfo);
+        const chart::AggregationInfo& aggregationInfo);
 
     void addPivotPointsToChart(XYChart* mainChart,
         const PivotPointsInstance& pivotPoints,
         const ChartDataManager& dataManager,
-        const ChartDataManager::AggregationInfo& aggregationInfo);
+        const chart::AggregationInfo& aggregationInfo);
 
     // Utilitaires
     ScatterLayer* addMarkers(XYChart* chart, 

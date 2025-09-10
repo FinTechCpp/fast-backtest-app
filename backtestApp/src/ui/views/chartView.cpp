@@ -78,7 +78,7 @@ void ChartView::setupUI()
 
     // Connecter les signaux du panneau de contrôle
     connect(m_leftPanel, &ChartControlPanel::chartTypeChanged, [this](const QString& chartType) {
-        m_chartWidget->setChartType(m_chartWidget->stringToChartType(chartType));
+        m_chartWidget->setChartType(chart::stringToChartType(chartType.toStdString()));
     });
     
     connect(m_leftPanel, &ChartControlPanel::rulerToolToggled, [this](bool checked) {

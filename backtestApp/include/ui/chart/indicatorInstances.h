@@ -5,6 +5,8 @@
 #include <memory>
 #include <map>
 
+#include "ui/chart/chartTypes.h"
+
 enum class IndicatorType {
     RSI,
     EMA,
@@ -187,60 +189,13 @@ struct ATRInstance : public IndicatorBase {
 
 
 struct PivotPointsInstance : public IndicatorBase {
-    enum class PeriodType {
-        FourHour,   // Points pivots toutes les 4 heures
-        Daily,      // Points pivots quotidiens
-        Weekly,     // Points pivots hebdomadaires
-        Monthly,    // Points pivots mensuels
-    };
-
-    enum class CalculationMethod {
-        HLC,     // High, Low, Close (méthode standard)
-        OHLC,    // Open, High, Low, Close
-        HL0       // High, Low, Open
-    };
-
-    enum class LevelType {
-        R3,         // Résistance 3
-        R2,         // Résistance 2
-        R1,         // Résistance 1
-        Pivot,      // Point pivot principal (PP)
-        S1,         // Support 1
-        S2,         // Support 2
-        S3,         // Support 3
-        M_R2R3,     // Milieu entre R2 et R3
-        M_R1R2,     // Milieu entre R1 et R2
-        M_PR1,      // Milieu entre PP et R1
-        M_PS1,      // Milieu entre PP et S1
-        M_S1S2,     // Milieu entre S1 et S2
-        M_S2S3,     // Milieu entre S2 et S3
-
-        NumLevels   // Nombre total de niveaux
-    };
-
-    enum class LineStyle {
-        Solid,
-        Dash,
-        Dot,
-        DotDash,
-        AltDash
-    };
-
-    struct LevelStyle {
-        int color = 0x000000;     // Couleur de la ligne
-        int thickness = 2;    // Épaisseur (1-3)
-        LineStyle lineStyle = LineStyle::Solid; // Style (solid, dash, dot, etc.)
-        bool visible = false;     // Visibilité du niveau
-
-        QString labelFormat = QString(); // Format d'affichage optionnel (ex: "PP: %.2f")
-    };
-
     PivotPointsInstance() : IndicatorBase(IndicatorType::PivotPoints) {
         setDefaults();
     }
-    PeriodType periodType;                          // Type de période (4H, journalier, hebdomadaire, mensuel)
-    CalculationMethod calculationMethod;            // Méthode de calcul des points pivots
-    std::map<LevelType, LevelStyle> levelStyles;    // Styles pour chaque niveau de pivot
+    chart::pivotpoints::PeriodType periodType;                          // Type de période (4H, journalier, hebdomadaire, mensuel)
+    chart::pivotpoints::CalculationMethod calculationMethod;            // Méthode de calcul des points pivots
+    // on peut mettre un std::array ca sera mieux
+    std::map<chart::pivotpoints::LevelType, chart::pivotpoints::LevelStyle> levelStyles;    // Styles pour chaque niveau de pivot
     bool showLabels = true;                         // Afficher les étiquettes des niveaux
 
 
@@ -253,15 +208,15 @@ struct PivotPointsInstance : public IndicatorBase {
     QString getDisplayName() const override {
         QString periodStr;
         switch (periodType) {
-            case PeriodType::FourHour: periodStr = "4H"; break;
-            case PeriodType::Daily: periodStr = "Jour"; break;
-            case PeriodType::Weekly: periodStr = "Hebdomadaire"; break;
-            case PeriodType::Monthly: periodStr = "Mensuel"; break;
+            case chart::pivotpoints::PeriodType::FourHour: periodStr = "4H"; break;
+            case chart::pivotpoints::PeriodType::Daily: periodStr = "Jour"; break;
+            case chart::pivotpoints::PeriodType::Weekly: periodStr = "Hebdomadaire"; break;
+            case chart::pivotpoints::PeriodType::Monthly: periodStr = "Mensuel"; break;
         }
         return QString("Pivot Points (%1)").arg(periodStr);
     }
 
-    bool isLevelVisible(LevelType level) const {
+    bool isLevelVisible(chart::pivotpoints::LevelType level) const {
         auto it = levelStyles.find(level);
         if (it == levelStyles.end()) return false;
         return it->second.visible;
@@ -269,84 +224,84 @@ struct PivotPointsInstance : public IndicatorBase {
 
     void setDefaults() override {
         // Point pivot central (noir, trait plein, visible)
-        LevelStyle pivotStyle;
+        chart::pivotpoints::LevelStyle pivotStyle;
         pivotStyle.color = 0x000000;  // Noir
         pivotStyle.thickness = 2;
-        pivotStyle.lineStyle = LineStyle::Solid;
+        pivotStyle.lineStyle = chart::pivotpoints::LineStyle::Solid;
         pivotStyle.visible = true;
         pivotStyle.labelFormat = "Piv %1";
-        levelStyles[LevelType::Pivot] = pivotStyle;
+        levelStyles[chart::pivotpoints::LevelType::Pivot] = pivotStyle;
         
         // Résistances (rouge, trait plein, visibles)
-        LevelStyle resistanceStyle;
+        chart::pivotpoints::LevelStyle resistanceStyle;
         resistanceStyle.color = 0xFF0000;  // Rouge
         resistanceStyle.thickness = 2;
-        resistanceStyle.lineStyle = LineStyle::Solid;
+        resistanceStyle.lineStyle = chart::pivotpoints::LineStyle::Solid;
         resistanceStyle.visible = true;
         
         resistanceStyle.labelFormat = "R1 %1";
-        levelStyles[LevelType::R1] = resistanceStyle;
+        levelStyles[chart::pivotpoints::LevelType::R1] = resistanceStyle;
 
         resistanceStyle.labelFormat = "R2 %1";
-        levelStyles[LevelType::R2] = resistanceStyle;
+        levelStyles[chart::pivotpoints::LevelType::R2] = resistanceStyle;
 
         resistanceStyle.labelFormat = "R3 %1";
-        levelStyles[LevelType::R3] = resistanceStyle;
+        levelStyles[chart::pivotpoints::LevelType::R3] = resistanceStyle;
         
         // Supports (vert, trait plein, visibles)
-        LevelStyle supportStyle;
+        chart::pivotpoints::LevelStyle supportStyle;
         supportStyle.color = 0x008000;  // Vert
         supportStyle.thickness = 2;
-        supportStyle.lineStyle = LineStyle::Solid;
+        supportStyle.lineStyle = chart::pivotpoints::LineStyle::Solid;
         supportStyle.visible = true;
 
         supportStyle.labelFormat = "S1 %1";
-        levelStyles[LevelType::S1] = supportStyle;
+        levelStyles[chart::pivotpoints::LevelType::S1] = supportStyle;
 
         supportStyle.labelFormat = "S2 %1";
-        levelStyles[LevelType::S2] = supportStyle;
+        levelStyles[chart::pivotpoints::LevelType::S2] = supportStyle;
 
         supportStyle.labelFormat = "S3 %1";
-        levelStyles[LevelType::S3] = supportStyle;
+        levelStyles[chart::pivotpoints::LevelType::S3] = supportStyle;
         
         // Niveaux milieux résistance (rouge, trait pointillé, non visibles par défaut)
-        LevelStyle midResistanceStyle;
+        chart::pivotpoints::LevelStyle midResistanceStyle;
         midResistanceStyle.color = 0xFF0000;  // Rouge
         midResistanceStyle.thickness = 1;
-        midResistanceStyle.lineStyle = LineStyle::Dash;
+        midResistanceStyle.lineStyle = chart::pivotpoints::LineStyle::Dash;
         midResistanceStyle.visible = false;  // Visible si showMidLevels est true
         
         midResistanceStyle.labelFormat = "mR3 %1";
-        levelStyles[LevelType::M_R2R3] = midResistanceStyle;
+        levelStyles[chart::pivotpoints::LevelType::M_R2R3] = midResistanceStyle;
 
         midResistanceStyle.labelFormat = "mR2 %1";
-        levelStyles[LevelType::M_R1R2] = midResistanceStyle;
+        levelStyles[chart::pivotpoints::LevelType::M_R1R2] = midResistanceStyle;
 
         midResistanceStyle.labelFormat = "mR1 %1";
-        levelStyles[LevelType::M_PR1] = midResistanceStyle;
-        
+        levelStyles[chart::pivotpoints::LevelType::M_PR1] = midResistanceStyle;
+
         // Niveaux milieux support (vert, trait pointillé, non visibles par défaut)
-        LevelStyle midSupportStyle;
+        chart::pivotpoints::LevelStyle midSupportStyle;
         midSupportStyle.color = 0x008000;  // Vert
         midSupportStyle.thickness = 1;
-        midSupportStyle.lineStyle = LineStyle::Dash;
+        midSupportStyle.lineStyle = chart::pivotpoints::LineStyle::Dash;
         midSupportStyle.visible = false;  // Visible si showMidLevels est true
 
         midSupportStyle.labelFormat = "mS1 %1";
-        levelStyles[LevelType::M_PS1] = midSupportStyle;
+        levelStyles[chart::pivotpoints::LevelType::M_PS1] = midSupportStyle;
 
         midSupportStyle.labelFormat = "mS2 %1";
-        levelStyles[LevelType::M_S1S2] = midSupportStyle;
+        levelStyles[chart::pivotpoints::LevelType::M_S1S2] = midSupportStyle;
 
         midSupportStyle.labelFormat = "mS3 %1";
-        levelStyles[LevelType::M_S2S3] = midSupportStyle;
+        levelStyles[chart::pivotpoints::LevelType::M_S2S3] = midSupportStyle;
         
         // Activer les étiquettes par défaut
         showLabels = true;
         
         // Type de période par défaut
-        periodType = PeriodType::Daily;
+        periodType = chart::pivotpoints::PeriodType::Daily;
 
-        calculationMethod = CalculationMethod::HLC;
+        calculationMethod = chart::pivotpoints::CalculationMethod::HLC;
     }
 };

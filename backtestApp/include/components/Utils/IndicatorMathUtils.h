@@ -8,24 +8,8 @@
 #include <unordered_map>
 #include <set>
 #include "date.hpp"
-// super pas top, je fais pour avoir PivotPointsInstance::PeriodType pour les points pivots
-#include "ui/chart/indicatorInstances.h"
+#include "ui/chart/chartTypes.h"
 
-enum class AggregationLevel {
-    Raw,         // Données brutes
-    OneMinute,   // 1 minute
-    OneHour,     // 1 heure
-    OneDay,      // 1 jour
-    Count        // Nombre total de niveaux d'agrégation
-};
-
-struct PivotPeriod {
-    // Mapping vers les indices agrégés pour différents niveaux d'agrégation
-    std::array<std::pair<size_t, size_t>, static_cast<size_t>(AggregationLevel::Count)> indices; // Indices bruts pour chaque niveau d'agrégation
-    
-    // Valeurs de tous les niveaux de pivot pour cette période
-    std::array<double, static_cast<size_t>(PivotPointsInstance::LevelType::NumLevels)> levelValues;
-};
 
 /**
  * @brief Utility class for calculating technical indicators
@@ -131,13 +115,13 @@ public:
         bool useLogScale = false
     );
 
-    static std::vector<PivotPeriod> calculatePivotPoints(
+    static std::vector<chart::pivotpoints::PivotPeriod> calculatePivotPoints(
         const std::vector<double>& openData,
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         const std::vector<be::Date>& timestamps,
-        PivotPointsInstance::PeriodType periodType,
-        PivotPointsInstance::CalculationMethod calcMethod
+        chart::pivotpoints::PeriodType periodType,
+        chart::pivotpoints::CalculationMethod calcMethod
     );
 };

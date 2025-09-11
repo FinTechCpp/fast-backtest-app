@@ -208,54 +208,48 @@ void ChartRenderer::createOrUpdateChart(
     m_plotAreaHeight = mainChart->getPlotArea()->getHeight();
 }
 
-void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 
+std::optional<std::pair<int, int>> ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled, 
     bool rulerFirstPointSelected, int rulerStartX, int rulerStartY, 
     const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)
 {
-    if (!viewer || !rulerEnabled || !rulerFirstPointSelected)
-        return;
-
     MultiChart* chart = dynamic_cast<MultiChart*>(viewer->getChart());
 
     // Vérifier que le chart est valide
-    if (chart->getChartCount() == 0) 
-        return;
+    if (!chart || chart->getChartCount() == 0) 
+        return std::nullopt;
 
     // Initialiser le dynamic layer une seule fois
     DrawArea* d = chart->initDynamicLayer();
 
-    int rulerEndX = viewer->getPlotAreaMouseX();
-    int rulerEndY = viewer->getPlotAreaMouseY();
-
-    drawRuler(chart, rulerStartX, rulerStartY, rulerEndX, rulerEndY, d, dataManager, aggregationInfo);
-}
-
-std::optional<std::pair<int, int>> ChartRenderer::updateTrackFinance(QChartViewer* viewer, std::optional<std::pair<int, int>> forcedMousePosition) 
-{
-    MultiChart* chart = dynamic_cast<MultiChart*>(viewer->getChart());
-
-    if (!viewer || chart->getChartCount() == 0) 
-        return std::nullopt;
-
-    DrawArea* d = chart->initDynamicLayer();
-
-    int mouseX;
-    int mouseY;
-
-    if (forcedMousePosition) {
-        mouseX = forcedMousePosition->first;
-        mouseY = forcedMousePosition->second;
-        trackFinance(chart, mouseX, mouseY, d);
-
-        return std::nullopt; // Pas besoin de renvoyer la position si elle est forcée
-    }
-
-    mouseX = viewer->getPlotAreaMouseX();
-    mouseY = viewer->getPlotAreaMouseY();
+    int mouseX = viewer->getPlotAreaMouseX();
+    int mouseY = viewer->getPlotAreaMouseY();
 
     trackFinance(chart, mouseX, mouseY, d);
 
+    if (rulerEnabled && rulerFirstPointSelected) {
+        int rulerEndX = viewer->getPlotAreaMouseX();
+        int rulerEndY = viewer->getPlotAreaMouseY();
+
+        drawRuler(chart, rulerStartX, rulerStartY, rulerEndX, rulerEndY, d, 
+                 dataManager, aggregationInfo);
+    }
+
     return std::make_pair(mouseX, mouseY);
+}
+
+void ChartRenderer::updateTrackFinance(QChartViewer* viewer, std::pair<int, int> forcedMousePosition) 
+{
+    MultiChart* chart = dynamic_cast<MultiChart*>(viewer->getChart());
+
+    if (!viewer || !chart || chart->getChartCount() == 0) 
+        return;
+
+    DrawArea* d = chart->initDynamicLayer();
+
+    int mouseX = forcedMousePosition.first;
+    int mouseY = forcedMousePosition.second;
+
+    trackFinance(chart, mouseX, mouseY, d);
 }
 
 void ChartRenderer::addEquityCurveSection(FinanceChart *chart, const ChartDataManager& dataManager, const DoubleArray &timestamps, int startIndex, int equityHeight)
@@ -1297,44 +1291,23 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
 
     // Récupérer les timestamps réels depuis le ChartDataManager
     double xValueStart, xValueEnd;
-    
-    // Récupérer les timestamps selon le niveau d'agrégation actuel
-    if (aggregationInfo.level == chart::AggregationLevel::Raw) {
-        // En mode Raw, utiliser directement l'indice pour accéder aux timestamps
-        const auto& timestamps = dataManager.getTimestamps();
-        size_t startIndex = aggregationInfo.startIndex;
-        
-        // Convertir les indices relatifs en indices absolus
-        size_t absIndexStart = startIndex + static_cast<size_t>(xIndexStart);
-        size_t absIndexEnd = startIndex + static_cast<size_t>(xIndexEnd);
-        
-        // Vérifier que les indices sont valides
-        if (absIndexStart < timestamps.size() && absIndexEnd < timestamps.size()) {
-            xValueStart = timestamps[absIndexStart];
-            xValueEnd = timestamps[absIndexEnd];
-        } else {
-            // Indices invalides, utiliser les valeurs par défaut
-            xValueStart = xIndexStart;
-            xValueEnd = xIndexEnd;
-        }
-    } else {
-        // En mode agrégé, utiliser les données agrégées
-        const auto& aggregatedData = dataManager.getAggregatedData(aggregationInfo.level);
-        size_t startIndex = aggregationInfo.startIndex;
-        
-        // Convertir les indices relatifs en indices absolus
-        size_t absIndexStart = startIndex + static_cast<size_t>(xIndexStart);
-        size_t absIndexEnd = startIndex + static_cast<size_t>(xIndexEnd);
 
-        // Vérifier que les indices sont valides
-        if (absIndexStart < aggregatedData.timestamps.size() && absIndexEnd < aggregatedData.timestamps.size()) {
-            xValueStart = aggregatedData.timestamps[absIndexStart];
-            xValueEnd = aggregatedData.timestamps[absIndexEnd];
-        } else {
-            // Indices invalides, utiliser les valeurs par défaut
-            xValueStart = xIndexStart;
-            xValueEnd = xIndexEnd;
-        }
+    // En mode agrégé, utiliser les données agrégées
+    const std::vector<double>& timestamps = dataManager.getAggregatedData(aggregationInfo.level).timestamps;
+    size_t startIndex = aggregationInfo.startIndex;
+    
+    // Convertir les indices relatifs en indices absolus
+    size_t absIndexStart = startIndex + static_cast<size_t>(xIndexStart);
+    size_t absIndexEnd = startIndex + static_cast<size_t>(xIndexEnd);
+
+    // Vérifier que les indices sont valides
+    if (absIndexStart < timestamps.size() && absIndexEnd < timestamps.size()) {
+        xValueStart = timestamps[absIndexStart];
+        xValueEnd = timestamps[absIndexEnd];
+    } else {
+        // Indices invalides, utiliser les valeurs par défaut
+        xValueStart = xIndexStart;
+        xValueEnd = xIndexEnd;
     }
 
     // Récupérer les timestamps formattés pour l'affichage

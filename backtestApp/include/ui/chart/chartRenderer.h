@@ -30,15 +30,15 @@ public:
         const chart::AggregationInfo& aggregationInfo
     );
 
-    void updateDynamicLayer(QChartViewer* viewer, 
+    std::optional<std::pair<int, int>> updateDynamicLayer(QChartViewer* viewer, 
                         bool rulerEnabled, 
                         bool rulerFirstPointSelected,
                         int rulerStartX, int rulerStartY, 
                         const ChartDataManager& dataManager,
                         const chart::AggregationInfo& aggregationInfo);
 
-    std::optional<std::pair<int, int>> updateTrackFinance(QChartViewer* viewer, std::optional<std::pair<int, int>> forcedMousePosition = std::nullopt);
-
+    void updateTrackFinance(QChartViewer* viewer, std::pair<int, int> forcedMousePosition);
+    
     double getYAxisMin() const {
         return m_lastYMin;
     }

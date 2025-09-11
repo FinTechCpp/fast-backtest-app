@@ -262,7 +262,7 @@ void ChartWidget::onMouseMoveChart(QMouseEvent *event)
         }
     }
 
-    m_renderer.updateDynamicLayer(
+    std::optional<std::pair<int, int>> mousePosition = m_renderer.updateDynamicLayer(
         m_chartViewer,
         m_rulerToolEnabled,
         m_rulerFirstPointSelected,
@@ -271,12 +271,10 @@ void ChartWidget::onMouseMoveChart(QMouseEvent *event)
         m_currentAggregation
     );
 
-    std::optional<std::pair<int, int>> trackFinance = m_renderer.updateTrackFinance(m_chartViewer);
-
     m_chartViewer->updateDisplay();
 
-    if (trackFinance) {
-        emit trackFinanceUpdated(trackFinance->first, trackFinance->second);
+    if (mousePosition) {
+        emit trackFinanceUpdated(mousePosition->first, mousePosition->second);
     }
 }
 
@@ -455,7 +453,7 @@ void ChartWidget::setViewport(double left, double width) {
 
 void ChartWidget::forceUpdateTrackFinance(int mouseX, int mouseY) {
     if (m_chartViewer && sender() == m_syncPartner) {
-        std::optional<std::pair<int, int>> trackFinance = m_renderer.updateTrackFinance(m_chartViewer, std::make_pair(mouseX, mouseY));
+        m_renderer.updateTrackFinance(m_chartViewer, std::make_pair(mouseX, mouseY));
 
         m_chartViewer->updateDisplay();
         return;

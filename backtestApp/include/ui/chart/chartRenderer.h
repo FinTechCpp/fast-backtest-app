@@ -37,6 +37,8 @@ public:
                         const ChartDataManager& dataManager,
                         const chart::AggregationInfo& aggregationInfo);
 
+    std::optional<std::pair<int, int>> updateTrackFinance(QChartViewer* viewer, std::optional<std::pair<int, int>> forcedMousePosition = std::nullopt);
+
     double getYAxisMin() const {
         return m_lastYMin;
     }

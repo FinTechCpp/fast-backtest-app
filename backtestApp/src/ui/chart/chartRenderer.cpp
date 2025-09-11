@@ -43,38 +43,6 @@ void ChartRenderer::createOrUpdateChart(
         }
     }
     
-    // if (aggregationInfo.level == chart::AggregationLevel::Raw && config.chartType == ChartDataManager::ChartType::HeikinAshi) {
-    //     // Utiliser les données brutes directement
-    //     const auto& backtestData = dataManager.getBacktestData();        
-    //     timestamps = DoubleArray(&dataManager.getTimestamps()[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //     volumeData = DoubleArray(&backtestData->getVolume()[aggregationInfo.startIndex], aggregationInfo.pointCount);
-        
-    //     // Déterminer quel type de données afficher (standard ou Heikin-Ashi)
-    //     if (config.chartType == ChartDataManager::ChartType::HeikinAshi) {
-    //         const auto& heikinAshiCache = dataManager.getHeikinAshiCache();
-            
-    //         openData = DoubleArray(&heikinAshiCache.open[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //         highData = DoubleArray(&heikinAshiCache.high[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //         lowData = DoubleArray(&heikinAshiCache.low[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //         closeData = DoubleArray(&heikinAshiCache.close[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //     } else {
-    //         openData = DoubleArray(&backtestData->getOpen()[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //         highData = DoubleArray(&backtestData->getHigh()[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //         lowData = DoubleArray(&backtestData->getLow()[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //         closeData = DoubleArray(&backtestData->getClose()[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //     }
-    // } else {
-    //     // Utiliser les données agrégées
-    //     const auto& aggregated = dataManager.getAggregatedData(aggregationInfo.level);
-        
-    //     timestamps = DoubleArray(&aggregated.timestamps[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //     openData = DoubleArray(&aggregated.open[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //     highData = DoubleArray(&aggregated.high[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //     lowData = DoubleArray(&aggregated.low[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //     closeData = DoubleArray(&aggregated.close[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    //     volumeData = DoubleArray(&aggregated.volume[aggregationInfo.startIndex], aggregationInfo.pointCount);
-    // }
-    
     // Créer un nouveau graphique
     m_financeChart = std::make_unique<FinanceChart>(config.chartWidth);
     
@@ -94,7 +62,8 @@ void ChartRenderer::createOrUpdateChart(
     
     // Configurer les données
     m_financeChart->setData(timestamps, highData, lowData, openData, closeData, volumeData, 0);
-    
+    // 0 ms
+
     // Cacher la légende par défaut en la rendant transparente
     m_financeChart->setLegendStyle("normal", 8, Chart::Transparent, Chart::Transparent);
     m_financeChart->setPlotAreaBorder(Chart::Transparent, 0);
@@ -216,17 +185,20 @@ void ChartRenderer::createOrUpdateChart(
     // if (config.showVolume) {
     //     m_financeChart->addVolBars(config.volumeHeight, 0x99ff99, 0xff9999, 0x808080);
     // }
-    
+
     // 5. Ajouter les trades si disponibles et demandés
     if (config.showTrades) {
         addTradeMarkers(mainChart, timestamps, dataManager, aggregationInfo);
+        // 0 ms
     }
 
     // std::cout << "Avant " << mainChart->getYCoor(20000) << std::endl;
 
     // Mettre à jour le graphique dans le viewer
-    if (viewer) 
+    if (viewer) {
         viewer->setChart(m_financeChart.get());
+        // BEAUCOUP DE TEMPS ICI (50-100ms) Je ne sais pas comment l'optimiser
+    }
 
     // std::cout << "Après " << mainChart->getYCoor(20000) << std::endl;
 
@@ -240,26 +212,50 @@ void ChartRenderer::updateDynamicLayer(QChartViewer *viewer, bool rulerEnabled,
     bool rulerFirstPointSelected, int rulerStartX, int rulerStartY, 
     const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)
 {
-    int mouseX = viewer->getPlotAreaMouseX();
-    int mouseY = viewer->getPlotAreaMouseY();
+    if (!viewer || !rulerEnabled || !rulerFirstPointSelected)
+        return;
 
     MultiChart* chart = dynamic_cast<MultiChart*>(viewer->getChart());
 
     // Vérifier que le chart est valide
-    if (!viewer || chart->getChartCount() == 0) return;
+    if (chart->getChartCount() == 0) 
+        return;
 
     // Initialiser le dynamic layer une seule fois
     DrawArea* d = chart->initDynamicLayer();
 
+    int rulerEndX = viewer->getPlotAreaMouseX();
+    int rulerEndY = viewer->getPlotAreaMouseY();
+
+    drawRuler(chart, rulerStartX, rulerStartY, rulerEndX, rulerEndY, d, dataManager, aggregationInfo);
+}
+
+std::optional<std::pair<int, int>> ChartRenderer::updateTrackFinance(QChartViewer* viewer, std::optional<std::pair<int, int>> forcedMousePosition) 
+{
+    MultiChart* chart = dynamic_cast<MultiChart*>(viewer->getChart());
+
+    if (!viewer || chart->getChartCount() == 0) 
+        return std::nullopt;
+
+    DrawArea* d = chart->initDynamicLayer();
+
+    int mouseX;
+    int mouseY;
+
+    if (forcedMousePosition) {
+        mouseX = forcedMousePosition->first;
+        mouseY = forcedMousePosition->second;
+        trackFinance(chart, mouseX, mouseY, d);
+
+        return std::nullopt; // Pas besoin de renvoyer la position si elle est forcée
+    }
+
+    mouseX = viewer->getPlotAreaMouseX();
+    mouseY = viewer->getPlotAreaMouseY();
+
     trackFinance(chart, mouseX, mouseY, d);
 
-    if (rulerEnabled && rulerFirstPointSelected) {
-        int rulerEndX = viewer->getPlotAreaMouseX();
-        int rulerEndY = viewer->getPlotAreaMouseY();
-
-        drawRuler(chart, rulerStartX, rulerStartY, rulerEndX, rulerEndY, d, 
-                 dataManager, aggregationInfo);
-    }
+    return std::make_pair(mouseX, mouseY);
 }
 
 void ChartRenderer::addEquityCurveSection(FinanceChart *chart, const ChartDataManager& dataManager, const DoubleArray &timestamps, int startIndex, int equityHeight)
@@ -271,15 +267,21 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart, const ChartDataMa
     // Obtenir la plage de temps visible
     double visibleStartTime = timestamps[0];
     double visibleEndTime = timestamps[timestamps.len - 1];
+
+    enum class SegmentColor {
+        Constant,
+        Up,
+        Down
+    };
     
     // Créer les vecteurs pour les données d'équité interpolées
     std::vector<double> interpolatedTimes;
     std::vector<double> interpolatedValues;
-    std::vector<double> colorValues;
+    std::vector<SegmentColor> colorValues;
     
     interpolatedTimes.reserve(timestamps.len);
     interpolatedValues.reserve(timestamps.len);
-    colorValues.reserve(timestamps.len - 1);
+    colorValues.reserve(timestamps.len);
     
     // Trouver le premier point d'équité qui précède ou correspond à visibleStartTime
     size_t equityIndex = 0;
@@ -313,11 +315,11 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart, const ChartDataMa
             double diff = curr - prev;
             
             if (std::abs(diff) < 1e-10) {
-                colorValues.push_back(0);  // Constant
+                colorValues.push_back(SegmentColor::Constant);
             } else if (diff > 0) {
-                colorValues.push_back(1);  // Hausse
+                colorValues.push_back(SegmentColor::Up);
             } else {
-                colorValues.push_back(2);  // Baisse
+                colorValues.push_back(SegmentColor::Down);
             }
         }
     }
@@ -368,7 +370,7 @@ void ChartRenderer::addEquityCurveSection(FinanceChart *chart, const ChartDataMa
     
     // Parcourir les points et créer des segments colorés
     for (size_t i = 1; i < interpolatedValues.size(); ++i) {
-        int colorIndex = static_cast<int>(colorValues[i-1]);
+        size_t colorIndex = static_cast<size_t>(colorValues[i-1]);
         
         segmentX[colorIndex].push_back(interpolatedTimes[i-1]);
         segmentY[colorIndex].push_back(interpolatedValues[i-1]);
@@ -449,7 +451,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
                                      const chart::AggregationInfo& aggregationInfo)
 {
     const std::vector<be::TradeData>& trades = dataManager.getTrades();
-    int startIndex = aggregationInfo.startIndex;
+    size_t startIndex = aggregationInfo.startIndex;
 
     // Obtenir le graphique principal
     if (!mainChart)
@@ -511,11 +513,10 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
         size_t exitBarIndex = trade.hasBeenClosed() ? trade.exitBar : 0;
 
         // Vérifier si le trade est visible dans la fenêtre (au moins entrée ou sortie visible)
-        bool entryVisible = (entryBarIndex >= static_cast<size_t>(startIndex) && 
-                            entryBarIndex < static_cast<size_t>(startIndex + timestamps.len));
-        bool exitVisible = trade.hasBeenClosed() && (exitBarIndex >= static_cast<size_t>(startIndex) && 
-                           exitBarIndex < static_cast<size_t>(startIndex + timestamps.len));
-                           
+        size_t length = static_cast<size_t>(timestamps.len);
+        bool entryVisible = (entryBarIndex >= startIndex && entryBarIndex < startIndex + length);
+        bool exitVisible = trade.hasBeenClosed() && (exitBarIndex >= startIndex && exitBarIndex < startIndex + length);
+
         // Si ni l'entrée ni la sortie n'est visible, ignorer ce trade
         if (!entryVisible && !exitVisible) continue;
 
@@ -545,10 +546,9 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
         if (trade.hasBeenClosed()) {
             // Calculer les indices relatifs comme pour les points pivots
             // en les contraignant aux limites de la fenêtre visible
-            double relativeEntryIndex = static_cast<double>(
-                std::max(int(entryBarIndex) - startIndex, 0));
-            double relativeExitIndex = static_cast<double>(
-                std::min(exitBarIndex - startIndex, aggregationInfo.pointCount - 1));
+            // double relativeEntryIndex = static_cast<double>(std::max(entryBarIndex - startIndex, static_cast<size_t>(0)));
+            double relativeEntryIndex = entryBarIndex > startIndex ? static_cast<double>(entryBarIndex - startIndex) : 0.0;
+            double relativeExitIndex = static_cast<double>(std::min(exitBarIndex - startIndex, aggregationInfo.pointCount - 1));
         
             int color;
             if (closeReason == be::CloseReason::TakeProfit) color = COLOR_TP;
@@ -1069,12 +1069,8 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
 }
 
-void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, 
-                                        const PivotPointsInstance &pivotPoints, 
-                                        const ChartDataManager &dataManager, 
-                                        const chart::AggregationInfo &aggregationInfo)
+void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const PivotPointsInstance &pivotPoints, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)
 {
-
     // Récupérer les données des points pivots depuis le cache
     size_t startIndex = aggregationInfo.startIndex;
     size_t endIndex = startIndex + aggregationInfo.pointCount - 1;
@@ -1171,9 +1167,7 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart,
                     labelText = style.labelFormat.arg(periodSuffix);
                 
                 // Ajouter un label personnalisé au point final du segment (index 1)
-                TextBox* label = layer->addCustomDataLabel(0, 1, 
-                                                         labelText.toStdString().c_str(), 
-                                                         "Arial Bold", 8, style.color);
+                TextBox* label = layer->addCustomDataLabel(0, 1, labelText.toStdString().c_str(), "Arial Bold", 8, style.color);
                 
                 // Configurer l'apparence du label
                 label->setAlignment(Chart::Right);
@@ -1204,8 +1198,7 @@ ScatterLayer* ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::p
     DoubleArray xArray = ChartDataManager::vectorToDoubleArray(xValues);
     DoubleArray yArray = ChartDataManager::vectorToDoubleArray(yValues);
 
-    ScatterLayer* layer = chart->addScatterLayer(xArray, yArray, name, 
-                                              symbolType, symbolSize, color);
+    ScatterLayer* layer = chart->addScatterLayer(xArray, yArray, name, symbolType, symbolSize, color);
 
     if (offsetX != 0 || offsetY != 0)
         layer->getDataSet(0)->setSymbolOffset(offsetX, offsetY);
@@ -1309,15 +1302,14 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
     if (aggregationInfo.level == chart::AggregationLevel::Raw) {
         // En mode Raw, utiliser directement l'indice pour accéder aux timestamps
         const auto& timestamps = dataManager.getTimestamps();
-        int startIndex = aggregationInfo.startIndex;
+        size_t startIndex = aggregationInfo.startIndex;
         
         // Convertir les indices relatifs en indices absolus
-        int absIndexStart = startIndex + static_cast<int>(xIndexStart);
-        int absIndexEnd = startIndex + static_cast<int>(xIndexEnd);
+        size_t absIndexStart = startIndex + static_cast<size_t>(xIndexStart);
+        size_t absIndexEnd = startIndex + static_cast<size_t>(xIndexEnd);
         
         // Vérifier que les indices sont valides
-        if (absIndexStart >= 0 && absIndexStart < static_cast<int>(timestamps.size()) &&
-            absIndexEnd >= 0 && absIndexEnd < static_cast<int>(timestamps.size())) {
+        if (absIndexStart < timestamps.size() && absIndexEnd < timestamps.size()) {
             xValueStart = timestamps[absIndexStart];
             xValueEnd = timestamps[absIndexEnd];
         } else {
@@ -1328,15 +1320,14 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
     } else {
         // En mode agrégé, utiliser les données agrégées
         const auto& aggregatedData = dataManager.getAggregatedData(aggregationInfo.level);
-        int startIndex = aggregationInfo.startIndex;
+        size_t startIndex = aggregationInfo.startIndex;
         
         // Convertir les indices relatifs en indices absolus
-        int absIndexStart = startIndex + static_cast<int>(xIndexStart);
-        int absIndexEnd = startIndex + static_cast<int>(xIndexEnd);
-        
+        size_t absIndexStart = startIndex + static_cast<size_t>(xIndexStart);
+        size_t absIndexEnd = startIndex + static_cast<size_t>(xIndexEnd);
+
         // Vérifier que les indices sont valides
-        if (absIndexStart >= 0 && absIndexStart < static_cast<int>(aggregatedData.timestamps.size()) &&
-            absIndexEnd >= 0 && absIndexEnd < static_cast<int>(aggregatedData.timestamps.size())) {
+        if (absIndexStart < aggregatedData.timestamps.size() && absIndexEnd < aggregatedData.timestamps.size()) {
             xValueStart = aggregatedData.timestamps[absIndexStart];
             xValueEnd = aggregatedData.timestamps[absIndexEnd];
         } else {
@@ -1583,7 +1574,7 @@ void ChartRenderer::trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea
             
             // Dessiner une ligne horizontale pour le crosshair Y
             d->hline(plotAreaLeftX, plotAreaLeftX + plotArea->getWidth(), 
-                    yAxisTooltipY, d->dashLineColor(0x000000, 0x0101));
+                    yAxisTooltipY, d->dashLineColor(0x000000, Chart::DashLine));
         }
         
         // La légende commence par l'étiquette de date
@@ -1598,7 +1589,7 @@ void ChartRenderer::trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea
         
         // Dessiner une ligne de suivi verticale à la position x
         d->vline(plotAreaTopY, plotAreaTopY + plotArea->getHeight(), c->getXCoor(xValue) +
-            c->getAbsOffsetX(), d->dashLineColor(0x000000, 0x0101));
+            c->getAbsOffsetX(), d->dashLineColor(0x000000, Chart::DashLine));
         
         // Afficher la légende en haut de la zone de tracé
         TTFText* t = d->text(legendText.str().c_str(), "Arial", 8);

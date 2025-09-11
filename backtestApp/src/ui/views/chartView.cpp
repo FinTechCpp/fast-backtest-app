@@ -8,19 +8,13 @@
 
 ChartView::ChartView(QWidget* parent)
     : BaseView(parent)
-    , m_dataExtracted(false)
+    , m_comparisonMode(false)
     , m_chartPlaceholder(nullptr)
     , m_leftPanel(nullptr)
     , m_rightPanel(nullptr)
     , m_chartWidget(nullptr)
-    , m_app(nullptr)
+    , m_chartWidget2(nullptr)
 {
-    QWidget* widget = parent;
-    while (widget && !m_app) {
-        m_app = qobject_cast<App*>(widget);
-        widget = widget->parentWidget();
-    }
-
     setupUI();
 }
 
@@ -71,23 +65,9 @@ void ChartView::setupUI()
 
     // Widget de graphique
     m_chartWidget = new ChartWidget();
-    // m_chartWidget2 = new ChartWidget(); // Pour comparaison verticale
+    m_chartWidget2 = new ChartWidget(); // Pour comparaison verticale
     m_chartWidget->setVisible(false);
-    // m_chartWidget2->setVisible(false);
-
-    // // Configurer la synchronisation entre les deux widgets
-    // m_chartWidget->setSyncPartner(m_chartWidget2);
-    // m_chartWidget2->setSyncPartner(m_chartWidget);
-
-    // // Connecter les signaux pour la synchronisation
-    // connect(m_chartWidget, &ChartWidget::aggregationChanged, 
-    //         m_chartWidget2, &ChartWidget::setCurrentAggregation);
-    // connect(m_chartWidget2, &ChartWidget::aggregationChanged, 
-    //         m_chartWidget, &ChartWidget::setCurrentAggregation);
-    // connect(m_chartWidget, &ChartWidget::viewportChanged, 
-    //         m_chartWidget2, &ChartWidget::setViewport);
-    // connect(m_chartWidget2, &ChartWidget::viewportChanged, 
-    //         m_chartWidget, &ChartWidget::setViewport);
+    m_chartWidget2->setVisible(false);
 
     // Associer le widget de graphique au panneau de contrôle
     m_leftPanel->setChartWidget(m_chartWidget);
@@ -95,23 +75,84 @@ void ChartView::setupUI()
     // Connecter les signaux du panneau de contrôle
     connect(m_leftPanel, &ChartControlPanel::chartTypeChanged, [this](const QString& chartType) {
         m_chartWidget->setChartType(chart::stringToChartType(chartType.toStdString()));
-        // m_chartWidget2->setChartType(chart::stringToChartType(chartType.toStdString()));
+        if (m_comparisonMode && m_chartWidget2) {
+            m_chartWidget2->setChartType(chart::stringToChartType(chartType.toStdString()));
+        }
     });
     
     connect(m_leftPanel, &ChartControlPanel::rulerToolToggled, [this](bool checked) {
         m_chartWidget->setRulerToolEnabled(checked);
-        // m_chartWidget2->setRulerToolEnabled(checked);
+        if (m_comparisonMode && m_chartWidget2) {
+            m_chartWidget2->setRulerToolEnabled(checked);
+        }
+    });
+
+    connect(m_leftPanel, &ChartControlPanel::transferDataForComparison, this, [this]() {
+        if (!m_chartWidget || !m_chartWidget2 || !m_currentResults) return;
+
+        // Connecter les signaux pour la synchronisation
+        connect(m_chartWidget, &ChartWidget::aggregationChanged, 
+                m_chartWidget2, &ChartWidget::setCurrentAggregation);
+        connect(m_chartWidget2, &ChartWidget::aggregationChanged, 
+                m_chartWidget, &ChartWidget::setCurrentAggregation);
+        connect(m_chartWidget, &ChartWidget::viewportChanged, 
+                m_chartWidget2, &ChartWidget::setViewport);
+        connect(m_chartWidget2, &ChartWidget::viewportChanged, 
+                m_chartWidget, &ChartWidget::setViewport);
+        connect(m_chartWidget, &ChartWidget::trackFinanceUpdated,
+                m_chartWidget2, &ChartWidget::forceUpdateTrackFinance);
+        connect(m_chartWidget2, &ChartWidget::trackFinanceUpdated,
+                m_chartWidget, &ChartWidget::forceUpdateTrackFinance);
+
+        m_chartWidget->setSyncPartner(m_chartWidget2);
+        m_chartWidget2->setSyncPartner(m_chartWidget);
+
+        m_chartWidget2->setVisible(true);
+
+        m_chartWidget2->setBacktestResults(m_currentResults);
+
+        m_comparisonMode = true;
+        m_leftPanel->setComparisonMode(true);
+    });
+    
+    connect(m_leftPanel, &ChartControlPanel::exitComparisonMode, this, [this]() {
+        if (!m_chartWidget || !m_chartWidget2)
+            return;
+
+        // Déconnecter les signaux de synchronisation
+        disconnect(m_chartWidget, &ChartWidget::aggregationChanged, 
+                    m_chartWidget2, &ChartWidget::setCurrentAggregation);
+        disconnect(m_chartWidget2, &ChartWidget::aggregationChanged, 
+                    m_chartWidget, &ChartWidget::setCurrentAggregation);
+        disconnect(m_chartWidget, &ChartWidget::viewportChanged, 
+                    m_chartWidget2, &ChartWidget::setViewport);
+        disconnect(m_chartWidget2, &ChartWidget::viewportChanged, 
+                    m_chartWidget, &ChartWidget::setViewport);
+        disconnect(m_chartWidget, &ChartWidget::trackFinanceUpdated,
+                    m_chartWidget2, &ChartWidget::forceUpdateTrackFinance);
+        disconnect(m_chartWidget2, &ChartWidget::trackFinanceUpdated,
+                    m_chartWidget, &ChartWidget::forceUpdateTrackFinance);
+        
+        m_chartWidget->setSyncPartner(nullptr);
+        m_chartWidget2->setSyncPartner(nullptr);
+
+        m_chartWidget2->setVisible(false);
+        
+        m_comparisonMode = false;
+        m_leftPanel->setComparisonMode(false);
     });
     
     connect(m_leftPanel, &ChartControlPanel::aggregationValueChanged, [this](int value) {
         m_chartWidget->setMaxDisplayPoints(value);
-        // m_chartWidget2->setMaxDisplayPoints(value);
+        if (m_comparisonMode && m_chartWidget2) {
+            m_chartWidget2->setMaxDisplayPoints(value);
+        }
     });
 
     // Ajouter les widgets au layout du panneau droit
     rightPanelLayout->addWidget(m_chartPlaceholder);
     rightPanelLayout->addWidget(m_chartWidget);
-    // rightPanelLayout->addWidget(m_chartWidget2);
+    rightPanelLayout->addWidget(m_chartWidget2);
 
     // Ajouter les composants au layout horizontal
     horizontalLayout->addWidget(m_leftPanel);
@@ -120,17 +161,10 @@ void ChartView::setupUI()
 
     // Configurer le widget pour s'étirer
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-
-    if (m_app) 
-        connect(m_app, &App::windowResizeStarted, m_chartWidget, [this]() {
-            m_chartWidget->setResizing(true);
-        });
 }
 
 void ChartView::updateData(BacktestResults* results) {
     m_currentResults = results;
-
-    QTime start = QTime::currentTime();
 
     if (!results || !results->data) {
         clear();
@@ -139,8 +173,6 @@ void ChartView::updateData(BacktestResults* results) {
     }
 
     m_chartWidget->setBacktestResults(results);
-    // m_chartWidget2->setBacktestResults(results); // Pour comparaison verticale
-    m_dataExtracted = true;
     
     // Afficher le widget de graphique
     showChartWidget();
@@ -150,16 +182,12 @@ void ChartView::updateData(BacktestResults* results) {
     
     // Actualiser la liste des indicateurs
     m_leftPanel->refreshIndicatorsList();
-    
-    m_dataExtracted = true;
-
-    int elapsed = start.msecsTo(QTime::currentTime());
 }
 
 void ChartView::showChartWidget() {
     if (m_chartPlaceholder) m_chartPlaceholder->setVisible(false);
     if (m_chartWidget) m_chartWidget->setVisible(true);
-    if (m_chartWidget2) m_chartWidget2->setVisible(true);
+    if (m_chartWidget2) m_chartWidget2->setVisible(m_comparisonMode);
 }
 
 void ChartView::showPlaceholder(const QString& message) {
@@ -173,7 +201,6 @@ void ChartView::showPlaceholder(const QString& message) {
 }
 
 void ChartView::clear() {
-    m_dataExtracted = false;
     m_leftPanel->refreshIndicatorsList();
     showPlaceholder("Exécutez un backtest pour afficher les graphiques");
 }
@@ -181,16 +208,9 @@ void ChartView::clear() {
 void ChartView::zoomToTrade(const be::TradeData& trade) {
     qDebug() << "ChartView::zoomToTrade appelé pour trade avec entrée:" << trade.entryDate.toString().c_str();
     
-    if (!m_chartWidget) {
-        qDebug() << "Impossible de zoomer: ChartWidget non initialisé";
-        return;
-    }
-    
     // S'assurer que le widget de graphique est visible
     showChartWidget();
     
     // Déléguer le zoom au ChartWidget
     m_chartWidget->zoomToTrade(trade);
-    // Je ne sais pas comment cela peut reagir avec deux graphiques mais je pense qu'il faut zoomer par rapport au graph1 et le deux suivra
-    // m_chartWidget2->zoomToTrade(trade); // Pour comparaison verticale 
 }

@@ -24,12 +24,18 @@ public:
     ~ChartControlPanel();
 
     void refreshIndicatorsList();
+    // je n'aime pas dutout cette methode elle addIndicator et a chaque ajout on update le chart
     void configureStrategyIndicators(const std::vector<StrategyIndicator>& indicators);
     void setChartWidget(ChartWidget* chartWidget);
+    
+    // Nouvelle méthode pour mettre à jour l'état de comparaison dans l'UI
+    void setComparisonMode(bool enabled);
 
 signals:
     void chartTypeChanged(const QString& chartType);
     void rulerToolToggled(bool checked);
+    void transferDataForComparison(); // Nouveau signal pour transférer les données
+    void exitComparisonMode();        // Nouveau signal pour quitter le mode comparaison
     void aggregationValueChanged(int value);
 
 private slots:
@@ -39,6 +45,8 @@ private slots:
     void onEditIndicator(int id);
     void onRemoveIndicator(int id);
     void onRulerToolToggled(bool checked);
+    void onTransferDataClicked();     // Nouveau slot pour le bouton de transfert
+    void onExitComparisonClicked();   // Nouveau slot pour le bouton de sortie
     void onAggregationSliderChanged(int value);
 
     void onIndicatorAdded(int id, const QString& name);
@@ -54,6 +62,11 @@ private:
     QComboBox* m_chartTypeCombo;
     QToolButton* m_rulerToolButton;
     
+    // Nouveaux boutons de comparaison
+    QPushButton* m_transferDataButton;
+    QPushButton* m_exitComparisonButton;
+    QHBoxLayout* m_comparisonButtonsLayout;
+    
     // Composants pour les indicateurs
     QPushButton* m_addIndicatorButton;
     QComboBox* m_indicatorTypeCombo;
@@ -67,6 +80,7 @@ private:
     QLabel* m_aggregationLabel;
 
     ChartWidget* m_chartWidget;
+    bool m_comparisonActive = false;
 
     template<typename IndicatorType, typename DialogType>
     bool tryOpenDialog(int id) {

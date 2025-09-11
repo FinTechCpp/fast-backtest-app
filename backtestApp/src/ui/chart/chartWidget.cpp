@@ -271,7 +271,13 @@ void ChartWidget::onMouseMoveChart(QMouseEvent *event)
         m_currentAggregation
     );
 
+    std::optional<std::pair<int, int>> trackFinance = m_renderer.updateTrackFinance(m_chartViewer);
+
     m_chartViewer->updateDisplay();
+
+    if (trackFinance) {
+        emit trackFinanceUpdated(trackFinance->first, trackFinance->second);
+    }
 }
 
 void ChartWidget::onMouseReleased(QMouseEvent *event)
@@ -437,12 +443,21 @@ void ChartWidget::setCurrentAggregation(const chart::AggregationInfo& aggregatio
 }
 
 void ChartWidget::setViewport(double left, double width) {
-    if (m_chartViewer && (sender() == m_syncPartner)) {
+    if (m_chartViewer && sender() == m_syncPartner) {
         m_chartViewer->setViewPortLeft(left);
         m_chartViewer->setViewPortWidth(width);
     
         // Ne pas appeler updateChartDisplay directement pour éviter la boucle
         // Le signal viewPortChanged du QChartViewer sera émis et connecté à onViewPortChanged
+        return;
+    }
+}
+
+void ChartWidget::forceUpdateTrackFinance(int mouseX, int mouseY) {
+    if (m_chartViewer && sender() == m_syncPartner) {
+        std::optional<std::pair<int, int>> trackFinance = m_renderer.updateTrackFinance(m_chartViewer, std::make_pair(mouseX, mouseY));
+
+        m_chartViewer->updateDisplay();
         return;
     }
 }

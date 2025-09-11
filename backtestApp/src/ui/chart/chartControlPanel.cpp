@@ -137,6 +137,45 @@ void ChartControlPanel::setupUI()
     
     leftPanelLayout->addWidget(m_rulerToolButton);
 
+    // Layout horizontal pour les boutons de comparaison
+    m_comparisonButtonsLayout = new QHBoxLayout();
+    m_comparisonButtonsLayout->setSpacing(5);
+    
+    // Bouton pour transférer les données vers le graphique de comparaison
+    m_transferDataButton = new QPushButton("Copier");
+    m_transferDataButton->setIcon(QIcon::fromTheme("edit-copy"));
+    m_transferDataButton->setStyleSheet(
+        "QPushButton {"
+        "    padding: 6px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+    );
+    m_comparisonButtonsLayout->addWidget(m_transferDataButton, 1); // Stretch ratio = 1
+    
+    // Bouton pour quitter le mode comparaison
+    m_exitComparisonButton = new QPushButton("");
+    m_exitComparisonButton->setIcon(QIcon::fromTheme("window-close"));
+    m_exitComparisonButton->setFixedWidth(30);
+    m_exitComparisonButton->setToolTip("Quitter le mode comparaison");
+    m_exitComparisonButton->setStyleSheet(
+        "QPushButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "    color: red;"
+        "}"
+    );
+    m_exitComparisonButton->setVisible(false); // Initialement caché
+    m_comparisonButtonsLayout->addWidget(m_exitComparisonButton, 0); // Stretch ratio = 0
+
+    leftPanelLayout->addLayout(m_comparisonButtonsLayout);
+    
+    connect(m_transferDataButton, &QPushButton::clicked, this, &ChartControlPanel::onTransferDataClicked);
+    connect(m_exitComparisonButton, &QPushButton::clicked, this, &ChartControlPanel::onExitComparisonClicked);
+
     // Section des indicateurs techniques
     QLabel* indicatorsLabel = new QLabel("Technical Indicators");
     indicatorsLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
@@ -297,6 +336,14 @@ void ChartControlPanel::onRulerToolToggled(bool checked) {
     emit rulerToolToggled(checked);
 }
 
+void ChartControlPanel::onTransferDataClicked() {
+    emit transferDataForComparison();
+}
+
+void ChartControlPanel::onExitComparisonClicked() {
+    emit exitComparisonMode();
+}
+
 void ChartControlPanel::onAggregationSliderChanged(int value) {
     m_aggregationLabel->setText(QString::number(value));
     emit aggregationValueChanged(value);
@@ -378,3 +425,14 @@ void ChartControlPanel::configureStrategyIndicators(const std::vector<StrategyIn
         }
     }
 }   
+
+void ChartControlPanel::setComparisonMode(bool enabled) {
+    m_comparisonActive = enabled;
+    m_exitComparisonButton->setVisible(enabled);
+    
+    if (enabled) {
+        m_transferDataButton->setText("Actualiser");
+    } else {
+        m_transferDataButton->setText("Copier");
+    }
+}

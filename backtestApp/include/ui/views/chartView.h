@@ -61,20 +61,20 @@ protected:
     void setupUI() override;
 
 private:
-    // Cache des données
-    bool m_dataExtracted;
+    bool m_comparisonMode = false;
 
     // UI Components 
     ChartControlPanel* m_leftPanel;         // Panneau de gauche (settings)
     QWidget* m_rightPanel;        // Panneau de droite (chart)
     QLabel* m_chartPlaceholder;
 
-    App* m_app;                   // Référence à l'application principale
     ChartWidget* m_chartWidget;   // Widget du graphique
     ChartWidget* m_chartWidget2;   // Widget du graphique pour la comparaison verticale
+
     
     void showPlaceholder(const QString& message);
     void showChartWidget();
+
     
     template<typename IndicatorType, typename DialogType>
     bool tryOpenDialog(int id) {

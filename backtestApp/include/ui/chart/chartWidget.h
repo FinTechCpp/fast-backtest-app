@@ -41,10 +41,6 @@ public:
 
     void removeAllIndicators();
 
-    // Resize et gestion de la vue
-    void setResizing(bool isResizing) { m_isResizing = isResizing; }
-    bool isResizing() const { return m_isResizing; }
-    
     // Méthode pour activer/désactiver l'outil règle
     void setRulerToolEnabled(bool enabled); // remplacer par un slot
     void setMaxDisplayPoints(int value);
@@ -57,6 +53,7 @@ public:
     void setCurrentAggregation(const chart::AggregationInfo& aggregation);
     void setSyncPartner(ChartWidget* partner) { m_syncPartner = partner; }
     void setViewport(double left, double width);
+    void forceUpdateTrackFinance(int mouseX, int mouseY);
 
     template<typename T>
     int addIndicator(T&& config) {
@@ -96,7 +93,8 @@ public:
 signals:
     void chartCreated();
     void viewportChanged(double left, double width);
-    void mouseOverPoint(double timestamp, double price);
+    void trackFinanceUpdated(int mouseX, int mouseY);
+    // void mouseOverPoint(double timestamp, double price);
 
     void indicatorAdded(int id, const QString& displayName);
     void indicatorChanged(int id, const QString& displayName);
@@ -138,7 +136,6 @@ private:
     QChartViewer* m_chartViewer = nullptr;
     
 
-    bool m_isResizing = false;  ///< Indique si le widget est en cours de redimensionnement
     QSize m_pendingResize;  ///< Taille en attente de redimensionnement
 
     // Variables pour l'outil règle

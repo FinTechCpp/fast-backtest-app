@@ -1152,10 +1152,10 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::
 
                 QString periodSuffix;
                 switch (pivotPoints.periodType) {
-                    case indicators::PivotPointsInstance::PeriodType::FourHour: periodSuffix = "4H"; break;
-                    case indicators::PivotPointsInstance::PeriodType::Daily: periodSuffix = "J"; break;
-                    case indicators::PivotPointsInstance::PeriodType::Weekly: periodSuffix = "S"; break;
-                    case indicators::PivotPointsInstance::PeriodType::Monthly: periodSuffix = "M"; break;
+                    case indicators::PivotPeriodType::FourHour: periodSuffix = "4H"; break;
+                    case indicators::PivotPeriodType::Daily: periodSuffix = "J"; break;
+                    case indicators::PivotPeriodType::Weekly: periodSuffix = "S"; break;
+                    case indicators::PivotPeriodType::Monthly: periodSuffix = "M"; break;
                 }
 
                 // Formater l'étiquette selon le format spécifié ou le format par défaut

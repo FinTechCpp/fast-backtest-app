@@ -363,8 +363,8 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     const std::vector<be::Date>& dates,
-    indicators::PivotPointsInstance::PeriodType periodType,
-    indicators::PivotPointsInstance::CalculationMethod calcMethod
+    indicators::PivotPeriodType periodType,
+    indicators::PivotCalculationMethod calcMethod
 ) {
     if (openData.empty() || highData.empty() || lowData.empty() || closeData.empty() || dates.empty())
         return {};
@@ -384,7 +384,7 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
         
         bool newPeriod = false;
         switch (periodType) {
-            case indicators::PivotPointsInstance::PeriodType::FourHour: {
+            case indicators::PivotPeriodType::FourHour: {
                 // On considère une nouvelle période si l'heure courante est dans {13, 17, 21, 1}
                 // et différente de la précédente (pour éviter de splitter plusieurs fois sur la même heure)
                 int hour = static_cast<int>(date.hour);
@@ -398,14 +398,14 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
                             (date.year != currentDate.year);
                 break;
             }
-            case indicators::PivotPointsInstance::PeriodType::Daily:
+            case indicators::PivotPeriodType::Daily:
                 // Nouvelle journée si le jour a changé
                 newPeriod = (date.day != currentDate.day ||
                              date.month != currentDate.month ||
                              date.year != currentDate.year);
                 break;
                 
-            case indicators::PivotPointsInstance::PeriodType::Weekly: {
+            case indicators::PivotPeriodType::Weekly: {
                 // Nouvelle semaine si la différence de jours > 2 (week-end ou jours fériés)
                 int dayDiff = static_cast<int>(date.day - dates[i-1].day);
                 bool isMonday = (dayDiff > 2);
@@ -413,7 +413,7 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
                 break;
             }
                 
-            case indicators::PivotPointsInstance::PeriodType::Monthly:
+            case indicators::PivotPeriodType::Monthly:
                 // Nouveau mois
                 newPeriod = (date.month != currentDate.month ||
                              date.year != currentDate.year);
@@ -433,7 +433,7 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
         size_t end = periodBoundaries[i+1] - 1;
         
         // Si première période incomplète (sauf pour quotidien)
-        if (i == 0 && periodType != indicators::PivotPointsInstance::PeriodType::Daily) {
+        if (i == 0 && periodType != indicators::PivotPeriodType::Daily) {
             continue;
         }
         
@@ -457,13 +457,13 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
         // Le reste du calcul des points pivots reste inchangé
         double pivot;
         switch (calcMethod) {
-            case indicators::PivotPointsInstance::CalculationMethod::OHLC:
+            case indicators::PivotCalculationMethod::OHLC:
                 pivot = (high + low + close + open) / 4.0;
                 break;
-            case indicators::PivotPointsInstance::CalculationMethod::HL0:
+            case indicators::PivotCalculationMethod::HLO:
                 pivot = (high + low + open) / 3.0;
                 break;
-            case indicators::PivotPointsInstance::CalculationMethod::HLC:
+            case indicators::PivotCalculationMethod::HLC:
             default:
                 pivot = (high + low + close) / 3.0;
                 break;

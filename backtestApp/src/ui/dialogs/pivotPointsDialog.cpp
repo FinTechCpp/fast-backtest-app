@@ -157,21 +157,21 @@ void PivotPointsDialog::setupUI()
     
     // Combo box pour le type de période
     m_periodTypeComboBox = new QComboBox();
-    m_periodTypeComboBox->addItem("4H", static_cast<int>(indicators::PivotPointsInstance::PeriodType::FourHour));
-    m_periodTypeComboBox->addItem("Daily", static_cast<int>(indicators::PivotPointsInstance::PeriodType::Daily));
-    m_periodTypeComboBox->addItem("Weekly", static_cast<int>(indicators::PivotPointsInstance::PeriodType::Weekly));
-    m_periodTypeComboBox->addItem("Monthly", static_cast<int>(indicators::PivotPointsInstance::PeriodType::Monthly));
+    m_periodTypeComboBox->addItem("4H", static_cast<int>(indicators::PivotPeriodType::FourHour));
+    m_periodTypeComboBox->addItem("Daily", static_cast<int>(indicators::PivotPeriodType::Daily));
+    m_periodTypeComboBox->addItem("Weekly", static_cast<int>(indicators::PivotPeriodType::Weekly));
+    m_periodTypeComboBox->addItem("Monthly", static_cast<int>(indicators::PivotPeriodType::Monthly));
     
     // Sélectionner la période actuelle
     generalLayout->addRow("Period Type:", m_periodTypeComboBox);
 
     m_calculationMethodComboBox = new QComboBox();
     m_calculationMethodComboBox->addItem("High, Low, Close (Standard)", 
-                                        static_cast<int>(indicators::PivotPointsInstance::CalculationMethod::HLC));
+                                        static_cast<int>(indicators::PivotCalculationMethod::HLC));
     m_calculationMethodComboBox->addItem("Open, High, Low, Close", 
-                                        static_cast<int>(indicators::PivotPointsInstance::CalculationMethod::OHLC));
+                                        static_cast<int>(indicators::PivotCalculationMethod::OHLC));
     m_calculationMethodComboBox->addItem("High, Low, Open", 
-                                        static_cast<int>(indicators::PivotPointsInstance::CalculationMethod::HL0));
+                                        static_cast<int>(indicators::PivotCalculationMethod::HLO));
 
     // Sélectionner la méthode de calcul actuelle
     generalLayout->addRow("Calculation Method:", m_calculationMethodComboBox);
@@ -202,10 +202,10 @@ void PivotPointsDialog::setupUI()
     // Obtenir le suffixe de période actuel
     QString periodSuffix;
     switch (m_currentIndicator.periodType) {
-        case indicators::PivotPointsInstance::PeriodType::FourHour: periodSuffix = "4H"; break;
-        case indicators::PivotPointsInstance::PeriodType::Daily: periodSuffix = "J"; break;
-        case indicators::PivotPointsInstance::PeriodType::Weekly: periodSuffix = "S"; break;
-        case indicators::PivotPointsInstance::PeriodType::Monthly: periodSuffix = "M"; break;
+        case indicators::PivotPeriodType::FourHour: periodSuffix = "4H"; break;
+        case indicators::PivotPeriodType::Daily: periodSuffix = "J"; break;
+        case indicators::PivotPeriodType::Weekly: periodSuffix = "S"; break;
+        case indicators::PivotPeriodType::Monthly: periodSuffix = "M"; break;
     }
     
     // Ajouter les niveaux dans l'ordre du plus élevé au plus bas
@@ -499,13 +499,13 @@ void PivotPointsDialog::connectSignals()
 
 void PivotPointsDialog::onPeriodTypeChanged(size_t index)
 {
-    m_currentIndicator.periodType = static_cast<indicators::PivotPointsInstance::PeriodType>(index);
+    m_currentIndicator.periodType = static_cast<indicators::PivotPeriodType>(index);
     applyChanges();
 }
 
 void PivotPointsDialog::onCalculationMethodChanged(size_t index)
 {
-    m_currentIndicator.calculationMethod = static_cast<indicators::PivotPointsInstance::CalculationMethod>(index);
+    m_currentIndicator.calculationMethod = static_cast<indicators::PivotCalculationMethod>(index);
     applyChanges();
 }
 

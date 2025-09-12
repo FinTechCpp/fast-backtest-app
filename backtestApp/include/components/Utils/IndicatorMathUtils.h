@@ -121,7 +121,7 @@ public:
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         const std::vector<be::Date>& timestamps,
-        indicators::PivotPointsInstance::PeriodType periodType,
-        indicators::PivotPointsInstance::CalculationMethod calcMethod
+        indicators::PivotPeriodType periodType,
+        indicators::PivotCalculationMethod calcMethod
     );
 };

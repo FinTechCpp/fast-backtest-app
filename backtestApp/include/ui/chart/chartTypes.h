@@ -124,13 +124,13 @@ namespace chart {
 
 
 namespace indicators {
-    enum class IndicatorType {
+    enum class Type {
         RSI,
         EMA,
         STOCHASTIC,
-        ATR,
+        ATR, 
         SUPERTREND,
-        PivotPoints,
+        PIVOTPOINTS
     };
 
     // Il faudrait faire des structure pour contenir uniquement les info techenique qui vont servir a CALCULER l'indicateur
@@ -150,10 +150,72 @@ namespace indicators {
     };
     */
 
+    enum class PivotPeriodType {
+        FourHour,   // Points pivots toutes les 4 heures
+        Daily,      // Points pivots quotidiens
+        Weekly,     // Points pivots hebdomadaires
+        Monthly     // Points pivots mensuels
+    };
+
+    enum class PivotCalculationMethod {
+        HLC,     // High, Low, Close (méthode standard)
+        OHLC,    // Open, High, Low, Close
+        HLO      // High, Low, Open
+    };
+
+    namespace params {
+        struct RSI {
+            int period = 14;
+        };
+        
+        struct EMA {
+            int period = 20;
+        };
+        
+        struct Stochastic {
+            int fastKPeriod = 14;
+            int slowKPeriod = 3;
+            int slowDPeriod = 3;
+        };
+        
+        struct ATR {
+            int period = 14;
+            bool useLogScale = false;
+        };
+        
+        struct SuperTrend {
+            int period = 10;
+            double multiplier = 3.0;
+        };
+        
+        struct PivotPoints {
+            PivotPeriodType periodType = PivotPeriodType::Daily;
+            PivotCalculationMethod calculationMethod = PivotCalculationMethod::HLC;
+        };
+    }
+
+    struct IndicatorSignal {        
+        Type type;
+        
+        // Unions de tous les types possibles de paramètres
+        union ParamsUnion {
+            params::RSI rsi;
+            params::EMA ema;
+            params::Stochastic stochastic;
+            params::ATR atr;
+            params::SuperTrend supertrend;
+            params::PivotPoints pivotpoints;
+            
+            ParamsUnion() {} // Union nécessite un constructeur par défaut
+            ~ParamsUnion() {} // Et un destructeur
+        } params;
+    };
+
     struct IndicatorBase {
-        IndicatorBase(IndicatorType type) : type_(type) {}
+        // IndicatorBase(Type type) : type_(type) {}
+        IndicatorBase() = default;
         int id = -1; // Identifiant unique de l'indicateur
-        IndicatorType type_; // Type d'indicateur
+        // Type type_; // Type d'indicateur
         bool visible = true; // Si l'indicateur est visible
 
         virtual bool needsRecalculation(const IndicatorBase& other) const = 0;
@@ -165,19 +227,27 @@ namespace indicators {
 
         virtual ~IndicatorBase() = default;
 
-        bool operator==(const IndicatorBase& other) const {
-            return id == other.id && type_ == other.type_;
-        }
+        // bool operator==(const IndicatorBase& other) const {
+        //     return id == other.id && type_ == other.type_;
+        // }
 
-        bool operator!=(const IndicatorBase& other) const {
-            return !(*this == other);
-        }
+        // bool operator!=(const IndicatorBase& other) const {
+        //     return !(*this == other);
+        // }
     };
 
     struct RSIInstance : public IndicatorBase {
-        RSIInstance() : IndicatorBase(IndicatorType::RSI) {
+        RSIInstance() : IndicatorBase() {
             setDefaults();
         }
+
+        RSIInstance(params::RSI p) : IndicatorBase() {
+            setDefaults();
+            period = p.period;
+        }
+
+        // static constexpr Type staticType = Type::RSI;
+
         int period;             // Période du RSI
         int height;             // Hauteur du panneau
         int color;              // Couleur de la ligne principale (violet par défaut)
@@ -208,7 +278,7 @@ namespace indicators {
     };
 
     struct EMAInstance : public IndicatorBase {
-        EMAInstance() : IndicatorBase(IndicatorType::EMA) {
+        EMAInstance() : IndicatorBase() {
             setDefaults();
         }
         int period;            // Période de l'EMA
@@ -231,7 +301,7 @@ namespace indicators {
     };
 
     struct SuperTrendInstance : public IndicatorBase {
-        SuperTrendInstance() : IndicatorBase(IndicatorType::SUPERTREND) {
+        SuperTrendInstance() : IndicatorBase() {
             setDefaults();
         }
         int period;            // Période pour le SuperTrend
@@ -258,7 +328,7 @@ namespace indicators {
     };
 
     struct StochasticInstance : public IndicatorBase {
-        StochasticInstance() : IndicatorBase(IndicatorType::STOCHASTIC) {
+        StochasticInstance() : IndicatorBase() {
             setDefaults();
         }
         int fastKPeriod;        // Période pour calculer le %K brut
@@ -295,7 +365,7 @@ namespace indicators {
     };
 
     struct ATRInstance : public IndicatorBase {
-        ATRInstance() : IndicatorBase(IndicatorType::ATR) {
+        ATRInstance() : IndicatorBase() {
             setDefaults();
         }
         int period;            // Période de l'ATR
@@ -322,19 +392,6 @@ namespace indicators {
     };
 
     struct PivotPointsInstance : public IndicatorBase {
-        enum class PeriodType {
-            FourHour,   // Points pivots toutes les 4 heures
-            Daily,      // Points pivots quotidiens
-            Weekly,     // Points pivots hebdomadaires
-            Monthly,    // Points pivots mensuels
-        };
-
-        enum class CalculationMethod {
-            HLC,     // High, Low, Close (méthode standard)
-            OHLC,    // Open, High, Low, Close
-            HL0       // High, Low, Open
-        };
-
         enum class LevelType {
             R3,         // Résistance 3
             R2,         // Résistance 2
@@ -378,12 +435,12 @@ namespace indicators {
             std::array<double, static_cast<size_t>(LevelType::Count)> levelValues;
         };
 
-        PivotPointsInstance() : IndicatorBase(IndicatorType::PivotPoints) {
+        PivotPointsInstance() : IndicatorBase() {
             setDefaults();
         }
 
-        PeriodType periodType;                          // Type de période (4H, journalier, hebdomadaire, mensuel)
-        CalculationMethod calculationMethod;            // Méthode de calcul des points pivots
+        PivotPeriodType periodType;                          // Type de période (4H, journalier, hebdomadaire, mensuel)
+        PivotCalculationMethod calculationMethod;            // Méthode de calcul des points pivots
         std::array<LevelStyle, static_cast<size_t>(LevelType::Count)> levelStyles; // Styles par défaut pour chaque niveau
         bool showLabels = true;                         // Afficher les étiquettes des niveaux
 
@@ -397,10 +454,10 @@ namespace indicators {
         QString getDisplayName() const override {
             QString periodStr;
             switch (periodType) {
-                case PeriodType::FourHour: periodStr = "4H"; break;
-                case PeriodType::Daily: periodStr = "Jour"; break;
-                case PeriodType::Weekly: periodStr = "Hebdomadaire"; break;
-                case PeriodType::Monthly: periodStr = "Mensuel"; break;
+                case PivotPeriodType::FourHour: periodStr = "4H"; break;
+                case PivotPeriodType::Daily: periodStr = "Jour"; break;
+                case PivotPeriodType::Weekly: periodStr = "Hebdomadaire"; break;
+                case PivotPeriodType::Monthly: periodStr = "Mensuel"; break;
             }
             return QString("Pivot Points (%1)").arg(periodStr);
         }
@@ -487,9 +544,9 @@ namespace indicators {
             showLabels = true;
             
             // Type de période par défaut
-            periodType = PeriodType::Daily;
+            periodType = PivotPeriodType::Daily;
 
-            calculationMethod = CalculationMethod::HLC;
+            calculationMethod = PivotCalculationMethod::HLC;
         }
     };
 }

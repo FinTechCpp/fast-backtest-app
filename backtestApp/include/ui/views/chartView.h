@@ -77,17 +77,4 @@ private:
     
     void showPlaceholder(const QString& message);
     void showChartWidget();
-
-    
-    template<typename IndicatorType, typename DialogType>
-    bool tryOpenDialog(int id) {
-        IndicatorType* indicator = m_chartWidget->findIndicator<IndicatorType>(id);
-        if (indicator) {
-            DialogType* dialog = new DialogType(this, m_chartWidget, *indicator);
-            dialog->exec();
-            delete dialog;
-            return true;
-        }
-        return false;
-    }
 };

@@ -87,8 +87,8 @@ public:
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<indicators::IndicatorBase, T>>>
     T* findIndicator(int id) const {
         for (auto& indicator : m_indicators)
-            if (indicator->id == id && indicator->type_ == T().type_)
-                return static_cast<T*>(indicator.get());
+            if (indicator->id == id)
+                return dynamic_cast<T*>(indicator.get());
         return nullptr;
     }
 
@@ -124,9 +124,11 @@ public:
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<indicators::IndicatorBase, T>>>
     std::vector<const T*> getIndicatorsOfType() const {
         std::vector<const T*> result;
-        for (const auto& indicator : m_indicators)
-            if (indicator->type_ == T().type_)
-                result.push_back(static_cast<const T*>(indicator.get()));
+        for (const auto& indicator : m_indicators) {
+            if (const T* typedIndicator = dynamic_cast<const T*>(indicator.get())) {
+                result.push_back(typedIndicator);
+            }
+        }
         return result;
     }
     

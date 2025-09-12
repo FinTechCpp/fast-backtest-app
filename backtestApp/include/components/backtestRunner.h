@@ -19,12 +19,10 @@
 #include "components/strategyRegistry.h"
 
 // Include necessary headers for the backtest components
-#include "backtest.hpp"
-#include "broker.hpp"
+#include "beTypes.h"
 #include "data.hpp"
+
 #include "strategy.hpp"
-#include "stats.hpp"
-#include "trade.hpp"
 #include "buy_heikin_green.hpp"
 
 // Forward declarations

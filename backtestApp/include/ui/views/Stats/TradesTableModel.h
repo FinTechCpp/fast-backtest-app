@@ -2,9 +2,7 @@
 
 #include <QStandardItemModel>
 #include <QDateTime>
-#include "date.hpp"
-#include "trade.hpp"
-
+#include "beTypes.h"
 
 
 /**

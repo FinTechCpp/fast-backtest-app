@@ -9,7 +9,6 @@
 #include "chartdir.h"
 #include "FinanceChart.h"
 #include "chartDataManager.h"
-#include "trade.hpp"
 
 #include "ui/chart/chartTypes.h"
 

@@ -16,6 +16,23 @@ enum class IndicatorType {
     PivotPoints,
 };
 
+// Il faudrait faire des structure pour contenir uniquement les info techenique qui vont servir a CALCULER l'indicateur
+// comme ca scela allege les methodes de calcule ET on utilise cela pour communiquer entre la strategy et le front plutot que :
+/*
+struct StrategyIndicator {
+    enum Type {
+        RSI,
+        EMA,
+        STOCHASTIC,
+        ATR,
+        SUPERTREND
+    };
+    
+    Type type;
+    std::map<std::string, double> params;  // Indicator parameters
+};
+*/
+
 struct IndicatorBase {
     IndicatorBase(IndicatorType type) : type_(type) {}
     int id = -1; // Identifiant unique de l'indicateur

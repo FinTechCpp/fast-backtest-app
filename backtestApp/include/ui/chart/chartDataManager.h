@@ -9,7 +9,7 @@
 #include <cmath>
 
 #include "data.hpp"
-#include "trade.hpp"
+#include "beTypes.h"
 #include "chartdir.h"
 #include "ui/chart/chartTypes.h"
 #include "ui/chart/indicatorInstances.h"
@@ -159,7 +159,6 @@ private:
     chart::AggregationLevel determineStartingAggregationLevel(const DoubleArray& timestamps) const;
     
     // Données
-    // std::shared_ptr<const be::Data> m_backtestData; // a supprimer c'est a mettre dans AggregatedOHLCV
     std::vector<be::Date> m_datesCache; // idem a mettre dans AggregatedOHLCV Temporaire
     std::array<chart::AggregatedOHLCV, static_cast<size_t>(chart::AggregationLevel::Count)> m_aggregatedOHLCVCache;
     std::array<chart::IndicatorData, static_cast<size_t>(chart::AggregationLevel::Count)> m_aggregatedIndicatorsCache;

@@ -4,7 +4,7 @@
 #include <QColor>
 #include <QDateTime>
 
-#include "date.hpp"
+#include "beTypes.h"
 #include "ui/views/Stats/StatsBaseWidget.h"
 
 

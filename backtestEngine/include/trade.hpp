@@ -3,7 +3,7 @@
 #include <string>
 #include <memory>
 #include <chrono>
-#include "date.hpp"
+#include "beTypes.h"
 
 
 namespace be {
@@ -11,41 +11,6 @@ namespace be {
 // Forward declarations
 class Broker;
 class Order;
-
-enum class CloseReason {
-    Unknown,      // Pas encore déterminé
-    ManualClose,  // Fermeture manuelle (liquidation)
-    StopLoss,     // Fermé par Stop Loss
-    TakeProfit,   // Fermé par Take Profit
-    BreakEven     // Fermé par Stop Loss en Break Even
-};
-
-struct TradeData {
-    int id = -1; // Identifiant unique du trade
-    double size = 0.0;
-    double entryPrice = 0.0;
-    double exitPrice = 0.0;
-    size_t entryBar = 0;
-    size_t exitBar = 0;
-    be::Date entryDate;
-    be::Date exitDate;
-    be::CloseReason closeReason = be::CloseReason::Unknown;
-    std::string tag;
-    double commissions = 0.0;
-    bool isBreakEven = false;
-    double tpPrice = 0.0; // Prix du Take Profit
-    double initialSlPrice = 0.0; // Prix du Stop Loss initialement défini
-    double lastSlPrice = 0.0; // Prix du dernier Stop Loss
-    double breakEvenTriggerPrice = 0.0;
-    double pl = 0.0;
-    double plPercent = 0.0;
-
-
-    // Methode utilitaires
-    bool wasLong() const { return size > 0; }
-    bool wasShort() const { return size < 0; }
-    bool hasBeenClosed() const { return exitPrice > 0; }
-};
 
 /**
  * @brief Représentation d'une transaction exécutée

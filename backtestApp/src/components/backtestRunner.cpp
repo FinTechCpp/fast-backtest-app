@@ -1,11 +1,15 @@
+#include <QDebug>
+#include <QApplication>
+
 #include "components/backtestRunner.h"
 #include "ui/app.h"
 #include "ui/panels/generalParamsPanel.h"
 #include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
 #include "Strategies/buy_heikin_green.hpp"
 #include "components/strategiesAdapters/buyHeikinGreen.hpp"
-#include <QDebug>
-#include <QApplication>  
+
+#include "backtest.hpp"
+#include "broker.hpp"
 
 BacktestRunner::BacktestRunner(QObject* parent)
     : QObject(parent)

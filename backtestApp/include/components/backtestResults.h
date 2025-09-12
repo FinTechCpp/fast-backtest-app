@@ -4,8 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
-#include "data.hpp"  
-#include "stats.hpp"
+#include "data.hpp"
 #include "common.h"
 
 // Structure for storing indicators used in the strategy 

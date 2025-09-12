@@ -46,9 +46,9 @@ void ChartView::setupUI()
     m_rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Layout pour le panneau droit
-    QHBoxLayout* rightPanelLayout = new QHBoxLayout(m_rightPanel);
-    rightPanelLayout->setContentsMargins(0, 0, 0, 0);
-    rightPanelLayout->setSpacing(0);
+    m_rightPanelLayout = new QStackedLayout(m_rightPanel);
+    m_rightPanelLayout->setContentsMargins(0, 0, 0, 0);
+    m_rightPanelLayout->setSpacing(0);
 
     // Placeholder initial
     m_chartPlaceholder = new QLabel("Exécutez le backtest pour afficher les graphiques");
@@ -63,10 +63,16 @@ void ChartView::setupUI()
         "}"
     );
 
+    // Créer le widget de graphique
+    m_chartContainer = new QWidget();
+    QHBoxLayout* chartLayout = new QHBoxLayout(m_chartContainer);
+    chartLayout->setContentsMargins(0, 0, 0, 0);
+    chartLayout->setSpacing(0);
+
     // Widget de graphique
     m_chartWidget = new ChartWidget();
     m_chartWidget2 = new ChartWidget(); // Pour comparaison verticale
-    m_chartWidget->setVisible(false);
+    m_chartWidget->setVisible(true);
     m_chartWidget2->setVisible(false);
 
     // Associer le widget de graphique au panneau de contrôle
@@ -149,10 +155,12 @@ void ChartView::setupUI()
         }
     });
 
+    chartLayout->addWidget(m_chartWidget, /*stretch=*/1);
+    chartLayout->addWidget(m_chartWidget2, /*stretch=*/1);
+
     // Ajouter les widgets au layout du panneau droit
-    rightPanelLayout->addWidget(m_chartPlaceholder);
-    rightPanelLayout->addWidget(m_chartWidget);
-    rightPanelLayout->addWidget(m_chartWidget2);
+    m_rightPanelLayout->addWidget(m_chartPlaceholder);  
+    m_rightPanelLayout->addWidget(m_chartContainer);
 
     // Ajouter les composants au layout horizontal
     horizontalLayout->addWidget(m_leftPanel);
@@ -185,19 +193,12 @@ void ChartView::updateData(BacktestResults* results) {
 }
 
 void ChartView::showChartWidget() {
-    if (m_chartPlaceholder) m_chartPlaceholder->setVisible(false);
-    if (m_chartWidget) m_chartWidget->setVisible(true);
-    if (m_chartWidget2) m_chartWidget2->setVisible(m_comparisonMode);
+    m_rightPanelLayout->setCurrentWidget(m_chartContainer);
 }
 
 void ChartView::showPlaceholder(const QString& message) {
-    if (m_chartWidget) m_chartWidget->setVisible(false);
-    if (m_chartWidget2) m_chartWidget2->setVisible(false);
-
-    if (m_chartPlaceholder) {
-        m_chartPlaceholder->setText(message);
-        m_chartPlaceholder->setVisible(true);
-    }
+    m_chartPlaceholder->setText(message);
+    m_rightPanelLayout->setCurrentWidget(m_chartPlaceholder);
 }
 
 void ChartView::clear() {

@@ -5,21 +5,9 @@
 #include <memory>
 #include <map>
 #include <stdexcept>
-#include "date.hpp"
+#include "beTypes.h"
 
 namespace be {
-
-/**
- * @brief Structure qui représente une bougie (OHLCV)
- */
-struct Candle {
-    Date date;
-    double open;
-    double high;
-    double low;
-    double close;
-    double volume;
-};
 
 /**
  * @brief Classe intégrée pour le stockage et l'accès séquentiel aux données de marché

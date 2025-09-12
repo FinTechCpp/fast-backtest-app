@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <iostream>
 
-#include "data.hpp"
 #include "components/Utils/IndicatorMathUtils.h"
 #include "components/backtestResults.h"
 #include "ui/chart/chartDataManager.h"
@@ -18,6 +17,8 @@
 #include "qchartviewer.h"
 #include "chartdir.h"
 #include "FinanceChart.h"
+
+#include "beTypes.h"
 
 /**
  * @brief Widget qui encapsule un graphique financier ChartDirector

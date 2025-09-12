@@ -6,6 +6,8 @@
 #include <cmath>
 #include <iostream>
 
+#include "beTypes.h"
+
 ChartRenderer::ChartRenderer() : m_financeChart(nullptr) {
 }
 

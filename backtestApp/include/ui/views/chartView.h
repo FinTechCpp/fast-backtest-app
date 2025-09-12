@@ -18,6 +18,7 @@
 #include <QDoubleSpinBox>
 #include <QColorDialog>
 #include <QFormLayout>
+#include <QStackedLayout>
 #include <QGroupBox>
 #include <QDialogButtonBox>
 #include <QListWidget>
@@ -67,6 +68,8 @@ private:
     ChartControlPanel* m_leftPanel;         // Panneau de gauche (settings)
     QWidget* m_rightPanel;        // Panneau de droite (chart)
     QLabel* m_chartPlaceholder;
+    QStackedLayout* m_rightPanelLayout; // Layout pour le panneau droit
+    QWidget* m_chartContainer; // Conteneur pour les widgets de graphique
 
     ChartWidget* m_chartWidget;   // Widget du graphique
     ChartWidget* m_chartWidget2;   // Widget du graphique pour la comparaison verticale

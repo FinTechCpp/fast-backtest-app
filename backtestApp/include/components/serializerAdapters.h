@@ -13,7 +13,7 @@
 #include "ui/panels/generalParamsPanel.h"
 #include "common.h"
 
-#include "stats.hpp"
+#include "beTypes.h"
 
 
 struct ProfileConfig {

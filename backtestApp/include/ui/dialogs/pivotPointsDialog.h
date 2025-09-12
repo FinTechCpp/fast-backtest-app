@@ -24,16 +24,16 @@ public:
     ~PivotPointsDialog() override;
     
 private slots:
-    void onPeriodTypeChanged(int index);
-    void onCalculationMethodChanged(int index);
+    void onPeriodTypeChanged(size_t index);
+    void onCalculationMethodChanged(size_t index);
     void onShowMidLevelsChanged(int state);
     void onShowLabelsChanged(int state);
     
     // Méthodes pour gérer les modifications de style des niveaux
-    void onLevelVisibilityChanged(int levelType, bool checked);
-    void onLevelColorChanged(int levelType);
-    void onLevelThicknessChanged(int levelType, int value);
-    void onLevelLineStyleChanged(int levelType, int index);
+    void onLevelVisibilityChanged(indicators::PivotPointsInstance::LevelType levelType, bool checked);
+    void onLevelColorChanged(indicators::PivotPointsInstance::LevelType levelType);
+    void onLevelThicknessChanged(indicators::PivotPointsInstance::LevelType levelType, int value);
+    void onLevelLineStyleChanged(indicators::PivotPointsInstance::LevelType levelType, int index);
     
 protected:
     // Méthodes virtuelles de BaseDialog
@@ -62,22 +62,22 @@ private:
         QPushButton* syncButton; // Nouveau bouton de synchronisation
     };
     
-    std::map<int, LevelControls> m_levelControls;  // Map des contrôles par type de niveau
+    std::array<LevelControls, static_cast<size_t>(indicators::PivotPointsInstance::LevelType::Count)> m_levelControls;
     QTabWidget* m_tabWidget;  // Pour organiser les niveaux en onglets
     
     // Structure pour suivre l'état de synchronisation des groupes
     struct SyncGroup {
         bool synchronized = false;
         int color;  // Couleur représentative du groupe
-        std::vector<int> levelTypes; // Les niveaux appartenant à ce groupe
+        std::vector<indicators::PivotPointsInstance::LevelType> levelTypes; // Les niveaux appartenant à ce groupe
     };
 
     std::map<std::string, SyncGroup> m_syncGroups; // Les groupes de synchronisation (R, S, mR, mS)
     
     // Méthodes pour la synchronisation
     void initSyncGroups();
-    void onSyncButtonToggled(int levelType, bool checked);
+    void onSyncButtonToggled(indicators::PivotPointsInstance::LevelType levelType, bool checked);
     void updateSyncButtonsInGroup(const std::string& groupName);
-    void syncGroupControls(const std::string& groupName, int sourceLevelType);
-    std::string getLevelGroup(int levelType) const;
+    void syncGroupControls(const std::string& groupName, indicators::PivotPointsInstance::LevelType sourceLevelType);
+    std::string getLevelGroup(indicators::PivotPointsInstance::LevelType levelType) const;
 };

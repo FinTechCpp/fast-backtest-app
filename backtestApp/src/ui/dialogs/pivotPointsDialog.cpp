@@ -25,9 +25,9 @@ void PivotPointsDialog::initSyncGroups()
         false,
         0xFF0000,  // Rouge vif pour résistances
         {
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::R1),
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::R2),
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::R3)
+            indicators::PivotPointsInstance::LevelType::R1,
+            indicators::PivotPointsInstance::LevelType::R2,
+            indicators::PivotPointsInstance::LevelType::R3
         }
     };
     
@@ -35,9 +35,9 @@ void PivotPointsDialog::initSyncGroups()
         false,
         0x008000,  // Vert foncé pour supports
         {
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::S1),
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::S2),
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::S3)
+            indicators::PivotPointsInstance::LevelType::S1,
+            indicators::PivotPointsInstance::LevelType::S2,
+            indicators::PivotPointsInstance::LevelType::S3
         }
     };
     
@@ -45,9 +45,9 @@ void PivotPointsDialog::initSyncGroups()
         false,
         0xFFA500,  // Orange vif pour niveaux milieux résistances
         {
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_PR1),
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_R1R2),
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_R2R3)
+            indicators::PivotPointsInstance::LevelType::M_PR1,
+            indicators::PivotPointsInstance::LevelType::M_R1R2,
+            indicators::PivotPointsInstance::LevelType::M_R2R3
         }
     };
     
@@ -55,14 +55,14 @@ void PivotPointsDialog::initSyncGroups()
         false,
         0x0000FF,  // Bleu vif pour niveaux milieux supports
         {
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_PS1),
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_S1S2),
-            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_S2S3)
+            indicators::PivotPointsInstance::LevelType::M_PS1,
+            indicators::PivotPointsInstance::LevelType::M_S1S2,
+            indicators::PivotPointsInstance::LevelType::M_S2S3
         }
     };
 }
 
-std::string PivotPointsDialog::getLevelGroup(int levelType) const
+std::string PivotPointsDialog::getLevelGroup(indicators::PivotPointsInstance::LevelType levelType) const
 {
     for (const auto& [groupName, group] : m_syncGroups) {
         if (std::find(group.levelTypes.begin(), group.levelTypes.end(), levelType) != group.levelTypes.end()) {
@@ -98,61 +98,54 @@ void PivotPointsDialog::updateSyncButtonsInGroup(const std::string& groupName)
     }
     
     // Mettre à jour tous les boutons du groupe
-    for (int levelType : m_syncGroups[groupName].levelTypes) {
-        auto it = m_levelControls.find(levelType);
-        if (it != m_levelControls.end()) {
-            it->second.syncButton->blockSignals(true);
-            it->second.syncButton->setChecked(synchronized);
-            it->second.syncButton->setStyleSheet(buttonStyle);
-            it->second.syncButton->blockSignals(false);
-        }
+    for (const auto& levelType : m_syncGroups[groupName].levelTypes) {
+        PivotPointsDialog::LevelControls controls = m_levelControls[static_cast<size_t>(levelType)];
+        controls.syncButton->blockSignals(true);
+        controls.syncButton->setChecked(synchronized);
+        controls.syncButton->setStyleSheet(buttonStyle);
+        controls.syncButton->blockSignals(false);
     }
 }
 
-void PivotPointsDialog::syncGroupControls(const std::string& groupName, int sourceLevelType)
+void PivotPointsDialog::syncGroupControls(const std::string& groupName, indicators::PivotPointsInstance::LevelType sourceLevelType)
 {
     if (m_syncGroups.find(groupName) == m_syncGroups.end()) return;
-    
-    // Obtenir les valeurs de référence du niveau source
-    auto sourceIt = m_levelControls.find(sourceLevelType);
-    if (sourceIt == m_levelControls.end()) return;
-    
-    indicators::PivotPointsInstance::LevelType sourceType = static_cast<indicators::PivotPointsInstance::LevelType>(sourceLevelType);
-    const auto& sourceStyle = m_currentIndicator.levelStyles[sourceType];
-    
-    bool visible = sourceIt->second.visibilityCheckBox->isChecked();
+
+    const auto& sourceStyle = m_currentIndicator.levelStyles[static_cast<size_t>(sourceLevelType)];
+    const auto& controls = m_levelControls[static_cast<size_t>(sourceLevelType)];
+
+    bool visible = controls.visibilityCheckBox->isChecked();
     int color = sourceStyle.color;
-    int thickness = sourceIt->second.thicknessSpinBox->value();
-    int lineStyleIndex = sourceIt->second.lineStyleComboBox->currentIndex();
-    
+    int thickness = controls.thicknessSpinBox->value();
+    int lineStyleIndex = controls.lineStyleComboBox->currentIndex();
+
     // Appliquer à tous les niveaux du groupe sauf le niveau source
-    for (int levelType : m_syncGroups[groupName].levelTypes) {
-        if (levelType != sourceLevelType) {
-            auto it = m_levelControls.find(levelType);
-            if (it == m_levelControls.end()) continue;
-            
-            // Mettre à jour l'UI sans déclencher de signaux
-            it->second.visibilityCheckBox->blockSignals(true);
-            it->second.thicknessSpinBox->blockSignals(true);
-            it->second.lineStyleComboBox->blockSignals(true);
-            
-            it->second.visibilityCheckBox->setChecked(visible);
-            updateColorButtonStyle(it->second.colorButton, color);
-            it->second.thicknessSpinBox->setValue(thickness);
-            it->second.lineStyleComboBox->setCurrentIndex(lineStyleIndex);
-            
-            // Mettre à jour les données
-            indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
-            m_currentIndicator.levelStyles[type].visible = visible;
-            m_currentIndicator.levelStyles[type].color = color;
-            m_currentIndicator.levelStyles[type].thickness = thickness;
-            m_currentIndicator.levelStyles[type].lineStyle = static_cast<indicators::PivotPointsInstance::LineStyle>(lineStyleIndex);
-            
-            // Réactiver les signaux
-            it->second.visibilityCheckBox->blockSignals(false);
-            it->second.thicknessSpinBox->blockSignals(false);
-            it->second.lineStyleComboBox->blockSignals(false);
-        }
+    for (indicators::PivotPointsInstance::LevelType levelType : m_syncGroups[groupName].levelTypes) {
+        if (levelType == sourceLevelType)
+            continue;
+
+        PivotPointsDialog::LevelControls& controls = m_levelControls[static_cast<size_t>(levelType)];
+        
+        // Mettre à jour l'UI sans déclencher de signaux
+        controls.visibilityCheckBox->blockSignals(true);
+        controls.thicknessSpinBox->blockSignals(true);
+        controls.lineStyleComboBox->blockSignals(true);
+
+        controls.visibilityCheckBox->setChecked(visible);
+        updateColorButtonStyle(controls.colorButton, color);
+        controls.thicknessSpinBox->setValue(thickness);
+        controls.lineStyleComboBox->setCurrentIndex(lineStyleIndex);
+        
+        // Mettre à jour les données
+        m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].visible = visible;
+        m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].color = color;
+        m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].thickness = thickness;
+        m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].lineStyle = static_cast<indicators::PivotPointsInstance::LineStyle>(lineStyleIndex);
+
+        // Réactiver les signaux
+        controls.visibilityCheckBox->blockSignals(false);
+        controls.thicknessSpinBox->blockSignals(false);
+        controls.lineStyleComboBox->blockSignals(false);
     }
 }
 
@@ -247,8 +240,7 @@ void PivotPointsDialog::setupUI()
 
 void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, indicators::PivotPointsInstance::LevelType levelType, const QString& labelText)
 {
-    int levelTypeInt = static_cast<int>(levelType);
-    auto& style = m_currentIndicator.levelStyles[levelType];
+    indicators::PivotPointsInstance::LevelStyle& style = m_currentIndicator.levelStyles[static_cast<size_t>(levelType)];
     
     // Visibility checkbox
     QCheckBox* visibilityCheckBox = new QCheckBox(labelText);
@@ -318,7 +310,7 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, indicat
     }
     
     // Stocker les contrôles pour les utiliser plus tard
-    m_levelControls[levelTypeInt] = {
+    m_levelControls[static_cast<size_t>(levelType)] = {
         visibilityCheckBox,
         colorButton,
         thicknessSpinBox,
@@ -327,7 +319,7 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, indicat
     };
     
     // Appliquer le style initial du bouton sync selon le groupe
-    std::string groupName = getLevelGroup(levelTypeInt);
+    std::string groupName = getLevelGroup(levelType);
     if (!groupName.empty()) {
         int groupColor = m_syncGroups[groupName].color;
         int r = (groupColor >> 16) & 0xFF;
@@ -420,13 +412,11 @@ void PivotPointsDialog::updateLevelControlsState()
         indicators::PivotPointsInstance::LevelType::M_S1S2,
         indicators::PivotPointsInstance::LevelType::M_S2S3
     };
+
     for (auto levelType : midLevels) {
-        int levelTypeInt = static_cast<int>(levelType);
-        auto it = m_levelControls.find(levelTypeInt);
-        if (it != m_levelControls.end()) {
-            // Si le raccourci est actif, on désactive la modification individuelle
-            it->second.visibilityCheckBox->setEnabled(!shortcutActive);
-        }
+        auto& controls = m_levelControls[static_cast<size_t>(levelType)];
+        // Si le raccourci est actif, on désactive la modification individuelle
+        controls.visibilityCheckBox->setEnabled(!shortcutActive);
     }
 }
 
@@ -439,9 +429,9 @@ void PivotPointsDialog::updateUIFromInstance()
     m_showMidLevelsCheckBox->setChecked(false);
     
     // Mettre à jour les contrôles pour chaque niveau
-    for (auto& [levelType, controls] : m_levelControls) {
-        indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
-        auto& style = m_currentIndicator.levelStyles[type];
+    for (size_t levelType = 0; levelType < static_cast<size_t>(indicators::PivotPointsInstance::LevelType::Count); ++levelType) {
+        auto& controls = m_levelControls[levelType];
+        auto& style = m_currentIndicator.levelStyles[levelType];
         
         controls.visibilityCheckBox->setChecked(style.visible);
         updateColorButtonStyle(controls.colorButton, style.color);
@@ -472,49 +462,48 @@ void PivotPointsDialog::connectSignals()
     connect(m_showLabelsCheckBox, &QCheckBox::checkStateChanged, this, &PivotPointsDialog::onShowLabelsChanged);
     
     // Connecter les contrôles pour chaque niveau
-    for (auto& [levelType, controls] : m_levelControls) {
+    for (size_t levelType = 0; levelType < static_cast<size_t>(indicators::PivotPointsInstance::LevelType::Count); ++levelType) {
         // Visibilité
-        connect(controls.visibilityCheckBox, &QCheckBox::toggled, [this, levelType](bool checked) {
-            onLevelVisibilityChanged(levelType, checked);
-            
+        auto& controls = m_levelControls[levelType];
+
+        connect(controls.visibilityCheckBox, &QCheckBox::toggled, [this, controls, levelType](bool checked) {
+            onLevelVisibilityChanged(static_cast<indicators::PivotPointsInstance::LevelType>(levelType), checked);
+
             // Mettre à jour l'état d'activation des autres contrôles
-            auto it = m_levelControls.find(levelType);
-            if (it != m_levelControls.end()) {
-                it->second.colorButton->setEnabled(checked);
-                it->second.thicknessSpinBox->setEnabled(checked);
-                it->second.lineStyleComboBox->setEnabled(checked);
-            }
+            controls.colorButton->setEnabled(checked);
+            controls.thicknessSpinBox->setEnabled(checked);
+            controls.lineStyleComboBox->setEnabled(checked);
         });
         
         // Couleur
         connect(controls.colorButton, &QPushButton::clicked, [this, levelType]() {
-            onLevelColorChanged(levelType);
+            onLevelColorChanged(static_cast<indicators::PivotPointsInstance::LevelType>(levelType));
         });
         
         // Épaisseur
         connect(controls.thicknessSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), [this, levelType](int value) {
-            onLevelThicknessChanged(levelType, value);
+            onLevelThicknessChanged(static_cast<indicators::PivotPointsInstance::LevelType>(levelType), value);
         });
         
         // Style de ligne
         connect(controls.lineStyleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [this, levelType](int index) {
-            onLevelLineStyleChanged(levelType, index);
+            onLevelLineStyleChanged(static_cast<indicators::PivotPointsInstance::LevelType>(levelType), index);
         });
 
         // Bouton de synchronisation
         connect(controls.syncButton, &QPushButton::toggled, [this, levelType](bool checked) {
-            onSyncButtonToggled(levelType, checked);
+            onSyncButtonToggled(static_cast<indicators::PivotPointsInstance::LevelType>(levelType), checked);
         });
     }
 }
 
-void PivotPointsDialog::onPeriodTypeChanged(int index)
+void PivotPointsDialog::onPeriodTypeChanged(size_t index)
 {
     m_currentIndicator.periodType = static_cast<indicators::PivotPointsInstance::PeriodType>(index);
     applyChanges();
 }
 
-void PivotPointsDialog::onCalculationMethodChanged(int index)
+void PivotPointsDialog::onCalculationMethodChanged(size_t index)
 {
     m_currentIndicator.calculationMethod = static_cast<indicators::PivotPointsInstance::CalculationMethod>(index);
     applyChanges();
@@ -539,19 +528,16 @@ void PivotPointsDialog::onShowMidLevelsChanged(int state)
 
     bool showMid = (state == Qt::Checked);
 
-    for (const auto& info : midLevels) {
-        bool leftVisible = m_currentIndicator.levelStyles[info.left].visible;
-        bool rightVisible = m_currentIndicator.levelStyles[info.right].visible;
+    for (const MidLevelInfo& info : midLevels) {
+        bool leftVisible = m_currentIndicator.levelStyles[static_cast<size_t>(info.left)].visible;
+        bool rightVisible = m_currentIndicator.levelStyles[static_cast<size_t>(info.right)].visible;
         bool midShouldBeVisible = showMid && leftVisible && rightVisible;
 
-        m_currentIndicator.levelStyles[info.mid].visible = midShouldBeVisible;
+        m_currentIndicator.levelStyles[static_cast<size_t>(info.mid)].visible = midShouldBeVisible;
 
         // Met à jour l'état du checkbox dans l'UI
-        int midTypeInt = static_cast<int>(info.mid);
-        auto it = m_levelControls.find(midTypeInt);
-        if (it != m_levelControls.end()) {
-            it->second.visibilityCheckBox->setChecked(midShouldBeVisible);
-        }
+        auto& controls = m_levelControls[static_cast<int>(info.mid)];
+        controls.visibilityCheckBox->setChecked(midShouldBeVisible);
     }
     applyChanges();
     updateLevelControlsState();
@@ -563,10 +549,9 @@ void PivotPointsDialog::onShowLabelsChanged(int state)
     applyChanges();
 }
 
-void PivotPointsDialog::onLevelVisibilityChanged(int levelType, bool checked)
+void PivotPointsDialog::onLevelVisibilityChanged(indicators::PivotPointsInstance::LevelType levelType, bool checked)
 {
-    indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
-    m_currentIndicator.levelStyles[type].visible = checked;
+    m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].visible = checked;
 
     // Synchroniser si nécessaire
     std::string groupName = getLevelGroup(levelType);
@@ -577,14 +562,13 @@ void PivotPointsDialog::onLevelVisibilityChanged(int levelType, bool checked)
     applyChanges();
 }
 
-void PivotPointsDialog::onLevelColorChanged(int levelType)
+void PivotPointsDialog::onLevelColorChanged(indicators::PivotPointsInstance::LevelType levelType)
 {
-    indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
-    QColor newColor = openColorDialog(m_currentIndicator.levelStyles[type].color, "Select Level Color");
+    QColor newColor = openColorDialog(m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].color, "Select Level Color");
     if (newColor.isValid()) {
         int colorValue = colorFromRGB(newColor.red(), newColor.green(), newColor.blue());
-        m_currentIndicator.levelStyles[type].color = colorValue;
-        updateColorButtonStyle(m_levelControls[levelType].colorButton, colorValue);
+        m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].color = colorValue;
+        updateColorButtonStyle(m_levelControls[static_cast<size_t>(levelType)].colorButton, colorValue);
 
         // Synchroniser si nécessaire
         std::string groupName = getLevelGroup(levelType);
@@ -596,10 +580,9 @@ void PivotPointsDialog::onLevelColorChanged(int levelType)
     }
 }
 
-void PivotPointsDialog::onLevelThicknessChanged(int levelType, int value)
+void PivotPointsDialog::onLevelThicknessChanged(indicators::PivotPointsInstance::LevelType levelType, int value)
 {
-    indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
-    m_currentIndicator.levelStyles[type].thickness = value;
+    m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].thickness = value;
 
     // Synchroniser si nécessaire
     std::string groupName = getLevelGroup(levelType);
@@ -610,10 +593,8 @@ void PivotPointsDialog::onLevelThicknessChanged(int levelType, int value)
     applyChanges();
 }
 
-void PivotPointsDialog::onLevelLineStyleChanged(int levelType, int index)
-{
-    indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
-    
+void PivotPointsDialog::onLevelLineStyleChanged(indicators::PivotPointsInstance::LevelType levelType, int index)
+{    
     // Convertir l'index en style de ligne Qt
     indicators::PivotPointsInstance::LineStyle style = indicators::PivotPointsInstance::LineStyle::Solid;
     switch (index) {
@@ -625,8 +606,8 @@ void PivotPointsDialog::onLevelLineStyleChanged(int levelType, int index)
         default: style = indicators::PivotPointsInstance::LineStyle::Solid; break;
     }
 
-    m_currentIndicator.levelStyles[type].lineStyle = style;
-    
+    m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].lineStyle = style;
+
     // Synchroniser si nécessaire
     std::string groupName = getLevelGroup(levelType);
     if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
@@ -636,7 +617,7 @@ void PivotPointsDialog::onLevelLineStyleChanged(int levelType, int index)
     applyChanges();
 }
 
-void PivotPointsDialog::onSyncButtonToggled(int levelType, bool checked)
+void PivotPointsDialog::onSyncButtonToggled(indicators::PivotPointsInstance::LevelType levelType, bool checked)
 {
     std::string groupName = getLevelGroup(levelType);
     if (groupName.empty()) return;

@@ -1098,12 +1098,13 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::
         size_t relativeEnd = std::min(aggEndIndex - startIndex, aggregationInfo.pointCount);
         
         // Pour chaque niveau de pivot configuré
-        for (const auto& [levelType, style] : pivotPoints.levelStyles) {
+        for (size_t levelType = 0; levelType < static_cast<size_t>(indicators::PivotPointsInstance::LevelType::Count); ++levelType) {
             // Vérifier si ce niveau doit être affiché
-            if (!pivotPoints.isLevelVisible(levelType)) continue;
+            const auto& style = pivotPoints.levelStyles[levelType];
+            if (!style.visible) continue;
             
             // Récupérer la valeur du niveau pour cette période
-            double value = period.levelValues[static_cast<size_t>(levelType)];
+            double value = period.levelValues[levelType];
             
             // Ignorer les segments avec des valeurs non valides ou nulles
             if (value == 0 || std::isnan(value)) continue;

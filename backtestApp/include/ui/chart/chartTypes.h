@@ -381,11 +381,10 @@ namespace indicators {
         PivotPointsInstance() : IndicatorBase(IndicatorType::PivotPoints) {
             setDefaults();
         }
-        
+
         PeriodType periodType;                          // Type de période (4H, journalier, hebdomadaire, mensuel)
         CalculationMethod calculationMethod;            // Méthode de calcul des points pivots
-        // on peut mettre un std::array ca sera mieux
-        std::map<LevelType, LevelStyle> levelStyles;    // Styles pour chaque niveau de pivot
+        std::array<LevelStyle, static_cast<size_t>(LevelType::Count)> levelStyles; // Styles par défaut pour chaque niveau
         bool showLabels = true;                         // Afficher les étiquettes des niveaux
 
 
@@ -407,9 +406,7 @@ namespace indicators {
         }
 
         bool isLevelVisible(LevelType level) const {
-            auto it = levelStyles.find(level);
-            if (it == levelStyles.end()) return false;
-            return it->second.visible;
+            return levelStyles[static_cast<size_t>(level)].visible;
         }
 
         void setDefaults() override {
@@ -420,8 +417,8 @@ namespace indicators {
             pivotStyle.lineStyle = LineStyle::Solid;
             pivotStyle.visible = true;
             pivotStyle.labelFormat = "Piv %1";
-            levelStyles[LevelType::Pivot] = pivotStyle;
-            
+            levelStyles[static_cast<size_t>(LevelType::Pivot)] = pivotStyle;
+
             // Résistances (rouge, trait plein, visibles)
             LevelStyle resistanceStyle;
             resistanceStyle.color = 0xFF0000;  // Rouge
@@ -430,13 +427,13 @@ namespace indicators {
             resistanceStyle.visible = true;
             
             resistanceStyle.labelFormat = "R1 %1";
-            levelStyles[LevelType::R1] = resistanceStyle;
+            levelStyles[static_cast<size_t>(LevelType::R1)] = resistanceStyle;
 
             resistanceStyle.labelFormat = "R2 %1";
-            levelStyles[LevelType::R2] = resistanceStyle;
+            levelStyles[static_cast<size_t>(LevelType::R2)] = resistanceStyle;
 
             resistanceStyle.labelFormat = "R3 %1";
-            levelStyles[LevelType::R3] = resistanceStyle;
+            levelStyles[static_cast<size_t>(LevelType::R3)] = resistanceStyle;
 
             // Supports (vert, trait plein, visibles)
             LevelStyle supportStyle;
@@ -446,13 +443,13 @@ namespace indicators {
             supportStyle.visible = true;
 
             supportStyle.labelFormat = "S1 %1";
-            levelStyles[LevelType::S1] = supportStyle;
+            levelStyles[static_cast<size_t>(LevelType::S1)] = supportStyle;
 
             supportStyle.labelFormat = "S2 %1";
-            levelStyles[LevelType::S2] = supportStyle;
+            levelStyles[static_cast<size_t>(LevelType::S2)] = supportStyle;
 
             supportStyle.labelFormat = "S3 %1";
-            levelStyles[LevelType::S3] = supportStyle;
+            levelStyles[static_cast<size_t>(LevelType::S3)] = supportStyle;
 
             // Niveaux milieux résistance (rouge, trait pointillé, non visibles par défaut)
             LevelStyle midResistanceStyle;
@@ -462,13 +459,13 @@ namespace indicators {
             midResistanceStyle.visible = false;  // Visible si showMidLevels est true
             
             midResistanceStyle.labelFormat = "mR3 %1";
-            levelStyles[LevelType::M_R2R3] = midResistanceStyle;
+            levelStyles[static_cast<size_t>(LevelType::M_R2R3)] = midResistanceStyle;
 
             midResistanceStyle.labelFormat = "mR2 %1";
-            levelStyles[LevelType::M_R1R2] = midResistanceStyle;
+            levelStyles[static_cast<size_t>(LevelType::M_R1R2)] = midResistanceStyle;
 
             midResistanceStyle.labelFormat = "mR1 %1";
-            levelStyles[LevelType::M_PR1] = midResistanceStyle;
+            levelStyles[static_cast<size_t>(LevelType::M_PR1)] = midResistanceStyle;
 
             // Niveaux milieux support (vert, trait pointillé, non visibles par défaut)
             LevelStyle midSupportStyle;
@@ -478,13 +475,13 @@ namespace indicators {
             midSupportStyle.visible = false;  // Visible si showMidLevels est true
 
             midSupportStyle.labelFormat = "mS1 %1";
-            levelStyles[LevelType::M_PS1] = midSupportStyle;
+            levelStyles[static_cast<size_t>(LevelType::M_PS1)] = midSupportStyle;
 
             midSupportStyle.labelFormat = "mS2 %1";
-            levelStyles[LevelType::M_S1S2] = midSupportStyle;
+            levelStyles[static_cast<size_t>(LevelType::M_S1S2)] = midSupportStyle;
 
             midSupportStyle.labelFormat = "mS3 %1";
-            levelStyles[LevelType::M_S2S3] = midSupportStyle;
+            levelStyles[static_cast<size_t>(LevelType::M_S2S3)] = midSupportStyle;
 
             // Activer les étiquettes par défaut
             showLabels = true;

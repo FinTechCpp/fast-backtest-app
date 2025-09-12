@@ -12,12 +12,12 @@
 /**
  * @brief Modal dialog to modify the parameters of a technical indicator
  */
-class RSIDialog : public IndicatorDialog<RSIInstance>
+class RSIDialog : public IndicatorDialog<indicators::RSIInstance>
 {
     Q_OBJECT
     
 public:
-    RSIDialog(QWidget* parent, ChartWidget* chartWidget, const RSIInstance& rsi);
+    RSIDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::RSIInstance& rsi);
     ~RSIDialog() override;
     
 private slots:

@@ -6,12 +6,12 @@
 /**
  * @brief Modal dialog to edit the parameters of a Stochastic indicator
  */
-class StochasticDialog : public IndicatorDialog<StochasticInstance>
+class StochasticDialog : public IndicatorDialog<indicators::StochasticInstance>
 {
     Q_OBJECT
     
 public:
-    StochasticDialog(QWidget* parent, ChartWidget* chartWidget, const StochasticInstance& stochastic);
+    StochasticDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::StochasticInstance& stochastic);
     ~StochasticDialog() override;
     
 private slots:

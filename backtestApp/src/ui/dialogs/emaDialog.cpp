@@ -1,7 +1,7 @@
 #include "ui/dialogs/emaDialog.h"
 
-EMADialog::EMADialog(QWidget* parent, ChartWidget* chartWidget, const EMAInstance& ema)
-    : IndicatorDialog<EMAInstance>(parent, "EMA", chartWidget, ema)
+EMADialog::EMADialog(QWidget* parent, ChartWidget* chartWidget, const indicators::EMAInstance& ema)
+    : IndicatorDialog<indicators::EMAInstance>(parent, "EMA", chartWidget, ema)
 {
     initialize();
 }

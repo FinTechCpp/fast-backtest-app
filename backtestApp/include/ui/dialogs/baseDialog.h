@@ -6,7 +6,9 @@
 #include <QDialogButtonBox>
 #include <QColorDialog>
 #include <QFormLayout>
+
 #include "ui/chart/chartWidget.h"
+#include "ui/chart/chartTypes.h"
 
 /**
  * @brief Base class for all indicator configuration dialogs

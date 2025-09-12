@@ -115,13 +115,13 @@ public:
         bool useLogScale = false
     );
 
-    static std::vector<chart::pivotpoints::PivotPeriod> calculatePivotPoints(
+    static std::vector<indicators::PivotPointsInstance::PivotPeriod> calculatePivotPoints(
         const std::vector<double>& openData,
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         const std::vector<be::Date>& timestamps,
-        chart::pivotpoints::PeriodType periodType,
-        chart::pivotpoints::CalculationMethod calcMethod
+        indicators::PivotPointsInstance::PeriodType periodType,
+        indicators::PivotPointsInstance::CalculationMethod calcMethod
     );
 };

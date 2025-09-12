@@ -7,8 +7,8 @@
 #include <QPainter>
 #include <QPen>
 
-PivotPointsDialog::PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, const PivotPointsInstance& pivotPoints)
-    : IndicatorDialog<PivotPointsInstance>(parent, "Pivot Points", chartWidget, pivotPoints)
+PivotPointsDialog::PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::PivotPointsInstance& pivotPoints)
+    : IndicatorDialog<indicators::PivotPointsInstance>(parent, "Pivot Points", chartWidget, pivotPoints)
 {
     initSyncGroups();
     initialize();
@@ -25,9 +25,9 @@ void PivotPointsDialog::initSyncGroups()
         false,
         0xFF0000,  // Rouge vif pour résistances
         {
-            static_cast<int>(chart::pivotpoints::LevelType::R1),
-            static_cast<int>(chart::pivotpoints::LevelType::R2),
-            static_cast<int>(chart::pivotpoints::LevelType::R3)
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::R1),
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::R2),
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::R3)
         }
     };
     
@@ -35,9 +35,9 @@ void PivotPointsDialog::initSyncGroups()
         false,
         0x008000,  // Vert foncé pour supports
         {
-            static_cast<int>(chart::pivotpoints::LevelType::S1),
-            static_cast<int>(chart::pivotpoints::LevelType::S2),
-            static_cast<int>(chart::pivotpoints::LevelType::S3)
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::S1),
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::S2),
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::S3)
         }
     };
     
@@ -45,9 +45,9 @@ void PivotPointsDialog::initSyncGroups()
         false,
         0xFFA500,  // Orange vif pour niveaux milieux résistances
         {
-            static_cast<int>(chart::pivotpoints::LevelType::M_PR1),
-            static_cast<int>(chart::pivotpoints::LevelType::M_R1R2),
-            static_cast<int>(chart::pivotpoints::LevelType::M_R2R3)
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_PR1),
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_R1R2),
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_R2R3)
         }
     };
     
@@ -55,9 +55,9 @@ void PivotPointsDialog::initSyncGroups()
         false,
         0x0000FF,  // Bleu vif pour niveaux milieux supports
         {
-            static_cast<int>(chart::pivotpoints::LevelType::M_PS1),
-            static_cast<int>(chart::pivotpoints::LevelType::M_S1S2),
-            static_cast<int>(chart::pivotpoints::LevelType::M_S2S3)
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_PS1),
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_S1S2),
+            static_cast<int>(indicators::PivotPointsInstance::LevelType::M_S2S3)
         }
     };
 }
@@ -117,7 +117,7 @@ void PivotPointsDialog::syncGroupControls(const std::string& groupName, int sour
     auto sourceIt = m_levelControls.find(sourceLevelType);
     if (sourceIt == m_levelControls.end()) return;
     
-    chart::pivotpoints::LevelType sourceType = static_cast<chart::pivotpoints::LevelType>(sourceLevelType);
+    indicators::PivotPointsInstance::LevelType sourceType = static_cast<indicators::PivotPointsInstance::LevelType>(sourceLevelType);
     const auto& sourceStyle = m_currentIndicator.levelStyles[sourceType];
     
     bool visible = sourceIt->second.visibilityCheckBox->isChecked();
@@ -142,11 +142,11 @@ void PivotPointsDialog::syncGroupControls(const std::string& groupName, int sour
             it->second.lineStyleComboBox->setCurrentIndex(lineStyleIndex);
             
             // Mettre à jour les données
-            chart::pivotpoints::LevelType type = static_cast<chart::pivotpoints::LevelType>(levelType);
+            indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
             m_currentIndicator.levelStyles[type].visible = visible;
             m_currentIndicator.levelStyles[type].color = color;
             m_currentIndicator.levelStyles[type].thickness = thickness;
-            m_currentIndicator.levelStyles[type].lineStyle = static_cast<chart::pivotpoints::LineStyle>(lineStyleIndex);
+            m_currentIndicator.levelStyles[type].lineStyle = static_cast<indicators::PivotPointsInstance::LineStyle>(lineStyleIndex);
             
             // Réactiver les signaux
             it->second.visibilityCheckBox->blockSignals(false);
@@ -164,21 +164,21 @@ void PivotPointsDialog::setupUI()
     
     // Combo box pour le type de période
     m_periodTypeComboBox = new QComboBox();
-    m_periodTypeComboBox->addItem("4H", static_cast<int>(chart::pivotpoints::PeriodType::FourHour));
-    m_periodTypeComboBox->addItem("Daily", static_cast<int>(chart::pivotpoints::PeriodType::Daily));
-    m_periodTypeComboBox->addItem("Weekly", static_cast<int>(chart::pivotpoints::PeriodType::Weekly));
-    m_periodTypeComboBox->addItem("Monthly", static_cast<int>(chart::pivotpoints::PeriodType::Monthly));
+    m_periodTypeComboBox->addItem("4H", static_cast<int>(indicators::PivotPointsInstance::PeriodType::FourHour));
+    m_periodTypeComboBox->addItem("Daily", static_cast<int>(indicators::PivotPointsInstance::PeriodType::Daily));
+    m_periodTypeComboBox->addItem("Weekly", static_cast<int>(indicators::PivotPointsInstance::PeriodType::Weekly));
+    m_periodTypeComboBox->addItem("Monthly", static_cast<int>(indicators::PivotPointsInstance::PeriodType::Monthly));
     
     // Sélectionner la période actuelle
     generalLayout->addRow("Period Type:", m_periodTypeComboBox);
 
     m_calculationMethodComboBox = new QComboBox();
     m_calculationMethodComboBox->addItem("High, Low, Close (Standard)", 
-                                        static_cast<int>(chart::pivotpoints::CalculationMethod::HLC));
+                                        static_cast<int>(indicators::PivotPointsInstance::CalculationMethod::HLC));
     m_calculationMethodComboBox->addItem("Open, High, Low, Close", 
-                                        static_cast<int>(chart::pivotpoints::CalculationMethod::OHLC));
+                                        static_cast<int>(indicators::PivotPointsInstance::CalculationMethod::OHLC));
     m_calculationMethodComboBox->addItem("High, Low, Open", 
-                                        static_cast<int>(chart::pivotpoints::CalculationMethod::HL0));
+                                        static_cast<int>(indicators::PivotPointsInstance::CalculationMethod::HL0));
 
     // Sélectionner la méthode de calcul actuelle
     generalLayout->addRow("Calculation Method:", m_calculationMethodComboBox);
@@ -209,33 +209,33 @@ void PivotPointsDialog::setupUI()
     // Obtenir le suffixe de période actuel
     QString periodSuffix;
     switch (m_currentIndicator.periodType) {
-        case chart::pivotpoints::PeriodType::FourHour: periodSuffix = "4H"; break;
-        case chart::pivotpoints::PeriodType::Daily: periodSuffix = "J"; break;
-        case chart::pivotpoints::PeriodType::Weekly: periodSuffix = "S"; break;
-        case chart::pivotpoints::PeriodType::Monthly: periodSuffix = "M"; break;
+        case indicators::PivotPointsInstance::PeriodType::FourHour: periodSuffix = "4H"; break;
+        case indicators::PivotPointsInstance::PeriodType::Daily: periodSuffix = "J"; break;
+        case indicators::PivotPointsInstance::PeriodType::Weekly: periodSuffix = "S"; break;
+        case indicators::PivotPointsInstance::PeriodType::Monthly: periodSuffix = "M"; break;
     }
     
     // Ajouter les niveaux dans l'ordre du plus élevé au plus bas
     int row = 1;
     
     // Résistances et leurs niveaux milieux
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::R3, "R3:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::M_R2R3, "mR3:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::R2, "R2:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::M_R1R2, "mR2:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::R1, "R1:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::M_PR1, "mR1:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::R3, "R3:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_R2R3, "mR3:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::R2, "R2:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_R1R2, "mR2:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::R1, "R1:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_PR1, "mR1:");
 
     // Pivot central
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::Pivot, "Piv:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::Pivot, "Piv:");
 
     // Supports et leurs niveaux milieux
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::M_PS1, "mS1:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::S1, "S1:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::M_S1S2, "mS2:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::S2, "S2:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::M_S2S3, "mS3:");
-    setupLevelControls(levelsLayout, row++, chart::pivotpoints::LevelType::S3, "S3:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_PS1, "mS1:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::S1, "S1:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_S1S2, "mS2:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::S2, "S2:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_S2S3, "mS3:");
+    setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::S3, "S3:");
 
     // Rendre le groupe des niveaux déroulable
     levelsGroupBox->setLayout(levelsLayout);
@@ -245,7 +245,7 @@ void PivotPointsDialog::setupUI()
     updateLevelControlsState();
 }
 
-void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, chart::pivotpoints::LevelType levelType, const QString& labelText)
+void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, indicators::PivotPointsInstance::LevelType levelType, const QString& labelText)
 {
     int levelTypeInt = static_cast<int>(levelType);
     auto& style = m_currentIndicator.levelStyles[levelType];
@@ -311,7 +311,7 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, chart::
     syncButton->setToolTip("Synchroniser avec les autres niveaux du groupe");
     layout->addWidget(syncButton, row, 4);
 
-    if (levelType == chart::pivotpoints::LevelType::Pivot) {
+    if (levelType == indicators::PivotPointsInstance::LevelType::Pivot) {
         // pour le point pivot on n'affiche pas le bouton de synchronisation
         // il faut donc le cacher
         syncButton->setVisible(false);
@@ -412,13 +412,13 @@ void PivotPointsDialog::updateLevelControlsState()
 {
     // Désactiver le checkbox de visibilité pour les milieux si on utilise le raccourci
     bool shortcutActive = m_showMidLevelsCheckBox->isChecked();
-    std::vector<chart::pivotpoints::LevelType> midLevels = {
-        chart::pivotpoints::LevelType::M_PR1,
-        chart::pivotpoints::LevelType::M_R1R2,
-        chart::pivotpoints::LevelType::M_R2R3,
-        chart::pivotpoints::LevelType::M_PS1,
-        chart::pivotpoints::LevelType::M_S1S2,
-        chart::pivotpoints::LevelType::M_S2S3
+    std::vector<indicators::PivotPointsInstance::LevelType> midLevels = {
+        indicators::PivotPointsInstance::LevelType::M_PR1,
+        indicators::PivotPointsInstance::LevelType::M_R1R2,
+        indicators::PivotPointsInstance::LevelType::M_R2R3,
+        indicators::PivotPointsInstance::LevelType::M_PS1,
+        indicators::PivotPointsInstance::LevelType::M_S1S2,
+        indicators::PivotPointsInstance::LevelType::M_S2S3
     };
     for (auto levelType : midLevels) {
         int levelTypeInt = static_cast<int>(levelType);
@@ -440,7 +440,7 @@ void PivotPointsDialog::updateUIFromInstance()
     
     // Mettre à jour les contrôles pour chaque niveau
     for (auto& [levelType, controls] : m_levelControls) {
-        chart::pivotpoints::LevelType type = static_cast<chart::pivotpoints::LevelType>(levelType);
+        indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
         auto& style = m_currentIndicator.levelStyles[type];
         
         controls.visibilityCheckBox->setChecked(style.visible);
@@ -449,11 +449,11 @@ void PivotPointsDialog::updateUIFromInstance()
         
         int styleIndex = 0;
         switch (style.lineStyle) {
-            case chart::pivotpoints::LineStyle::Solid: styleIndex = 0; break;
-            case chart::pivotpoints::LineStyle::Dash: styleIndex = 1; break;
-            case chart::pivotpoints::LineStyle::Dot: styleIndex = 2; break;
-            case chart::pivotpoints::LineStyle::DotDash: styleIndex = 3; break;
-            case chart::pivotpoints::LineStyle::AltDash: styleIndex = 4; break;
+            case indicators::PivotPointsInstance::LineStyle::Solid: styleIndex = 0; break;
+            case indicators::PivotPointsInstance::LineStyle::Dash: styleIndex = 1; break;
+            case indicators::PivotPointsInstance::LineStyle::Dot: styleIndex = 2; break;
+            case indicators::PivotPointsInstance::LineStyle::DotDash: styleIndex = 3; break;
+            case indicators::PivotPointsInstance::LineStyle::AltDash: styleIndex = 4; break;
             default: styleIndex = 0; break;
         }
         controls.lineStyleComboBox->setCurrentIndex(styleIndex);
@@ -510,13 +510,13 @@ void PivotPointsDialog::connectSignals()
 
 void PivotPointsDialog::onPeriodTypeChanged(int index)
 {
-    m_currentIndicator.periodType = static_cast<chart::pivotpoints::PeriodType>(index);
+    m_currentIndicator.periodType = static_cast<indicators::PivotPointsInstance::PeriodType>(index);
     applyChanges();
 }
 
 void PivotPointsDialog::onCalculationMethodChanged(int index)
 {
-    m_currentIndicator.calculationMethod = static_cast<chart::pivotpoints::CalculationMethod>(index);
+    m_currentIndicator.calculationMethod = static_cast<indicators::PivotPointsInstance::CalculationMethod>(index);
     applyChanges();
 }
 
@@ -524,17 +524,17 @@ void PivotPointsDialog::onShowMidLevelsChanged(int state)
 {
     // Liste des niveaux milieux et leurs dépendances
     struct MidLevelInfo {
-        chart::pivotpoints::LevelType mid;
-        chart::pivotpoints::LevelType left;
-        chart::pivotpoints::LevelType right;
+        indicators::PivotPointsInstance::LevelType mid;
+        indicators::PivotPointsInstance::LevelType left;
+        indicators::PivotPointsInstance::LevelType right;
     };
     std::vector<MidLevelInfo> midLevels = {
-        {chart::pivotpoints::LevelType::M_PR1, chart::pivotpoints::LevelType::Pivot, chart::pivotpoints::LevelType::R1},
-        {chart::pivotpoints::LevelType::M_R1R2, chart::pivotpoints::LevelType::R1, chart::pivotpoints::LevelType::R2},
-        {chart::pivotpoints::LevelType::M_R2R3, chart::pivotpoints::LevelType::R2, chart::pivotpoints::LevelType::R3},
-        {chart::pivotpoints::LevelType::M_PS1, chart::pivotpoints::LevelType::Pivot, chart::pivotpoints::LevelType::S1},
-        {chart::pivotpoints::LevelType::M_S1S2, chart::pivotpoints::LevelType::S1, chart::pivotpoints::LevelType::S2},
-        {chart::pivotpoints::LevelType::M_S2S3, chart::pivotpoints::LevelType::S2, chart::pivotpoints::LevelType::S3}
+        {indicators::PivotPointsInstance::LevelType::M_PR1, indicators::PivotPointsInstance::LevelType::Pivot, indicators::PivotPointsInstance::LevelType::R1},
+        {indicators::PivotPointsInstance::LevelType::M_R1R2, indicators::PivotPointsInstance::LevelType::R1, indicators::PivotPointsInstance::LevelType::R2},
+        {indicators::PivotPointsInstance::LevelType::M_R2R3, indicators::PivotPointsInstance::LevelType::R2, indicators::PivotPointsInstance::LevelType::R3},
+        {indicators::PivotPointsInstance::LevelType::M_PS1, indicators::PivotPointsInstance::LevelType::Pivot, indicators::PivotPointsInstance::LevelType::S1},
+        {indicators::PivotPointsInstance::LevelType::M_S1S2, indicators::PivotPointsInstance::LevelType::S1, indicators::PivotPointsInstance::LevelType::S2},
+        {indicators::PivotPointsInstance::LevelType::M_S2S3, indicators::PivotPointsInstance::LevelType::S2, indicators::PivotPointsInstance::LevelType::S3}
     };
 
     bool showMid = (state == Qt::Checked);
@@ -565,7 +565,7 @@ void PivotPointsDialog::onShowLabelsChanged(int state)
 
 void PivotPointsDialog::onLevelVisibilityChanged(int levelType, bool checked)
 {
-    chart::pivotpoints::LevelType type = static_cast<chart::pivotpoints::LevelType>(levelType);
+    indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
     m_currentIndicator.levelStyles[type].visible = checked;
 
     // Synchroniser si nécessaire
@@ -579,7 +579,7 @@ void PivotPointsDialog::onLevelVisibilityChanged(int levelType, bool checked)
 
 void PivotPointsDialog::onLevelColorChanged(int levelType)
 {
-    chart::pivotpoints::LevelType type = static_cast<chart::pivotpoints::LevelType>(levelType);
+    indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
     QColor newColor = openColorDialog(m_currentIndicator.levelStyles[type].color, "Select Level Color");
     if (newColor.isValid()) {
         int colorValue = colorFromRGB(newColor.red(), newColor.green(), newColor.blue());
@@ -598,7 +598,7 @@ void PivotPointsDialog::onLevelColorChanged(int levelType)
 
 void PivotPointsDialog::onLevelThicknessChanged(int levelType, int value)
 {
-    chart::pivotpoints::LevelType type = static_cast<chart::pivotpoints::LevelType>(levelType);
+    indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
     m_currentIndicator.levelStyles[type].thickness = value;
 
     // Synchroniser si nécessaire
@@ -612,17 +612,17 @@ void PivotPointsDialog::onLevelThicknessChanged(int levelType, int value)
 
 void PivotPointsDialog::onLevelLineStyleChanged(int levelType, int index)
 {
-    chart::pivotpoints::LevelType type = static_cast<chart::pivotpoints::LevelType>(levelType);
+    indicators::PivotPointsInstance::LevelType type = static_cast<indicators::PivotPointsInstance::LevelType>(levelType);
     
     // Convertir l'index en style de ligne Qt
-    chart::pivotpoints::LineStyle style = chart::pivotpoints::LineStyle::Solid;
+    indicators::PivotPointsInstance::LineStyle style = indicators::PivotPointsInstance::LineStyle::Solid;
     switch (index) {
-        case 0: style = chart::pivotpoints::LineStyle::Solid; break;
-        case 1: style = chart::pivotpoints::LineStyle::Dash; break;
-        case 2: style = chart::pivotpoints::LineStyle::Dot; break;
-        case 3: style = chart::pivotpoints::LineStyle::DotDash; break;
-        case 4: style = chart::pivotpoints::LineStyle::AltDash; break;
-        default: style = chart::pivotpoints::LineStyle::Solid; break;
+        case 0: style = indicators::PivotPointsInstance::LineStyle::Solid; break;
+        case 1: style = indicators::PivotPointsInstance::LineStyle::Dash; break;
+        case 2: style = indicators::PivotPointsInstance::LineStyle::Dot; break;
+        case 3: style = indicators::PivotPointsInstance::LineStyle::DotDash; break;
+        case 4: style = indicators::PivotPointsInstance::LineStyle::AltDash; break;
+        default: style = indicators::PivotPointsInstance::LineStyle::Solid; break;
     }
 
     m_currentIndicator.levelStyles[type].lineStyle = style;

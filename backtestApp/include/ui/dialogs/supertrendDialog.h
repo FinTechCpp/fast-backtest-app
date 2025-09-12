@@ -7,12 +7,12 @@
 /**
  * @brief Modal dialog to edit the parameters of a Supertrend indicator
  */
-class SupertrendDialog : public IndicatorDialog<SuperTrendInstance>
+class SupertrendDialog : public IndicatorDialog<indicators::SuperTrendInstance>
 {
     Q_OBJECT
     
 public:
-    SupertrendDialog(QWidget* parent, ChartWidget* chartWidget, const SuperTrendInstance& supertrend);
+    SupertrendDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::SuperTrendInstance& supertrend);
     ~SupertrendDialog() override;
     
 private slots:

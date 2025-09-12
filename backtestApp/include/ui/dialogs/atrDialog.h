@@ -8,12 +8,12 @@
 /**
  * @brief Modal dialog to modify the parameters of an ATR (Average True Range) indicator
  */
-class ATRDialog : public IndicatorDialog<ATRInstance>
+class ATRDialog : public IndicatorDialog<indicators::ATRInstance>
 {
     Q_OBJECT
     
 public:
-    ATRDialog(QWidget* parent, ChartWidget* chartWidget, const ATRInstance& atr);
+    ATRDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::ATRInstance& atr);
     ~ATRDialog() override;
     
 private slots:

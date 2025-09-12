@@ -448,7 +448,7 @@ void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].atrValues[id] = std::move(atrValues);
 }
 
-void ChartDataManager::calculatePivotPoints(const PivotPointsInstance& config) {
+void ChartDataManager::calculatePivotPoints(const indicators::PivotPointsInstance& config) {
     // Vérifier si les données nécessaires sont disponibles
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid) return;
     
@@ -460,7 +460,7 @@ void ChartDataManager::calculatePivotPoints(const PivotPointsInstance& config) {
     std::vector<double> closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
     
     // Structure pour stocker les niveaux calculés
-    std::vector<chart::pivotpoints::PivotPeriod> levelSegments = IndicatorMathUtils::calculatePivotPoints(
+    std::vector<indicators::PivotPointsInstance::PivotPeriod> levelSegments = IndicatorMathUtils::calculatePivotPoints(
         openPrices, highPrices, lowPrices, closePrices, dates, 
         config.periodType, config.calculationMethod
     );
@@ -476,7 +476,7 @@ void ChartDataManager::calculatePivotPoints(const PivotPointsInstance& config) {
     }
 }
 
-void ChartDataManager::precalculatePivotIndices(std::vector<chart::pivotpoints::PivotPeriod>& periods, chart::AggregationLevel level) {
+void ChartDataManager::precalculatePivotIndices(std::vector<indicators::PivotPointsInstance::PivotPeriod>& periods, chart::AggregationLevel level) {
     
     // Vérifier que le niveau existe dans le cache
     const chart::AggregatedOHLCV& aggData = m_aggregatedOHLCVCache[static_cast<size_t>(level)];
@@ -496,7 +496,7 @@ void ChartDataManager::precalculatePivotIndices(std::vector<chart::pivotpoints::
     // Curseurs pour parcourir le mapping une seule fois
     size_t mappingIdx = 0;
     
-    for (chart::pivotpoints::PivotPeriod& period : periods) {
+    for (indicators::PivotPointsInstance::PivotPeriod& period : periods) {
         size_t aggStartIndex;
         size_t aggEndIndex;
 
@@ -773,39 +773,39 @@ int ChartDataManager::aggregatedToFirstRawIndex(chart::AggregationLevel level, i
     return rawIndices.empty() ? -1 : rawIndices.front();
 }
 
-void ChartDataManager::calculateIndicator(const IndicatorBase &config)
+void ChartDataManager::calculateIndicator(const indicators::IndicatorBase &config)
 {
-    if (const RSIInstance* rsiConfig = dynamic_cast<const RSIInstance*>(&config)) {
+    if (const indicators::RSIInstance* rsiConfig = dynamic_cast<const indicators::RSIInstance*>(&config)) {
         calculateRSI(rsiConfig->id, rsiConfig->period);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validRsiIds.erase(rsiConfig->id);
         return;
     }
-    if (const EMAInstance* emaConfig = dynamic_cast<const EMAInstance*>(&config)) {
+    if (const indicators::EMAInstance* emaConfig = dynamic_cast<const indicators::EMAInstance*>(&config)) {
         calculateEMA(emaConfig->id, emaConfig->period);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validEmaIds.erase(emaConfig->id);
         return;
     }
-    if (const SuperTrendInstance* supertrendConfig = dynamic_cast<const SuperTrendInstance*>(&config)) {
+    if (const indicators::SuperTrendInstance* supertrendConfig = dynamic_cast<const indicators::SuperTrendInstance*>(&config)) {
         calculateSupertrend(supertrendConfig->id, supertrendConfig->period, supertrendConfig->multiplier);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validSupertrendIds.erase(supertrendConfig->id);
         return;
     }
-    if (const StochasticInstance* stochasticConfig = dynamic_cast<const StochasticInstance*>(&config)) {
+    if (const indicators::StochasticInstance* stochasticConfig = dynamic_cast<const indicators::StochasticInstance*>(&config)) {
         calculateStochastic(stochasticConfig->id, stochasticConfig->fastKPeriod, stochasticConfig->slowKPeriod, stochasticConfig->slowDPeriod);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validStochasticIds.erase(stochasticConfig->id);
         return;
     }
-    if (const ATRInstance* atrConfig = dynamic_cast<const ATRInstance*>(&config)) {
+    if (const indicators::ATRInstance* atrConfig = dynamic_cast<const indicators::ATRInstance*>(&config)) {
         calculateATR(atrConfig->id, atrConfig->period, atrConfig->useLogScale);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validAtrIds.erase(atrConfig->id);
         return;
     }
-    if (const PivotPointsInstance* pivotConfig = dynamic_cast<const PivotPointsInstance*>(&config)) {
+    if (const indicators::PivotPointsInstance* pivotConfig = dynamic_cast<const indicators::PivotPointsInstance*>(&config)) {
         calculatePivotPoints(*pivotConfig);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validPivotPointsIds.erase(pivotConfig->id);

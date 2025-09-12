@@ -6,12 +6,12 @@
 /**
  * @brief Modal dialog to edit the parameters of an EMA (Exponential Moving Average)
  */
-class EMADialog : public IndicatorDialog<EMAInstance>
+class EMADialog : public IndicatorDialog<indicators::EMAInstance>
 {
     Q_OBJECT
     
 public:
-    EMADialog(QWidget* parent, ChartWidget* chartWidget, const EMAInstance& ema);
+    EMADialog(QWidget* parent, ChartWidget* chartWidget, const indicators::EMAInstance& ema);
     ~EMADialog() override;
     
 private slots:

@@ -87,17 +87,17 @@ void ChartRenderer::createOrUpdateChart(
         subChartsTotalHeight += config.equityHeight;
     }
 
-    for (const RSIInstance* rsi : dataManager.getIndicatorsOfType<RSIInstance>())
+    for (const indicators::RSIInstance* rsi : dataManager.getIndicatorsOfType<indicators::RSIInstance>())
         if (rsi->visible)
             subChartsTotalHeight += rsi->height;
     
     // 3. Espace pour Stochastique
-    for (const StochasticInstance* stochastic : dataManager.getIndicatorsOfType<StochasticInstance>())
+    for (const indicators::StochasticInstance* stochastic : dataManager.getIndicatorsOfType<indicators::StochasticInstance>())
         if (stochastic->visible)
             subChartsTotalHeight += stochastic->height;
     
     // 4. Espace pour ATR
-    for (const ATRInstance* atr : dataManager.getIndicatorsOfType<ATRInstance>())
+    for (const indicators::ATRInstance* atr : dataManager.getIndicatorsOfType<indicators::ATRInstance>())
         if (atr->visible)
             subChartsTotalHeight += atr->height;
     
@@ -138,42 +138,42 @@ void ChartRenderer::createOrUpdateChart(
     
     // 3. Ajouter tous les indicateurs actifs
     // RSI
-    for (const RSIInstance* rsi : dataManager.getIndicatorsOfType<RSIInstance>()) {
+    for (const indicators::RSIInstance* rsi : dataManager.getIndicatorsOfType<indicators::RSIInstance>()) {
         if (rsi->visible) {
             addRSIToChart(m_financeChart.get(), *rsi, dataManager, aggregationInfo);
         }
     }
     
     // EMA
-    for (const EMAInstance* ema : dataManager.getIndicatorsOfType<EMAInstance>()) {
+    for (const indicators::EMAInstance* ema : dataManager.getIndicatorsOfType<indicators::EMAInstance>()) {
         if (ema->visible) {
             addEMAToChart(m_financeChart.get(), *ema, dataManager, aggregationInfo);
         }
     }
     
     // Supertrend
-    for (const SuperTrendInstance* supertrend : dataManager.getIndicatorsOfType<SuperTrendInstance>()) {
+    for (const indicators::SuperTrendInstance* supertrend : dataManager.getIndicatorsOfType<indicators::SuperTrendInstance>()) {
         if (supertrend->visible) {
             addSupertrendToChart(m_financeChart.get(), *supertrend, dataManager, aggregationInfo);
         }
     }
     
     // Stochastique
-    for (const StochasticInstance* stochastic : dataManager.getIndicatorsOfType<StochasticInstance>()) {
+    for (const indicators::StochasticInstance* stochastic : dataManager.getIndicatorsOfType<indicators::StochasticInstance>()) {
         if (stochastic->visible) {
             addStochasticToChart(m_financeChart.get(), *stochastic, dataManager, aggregationInfo);
         }
     }
     
     // ATR
-    for (const ATRInstance* atr : dataManager.getIndicatorsOfType<ATRInstance>()) {
+    for (const indicators::ATRInstance* atr : dataManager.getIndicatorsOfType<indicators::ATRInstance>()) {
         if (atr->visible) {
             addATRToChart(m_financeChart.get(), *atr, dataManager, aggregationInfo);
         }
     }
 
     // Points pivots
-    for (const PivotPointsInstance* pivotPoints : dataManager.getIndicatorsOfType<PivotPointsInstance>()) {
+    for (const indicators::PivotPointsInstance* pivotPoints : dataManager.getIndicatorsOfType<indicators::PivotPointsInstance>()) {
         if (pivotPoints->visible) {
             addPivotPointsToChart(mainChart, *pivotPoints, dataManager, aggregationInfo);
         }
@@ -834,7 +834,7 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
 }
 
 void ChartRenderer::addRSIToChart(FinanceChart* chart, 
-                                const RSIInstance& rsi, 
+                                const indicators::RSIInstance& rsi, 
                                 const ChartDataManager& dataManager, 
                                 const chart::AggregationInfo& aggregationInfo)
 {
@@ -877,7 +877,7 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
 }
 
 void ChartRenderer::addEMAToChart(FinanceChart* chart, 
-                                const EMAInstance& ema, 
+                                const indicators::EMAInstance& ema, 
                                 const ChartDataManager& dataManager, 
                                 const chart::AggregationInfo& aggregationInfo)
 {
@@ -912,7 +912,7 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
 }
 
 void ChartRenderer::addSupertrendToChart(FinanceChart* chart, 
-                                      const SuperTrendInstance& supertrend, 
+                                      const indicators::SuperTrendInstance& supertrend, 
                                       const ChartDataManager& dataManager, 
                                       const chart::AggregationInfo& aggregationInfo)
 {
@@ -969,7 +969,7 @@ void ChartRenderer::addSupertrendToChart(FinanceChart* chart,
 
 
 void ChartRenderer::addStochasticToChart(FinanceChart* chart, 
-                                       const StochasticInstance& stochastic, 
+                                       const indicators::StochasticInstance& stochastic, 
                                        const ChartDataManager& dataManager, 
                                        const chart::AggregationInfo& aggregationInfo)
 {
@@ -1025,7 +1025,7 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
 }
 
 void ChartRenderer::addATRToChart(FinanceChart* chart, 
-                                const ATRInstance& atr, 
+                                const indicators::ATRInstance& atr, 
                                 const ChartDataManager& dataManager, 
                                 const chart::AggregationInfo& aggregationInfo)
 {
@@ -1065,20 +1065,20 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
 }
 
-void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const PivotPointsInstance &pivotPoints, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)
+void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::PivotPointsInstance &pivotPoints, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)
 {
     // Récupérer les données des points pivots depuis le cache
     size_t startIndex = aggregationInfo.startIndex;
     size_t endIndex = startIndex + aggregationInfo.pointCount - 1;
     chart::AggregationLevel currentLevel = aggregationInfo.level;
 
-    const std::map<int, std::vector<chart::pivotpoints::PivotPeriod>>& pivotPeriodsMap = dataManager.getPivotPeriods();
+    const std::map<int, std::vector<indicators::PivotPointsInstance::PivotPeriod>>& pivotPeriodsMap = dataManager.getPivotPeriods();
     auto it = pivotPeriodsMap.find(pivotPoints.id);
     if (it == pivotPeriodsMap.end())
         return; // Pas de données pour cet ID de points pivots
     
     // Récupérer le vecteur de périodes pivot
-    const std::vector<chart::pivotpoints::PivotPeriod>& pivotPeriods = it->second;
+    const std::vector<indicators::PivotPointsInstance::PivotPeriod>& pivotPeriods = it->second;
 
     // Parcourir toutes les périodes pivot
     for (const auto& period : pivotPeriods) {
@@ -1124,16 +1124,16 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const PivotPointsI
             // Définir le style de ligne en fonction du style de LineStyle
             int dashPatternColor;
             switch (style.lineStyle) {
-                case chart::pivotpoints::LineStyle::Dash:
+                case indicators::PivotPointsInstance::LineStyle::Dash:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::DashLine);
                     break;
-                case chart::pivotpoints::LineStyle::Dot:
+                case indicators::PivotPointsInstance::LineStyle::Dot:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::DotLine);
                     break;
-                case chart::pivotpoints::LineStyle::DotDash:
+                case indicators::PivotPointsInstance::LineStyle::DotDash:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::DotDashLine);
                     break;
-                case chart::pivotpoints::LineStyle::AltDash:
+                case indicators::PivotPointsInstance::LineStyle::AltDash:
                     dashPatternColor = mainChart->dashLineColor(style.color, Chart::AltDashLine);
                     break;
                 default: // LineStyle::Solid
@@ -1151,10 +1151,10 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const PivotPointsI
 
                 QString periodSuffix;
                 switch (pivotPoints.periodType) {
-                    case chart::pivotpoints::PeriodType::FourHour: periodSuffix = "4H"; break;
-                    case chart::pivotpoints::PeriodType::Daily: periodSuffix = "J"; break;
-                    case chart::pivotpoints::PeriodType::Weekly: periodSuffix = "S"; break;
-                    case chart::pivotpoints::PeriodType::Monthly: periodSuffix = "M"; break;
+                    case indicators::PivotPointsInstance::PeriodType::FourHour: periodSuffix = "4H"; break;
+                    case indicators::PivotPointsInstance::PeriodType::Daily: periodSuffix = "J"; break;
+                    case indicators::PivotPointsInstance::PeriodType::Weekly: periodSuffix = "S"; break;
+                    case indicators::PivotPointsInstance::PeriodType::Monthly: periodSuffix = "M"; break;
                 }
 
                 // Formater l'étiquette selon le format spécifié ou le format par défaut

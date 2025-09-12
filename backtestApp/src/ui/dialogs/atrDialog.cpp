@@ -1,7 +1,7 @@
 #include "ui/dialogs/atrDialog.h"
 
-ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, const ATRInstance& atr)
-    : IndicatorDialog<ATRInstance>(parent, "ATR", chartWidget, atr)
+ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::ATRInstance& atr)
+    : IndicatorDialog<indicators::ATRInstance>(parent, "ATR", chartWidget, atr)
 {
     initialize();
 }

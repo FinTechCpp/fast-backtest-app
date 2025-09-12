@@ -9,17 +9,18 @@
 #include <QLabel>
 
 #include "ui/dialogs/baseDialog.h"
-#include "ui/chart/indicatorInstances.h"
+#include "ui/chart/chartTypes.h"
+
 
 /**
  * @brief Modal dialog to modify the parameters of Pivot Points indicator
  */
-class PivotPointsDialog : public IndicatorDialog<PivotPointsInstance>
+class PivotPointsDialog : public IndicatorDialog<indicators::PivotPointsInstance>
 {
     Q_OBJECT
     
 public:
-    PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, const PivotPointsInstance& pivotPoints);
+    PivotPointsDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::PivotPointsInstance& pivotPoints);
     ~PivotPointsDialog() override;
     
 private slots:
@@ -42,7 +43,7 @@ protected:
 
 private:
     // Méthodes utilitaires
-    void setupLevelControls(QGridLayout* layout, int row, chart::pivotpoints::LevelType levelType, const QString& labelText);
+    void setupLevelControls(QGridLayout* layout, int row, indicators::PivotPointsInstance::LevelType levelType, const QString& labelText);
     QComboBox* createLineStyleComboBox();
     void updateLevelControlsState();
     

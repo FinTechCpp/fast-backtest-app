@@ -227,27 +227,27 @@ void ChartControlPanel::onAddIndicatorClicked() {
     QString indicatorType = m_indicatorTypeCombo->currentData().toString();
 
     if (indicatorType == "RSI") {
-        RSIInstance rsi;
+        indicators::RSIInstance rsi;
         m_chartWidget->addIndicator(std::move(rsi));
     }
     else if (indicatorType == "EMA") {
-        EMAInstance ema;
+        indicators::EMAInstance ema;
         m_chartWidget->addIndicator(std::move(ema));
     }
     else if (indicatorType == "SUPERTREND") {
-        SuperTrendInstance supertrend;
+        indicators::SuperTrendInstance supertrend;
         m_chartWidget->addIndicator(std::move(supertrend));
     }
     else if (indicatorType == "STOCH") {
-        StochasticInstance stochastic;
+        indicators::StochasticInstance stochastic;
         m_chartWidget->addIndicator(std::move(stochastic));
     }
     else if (indicatorType == "ATR") {
-        ATRInstance atr;
+        indicators::ATRInstance atr;
         m_chartWidget->addIndicator(std::move(atr));
     }
     else if (indicatorType == "PivotPoints") {
-        PivotPointsInstance pivotPoints;
+        indicators::PivotPointsInstance pivotPoints;
         m_chartWidget->addIndicator(std::move(pivotPoints));
     }
 }
@@ -285,13 +285,13 @@ void ChartControlPanel::createIndicatorWidgets(int id, const QString &name) {
 
 void ChartControlPanel::onEditIndicator(int id) {
     if (!m_chartWidget) return;
-    
-    if (tryOpenDialog<RSIInstance, RSIDialog>(id)) return;
-    if (tryOpenDialog<EMAInstance, EMADialog>(id)) return;
-    if (tryOpenDialog<SuperTrendInstance, SupertrendDialog>(id)) return;
-    if (tryOpenDialog<StochasticInstance, StochasticDialog>(id)) return;
-    if (tryOpenDialog<ATRInstance, ATRDialog>(id)) return;
-    if (tryOpenDialog<PivotPointsInstance, PivotPointsDialog>(id)) return;
+
+    if (tryOpenDialog<indicators::RSIInstance, RSIDialog>(id)) return;
+    if (tryOpenDialog<indicators::EMAInstance, EMADialog>(id)) return;
+    if (tryOpenDialog<indicators::SuperTrendInstance, SupertrendDialog>(id)) return;
+    if (tryOpenDialog<indicators::StochasticInstance, StochasticDialog>(id)) return;
+    if (tryOpenDialog<indicators::ATRInstance, ATRDialog>(id)) return;
+    if (tryOpenDialog<indicators::PivotPointsInstance, PivotPointsDialog>(id)) return;
 }
 
 void ChartControlPanel::onRemoveIndicator(int id) {
@@ -314,7 +314,7 @@ void ChartControlPanel::refreshIndicatorsList() {
     m_editButtons.clear();
     m_removeButtons.clear();
 
-    const std::vector<std::unique_ptr<IndicatorBase>>& allIndicators = m_chartWidget->getIndicators();
+    const std::vector<std::unique_ptr<indicators::IndicatorBase>>& allIndicators = m_chartWidget->getIndicators();
     for (const auto& indicator : allIndicators) {
         if (indicator->visible) {
             createIndicatorWidgets(indicator->id, indicator->getDisplayName());
@@ -371,7 +371,7 @@ void ChartControlPanel::configureStrategyIndicators(const std::vector<StrategyIn
     for (const auto& indicator : indicators) {
         switch (indicator.type) {
             case StrategyIndicator::RSI: {
-                RSIInstance rsi;
+                indicators::RSIInstance rsi;
                 rsi.period = static_cast<int>(indicator.params.at("period"));
                 rsi.height = 90;
                 rsi.color = 0x800080;
@@ -379,7 +379,7 @@ void ChartControlPanel::configureStrategyIndicators(const std::vector<StrategyIn
                 break;
             }
             case StrategyIndicator::EMA: {
-                EMAInstance ema;
+                indicators::EMAInstance ema;
                 ema.period = static_cast<int>(indicator.params.at("period"));
                 ema.visible = true;
 
@@ -394,7 +394,7 @@ void ChartControlPanel::configureStrategyIndicators(const std::vector<StrategyIn
                 break;
             }
             case StrategyIndicator::STOCHASTIC: {
-                StochasticInstance stoch;
+                indicators::StochasticInstance stoch;
                 stoch.fastKPeriod = static_cast<int>(indicator.params.at("fastKPeriod"));
                 stoch.slowKPeriod = static_cast<int>(indicator.params.at("slowKPeriod"));
                 stoch.slowDPeriod = static_cast<int>(indicator.params.at("slowDPeriod"));
@@ -407,7 +407,7 @@ void ChartControlPanel::configureStrategyIndicators(const std::vector<StrategyIn
                 break;
             }
             case StrategyIndicator::ATR: {
-                ATRInstance atr;
+                indicators::ATRInstance atr;
                 atr.period = static_cast<int>(indicator.params.at("period"));
                 atr.useLogScale = indicator.params.at("useLogScale") > 0.5;
                 atr.height = 90;
@@ -416,7 +416,7 @@ void ChartControlPanel::configureStrategyIndicators(const std::vector<StrategyIn
                 break;
             }
             case StrategyIndicator::SUPERTREND: {
-                SuperTrendInstance supertrend;
+                indicators::SuperTrendInstance supertrend;
                 supertrend.period = static_cast<int>(indicator.params.at("period"));
                 supertrend.multiplier = indicator.params.at("multiplier");
                 m_chartWidget->addIndicator(std::move(supertrend));

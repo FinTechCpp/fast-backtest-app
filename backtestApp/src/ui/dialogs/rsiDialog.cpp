@@ -1,7 +1,7 @@
 #include "ui/dialogs/rsiDialog.h"
 
-RSIDialog::RSIDialog(QWidget* parent, ChartWidget* chartWidget, const RSIInstance& rsi)
-    : IndicatorDialog<RSIInstance>(parent, "RSI", chartWidget, rsi)
+RSIDialog::RSIDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::RSIInstance& rsi)
+    : IndicatorDialog<indicators::RSIInstance>(parent, "RSI", chartWidget, rsi)
 {
     initialize();
 }

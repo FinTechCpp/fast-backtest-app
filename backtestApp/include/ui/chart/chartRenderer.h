@@ -100,33 +100,33 @@ private:
     
     // Méthodes pour l'ajout d'indicateurs
     void addRSIToChart(FinanceChart* chart, 
-        const RSIInstance& rsi, 
+        const indicators::RSIInstance& rsi, 
         const ChartDataManager& dataManager, 
         const chart::AggregationInfo& aggregationInfo);
 
     void addEMAToChart(FinanceChart* chart, 
-        const EMAInstance& ema, 
+        const indicators::EMAInstance& ema, 
         const ChartDataManager& dataManager, 
         const chart::AggregationInfo& aggregationInfo);
 
         // Ajouter dans la classe ChartRenderer:
     void addSupertrendToChart(FinanceChart* chart, 
-        const SuperTrendInstance& supertrend, 
+        const indicators::SuperTrendInstance& supertrend, 
         const ChartDataManager& dataManager, 
         const chart::AggregationInfo& aggregationInfo);
 
     void addStochasticToChart(FinanceChart* chart, 
-        const StochasticInstance& stochastic, 
+        const indicators::StochasticInstance& stochastic, 
         const ChartDataManager& dataManager, 
         const chart::AggregationInfo& aggregationInfo);
 
     void addATRToChart(FinanceChart* chart, 
-        const ATRInstance& atr, 
+        const indicators::ATRInstance& atr, 
         const ChartDataManager& dataManager, 
         const chart::AggregationInfo& aggregationInfo);
 
     void addPivotPointsToChart(XYChart* mainChart,
-        const PivotPointsInstance& pivotPoints,
+        const indicators::PivotPointsInstance& pivotPoints,
         const ChartDataManager& dataManager,
         const chart::AggregationInfo& aggregationInfo);
 

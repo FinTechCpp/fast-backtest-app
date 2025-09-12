@@ -38,7 +38,7 @@ public:
 
     // Configuration et contrôle du graphique
     void setChartType(chart::ChartType chartType); // remplacer par un slot
-    const std::vector<std::unique_ptr<IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
+    const std::vector<std::unique_ptr<indicators::IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
 
     void removeAllIndicators();
 

@@ -22,7 +22,7 @@ target_include_directories(backtestapp
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_SOURCE_DIR}/backtestEngine/include
+        ${CMAKE_SOURCE_DIR}/fast-backtest-engine/include
         ${CMAKE_SOURCE_DIR}/strategies/include
         ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include  # Ajoutez cette ligne
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
@@ -60,7 +60,7 @@ target_link_libraries(backtestapp
         Qt6::Widgets
         Qt6::Charts
         Qt::Network
-        backtestEngine
+        fast-backtest-engine
         strategies
         chartdirector
 )

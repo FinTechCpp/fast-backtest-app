@@ -135,7 +135,7 @@ add_subdirectory(ThirdParty/Strategies)
 add_subdirectory(ThirdParty/ChartDirector)
 
 # Add sub-projects (libraries)
-add_subdirectory(backtestEngine)
+add_subdirectory(fast-backtest-engine)
 add_subdirectory(backtestApp)
 
 # Show a summary of the configuration

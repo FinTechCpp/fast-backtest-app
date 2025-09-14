@@ -8,6 +8,6 @@
 [submodule "ThirdParty/cereal"]
 	path = ThirdParty/cereal
 	url = https://github.com/USCiLab/cereal.git
-[submodule "fast-backtest-engine"]
-	path = fast-backtest-engine
+[submodule "ThirdParty/fast-backtest-engine"]
+	path = ThirdParty/fast-backtest-engine
 	url = https://github.com/FinTechCpp/fast-backtest-engine.git

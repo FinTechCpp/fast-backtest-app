@@ -92,6 +92,9 @@ if command -v nproc &> /dev/null; then
 else
     CORES=$(sysctl -n hw.ncpu)
 fi
+
+# Set environment variable to bypass Qt licensing check
+export QTFRAMEWORK_BYPASS_LICENSE_CHECK=1
 make -j"$CORES" || { show_error "Compilation failed"; exit 1; }
 
 show_success "Compilation completed successfully!"

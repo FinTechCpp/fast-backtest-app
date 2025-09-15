@@ -254,14 +254,6 @@ namespace indicators {
         // }
     };
 
-    template <typename T>
-    struct IndicatorCRTP : public IndicatorBase {
-        bool needsRecalculation(const IndicatorBase& other) const override {
-            const T* otherIndicator = static_cast<const T*>(&other);
-            return *static_cast<const T*>(this) != *otherIndicator;
-        }
-    };
-
     struct RSIInstance : public IndicatorBase {
         RSIInstance() : IndicatorBase() {
             setDefaults();

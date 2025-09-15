@@ -207,6 +207,7 @@ void BacktestResultMenuManager::onSaveCurrentResult()
 
         BacktestResults* currentResults = m_mainWindow->getBacktestResults();
 
+        // config.indicatorInstances = m_mainWindow->readFromStrategyPanelToIndicatorInstances();
         config.stats = currentResults ? currentResults->stats : be::Stats();
         config.candles = currentResults ? currentResults->data->getCandles() : std::vector<be::Candle>();
         
@@ -258,6 +259,7 @@ void BacktestResultMenuManager::onLoadResult()
 
                 results->stats = config.stats;
                 results->data = std::make_shared<be::Data>(config.candles);
+                // results->indicatorInstances = std::move(config.indicatorInstances);
 
                 m_mainWindow->setBacktestResults(std::move(results));
 

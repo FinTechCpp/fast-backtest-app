@@ -1,5 +1,27 @@
 #include "ui/chart/chartTypes.h"
 
+
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/json.hpp>
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/memory.hpp>
+
+// Enregistrer tous les types dérivés
+CEREAL_REGISTER_TYPE(indicators::RSIInstance)
+CEREAL_REGISTER_TYPE(indicators::EMAInstance)
+CEREAL_REGISTER_TYPE(indicators::StochasticInstance)
+CEREAL_REGISTER_TYPE(indicators::ATRInstance)
+CEREAL_REGISTER_TYPE(indicators::SuperTrendInstance)
+CEREAL_REGISTER_TYPE(indicators::PivotPointsInstance)
+
+// Déclarer les relations hiérarchiques
+CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::RSIInstance)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::EMAInstance)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::StochasticInstance)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::ATRInstance)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::SuperTrendInstance)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::PivotPointsInstance)
+
 namespace chart {
 
 const std::array<std::pair<ChartType, const char*>, static_cast<size_t>(ChartType::Count)> chartTypeNames = {{

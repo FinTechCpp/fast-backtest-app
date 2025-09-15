@@ -84,11 +84,12 @@ void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, cons
         double currentValue = equityCurve[i];
         
         // Si la valeur a changé ou si c'est le dernier point, l'ajouter
-        if (std::abs(currentValue - lastValue) > 1e-10 || i == numPoints - 1) {
-            m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(i).date));
-            m_equityData.equity_values.push_back(currentValue);
-            lastValue = currentValue;
-        }
+        if (std::abs(currentValue - lastValue) <= 1e-10 && i != numPoints - 1)
+            continue;
+        
+        m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(i).date));
+        m_equityData.equity_values.push_back(currentValue);
+        lastValue = currentValue;
     }
 }
 

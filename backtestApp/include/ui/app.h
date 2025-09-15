@@ -55,7 +55,8 @@ public:
     
     // Getters pour les configurations
     // DEPRECATED
-    std::vector<StrategyIndicator> getIndicatorConfig() const;
+    // std::vector<StrategyIndicator> getIndicatorConfig() const;
+    std::vector<std::unique_ptr<indicators::IndicatorBase>> readFromStrategyPanelToIndicatorInstances() const;
 
     GeneralParamsConfig getGeneralParamsConfig() const;
     StrategyBaseConfig getStrategyBaseConfig() const;

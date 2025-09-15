@@ -166,31 +166,49 @@ namespace indicators {
     namespace params {
         struct RSI {
             int period = 14;
+
+            bool operator==(const RSI& other) const = default;
+            bool operator!=(const RSI& other) const = default;
         };
         
         struct EMA {
             int period = 20;
+
+            bool operator==(const EMA& other) const = default;
+            bool operator!=(const EMA& other) const = default;
         };
         
         struct Stochastic {
             int fastKPeriod = 14;
             int slowKPeriod = 3;
             int slowDPeriod = 3;
+
+            bool operator==(const Stochastic& other) const = default;
+            bool operator!=(const Stochastic& other) const = default;
         };
         
         struct ATR {
             int period = 14;
             bool useLogScale = false;
+
+            bool operator==(const ATR& other) const = default;
+            bool operator!=(const ATR& other) const = default;
         };
         
         struct SuperTrend {
             int period = 10;
             double multiplier = 3.0;
+
+            bool operator==(const SuperTrend& other) const = default;
+            bool operator!=(const SuperTrend& other) const = default;
         };
         
         struct PivotPoints {
             PivotPeriodType periodType = PivotPeriodType::Daily;
             PivotCalculationMethod calculationMethod = PivotCalculationMethod::HLC;
+
+            bool operator==(const PivotPoints& other) const = default;
+            bool operator!=(const PivotPoints& other) const = default;
         };
     }
 
@@ -234,6 +252,14 @@ namespace indicators {
         // bool operator!=(const IndicatorBase& other) const {
         //     return !(*this == other);
         // }
+    };
+
+    template <typename T>
+    struct IndicatorCRTP : public IndicatorBase {
+        bool needsRecalculation(const IndicatorBase& other) const override {
+            const T* otherIndicator = static_cast<const T*>(&other);
+            return *static_cast<const T*>(this) != *otherIndicator;
+        }
     };
 
     struct RSIInstance : public IndicatorBase {

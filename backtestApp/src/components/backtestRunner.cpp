@@ -234,14 +234,11 @@ void BacktestWorker::run()
     }
     // Convertir en format be::Data
     std::shared_ptr<be::Data> data = convertToBeData(rawData);
-    
-    // Extraire les indicateurs de la stratégie
-    std::vector<StrategyIndicator> strategyIndicators = m_mainWindow->getIndicatorConfig();
-    
+        
     // Créer un objet BacktestResults pour stocker les résultats
     m_results = std::make_unique<BacktestResults>();
     m_results->data = data;
-    m_results->indicators = strategyIndicators;  // Stocker les indicateurs
+    m_results->indicatorInstances = m_mainWindow->readFromStrategyPanelToIndicatorInstances(); // Stocker les instances d'indicateurs
     m_results->strategyBaseConfig = m_mainWindow->getStrategyBaseConfig(); // Stocker la configuration de base de la stratégie
     
     qDebug() << "Données disponibles:" << data->size() << "barres";

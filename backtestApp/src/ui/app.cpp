@@ -260,171 +260,130 @@ void App::setSellHeikinRedConfig(const SellHeikinRedConfig& config) {
     }
 }
 
-std::vector<StrategyIndicator> App::getIndicatorConfig() const
-{
-    // Get strategy parameters
-    // QMap<QString, QVariant> params = this->getStrategyConfig();
-    // QMap<QString, QVariant> generalValues = m_generalParamsPanel->getValues();
-    GeneralParamsConfig generalConfig = this->getGeneralParamsConfig();
-    StrategyBaseConfig baseConfig = this->getStrategyBaseConfig();
-    std::vector<StrategyIndicator> indicators;
-    
-    // Lambda function to check if an indicator with the same type and parameters already exists
-    auto indicatorExists = [&indicators](StrategyIndicator::Type type, const std::map<std::string, double>& params) {
-        for (const auto& existingIndicator : indicators) {
-            if (existingIndicator.type == type && existingIndicator.params == params) {
-                return true;
-            }
-        }
-        return false;
-    };
-    
-    // Lambda function to add indicator only if it doesn't already exist
-    auto addUniqueIndicator = [&indicators, &indicatorExists](const StrategyIndicator& indicator) {
-        if (!indicatorExists(indicator.type, indicator.params)) {
-            indicators.push_back(indicator);
-        }
-    };
-    
-    // Extract ATR if used for SL or TP
-    // bool use_atr_for_sl = params.value("use_atr_for_sl", false).toBool();
-    // bool use_atr_for_tp = params.value("use_atr_for_tp", false).toBool();
+std::vector<std::unique_ptr<indicators::IndicatorBase>> App::readFromStrategyPanelToIndicatorInstances() const {
+    std::vector<std::unique_ptr<indicators::IndicatorBase>> indicators;
+
+    GeneralParamsConfig generalConfig = getGeneralParamsConfig();
+    StrategyBaseConfig baseConfig = getStrategyBaseConfig();
+
 
     if (baseConfig.sl_method == StopLossMethod::ATR || baseConfig.tp_method == TakeProfitMethod::ATR) {
-        StrategyIndicator atr;
-        atr.type = StrategyIndicator::ATR;
-        atr.params["period"] = baseConfig.atr_period;
-        atr.params["useLogScale"] = 1.0;  // true by default
-        addUniqueIndicator(atr);
+        auto atrInstance = std::make_unique<indicators::ATRInstance>();
+        atrInstance->period = baseConfig.atr_period;
+        atrInstance->useLogScale = true;
+        indicators.push_back(std::move(atrInstance));
     }
 
-    // Extract strategy-specific indicators
-    // QString strategyName = generalValues.value("strategy", "").toString();
+    if (baseConfig.tp_method == TakeProfitMethod::SuperTrend) {
+        auto superTrendInstance = std::make_unique<indicators::SuperTrendInstance>();
+        superTrendInstance->period = baseConfig.tp_supertrend_atr_period;
+        superTrendInstance->multiplier = baseConfig.tp_supertrend_multiplier;
+        indicators.push_back(std::move(superTrendInstance));
+    }
+
     QString strategyName = QString::fromStdString(generalConfig.strategyName);
-    
+
+
     if (strategyName.contains("BuyHeikinGreen", Qt::CaseInsensitive)) {
-        // QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
         BuyHeikinGreenConfig config = getBuyHeikinGreenConfig();
 
-        // EMA short term
-        bool use_ema_short = config.use_ema_short_filter;
-        if (use_ema_short) {
-            StrategyIndicator ema;
-            ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = config.ema_short_period;
-            addUniqueIndicator(ema);
+        if (config.use_ema_short_filter) {
+            auto emaShortInstance = std::make_unique<indicators::EMAInstance>();
+            emaShortInstance->period = config.ema_short_period;
+            indicators.push_back(std::move(emaShortInstance));
         }
 
-        // EMA long term
-        bool use_ema_long = config.use_ema_long_filter;
-        if (use_ema_long) {
-            StrategyIndicator ema;
-            ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = config.ema_long_period;
-            addUniqueIndicator(ema);
-        }
-        
-        // RSI
-        bool use_rsi = config.use_rsi_filter;
-        if (use_rsi) {
-            StrategyIndicator rsi;
-            rsi.type = StrategyIndicator::RSI;
-            rsi.params["period"] = config.rsi_period;
-            rsi.params["overboughtLevel"] = 70.0;  // Default value
-            rsi.params["oversoldLevel"] = config.rsi_threshold;
-            addUniqueIndicator(rsi);
+        if (config.use_ema_long_filter) {
+            auto emaLongInstance = std::make_unique<indicators::EMAInstance>();
+            emaLongInstance->period = config.ema_long_period;
+            indicators.push_back(std::move(emaLongInstance));
         }
 
-        // Stochastic
-        bool use_stoch = config.use_stoch_filter;
-        if (use_stoch) {
-            StrategyIndicator stoch;
-            stoch.type = StrategyIndicator::STOCHASTIC;
-            stoch.params["fastKPeriod"] = config.stoch_fastk;
-            stoch.params["slowKPeriod"] = config.stoch_slowk;
-            stoch.params["slowDPeriod"] = config.stoch_slowd;
-            stoch.params["overboughtLevel"] = 80.0;  // Default value
-            stoch.params["oversoldLevel"] = config.stoch_threshold;
-            addUniqueIndicator(stoch);
+        if (config.use_rsi_filter) {
+            auto rsiInstance = std::make_unique<indicators::RSIInstance>();
+            rsiInstance->period = config.rsi_period;
+            rsiInstance->overboughtLevel = 70.0;  // Default value
+            rsiInstance->oversoldLevel = config.rsi_threshold;
+            indicators.push_back(std::move(rsiInstance));
         }
-        
-        // Supertrend
-        bool use_supertrend = config.use_supertrend_filter;
-        if (use_supertrend) {
-            StrategyIndicator supertrend;
-            supertrend.type = StrategyIndicator::SUPERTREND;
-            supertrend.params["period"] = config.supertrend_atr_period;
-            supertrend.params["multiplier"] = config.supertrend_multiplier;
-            addUniqueIndicator(supertrend);
+
+        if (config.use_stoch_filter) {
+            auto stochInstance = std::make_unique<indicators::StochasticInstance>();
+            stochInstance->fastKPeriod = config.stoch_fastk;
+            stochInstance->slowKPeriod = config.stoch_slowk;
+            stochInstance->slowDPeriod = config.stoch_slowd;
+            stochInstance->overboughtLevel = 80.0;  // Default value
+            stochInstance->oversoldLevel = config.stoch_threshold;
+            indicators.push_back(std::move(stochInstance));
         }
-        
-        // ATR Filter
-        bool use_atr_filter = config.use_atr_filter;
-        if (use_atr_filter) {
-            StrategyIndicator atr;
-            atr.type = StrategyIndicator::ATR;
-            atr.params["period"] = config.atr_filter_period;
-            atr.params["useLogScale"] = 1.0;  // Use ATRLog as specified
-            addUniqueIndicator(atr);
+
+        if (config.use_supertrend_filter) {
+            auto superTrendInstance = std::make_unique<indicators::SuperTrendInstance>();
+            superTrendInstance->period = config.supertrend_atr_period;
+            superTrendInstance->multiplier = config.supertrend_multiplier;
+            indicators.push_back(std::move(superTrendInstance));
+        }
+
+        if (config.use_atr_filter) {
+            auto atrFilterInstance = std::make_unique<indicators::ATRInstance>();
+            atrFilterInstance->period = config.atr_filter_period;
+            atrFilterInstance->useLogScale = true;
+            indicators.push_back(std::move(atrFilterInstance));
         }
     }
     else if (strategyName.contains("SellHeikinRed", Qt::CaseInsensitive)) {
-        // QMap<QString, QVariant> specificValues = m_strategySpecificPanel->getValues();
         SellHeikinRedConfig config = getSellHeikinRedConfig();
-        // EMA short term
-        bool use_ema_short = config.use_ema_short_filter;
-        if (use_ema_short) {
-            StrategyIndicator ema;
-            ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = config.ema_short_period;
-            addUniqueIndicator(ema);
+
+        if (config.use_ema_short_filter) {
+            auto emaShortInstance = std::make_unique<indicators::EMAInstance>();
+            emaShortInstance->period = config.ema_short_period;
+            indicators.push_back(std::move(emaShortInstance));
         }
 
-        // EMA long term
-        bool use_ema_long = config.use_ema_long_filter;
-        if (use_ema_long) {
-            StrategyIndicator ema;
-            ema.type = StrategyIndicator::EMA;
-            ema.params["period"] = config.ema_long_period;
-            addUniqueIndicator(ema);
-        }
-        
-        // RSI
-        bool use_rsi = config.use_rsi_filter;
-        if (use_rsi) {
-            StrategyIndicator rsi;
-            rsi.type = StrategyIndicator::RSI;
-            rsi.params["period"] = config.rsi_period;
-            rsi.params["overboughtLevel"] = config.rsi_threshold;
-            rsi.params["oversoldLevel"] = 30.0;  // Default value
-            addUniqueIndicator(rsi);
+        if (config.use_ema_long_filter) {
+            auto emaLongInstance = std::make_unique<indicators::EMAInstance>();
+            emaLongInstance->period = config.ema_long_period;
+            indicators.push_back(std::move(emaLongInstance));
         }
 
-        // Stochastic
-        bool use_stoch = config.use_stoch_filter;
-        if (use_stoch) {
-            StrategyIndicator stoch;
-            stoch.type = StrategyIndicator::STOCHASTIC;
-            stoch.params["fastKPeriod"] = config.stoch_fastk;
-            stoch.params["slowKPeriod"] = config.stoch_slowk;
-            stoch.params["slowDPeriod"] = config.stoch_slowd;
-            stoch.params["overboughtLevel"] = config.stoch_threshold;
-            stoch.params["oversoldLevel"] = 20.0;  // Default value
-            addUniqueIndicator(stoch);
+        if (config.use_rsi_filter) {
+            auto rsiInstance = std::make_unique<indicators::RSIInstance>();
+            rsiInstance->period = config.rsi_period;
+            rsiInstance->overboughtLevel = config.rsi_threshold;
+            rsiInstance->oversoldLevel = 30.0;  // Default value
+            indicators.push_back(std::move(rsiInstance));
         }
-        
-        // Supertrend
-        bool use_supertrend = config.use_supertrend_filter;
-        if (use_supertrend) {
-            StrategyIndicator supertrend;
-            supertrend.type = StrategyIndicator::SUPERTREND;
-            supertrend.params["period"] = config.supertrend_atr_period;
-            supertrend.params["multiplier"] = config.supertrend_multiplier;
-            addUniqueIndicator(supertrend);
+
+        if (config.use_stoch_filter) {
+            auto stochInstance = std::make_unique<indicators::StochasticInstance>();
+            stochInstance->fastKPeriod = config.stoch_fastk;
+            stochInstance->slowKPeriod = config.stoch_slowk;
+            stochInstance->slowDPeriod = config.stoch_slowd;
+            stochInstance->overboughtLevel = config.stoch_threshold;
+            stochInstance->oversoldLevel = 20.0;  // Default value
+            indicators.push_back(std::move(stochInstance));
+        }
+
+        if (config.use_supertrend_filter) {
+            auto superTrendInstance = std::make_unique<indicators::SuperTrendInstance>();
+            superTrendInstance->period = config.supertrend_atr_period;
+            superTrendInstance->multiplier = config.supertrend_multiplier;
+            indicators.push_back(std::move(superTrendInstance));
+        }
+
+        if (config.use_atr_filter) {
+            auto atrFilterInstance = std::make_unique<indicators::ATRInstance>();
+            atrFilterInstance->period = config.atr_filter_period;
+            atrFilterInstance->useLogScale = true;
+            indicators.push_back(std::move(atrFilterInstance));
         }
     }
 
-    // For other strategies, add more conditions here
+    // on supprime les doublons dans le vector indicators
+    // auto end = std::unique(indicators.begin(), indicators.end(), [](const indicators::IndicatorBase& a, const indicators::IndicatorBase& b) {
+    //     return a == b;
+    // });
+    // indicators.erase(end, indicators.end());
 
     return indicators;
 }

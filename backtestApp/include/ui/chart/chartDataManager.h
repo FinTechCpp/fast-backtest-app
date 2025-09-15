@@ -71,11 +71,12 @@ public:
 
     // Ici il faut implementer le vole de données avec move
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<indicators::IndicatorBase, T>>>
-    int addIndicator(T&& config) {
-        config.id = m_nextIndicatorId++;
-        int id = config.id;
+    int addIndicator(const T& config) {
+        T copy = config;
+        copy.id = m_nextIndicatorId++;
+        int id = copy.id;
 
-        std::unique_ptr<indicators::IndicatorBase> indicator = std::make_unique<T>(std::move(config));
+        std::unique_ptr<indicators::IndicatorBase> indicator = std::make_unique<T>(copy);
 
         m_indicators.push_back(std::move(indicator));
 

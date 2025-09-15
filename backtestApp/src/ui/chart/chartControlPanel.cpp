@@ -363,68 +363,27 @@ void ChartControlPanel::onIndicatorRemoved(int id) {
     refreshIndicatorsList();
 }
 
-void ChartControlPanel::configureStrategyIndicators(const std::vector<StrategyIndicator>& indicators) {
+void ChartControlPanel::configureIndicatorInstances(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators) {
     if (!m_chartWidget) return;
 
     m_chartWidget->removeAllIndicators();
 
     for (const auto& indicator : indicators) {
-        switch (indicator.type) {
-            case StrategyIndicator::RSI: {
-                indicators::RSIInstance rsi;
-                rsi.period = static_cast<int>(indicator.params.at("period"));
-                rsi.height = 90;
-                rsi.color = 0x800080;
-                m_chartWidget->addIndicator(std::move(rsi));
-                break;
-            }
-            case StrategyIndicator::EMA: {
-                indicators::EMAInstance ema;
-                ema.period = static_cast<int>(indicator.params.at("period"));
-                ema.visible = true;
-
-                if (ema.period < 50)
-                    ema.color = 0x0000FF;
-                else if (ema.period < 100)
-                    ema.color = 0xff00b6;
-                else
-                    ema.color = 0xFFA500;
-
-                m_chartWidget->addIndicator(std::move(ema));
-                break;
-            }
-            case StrategyIndicator::STOCHASTIC: {
-                indicators::StochasticInstance stoch;
-                stoch.fastKPeriod = static_cast<int>(indicator.params.at("fastKPeriod"));
-                stoch.slowKPeriod = static_cast<int>(indicator.params.at("slowKPeriod"));
-                stoch.slowDPeriod = static_cast<int>(indicator.params.at("slowDPeriod"));
-                stoch.overboughtLevel = static_cast<int>(indicator.params.at("overboughtLevel"));
-                stoch.oversoldLevel = static_cast<int>(indicator.params.at("oversoldLevel"));
-                stoch.height = 90;
-                stoch.kColor = 0x0000FF;
-                stoch.dColor = 0xFF0000;
-                m_chartWidget->addIndicator(std::move(stoch));
-                break;
-            }
-            case StrategyIndicator::ATR: {
-                indicators::ATRInstance atr;
-                atr.period = static_cast<int>(indicator.params.at("period"));
-                atr.useLogScale = indicator.params.at("useLogScale") > 0.5;
-                atr.height = 90;
-                atr.color = 0x008800;
-                m_chartWidget->addIndicator(std::move(atr));
-                break;
-            }
-            case StrategyIndicator::SUPERTREND: {
-                indicators::SuperTrendInstance supertrend;
-                supertrend.period = static_cast<int>(indicator.params.at("period"));
-                supertrend.multiplier = indicator.params.at("multiplier");
-                m_chartWidget->addIndicator(std::move(supertrend));
-                break;
-            }
+        if (const indicators::RSIInstance* rsi = dynamic_cast<const indicators::RSIInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*rsi);
+        } else if (const indicators::EMAInstance* ema = dynamic_cast<const indicators::EMAInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*ema);
+        } else if (const indicators::StochasticInstance* stoch = dynamic_cast<const indicators::StochasticInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*stoch);
+        } else if (const indicators::ATRInstance* atr = dynamic_cast<const indicators::ATRInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*atr);
+        } else if (const indicators::SuperTrendInstance* supertrend = dynamic_cast<const indicators::SuperTrendInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*supertrend);
+        } else if (const indicators::PivotPointsInstance* pivotPoints = dynamic_cast<const indicators::PivotPointsInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*pivotPoints);
         }
     }
-}   
+}
 
 void ChartControlPanel::setComparisonMode(bool enabled) {
     m_comparisonActive = enabled;

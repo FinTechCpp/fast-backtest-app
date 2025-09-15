@@ -24,8 +24,7 @@ public:
     ~ChartControlPanel();
 
     void refreshIndicatorsList();
-    // je n'aime pas dutout cette methode elle addIndicator et a chaque ajout on update le chart
-    void configureStrategyIndicators(const std::vector<StrategyIndicator>& indicators);
+    void configureIndicatorInstances(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators);
     void setChartWidget(ChartWidget* chartWidget);
     
     // Nouvelle méthode pour mettre à jour l'état de comparaison dans l'UI

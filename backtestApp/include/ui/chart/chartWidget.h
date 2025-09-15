@@ -57,11 +57,11 @@ public:
     void forceUpdateTrackFinance(int mouseX, int mouseY);
 
     template<typename T>
-    int addIndicator(T&& config) {
+    int addIndicator(const T& config) {
         if (!m_dataManager.hasRawData()) return -1; 
 
         QString displayName = config.getDisplayName();
-        int id = m_dataManager.addIndicator(std::move(config));
+        int id = m_dataManager.addIndicator(config);
 
         emit indicatorAdded(id, displayName);
 

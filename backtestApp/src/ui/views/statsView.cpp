@@ -102,6 +102,9 @@ void StatsView::setupUI() {
     m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
     m_statsLayout->addWidget(m_monthlyPerformanceWidget);
 
+    m_reportWidget = new ReportWidget();
+    m_statsLayout->addWidget(m_reportWidget);
+
 
     // m_riskReturnMapWidget = new RiskReturnMapWidget();
     // m_statsLayout->addWidget(m_riskReturnMapWidget);
@@ -148,6 +151,18 @@ void StatsView::updateData(BacktestResults* results)
     for (auto widget : m_statsWidgets) {
         widget->updateContent(m_currentResults->stats);
     }
+    
+    // Update ReportWidget with stats and strategy configuration
+    if (m_reportWidget) {
+        m_reportWidget->updateContent(m_currentResults->stats);
+        
+        // Get strategy configurations from the app if available
+        if (m_app) {
+            StrategyBaseConfig baseConfig = m_app->getStrategyBaseConfig();
+            BuyHeikinGreenConfig buyHeikinConfig = m_app->getBuyHeikinGreenConfig();
+            m_reportWidget->setStrategyConfigurations(baseConfig, buyHeikinConfig);
+        }
+    }
 }
 
 void StatsView::clear() {
@@ -155,6 +170,11 @@ void StatsView::clear() {
 
     for (auto widget : m_statsWidgets) {
         widget->clear();
+    }
+    
+    // Clear ReportWidget
+    if (m_reportWidget) {
+        m_reportWidget->clear();
     }
     
     m_currentResults = nullptr;

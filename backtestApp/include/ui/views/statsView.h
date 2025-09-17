@@ -30,6 +30,7 @@
 #include "ui/views/Stats/PnLGaugeWidget.h"
 #include "ui/views/Stats/MonthlyPerformanceWidget.h"
 #include "ui/views/Stats/DrawdownComparisonWidget.h"
+#include "ui/views/Stats/ReportWidget.h"
 
 
 
@@ -91,6 +92,7 @@ private:
     RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
     MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
+    ReportWidget* m_reportWidget = nullptr;
 
     std::vector<StatsBaseWidget*> m_statsWidgets;
 

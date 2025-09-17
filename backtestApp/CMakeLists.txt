@@ -17,7 +17,7 @@ add_executable(backtestapp
     ${CMAKE_CURRENT_SOURCE_DIR}/qresources.qrc
 )
 
-# Configure the main include paths - Modified section
+# Configure the main include paths
 target_include_directories(backtestapp
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -25,8 +25,9 @@ target_include_directories(backtestapp
         ${CMAKE_SOURCE_DIR}/ThirdParty/fast-backtest-engine/include
         ${CMAKE_SOURCE_DIR}/ThirdParty/Strategies/include 
         ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include 
-        ${CMAKE_SOURCE_DIR}/ChartDirector/include
-        ${CMAKE_SOURCE_DIR}/ChartDirector/src
+        ${CMAKE_SOURCE_DIR}/ThirdParty/ChartDirector/include
+        ${CMAKE_SOURCE_DIR}/ThirdParty/ChartDirector/src
+        ${CMAKE_SOURCE_DIR}/ThirdParty/llama.cpp/include
         ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -63,6 +64,7 @@ target_link_libraries(backtestapp
         backtestEngine
         strategies
         chartdirector
+        llama
 )
 
 # For Windows compilation (native or cross-compilation)

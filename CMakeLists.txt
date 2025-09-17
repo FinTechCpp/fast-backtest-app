@@ -133,6 +133,7 @@ add_subdirectory(ThirdParty/spdlog)
 # include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include)
 add_subdirectory(ThirdParty/Strategies)
 add_subdirectory(ThirdParty/ChartDirector)
+add_subdirectory(ThirdParty/llama.cpp)
 
 # Add sub-projects (libraries)
 add_subdirectory(ThirdParty/fast-backtest-engine)

@@ -13,4 +13,4 @@
 	url = https://github.com/FinTechCpp/fast-backtest-engine.git
 [submodule "ThirdParty/llama.cpp"]
 	path = ThirdParty/llama.cpp
-	url = https://github.com/ggerganov/llama.cpp.git
+	url = https://github.com/FinTechCpp/llama.cpp.git

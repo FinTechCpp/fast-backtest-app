@@ -20,7 +20,7 @@ ReportWidget::ReportWidget(QWidget* parent)
     : StatsBaseWidget(parent)
     , m_hasValidStats(false)
     , m_hasValidConfig(false)
-    , m_currentModelType(ai::ModelFactory::ModelType::ONNX)
+    , m_currentModelType(ai::ModelFactory::ModelType::LlamaCpp)
 {
     setupUI();
     
@@ -76,9 +76,8 @@ void ReportWidget::setupUI()
     
     m_modelTypeLabel = new QLabel("AI Model Type:");
     m_modelTypeCombo = new QComboBox();
-    m_modelTypeCombo->addItem("ONNX Runtime", static_cast<int>(ai::ModelFactory::ModelType::ONNX));
     m_modelTypeCombo->addItem("Llama.cpp (GGUF)", static_cast<int>(ai::ModelFactory::ModelType::LlamaCpp));
-    m_modelTypeCombo->setCurrentIndex(0); // Start with ONNX
+    m_modelTypeCombo->setCurrentIndex(0); // Start with Llama.cpp
 
     m_loadModelButton = new QPushButton("🗂️ Load Model");
     m_loadModelButton->setToolTip("Load an AI model from file");
@@ -259,16 +258,12 @@ void ReportWidget::onLoadModelClicked()
     QString dialogTitle;
     
     switch (modelType) {
-        case ai::ModelFactory::ModelType::ONNX:
-            filter = "ONNX Models (*.onnx);;All Files (*)";
-            dialogTitle = "Select ONNX Model File";
-            break;
         case ai::ModelFactory::ModelType::LlamaCpp:
             filter = "GGUF Models (*.gguf);;Binary Models (*.bin);;All Files (*)";
             dialogTitle = "Select Llama.cpp Model File";
             break;
         default:
-            filter = "All Model Files (*.onnx *.gguf *.bin);;All Files (*)";
+            filter = "All Model Files (*.gguf *.bin);;All Files (*)";
             dialogTitle = "Select AI Model File";
             break;
     }

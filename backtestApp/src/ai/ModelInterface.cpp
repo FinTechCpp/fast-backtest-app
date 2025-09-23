@@ -20,57 +20,6 @@
 namespace ai {
 
 // =============================================================================
-// ONNX Model Implementation (placeholder for future ONNX support)
-// =============================================================================
-class ONNXModel : public ModelInterface {
-private:
-    QString m_lastError;
-    QString m_modelPath;
-    bool m_isLoaded = false;
-
-public:
-    bool loadModel(const QString& modelPath) override {
-        m_modelPath = modelPath;
-        QFileInfo fileInfo(modelPath);
-        
-        if (!fileInfo.exists()) {
-            m_lastError = "ONNX model file not found: " + modelPath;
-            return false;
-        }
-
-        // For now, this is a placeholder
-        // In a real implementation, you would initialize ONNX Runtime here
-        m_lastError = "ONNX Runtime not implemented yet.";
-        m_isLoaded = false;
-        return false;
-    }
-
-    QString inference(const QString& prompt, int maxTokens) override {
-        Q_UNUSED(maxTokens)
-        
-        if (!m_isLoaded) {
-            m_lastError = "Model not loaded or ready";
-            return "";
-        }
-
-        // Real ONNX inference would go here
-        return "ONNX inference not implemented.";
-    }
-
-    bool isReady() const override {
-        return m_isLoaded;
-    }
-
-    QString getLastError() const override {
-        return m_lastError;
-    }
-
-    QString getModelInfo() const override {
-        return "ONNX Runtime Model (Not Implemented)";
-    }
-};
-
-// =============================================================================
 // LlamaCpp Model Implementation (Full llama.cpp support)
 // =============================================================================
 class LlamaCppModel : public ModelInterface {
@@ -391,10 +340,7 @@ Start your response with <div> and end with </div>. Use proper HTML formatting t
 // Model Factory Implementation
 // =============================================================================
 std::unique_ptr<ModelInterface> ModelFactory::createModel(ModelType type) {
-    switch (type) {            
-        case ModelType::ONNX:
-            return std::make_unique<ONNXModel>();
-            
+    switch (type) {                        
         case ModelType::LlamaCpp:
             return std::make_unique<LlamaCppModel>();
             
@@ -410,8 +356,6 @@ std::unique_ptr<ModelInterface> ModelFactory::createModel(const QString& modelPa
     
     if (extension == "gguf" || extension == "bin") 
         return createModel(ModelType::LlamaCpp);
-    else if (extension == "onnx") 
-        return createModel(ModelType::ONNX);
     else 
         // error
         return nullptr;
@@ -421,8 +365,6 @@ bool ModelFactory::isSupported(ModelType type) {
     switch (type) {
         case ModelType::LlamaCpp:
             return true;  // Now supported with llama.cpp integration
-        case ModelType::ONNX:
-            return false; // Not implemented yet
         case ModelType::Auto:
             return true;
     }
@@ -434,8 +376,6 @@ QStringList ModelFactory::getSupportedExtensions() {
     extensions << "";  // Always supported
     
     // Add others based on what's compiled in
-    if (isSupported(ModelType::ONNX)) 
-        extensions << "onnx";
     if (isSupported(ModelType::LlamaCpp)) 
         extensions << "gguf" << "bin";
     

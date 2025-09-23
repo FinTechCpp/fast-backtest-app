@@ -11,7 +11,7 @@ namespace ai {
  * @brief Generic interface for AI model inference
  * 
  * This interface provides a unified way to interact with different AI models
- * regardless of the underlying implementation (ONNX, llama.cpp, OpenVINO, etc.)
+ * regardless of the underlying implementation (llama.cpp, OpenVINO, etc.)
  */
 class ModelInterface {
 public:
@@ -56,7 +56,6 @@ public:
     enum class ModelType {
         Auto,        // Auto-detect from file extension
         LlamaCpp,    // llama.cpp GGUF models
-        ONNX,        // ONNX Runtime models
     };
 
     /**

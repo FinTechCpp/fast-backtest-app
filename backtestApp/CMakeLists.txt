@@ -117,6 +117,49 @@ if(WIN32 OR CMAKE_CROSSCOMPILING)
             COMMENT "Copy chartdir70.dll to the executable directory"
         )
     endif()
+    
+    # Copy llama.cpp DLLs using the same approach as chartdir70.dll
+    if(BUILD_SHARED_LIBS)
+        # Copy llama.dll
+        add_custom_command(TARGET backtestapp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/llama.dll"
+            "$<TARGET_FILE_DIR:backtestapp>"
+            COMMENT "Copying llama.dll"
+        )
+        
+        # Copy ggml.dll
+        add_custom_command(TARGET backtestapp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/ggml.dll"
+            "$<TARGET_FILE_DIR:backtestapp>"
+            COMMENT "Copying ggml.dll"
+        )
+        
+        # Copy ggml-base.dll
+        add_custom_command(TARGET backtestapp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/ggml-base.dll"
+            "$<TARGET_FILE_DIR:backtestapp>"
+            COMMENT "Copying ggml-base.dll"
+        )
+        
+        # Copy ggml-cpu.dll
+        add_custom_command(TARGET backtestapp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/ggml-cpu.dll"
+            "$<TARGET_FILE_DIR:backtestapp>"
+            COMMENT "Copying ggml-cpu.dll"
+        )
+        
+        # Copy spdlog.dll
+        add_custom_command(TARGET backtestapp POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_BINARY_DIR}/ThirdParty/spdlog/$<CONFIG>/spdlog.dll"
+            "$<TARGET_FILE_DIR:backtestapp>"
+            COMMENT "Copying spdlog.dll"
+        )
+    endif()
 endif()
 
 # Install the executable and its dependencies

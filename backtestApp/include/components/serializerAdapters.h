@@ -5,16 +5,65 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/array.hpp>
+#include <cereal/types/map.hpp>
 #include <QDateTime>
 
 // Inclure les définitions de structures (sans les fonctions de sérialisation)
 #include "Strategies/buy_heikin_green.hpp"
 #include "Strategies/sell_heikin_red.hpp"
+#include "Strategies/generic_strategy.hpp"
 #include "ui/panels/generalParamsPanel.h"
 #include "common.h"
 
 #include "beTypes.h"
 #include "ui/chart/chartTypes.h"
+
+/**
+ * @brief Configuration structures for generic strategy
+ */
+
+enum class ComparisonType : int {
+    THRESHOLD_ABOVE = 0,    // valeur1 > seuil
+    THRESHOLD_BELOW = 1,    // valeur1 < seuil
+    CROSSOVER_ABOVE = 2,    // valeur1 croise au-dessus valeur2
+    CROSSOVER_BELOW = 3     // valeur1 croise en-dessous valeur2
+};
+
+enum class ValueType : int {
+    PRICE = 0,              // Prix actuel
+    INDICATOR = 1,          // Valeur d'un indicateur
+    CONSTANT = 2            // Valeur constante
+};
+
+struct ValueSource {
+    ValueType type = ValueType::PRICE;
+    std::string identifier = "";  // nom de l'indicateur ou "price" ou valeur constante
+    double constantValue = 0.0;
+    int historicalOffset = 0;  // pour accéder aux valeurs précédentes (0 = actuelle, 1 = précédente, etc.)
+    
+    ValueSource() = default;
+    ValueSource(ValueType t, const std::string& id, int offset = 0) 
+        : type(t), identifier(id), historicalOffset(offset) {}
+    ValueSource(double value) 
+        : type(ValueType::CONSTANT), constantValue(value) {}
+};
+
+struct FilterConfig {
+    std::string name = "";
+    ValueSource value1;
+    ValueSource value2;
+    ComparisonType comparison = ComparisonType::THRESHOLD_ABOVE;
+    int lookbackPeriods = 1;  // sur combien de périodes chercher la condition
+    bool enabled = true;
+};
+
+// struct IndicatorConfig {
+//     std::string name = "";
+//     std::string type = "";  // "EMA", "RSI", "STOCH", "ATR", "SUPERTREND"
+//     std::map<std::string, double> parameters;  // paramètres spécifiques à l'indicateur
+//     bool enabled = true;
+// };
+
 
 
 struct ProfileConfig {
@@ -25,6 +74,7 @@ struct ProfileConfig {
     StrategyBaseConfig baseConfig;
     BuyHeikinGreenConfig buyConfig;
     SellHeikinRedConfig sellConfig;
+    GenericStrategyConfig genericConfig;
 
     template<class Archive>
     void serialize(Archive & ar) {
@@ -35,6 +85,7 @@ struct ProfileConfig {
            CEREAL_NVP(baseConfig),
            CEREAL_NVP(buyConfig),
            CEREAL_NVP(sellConfig));
+        //    CEREAL_NVP(genericConfig));
     }
 };
 
@@ -358,4 +409,54 @@ namespace cereal {
            cereal::make_nvp("exclusiveOrders", config.exclusiveOrders),
            cereal::make_nvp("finalizeTrades", config.finalizeTrades));
     }
+
+    // template<class Archive>
+    // void serialize(Archive & ar, GenericStrategyConfig & config) {
+    //     ar(cereal::make_nvp("name", config.name),
+    //        cereal::make_nvp("direction", config.direction),
+    //        cereal::make_nvp("indicators", config.indicators),
+    //        cereal::make_nvp("filters", config.filters));
+    // }
+
+    // Sérialisation pour ValueSource
+    // template<class Archive>
+    // void serialize(Archive & ar, ValueSource & config) {
+    //     int typeInt = static_cast<int>(config.type);
+    //     ar(cereal::make_nvp("type", typeInt),
+    //        cereal::make_nvp("identifier", config.identifier),
+    //        cereal::make_nvp("constantValue", config.constantValue),
+    //        cereal::make_nvp("historicalOffset", config.historicalOffset));
+    //     config.type = static_cast<ValueType>(typeInt);
+    // }
+
+    // Sérialisation pour FilterConfig
+    // template<class Archive>
+    // void serialize(Archive & ar, FilterConfig & config) {
+    //     int comparisonInt = static_cast<int>(config.comparison);
+    //     ar(cereal::make_nvp("name", config.name),
+    //        cereal::make_nvp("value1", config.value1),
+    //        cereal::make_nvp("value2", config.value2),
+    //        cereal::make_nvp("comparison", comparisonInt),
+    //        cereal::make_nvp("lookbackPeriods", config.lookbackPeriods),
+    //        cereal::make_nvp("enabled", config.enabled));
+    //     config.comparison = static_cast<ComparisonType>(comparisonInt);
+    // }
+
+    // Sérialisation pour IndicatorConfig
+    // template<class Archive>
+    // void serialize(Archive & ar, IndicatorConfig & config) {
+    //     ar(cereal::make_nvp("name", config.name),
+    //        cereal::make_nvp("type", config.type),
+    //        cereal::make_nvp("parameters", config.parameters),
+    //        cereal::make_nvp("enabled", config.enabled));
+    // }
+    
+    // Sérialisation pour GenericStrategyConfig
+    // template<class Archive>
+    // void serialize(Archive & ar, GenericStrategyConfig & config) {
+    //     ar(cereal::make_nvp("name", config.name),
+    //        cereal::make_nvp("direction", config.direction),
+    //        cereal::make_nvp("indicators", config.indicators),
+    //        cereal::make_nvp("filters", config.filters));
+    // }
 }

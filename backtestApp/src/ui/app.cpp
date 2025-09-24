@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QTime>
+#include <QCoreApplication>
 
 #include "components/Managers/ProfileManager.h"
 #include "components/Managers/BacktestResultManager.h"
@@ -18,6 +19,7 @@
 #include "ui/views/histogramView.h"
 #include "components/Managers/resultManager.h"
 #include "components/backtestRunner.h"
+#include "components/Utils/SerializationUtils.hpp"
 
 
 App::App() : QMainWindow() {
@@ -108,6 +110,7 @@ void App::initStrategyMap()
 {
     m_strategyMap["BuyHeikinGreenBA"] = "BuyHeikinGreenBA";
     m_strategyMap["SellHeikinRedBA"] = "SellHeikinRedBA";
+    m_strategyMap["GenericStrategyAdapter"] = "GenericStrategyAdapter";
 }
 
 void App::createControlPanel() {
@@ -136,10 +139,12 @@ void App::createControlPanel() {
     // Create all strategy-specific panels in advance
     m_buyHeikinGreenPanel = new BuyHeikinGreenPanel(m_controlPanel);
     m_sellHeikinRedPanel = new SellHeikinRedPanel(m_controlPanel);
+    m_genericStrategyPanel = new GenericStrategyPanel(m_controlPanel);
     
     // Add all panels to the stack
     m_strategyPanelStack->addWidget(m_buyHeikinGreenPanel);
     m_strategyPanelStack->addWidget(m_sellHeikinRedPanel);
+    m_strategyPanelStack->addWidget(m_genericStrategyPanel);
     
     // Initialize strategy-specific panels
     // updateStrategySpecificPanel();
@@ -192,6 +197,9 @@ void App::updateStrategySpecificPanel() {
     else if (selectedStrategy == "SellHeikinRedBA") {
         m_strategyPanelStack->setCurrentWidget(m_sellHeikinRedPanel);
     }
+    else if (selectedStrategy == "GenericStrategy") {
+        m_strategyPanelStack->setCurrentWidget(m_genericStrategyPanel); 
+    }
 }
 
 void App::mousePressEvent(QMouseEvent *event)
@@ -236,6 +244,12 @@ SellHeikinRedConfig App::getSellHeikinRedConfig() const {
     return SellHeikinRedConfig();
 }
 
+GenericStrategyConfig App::getGenericStrategyConfig() const {
+    if (m_genericStrategyPanel)
+        return m_genericStrategyPanel->getConfig();
+    return GenericStrategyConfig();
+}
+
 void App::setGeneralParamsConfig(const GeneralParamsConfig& config) {
     if (m_generalParamsPanel) {
         m_generalParamsPanel->setConfig(config);
@@ -257,6 +271,12 @@ void App::setBuyHeikinGreenConfig(const BuyHeikinGreenConfig& config) {
 void App::setSellHeikinRedConfig(const SellHeikinRedConfig& config) {
     if (m_sellHeikinRedPanel) {
         m_sellHeikinRedPanel->setConfig(config);
+    }
+}
+
+void App::setGenericStrategyConfig(const GenericStrategyConfig& config) {
+    if (m_genericStrategyPanel) {
+        m_genericStrategyPanel->setConfig(config);
     }
 }
 

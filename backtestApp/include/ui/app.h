@@ -22,8 +22,10 @@
 #include "common.h"
 #include "buy_heikin_green.hpp"
 #include "sell_heikin_red.hpp"
+#include "components/strategiesAdapters/genericStrategyAdapter.hpp"
 #include "ui/panels/strategySpecificPanels/buyHeikinGreenPanel.h"
 #include "ui/panels/strategySpecificPanels/sellHeikinRedPanel.h"
+#include "ui/panels/strategySpecificPanels/GenericStrategyPanel.h"
 // #include "ui/menu/BacktestResultMenuManager.h"
 
 
@@ -60,11 +62,13 @@ public:
     StrategyBaseConfig getStrategyBaseConfig() const;
     BuyHeikinGreenConfig getBuyHeikinGreenConfig() const;
     SellHeikinRedConfig getSellHeikinRedConfig() const;
+    GenericStrategyConfig getGenericStrategyConfig() const;
 
     void setGeneralParamsConfig(const GeneralParamsConfig& config);
     void setStrategyBaseConfig(const StrategyBaseConfig& config);
     void setBuyHeikinGreenConfig(const BuyHeikinGreenConfig& config);
     void setSellHeikinRedConfig(const SellHeikinRedConfig& config);
+    void setGenericStrategyConfig(const GenericStrategyConfig& config);
 
     // Ajout d'accesseurs pour les résultats de backtest
     BacktestResults* getBacktestResults() const { return m_backtestResults.get(); }
@@ -129,7 +133,7 @@ private:
     StrategyBasePanel* m_strategyBasePanel = nullptr;
     BuyHeikinGreenPanel* m_buyHeikinGreenPanel = nullptr;
     SellHeikinRedPanel* m_sellHeikinRedPanel = nullptr;
-
+    GenericStrategyPanel* m_genericStrategyPanel = nullptr;
     
     // Components
     BacktestRunner* m_backtestRunner;

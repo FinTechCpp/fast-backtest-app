@@ -6,6 +6,7 @@
 #include "ui/panels/strategySpecificPanels/sellHeikinRedPanel.h"
 #include "components/strategiesAdapters/buyHeikinGreen.hpp"
 #include "components/strategiesAdapters/sellHeikinRed.hpp"
+#include "components/strategiesAdapters/genericStrategyAdapter.hpp"
 
 // Fonction d'initialisation des stratégies
 void registerAllStrategies() {
@@ -48,6 +49,26 @@ void registerAllStrategies() {
 
             // Création directe de la stratégie
             return std::make_shared<SellHeikinRedAdapter>(broker, data, baseConfig, sellConfig);
+        }
+    );
+
+    // Enregistrer GenericStrategy
+    registry.registerStrategy(
+        "GenericStrategy", 
+        "Generic Strategy (Configurable)",
+        [](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, App* app) {
+            GeneralParamsConfig generalParams = app->getGeneralParamsConfig();
+            StrategyBaseConfig baseConfig = app->getStrategyBaseConfig();
+            baseConfig.cash = generalParams.cash;
+            baseConfig.leverage_limit = generalParams.leverage_limit;
+            GenericStrategyConfig genericConfig = app->getGenericStrategyConfig();
+
+            std::cout << generalParams << std::endl;
+            std::cout << baseConfig << std::endl;
+            std::cout << genericConfig << std::endl;
+
+            // Création directe de la stratégie
+            return std::make_shared<GenericStrategyAdapter>(broker, data, baseConfig, genericConfig);
         }
     );
 

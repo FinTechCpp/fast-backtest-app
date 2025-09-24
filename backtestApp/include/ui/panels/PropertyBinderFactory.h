@@ -18,6 +18,29 @@ public:
         auto getter = [](QCheckBox* w) -> bool { return w->isChecked(); };
         return std::make_unique<TypedPropertyBinder<QCheckBox, bool>>(widget, property, setter, getter);
     }
+
+    static std::unique_ptr<PropertyBinder> createOptionalBoolBinding(QCheckBox* widget, std::optional<bool>* property) {
+        // Setter: depuis l'optional vers le widget
+        auto setter = [](QCheckBox* w, const std::optional<bool>& value) { 
+            if (value.has_value()) {
+                w->setChecked(value.value());
+                w->setTristate(false);
+            } else {
+                w->setTristate(true);
+                w->setCheckState(Qt::PartiallyChecked);
+            }
+        };
+        
+        // Getter: depuis le widget vers l'optional
+        auto getter = [](QCheckBox* w) -> std::optional<bool> { 
+            if (w->checkState() == Qt::PartiallyChecked) {
+                return std::nullopt;
+            }
+            return w->isChecked();
+        };
+        
+        return std::make_unique<TypedPropertyBinder<QCheckBox, std::optional<bool>>>(widget, property, setter, getter);
+    }
     
     // Créer un binding pour un QSpinBox et un int
     static std::unique_ptr<PropertyBinder> createIntBinding(QSpinBox* widget, int* property) {

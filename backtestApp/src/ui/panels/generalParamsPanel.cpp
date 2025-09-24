@@ -17,6 +17,7 @@ void GeneralParamsPanel::initStrategyMap()
     // Initialiser le dictionnaire des stratégies disponibles
     m_strategyMap["BuyHeikinGreenBA"] = "BuyHeikinGreenBA";
     m_strategyMap["SellHeikinRedBA"] = "SellHeikinRedBA";
+    m_strategyMap["GenericStrategy"] = "GenericStrategy";
 }
 
 void GeneralParamsPanel::setupUI()

@@ -369,7 +369,7 @@ namespace cereal {
            cereal::make_nvp("min_stop_loss_distance", config.min_stop_loss_distance),
            cereal::make_nvp("min_take_profit_distance", config.min_take_profit_distance),
            cereal::make_nvp("sl_minmax_periods", config.sl_minmax_periods),
-           cereal::make_nvp("sl_minmax_delta", config.sl_minmax_delta),
+           cereal::make_nvp("sl_minmax_delta_coef_atr", config.sl_minmax_delta_coef_atr),
            cereal::make_nvp("tp_sl_ratio", config.tp_sl_ratio),
            cereal::make_nvp("tp_supertrend_atr_period", config.tp_supertrend_atr_period),
            cereal::make_nvp("tp_supertrend_multiplier", config.tp_supertrend_multiplier),

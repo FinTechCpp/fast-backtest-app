@@ -112,7 +112,7 @@ void StrategyBasePanel::setupUI() {
     
     addBinding(PropertyBinderFactory::createDoubleBinding(
         slMinmaxDeltaSpin,
-        &m_config.sl_minmax_delta
+        &m_config.sl_minmax_delta_coef_atr
     ));
     
     // SL minimum

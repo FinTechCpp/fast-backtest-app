@@ -22,40 +22,40 @@
  * @brief Configuration structures for generic strategy
  */
 
-enum class ComparisonType : int {
-    THRESHOLD_ABOVE = 0,    // valeur1 > seuil
-    THRESHOLD_BELOW = 1,    // valeur1 < seuil
-    CROSSOVER_ABOVE = 2,    // valeur1 croise au-dessus valeur2
-    CROSSOVER_BELOW = 3     // valeur1 croise en-dessous valeur2
-};
+// enum class ComparisonType : int {
+//     THRESHOLD_ABOVE = 0,    // valeur1 > seuil
+//     THRESHOLD_BELOW = 1,    // valeur1 < seuil
+//     CROSSOVER_ABOVE = 2,    // valeur1 croise au-dessus valeur2
+//     CROSSOVER_BELOW = 3     // valeur1 croise en-dessous valeur2
+// };
 
-enum class ValueType : int {
-    PRICE = 0,              // Prix actuel
-    INDICATOR = 1,          // Valeur d'un indicateur
-    CONSTANT = 2            // Valeur constante
-};
+// enum class ValueType : int {
+//     PRICE = 0,              // Prix actuel
+//     INDICATOR = 1,          // Valeur d'un indicateur
+//     CONSTANT = 2            // Valeur constante
+// };
 
-struct ValueSource {
-    ValueType type = ValueType::PRICE;
-    std::string identifier = "";  // nom de l'indicateur ou "price" ou valeur constante
-    double constantValue = 0.0;
-    int historicalOffset = 0;  // pour accéder aux valeurs précédentes (0 = actuelle, 1 = précédente, etc.)
+// struct ValueSource {
+//     ValueType type = ValueType::PRICE;
+//     std::string identifier = "";  // nom de l'indicateur ou "price" ou valeur constante
+//     double constantValue = 0.0;
+//     int historicalOffset = 0;  // pour accéder aux valeurs précédentes (0 = actuelle, 1 = précédente, etc.)
     
-    ValueSource() = default;
-    ValueSource(ValueType t, const std::string& id, int offset = 0) 
-        : type(t), identifier(id), historicalOffset(offset) {}
-    ValueSource(double value) 
-        : type(ValueType::CONSTANT), constantValue(value) {}
-};
+//     ValueSource() = default;
+//     ValueSource(ValueType t, const std::string& id, int offset = 0) 
+//         : type(t), identifier(id), historicalOffset(offset) {}
+//     ValueSource(double value) 
+//         : type(ValueType::CONSTANT), constantValue(value) {}
+// };
 
-struct FilterConfig {
-    std::string name = "";
-    ValueSource value1;
-    ValueSource value2;
-    ComparisonType comparison = ComparisonType::THRESHOLD_ABOVE;
-    int lookbackPeriods = 1;  // sur combien de périodes chercher la condition
-    bool enabled = true;
-};
+// struct FilterConfig {
+//     std::string name = "";
+//     ValueSource value1;
+//     ValueSource value2;
+//     ComparisonType comparison = ComparisonType::THRESHOLD_ABOVE;
+//     int lookbackPeriods = 1;  // sur combien de périodes chercher la condition
+//     bool enabled = true;
+// };
 
 // struct IndicatorConfig {
 //     std::string name = "";

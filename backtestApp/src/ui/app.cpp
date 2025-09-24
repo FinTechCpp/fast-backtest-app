@@ -267,7 +267,7 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> App::readFromStrategyPan
     StrategyBaseConfig baseConfig = getStrategyBaseConfig();
 
 
-    if (baseConfig.sl_method == StopLossMethod::ATR || baseConfig.tp_method == TakeProfitMethod::ATR) {
+    if (baseConfig.sl_method == StopLossMethod::ATR || baseConfig.tp_method == TakeProfitMethod::ATR || baseConfig.sl_method == StopLossMethod::MinMax) {
         auto atrInstance = std::make_unique<indicators::ATRInstance>();
         atrInstance->period = baseConfig.atr_period;
         atrInstance->useLogScale = true;

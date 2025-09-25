@@ -451,6 +451,176 @@ namespace cereal {
     //        cereal::make_nvp("enabled", config.enabled));
     // }
     
+    // Enum serializers for the new generic filter system
+    template<class Archive>
+    void serialize(Archive & ar, ValueCategory & cat) {
+        int value = static_cast<int>(cat);
+        ar(cereal::make_nvp("value", value));
+        cat = static_cast<ValueCategory>(value);
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, PriceType & type) {
+        int value = static_cast<int>(type);
+        ar(cereal::make_nvp("value", value));
+        type = static_cast<PriceType>(value);
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, IndicatorType & type) {
+        int value = static_cast<int>(type);
+        ar(cereal::make_nvp("value", value));
+        type = static_cast<IndicatorType>(value);
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, CandlePropertyType & type) {
+        int value = static_cast<int>(type);
+        ar(cereal::make_nvp("value", value));
+        type = static_cast<CandlePropertyType>(value);
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, ComparisonOperator & op) {
+        int value = static_cast<int>(op);
+        ar(cereal::make_nvp("value", value));
+        op = static_cast<ComparisonOperator>(value);
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, TemporalLogic & logic) {
+        int value = static_cast<int>(logic);
+        ar(cereal::make_nvp("value", value));
+        logic = static_cast<TemporalLogic>(value);
+    }
+
+    // Parameter structures
+    template<class Archive>
+    void serialize(Archive & ar, EMAParams & params) {
+        ar(cereal::make_nvp("period", params.period));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, RSIParams & params) {
+        ar(cereal::make_nvp("period", params.period));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, StochasticParams & params) {
+        ar(cereal::make_nvp("fastK", params.fastK),
+           cereal::make_nvp("slowK", params.slowK),
+           cereal::make_nvp("slowD", params.slowD));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, ATRParams & params) {
+        ar(cereal::make_nvp("period", params.period),
+           cereal::make_nvp("useLog", params.useLog));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, SuperTrendParams & params) {
+        ar(cereal::make_nvp("atrPeriod", params.atrPeriod),
+           cereal::make_nvp("multiplier", params.multiplier));
+    }
+
+    // ValueSource serialization - more complex due to unions
+    template<class Archive>
+    void save(Archive & ar, const ValueSource & source) {
+        ar(cereal::make_nvp("category", source.category));
+        ar(cereal::make_nvp("historicalOffset", source.historicalOffset));
+        
+        switch (source.category) {
+            case ValueCategory::PRICE:
+                ar(cereal::make_nvp("priceType", source.priceType));
+                break;
+            case ValueCategory::INDICATOR:
+                ar(cereal::make_nvp("indicatorType", source.indicatorType));
+                switch (source.indicatorType) {
+                    case IndicatorType::EMA:
+                        ar(cereal::make_nvp("emaParams", source.emaParams));
+                        break;
+                    case IndicatorType::RSI:
+                        ar(cereal::make_nvp("rsiParams", source.rsiParams));
+                        break;
+                    case IndicatorType::STOCHASTIC_K:
+                    case IndicatorType::STOCHASTIC_D:
+                        ar(cereal::make_nvp("stochParams", source.stochParams));
+                        break;
+                    case IndicatorType::ATR:
+                        ar(cereal::make_nvp("atrParams", source.atrParams));
+                        break;
+                    case IndicatorType::SUPERTREND_VALUE:
+                    case IndicatorType::SUPERTREND_DIRECTION:
+                        ar(cereal::make_nvp("supertrendParams", source.supertrendParams));
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case ValueCategory::CONSTANT:
+                ar(cereal::make_nvp("constantValue", source.constantValue));
+                break;
+            case ValueCategory::CANDLE_PROPERTY:
+                ar(cereal::make_nvp("candlePropertyType", source.candlePropertyType));
+                break;
+        }
+    }
+
+    template<class Archive>
+    void load(Archive & ar, ValueSource & source) {
+        ar(cereal::make_nvp("category", source.category));
+        ar(cereal::make_nvp("historicalOffset", source.historicalOffset));
+        
+        switch (source.category) {
+            case ValueCategory::PRICE:
+                ar(cereal::make_nvp("priceType", source.priceType));
+                break;
+            case ValueCategory::INDICATOR:
+                ar(cereal::make_nvp("indicatorType", source.indicatorType));
+                switch (source.indicatorType) {
+                    case IndicatorType::EMA:
+                        ar(cereal::make_nvp("emaParams", source.emaParams));
+                        break;
+                    case IndicatorType::RSI:
+                        ar(cereal::make_nvp("rsiParams", source.rsiParams));
+                        break;
+                    case IndicatorType::STOCHASTIC_K:
+                    case IndicatorType::STOCHASTIC_D:
+                        ar(cereal::make_nvp("stochParams", source.stochParams));
+                        break;
+                    case IndicatorType::ATR:
+                        ar(cereal::make_nvp("atrParams", source.atrParams));
+                        break;
+                    case IndicatorType::SUPERTREND_VALUE:
+                    case IndicatorType::SUPERTREND_DIRECTION:
+                        ar(cereal::make_nvp("supertrendParams", source.supertrendParams));
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case ValueCategory::CONSTANT:
+                ar(cereal::make_nvp("constantValue", source.constantValue));
+                break;
+            case ValueCategory::CANDLE_PROPERTY:
+                ar(cereal::make_nvp("candlePropertyType", source.candlePropertyType));
+                break;
+        }
+    }
+
+    // GenericFilter serialization
+    template<class Archive>
+    void serialize(Archive & ar, GenericFilter & filter) {
+        ar(cereal::make_nvp("leftValue", filter.leftValue),
+           cereal::make_nvp("rightValue", filter.rightValue),
+           cereal::make_nvp("op", filter.op),
+           cereal::make_nvp("temporalLogic", filter.temporalLogic),
+           cereal::make_nvp("lookbackPeriods", filter.lookbackPeriods),
+           cereal::make_nvp("enabled", filter.enabled),
+           cereal::make_nvp("description", filter.description));
+    }
+    
     // Sérialisation pour GenericStrategyConfig
     // template<class Archive>
     // void serialize(Archive & ar, GenericStrategyConfig & config) {

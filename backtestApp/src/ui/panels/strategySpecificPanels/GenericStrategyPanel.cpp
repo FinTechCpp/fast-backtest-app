@@ -1,8 +1,16 @@
 #include "ui/panels/strategySpecificPanels/GenericStrategyPanel.h"
+#include "ui/dialogs/StrategyCreationDialog.h"
+#include <QMessageBox>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QGroupBox>
+#include <QListWidget>
+#include <QLabel>
 
 
 GenericStrategyPanel::GenericStrategyPanel(QWidget* parent)
-    : ConfigPanel<GenericStrategyConfig>("Paramètres GenericStrategy", parent)
+    : ConfigPanel<GenericStrategyConfig>("Stratégies Personnalisées", parent)
 {
     setupUI();
 }
@@ -12,389 +20,259 @@ void GenericStrategyPanel::setupUI()
     QWidget* parent = qobject_cast<QWidget*>(this);
 
     QVBoxLayout* strategyLayout = new QVBoxLayout(this);
-    strategyLayout->setSpacing(10);
+    strategyLayout->setSpacing(15);
     strategyLayout->setContentsMargins(10, 15, 10, 15);
 
-    // SECTION DIRECTION
-    QHBoxLayout* directionLayout = new QHBoxLayout();
-    directionLayout->setContentsMargins(5, 0, 5, 5);
-
-    // Ajoutez un label explicatif
-    QLabel* directionLabel = new QLabel("Direction: ", this);
-    directionLabel->setStyleSheet("color: gray;");
-    directionLayout->addWidget(directionLabel);
-
-    // Il faut ajouter la direction (long/short) à la config
-    QCheckBox* directionCheck = new QCheckBox("Direction: Long/Short/Not Set", this);
-    directionCheck->setTristate(true);
-    directionCheck->setCheckState(Qt::PartiallyChecked);
-    directionLayout->addWidget(directionCheck);
-
-    // Connectez le binding
-    addBinding(PropertyBinderFactory::createOptionalBoolBinding(
-        directionCheck, 
-        &m_config.go_direction)
-    );
-
-    strategyLayout->addLayout(directionLayout);
-
+    // Strategy creation section
+    QGroupBox* creationGroup = new QGroupBox("Gestion des stratégies", this);
+    QVBoxLayout* creationLayout = new QVBoxLayout(creationGroup);
     
-    // SECTION EMA COURT
-    QGridLayout* emaShortLayout = new QGridLayout();
-    emaShortLayout->setContentsMargins(5, 0, 5, 5);
+    // Current strategy info
+    QHBoxLayout* currentStrategyLayout = new QHBoxLayout();
+    QLabel* currentLabel = new QLabel("Stratégie actuelle:", this);
+    m_currentStrategyLabel = new QLabel("Aucune stratégie chargée", this);
+    m_currentStrategyLabel->setStyleSheet("font-weight: bold; color: #2c5aa0;");
+    currentStrategyLayout->addWidget(currentLabel);
+    currentStrategyLayout->addWidget(m_currentStrategyLabel);
+    currentStrategyLayout->addStretch();
+    creationLayout->addLayout(currentStrategyLayout);
 
-    QCheckBox* emaShortFilterCheck = new QCheckBox("Activer filtre EMA Court", this);
-    emaShortLayout->addWidget(emaShortFilterCheck, 0, 0, 1, 2);
-
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        emaShortFilterCheck, 
-        &m_config.use_ema_short_filter)
+    // Buttons
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    
+    m_createStrategyBtn = new QPushButton("Créer nouvelle stratégie", this);
+    m_createStrategyBtn->setStyleSheet(
+        "QPushButton {"
+        "  background-color: #4CAF50;"
+        "  color: white;"
+        "  border: none;"
+        "  padding: 8px 16px;"
+        "  border-radius: 4px;"
+        "  font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "  background-color: #45a049;"
+        "}"
     );
     
-    emaShortLayout->addWidget(new QLabel("Période:", this), 1, 0);
-
-    QSpinBox* emaShortSpin = new QSpinBox(this);
-    emaShortSpin->setRange(1, 500);
-    emaShortSpin->setValue(20);
-    emaShortLayout->addWidget(emaShortSpin, 1, 1);
-    emaShortLayout->setColumnStretch(2, 1);
-
-    addBinding(PropertyBinderFactory::createIntBinding(
-        emaShortSpin, 
-        &m_config.ema_short_period)
-    );
-
-    createDependencyGroup(
-        emaShortFilterCheck,
-        {emaShortSpin}
-    );
-    
-    strategyLayout->addLayout(emaShortLayout);
-    
-    // Ligne de séparation
-    QFrame* line1 = new QFrame(this);
-    line1->setFrameShape(QFrame::HLine);
-    line1->setFrameShadow(QFrame::Sunken);
-    strategyLayout->addWidget(line1);
-    
-    // SECTION EMA LONG
-    QGridLayout* emaLongLayout = new QGridLayout();
-    emaLongLayout->setContentsMargins(5, 5, 5, 5);
-
-    QCheckBox* emaLongFilterCheck = new QCheckBox("Activer filtre EMA Long", this);
-    emaLongLayout->addWidget(emaLongFilterCheck, 0, 0, 1, 2);
-
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        emaLongFilterCheck, 
-        &m_config.use_ema_long_filter)
+    m_editStrategyBtn = new QPushButton("Modifier stratégie", this);
+    m_editStrategyBtn->setEnabled(false);
+    m_editStrategyBtn->setStyleSheet(
+        "QPushButton {"
+        "  background-color: #2196F3;"
+        "  color: white;"
+        "  border: none;"
+        "  padding: 8px 16px;"
+        "  border-radius: 4px;"
+        "  font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "  background-color: #1976D2;"
+        "}"
+        "QPushButton:disabled {"
+        "  background-color: #cccccc;"
+        "  color: #666666;"
+        "}"
     );
 
-    emaLongLayout->addWidget(new QLabel("Période:", this), 1, 0);
-    QSpinBox* emaLongSpin = new QSpinBox(this);
-    emaLongSpin->setRange(1, 500);
-    emaLongSpin->setValue(200);
-    emaLongLayout->addWidget(emaLongSpin, 1, 1);
-    emaLongLayout->setColumnStretch(2, 1);
+    m_clearStrategyBtn = new QPushButton("Vider stratégie", this);
+    m_clearStrategyBtn->setEnabled(false);
+    m_clearStrategyBtn->setStyleSheet(
+        "QPushButton {"
+        "  background-color: #f44336;"
+        "  color: white;"
+        "  border: none;"
+        "  padding: 8px 16px;"
+        "  border-radius: 4px;"
+        "  font-weight: bold;"
+        "}"
+        "QPushButton:hover {"
+        "  background-color: #d32f2f;"
+        "}"
+        "QPushButton:disabled {"
+        "  background-color: #cccccc;"
+        "  color: #666666;"
+        "}"
+    );
+    
+    buttonLayout->addWidget(m_createStrategyBtn);
+    buttonLayout->addWidget(m_editStrategyBtn);
+    buttonLayout->addWidget(m_clearStrategyBtn);
+    buttonLayout->addStretch();
+    
+    creationLayout->addLayout(buttonLayout);
+    strategyLayout->addWidget(creationGroup);
 
-    addBinding(PropertyBinderFactory::createIntBinding(
-        emaLongSpin, 
-        &m_config.ema_long_period)
-    );
+    // Filters display section
+    QGroupBox* filtersGroup = new QGroupBox("Filtres de la stratégie", this);
+    QVBoxLayout* filtersLayout = new QVBoxLayout(filtersGroup);
+    
+    m_filtersListWidget = new QListWidget(this);
+    m_filtersListWidget->setMinimumHeight(200);
+    m_filtersListWidget->setAlternatingRowColors(true);
+    filtersLayout->addWidget(m_filtersListWidget);
+    
+    QLabel* filtersInfoLabel = new QLabel("Les filtres de la stratégie chargée s'afficheront ici.", this);
+    filtersInfoLabel->setStyleSheet("color: #888; font-style: italic;");
+    filtersLayout->addWidget(filtersInfoLabel);
+    
+    strategyLayout->addWidget(filtersGroup);
 
-    createDependencyGroup(
-        emaLongFilterCheck,
-        {emaLongSpin}
-    );
-    
-    strategyLayout->addLayout(emaLongLayout);
-    
-    // Ligne de séparation
-    QFrame* line2 = new QFrame(this);
-    line2->setFrameShape(QFrame::HLine);
-    line2->setFrameShadow(QFrame::Sunken);
-    strategyLayout->addWidget(line2);
-    
-    // SECTION RSI
-    QGridLayout* rsiLayout = new QGridLayout();
-    rsiLayout->setContentsMargins(5, 5, 5, 5);
-    
-    QCheckBox* rsiFilterCheck = new QCheckBox("Activer filtre RSI", this);
-    rsiLayout->addWidget(rsiFilterCheck, 0, 0, 1, 2);
-    
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        rsiFilterCheck, 
-        &m_config.use_rsi_filter)
-    );
-    
-    rsiLayout->addWidget(new QLabel("Période:", this), 1, 0);
-    QSpinBox* rsiPeriodSpin = new QSpinBox(this);
-    rsiPeriodSpin->setRange(2, 100);
-    rsiPeriodSpin->setValue(14);
-    rsiLayout->addWidget(rsiPeriodSpin, 1, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        rsiPeriodSpin, 
-        &m_config.rsi_period)
-    );
-    
-    rsiLayout->addWidget(new QLabel("Seuil:", this), 2, 0);
-    QSpinBox* rsiThresholdSpin = new QSpinBox(this);
-    rsiThresholdSpin->setRange(1, 99);
-    rsiThresholdSpin->setValue(30);
-    rsiLayout->addWidget(rsiThresholdSpin, 2, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        rsiThresholdSpin, 
-        &m_config.rsi_threshold)
-    );
-    
-    rsiLayout->addWidget(new QLabel("Périodes d'historique:", this), 3, 0);
-    QSpinBox* rsiHistoryPeriodsSpin = new QSpinBox(this);
-    rsiHistoryPeriodsSpin->setRange(1, 20);
-    rsiHistoryPeriodsSpin->setValue(3);
-    rsiLayout->addWidget(rsiHistoryPeriodsSpin, 3, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        rsiHistoryPeriodsSpin, 
-        &m_config.rsi_history_periods)
-    );
+    // Add stretch to push everything to the top
+    strategyLayout->addStretch();
 
-    createDependencyGroup(
-        rsiFilterCheck,
-        {rsiPeriodSpin, rsiThresholdSpin, rsiHistoryPeriodsSpin}
-    );
+    // Connect signals
+    connect(m_createStrategyBtn, &QPushButton::clicked, this, &GenericStrategyPanel::onCreateStrategy);
+    connect(m_editStrategyBtn, &QPushButton::clicked, this, &GenericStrategyPanel::onEditStrategy);
+    connect(m_clearStrategyBtn, &QPushButton::clicked, this, &GenericStrategyPanel::onClearStrategy);
+    
+    // Update UI based on current config
+    updateUI();
+}
 
-    rsiLayout->setColumnStretch(2, 1);
-    strategyLayout->addLayout(rsiLayout);
+void GenericStrategyPanel::onCreateStrategy()
+{
+    StrategyCreationDialog dialog(this);
     
-    // Ligne de séparation
-    QFrame* line3 = new QFrame(this);
-    line3->setFrameShape(QFrame::HLine);
-    line3->setFrameShadow(QFrame::Sunken);
-    strategyLayout->addWidget(line3);
-    
-    // SECTION ATR FILTER
-    QGridLayout* atrLayout = new QGridLayout();
-    atrLayout->setContentsMargins(5, 5, 5, 5);
-    
-    QCheckBox* atrFilterCheck = new QCheckBox("Activer filtre ATR", this);
-    atrLayout->addWidget(atrFilterCheck, 0, 0, 1, 2);
-    
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        atrFilterCheck, 
-        &m_config.use_atr_filter)
-    );
-    
-    atrLayout->addWidget(new QLabel("Période:", this), 1, 0);
-    QSpinBox* atrPeriodSpin = new QSpinBox(this);
-    atrPeriodSpin->setRange(1, 500);
-    atrPeriodSpin->setValue(14);
-    atrLayout->addWidget(atrPeriodSpin, 1, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        atrPeriodSpin, 
-        &m_config.atr_filter_period)
-    );
-    
-    atrLayout->addWidget(new QLabel("Seuil:", this), 2, 0);
-    QDoubleSpinBox* atrThresholdSpin = new QDoubleSpinBox(this);
-    atrThresholdSpin->setRange(0.01, 100.0);
-    atrThresholdSpin->setSingleStep(0.1);
-    atrThresholdSpin->setDecimals(2);
-    atrThresholdSpin->setValue(0.5);
-    atrLayout->addWidget(atrThresholdSpin, 2, 1);
-    
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        atrThresholdSpin, 
-        &m_config.atr_threshold)
-    );
-    
-    atrLayout->addWidget(new QLabel("Périodes d'historique:", this), 3, 0);
-    QSpinBox* atrHistoryPeriodsSpin = new QSpinBox(this);
-    atrHistoryPeriodsSpin->setRange(1, 50);
-    atrHistoryPeriodsSpin->setValue(1);
-    atrLayout->addWidget(atrHistoryPeriodsSpin, 3, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        atrHistoryPeriodsSpin, 
-        &m_config.atr_history_periods)
-    );
+    if (dialog.exec() == QDialog::Accepted) {
+        GenericStrategyConfig newConfig = dialog.getStrategyConfig();
+        
+        // Update the current configuration
+        updateConfig(newConfig);
+        
+        // Update the UI to reflect the new strategy
+        updateUI();
+        
+        // Emit signal to notify that config has changed
+        emit configChanged();
+    }
+}
 
-    createDependencyGroup(
-        atrFilterCheck,
-        {atrPeriodSpin, atrThresholdSpin, atrHistoryPeriodsSpin}
-    );
+void GenericStrategyPanel::onEditStrategy()
+{
+    StrategyCreationDialog dialog(m_config, this);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        GenericStrategyConfig updatedConfig = dialog.getStrategyConfig();
+        
+        // Update the current configuration
+        updateConfig(updatedConfig);
+        
+        // Update the UI to reflect the modified strategy
+        updateUI();
+        
+        // Emit signal to notify that config has changed
+        emit configChanged();
+    }
+}
 
-    atrLayout->setColumnStretch(2, 1);
-    strategyLayout->addLayout(atrLayout);
+void GenericStrategyPanel::onClearStrategy()
+{
+    int result = QMessageBox::question(this, "Vider la stratégie", 
+                                     "Êtes-vous sûr de vouloir vider la stratégie actuelle ?\n"
+                                     "Tous les filtres seront supprimés.",
+                                     QMessageBox::Yes | QMessageBox::No,
+                                     QMessageBox::No);
     
-    // Ligne de séparation
-    QFrame* line4 = new QFrame(this);
-    line4->setFrameShape(QFrame::HLine);
-    line4->setFrameShadow(QFrame::Sunken);
-    strategyLayout->addWidget(line4);
-    
-    // SECTION STOCHASTIQUE
-    QGridLayout* stochLayout = new QGridLayout();
-    stochLayout->setContentsMargins(5, 5, 5, 5);
-    
-    QCheckBox* stochFilterCheck = new QCheckBox("Activer filtre Stochastique", this);
-    stochLayout->addWidget(stochFilterCheck, 0, 0, 1, 2);
-    
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        stochFilterCheck, 
-        &m_config.use_stoch_filter)
-    );
-    
-    stochLayout->addWidget(new QLabel("Fast %K:", this), 1, 0);
-    QSpinBox* fastkSpin = new QSpinBox(this);
-    fastkSpin->setRange(1, 100);
-    fastkSpin->setValue(10);
-    stochLayout->addWidget(fastkSpin, 1, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        fastkSpin, 
-        &m_config.stoch_fastk)
-    );
-    
-    stochLayout->addWidget(new QLabel("Slow %K:", this), 2, 0);
-    QSpinBox* slowkSpin = new QSpinBox(this);
-    slowkSpin->setRange(1, 100);
-    slowkSpin->setValue(7);
-    stochLayout->addWidget(slowkSpin, 2, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        slowkSpin, 
-        &m_config.stoch_slowk)
-    );
-    
-    stochLayout->addWidget(new QLabel("Slow %D:", this), 3, 0);
-    QSpinBox* slowdSpin = new QSpinBox(this);
-    slowdSpin->setRange(1, 100);
-    slowdSpin->setValue(3);
-    stochLayout->addWidget(slowdSpin, 3, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        slowdSpin, 
-        &m_config.stoch_slowd)
-    );
-    
-    stochLayout->addWidget(new QLabel("Seuil:", this), 4, 0);
-    QSpinBox* stochThresholdSpin = new QSpinBox(this);
-    stochThresholdSpin->setRange(1, 99);
-    stochThresholdSpin->setValue(20);
-    stochLayout->addWidget(stochThresholdSpin, 4, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        stochThresholdSpin, 
-        &m_config.stoch_threshold)
-    );
-    
-    stochLayout->addWidget(new QLabel("Périodes d'historique:", this), 5, 0);
-    QSpinBox* stochHistoryPeriodsSpin = new QSpinBox(this);
-    stochHistoryPeriodsSpin->setRange(1, 20);
-    stochHistoryPeriodsSpin->setValue(4);
-    stochLayout->addWidget(stochHistoryPeriodsSpin, 5, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        stochHistoryPeriodsSpin, 
-        &m_config.stoch_history_periods)
-    );
+    if (result == QMessageBox::Yes) {
+        // Create empty strategy config
+        GenericStrategyConfig emptyConfig;
+        emptyConfig.name = "";
+        emptyConfig.go_direction = std::nullopt;
+        emptyConfig.filters.clear();
+        
+        // Initialize with default values for backward compatibility
+        emptyConfig.ema_short_period = 20;
+        emptyConfig.ema_long_period = 200;
+        emptyConfig.stoch_fastk = 14;
+        emptyConfig.stoch_slowk = 3;
+        emptyConfig.stoch_slowd = 3;
+        emptyConfig.stoch_threshold = 20;
+        emptyConfig.rsi_period = 14;
+        emptyConfig.rsi_threshold = 30;
+        emptyConfig.supertrend_atr_period = 10;
+        emptyConfig.supertrend_multiplier = 3.0;
+        emptyConfig.previous_ha_candle_red_filter_n = 3;
+        emptyConfig.rsi_history_periods = 3;
+        emptyConfig.stoch_history_periods = 3;
+        emptyConfig.atr_filter_period = 14;
+        emptyConfig.atr_threshold = 0.01;
+        emptyConfig.atr_history_periods = 3;
+        
+        // All hardcoded filters disabled
+        emptyConfig.use_ema_short_filter = false;
+        emptyConfig.use_ema_long_filter = false;
+        emptyConfig.use_stoch_filter = false;
+        emptyConfig.use_rsi_filter = false;
+        emptyConfig.use_previous_ha_candle_red_filter = false;
+        emptyConfig.use_supertrend_filter = false;
+        emptyConfig.use_atr_filter = false;
+        
+        // Update the configuration
+        updateConfig(emptyConfig);
+        
+        // Update UI
+        updateUI();
+        
+        // Emit signal to notify that config has changed
+        emit configChanged();
+    }
+}
 
-    createDependencyGroup(
-        stochFilterCheck,
-        {fastkSpin, slowkSpin, slowdSpin, stochThresholdSpin, stochHistoryPeriodsSpin}
-    );
+void GenericStrategyPanel::updateUI()
+{
+    // Update current strategy label
+    if (m_config.name.empty() || m_config.filters.empty()) {
+        m_currentStrategyLabel->setText("Aucune stratégie chargée");
+        m_currentStrategyLabel->setStyleSheet("font-weight: bold; color: #888;");
+        m_editStrategyBtn->setEnabled(false);
+        m_clearStrategyBtn->setEnabled(false);
+    } else {
+        QString directionText;
+        if (m_config.go_direction.has_value()) {
+            directionText = m_config.go_direction.value() ? " (Long)" : " (Short)";
+        } else {
+            directionText = " (Long/Short)";
+        }
+        
+        m_currentStrategyLabel->setText(QString::fromStdString(m_config.name) + directionText);
+        m_currentStrategyLabel->setStyleSheet("font-weight: bold; color: #2c5aa0;");
+        m_editStrategyBtn->setEnabled(true);
+        m_clearStrategyBtn->setEnabled(true);
+    }
+    
+    // Update filters list
+    m_filtersListWidget->clear();
+    
+    if (m_config.filters.empty()) {
+        QListWidgetItem* item = new QListWidgetItem("Aucun filtre configuré");
+        item->setForeground(QColor::fromRgb(136, 136, 136));
+        item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
+        m_filtersListWidget->addItem(item);
+    } else {
+        for (size_t i = 0; i < m_config.filters.size(); ++i) {
+            const GenericFilter& filter = m_config.filters[i];
+            
+            QString itemText = QString("Filtre %1: %2")
+                                 .arg(i + 1)
+                                 .arg(QString::fromStdString(filter.description));
+            
+            QListWidgetItem* item = new QListWidgetItem(itemText);
+            
+            if (!filter.enabled) {
+                itemText += " (désactivé)";
+                item->setText(itemText);
+                item->setForeground(QColor::fromRgb(136, 136, 136));
+            } else {
+                item->setForeground(QColor::fromRgb(0, 0, 0));
+            }
+            
+            m_filtersListWidget->addItem(item);
+        }
+    }
+}
 
-    stochLayout->setColumnStretch(2, 1);
-    strategyLayout->addLayout(stochLayout);
-    
-    // Ligne de séparation
-    QFrame* line5 = new QFrame(this);
-    line5->setFrameShape(QFrame::HLine);
-    line5->setFrameShadow(QFrame::Sunken);
-    strategyLayout->addWidget(line5);
-    
-    // SECTION SUPERTREND
-    QGridLayout* supertrendLayout = new QGridLayout();
-    supertrendLayout->setContentsMargins(5, 5, 5, 5);
-    
-    QCheckBox* supertrendFilterCheck = new QCheckBox("Activer filtre Supertrend", this);
-    supertrendLayout->addWidget(supertrendFilterCheck, 0, 0, 1, 2);
-    
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        supertrendFilterCheck, 
-        &m_config.use_supertrend_filter)
-    );
-    
-    supertrendLayout->addWidget(new QLabel("Période:", this), 1, 0);
-    QSpinBox* supertrendPeriodSpin = new QSpinBox(this);
-    supertrendPeriodSpin->setRange(1, 100);
-    supertrendPeriodSpin->setValue(10);
-    supertrendLayout->addWidget(supertrendPeriodSpin, 1, 1);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        supertrendPeriodSpin, 
-        &m_config.supertrend_atr_period)
-    );
-    
-    supertrendLayout->addWidget(new QLabel("Multiplicateur:", this), 2, 0);
-    QDoubleSpinBox* supertrendMultiplierSpin = new QDoubleSpinBox(this);
-    supertrendMultiplierSpin->setRange(0.1, 10.0);
-    supertrendMultiplierSpin->setValue(3.0);
-    supertrendMultiplierSpin->setSingleStep(0.1);
-    supertrendMultiplierSpin->setDecimals(1);
-    supertrendLayout->addWidget(supertrendMultiplierSpin, 2, 1);
-    
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        supertrendMultiplierSpin, 
-        &m_config.supertrend_multiplier)
-    );
-
-    createDependencyGroup(
-        supertrendFilterCheck,
-        {supertrendPeriodSpin, supertrendMultiplierSpin}
-    );
-    
-    supertrendLayout->setColumnStretch(2, 1);
-    strategyLayout->addLayout(supertrendLayout);
-    
-    // Ligne de séparation
-    QFrame* line6 = new QFrame(this);
-    line6->setFrameShape(QFrame::HLine);
-    line6->setFrameShadow(QFrame::Sunken);
-    strategyLayout->addWidget(line6);
-    
-    // SECTION AUTRES FILTRES
-    QVBoxLayout* otherFiltersLayout = new QVBoxLayout();
-    otherFiltersLayout->setContentsMargins(5, 5, 5, 5);
-    
-    QCheckBox* previousHaCandleRedFilterCheck = new QCheckBox("Activer filtre précédente(s) bougie(s) rouge(s)", this);
-    otherFiltersLayout->addWidget(previousHaCandleRedFilterCheck);
-    
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        previousHaCandleRedFilterCheck, 
-        &m_config.use_previous_ha_candle_red_filter)
-    );
-
-    // Paramètres n bougies précédentes
-    QSpinBox* previousHaCandleRedFilterSpin = new QSpinBox(this);
-    previousHaCandleRedFilterSpin->setRange(1, 100);
-    previousHaCandleRedFilterSpin->setValue(2);
-    otherFiltersLayout->addWidget(previousHaCandleRedFilterSpin);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        previousHaCandleRedFilterSpin, 
-        &m_config.previous_ha_candle_red_filter_n)
-    );
-    
-    createDependencyGroup(
-        previousHaCandleRedFilterCheck,
-        {previousHaCandleRedFilterSpin}
-    );
-    
-    strategyLayout->addLayout(otherFiltersLayout);
-
-    // Stretch pour prendre l'espace restant
-    strategyLayout->addStretch(1);
+void GenericStrategyPanel::updateConfig(const GenericStrategyConfig& newConfig)
+{
+    m_config = newConfig;
 }

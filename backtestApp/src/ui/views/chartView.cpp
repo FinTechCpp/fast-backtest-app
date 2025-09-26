@@ -186,7 +186,9 @@ void ChartView::updateData(BacktestResults* results) {
     showChartWidget();
 
     // Configurer les indicateurs de stratégie
-    m_leftPanel->configureIndicatorInstances(results->indicatorInstances);
+    m_leftPanel->configureIndicatorInstances(
+        extractIndicatorsFromFilters(results->strategyConfig)
+    );
     
     // Actualiser la liste des indicateurs
     m_leftPanel->refreshIndicatorsList();
@@ -214,4 +216,81 @@ void ChartView::zoomToTrade(const be::TradeData& trade) {
     
     // Déléguer le zoom au ChartWidget
     m_chartWidget->zoomToTrade(trade);
+}
+
+// Dans ChartView.cpp, ajoutez cette méthode
+std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndicatorsFromFilters(const StrategyConfig& strategyConfig) {
+    std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances;
+        
+    // Fonction helper pour extraire les indicateurs des ValueSource
+    auto extractIndicator = [&indicatorInstances](const ValueSource& source) {
+        if (source.category != ValueCategory::INDICATOR) {
+            return;
+        }
+        
+        switch (source.indicatorType) {
+            case IndicatorType::EMA: {
+                auto ema = std::make_unique<indicators::EMAInstance>();
+                ema->period = source.emaParams.period;
+                indicatorInstances.push_back(std::move(ema));
+                break;
+            }
+            case IndicatorType::RSI: {
+                auto rsi = std::make_unique<indicators::RSIInstance>();
+                rsi->period = source.rsiParams.period;
+                indicatorInstances.push_back(std::move(rsi));
+                break;
+            }
+            case IndicatorType::ATR: {
+                auto atr = std::make_unique<indicators::ATRInstance>();
+                atr->period = source.atrParams.period;
+                atr->useLogScale = source.atrParams.useLog;
+                indicatorInstances.push_back(std::move(atr));
+                break;
+            }
+            case IndicatorType::STOCHASTIC_K:
+            case IndicatorType::STOCHASTIC_D: {
+                auto stoch = std::make_unique<indicators::StochasticInstance>();
+                stoch->fastKPeriod = source.stochParams.fastK;
+                stoch->slowKPeriod = source.stochParams.slowK;
+                stoch->slowDPeriod = source.stochParams.slowD;
+                indicatorInstances.push_back(std::move(stoch));
+                break;
+            }
+            case IndicatorType::SUPERTREND_VALUE:
+            case IndicatorType::SUPERTREND_DIRECTION: {
+                auto supertrend = std::make_unique<indicators::SuperTrendInstance>();
+                supertrend->period = source.supertrendParams.atrPeriod;
+                supertrend->multiplier = source.supertrendParams.multiplier;
+                indicatorInstances.push_back(std::move(supertrend));
+                break;
+            }
+            default:
+                break;
+        }
+    };
+    
+    // Parcourir tous les filtres et extraire les indicateurs
+    for (const auto& filter : strategyConfig.filters) {
+        extractIndicator(filter.leftValue);
+        extractIndicator(filter.rightValue);
+    }
+    
+    // Ajouter aussi les indicateurs utilisés pour le SL/TP
+    if (strategyConfig.sl_method == StopLossMethod::ATR || 
+        strategyConfig.tp_method == TakeProfitMethod::ATR) {
+        auto atr = std::make_unique<indicators::ATRInstance>();
+        atr->period = strategyConfig.atr_period;
+        atr->useLogScale = true;
+        indicatorInstances.push_back(std::move(atr));
+    }
+
+    if (strategyConfig.tp_method == TakeProfitMethod::SuperTrend) {
+        auto supertrend = std::make_unique<indicators::SuperTrendInstance>();
+        supertrend->period = strategyConfig.tp_supertrend_atr_period;
+        supertrend->multiplier = strategyConfig.tp_supertrend_multiplier;
+        indicatorInstances.push_back(std::move(supertrend));
+    }
+    
+    return indicatorInstances;
 }

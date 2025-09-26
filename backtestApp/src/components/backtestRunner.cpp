@@ -229,7 +229,6 @@ void BacktestWorker::run()
     // Créer un objet BacktestResults pour stocker les résultats
     m_results = std::make_unique<BacktestResults>();
     m_results->data = data;
-    m_results->indicatorInstances = m_mainWindow->readFromStrategyPanelToIndicatorInstances(); // Stocker les instances d'indicateurs
     m_results->strategyConfig = m_mainWindow->getStrategyConfig(); // Stocker la configuration de base de la stratégie
     
     qDebug() << "Données disponibles:" << data->size() << "barres";
@@ -238,7 +237,6 @@ void BacktestWorker::run()
     
     // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
     auto strategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data) {
-
         GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
         StrategyConfig strategyConfig = m_mainWindow->getStrategyConfig();
         strategyConfig.cash = generalParams.cash;

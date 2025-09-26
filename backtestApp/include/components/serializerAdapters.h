@@ -30,6 +30,7 @@ struct ProfileConfig {
     }
 };
 
+// TODO finir l'enregistrement total des resultats de backtest
 struct BacktestResultConfig {
     std::string name;
     std::string version;

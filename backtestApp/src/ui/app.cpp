@@ -210,14 +210,6 @@ void App::setStrategyConfig(const StrategyConfig& config) {
     }
 }
 
-std::vector<std::unique_ptr<indicators::IndicatorBase>> App::readFromStrategyPanelToIndicatorInstances() const {
-    std::vector<std::unique_ptr<indicators::IndicatorBase>> indicators;
-
-
-
-    return indicators;
-}
-
 void App::setBacktestResults(std::unique_ptr<BacktestResults> results) {
     m_backtestResults = std::move(results);
 

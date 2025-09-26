@@ -77,4 +77,5 @@ private:
     
     void showPlaceholder(const QString& message);
     void showChartWidget();
+    std::vector<std::unique_ptr<indicators::IndicatorBase>> extractIndicatorsFromFilters(const StrategyConfig& strategyConfig);
 };

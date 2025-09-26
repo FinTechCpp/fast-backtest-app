@@ -49,20 +49,11 @@ public:
     App();
     ~App();
     
-    // Getters pour les configurations
-    std::vector<std::unique_ptr<indicators::IndicatorBase>> readFromStrategyPanelToIndicatorInstances() const;
-
     GeneralParamsConfig getGeneralParamsConfig() const;
     StrategyConfig getStrategyConfig() const;
-    // BuyHeikinGreenConfig getBuyHeikinGreenConfig() const;
-    // SellHeikinRedConfig getSellHeikinRedConfig() const;
-    // GenericStrategyConfig getGenericStrategyConfig() const;
 
     void setGeneralParamsConfig(const GeneralParamsConfig& config);
     void setStrategyConfig(const StrategyConfig& config);
-    // void setBuyHeikinGreenConfig(const BuyHeikinGreenConfig& config);
-    // void setSellHeikinRedConfig(const SellHeikinRedConfig& config);
-    // void setGenericStrategyConfig(const GenericStrategyConfig& config);
 
     // Ajout d'accesseurs pour les résultats de backtest
     BacktestResults* getBacktestResults() const { return m_backtestResults.get(); }

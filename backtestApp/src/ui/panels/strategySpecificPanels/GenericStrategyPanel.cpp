@@ -181,33 +181,6 @@ void GenericStrategyPanel::onClearStrategy()
         emptyConfig.go_direction = std::nullopt;
         emptyConfig.filters.clear();
         
-        // Initialize with default values for backward compatibility
-        emptyConfig.ema_short_period = 20;
-        emptyConfig.ema_long_period = 200;
-        emptyConfig.stoch_fastk = 14;
-        emptyConfig.stoch_slowk = 3;
-        emptyConfig.stoch_slowd = 3;
-        emptyConfig.stoch_threshold = 20;
-        emptyConfig.rsi_period = 14;
-        emptyConfig.rsi_threshold = 30;
-        emptyConfig.supertrend_atr_period = 10;
-        emptyConfig.supertrend_multiplier = 3.0;
-        emptyConfig.previous_ha_candle_red_filter_n = 3;
-        emptyConfig.rsi_history_periods = 3;
-        emptyConfig.stoch_history_periods = 3;
-        emptyConfig.atr_filter_period = 14;
-        emptyConfig.atr_threshold = 0.01;
-        emptyConfig.atr_history_periods = 3;
-        
-        // All hardcoded filters disabled
-        emptyConfig.use_ema_short_filter = false;
-        emptyConfig.use_ema_long_filter = false;
-        emptyConfig.use_stoch_filter = false;
-        emptyConfig.use_rsi_filter = false;
-        emptyConfig.use_previous_ha_candle_red_filter = false;
-        emptyConfig.use_supertrend_filter = false;
-        emptyConfig.use_atr_filter = false;
-        
         // Update the configuration
         updateConfig(emptyConfig);
         

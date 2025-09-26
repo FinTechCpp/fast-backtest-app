@@ -779,32 +779,5 @@ GenericStrategyConfig StrategyCreationDialog::getStrategyConfig() const
     // Set filters
     config.filters = m_filters;
     
-    // Initialize other parameters with defaults
-    config.ema_short_period = 20;
-    config.ema_long_period = 200;
-    config.stoch_fastk = 14;
-    config.stoch_slowk = 3;
-    config.stoch_slowd = 3;
-    config.stoch_threshold = 20;
-    config.rsi_period = 14;
-    config.rsi_threshold = 30;
-    config.supertrend_atr_period = 10;
-    config.supertrend_multiplier = 3.0;
-    config.previous_ha_candle_red_filter_n = 3;
-    config.rsi_history_periods = 3;
-    config.stoch_history_periods = 3;
-    config.atr_filter_period = 14;
-    config.atr_threshold = 0.01;
-    config.atr_history_periods = 3;
-    
-    // All hardcoded filters disabled by default
-    config.use_ema_short_filter = false;
-    config.use_ema_long_filter = false;
-    config.use_stoch_filter = false;
-    config.use_rsi_filter = false;
-    config.use_previous_ha_candle_red_filter = false;
-    config.use_supertrend_filter = false;
-    config.use_atr_filter = false;
-    
     return config;
 }

@@ -19,9 +19,6 @@ struct ProfileConfig {
     std::string createdAt;
     GeneralParamsConfig generalParams;
     StrategyConfig strategyConfig;
-    // BuyHeikinGreenConfig buyConfig;
-    // SellHeikinRedConfig sellConfig;
-    // GenericStrategyConfig genericConfig;
 
     template<class Archive>
     void serialize(Archive & ar) {
@@ -30,9 +27,6 @@ struct ProfileConfig {
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
            CEREAL_NVP(strategyConfig));
-        //    CEREAL_NVP(buyConfig),
-        //    CEREAL_NVP(sellConfig));
-        //    CEREAL_NVP(genericConfig));
     }
 };
 
@@ -250,60 +244,15 @@ namespace cereal {
            cereal::make_nvp("kellyCriterion", stats.kellyCriterion));
     }
     
-    // Sérialisation pour BuyHeikinGreenConfig
-    // template<class Archive>
-    // void serialize(Archive & ar, BuyHeikinGreenConfig & config) {
-    //     ar(cereal::make_nvp("ema_short_period", config.ema_short_period),
-    //        cereal::make_nvp("ema_long_period", config.ema_long_period),
-    //        cereal::make_nvp("stoch_fastk", config.stoch_fastk),
-    //        cereal::make_nvp("stoch_slowk", config.stoch_slowk),
-    //        cereal::make_nvp("stoch_slowd", config.stoch_slowd),
-    //        cereal::make_nvp("stoch_threshold", config.stoch_threshold),
-    //        cereal::make_nvp("rsi_period", config.rsi_period),
-    //        cereal::make_nvp("rsi_threshold", config.rsi_threshold),
-    //        cereal::make_nvp("supertrend_atr_period", config.supertrend_atr_period),
-    //        cereal::make_nvp("supertrend_multiplier", config.supertrend_multiplier),
-    //        cereal::make_nvp("previous_ha_candle_red_filter_n", config.previous_ha_candle_red_filter_n),
-    //        cereal::make_nvp("rsi_history_periods", config.rsi_history_periods),
-    //        cereal::make_nvp("stoch_history_periods", config.stoch_history_periods),
-    //        cereal::make_nvp("use_ema_short_filter", config.use_ema_short_filter),
-    //        cereal::make_nvp("use_ema_long_filter", config.use_ema_long_filter),
-    //        cereal::make_nvp("use_stoch_filter", config.use_stoch_filter),
-    //        cereal::make_nvp("use_rsi_filter", config.use_rsi_filter),
-    //        cereal::make_nvp("use_supertrend_filter", config.use_supertrend_filter),
-    //        cereal::make_nvp("use_previous_ha_candle_red_filter", config.use_previous_ha_candle_red_filter));
-    // }
-    
-    // Sérialisation pour SellHeikinRedConfig
-    // template<class Archive>
-    // void serialize(Archive & ar, SellHeikinRedConfig & config) {
-    //     ar(cereal::make_nvp("ema_short_period", config.ema_short_period),
-    //        cereal::make_nvp("ema_long_period", config.ema_long_period),
-    //        cereal::make_nvp("stoch_fastk", config.stoch_fastk),
-    //        cereal::make_nvp("stoch_slowk", config.stoch_slowk),
-    //        cereal::make_nvp("stoch_slowd", config.stoch_slowd),
-    //        cereal::make_nvp("stoch_threshold", config.stoch_threshold),
-    //        cereal::make_nvp("rsi_period", config.rsi_period),
-    //        cereal::make_nvp("rsi_threshold", config.rsi_threshold),
-    //        cereal::make_nvp("supertrend_atr_period", config.supertrend_atr_period),
-    //        cereal::make_nvp("supertrend_multiplier", config.supertrend_multiplier),
-    //        cereal::make_nvp("previous_ha_candle_green_filter_n", config.previous_ha_candle_green_filter_n),
-    //        cereal::make_nvp("rsi_history_periods", config.rsi_history_periods),
-    //        cereal::make_nvp("stoch_history_periods", config.stoch_history_periods),
-    //        cereal::make_nvp("use_ema_short_filter", config.use_ema_short_filter),
-    //        cereal::make_nvp("use_ema_long_filter", config.use_ema_long_filter),
-    //        cereal::make_nvp("use_stoch_filter", config.use_stoch_filter),
-    //        cereal::make_nvp("use_rsi_filter", config.use_rsi_filter),
-    //        cereal::make_nvp("use_supertrend_filter", config.use_supertrend_filter),
-    //        cereal::make_nvp("use_previous_ha_candle_green_filter", config.use_previous_ha_candle_green_filter));
-    // }
-    
     // Sérialisation pour StrategyConfig
     // TODO il faudra ajouter les filtres et la direction
     template<class Archive>
     void serialize(Archive & ar, StrategyConfig & config) {
-        ar(cereal::make_nvp("enable_logging", config.enable_logging),
+        ar(cereal::make_nvp("name", config.name),
+           cereal::make_nvp("tradeDirection", config.tradeDirection),
+           cereal::make_nvp("enable_logging", config.enable_logging),
            cereal::make_nvp("logLevel", config.logLevel),
+           cereal::make_nvp("filters", config.filters),
            cereal::make_nvp("sl_method", config.sl_method),
            cereal::make_nvp("tp_method", config.tp_method),
            cereal::make_nvp("trading_from", config.trading_from),
@@ -358,88 +307,78 @@ namespace cereal {
            cereal::make_nvp("finalizeTrades", config.finalizeTrades));
     }
 
-    // template<class Archive>
-    // void serialize(Archive & ar, GenericStrategyConfig & config) {
-    //     ar(cereal::make_nvp("name", config.name),
-    //        cereal::make_nvp("direction", config.direction),
-    //        cereal::make_nvp("indicators", config.indicators),
-    //        cereal::make_nvp("filters", config.filters));
-    // }
-
-    // Sérialisation pour ValueSource
-    // template<class Archive>
-    // void serialize(Archive & ar, ValueSource & config) {
-    //     int typeInt = static_cast<int>(config.type);
-    //     ar(cereal::make_nvp("type", typeInt),
-    //        cereal::make_nvp("identifier", config.identifier),
-    //        cereal::make_nvp("constantValue", config.constantValue),
-    //        cereal::make_nvp("historicalOffset", config.historicalOffset));
-    //     config.type = static_cast<ValueType>(typeInt);
-    // }
-
-    // Sérialisation pour FilterConfig
-    // template<class Archive>
-    // void serialize(Archive & ar, FilterConfig & config) {
-    //     int comparisonInt = static_cast<int>(config.comparison);
-    //     ar(cereal::make_nvp("name", config.name),
-    //        cereal::make_nvp("value1", config.value1),
-    //        cereal::make_nvp("value2", config.value2),
-    //        cereal::make_nvp("comparison", comparisonInt),
-    //        cereal::make_nvp("lookbackPeriods", config.lookbackPeriods),
-    //        cereal::make_nvp("enabled", config.enabled));
-    //     config.comparison = static_cast<ComparisonType>(comparisonInt);
-    // }
-
-    // Sérialisation pour IndicatorConfig
-    // template<class Archive>
-    // void serialize(Archive & ar, IndicatorConfig & config) {
-    //     ar(cereal::make_nvp("name", config.name),
-    //        cereal::make_nvp("type", config.type),
-    //        cereal::make_nvp("parameters", config.parameters),
-    //        cereal::make_nvp("enabled", config.enabled));
-    // }
-    
-    // Enum serializers for the new generic filter system
     template<class Archive>
-    void serialize(Archive & ar, ValueCategory & cat) {
-        int value = static_cast<int>(cat);
-        ar(cereal::make_nvp("value", value));
-        cat = static_cast<ValueCategory>(value);
+    void serialize(Archive & ar, GenericFilter & filter) {
+        ar(cereal::make_nvp("leftValue", filter.leftValue),
+           cereal::make_nvp("rightValue", filter.rightValue),
+           cereal::make_nvp("comparisonOperator", filter.op),
+           cereal::make_nvp("temporalLogic", filter.temporalLogic),
+           cereal::make_nvp("lookbackPeriods", filter.lookbackPeriods),
+           cereal::make_nvp("enabled", filter.enabled), 
+           cereal::make_nvp("description", filter.description));
     }
 
     template<class Archive>
-    void serialize(Archive & ar, PriceType & type) {
-        int value = static_cast<int>(type);
-        ar(cereal::make_nvp("value", value));
-        type = static_cast<PriceType>(value);
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, IndicatorType & type) {
-        int value = static_cast<int>(type);
-        ar(cereal::make_nvp("value", value));
-        type = static_cast<IndicatorType>(value);
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, CandlePropertyType & type) {
-        int value = static_cast<int>(type);
-        ar(cereal::make_nvp("value", value));
-        type = static_cast<CandlePropertyType>(value);
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, ComparisonOperator & op) {
-        int value = static_cast<int>(op);
-        ar(cereal::make_nvp("value", value));
-        op = static_cast<ComparisonOperator>(value);
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, TemporalLogic & logic) {
-        int value = static_cast<int>(logic);
-        ar(cereal::make_nvp("value", value));
-        logic = static_cast<TemporalLogic>(value);
+    void serialize(Archive & ar, ValueSource & valueSource)
+    {
+        // Toujours sérialiser la catégorie en premier
+        ar(cereal::make_nvp("category", valueSource.category));
+        
+        // Sérialiser les membres de la première union selon la catégorie
+        switch (valueSource.category) {
+            case ValueCategory::PRICE:
+                ar(cereal::make_nvp("priceType", valueSource.priceType));
+                break;
+                
+            case ValueCategory::INDICATOR:
+                ar(cereal::make_nvp("indicatorType", valueSource.indicatorType));
+                
+                // Pour les indicateurs, sérialiser la bonne structure de paramètres
+                switch (valueSource.indicatorType) {
+                    case IndicatorType::EMA:
+                        ar(cereal::make_nvp("emaParams", valueSource.emaParams));
+                        break;
+                        
+                    case IndicatorType::RSI:
+                        ar(cereal::make_nvp("rsiParams", valueSource.rsiParams));
+                        break;
+                        
+                    case IndicatorType::STOCHASTIC_K:
+                    case IndicatorType::STOCHASTIC_D:
+                        ar(cereal::make_nvp("stochParams", valueSource.stochParams));
+                        break;
+                        
+                    case IndicatorType::ATR:
+                        ar(cereal::make_nvp("atrParams", valueSource.atrParams));
+                        break;
+                        
+                    case IndicatorType::SUPERTREND_VALUE:
+                    case IndicatorType::SUPERTREND_DIRECTION:
+                        ar(cereal::make_nvp("supertrendParams", valueSource.supertrendParams));
+                        break;
+                        
+                    case IndicatorType::PIVOT_POINT:
+                        // Pas de paramètre spécifique pour ce type
+                        break;
+                }
+                break;
+                
+            case ValueCategory::CANDLE_PROPERTY:
+                ar(cereal::make_nvp("candlePropertyType", valueSource.candlePropertyType));
+                break;
+                
+            case ValueCategory::CONSTANT:
+                // Pas de membre de la première union pour les constantes
+                break;
+        }
+        
+        // Sérialiser les membres hors des unions
+        if (valueSource.category == ValueCategory::CONSTANT) {
+            ar(cereal::make_nvp("constantValue", valueSource.constantValue));
+        }
+        
+        // Le décalage historique s'applique à toutes les catégories
+        ar(cereal::make_nvp("historicalOffset", valueSource.historicalOffset));
     }
 
     // Parameter structures
@@ -471,110 +410,4 @@ namespace cereal {
         ar(cereal::make_nvp("atrPeriod", params.atrPeriod),
            cereal::make_nvp("multiplier", params.multiplier));
     }
-
-    // ValueSource serialization - more complex due to unions
-    template<class Archive>
-    void save(Archive & ar, const ValueSource & source) {
-        ar(cereal::make_nvp("category", source.category));
-        ar(cereal::make_nvp("historicalOffset", source.historicalOffset));
-        
-        switch (source.category) {
-            case ValueCategory::PRICE:
-                ar(cereal::make_nvp("priceType", source.priceType));
-                break;
-            case ValueCategory::INDICATOR:
-                ar(cereal::make_nvp("indicatorType", source.indicatorType));
-                switch (source.indicatorType) {
-                    case IndicatorType::EMA:
-                        ar(cereal::make_nvp("emaParams", source.emaParams));
-                        break;
-                    case IndicatorType::RSI:
-                        ar(cereal::make_nvp("rsiParams", source.rsiParams));
-                        break;
-                    case IndicatorType::STOCHASTIC_K:
-                    case IndicatorType::STOCHASTIC_D:
-                        ar(cereal::make_nvp("stochParams", source.stochParams));
-                        break;
-                    case IndicatorType::ATR:
-                        ar(cereal::make_nvp("atrParams", source.atrParams));
-                        break;
-                    case IndicatorType::SUPERTREND_VALUE:
-                    case IndicatorType::SUPERTREND_DIRECTION:
-                        ar(cereal::make_nvp("supertrendParams", source.supertrendParams));
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case ValueCategory::CONSTANT:
-                ar(cereal::make_nvp("constantValue", source.constantValue));
-                break;
-            case ValueCategory::CANDLE_PROPERTY:
-                ar(cereal::make_nvp("candlePropertyType", source.candlePropertyType));
-                break;
-        }
-    }
-
-    template<class Archive>
-    void load(Archive & ar, ValueSource & source) {
-        ar(cereal::make_nvp("category", source.category));
-        ar(cereal::make_nvp("historicalOffset", source.historicalOffset));
-        
-        switch (source.category) {
-            case ValueCategory::PRICE:
-                ar(cereal::make_nvp("priceType", source.priceType));
-                break;
-            case ValueCategory::INDICATOR:
-                ar(cereal::make_nvp("indicatorType", source.indicatorType));
-                switch (source.indicatorType) {
-                    case IndicatorType::EMA:
-                        ar(cereal::make_nvp("emaParams", source.emaParams));
-                        break;
-                    case IndicatorType::RSI:
-                        ar(cereal::make_nvp("rsiParams", source.rsiParams));
-                        break;
-                    case IndicatorType::STOCHASTIC_K:
-                    case IndicatorType::STOCHASTIC_D:
-                        ar(cereal::make_nvp("stochParams", source.stochParams));
-                        break;
-                    case IndicatorType::ATR:
-                        ar(cereal::make_nvp("atrParams", source.atrParams));
-                        break;
-                    case IndicatorType::SUPERTREND_VALUE:
-                    case IndicatorType::SUPERTREND_DIRECTION:
-                        ar(cereal::make_nvp("supertrendParams", source.supertrendParams));
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            case ValueCategory::CONSTANT:
-                ar(cereal::make_nvp("constantValue", source.constantValue));
-                break;
-            case ValueCategory::CANDLE_PROPERTY:
-                ar(cereal::make_nvp("candlePropertyType", source.candlePropertyType));
-                break;
-        }
-    }
-
-    // GenericFilter serialization
-    template<class Archive>
-    void serialize(Archive & ar, GenericFilter & filter) {
-        ar(cereal::make_nvp("leftValue", filter.leftValue),
-           cereal::make_nvp("rightValue", filter.rightValue),
-           cereal::make_nvp("op", filter.op),
-           cereal::make_nvp("temporalLogic", filter.temporalLogic),
-           cereal::make_nvp("lookbackPeriods", filter.lookbackPeriods),
-           cereal::make_nvp("enabled", filter.enabled),
-           cereal::make_nvp("description", filter.description));
-    }
-    
-    // Sérialisation pour GenericStrategyConfig
-    // template<class Archive>
-    // void serialize(Archive & ar, GenericStrategyConfig & config) {
-    //     ar(cereal::make_nvp("name", config.name),
-    //        cereal::make_nvp("direction", config.direction),
-    //        cereal::make_nvp("indicators", config.indicators),
-    //        cereal::make_nvp("filters", config.filters));
-    // }
 }

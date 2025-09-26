@@ -12,5 +12,5 @@ struct BacktestResults {
     std::shared_ptr<be::Data> data;  // Pointer to backtest data
     be::Stats stats;                  // Backtest statistics
     std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances; // Instances of indicators calculated during backtest
-    StrategyBaseConfig strategyBaseConfig; // Base configuration for the strategy
+    StrategyConfig strategyConfig; // Base configuration for the strategy
 };

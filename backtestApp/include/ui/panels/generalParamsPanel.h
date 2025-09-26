@@ -5,6 +5,7 @@
 #include <QGridLayout>
 #include <QFormLayout>
 #include <QLabel>
+#include <QDateTime>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QDoubleSpinBox>
@@ -66,16 +67,7 @@ class GeneralParamsPanel : public ConfigPanel<GeneralParamsConfig>
 public:
     GeneralParamsPanel(QWidget* parent = nullptr);
 
-signals:
-    void strategyChanged(const QString& strategy);
-private slots:
-    void onStrategyComboChanged(const QString& strategy);
-
-
 private:
-    QMap<QString, QString> m_strategyMap;
-    void initStrategyMap();
-
     void setupUI();
 };
 

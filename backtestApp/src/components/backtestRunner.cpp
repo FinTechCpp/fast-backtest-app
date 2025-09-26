@@ -4,9 +4,7 @@
 #include "components/backtestRunner.h"
 #include "ui/app.h"
 #include "ui/panels/generalParamsPanel.h"
-#include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
-#include "Strategies/buy_heikin_green.hpp"
-#include "components/strategiesAdapters/buyHeikinGreen.hpp"
+#include "ui/panels/StrategyPanel.h"
 
 #include "backtest.hpp"
 #include "broker.hpp"
@@ -218,13 +216,6 @@ void BacktestWorker::run()
 
     GeneralParamsConfig generalConfig = m_mainWindow->getGeneralParamsConfig();
 
-
-    auto strategyCreator = StrategyRegistry::getInstance().getCreator(QString::fromStdString(generalConfig.strategyName));
-    if (!strategyCreator) {
-        emit error(QString("Stratégie non supportée: %1").arg(QString::fromStdString(generalConfig.strategyName)));
-        return;
-    }
-    
     // Chargement des données avec DataLoader puis conversion en be::Data
     std::vector<OHLCBar> rawData = DataLoader::loadData(generalConfig.symbol, generalConfig.interval, generalConfig.period, generalConfig.endDate);
 
@@ -239,16 +230,28 @@ void BacktestWorker::run()
     m_results = std::make_unique<BacktestResults>();
     m_results->data = data;
     m_results->indicatorInstances = m_mainWindow->readFromStrategyPanelToIndicatorInstances(); // Stocker les instances d'indicateurs
-    m_results->strategyBaseConfig = m_mainWindow->getStrategyBaseConfig(); // Stocker la configuration de base de la stratégie
+    m_results->strategyConfig = m_mainWindow->getStrategyConfig(); // Stocker la configuration de base de la stratégie
     
     qDebug() << "Données disponibles:" << data->size() << "barres";
     qDebug() << "Démarrage du backtest C++...";
     
     
     // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
-    auto strategyFactory = [strategyCreator, this](std::shared_ptr<be::Broker> b, std::shared_ptr<be::Data> d) {
-        return strategyCreator(b, d, m_mainWindow);
+    auto strategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data) {
+
+        GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
+        StrategyConfig strategyConfig = m_mainWindow->getStrategyConfig();
+        strategyConfig.cash = generalParams.cash;
+        strategyConfig.leverage_limit = generalParams.leverage_limit;
+
+        std::cout << generalParams << std::endl;
+        std::cout << strategyConfig << std::endl;
+
+        // Création directe de la stratégie
+        return std::make_shared<StrategyAdapter>(broker, data, strategyConfig);
     };
+
+
     double margin = 1 / generalConfig.leverage_limit; // Calculer la marge à partir du levier
     
     // Créer et exécuter le backtest

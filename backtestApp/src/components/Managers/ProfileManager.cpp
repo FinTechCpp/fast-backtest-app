@@ -159,10 +159,10 @@ bool ProfileManager::applyProfileToUI(const QString& profileName)
     if (success) {
         // Apply configurations to UI
         m_mainWindow->setGeneralParamsConfig(profileConfig.generalParams);
-        m_mainWindow->setStrategyBaseConfig(profileConfig.baseConfig);
-        m_mainWindow->setBuyHeikinGreenConfig(profileConfig.buyConfig);
-        m_mainWindow->setSellHeikinRedConfig(profileConfig.sellConfig);
-        m_mainWindow->setGenericStrategyConfig(profileConfig.genericConfig);
+        m_mainWindow->setStrategyConfig(profileConfig.strategyConfig);
+        // m_mainWindow->setBuyHeikinGreenConfig(profileConfig.buyConfig);
+        // m_mainWindow->setSellHeikinRedConfig(profileConfig.sellConfig);
+        // m_mainWindow->setGenericStrategyConfig(profileConfig.genericConfig);
         
         m_currentProfile = profileName;
         emit profileChanged(profileName);
@@ -189,10 +189,10 @@ bool ProfileManager::saveCurrentProfile(QWidget* parentWidget)
     
     // Get configurations from UI
     profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-    profileConfig.baseConfig = m_mainWindow->getStrategyBaseConfig();
-    profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
-    profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
-    profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
+    profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
+    // profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
+    // profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
+    // profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
     
     bool success = saveProfile(m_currentProfile, profileConfig);
     
@@ -231,10 +231,10 @@ bool ProfileManager::promptCreateNewProfile(QWidget* parentWidget)
         
         // Get configurations from UI
         profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-        profileConfig.baseConfig = m_mainWindow->getStrategyBaseConfig();
-        profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
-        profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
-        profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
+        profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
+        // profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
+        // profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
+        // profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
         
         bool success = saveProfile(profileName, profileConfig);
         
@@ -406,10 +406,10 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
         profileConfig.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate).toStdString();
         
         profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-        profileConfig.baseConfig = m_mainWindow->getStrategyBaseConfig();
-        profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
-        profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
-        profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
+        profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
+        // profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
+        // profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
+        // profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
     } else {
         // Otherwise, load from saved profile
         if (!loadProfileFromJson(targetProfile, profileConfig)) {

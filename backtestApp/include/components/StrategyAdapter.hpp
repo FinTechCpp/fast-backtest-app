@@ -3,28 +3,28 @@
 #include "strategy.hpp"
 #include "broker.hpp"
 #include "data.hpp"
-#include "buy_heikin_green.hpp"
+#include "common.h"
+#include "components/serializerAdapters.h"  // Include structures and serialization
+#include "strategy.h"  // Include the generic strategy class
 #include <memory>
+#include <vector>
+#include <string>
+#include <map>
 #include <iostream>
 #include "spdlog/spdlog.h"
 #include "spdlog/async.h"
-// #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/sinks/rotating_file_sink.h"
 
-
 /**
- * @brief Adapter enabling the use of the BuyHeikinGreen strategy with the C++ backtesting engine
+ * @brief Adapter enabling the use of generic strategies with the C++ backtesting engine
  * 
- * This class serves as an interface between the BuyHeikinGreen strategy (which uses its own structure)
+ * This class serves as an interface between the GenericStrategy (which uses its own structure)
  * and the C++ backtesting engine, which expects a class derived from Strategy.
  */
-class BuyHeikinGreenAdapter : public be::Strategy {
+class StrategyAdapter : public be::Strategy {
 private:
-    // Specific configuration for the BuyHeikinGreen strategy
-    BuyHeikinGreenConfig strategy_config;
-
-    // Instance of the BuyHeikinGreen strategy
-    std::unique_ptr<BuyHeikinGreen> strategy;
+    // Instance of the Generic strategy
+    std::unique_ptr<::Strategy> strategy;
 
     // Cache for trading signals
     bool should_enter_long = false;
@@ -35,34 +35,32 @@ private:
     bool last_trade_closed = false;
     double last_trade_pnl = 0.0;
     
+    // Logger
+    std::shared_ptr<spdlog::logger> async_file;
+    
 public:
     /**
      * @brief Constructor for the adapter
      * 
      * @param broker Broker used by the backtest
      * @param data Historical data used by the backtest
-     * @param base_config Base configuration common to all strategies
-     * @param bhg_config Configuration specific to BuyHeikinGreen
+     * @param strategyConfig Configuration of the strategy
+     * @param generic_config Configuration specific to the Generic strategy
      */
-    BuyHeikinGreenAdapter(
-        std::shared_ptr<be::Broker> broker, 
-        std::shared_ptr<be::Data> data,
-        const StrategyBaseConfig& base_config,
-        const BuyHeikinGreenConfig& bhg_config
-    ) : be::Strategy(broker, data), strategy_config(bhg_config) {
-        // Create Strategy instance with the provided configurations
-        strategy = std::make_unique<BuyHeikinGreen>(base_config, bhg_config);
+    StrategyAdapter(std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, const StrategyConfig& strategyConfig) 
+    : be::Strategy(broker, data) {
+        strategy = std::make_unique<::Strategy>(strategyConfig);
 
         spdlog::drop("async_file_logger"); // Drop the previous logger if it exists
-        auto async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
+        async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
             "async_file_logger",       // Logger name
-            "logs/Strategies/BuyHeikinGreen_async.log",      // Log file path
+            "logs/Strategies/GenericStrategy_async.log",      // Log file path
             100 * 1024 * 1024,          // Max file size (100 MB)
             1
         );
         async_file->set_level(spdlog::level::debug);
 
-        auto log_callback = [async_file](const std::string& message, int level) {
+        auto log_callback = [this](const std::string& message, int level) {
             spdlog::level::level_enum spdlog_level = spdlog::level::info;
             switch (level) {
                 case static_cast<int>(LogLevel::DEBUG):   spdlog_level = spdlog::level::debug; break;
@@ -71,7 +69,7 @@ public:
                 case static_cast<int>(LogLevel::FATAL):   spdlog_level = spdlog::level::err; break;
             }
             
-            async_file->log(spdlog_level, "{}", message);
+            this->async_file->log(spdlog_level, "{}", message);
         };
 
         strategy->set_log_callback(log_callback);
@@ -84,6 +82,7 @@ public:
      * the strategy to initialize itself with historical data.
      */
     void init() override {
+        async_file->debug("GenericStrategyAdapter init() called");
         // Initialize the strategy
     }
     
@@ -136,7 +135,6 @@ public:
         // Update the strategy signal with the new latest candle by executing strategy logic
         Signal* signal = strategy->update_candle(candle);
 
-
         if (!signal)
             return; // No signal to process
 
@@ -161,8 +159,9 @@ public:
                 0,
                 signal->stop_loss, 
                 signal->take_profit
-                // signal->tag
             );
+            async_file->info("BUY signal executed: qty={}, SL={}, TP={}", 
+                           signal->quantity, signal->stop_loss, signal->take_profit);
         }
         else if (trades.empty() && signal->action == "SELL" && signal->quantity > 0) {
             // Process a sell signal
@@ -174,8 +173,9 @@ public:
                 0,
                 signal->stop_loss, 
                 signal->take_profit
-                // signal->tag
             );
+            async_file->info("SELL signal executed: qty={}, SL={}, TP={}", 
+                           signal->quantity, signal->stop_loss, signal->take_profit);
         }
     }
 };

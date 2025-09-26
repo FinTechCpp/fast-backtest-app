@@ -6,75 +6,22 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/types/array.hpp>
 #include <cereal/types/map.hpp>
-#include <QDateTime>
 
-// Inclure les définitions de structures (sans les fonctions de sérialisation)
-#include "Strategies/buy_heikin_green.hpp"
-#include "Strategies/sell_heikin_red.hpp"
-#include "Strategies/generic_strategy.hpp"
 #include "ui/panels/generalParamsPanel.h"
 #include "common.h"
 
 #include "beTypes.h"
 #include "ui/chart/chartTypes.h"
 
-/**
- * @brief Configuration structures for generic strategy
- */
-
-// enum class ComparisonType : int {
-//     THRESHOLD_ABOVE = 0,    // valeur1 > seuil
-//     THRESHOLD_BELOW = 1,    // valeur1 < seuil
-//     CROSSOVER_ABOVE = 2,    // valeur1 croise au-dessus valeur2
-//     CROSSOVER_BELOW = 3     // valeur1 croise en-dessous valeur2
-// };
-
-// enum class ValueType : int {
-//     PRICE = 0,              // Prix actuel
-//     INDICATOR = 1,          // Valeur d'un indicateur
-//     CONSTANT = 2            // Valeur constante
-// };
-
-// struct ValueSource {
-//     ValueType type = ValueType::PRICE;
-//     std::string identifier = "";  // nom de l'indicateur ou "price" ou valeur constante
-//     double constantValue = 0.0;
-//     int historicalOffset = 0;  // pour accéder aux valeurs précédentes (0 = actuelle, 1 = précédente, etc.)
-    
-//     ValueSource() = default;
-//     ValueSource(ValueType t, const std::string& id, int offset = 0) 
-//         : type(t), identifier(id), historicalOffset(offset) {}
-//     ValueSource(double value) 
-//         : type(ValueType::CONSTANT), constantValue(value) {}
-// };
-
-// struct FilterConfig {
-//     std::string name = "";
-//     ValueSource value1;
-//     ValueSource value2;
-//     ComparisonType comparison = ComparisonType::THRESHOLD_ABOVE;
-//     int lookbackPeriods = 1;  // sur combien de périodes chercher la condition
-//     bool enabled = true;
-// };
-
-// struct IndicatorConfig {
-//     std::string name = "";
-//     std::string type = "";  // "EMA", "RSI", "STOCH", "ATR", "SUPERTREND"
-//     std::map<std::string, double> parameters;  // paramètres spécifiques à l'indicateur
-//     bool enabled = true;
-// };
-
-
-
 struct ProfileConfig {
     std::string name;
     std::string version;
     std::string createdAt;
     GeneralParamsConfig generalParams;
-    StrategyBaseConfig baseConfig;
-    BuyHeikinGreenConfig buyConfig;
-    SellHeikinRedConfig sellConfig;
-    GenericStrategyConfig genericConfig;
+    StrategyConfig strategyConfig;
+    // BuyHeikinGreenConfig buyConfig;
+    // SellHeikinRedConfig sellConfig;
+    // GenericStrategyConfig genericConfig;
 
     template<class Archive>
     void serialize(Archive & ar) {
@@ -82,9 +29,9 @@ struct ProfileConfig {
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
-           CEREAL_NVP(baseConfig),
-           CEREAL_NVP(buyConfig),
-           CEREAL_NVP(sellConfig));
+           CEREAL_NVP(strategyConfig));
+        //    CEREAL_NVP(buyConfig),
+        //    CEREAL_NVP(sellConfig));
         //    CEREAL_NVP(genericConfig));
     }
 };
@@ -304,56 +251,57 @@ namespace cereal {
     }
     
     // Sérialisation pour BuyHeikinGreenConfig
-    template<class Archive>
-    void serialize(Archive & ar, BuyHeikinGreenConfig & config) {
-        ar(cereal::make_nvp("ema_short_period", config.ema_short_period),
-           cereal::make_nvp("ema_long_period", config.ema_long_period),
-           cereal::make_nvp("stoch_fastk", config.stoch_fastk),
-           cereal::make_nvp("stoch_slowk", config.stoch_slowk),
-           cereal::make_nvp("stoch_slowd", config.stoch_slowd),
-           cereal::make_nvp("stoch_threshold", config.stoch_threshold),
-           cereal::make_nvp("rsi_period", config.rsi_period),
-           cereal::make_nvp("rsi_threshold", config.rsi_threshold),
-           cereal::make_nvp("supertrend_atr_period", config.supertrend_atr_period),
-           cereal::make_nvp("supertrend_multiplier", config.supertrend_multiplier),
-           cereal::make_nvp("previous_ha_candle_red_filter_n", config.previous_ha_candle_red_filter_n),
-           cereal::make_nvp("rsi_history_periods", config.rsi_history_periods),
-           cereal::make_nvp("stoch_history_periods", config.stoch_history_periods),
-           cereal::make_nvp("use_ema_short_filter", config.use_ema_short_filter),
-           cereal::make_nvp("use_ema_long_filter", config.use_ema_long_filter),
-           cereal::make_nvp("use_stoch_filter", config.use_stoch_filter),
-           cereal::make_nvp("use_rsi_filter", config.use_rsi_filter),
-           cereal::make_nvp("use_supertrend_filter", config.use_supertrend_filter),
-           cereal::make_nvp("use_previous_ha_candle_red_filter", config.use_previous_ha_candle_red_filter));
-    }
+    // template<class Archive>
+    // void serialize(Archive & ar, BuyHeikinGreenConfig & config) {
+    //     ar(cereal::make_nvp("ema_short_period", config.ema_short_period),
+    //        cereal::make_nvp("ema_long_period", config.ema_long_period),
+    //        cereal::make_nvp("stoch_fastk", config.stoch_fastk),
+    //        cereal::make_nvp("stoch_slowk", config.stoch_slowk),
+    //        cereal::make_nvp("stoch_slowd", config.stoch_slowd),
+    //        cereal::make_nvp("stoch_threshold", config.stoch_threshold),
+    //        cereal::make_nvp("rsi_period", config.rsi_period),
+    //        cereal::make_nvp("rsi_threshold", config.rsi_threshold),
+    //        cereal::make_nvp("supertrend_atr_period", config.supertrend_atr_period),
+    //        cereal::make_nvp("supertrend_multiplier", config.supertrend_multiplier),
+    //        cereal::make_nvp("previous_ha_candle_red_filter_n", config.previous_ha_candle_red_filter_n),
+    //        cereal::make_nvp("rsi_history_periods", config.rsi_history_periods),
+    //        cereal::make_nvp("stoch_history_periods", config.stoch_history_periods),
+    //        cereal::make_nvp("use_ema_short_filter", config.use_ema_short_filter),
+    //        cereal::make_nvp("use_ema_long_filter", config.use_ema_long_filter),
+    //        cereal::make_nvp("use_stoch_filter", config.use_stoch_filter),
+    //        cereal::make_nvp("use_rsi_filter", config.use_rsi_filter),
+    //        cereal::make_nvp("use_supertrend_filter", config.use_supertrend_filter),
+    //        cereal::make_nvp("use_previous_ha_candle_red_filter", config.use_previous_ha_candle_red_filter));
+    // }
     
     // Sérialisation pour SellHeikinRedConfig
-    template<class Archive>
-    void serialize(Archive & ar, SellHeikinRedConfig & config) {
-        ar(cereal::make_nvp("ema_short_period", config.ema_short_period),
-           cereal::make_nvp("ema_long_period", config.ema_long_period),
-           cereal::make_nvp("stoch_fastk", config.stoch_fastk),
-           cereal::make_nvp("stoch_slowk", config.stoch_slowk),
-           cereal::make_nvp("stoch_slowd", config.stoch_slowd),
-           cereal::make_nvp("stoch_threshold", config.stoch_threshold),
-           cereal::make_nvp("rsi_period", config.rsi_period),
-           cereal::make_nvp("rsi_threshold", config.rsi_threshold),
-           cereal::make_nvp("supertrend_atr_period", config.supertrend_atr_period),
-           cereal::make_nvp("supertrend_multiplier", config.supertrend_multiplier),
-           cereal::make_nvp("previous_ha_candle_green_filter_n", config.previous_ha_candle_green_filter_n),
-           cereal::make_nvp("rsi_history_periods", config.rsi_history_periods),
-           cereal::make_nvp("stoch_history_periods", config.stoch_history_periods),
-           cereal::make_nvp("use_ema_short_filter", config.use_ema_short_filter),
-           cereal::make_nvp("use_ema_long_filter", config.use_ema_long_filter),
-           cereal::make_nvp("use_stoch_filter", config.use_stoch_filter),
-           cereal::make_nvp("use_rsi_filter", config.use_rsi_filter),
-           cereal::make_nvp("use_supertrend_filter", config.use_supertrend_filter),
-           cereal::make_nvp("use_previous_ha_candle_green_filter", config.use_previous_ha_candle_green_filter));
-    }
+    // template<class Archive>
+    // void serialize(Archive & ar, SellHeikinRedConfig & config) {
+    //     ar(cereal::make_nvp("ema_short_period", config.ema_short_period),
+    //        cereal::make_nvp("ema_long_period", config.ema_long_period),
+    //        cereal::make_nvp("stoch_fastk", config.stoch_fastk),
+    //        cereal::make_nvp("stoch_slowk", config.stoch_slowk),
+    //        cereal::make_nvp("stoch_slowd", config.stoch_slowd),
+    //        cereal::make_nvp("stoch_threshold", config.stoch_threshold),
+    //        cereal::make_nvp("rsi_period", config.rsi_period),
+    //        cereal::make_nvp("rsi_threshold", config.rsi_threshold),
+    //        cereal::make_nvp("supertrend_atr_period", config.supertrend_atr_period),
+    //        cereal::make_nvp("supertrend_multiplier", config.supertrend_multiplier),
+    //        cereal::make_nvp("previous_ha_candle_green_filter_n", config.previous_ha_candle_green_filter_n),
+    //        cereal::make_nvp("rsi_history_periods", config.rsi_history_periods),
+    //        cereal::make_nvp("stoch_history_periods", config.stoch_history_periods),
+    //        cereal::make_nvp("use_ema_short_filter", config.use_ema_short_filter),
+    //        cereal::make_nvp("use_ema_long_filter", config.use_ema_long_filter),
+    //        cereal::make_nvp("use_stoch_filter", config.use_stoch_filter),
+    //        cereal::make_nvp("use_rsi_filter", config.use_rsi_filter),
+    //        cereal::make_nvp("use_supertrend_filter", config.use_supertrend_filter),
+    //        cereal::make_nvp("use_previous_ha_candle_green_filter", config.use_previous_ha_candle_green_filter));
+    // }
     
-    // Sérialisation pour StrategyBaseConfig
+    // Sérialisation pour StrategyConfig
+    // TODO il faudra ajouter les filtres et la direction
     template<class Archive>
-    void serialize(Archive & ar, StrategyBaseConfig & config) {
+    void serialize(Archive & ar, StrategyConfig & config) {
         ar(cereal::make_nvp("enable_logging", config.enable_logging),
            cereal::make_nvp("logLevel", config.logLevel),
            cereal::make_nvp("sl_method", config.sl_method),

@@ -16,14 +16,13 @@
 
 #include "components/Utils/dataLoader.h"
 #include "components/backtestResults.h"
-#include "components/strategyRegistry.h"
 
 // Include necessary headers for the backtest components
 #include "beTypes.h"
 #include "data.hpp"
 
 #include "strategy.hpp"
-#include "buy_heikin_green.hpp"
+// #include "buy_heikin_green.hpp"
 
 // Forward declarations
 class App;

@@ -155,9 +155,9 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     // Type de catégorie (Prix, Indicateur, etc.)
     QFormLayout* categoryLayout = new QFormLayout();
     m_leftCategoryCombo = new QComboBox(parent);
-    m_leftCategoryCombo->addItem("Prix", static_cast<int>(ValueCategory::PRICE));
-    m_leftCategoryCombo->addItem("Indicateur", static_cast<int>(ValueCategory::INDICATOR));
-    m_leftCategoryCombo->addItem("Propriété bougie", static_cast<int>(ValueCategory::CANDLE_PROPERTY));
+    m_leftCategoryCombo->addItem("Prix", static_cast<int>(filter::ValueCategory::PRICE));
+    m_leftCategoryCombo->addItem("Indicateur", static_cast<int>(filter::ValueCategory::INDICATOR));
+    m_leftCategoryCombo->addItem("Propriété bougie", static_cast<int>(filter::ValueCategory::CANDLE_PROPERTY));
     categoryLayout->addRow("Catégorie:", m_leftCategoryCombo);
     
     // Décalage historique commun à toutes les catégories
@@ -175,12 +175,12 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftPriceWidget = new QWidget(parent);
     QFormLayout* priceLayout = new QFormLayout(m_leftPriceWidget);
     m_leftPriceTypeCombo = new QComboBox(m_leftPriceWidget);
-    m_leftPriceTypeCombo->addItem("Clôture", static_cast<int>(PriceType::CLOSE));
-    m_leftPriceTypeCombo->addItem("Ouverture", static_cast<int>(PriceType::OPEN));
-    m_leftPriceTypeCombo->addItem("Plus haut", static_cast<int>(PriceType::HIGH));
-    m_leftPriceTypeCombo->addItem("Plus bas", static_cast<int>(PriceType::LOW));
-    m_leftPriceTypeCombo->addItem("Typique", static_cast<int>(PriceType::TYPICAL));
-    m_leftPriceTypeCombo->addItem("Médian", static_cast<int>(PriceType::MEDIAN));
+    m_leftPriceTypeCombo->addItem("Clôture", static_cast<int>(filter::PriceType::CLOSE));
+    m_leftPriceTypeCombo->addItem("Ouverture", static_cast<int>(filter::PriceType::OPEN));
+    m_leftPriceTypeCombo->addItem("Plus haut", static_cast<int>(filter::PriceType::HIGH));
+    m_leftPriceTypeCombo->addItem("Plus bas", static_cast<int>(filter::PriceType::LOW));
+    m_leftPriceTypeCombo->addItem("Typique", static_cast<int>(filter::PriceType::TYPICAL));
+    m_leftPriceTypeCombo->addItem("Médian", static_cast<int>(filter::PriceType::MEDIAN));
     priceLayout->addRow("Type de prix:", m_leftPriceTypeCombo);
     m_leftPriceWidget->setVisible(false);
     leftLayout->addWidget(m_leftPriceWidget);
@@ -192,13 +192,13 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     // Type d'indicateur
     QFormLayout* indicatorTypeLayout = new QFormLayout();
     m_leftIndicatorTypeCombo = new QComboBox(m_leftIndicatorWidget);
-    m_leftIndicatorTypeCombo->addItem("EMA", static_cast<int>(IndicatorType::EMA));
-    m_leftIndicatorTypeCombo->addItem("RSI", static_cast<int>(IndicatorType::RSI));
-    m_leftIndicatorTypeCombo->addItem("Stochastique K", static_cast<int>(IndicatorType::STOCHASTIC_K));
-    m_leftIndicatorTypeCombo->addItem("Stochastique D", static_cast<int>(IndicatorType::STOCHASTIC_D));
-    m_leftIndicatorTypeCombo->addItem("ATR", static_cast<int>(IndicatorType::ATR));
-    m_leftIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(IndicatorType::SUPERTREND_VALUE));
-    m_leftIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(IndicatorType::SUPERTREND_DIRECTION));
+    m_leftIndicatorTypeCombo->addItem("EMA", static_cast<int>(filter::IndicatorType::EMA));
+    m_leftIndicatorTypeCombo->addItem("RSI", static_cast<int>(filter::IndicatorType::RSI));
+    m_leftIndicatorTypeCombo->addItem("Stochastique K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
+    m_leftIndicatorTypeCombo->addItem("Stochastique D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
+    m_leftIndicatorTypeCombo->addItem("ATR", static_cast<int>(filter::IndicatorType::ATR));
+    m_leftIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
+    m_leftIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_leftIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
     
@@ -276,14 +276,14 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftCandlePropertyWidget = new QWidget(parent);
     QFormLayout* candleLayout = new QFormLayout(m_leftCandlePropertyWidget);
     m_leftCandlePropertyCombo = new QComboBox(m_leftCandlePropertyWidget);
-    m_leftCandlePropertyCombo->addItem("Bougie verte (Heikin Ashi)", static_cast<int>(CandlePropertyType::HEIKIN_ASHI_IS_GREEN));
-    m_leftCandlePropertyCombo->addItem("Bougie rouge (Heikin Ashi)", static_cast<int>(CandlePropertyType::HEIKIN_ASHI_IS_RED));
-    m_leftCandlePropertyCombo->addItem("Bougie verte", static_cast<int>(CandlePropertyType::IS_GREEN));
-    m_leftCandlePropertyCombo->addItem("Bougie rouge", static_cast<int>(CandlePropertyType::IS_RED));
-    m_leftCandlePropertyCombo->addItem("Taille du corps", static_cast<int>(CandlePropertyType::BODY_SIZE));
-    m_leftCandlePropertyCombo->addItem("Ombre supérieure", static_cast<int>(CandlePropertyType::UPPER_SHADOW_SIZE));
-    m_leftCandlePropertyCombo->addItem("Ombre inférieure", static_cast<int>(CandlePropertyType::LOWER_SHADOW_SIZE));
-    m_leftCandlePropertyCombo->addItem("Amplitude", static_cast<int>(CandlePropertyType::RANGE));
+    m_leftCandlePropertyCombo->addItem("Bougie verte (Heikin Ashi)", static_cast<int>(filter::CandlePropertyType::HEIKIN_ASHI_IS_GREEN));
+    m_leftCandlePropertyCombo->addItem("Bougie rouge (Heikin Ashi)", static_cast<int>(filter::CandlePropertyType::HEIKIN_ASHI_IS_RED));
+    m_leftCandlePropertyCombo->addItem("Bougie verte", static_cast<int>(filter::CandlePropertyType::IS_GREEN));
+    m_leftCandlePropertyCombo->addItem("Bougie rouge", static_cast<int>(filter::CandlePropertyType::IS_RED));
+    m_leftCandlePropertyCombo->addItem("Taille du corps", static_cast<int>(filter::CandlePropertyType::BODY_SIZE));
+    m_leftCandlePropertyCombo->addItem("Ombre supérieure", static_cast<int>(filter::CandlePropertyType::UPPER_SHADOW_SIZE));
+    m_leftCandlePropertyCombo->addItem("Ombre inférieure", static_cast<int>(filter::CandlePropertyType::LOWER_SHADOW_SIZE));
+    m_leftCandlePropertyCombo->addItem("Amplitude", static_cast<int>(filter::CandlePropertyType::RANGE));
     candleLayout->addRow("Propriété:", m_leftCandlePropertyCombo);
     m_leftCandlePropertyWidget->setVisible(false);
     leftLayout->addWidget(m_leftCandlePropertyWidget);
@@ -296,10 +296,10 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     // Type de catégorie (Prix, Indicateur, Constante, etc.)
     QFormLayout* categoryLayout = new QFormLayout();
     m_rightCategoryCombo = new QComboBox(parent);
-    m_rightCategoryCombo->addItem("Prix", static_cast<int>(ValueCategory::PRICE));
-    m_rightCategoryCombo->addItem("Indicateur", static_cast<int>(ValueCategory::INDICATOR));
-    m_rightCategoryCombo->addItem("Constante", static_cast<int>(ValueCategory::CONSTANT));
-    m_rightCategoryCombo->addItem("Propriété bougie", static_cast<int>(ValueCategory::CANDLE_PROPERTY));
+    m_rightCategoryCombo->addItem("Prix", static_cast<int>(filter::ValueCategory::PRICE));
+    m_rightCategoryCombo->addItem("Indicateur", static_cast<int>(filter::ValueCategory::INDICATOR));
+    m_rightCategoryCombo->addItem("Constante", static_cast<int>(filter::ValueCategory::CONSTANT));
+    m_rightCategoryCombo->addItem("Propriété bougie", static_cast<int>(filter::ValueCategory::CANDLE_PROPERTY));
     categoryLayout->addRow("Catégorie:", m_rightCategoryCombo);
     
     // Décalage historique commun à toutes les catégories sauf Constante
@@ -317,12 +317,12 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightPriceWidget = new QWidget(parent);
     QFormLayout* priceLayout = new QFormLayout(m_rightPriceWidget);
     m_rightPriceTypeCombo = new QComboBox(m_rightPriceWidget);
-    m_rightPriceTypeCombo->addItem("Clôture", static_cast<int>(PriceType::CLOSE));
-    m_rightPriceTypeCombo->addItem("Ouverture", static_cast<int>(PriceType::OPEN));
-    m_rightPriceTypeCombo->addItem("Plus haut", static_cast<int>(PriceType::HIGH));
-    m_rightPriceTypeCombo->addItem("Plus bas", static_cast<int>(PriceType::LOW));
-    m_rightPriceTypeCombo->addItem("Typique", static_cast<int>(PriceType::TYPICAL));
-    m_rightPriceTypeCombo->addItem("Médian", static_cast<int>(PriceType::MEDIAN));
+    m_rightPriceTypeCombo->addItem("Clôture", static_cast<int>(filter::PriceType::CLOSE));
+    m_rightPriceTypeCombo->addItem("Ouverture", static_cast<int>(filter::PriceType::OPEN));
+    m_rightPriceTypeCombo->addItem("Plus haut", static_cast<int>(filter::PriceType::HIGH));
+    m_rightPriceTypeCombo->addItem("Plus bas", static_cast<int>(filter::PriceType::LOW));
+    m_rightPriceTypeCombo->addItem("Typique", static_cast<int>(filter::PriceType::TYPICAL));
+    m_rightPriceTypeCombo->addItem("Médian", static_cast<int>(filter::PriceType::MEDIAN));
     priceLayout->addRow("Type de prix:", m_rightPriceTypeCombo);
     m_rightPriceWidget->setVisible(false);
     rightLayout->addWidget(m_rightPriceWidget);
@@ -333,13 +333,13 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     
     QFormLayout* indicatorTypeLayout = new QFormLayout();
     m_rightIndicatorTypeCombo = new QComboBox(m_rightIndicatorWidget);
-    m_rightIndicatorTypeCombo->addItem("EMA", static_cast<int>(IndicatorType::EMA));
-    m_rightIndicatorTypeCombo->addItem("RSI", static_cast<int>(IndicatorType::RSI));
-    m_rightIndicatorTypeCombo->addItem("Stochastique K", static_cast<int>(IndicatorType::STOCHASTIC_K));
-    m_rightIndicatorTypeCombo->addItem("Stochastique D", static_cast<int>(IndicatorType::STOCHASTIC_D));
-    m_rightIndicatorTypeCombo->addItem("ATR", static_cast<int>(IndicatorType::ATR));
-    m_rightIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(IndicatorType::SUPERTREND_VALUE));
-    m_rightIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(IndicatorType::SUPERTREND_DIRECTION));
+    m_rightIndicatorTypeCombo->addItem("EMA", static_cast<int>(filter::IndicatorType::EMA));
+    m_rightIndicatorTypeCombo->addItem("RSI", static_cast<int>(filter::IndicatorType::RSI));
+    m_rightIndicatorTypeCombo->addItem("Stochastique K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
+    m_rightIndicatorTypeCombo->addItem("Stochastique D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
+    m_rightIndicatorTypeCombo->addItem("ATR", static_cast<int>(filter::IndicatorType::ATR));
+    m_rightIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
+    m_rightIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_rightIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
     
@@ -427,14 +427,14 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightCandlePropertyWidget = new QWidget(parent);
     QFormLayout* candleLayout = new QFormLayout(m_rightCandlePropertyWidget);
     m_rightCandlePropertyCombo = new QComboBox(m_rightCandlePropertyWidget);
-    m_rightCandlePropertyCombo->addItem("Bougie verte (Heikin Ashi)", static_cast<int>(CandlePropertyType::HEIKIN_ASHI_IS_GREEN));
-    m_rightCandlePropertyCombo->addItem("Bougie rouge (Heikin Ashi)", static_cast<int>(CandlePropertyType::HEIKIN_ASHI_IS_RED));
-    m_rightCandlePropertyCombo->addItem("Bougie verte", static_cast<int>(CandlePropertyType::IS_GREEN));
-    m_rightCandlePropertyCombo->addItem("Bougie rouge", static_cast<int>(CandlePropertyType::IS_RED));
-    m_rightCandlePropertyCombo->addItem("Taille du corps", static_cast<int>(CandlePropertyType::BODY_SIZE));
-    m_rightCandlePropertyCombo->addItem("Ombre supérieure", static_cast<int>(CandlePropertyType::UPPER_SHADOW_SIZE));
-    m_rightCandlePropertyCombo->addItem("Ombre inférieure", static_cast<int>(CandlePropertyType::LOWER_SHADOW_SIZE));
-    m_rightCandlePropertyCombo->addItem("Amplitude", static_cast<int>(CandlePropertyType::RANGE));
+    m_rightCandlePropertyCombo->addItem("Bougie verte (Heikin Ashi)", static_cast<int>(filter::CandlePropertyType::HEIKIN_ASHI_IS_GREEN));
+    m_rightCandlePropertyCombo->addItem("Bougie rouge (Heikin Ashi)", static_cast<int>(filter::CandlePropertyType::HEIKIN_ASHI_IS_RED));
+    m_rightCandlePropertyCombo->addItem("Bougie verte", static_cast<int>(filter::CandlePropertyType::IS_GREEN));
+    m_rightCandlePropertyCombo->addItem("Bougie rouge", static_cast<int>(filter::CandlePropertyType::IS_RED));
+    m_rightCandlePropertyCombo->addItem("Taille du corps", static_cast<int>(filter::CandlePropertyType::BODY_SIZE));
+    m_rightCandlePropertyCombo->addItem("Ombre supérieure", static_cast<int>(filter::CandlePropertyType::UPPER_SHADOW_SIZE));
+    m_rightCandlePropertyCombo->addItem("Ombre inférieure", static_cast<int>(filter::CandlePropertyType::LOWER_SHADOW_SIZE));
+    m_rightCandlePropertyCombo->addItem("Amplitude", static_cast<int>(filter::CandlePropertyType::RANGE));
     candleLayout->addRow("Propriété:", m_rightCandlePropertyCombo);
     m_rightCandlePropertyWidget->setVisible(false);
     rightLayout->addWidget(m_rightCandlePropertyWidget);
@@ -445,15 +445,15 @@ void FilterEditDialog::setupOperatorUI(QWidget* parent)
     QFormLayout* operatorLayout = new QFormLayout(parent);
     
     m_operatorCombo = new QComboBox(parent);
-    m_operatorCombo->addItem(">", static_cast<int>(ComparisonOperator::GREATER_THAN));
-    m_operatorCombo->addItem("<", static_cast<int>(ComparisonOperator::LESS_THAN));
-    m_operatorCombo->addItem(">=", static_cast<int>(ComparisonOperator::GREATER_OR_EQUAL));
-    m_operatorCombo->addItem("<=", static_cast<int>(ComparisonOperator::LESS_OR_EQUAL));
-    m_operatorCombo->addItem("==", static_cast<int>(ComparisonOperator::EQUAL));
-    m_operatorCombo->addItem("!=", static_cast<int>(ComparisonOperator::NOT_EQUAL));
-    m_operatorCombo->addItem("Croise au-dessus", static_cast<int>(ComparisonOperator::CROSSES_ABOVE));
-    m_operatorCombo->addItem("Croise en-dessous", static_cast<int>(ComparisonOperator::CROSSES_BELOW));
-    
+    m_operatorCombo->addItem(">", static_cast<int>(filter::ComparisonOperator::GREATER_THAN));
+    m_operatorCombo->addItem("<", static_cast<int>(filter::ComparisonOperator::LESS_THAN));
+    m_operatorCombo->addItem(">=", static_cast<int>(filter::ComparisonOperator::GREATER_OR_EQUAL));
+    m_operatorCombo->addItem("<=", static_cast<int>(filter::ComparisonOperator::LESS_OR_EQUAL));
+    m_operatorCombo->addItem("==", static_cast<int>(filter::ComparisonOperator::EQUAL));
+    m_operatorCombo->addItem("!=", static_cast<int>(filter::ComparisonOperator::NOT_EQUAL));
+    m_operatorCombo->addItem("Croise au-dessus", static_cast<int>(filter::ComparisonOperator::CROSSES_ABOVE));
+    m_operatorCombo->addItem("Croise en-dessous", static_cast<int>(filter::ComparisonOperator::CROSSES_BELOW));
+
     operatorLayout->addRow("Opérateur:", m_operatorCombo);
 }
 
@@ -462,9 +462,9 @@ void FilterEditDialog::setupTemporalLogicUI(QWidget* parent)
     QFormLayout* temporalLayout = new QFormLayout(parent);
     
     m_temporalLogicCombo = new QComboBox(parent);
-    m_temporalLogicCombo->addItem("Actuel", static_cast<int>(TemporalLogic::CURRENT));
-    m_temporalLogicCombo->addItem("Au moins une fois dans les N dernières barres", static_cast<int>(TemporalLogic::ANY_OF));
-    m_temporalLogicCombo->addItem("Toutes les N dernières barres", static_cast<int>(TemporalLogic::ALL_OF));
+    m_temporalLogicCombo->addItem("Actuel", static_cast<int>(filter::TemporalLogic::CURRENT));
+    m_temporalLogicCombo->addItem("Au moins une fois dans les N dernières barres", static_cast<int>(filter::TemporalLogic::ANY_OF));
+    m_temporalLogicCombo->addItem("Toutes les N dernières barres", static_cast<int>(filter::TemporalLogic::ALL_OF));
     temporalLayout->addRow("Logique temporelle:", m_temporalLogicCombo);
     
     m_lookbackPeriodsSpin = new QSpinBox(parent);
@@ -473,60 +473,60 @@ void FilterEditDialog::setupTemporalLogicUI(QWidget* parent)
     temporalLayout->addRow("Barres à vérifier:", m_lookbackPeriodsSpin);
 }
 
-void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, IndicatorType type)
+void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filter::IndicatorType type)
 {
     if (container == m_leftIndicatorWidget) {
-        m_leftEMAWidget->setVisible(type == IndicatorType::EMA);
-        m_leftRSIWidget->setVisible(type == IndicatorType::RSI);
-        m_leftStochasticWidget->setVisible(type == IndicatorType::STOCHASTIC_K || type == IndicatorType::STOCHASTIC_D);
-        m_leftATRWidget->setVisible(type == IndicatorType::ATR);
-        m_leftSuperTrendWidget->setVisible(type == IndicatorType::SUPERTREND_VALUE || type == IndicatorType::SUPERTREND_DIRECTION);
+        m_leftEMAWidget->setVisible(type == filter::IndicatorType::EMA);
+        m_leftRSIWidget->setVisible(type == filter::IndicatorType::RSI);
+        m_leftStochasticWidget->setVisible(type == filter::IndicatorType::STOCHASTIC_K || type == filter::IndicatorType::STOCHASTIC_D);
+        m_leftATRWidget->setVisible(type == filter::IndicatorType::ATR);
+        m_leftSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
     } else if (container == m_rightIndicatorWidget) {
-        m_rightEMAWidget->setVisible(type == IndicatorType::EMA);
-        m_rightRSIWidget->setVisible(type == IndicatorType::RSI);
-        m_rightStochasticWidget->setVisible(type == IndicatorType::STOCHASTIC_K || type == IndicatorType::STOCHASTIC_D);
-        m_rightATRWidget->setVisible(type == IndicatorType::ATR);
-        m_rightSuperTrendWidget->setVisible(type == IndicatorType::SUPERTREND_VALUE || type == IndicatorType::SUPERTREND_DIRECTION);
+        m_rightEMAWidget->setVisible(type == filter::IndicatorType::EMA);
+        m_rightRSIWidget->setVisible(type == filter::IndicatorType::RSI);
+        m_rightStochasticWidget->setVisible(type == filter::IndicatorType::STOCHASTIC_K || type == filter::IndicatorType::STOCHASTIC_D);
+        m_rightATRWidget->setVisible(type == filter::IndicatorType::ATR);
+        m_rightSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
     }
 }
 
-ValueSource FilterEditDialog::getLeftValueSource() const
+filter::ValueSource FilterEditDialog::getLeftValueSource() const
 {
-    ValueSource source;
+    filter::ValueSource source;
     source.historicalOffset = m_leftHistoricalOffsetSpin->value();
-    source.category = static_cast<ValueCategory>(m_leftCategoryCombo->currentData().toInt());
-    
+    source.category = static_cast<filter::ValueCategory>(m_leftCategoryCombo->currentData().toInt());
+
     switch (source.category) {
-        case ValueCategory::PRICE:
-            source.priceType = static_cast<PriceType>(m_leftPriceTypeCombo->currentData().toInt());
+        case filter::ValueCategory::PRICE:
+            source.priceType = static_cast<filter::PriceType>(m_leftPriceTypeCombo->currentData().toInt());
             break;
-        case ValueCategory::INDICATOR:
-            source.indicatorType = static_cast<IndicatorType>(m_leftIndicatorTypeCombo->currentData().toInt());
-            
+        case filter::ValueCategory::INDICATOR:
+            source.indicatorType = static_cast<filter::IndicatorType>(m_leftIndicatorTypeCombo->currentData().toInt());
+
             switch (source.indicatorType) {
-                case IndicatorType::EMA:
-                    source.emaParams = EMAParams(m_leftEMAPeriodSpin->value());
+                case filter::IndicatorType::EMA:
+                    source.emaParams = filter::EMAParams(m_leftEMAPeriodSpin->value());
                     break;
-                case IndicatorType::RSI:
-                    source.rsiParams = RSIParams(m_leftRSIPeriodSpin->value());
+                case filter::IndicatorType::RSI:
+                    source.rsiParams = filter::RSIParams(m_leftRSIPeriodSpin->value());
                     break;
-                case IndicatorType::STOCHASTIC_K:
-                case IndicatorType::STOCHASTIC_D:
-                    source.stochParams = StochasticParams(
+                case filter::IndicatorType::STOCHASTIC_K:
+                case filter::IndicatorType::STOCHASTIC_D:
+                    source.stochParams = filter::StochasticParams(
                         m_leftStochFastKSpin->value(),
                         m_leftStochSlowKSpin->value(),
                         m_leftStochSlowDSpin->value()
                     );
                     break;
-                case IndicatorType::ATR:
-                    source.atrParams = ATRParams(
+                case filter::IndicatorType::ATR:
+                    source.atrParams = filter::ATRParams(
                         m_leftATRPeriodSpin->value(),
                         m_leftATRUseLogCheck->isChecked()
                     );
                     break;
-                case IndicatorType::SUPERTREND_VALUE:
-                case IndicatorType::SUPERTREND_DIRECTION:
-                    source.supertrendParams = SuperTrendParams(
+                case filter::IndicatorType::SUPERTREND_VALUE:
+                case filter::IndicatorType::SUPERTREND_DIRECTION:
+                    source.supertrendParams = filter::SuperTrendParams(
                         m_leftSuperTrendPeriodSpin->value(),
                         m_leftSuperTrendMultiplierSpin->value()
                     );
@@ -535,8 +535,8 @@ ValueSource FilterEditDialog::getLeftValueSource() const
                     break;
             }
             break;
-        case ValueCategory::CANDLE_PROPERTY:
-            source.candlePropertyType = static_cast<CandlePropertyType>(m_leftCandlePropertyCombo->currentData().toInt());
+        case filter::ValueCategory::CANDLE_PROPERTY:
+            source.candlePropertyType = static_cast<filter::CandlePropertyType>(m_leftCandlePropertyCombo->currentData().toInt());
             break;
         default:
             break;
@@ -545,43 +545,43 @@ ValueSource FilterEditDialog::getLeftValueSource() const
     return source;
 }
 
-ValueSource FilterEditDialog::getRightValueSource() const
+filter::ValueSource FilterEditDialog::getRightValueSource() const
 {
-    ValueSource source;
+    filter::ValueSource source;
     source.historicalOffset = m_rightHistoricalOffsetSpin->value();
-    source.category = static_cast<ValueCategory>(m_rightCategoryCombo->currentData().toInt());
+    source.category = static_cast<filter::ValueCategory>(m_rightCategoryCombo->currentData().toInt());
     
     switch (source.category) {
-        case ValueCategory::PRICE:
-            source.priceType = static_cast<PriceType>(m_rightPriceTypeCombo->currentData().toInt());
+        case filter::ValueCategory::PRICE:
+            source.priceType = static_cast<filter::PriceType>(m_rightPriceTypeCombo->currentData().toInt());
             break;
-        case ValueCategory::INDICATOR:
-            source.indicatorType = static_cast<IndicatorType>(m_rightIndicatorTypeCombo->currentData().toInt());
+        case filter::ValueCategory::INDICATOR:
+            source.indicatorType = static_cast<filter::IndicatorType>(m_rightIndicatorTypeCombo->currentData().toInt());
             
             switch (source.indicatorType) {
-                case IndicatorType::EMA:
-                    source.emaParams = EMAParams(m_rightEMAPeriodSpin->value());
+                case filter::IndicatorType::EMA:
+                    source.emaParams = filter::EMAParams(m_rightEMAPeriodSpin->value());
                     break;
-                case IndicatorType::RSI:
-                    source.rsiParams = RSIParams(m_rightRSIPeriodSpin->value());
+                case filter::IndicatorType::RSI:
+                    source.rsiParams = filter::RSIParams(m_rightRSIPeriodSpin->value());
                     break;
-                case IndicatorType::STOCHASTIC_K:
-                case IndicatorType::STOCHASTIC_D:
-                    source.stochParams = StochasticParams(
+                case filter::IndicatorType::STOCHASTIC_K:
+                case filter::IndicatorType::STOCHASTIC_D:
+                    source.stochParams = filter::StochasticParams(
                         m_rightStochFastKSpin->value(),
                         m_rightStochSlowKSpin->value(),
                         m_rightStochSlowDSpin->value()
                     );
                     break;
-                case IndicatorType::ATR:
-                    source.atrParams = ATRParams(
+                case filter::IndicatorType::ATR:
+                    source.atrParams = filter::ATRParams(
                         m_rightATRPeriodSpin->value(),
                         m_rightATRUseLogCheck->isChecked()
                     );
                     break;
-                case IndicatorType::SUPERTREND_VALUE:
-                case IndicatorType::SUPERTREND_DIRECTION:
-                    source.supertrendParams = SuperTrendParams(
+                case filter::IndicatorType::SUPERTREND_VALUE:
+                case filter::IndicatorType::SUPERTREND_DIRECTION:
+                    source.supertrendParams = filter::SuperTrendParams(
                         m_rightSuperTrendPeriodSpin->value(),
                         m_rightSuperTrendMultiplierSpin->value()
                     );
@@ -590,11 +590,11 @@ ValueSource FilterEditDialog::getRightValueSource() const
                     break;
             }
             break;
-        case ValueCategory::CONSTANT:
+        case filter::ValueCategory::CONSTANT:
             source.constantValue = m_rightConstantValueSpin->value();
             break;
-        case ValueCategory::CANDLE_PROPERTY:
-            source.candlePropertyType = static_cast<CandlePropertyType>(m_rightCandlePropertyCombo->currentData().toInt());
+        case filter::ValueCategory::CANDLE_PROPERTY:
+            source.candlePropertyType = static_cast<filter::CandlePropertyType>(m_rightCandlePropertyCombo->currentData().toInt());
             break;
         default:
             break;
@@ -605,15 +605,15 @@ ValueSource FilterEditDialog::getRightValueSource() const
 
 void FilterEditDialog::onLeftValueCategoryChanged(int index)
 {
-    ValueCategory category = static_cast<ValueCategory>(m_leftCategoryCombo->itemData(index).toInt());
-    
-    m_leftPriceWidget->setVisible(category == ValueCategory::PRICE);
-    m_leftIndicatorWidget->setVisible(category == ValueCategory::INDICATOR);
-    m_leftCandlePropertyWidget->setVisible(category == ValueCategory::CANDLE_PROPERTY);
-    
+    filter::ValueCategory category = static_cast<filter::ValueCategory>(m_leftCategoryCombo->itemData(index).toInt());
+
+    m_leftPriceWidget->setVisible(category == filter::ValueCategory::PRICE);
+    m_leftIndicatorWidget->setVisible(category == filter::ValueCategory::INDICATOR);
+    m_leftCandlePropertyWidget->setVisible(category == filter::ValueCategory::CANDLE_PROPERTY);
+
     // Si c'est un indicateur, mettre à jour immédiatement la visibilité des paramètres
-    if (category == ValueCategory::INDICATOR) {
-        IndicatorType type = static_cast<IndicatorType>(m_leftIndicatorTypeCombo->currentData().toInt());
+    if (category == filter::ValueCategory::INDICATOR) {
+        filter::IndicatorType type = static_cast<filter::IndicatorType>(m_leftIndicatorTypeCombo->currentData().toInt());
         updateIndicatorParamsVisibility(m_leftIndicatorWidget, type);
     }
 
@@ -622,40 +622,40 @@ void FilterEditDialog::onLeftValueCategoryChanged(int index)
 
 void FilterEditDialog::onRightValueCategoryChanged(int index)
 {
-    ValueCategory category = static_cast<ValueCategory>(m_rightCategoryCombo->itemData(index).toInt());
-    
-    m_rightPriceWidget->setVisible(category == ValueCategory::PRICE);
-    m_rightIndicatorWidget->setVisible(category == ValueCategory::INDICATOR);
-    m_rightConstantWidget->setVisible(category == ValueCategory::CONSTANT);
-    m_rightCandlePropertyWidget->setVisible(category == ValueCategory::CANDLE_PROPERTY);
+    filter::ValueCategory category = static_cast<filter::ValueCategory>(m_rightCategoryCombo->itemData(index).toInt());
+
+    m_rightPriceWidget->setVisible(category == filter::ValueCategory::PRICE);
+    m_rightIndicatorWidget->setVisible(category == filter::ValueCategory::INDICATOR);
+    m_rightConstantWidget->setVisible(category == filter::ValueCategory::CONSTANT);
+    m_rightCandlePropertyWidget->setVisible(category == filter::ValueCategory::CANDLE_PROPERTY);
 
     // Si c'est un indicateur, mettre à jour immédiatement la visibilité des paramètres
-    if (category == ValueCategory::INDICATOR) {
-        IndicatorType type = static_cast<IndicatorType>(m_rightIndicatorTypeCombo->currentData().toInt());
+    if (category == filter::ValueCategory::INDICATOR) {
+        filter::IndicatorType type = static_cast<filter::IndicatorType>(m_rightIndicatorTypeCombo->currentData().toInt());
         updateIndicatorParamsVisibility(m_rightIndicatorWidget, type);
     }
     
     // Masquer/Afficher le décalage historique (non applicable pour les constantes)
-    m_rightHistoricalOffsetSpin->setEnabled(category != ValueCategory::CONSTANT);
+    m_rightHistoricalOffsetSpin->setEnabled(category != filter::ValueCategory::CONSTANT);
     
     updatePreview();
 }
 
 void FilterEditDialog::onLeftIndicatorTypeChanged(int index)
 {
-    IndicatorType type = static_cast<IndicatorType>(m_leftIndicatorTypeCombo->itemData(index).toInt());
+    filter::IndicatorType type = static_cast<filter::IndicatorType>(m_leftIndicatorTypeCombo->itemData(index).toInt());
     updateIndicatorParamsVisibility(m_leftIndicatorWidget, type);
     updatePreview();
 }
 
 void FilterEditDialog::onRightIndicatorTypeChanged(int index)
 {
-    IndicatorType type = static_cast<IndicatorType>(m_rightIndicatorTypeCombo->itemData(index).toInt());
+    filter::IndicatorType type = static_cast<filter::IndicatorType>(m_rightIndicatorTypeCombo->itemData(index).toInt());
     updateIndicatorParamsVisibility(m_rightIndicatorWidget, type);
     updatePreview();
 }
 
-void FilterEditDialog::setFilter(const GenericFilter& filter)
+void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
 {
     m_filter = filter;
     
@@ -665,31 +665,31 @@ void FilterEditDialog::setFilter(const GenericFilter& filter)
     m_leftHistoricalOffsetSpin->setValue(filter.leftValue.historicalOffset);
     
     switch (filter.leftValue.category) {
-        case ValueCategory::PRICE:
+        case filter::ValueCategory::PRICE:
             m_leftPriceTypeCombo->setCurrentIndex(m_leftPriceTypeCombo->findData(static_cast<int>(filter.leftValue.priceType)));
             break;
-        case ValueCategory::INDICATOR:
+        case filter::ValueCategory::INDICATOR:
             m_leftIndicatorTypeCombo->setCurrentIndex(m_leftIndicatorTypeCombo->findData(static_cast<int>(filter.leftValue.indicatorType)));
             
             switch (filter.leftValue.indicatorType) {
-                case IndicatorType::EMA:
+                case filter::IndicatorType::EMA:
                     m_leftEMAPeriodSpin->setValue(filter.leftValue.emaParams.period);
                     break;
-                case IndicatorType::RSI:
+                case filter::IndicatorType::RSI:
                     m_leftRSIPeriodSpin->setValue(filter.leftValue.rsiParams.period);
                     break;
-                case IndicatorType::STOCHASTIC_K:
-                case IndicatorType::STOCHASTIC_D:
+                case filter::IndicatorType::STOCHASTIC_K:
+                case filter::IndicatorType::STOCHASTIC_D:
                     m_leftStochFastKSpin->setValue(filter.leftValue.stochParams.fastK);
                     m_leftStochSlowKSpin->setValue(filter.leftValue.stochParams.slowK);
                     m_leftStochSlowDSpin->setValue(filter.leftValue.stochParams.slowD);
                     break;
-                case IndicatorType::ATR:
+                case filter::IndicatorType::ATR:
                     m_leftATRPeriodSpin->setValue(filter.leftValue.atrParams.period);
                     m_leftATRUseLogCheck->setChecked(filter.leftValue.atrParams.useLog);
                     break;
-                case IndicatorType::SUPERTREND_VALUE:
-                case IndicatorType::SUPERTREND_DIRECTION:
+                case filter::IndicatorType::SUPERTREND_VALUE:
+                case filter::IndicatorType::SUPERTREND_DIRECTION:
                     m_leftSuperTrendPeriodSpin->setValue(filter.leftValue.supertrendParams.atrPeriod);
                     m_leftSuperTrendMultiplierSpin->setValue(filter.leftValue.supertrendParams.multiplier);
                     break;
@@ -700,7 +700,7 @@ void FilterEditDialog::setFilter(const GenericFilter& filter)
             // Mettre à jour la visibilité des paramètres d'indicateurs
             updateIndicatorParamsVisibility(m_leftIndicatorWidget, filter.leftValue.indicatorType);
             break;
-        case ValueCategory::CANDLE_PROPERTY:
+        case filter::ValueCategory::CANDLE_PROPERTY:
             m_leftCandlePropertyCombo->setCurrentIndex(m_leftCandlePropertyCombo->findData(static_cast<int>(filter.leftValue.candlePropertyType)));
             break;
         default:
@@ -716,31 +716,31 @@ void FilterEditDialog::setFilter(const GenericFilter& filter)
     m_rightHistoricalOffsetSpin->setValue(filter.rightValue.historicalOffset);
     
     switch (filter.rightValue.category) {
-        case ValueCategory::PRICE:
+        case filter::ValueCategory::PRICE:
             m_rightPriceTypeCombo->setCurrentIndex(m_rightPriceTypeCombo->findData(static_cast<int>(filter.rightValue.priceType)));
             break;
-        case ValueCategory::INDICATOR:
+        case filter::ValueCategory::INDICATOR:
             m_rightIndicatorTypeCombo->setCurrentIndex(m_rightIndicatorTypeCombo->findData(static_cast<int>(filter.rightValue.indicatorType)));
             
             switch (filter.rightValue.indicatorType) {
-                case IndicatorType::EMA:
+                case filter::IndicatorType::EMA:
                     m_rightEMAPeriodSpin->setValue(filter.rightValue.emaParams.period);
                     break;
-                case IndicatorType::RSI:
+                case filter::IndicatorType::RSI:
                     m_rightRSIPeriodSpin->setValue(filter.rightValue.rsiParams.period);
                     break;
-                case IndicatorType::STOCHASTIC_K:
-                case IndicatorType::STOCHASTIC_D:
+                case filter::IndicatorType::STOCHASTIC_K:
+                case filter::IndicatorType::STOCHASTIC_D:
                     m_rightStochFastKSpin->setValue(filter.rightValue.stochParams.fastK);
                     m_rightStochSlowKSpin->setValue(filter.rightValue.stochParams.slowK);
                     m_rightStochSlowDSpin->setValue(filter.rightValue.stochParams.slowD);
                     break;
-                case IndicatorType::ATR:
+                case filter::IndicatorType::ATR:
                     m_rightATRPeriodSpin->setValue(filter.rightValue.atrParams.period);
                     m_rightATRUseLogCheck->setChecked(filter.rightValue.atrParams.useLog);
                     break;
-                case IndicatorType::SUPERTREND_VALUE:
-                case IndicatorType::SUPERTREND_DIRECTION:
+                case filter::IndicatorType::SUPERTREND_VALUE:
+                case filter::IndicatorType::SUPERTREND_DIRECTION:
                     m_rightSuperTrendPeriodSpin->setValue(filter.rightValue.supertrendParams.atrPeriod);
                     m_rightSuperTrendMultiplierSpin->setValue(filter.rightValue.supertrendParams.multiplier);
                     break;
@@ -751,10 +751,10 @@ void FilterEditDialog::setFilter(const GenericFilter& filter)
             // Mettre à jour la visibilité des paramètres d'indicateurs
             updateIndicatorParamsVisibility(m_rightIndicatorWidget, filter.rightValue.indicatorType);
             break;
-        case ValueCategory::CONSTANT:
+        case filter::ValueCategory::CONSTANT:
             m_rightConstantValueSpin->setValue(filter.rightValue.constantValue);
             break;
-        case ValueCategory::CANDLE_PROPERTY:
+        case filter::ValueCategory::CANDLE_PROPERTY:
             m_rightCandlePropertyCombo->setCurrentIndex(m_rightCandlePropertyCombo->findData(static_cast<int>(filter.rightValue.candlePropertyType)));
             break;
         default:
@@ -775,13 +775,13 @@ void FilterEditDialog::setFilter(const GenericFilter& filter)
 void FilterEditDialog::updatePreview()
 {    
     // Partie gauche
-    ValueSource leftSource = getLeftValueSource();
-    ComparisonOperator op = static_cast<ComparisonOperator>(m_operatorCombo->currentData().toInt());
-    ValueSource rightSource = getRightValueSource();
-    TemporalLogic tempLogic = static_cast<TemporalLogic>(m_temporalLogicCombo->currentData().toInt());
+    filter::ValueSource leftSource = getLeftValueSource();
+    filter::ComparisonOperator op = static_cast<filter::ComparisonOperator>(m_operatorCombo->currentData().toInt());
+    filter::ValueSource rightSource = getRightValueSource();
+    filter::TemporalLogic tempLogic = static_cast<filter::TemporalLogic>(m_temporalLogicCombo->currentData().toInt());
     int lookbackPeriods = m_lookbackPeriodsSpin->value();
 
-    GenericFilter tempFilter;
+    filter::GenericFilter tempFilter;
     tempFilter.leftValue = leftSource;
     tempFilter.rightValue = rightSource;
     tempFilter.op = op;
@@ -796,8 +796,8 @@ void FilterEditDialog::onOkButtonClicked()
     // Construire le filtre à partir des valeurs actuelles des widgets
     m_filter.leftValue = getLeftValueSource();
     m_filter.rightValue = getRightValueSource();
-    m_filter.op = static_cast<ComparisonOperator>(m_operatorCombo->currentData().toInt());
-    m_filter.temporalLogic = static_cast<TemporalLogic>(m_temporalLogicCombo->currentData().toInt());
+    m_filter.op = static_cast<filter::ComparisonOperator>(m_operatorCombo->currentData().toInt());
+    m_filter.temporalLogic = static_cast<filter::TemporalLogic>(m_temporalLogicCombo->currentData().toInt());
     m_filter.lookbackPeriods = m_lookbackPeriodsSpin->value();
     m_filter.enabled = true;
     m_filter.description = m_filter.autoGenerateDescription();
@@ -810,7 +810,7 @@ void FilterEditDialog::onCancelButtonClicked()
     reject();
 }
 
-GenericFilter FilterEditDialog::getFilter() const
+filter::GenericFilter FilterEditDialog::getFilter() const
 {
     return m_filter;
 }

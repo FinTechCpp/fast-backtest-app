@@ -245,7 +245,7 @@ namespace cereal {
     }
 
     template<class Archive>
-    void serialize(Archive & ar, GenericFilter & filter) {
+    void serialize(Archive & ar, filter::GenericFilter & filter) {
         ar(cereal::make_nvp("leftValue", filter.leftValue),
            cereal::make_nvp("rightValue", filter.rightValue),
            cereal::make_nvp("comparisonOperator", filter.op),
@@ -256,61 +256,61 @@ namespace cereal {
     }
 
     template<class Archive>
-    void serialize(Archive & ar, ValueSource & valueSource)
+    void serialize(Archive & ar, filter::ValueSource & valueSource)
     {
         // Toujours sérialiser la catégorie en premier
         ar(cereal::make_nvp("category", valueSource.category));
         
         // Sérialiser les membres de la première union selon la catégorie
         switch (valueSource.category) {
-            case ValueCategory::PRICE:
+            case filter::ValueCategory::PRICE:
                 ar(cereal::make_nvp("priceType", valueSource.priceType));
                 break;
                 
-            case ValueCategory::INDICATOR:
+            case filter::ValueCategory::INDICATOR:
                 ar(cereal::make_nvp("indicatorType", valueSource.indicatorType));
                 
                 // Pour les indicateurs, sérialiser la bonne structure de paramètres
                 switch (valueSource.indicatorType) {
-                    case IndicatorType::EMA:
+                    case filter::IndicatorType::EMA:
                         ar(cereal::make_nvp("emaParams", valueSource.emaParams));
                         break;
                         
-                    case IndicatorType::RSI:
+                    case filter::IndicatorType::RSI:
                         ar(cereal::make_nvp("rsiParams", valueSource.rsiParams));
                         break;
                         
-                    case IndicatorType::STOCHASTIC_K:
-                    case IndicatorType::STOCHASTIC_D:
+                    case filter::IndicatorType::STOCHASTIC_K:
+                    case filter::IndicatorType::STOCHASTIC_D:
                         ar(cereal::make_nvp("stochParams", valueSource.stochParams));
                         break;
                         
-                    case IndicatorType::ATR:
+                    case filter::IndicatorType::ATR:
                         ar(cereal::make_nvp("atrParams", valueSource.atrParams));
                         break;
                         
-                    case IndicatorType::SUPERTREND_VALUE:
-                    case IndicatorType::SUPERTREND_DIRECTION:
+                    case filter::IndicatorType::SUPERTREND_VALUE:
+                    case filter::IndicatorType::SUPERTREND_DIRECTION:
                         ar(cereal::make_nvp("supertrendParams", valueSource.supertrendParams));
                         break;
                         
-                    case IndicatorType::PIVOT_POINT:
+                    case filter::IndicatorType::PIVOT_POINT:
                         // Pas de paramètre spécifique pour ce type
                         break;
                 }
                 break;
                 
-            case ValueCategory::CANDLE_PROPERTY:
+            case filter::ValueCategory::CANDLE_PROPERTY:
                 ar(cereal::make_nvp("candlePropertyType", valueSource.candlePropertyType));
                 break;
                 
-            case ValueCategory::CONSTANT:
+            case filter::ValueCategory::CONSTANT:
                 // Pas de membre de la première union pour les constantes
                 break;
         }
         
         // Sérialiser les membres hors des unions
-        if (valueSource.category == ValueCategory::CONSTANT) {
+        if (valueSource.category == filter::ValueCategory::CONSTANT) {
             ar(cereal::make_nvp("constantValue", valueSource.constantValue));
         }
         
@@ -320,30 +320,30 @@ namespace cereal {
 
     // Parameter structures
     template<class Archive>
-    void serialize(Archive & ar, EMAParams & params) {
+    void serialize(Archive & ar, filter::EMAParams & params) {
         ar(cereal::make_nvp("period", params.period));
     }
 
     template<class Archive>
-    void serialize(Archive & ar, RSIParams & params) {
+    void serialize(Archive & ar, filter::RSIParams & params) {
         ar(cereal::make_nvp("period", params.period));
     }
 
     template<class Archive>
-    void serialize(Archive & ar, StochasticParams & params) {
+    void serialize(Archive & ar, filter::StochasticParams & params) {
         ar(cereal::make_nvp("fastK", params.fastK),
            cereal::make_nvp("slowK", params.slowK),
            cereal::make_nvp("slowD", params.slowD));
     }
 
     template<class Archive>
-    void serialize(Archive & ar, ATRParams & params) {
+    void serialize(Archive & ar, filter::ATRParams & params) {
         ar(cereal::make_nvp("period", params.period),
            cereal::make_nvp("useLog", params.useLog));
     }
 
     template<class Archive>
-    void serialize(Archive & ar, SuperTrendParams & params) {
+    void serialize(Archive & ar, filter::SuperTrendParams & params) {
         ar(cereal::make_nvp("atrPeriod", params.atrPeriod),
            cereal::make_nvp("multiplier", params.multiplier));
     }

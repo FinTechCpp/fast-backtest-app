@@ -15,8 +15,8 @@ public:
     FiltersWidget(QWidget* parent = nullptr);
     
     // Méthodes pour accéder aux filtres
-    void setFilters(const std::vector<GenericFilter>& filters);
-    const std::vector<GenericFilter>& getFilters() const;
+    void setFilters(const std::vector<filter::GenericFilter>& filters);
+    const std::vector<filter::GenericFilter>& getFilters() const;
     
 signals:
     void filtersChanged();
@@ -30,7 +30,7 @@ private slots:
 private:
     void setupUI();
     void updateFilterDisplay();
-    void createFilterWidgets(int index, const GenericFilter& filter);
+    void createFilterWidgets(int index, const filter::GenericFilter& filter);
     void clearFilterWidgets();
     
     QGroupBox* m_groupBox;
@@ -38,6 +38,6 @@ private:
     QVBoxLayout* m_filtersLayout;
     QPushButton* m_addFilterButton;
     
-    std::vector<GenericFilter> m_filters;
+    std::vector<filter::GenericFilter> m_filters;
     std::vector<QWidget*> m_filterWidgets; // Pour faciliter le nettoyage
 };

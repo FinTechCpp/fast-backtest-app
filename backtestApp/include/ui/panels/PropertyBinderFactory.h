@@ -43,10 +43,10 @@ public:
         return std::make_unique<TypedPropertyBinder<QCheckBox, std::optional<bool>>>(widget, property, setter, getter);
     }
 
-    static std::unique_ptr<PropertyBinder> createFiltersBinding(FiltersWidget* widget, std::vector<GenericFilter>* property) {
-        auto setter = [](FiltersWidget* w, const std::vector<GenericFilter>& value) { w->setFilters(value); };
-        auto getter = [](FiltersWidget* w) -> std::vector<GenericFilter> { return w->getFilters(); };
-        return std::make_unique<TypedPropertyBinder<FiltersWidget, std::vector<GenericFilter>>>(widget, property, setter, getter);
+    static std::unique_ptr<PropertyBinder> createFiltersBinding(FiltersWidget* widget, std::vector<filter::GenericFilter>* property) {
+        auto setter = [](FiltersWidget* w, const std::vector<filter::GenericFilter>& value) { w->setFilters(value); };
+        auto getter = [](FiltersWidget* w) -> std::vector<filter::GenericFilter> { return w->getFilters(); };
+        return std::make_unique<TypedPropertyBinder<FiltersWidget, std::vector<filter::GenericFilter>>>(widget, property, setter, getter);
     }
     
     // Créer un binding pour un QSpinBox et un int

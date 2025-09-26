@@ -49,13 +49,13 @@ void FiltersWidget::setupUI()
     m_mainLayout->addWidget(m_groupBox);
 }
 
-void FiltersWidget::setFilters(const std::vector<GenericFilter>& filters)
+void FiltersWidget::setFilters(const std::vector<filter::GenericFilter>& filters)
 {
     m_filters = filters;
     updateFilterDisplay();
 }
 
-const std::vector<GenericFilter>& FiltersWidget::getFilters() const
+const std::vector<filter::GenericFilter>& FiltersWidget::getFilters() const
 {
     return m_filters;
 }
@@ -80,7 +80,7 @@ void FiltersWidget::clearFilterWidgets()
     m_filterWidgets.clear();
 }
 
-void FiltersWidget::createFilterWidgets(int index, const GenericFilter& filter)
+void FiltersWidget::createFilterWidgets(int index, const filter::GenericFilter& filter)
 {
     // Créer un widget conteneur pour ce filtre
     QWidget* filterWidget = new QWidget(this);
@@ -148,7 +148,7 @@ void FiltersWidget::onAddFilterClicked()
     FilterEditDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
         // Récupérer le nouveau filtre et l'ajouter
-        GenericFilter newFilter = dialog.getFilter();
+        filter::GenericFilter newFilter = dialog.getFilter();
         m_filters.push_back(newFilter);
         updateFilterDisplay();
         emit filtersChanged();

@@ -17,8 +17,8 @@ public:
     FilterEditDialog(QWidget* parent = nullptr);
     
     // Setter/Getter pour le filtre
-    void setFilter(const GenericFilter& filter);
-    GenericFilter getFilter() const;
+    void setFilter(const filter::GenericFilter& filter);
+    filter::GenericFilter getFilter() const;
 
 private slots:
     void onLeftValueCategoryChanged(int index);
@@ -35,10 +35,10 @@ private:
     void setupRightValueUI(QWidget* parent);
     void setupOperatorUI(QWidget* parent);
     void setupTemporalLogicUI(QWidget* parent);
-    void updateIndicatorParamsVisibility(QWidget* container, IndicatorType type);
+    void updateIndicatorParamsVisibility(QWidget* container, filter::IndicatorType type);
     
-    ValueSource getLeftValueSource() const;
-    ValueSource getRightValueSource() const;
+    filter::ValueSource getLeftValueSource() const;
+    filter::ValueSource getRightValueSource() const;
     
     // Widgets pour le côté gauche
     QComboBox* m_leftCategoryCombo;
@@ -105,5 +105,5 @@ private:
     QLabel* m_previewLabel;
     
     // Le filtre en cours d'édition
-    GenericFilter m_filter;
+    filter::GenericFilter m_filter;
 };

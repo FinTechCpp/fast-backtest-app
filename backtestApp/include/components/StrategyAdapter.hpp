@@ -139,17 +139,17 @@ public:
             return; // No signal to process
 
         // Process the signal if there is one
-        if (signal->action == "LIQUIDATE") {
+        if (signal->type == SignalType::LIQUIDATE) {
             for (const auto& trade : trades) {
                 trade->close();
             }
         }
-        else if (signal->action == "MOVE_SL") {
+        else if (signal->type == SignalType::MOVE_SL) {
             // Récupérer le prix de trigger depuis le signal
             double triggerPrice = signal->price > 0 ? signal->price : 0.0;
             bool success = current_trade->setBreakEven(signal->new_sl, triggerPrice);
         }
-        else if (trades.empty() && signal->action == "BUY" && signal->quantity > 0) {
+        else if (trades.empty() && signal->type == SignalType::BUY && signal->quantity > 0) {
             // Process a buy signal
             buy(
                 signal->quantity,
@@ -163,7 +163,7 @@ public:
             async_file->info("BUY signal executed: qty={}, SL={}, TP={}", 
                            signal->quantity, signal->stop_loss, signal->take_profit);
         }
-        else if (trades.empty() && signal->action == "SELL" && signal->quantity > 0) {
+        else if (trades.empty() && signal->type == SignalType::SELL && signal->quantity > 0) {
             // Process a sell signal
             sell(
                 signal->quantity,

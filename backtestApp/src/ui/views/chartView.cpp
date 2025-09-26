@@ -223,33 +223,33 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
     std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances;
         
     // Fonction helper pour extraire les indicateurs des ValueSource
-    auto extractIndicator = [&indicatorInstances](const ValueSource& source) {
-        if (source.category != ValueCategory::INDICATOR) {
+    auto extractIndicator = [&indicatorInstances](const filter::ValueSource& source) {
+        if (source.category != filter::ValueCategory::INDICATOR) {
             return;
         }
         
         switch (source.indicatorType) {
-            case IndicatorType::EMA: {
+            case filter::IndicatorType::EMA: {
                 auto ema = std::make_unique<indicators::EMAInstance>();
                 ema->period = source.emaParams.period;
                 indicatorInstances.push_back(std::move(ema));
                 break;
             }
-            case IndicatorType::RSI: {
+            case filter::IndicatorType::RSI: {
                 auto rsi = std::make_unique<indicators::RSIInstance>();
                 rsi->period = source.rsiParams.period;
                 indicatorInstances.push_back(std::move(rsi));
                 break;
             }
-            case IndicatorType::ATR: {
+            case filter::IndicatorType::ATR: {
                 auto atr = std::make_unique<indicators::ATRInstance>();
                 atr->period = source.atrParams.period;
                 atr->useLogScale = source.atrParams.useLog;
                 indicatorInstances.push_back(std::move(atr));
                 break;
             }
-            case IndicatorType::STOCHASTIC_K:
-            case IndicatorType::STOCHASTIC_D: {
+            case filter::IndicatorType::STOCHASTIC_K:
+            case filter::IndicatorType::STOCHASTIC_D: {
                 auto stoch = std::make_unique<indicators::StochasticInstance>();
                 stoch->fastKPeriod = source.stochParams.fastK;
                 stoch->slowKPeriod = source.stochParams.slowK;
@@ -257,8 +257,8 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
                 indicatorInstances.push_back(std::move(stoch));
                 break;
             }
-            case IndicatorType::SUPERTREND_VALUE:
-            case IndicatorType::SUPERTREND_DIRECTION: {
+            case filter::IndicatorType::SUPERTREND_VALUE:
+            case filter::IndicatorType::SUPERTREND_DIRECTION: {
                 auto supertrend = std::make_unique<indicators::SuperTrendInstance>();
                 supertrend->period = source.supertrendParams.atrPeriod;
                 supertrend->multiplier = source.supertrendParams.multiplier;

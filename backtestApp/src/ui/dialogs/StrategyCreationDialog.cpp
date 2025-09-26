@@ -420,42 +420,56 @@ ValueSource FilterConfigWidget::getValueSourceFromWidgets(QComboBox* categoryCom
         case ValueCategory::INDICATOR: {
             source.indicatorType = static_cast<IndicatorType>(typeCombo->currentIndex());
             
+            // Determine if this is left or right widget to build the correct object name
+            bool isLeft = (categoryCombo == m_leftCategoryCombo);
+            QString prefix = isLeft ? "left" : "right";
+            
             // Get parameters from paramWidget
             if (source.indicatorType == IndicatorType::EMA) {
-                QSpinBox* periodSpin = paramWidget->findChild<QSpinBox*>("*EmaPeriod");
-                if (periodSpin) {
+                QSpinBox* periodSpin = paramWidget->findChild<QSpinBox*>(prefix + "EmaPeriod");
+                if (periodSpin) 
                     source.emaParams = EMAParams{periodSpin->value()};
-                }
+                else 
+                    throw std::runtime_error("EMA period spin box not found");
+                
             }
             else if (source.indicatorType == IndicatorType::RSI) {
-                QSpinBox* periodSpin = paramWidget->findChild<QSpinBox*>("*RsiPeriod");
-                if (periodSpin) {
+                QSpinBox* periodSpin = paramWidget->findChild<QSpinBox*>(prefix + "RsiPeriod");
+                if (periodSpin) 
                     source.rsiParams = RSIParams{periodSpin->value()};
-                }
+                else 
+                    throw std::runtime_error("RSI period spin box not found");
+
             }
             else if (source.indicatorType == IndicatorType::STOCHASTIC_K || 
                      source.indicatorType == IndicatorType::STOCHASTIC_D) {
-                QSpinBox* fastKSpin = paramWidget->findChild<QSpinBox*>("*StochFastK");
-                QSpinBox* slowKSpin = paramWidget->findChild<QSpinBox*>("*StochSlowK");
-                QSpinBox* slowDSpin = paramWidget->findChild<QSpinBox*>("*StochSlowD");
-                if (fastKSpin && slowKSpin && slowDSpin) {
+                QSpinBox* fastKSpin = paramWidget->findChild<QSpinBox*>(prefix + "StochFastK");
+                QSpinBox* slowKSpin = paramWidget->findChild<QSpinBox*>(prefix + "StochSlowK");
+                QSpinBox* slowDSpin = paramWidget->findChild<QSpinBox*>(prefix + "StochSlowD");
+                if (fastKSpin && slowKSpin && slowDSpin) 
                     source.stochParams = StochasticParams{fastKSpin->value(), slowKSpin->value(), slowDSpin->value()};
-                }
+                else 
+                    throw std::runtime_error("Stochastic parameter spin boxes not found");
+                
             }
             else if (source.indicatorType == IndicatorType::ATR) {
-                QSpinBox* periodSpin = paramWidget->findChild<QSpinBox*>("*AtrPeriod");
-                QCheckBox* useLogCheck = paramWidget->findChild<QCheckBox*>("*AtrUseLog");
-                if (periodSpin) {
+                QSpinBox* periodSpin = paramWidget->findChild<QSpinBox*>(prefix + "AtrPeriod");
+                QCheckBox* useLogCheck = paramWidget->findChild<QCheckBox*>(prefix + "AtrUseLog");
+                if (periodSpin) 
                     source.atrParams = ATRParams{periodSpin->value(), useLogCheck ? useLogCheck->isChecked() : false};
-                }
+                else 
+                    throw std::runtime_error("ATR period spin box not found");
+                
             }
             else if (source.indicatorType == IndicatorType::SUPERTREND_VALUE ||
                      source.indicatorType == IndicatorType::SUPERTREND_DIRECTION) {
-                QSpinBox* atrPeriodSpin = paramWidget->findChild<QSpinBox*>("*SupertrendAtrPeriod");
-                QDoubleSpinBox* multiplierSpin = paramWidget->findChild<QDoubleSpinBox*>("*SupertrendMultiplier");
-                if (atrPeriodSpin && multiplierSpin) {
+                QSpinBox* atrPeriodSpin = paramWidget->findChild<QSpinBox*>(prefix + "SupertrendAtrPeriod");
+                QDoubleSpinBox* multiplierSpin = paramWidget->findChild<QDoubleSpinBox*>(prefix + "SupertrendMultiplier");
+                if (atrPeriodSpin && multiplierSpin) 
                     source.supertrendParams = SuperTrendParams{atrPeriodSpin->value(), multiplierSpin->value()};
-                }
+                else
+                    throw std::runtime_error("Supertrend parameter spin boxes not found");
+
             }
             break;
         }
@@ -522,7 +536,9 @@ void FilterConfigWidget::setValueSourceToWidgets(const ValueSource& source, QCom
             typeCombo->setCurrentIndex(static_cast<int>(source.indicatorType));
             // Set parameters based on indicator type
             if (source.indicatorType == IndicatorType::EMA) {
-                QSpinBox* periodSpin = paramWidget->findChild<QSpinBox*>("*EmaPeriod");
+                bool isLeft = (categoryCombo == m_leftCategoryCombo);
+                QString prefix = isLeft ? "left" : "right";
+                QSpinBox* periodSpin = paramWidget->findChild<QSpinBox*>(prefix + "EmaPeriod");
                 if (periodSpin) periodSpin->setValue(source.emaParams.period);
             }
             // Add similar code for other indicators...

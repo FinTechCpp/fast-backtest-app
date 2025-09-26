@@ -7,9 +7,11 @@
 #include "data.hpp"
 #include "common.h"
 #include "ui/chart/chartTypes.h"
+#include "ui/panels/generalParamsPanel.h"
 
 struct BacktestResults {
+    GeneralParamsConfig generalConfig; // General configuration for the backtest
+    StrategyConfig strategyConfig; // Strategy configuration used in the backtest
     std::shared_ptr<be::Data> data;  // Pointer to backtest data
     be::Stats stats;                  // Backtest statistics
-    StrategyConfig strategyConfig; // Base configuration for the strategy
 };

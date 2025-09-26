@@ -39,7 +39,7 @@ public:
 
 signals:
     void backtestStarted();
-    void backtestCompleted(BacktestResults* results);
+    void backtestCompleted(const BacktestResults& results);
     void backtestError(const QString& error);
 
 public slots:

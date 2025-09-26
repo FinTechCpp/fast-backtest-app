@@ -56,7 +56,7 @@ public:
     void setStrategyConfig(const StrategyConfig& config);
 
     // Ajout d'accesseurs pour les résultats de backtest
-    BacktestResults* getBacktestResults() const { return m_backtestResults.get(); }
+    const BacktestResults& getBacktestResults() const { return *m_backtestResults.get(); }
     void setBacktestResults(std::unique_ptr<BacktestResults> results);
 
 private slots:

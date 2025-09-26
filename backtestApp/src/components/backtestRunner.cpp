@@ -229,6 +229,7 @@ void BacktestWorker::run()
     // Créer un objet BacktestResults pour stocker les résultats
     m_results = std::make_unique<BacktestResults>();
     m_results->data = data;
+    m_results->generalConfig = generalConfig; // Stocker la configuration générale du backtest
     m_results->strategyConfig = m_mainWindow->getStrategyConfig(); // Stocker la configuration de base de la stratégie
     
     qDebug() << "Données disponibles:" << data->size() << "barres";

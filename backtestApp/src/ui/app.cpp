@@ -120,22 +120,6 @@ void App::createControlPanel() {
     m_strategyPanel = new StrategyPanel(m_controlPanel);
     m_controlPanelLayout->addWidget(m_strategyPanel);
     
-    // Strategy-specific panel container
-    // m_strategyPanelStack = new QStackedWidget();
-    // m_controlPanelLayout->addWidget(m_strategyPanelStack);
-    
-    // Create all strategy-specific panels in advance
-    // m_buyHeikinGreenPanel = new BuyHeikinGreenPanel(m_controlPanel);
-    // m_sellHeikinRedPanel = new SellHeikinRedPanel(m_controlPanel);
-    // m_genericStrategyPanel = new GenericStrategyPanel(m_controlPanel);
-    
-    // Add all panels to the stack
-    // m_strategyPanelStack->addWidget(m_buyHeikinGreenPanel);
-    // m_strategyPanelStack->addWidget(m_sellHeikinRedPanel);
-    // m_strategyPanelStack->addWidget(m_genericStrategyPanel);
-    
-    // Initialize strategy-specific panels
-    
     // Create scroll area and add to splitter
     m_controlPanelScrollArea = new QScrollArea();
     m_controlPanelScrollArea->setWidget(m_controlPanel);

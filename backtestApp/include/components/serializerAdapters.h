@@ -35,10 +35,11 @@ struct BacktestResultConfig {
     std::string name;
     std::string version;
     std::string createdAt;
+    GeneralParamsConfig generalParams;
+    StrategyConfig strategyConfig;
     be::Stats stats;
     // c'est vraiment lourd, il faudrait plutot une reference vers des données, ensuite en verifie que les données chargées étaient bien celles de l'enregistrement
     std::vector<be::Candle> candles;
-    // std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances; // Instances of indicators calculated during backtest
 
     // peut etre ajouter la configuration du profile utiliser pour le backtest en question ?
 
@@ -47,78 +48,13 @@ struct BacktestResultConfig {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
+           CEREAL_NVP(strategyConfig),
            CEREAL_NVP(stats),
            CEREAL_NVP(candles));
-        //    CEREAL_NVP(indicatorInstances));
     }
 };
 
 namespace cereal {
-    template<class Archive>
-    void serialize(Archive & ar, indicators::IndicatorBase & base) {
-        ar(cereal::make_nvp("id", base.id),
-           cereal::make_nvp("visible", base.visible));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::RSIInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("period", config.period),
-           cereal::make_nvp("height", config.height),
-           cereal::make_nvp("color", config.color),
-           cereal::make_nvp("overboughtLevel", config.overboughtLevel),
-           cereal::make_nvp("oversoldLevel", config.oversoldLevel),
-           cereal::make_nvp("upperColor", config.upperColor),
-           cereal::make_nvp("lowerColor", config.lowerColor));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::EMAInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("period", config.period),
-           cereal::make_nvp("color", config.color));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::StochasticInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("fastKPeriod", config.fastKPeriod),
-           cereal::make_nvp("slowKPeriod", config.slowKPeriod),
-           cereal::make_nvp("slowDPeriod", config.slowDPeriod),
-           cereal::make_nvp("height", config.height),
-           cereal::make_nvp("kColor", config.kColor),
-           cereal::make_nvp("dColor", config.dColor),
-           cereal::make_nvp("overboughtLevel", config.overboughtLevel),
-           cereal::make_nvp("oversoldLevel", config.oversoldLevel));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::ATRInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("period", config.period),
-           cereal::make_nvp("height", config.height),
-           cereal::make_nvp("color", config.color),
-           cereal::make_nvp("useLogScale", config.useLogScale));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::SuperTrendInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("period", config.period),
-           cereal::make_nvp("multiplier", config.multiplier),
-           cereal::make_nvp("upColor", config.upColor),
-           cereal::make_nvp("downColor", config.downColor));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::PivotPointsInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("periodType", config.periodType),
-           cereal::make_nvp("calculationMethod", config.calculationMethod),
-           cereal::make_nvp("levelStyles", config.levelStyles),
-           cereal::make_nvp("showLabels", config.showLabels));
-    }
-
     template<class Archive>
     void serialize(Archive & ar, be::Duration & duration) {
         ar(cereal::make_nvp("seconds", duration.seconds));

@@ -158,9 +158,8 @@ void StatsView::updateData(BacktestResults* results)
         
         // Get strategy configurations from the app if available
         if (m_app) {
-            StrategyBaseConfig baseConfig = m_app->getStrategyBaseConfig();
-            BuyHeikinGreenConfig buyHeikinConfig = m_app->getBuyHeikinGreenConfig();
-            m_reportWidget->setStrategyConfigurations(baseConfig, buyHeikinConfig);
+            StrategyConfig Config = m_app->getStrategyConfig();
+            m_reportWidget->setStrategyConfigurations(Config);
         }
     }
 }

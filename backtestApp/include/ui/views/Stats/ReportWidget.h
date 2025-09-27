@@ -23,7 +23,6 @@
 #include "stats.hpp"
 #include "common.h"
 #include "components/backtestResults.h"
-#include "Strategies/buy_heikin_green.hpp"
 
 /**
  * @brief AI-powered analysis widget for backtest results
@@ -44,10 +43,8 @@ public:
     /**
      * @brief Set the strategy configuration for analysis
      * @param baseConfig Base strategy configuration
-     * @param buyHeikinConfig Buy Heikin Ashi strategy specific configuration
      */
-    void setStrategyConfigurations(const StrategyBaseConfig& baseConfig, 
-                                   const BuyHeikinGreenConfig& buyHeikinConfig);
+    void setStrategyConfigurations(const StrategyConfig& Config);
 
 signals:
     void reportGenerated(const QString& report);
@@ -74,13 +71,11 @@ private:
     /**
      * @brief Create the optimized prompt for AI analysis
      * @param stats Backtest statistics
-     * @param baseConfig Base strategy configuration
-     * @param buyHeikinConfig Strategy-specific configuration
+     * @param Config Base strategy configuration
      * @return Formatted prompt string
      */
     QString createAnalysisPrompt(const be::Stats& stats, 
-                                const StrategyBaseConfig& baseConfig,
-                                const BuyHeikinGreenConfig& buyHeikinConfig) const;
+                                const StrategyConfig& Config) const;
 
     /**
      * @brief Format statistics into a readable string for the AI model
@@ -91,12 +86,10 @@ private:
 
     /**
      * @brief Format strategy configuration into a readable string
-     * @param baseConfig Base configuration
-     * @param buyHeikinConfig Strategy-specific configuration
+     * @param Config Base configuration
      * @return Formatted configuration string
      */
-    QString formatConfigForPrompt(const StrategyBaseConfig& baseConfig,
-                                 const BuyHeikinGreenConfig& buyHeikinConfig) const;
+    QString formatConfigForPrompt(const StrategyConfig& Config) const;
 
     /**
      * @brief Check if an AI model is loaded and ready
@@ -148,8 +141,7 @@ private:
     
     // Data
     be::Stats m_currentStats;
-    StrategyBaseConfig m_currentBaseConfig;
-    BuyHeikinGreenConfig m_currentBuyHeikinConfig;
+    StrategyConfig m_currentBaseConfig;
     bool m_hasValidStats;
     bool m_hasValidConfig;
     

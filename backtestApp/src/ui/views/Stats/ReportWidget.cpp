@@ -202,11 +202,9 @@ void ReportWidget::clear()
     updateGenerateButtonState();
 }
 
-void ReportWidget::setStrategyConfigurations(const StrategyBaseConfig& baseConfig, 
-                                           const BuyHeikinGreenConfig& buyHeikinConfig)
+void ReportWidget::setStrategyConfigurations(const StrategyConfig& Config)
 {
-    m_currentBaseConfig = baseConfig;
-    m_currentBuyHeikinConfig = buyHeikinConfig;
+    m_currentBaseConfig = Config;
     m_hasValidConfig = true;
     
     // Update button state
@@ -240,7 +238,7 @@ void ReportWidget::onGenerateReportClicked()
     m_progressBar->setValue(0);
     
     // Create analysis prompt
-    QString prompt = createAnalysisPrompt(m_currentStats, m_currentBaseConfig, m_currentBuyHeikinConfig);
+    QString prompt = createAnalysisPrompt(m_currentStats, m_currentBaseConfig);
     
     // Start inference
     m_inferenceManager->runInferenceAsync(prompt, 1024);
@@ -330,8 +328,7 @@ void ReportWidget::onInferenceProgress(int progress)
 }
 
 QString ReportWidget::createAnalysisPrompt(const be::Stats& stats, 
-                                          const StrategyBaseConfig& baseConfig,
-                                          const BuyHeikinGreenConfig& buyHeikinConfig) const
+                                          const StrategyConfig& Config) const
 {
     QString prompt = QString(
         "You are an expert quantitative analyst specializing in trading strategy evaluation. "
@@ -380,7 +377,7 @@ QString ReportWidget::createAnalysisPrompt(const be::Stats& stats,
         "Keep the analysis professional but accessible.\n"
     )
     .arg(formatStatsForPrompt(stats))
-    .arg(formatConfigForPrompt(baseConfig, buyHeikinConfig));
+    .arg(formatConfigForPrompt(Config));
     
     return prompt;
 }
@@ -427,58 +424,23 @@ QString ReportWidget::formatStatsForPrompt(const be::Stats& stats) const
     return formatted;
 }
 
-QString ReportWidget::formatConfigForPrompt(const StrategyBaseConfig& baseConfig,
-                                          const BuyHeikinGreenConfig& buyHeikinConfig) const
+QString ReportWidget::formatConfigForPrompt(const StrategyConfig& Config) const
 {
     QString formatted;
     QTextStream stream(&formatted);
     
     // Base configuration
     stream << "**Base Strategy Configuration:**\n";
-    stream << QString("- Take Profit Distance: %1\n").arg(baseConfig.take_profit_distance);
-    stream << QString("- Stop Loss Distance: %1\n").arg(baseConfig.stop_loss_distance);
-    stream << QString("- Risk-based Sizing: %1\n").arg(baseConfig.use_risk_based_sizing ? "Yes" : "No");
-    stream << QString("- Risk Percentage: %1%\n").arg(baseConfig.risk_percentage);
-    stream << QString("- Use Break-even: %1\n").arg(baseConfig.use_break_even ? "Yes" : "No");
-    if (baseConfig.use_break_even) {
-        stream << QString("- Break-even Threshold: %1\n").arg(baseConfig.break_even_threshold);
+    stream << QString("- Take Profit Distance: %1\n").arg(Config.take_profit_distance);
+    stream << QString("- Stop Loss Distance: %1\n").arg(Config.stop_loss_distance);
+    stream << QString("- Risk-based Sizing: %1\n").arg(Config.use_risk_based_sizing ? "Yes" : "No");
+    stream << QString("- Risk Percentage: %1%\n").arg(Config.risk_percentage);
+    stream << QString("- Use Break-even: %1\n").arg(Config.use_break_even ? "Yes" : "No");
+    if (Config.use_break_even) {
+        stream << QString("- Break-even Threshold: %1\n").arg(Config.break_even_threshold);
     }
     
-    // Buy Heikin Green specific configuration
-    stream << "\n**Buy Heikin Green Strategy Configuration:**\n";
     
-    if (buyHeikinConfig.use_ema_short_filter) {
-        stream << QString("- EMA Short Period: %1 (ACTIVE)\n").arg(buyHeikinConfig.ema_short_period);
-    }
-    if (buyHeikinConfig.use_ema_long_filter) {
-        stream << QString("- EMA Long Period: %1 (ACTIVE)\n").arg(buyHeikinConfig.ema_long_period);
-    }
-    if (buyHeikinConfig.use_stoch_filter) {
-        stream << QString("- Stochastic Filter (ACTIVE): FastK=%1, SlowK=%2, SlowD=%3, Threshold=%4\n")
-                  .arg(buyHeikinConfig.stoch_fastk)
-                  .arg(buyHeikinConfig.stoch_slowk)
-                  .arg(buyHeikinConfig.stoch_slowd)
-                  .arg(buyHeikinConfig.stoch_threshold);
-    }
-    if (buyHeikinConfig.use_rsi_filter) {
-        stream << QString("- RSI Filter (ACTIVE): Period=%1, Threshold=%2\n")
-                  .arg(buyHeikinConfig.rsi_period)
-                  .arg(buyHeikinConfig.rsi_threshold);
-    }
-    if (buyHeikinConfig.use_supertrend_filter) {
-        stream << QString("- SuperTrend Filter (ACTIVE): ATR Period=%1, Multiplier=%2\n")
-                  .arg(buyHeikinConfig.supertrend_atr_period)
-                  .arg(buyHeikinConfig.supertrend_multiplier);
-    }
-    if (buyHeikinConfig.use_atr_filter) {
-        stream << QString("- ATR Filter (ACTIVE): Period=%1, Threshold=%2\n")
-                  .arg(buyHeikinConfig.atr_filter_period)
-                  .arg(buyHeikinConfig.atr_threshold);
-    }
-    if (buyHeikinConfig.use_previous_ha_candle_red_filter) {
-        stream << QString("- Previous HA Candle Red Filter (ACTIVE): N=%1\n")
-                  .arg(buyHeikinConfig.previous_ha_candle_red_filter_n);
-    }
     
     return formatted;
 }

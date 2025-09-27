@@ -1,7 +1,9 @@
-#include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
+#include "ui/panels/StrategyPanel.h"
+
+#include "ui/panels/FiltersWidget.h"
 #include <QDebug>
 
-StrategyBasePanel::StrategyBasePanel(QWidget* parent)
+StrategyPanel::StrategyPanel(QWidget* parent)
     : ConfigPanel("Paramètres de base", parent)
 {
     // Initialiser le tableau des jours de trading (Lun-Ven activés par défaut)
@@ -12,7 +14,7 @@ StrategyBasePanel::StrategyBasePanel(QWidget* parent)
     setupUI();
 }
 
-void StrategyBasePanel::setupUI() {    
+void StrategyPanel::setupUI() {    
     // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
     QVBoxLayout* baseLayout = new QVBoxLayout(this);
 
@@ -25,6 +27,21 @@ void StrategyBasePanel::setupUI() {
     addBinding(PropertyBinderFactory::createBoolBinding(
         enableLoggingCheck,
         &m_config.enable_logging
+    ));
+
+    // Section Direction de trading
+    QHBoxLayout* directionLayout = new QHBoxLayout();
+    directionLayout->addWidget(new QLabel("Direction de trading:", this));
+    QComboBox* strategyDirectionCombo = new QComboBox(this);
+    strategyDirectionCombo->addItems({"", "Long", "Short"});
+    strategyDirectionCombo->setCurrentIndex(1); // Long par défaut
+    directionLayout->addWidget(strategyDirectionCombo);
+
+    baseLayout->addLayout(directionLayout);
+
+    addBinding(PropertyBinderFactory::createEnumComboBinding(
+        strategyDirectionCombo,
+        &m_config.tradeDirection
     ));
 
     // Section SL/TP
@@ -114,6 +131,19 @@ void StrategyBasePanel::setupUI() {
     addBinding(PropertyBinderFactory::createIntBinding(
         slMinmaxPeriodsSpin,
         &m_config.sl_minmax_periods
+    ));
+    
+    QDoubleSpinBox* slMinmaxDeltaSpin = new QDoubleSpinBox(this);
+    slMinmaxDeltaSpin->setDecimals(2);
+    slMinmaxDeltaSpin->setRange(0, 1000.0);
+    slMinmaxDeltaSpin->setValue(5.0);
+    slMinmaxDeltaSpin->setEnabled(false);
+    slMinmaxDeltaSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    slLayout->addRow(new QLabel("Delta Min/Max:", this), slMinmaxDeltaSpin);
+    
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        slMinmaxDeltaSpin,
+        &m_config.sl_minmax_delta_coef_atr
     ));
     
     // SL minimum
@@ -556,6 +586,20 @@ void StrategyBasePanel::setupUI() {
     
     riskGroup->setLayout(riskLayout);
     baseLayout->addWidget(riskGroup);
+
+
+    // Section de configuration des filtres
+    FiltersWidget* filtersWidget = new FiltersWidget(this);
+    filtersWidget->setFilters(m_config.filters);
+    QVBoxLayout* filtersLayout = new QVBoxLayout();
+    filtersLayout->addWidget(filtersWidget);
+    baseLayout->addLayout(filtersLayout);
+
+    addBinding(PropertyBinderFactory::createFiltersBinding(
+        filtersWidget,
+        &m_config.filters
+    ));
     
     setLayout(baseLayout);
 }
+

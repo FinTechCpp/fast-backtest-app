@@ -5,6 +5,7 @@
 #include <QGridLayout>
 #include <QFormLayout>
 #include <QLabel>
+#include <QDateTime>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QDoubleSpinBox>
@@ -35,21 +36,21 @@ struct GeneralParamsConfig {
 
 // surcharge de l'operateur << pour GeneralParamsConfig
 inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& config) {
-    os << "GeneralParamsConfig("
-       << "strategyName: " << config.strategyName << ", "
-       << "symbol: " << config.symbol << ", "
-       << "interval: " << config.interval << ", "
-       << "period: " << config.period << ", "
-       << "endDate: " << config.endDate.toString("dd/MM/yyyy").toStdString() << ", "
-       << "cash: " << config.cash << ", "
-       << "spread: " << config.spread << ", "
-       << "commission: " << config.commission << ", "
-       << "leverage_limit: " << config.leverage_limit << ", "
-       << "tradeOnClose: " << config.tradeOnClose << ", "
-       << "hedging: " << config.hedging << ", "
-       << "exclusiveOrders: " << config.exclusiveOrders << ", "
-       << "finalizeTrades: " << config.finalizeTrades
-       << ")";
+    os << "GeneralParamsConfig {\n"
+       << "  strategyName: " << config.strategyName << ", \n"
+       << "  symbol: " << config.symbol << ", \n"
+       << "  interval: " << config.interval << ", \n"
+       << "  period: " << config.period << ", \n"
+       << "  endDate: " << config.endDate.toString("dd/MM/yyyy").toStdString() << ", \n"
+       << "  cash: " << config.cash << ", \n"
+       << "  spread: " << config.spread << ", \n"
+       << "  commission: " << config.commission << ", \n"
+       << "  leverage_limit: " << config.leverage_limit << ", \n"
+       << "  tradeOnClose: " << config.tradeOnClose << ", \n"
+       << "  hedging: " << config.hedging << ", \n"
+       << "  exclusiveOrders: " << config.exclusiveOrders << ", \n"
+       << "  finalizeTrades: " << config.finalizeTrades << "\n"
+       << "}\n";
     return os;
 }
 
@@ -66,16 +67,7 @@ class GeneralParamsPanel : public ConfigPanel<GeneralParamsConfig>
 public:
     GeneralParamsPanel(QWidget* parent = nullptr);
 
-signals:
-    void strategyChanged(const QString& strategy);
-private slots:
-    void onStrategyComboChanged(const QString& strategy);
-
-
 private:
-    QMap<QString, QString> m_strategyMap;
-    void initStrategyMap();
-
     void setupUI();
 };
 

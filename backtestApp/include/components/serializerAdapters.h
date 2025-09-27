@@ -5,26 +5,20 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/array.hpp>
-#include <QDateTime>
+#include <cereal/types/map.hpp>
 
-// Inclure les définitions de structures (sans les fonctions de sérialisation)
-#include "Strategies/buy_heikin_green.hpp"
-#include "Strategies/sell_heikin_red.hpp"
 #include "ui/panels/generalParamsPanel.h"
 #include "common.h"
 
 #include "beTypes.h"
 #include "ui/chart/chartTypes.h"
 
-
 struct ProfileConfig {
     std::string name;
     std::string version;
     std::string createdAt;
     GeneralParamsConfig generalParams;
-    StrategyBaseConfig baseConfig;
-    BuyHeikinGreenConfig buyConfig;
-    SellHeikinRedConfig sellConfig;
+    StrategyConfig strategyConfig;
 
     template<class Archive>
     void serialize(Archive & ar) {
@@ -32,20 +26,20 @@ struct ProfileConfig {
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
-           CEREAL_NVP(baseConfig),
-           CEREAL_NVP(buyConfig),
-           CEREAL_NVP(sellConfig));
+           CEREAL_NVP(strategyConfig));
     }
 };
 
+// TODO finir l'enregistrement total des resultats de backtest
 struct BacktestResultConfig {
     std::string name;
     std::string version;
     std::string createdAt;
+    GeneralParamsConfig generalParams;
+    StrategyConfig strategyConfig;
     be::Stats stats;
     // c'est vraiment lourd, il faudrait plutot une reference vers des données, ensuite en verifie que les données chargées étaient bien celles de l'enregistrement
     std::vector<be::Candle> candles;
-    // std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances; // Instances of indicators calculated during backtest
 
     // peut etre ajouter la configuration du profile utiliser pour le backtest en question ?
 
@@ -54,78 +48,14 @@ struct BacktestResultConfig {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
+           CEREAL_NVP(generalParams),
+           CEREAL_NVP(strategyConfig),
            CEREAL_NVP(stats),
            CEREAL_NVP(candles));
-        //    CEREAL_NVP(indicatorInstances));
     }
 };
 
 namespace cereal {
-    template<class Archive>
-    void serialize(Archive & ar, indicators::IndicatorBase & base) {
-        ar(cereal::make_nvp("id", base.id),
-           cereal::make_nvp("visible", base.visible));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::RSIInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("period", config.period),
-           cereal::make_nvp("height", config.height),
-           cereal::make_nvp("color", config.color),
-           cereal::make_nvp("overboughtLevel", config.overboughtLevel),
-           cereal::make_nvp("oversoldLevel", config.oversoldLevel),
-           cereal::make_nvp("upperColor", config.upperColor),
-           cereal::make_nvp("lowerColor", config.lowerColor));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::EMAInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("period", config.period),
-           cereal::make_nvp("color", config.color));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::StochasticInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("fastKPeriod", config.fastKPeriod),
-           cereal::make_nvp("slowKPeriod", config.slowKPeriod),
-           cereal::make_nvp("slowDPeriod", config.slowDPeriod),
-           cereal::make_nvp("height", config.height),
-           cereal::make_nvp("kColor", config.kColor),
-           cereal::make_nvp("dColor", config.dColor),
-           cereal::make_nvp("overboughtLevel", config.overboughtLevel),
-           cereal::make_nvp("oversoldLevel", config.oversoldLevel));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::ATRInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("period", config.period),
-           cereal::make_nvp("height", config.height),
-           cereal::make_nvp("color", config.color),
-           cereal::make_nvp("useLogScale", config.useLogScale));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::SuperTrendInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("period", config.period),
-           cereal::make_nvp("multiplier", config.multiplier),
-           cereal::make_nvp("upColor", config.upColor),
-           cereal::make_nvp("downColor", config.downColor));
-    }
-
-    template<class Archive>
-    void serialize(Archive & ar, indicators::PivotPointsInstance & config) {
-        ar(cereal::base_class<indicators::IndicatorBase>(config),
-           cereal::make_nvp("periodType", config.periodType),
-           cereal::make_nvp("calculationMethod", config.calculationMethod),
-           cereal::make_nvp("levelStyles", config.levelStyles),
-           cereal::make_nvp("showLabels", config.showLabels));
-    }
-
     template<class Archive>
     void serialize(Archive & ar, be::Duration & duration) {
         ar(cereal::make_nvp("seconds", duration.seconds));
@@ -252,59 +182,15 @@ namespace cereal {
            cereal::make_nvp("kellyCriterion", stats.kellyCriterion));
     }
     
-    // Sérialisation pour BuyHeikinGreenConfig
+    // Sérialisation pour StrategyConfig
+    // TODO il faudra ajouter les filtres et la direction
     template<class Archive>
-    void serialize(Archive & ar, BuyHeikinGreenConfig & config) {
-        ar(cereal::make_nvp("ema_short_period", config.ema_short_period),
-           cereal::make_nvp("ema_long_period", config.ema_long_period),
-           cereal::make_nvp("stoch_fastk", config.stoch_fastk),
-           cereal::make_nvp("stoch_slowk", config.stoch_slowk),
-           cereal::make_nvp("stoch_slowd", config.stoch_slowd),
-           cereal::make_nvp("stoch_threshold", config.stoch_threshold),
-           cereal::make_nvp("rsi_period", config.rsi_period),
-           cereal::make_nvp("rsi_threshold", config.rsi_threshold),
-           cereal::make_nvp("supertrend_atr_period", config.supertrend_atr_period),
-           cereal::make_nvp("supertrend_multiplier", config.supertrend_multiplier),
-           cereal::make_nvp("previous_ha_candle_red_filter_n", config.previous_ha_candle_red_filter_n),
-           cereal::make_nvp("rsi_history_periods", config.rsi_history_periods),
-           cereal::make_nvp("stoch_history_periods", config.stoch_history_periods),
-           cereal::make_nvp("use_ema_short_filter", config.use_ema_short_filter),
-           cereal::make_nvp("use_ema_long_filter", config.use_ema_long_filter),
-           cereal::make_nvp("use_stoch_filter", config.use_stoch_filter),
-           cereal::make_nvp("use_rsi_filter", config.use_rsi_filter),
-           cereal::make_nvp("use_supertrend_filter", config.use_supertrend_filter),
-           cereal::make_nvp("use_previous_ha_candle_red_filter", config.use_previous_ha_candle_red_filter));
-    }
-    
-    // Sérialisation pour SellHeikinRedConfig
-    template<class Archive>
-    void serialize(Archive & ar, SellHeikinRedConfig & config) {
-        ar(cereal::make_nvp("ema_short_period", config.ema_short_period),
-           cereal::make_nvp("ema_long_period", config.ema_long_period),
-           cereal::make_nvp("stoch_fastk", config.stoch_fastk),
-           cereal::make_nvp("stoch_slowk", config.stoch_slowk),
-           cereal::make_nvp("stoch_slowd", config.stoch_slowd),
-           cereal::make_nvp("stoch_threshold", config.stoch_threshold),
-           cereal::make_nvp("rsi_period", config.rsi_period),
-           cereal::make_nvp("rsi_threshold", config.rsi_threshold),
-           cereal::make_nvp("supertrend_atr_period", config.supertrend_atr_period),
-           cereal::make_nvp("supertrend_multiplier", config.supertrend_multiplier),
-           cereal::make_nvp("previous_ha_candle_green_filter_n", config.previous_ha_candle_green_filter_n),
-           cereal::make_nvp("rsi_history_periods", config.rsi_history_periods),
-           cereal::make_nvp("stoch_history_periods", config.stoch_history_periods),
-           cereal::make_nvp("use_ema_short_filter", config.use_ema_short_filter),
-           cereal::make_nvp("use_ema_long_filter", config.use_ema_long_filter),
-           cereal::make_nvp("use_stoch_filter", config.use_stoch_filter),
-           cereal::make_nvp("use_rsi_filter", config.use_rsi_filter),
-           cereal::make_nvp("use_supertrend_filter", config.use_supertrend_filter),
-           cereal::make_nvp("use_previous_ha_candle_green_filter", config.use_previous_ha_candle_green_filter));
-    }
-    
-    // Sérialisation pour StrategyBaseConfig
-    template<class Archive>
-    void serialize(Archive & ar, StrategyBaseConfig & config) {
-        ar(cereal::make_nvp("enable_logging", config.enable_logging),
+    void serialize(Archive & ar, StrategyConfig & config) {
+        ar(cereal::make_nvp("name", config.name),
+           cereal::make_nvp("tradeDirection", config.tradeDirection),
+           cereal::make_nvp("enable_logging", config.enable_logging),
            cereal::make_nvp("logLevel", config.logLevel),
+           cereal::make_nvp("filters", config.filters),
            cereal::make_nvp("sl_method", config.sl_method),
            cereal::make_nvp("tp_method", config.tp_method),
            cereal::make_nvp("trading_from", config.trading_from),
@@ -357,5 +243,109 @@ namespace cereal {
            cereal::make_nvp("hedging", config.hedging),
            cereal::make_nvp("exclusiveOrders", config.exclusiveOrders),
            cereal::make_nvp("finalizeTrades", config.finalizeTrades));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::GenericFilter & filter) {
+        ar(cereal::make_nvp("leftValue", filter.leftValue),
+           cereal::make_nvp("rightValue", filter.rightValue),
+           cereal::make_nvp("comparisonOperator", filter.op),
+           cereal::make_nvp("temporalLogic", filter.temporalLogic),
+           cereal::make_nvp("lookbackPeriods", filter.lookbackPeriods),
+           cereal::make_nvp("enabled", filter.enabled), 
+           cereal::make_nvp("description", filter.description));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::ValueSource & valueSource)
+    {
+        // Toujours sérialiser la catégorie en premier
+        ar(cereal::make_nvp("category", valueSource.category));
+        
+        // Sérialiser les membres de la première union selon la catégorie
+        switch (valueSource.category) {
+            case filter::ValueCategory::PRICE:
+                ar(cereal::make_nvp("priceType", valueSource.priceType));
+                break;
+                
+            case filter::ValueCategory::INDICATOR:
+                ar(cereal::make_nvp("indicatorType", valueSource.indicatorType));
+                
+                // Pour les indicateurs, sérialiser la bonne structure de paramètres
+                switch (valueSource.indicatorType) {
+                    case filter::IndicatorType::EMA:
+                        ar(cereal::make_nvp("emaParams", valueSource.emaParams));
+                        break;
+                        
+                    case filter::IndicatorType::RSI:
+                        ar(cereal::make_nvp("rsiParams", valueSource.rsiParams));
+                        break;
+                        
+                    case filter::IndicatorType::STOCHASTIC_K:
+                    case filter::IndicatorType::STOCHASTIC_D:
+                        ar(cereal::make_nvp("stochParams", valueSource.stochParams));
+                        break;
+                        
+                    case filter::IndicatorType::ATR:
+                        ar(cereal::make_nvp("atrParams", valueSource.atrParams));
+                        break;
+                        
+                    case filter::IndicatorType::SUPERTREND_VALUE:
+                    case filter::IndicatorType::SUPERTREND_DIRECTION:
+                        ar(cereal::make_nvp("supertrendParams", valueSource.supertrendParams));
+                        break;
+                        
+                    case filter::IndicatorType::PIVOT_POINT:
+                        // Pas de paramètre spécifique pour ce type
+                        break;
+                }
+                break;
+                
+            case filter::ValueCategory::CANDLE_PROPERTY:
+                ar(cereal::make_nvp("candlePropertyType", valueSource.candlePropertyType));
+                break;
+                
+            case filter::ValueCategory::CONSTANT:
+                // Pas de membre de la première union pour les constantes
+                break;
+        }
+        
+        // Sérialiser les membres hors des unions
+        if (valueSource.category == filter::ValueCategory::CONSTANT) {
+            ar(cereal::make_nvp("constantValue", valueSource.constantValue));
+        }
+        
+        // Le décalage historique s'applique à toutes les catégories
+        ar(cereal::make_nvp("historicalOffset", valueSource.historicalOffset));
+    }
+
+    // Parameter structures
+    template<class Archive>
+    void serialize(Archive & ar, filter::EMAParams & params) {
+        ar(cereal::make_nvp("period", params.period));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::RSIParams & params) {
+        ar(cereal::make_nvp("period", params.period));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::StochasticParams & params) {
+        ar(cereal::make_nvp("fastK", params.fastK),
+           cereal::make_nvp("slowK", params.slowK),
+           cereal::make_nvp("slowD", params.slowD));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::ATRParams & params) {
+        ar(cereal::make_nvp("period", params.period),
+           cereal::make_nvp("useLog", params.useLog));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::SuperTrendParams & params) {
+        ar(cereal::make_nvp("atrPeriod", params.atrPeriod),
+           cereal::make_nvp("multiplier", params.multiplier));
     }
 }

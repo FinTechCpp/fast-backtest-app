@@ -20,19 +20,15 @@
 #include <QDebug>
 #include "components/backtestResults.h"
 #include "common.h"
-#include "buy_heikin_green.hpp"
-#include "sell_heikin_red.hpp"
-#include "ui/panels/strategySpecificPanels/buyHeikinGreenPanel.h"
-#include "ui/panels/strategySpecificPanels/sellHeikinRedPanel.h"
-// #include "ui/menu/BacktestResultMenuManager.h"
+#include "components/StrategyAdapter.hpp"
 
 
 // Forward declarations
 class ProfileManager;
 class GeneralParamsPanel;
 struct GeneralParamsConfig;
-class StrategyBasePanel;
-struct StrategyBaseConfig;
+class StrategyPanel;
+struct StrategyConfig;
 class StatsView;
 class ChartView;
 class HistogramView;
@@ -53,29 +49,20 @@ public:
     App();
     ~App();
     
-    // Getters pour les configurations
-    std::vector<std::unique_ptr<indicators::IndicatorBase>> readFromStrategyPanelToIndicatorInstances() const;
-
     GeneralParamsConfig getGeneralParamsConfig() const;
-    StrategyBaseConfig getStrategyBaseConfig() const;
-    BuyHeikinGreenConfig getBuyHeikinGreenConfig() const;
-    SellHeikinRedConfig getSellHeikinRedConfig() const;
+    StrategyConfig getStrategyConfig() const;
 
     void setGeneralParamsConfig(const GeneralParamsConfig& config);
-    void setStrategyBaseConfig(const StrategyBaseConfig& config);
-    void setBuyHeikinGreenConfig(const BuyHeikinGreenConfig& config);
-    void setSellHeikinRedConfig(const SellHeikinRedConfig& config);
+    void setStrategyConfig(const StrategyConfig& config);
 
     // Ajout d'accesseurs pour les résultats de backtest
-    BacktestResults* getBacktestResults() const { return m_backtestResults.get(); }
+    const BacktestResults& getBacktestResults() const { return *m_backtestResults.get(); }
     void setBacktestResults(std::unique_ptr<BacktestResults> results);
 
 private slots:
-    void onStrategyChanged(const QString& strategy);
     void onRunBacktest();
     void onBacktestCompleted();
     void onBacktestError(const QString& error);
-    void updateStrategySpecificPanel();
     void onAbout();
 
 private:
@@ -109,13 +96,6 @@ private:
     QWidget* m_controlPanel;
     QVBoxLayout* m_controlPanelLayout;
     
-    // Strategy map
-    QMap<QString, QString> m_strategyMap;
-    
-    // Strategy-specific panel container
-    QStackedWidget* m_strategyPanelStack;
-    QMap<QString, QWidget*> m_strategyPanels;
-    
     // Results Area
     QTabWidget* m_resultsTabWidget;
     
@@ -126,10 +106,7 @@ private:
     
     // Panels - SUPPRESSION de ProfilePanel
     GeneralParamsPanel* m_generalParamsPanel = nullptr;
-    StrategyBasePanel* m_strategyBasePanel = nullptr;
-    BuyHeikinGreenPanel* m_buyHeikinGreenPanel = nullptr;
-    SellHeikinRedPanel* m_sellHeikinRedPanel = nullptr;
-
+    StrategyPanel* m_strategyPanel = nullptr;
     
     // Components
     BacktestRunner* m_backtestRunner;
@@ -148,14 +125,12 @@ private:
     QLabel* m_statusLabel;
     
     // Private methods
-    void initStrategyMap();
     void createControlPanel();
     void createResultsArea();
     void setupConnections();
     void updateUI();
     void showResults();
     void clearResults();
-    QWidget* createStrategySpecificPanel(const QString& strategy);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

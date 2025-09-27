@@ -8,36 +8,13 @@
 GeneralParamsPanel::GeneralParamsPanel(QWidget* parent)
     : ConfigPanel<GeneralParamsConfig>("Paramètres généraux", parent)
 {
-    initStrategyMap();
     setupUI();
-}
-
-void GeneralParamsPanel::initStrategyMap()
-{
-    // Initialiser le dictionnaire des stratégies disponibles
-    m_strategyMap["BuyHeikinGreenBA"] = "BuyHeikinGreenBA";
-    m_strategyMap["SellHeikinRedBA"] = "SellHeikinRedBA";
 }
 
 void GeneralParamsPanel::setupUI()
 {
     // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
     QFormLayout* paramsLayout = new QFormLayout(this);
-    
-    // Stratégie
-    QComboBox* strategyCombo = new QComboBox(this);
-    strategyCombo->addItems(m_strategyMap.keys());
-    paramsLayout->addRow(new QLabel("Stratégie:", this), strategyCombo);
-    
-    // Binding pour la stratégie
-    addBinding(PropertyBinderFactory::createStringComboBinding(
-        strategyCombo,
-        &m_config.strategyName)
-    );
-    
-    // Connecter le signal de changement de stratégie
-    connect(strategyCombo, QOverload<const QString&>::of(&QComboBox::currentTextChanged),
-            this, &GeneralParamsPanel::onStrategyComboChanged);
     
     // Symbole
     QComboBox* symbolCombo = new QComboBox(this);
@@ -187,8 +164,4 @@ void GeneralParamsPanel::setupUI()
         finalizeTradesCheck,
         &m_config.finalizeTrades)
     );
-}
-
-void GeneralParamsPanel::onStrategyComboChanged(const QString& strategy) {
-    emit strategyChanged(strategy);
 }

@@ -24,7 +24,7 @@
  * Ce panel contient les paramètres communs comme le stop loss, le take profit,
  * les heures de trading, la gestion du risque, etc.
  */
-class StrategyBasePanel : public ConfigPanel<StrategyBaseConfig>
+class StrategyPanel : public ConfigPanel<StrategyConfig>
 {
     Q_OBJECT
 
@@ -33,9 +33,8 @@ public:
      * @brief Constructeur
      * @param parent Pointeur vers le widget parent
      */
-    StrategyBasePanel(QWidget* parent = nullptr);
+    StrategyPanel(QWidget* parent = nullptr);
 
 private:
     void setupUI();
 };
-

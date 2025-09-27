@@ -48,6 +48,7 @@ struct BacktestResultConfig {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
+           CEREAL_NVP(generalParams),
            CEREAL_NVP(strategyConfig),
            CEREAL_NVP(stats),
            CEREAL_NVP(candles));

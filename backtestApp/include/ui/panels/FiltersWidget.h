@@ -33,15 +33,15 @@ signals:
     
 private slots:
     void onAddFilterClicked();
-    void onEditFilterClicked(int index);
-    void onDeleteFilterClicked(int index);
-    void onFilterEnabledChanged(int index, bool enabled);
-    
+    void onEditFilterClicked(size_t index);
+    void onDeleteFilterClicked(size_t index);
+    void onFilterEnabledChanged(size_t index, bool enabled);
+
 private:
     void setupUI();
-    void addFilterWidget(int index, const filter::GenericFilter& filter);
-    void updateFilterWidget(int index);
-    QWidget* createFilterWidget(int index, const filter::GenericFilter& filter);
+    void addFilterWidget(size_t index, const filter::GenericFilter& filter);
+    void updateFilterWidget(size_t index);
+    QWidget* createFilterWidget(size_t index, const filter::GenericFilter& filter);
     void removeGaps();
     
     QGroupBox* m_groupBox;

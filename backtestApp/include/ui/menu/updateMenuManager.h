@@ -11,10 +11,10 @@
 class UpdateChecker;
 
 /**
- * @brief Gestionnaire de menu des mises à jour
- * 
- * Cette classe gère le menu "Mise à jour" dans la barre de menu principale
- * avec les actions pour vérifier et gérer les mises à jour.
+ * @brief Update menu manager
+ *
+ * This class manages the "Update" menu in the main menu bar
+ * with actions to check for and manage updates.
  */
 class UpdateMenuManager : public QObject
 {
@@ -25,18 +25,21 @@ public:
     ~UpdateMenuManager();
 
     /**
-     * @brief Crée le menu Mise à jour dans la barre de menu
-     * @param menuBar La barre de menu où ajouter le menu
+     * @brief Creates the Update menu in the menu bar
+     * @param menuBar The menu bar to add the menu to
      */
     void createUpdateMenu(QMenuBar* menuBar);
 
 private slots:
-    void onTestDownload();
+    void onCheckForUpdates();
+    void onUpdateCheckCompleted(bool updateAvailable, const QString& latestVersion, const QString& currentVersion);
+    void onUpdateCheckError(const QString& errorMessage);
     void onDownloadCompleted(bool success, const QString& filePath);
     void onDownloadError(const QString& errorMessage);
 
 private:
-    QAction* m_testDownloadAction;
+    QAction* m_checkForUpdatesAction;
     UpdateChecker* m_updateChecker;
+    QString m_pendingDownloadVersion;  // Version to download if user agrees
 
 };

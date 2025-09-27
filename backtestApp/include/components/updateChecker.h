@@ -25,26 +25,45 @@ public:
     // Static method to get current app version
     static QString currentVersion();
     
+    // Version checking methods
+    void checkForUpdates();
+    
     // Minimal download method
-    void downloadLatestRelease();
+    void downloadLatestRelease(const QString& version);
+    
+    // Version comparison
+    static bool isNewerVersion(const QString& currentVersion, const QString& latestVersion);
+    
+    // Utility methods
+    static QString buildDownloadUrl(const QString& version);
+    
+    // Constants publiques
+    static const QString GITHUB_PAGES_BASE_URL;
 
 signals:
     void downloadCompleted(bool success, const QString& filePath);
     void downloadError(const QString& errorMessage);
+    void updateCheckCompleted(bool updateAvailable, const QString& latestVersion, const QString& currentVersion);
+    void updateCheckError(const QString& errorMessage);
 
 private slots:
     void onDownloadFinished();
     void onDownloadError(QNetworkReply::NetworkError error);
     void onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
     void onReadyRead();
+    
+    // Version check slots
+    void onVersionCheckFinished();
+    void onVersionCheckError(QNetworkReply::NetworkError error);
 
 private:    
-    // Constants
-    static const QUrl GITHUB_PAGES_RELEASES_URL;
-    
     // Network components
     QNetworkAccessManager* m_networkManager;
     QNetworkReply* m_currentReply;
     QFile* m_downloadFile;
     int m_progressCount;
+    
+    // Version checking
+    QNetworkReply* m_versionCheckReply;
+    QString extractVersionFromHtml(const QString& html);
 };

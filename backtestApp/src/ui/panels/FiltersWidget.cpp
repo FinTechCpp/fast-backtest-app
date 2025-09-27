@@ -51,8 +51,20 @@ void FiltersWidget::setupUI()
 
 void FiltersWidget::setFilters(const std::vector<filter::GenericFilter>& filters)
 {
+    // Nettoyer les widgets existants
+    for (const auto& widgetGroup : m_filterWidgets) {
+        m_filtersLayout->removeWidget(widgetGroup.container);
+        delete widgetGroup.container;
+    }
+    m_filterWidgets.clear();
+    
+    // Enregistrer les nouveaux filtres
     m_filters = filters;
-    updateFilterDisplay();
+    
+    // Créer les widgets pour chaque filtre
+    for (size_t i = 0; i < m_filters.size(); ++i) {
+        addFilterWidget(i, m_filters[i]);
+    }
 }
 
 const std::vector<filter::GenericFilter>& FiltersWidget::getFilters() const
@@ -60,27 +72,7 @@ const std::vector<filter::GenericFilter>& FiltersWidget::getFilters() const
     return m_filters;
 }
 
-void FiltersWidget::updateFilterDisplay()
-{
-    clearFilterWidgets();
-    
-    // Créer un widget pour chaque filtre
-    for (size_t i = 0; i < m_filters.size(); ++i) {
-        createFilterWidgets(i, m_filters[i]);
-    }
-}
-
-void FiltersWidget::clearFilterWidgets()
-{
-    // Nettoyer tous les widgets de filtres existants
-    for (QWidget* widget : m_filterWidgets) {
-        m_filtersLayout->removeWidget(widget);
-        delete widget;
-    }
-    m_filterWidgets.clear();
-}
-
-void FiltersWidget::createFilterWidgets(int index, const filter::GenericFilter& filter)
+QWidget* FiltersWidget::createFilterWidget(int index, const filter::GenericFilter& filter)
 {
     // Créer un widget conteneur pour ce filtre
     QWidget* filterWidget = new QWidget(this);
@@ -138,9 +130,89 @@ void FiltersWidget::createFilterWidgets(int index, const filter::GenericFilter& 
     });
     filterLayout->addWidget(deleteButton);
     
-    // Ajouter le widget au layout principal
-    m_filtersLayout->addWidget(filterWidget);
-    m_filterWidgets.push_back(filterWidget);
+    // Stocker le groupe de widgets
+    FilterWidgetGroup widgetGroup;
+    widgetGroup.container = filterWidget;
+    widgetGroup.enableCheckbox = enableCheckbox;
+    widgetGroup.editButton = editButton;
+    widgetGroup.deleteButton = deleteButton;
+    
+    // Ajouter le groupe à notre collection
+    if (index >= 0 && index < static_cast<int>(m_filterWidgets.size())) {
+        m_filterWidgets.insert(m_filterWidgets.begin() + index, widgetGroup);
+    } else {
+        m_filterWidgets.push_back(widgetGroup);
+    }
+    
+    return filterWidget;
+}
+
+void FiltersWidget::addFilterWidget(int index, const filter::GenericFilter& filter)
+{
+    QWidget* widget = createFilterWidget(index, filter);
+    m_filtersLayout->insertWidget(index, widget);
+}
+
+void FiltersWidget::updateFilterWidget(int index)
+{
+    if (index < 0 || index >= static_cast<int>(m_filters.size()) || 
+        index >= static_cast<int>(m_filterWidgets.size())) {
+        return;
+    }
+    
+    const filter::GenericFilter& filter = m_filters[index];
+    FilterWidgetGroup& widgetGroup = m_filterWidgets[index];
+    
+    // Mettre à jour l'état de la checkbox
+    widgetGroup.enableCheckbox->setChecked(filter.enabled);
+    
+    // Mettre à jour le texte et le style du bouton d'édition
+    widgetGroup.editButton->setText(QString::fromStdString(filter.description));
+    
+    QString baseStyle = 
+        "QPushButton {"
+        "  text-align: left;"
+        "  padding: 5px 8px;"
+        "  background-color: #f0f0f0;"
+        "  border: 1px solid #ddd;"
+        "  border-radius: 4px;"
+        "}"
+        "QPushButton:hover {"
+        "  background-color: #e0e0e0;"
+        "}";
+    
+    if (!filter.enabled) {
+        widgetGroup.editButton->setStyleSheet(baseStyle + "QPushButton { color: #888; }");
+    } else {
+        widgetGroup.editButton->setStyleSheet(baseStyle);
+    }
+    
+    // Pas besoin de mettre à jour le bouton de suppression
+}
+
+void FiltersWidget::removeGaps()
+{
+    // Cette fonction réajuste les indices des connexions lambda après une suppression
+    for (size_t i = 0; i < m_filterWidgets.size(); ++i) {
+        FilterWidgetGroup& widgetGroup = m_filterWidgets[i];
+        
+        // Déconnecter les anciens signaux
+        disconnect(widgetGroup.enableCheckbox, nullptr, this, nullptr);
+        disconnect(widgetGroup.editButton, nullptr, this, nullptr);
+        disconnect(widgetGroup.deleteButton, nullptr, this, nullptr);
+        
+        // Reconnecter avec les nouveaux indices
+        int index = static_cast<int>(i);
+        
+        connect(widgetGroup.enableCheckbox, &QCheckBox::toggled, this, 
+            [this, index](bool checked) { onFilterEnabledChanged(index, checked); });
+        
+        connect(widgetGroup.editButton, &QPushButton::clicked, this, 
+            [this, index]() { onEditFilterClicked(index); });
+        
+        connect(widgetGroup.deleteButton, &QPushButton::clicked, this, 
+            [this, index]() { onDeleteFilterClicked(index); });
+    }
 }
 
 void FiltersWidget::onAddFilterClicked()
@@ -149,8 +221,12 @@ void FiltersWidget::onAddFilterClicked()
     if (dialog.exec() == QDialog::Accepted) {
         // Récupérer le nouveau filtre et l'ajouter
         filter::GenericFilter newFilter = dialog.getFilter();
+        int newIndex = static_cast<int>(m_filters.size());
         m_filters.push_back(newFilter);
-        updateFilterDisplay();
+        
+        // Ajouter uniquement le nouveau widget
+        addFilterWidget(newIndex, newFilter);
+        
         emit filtersChanged();
     }
 }
@@ -164,18 +240,33 @@ void FiltersWidget::onEditFilterClicked(int index)
     if (dialog.exec() == QDialog::Accepted) {
         // Mettre à jour le filtre
         m_filters[index] = dialog.getFilter();
-        updateFilterDisplay();
+        
+        // Mettre à jour uniquement le widget concerné
+        updateFilterWidget(index);
+        
         emit filtersChanged();
     }
 }
 
 void FiltersWidget::onDeleteFilterClicked(int index)
 {
-    if (index < 0 || index >= static_cast<int>(m_filters.size())) return;
+    if (index < 0 || index >= static_cast<int>(m_filters.size()) || 
+        index >= static_cast<int>(m_filterWidgets.size())) {
+        return;
+    }
 
-    // Supprimer le filtre
+    // Supprimer le filtre des données
     m_filters.erase(m_filters.begin() + index);
-    updateFilterDisplay();
+    
+    // Supprimer le widget correspondant
+    QWidget* widget = m_filterWidgets[index].container;
+    m_filtersLayout->removeWidget(widget);
+    delete widget;
+    m_filterWidgets.erase(m_filterWidgets.begin() + index);
+    
+    // Réajuster les indices des connexions
+    removeGaps();
+    
     emit filtersChanged();
 }
 
@@ -183,7 +274,12 @@ void FiltersWidget::onFilterEnabledChanged(int index, bool enabled)
 {
     if (index < 0 || index >= static_cast<int>(m_filters.size())) return;
     
+    // Mettre à jour l'état du filtre
     m_filters[index].enabled = enabled;
-    updateFilterDisplay();
+    m_filters[index].description = m_filters[index].autoGenerateDescription();
+    
+    // Mettre à jour uniquement le style du bouton d'édition
+    updateFilterWidget(index);
+    
     emit filtersChanged();
 }

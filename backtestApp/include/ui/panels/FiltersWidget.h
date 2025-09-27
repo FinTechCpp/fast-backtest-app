@@ -4,8 +4,18 @@
 #include <QGroupBox>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QCheckBox>
+#include <QMap>
 #include <vector>
 #include "common.h"  // Pour accéder à GenericFilter
+
+// Structure pour regrouper les widgets d'un filtre
+struct FilterWidgetGroup {
+    QWidget* container;
+    QCheckBox* enableCheckbox;
+    QPushButton* editButton;
+    QPushButton* deleteButton;
+};
 
 class FiltersWidget : public QWidget
 {
@@ -29,9 +39,10 @@ private slots:
     
 private:
     void setupUI();
-    void updateFilterDisplay();
-    void createFilterWidgets(int index, const filter::GenericFilter& filter);
-    void clearFilterWidgets();
+    void addFilterWidget(int index, const filter::GenericFilter& filter);
+    void updateFilterWidget(int index);
+    QWidget* createFilterWidget(int index, const filter::GenericFilter& filter);
+    void removeGaps();
     
     QGroupBox* m_groupBox;
     QVBoxLayout* m_mainLayout;
@@ -39,5 +50,5 @@ private:
     QPushButton* m_addFilterButton;
     
     std::vector<filter::GenericFilter> m_filters;
-    std::vector<QWidget*> m_filterWidgets; // Pour faciliter le nettoyage
+    std::vector<FilterWidgetGroup> m_filterWidgets;
 };

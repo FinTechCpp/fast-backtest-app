@@ -26,6 +26,8 @@
 #include <QNetworkRequest>
 #include <QUrl>
 #include <QVersionNumber>
+#include <QDirIterator>
+#include <QThread>
 #include "version.h"  
 
 // DOWNLOAD_URL example for version 1.0.0.19 : https://fintechcpp.github.io/fast-backtest-app-releases/downloads/fast-backtest-app-windows-v1.0.0.19.zip
@@ -40,6 +42,8 @@ UpdateChecker::UpdateChecker(QObject* parent)
     , m_downloadFile(nullptr)
     , m_progressCount(0)
     , m_versionCheckReply(nullptr)
+    , m_autoInstallMode(false)
+    , m_downloadedFilePath()
 {
     qDebug() << "UpdateChecker constructor called";
 
@@ -120,7 +124,7 @@ void UpdateChecker::downloadLatestRelease(const QString& version)
     connect(m_currentReply, &QNetworkReply::finished, 
             this, &UpdateChecker::onDownloadFinished);
 
-    // Show request information (as in the example)
+    // Show request information 
     qDebug() << "Request URL:" << request.url().toString();
     qDebug() << "User-Agent:" << request.header(QNetworkRequest::UserAgentHeader).toString();
     qDebug() << "Waiting for download to complete...";
@@ -128,7 +132,6 @@ void UpdateChecker::downloadLatestRelease(const QString& version)
 
 void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 {
-    // Same logic as in the working example
     m_progressCount++;
     if (m_progressCount % 10 == 0) { // Show only every 10 events
         if (bytesTotal > 0) {
@@ -142,11 +145,9 @@ void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
 
 void UpdateChecker::onReadyRead()
 {
-    if (!m_currentReply || !m_downloadFile) {
+    if (!m_currentReply || !m_downloadFile) 
         return;
-    }
-
-    // Same logic as in the working example
+    
     QByteArray data = m_currentReply->readAll();
     if (!data.isEmpty()) {
         qint64 written = m_downloadFile->write(data);
@@ -156,7 +157,6 @@ void UpdateChecker::onReadyRead()
 
 void UpdateChecker::onDownloadError(QNetworkReply::NetworkError error)
 {
-    // Same logic as in the working example
     qWarning() << "Network error occurred:" << error;
     qWarning() << "Error string:" << (m_currentReply ? m_currentReply->errorString() : "Unknown error");
     emit downloadError(m_currentReply ? m_currentReply->errorString() : "Unknown network error");
@@ -174,7 +174,7 @@ void UpdateChecker::onDownloadFinished()
     // Close the file
     m_downloadFile->close();
 
-    // Check the result (same logic as in the working example)
+    // Check the result
     QNetworkReply::NetworkError error = m_currentReply->error();
     if (error == QNetworkReply::NoError) {
         QFileInfo fileInfo(m_downloadFile->fileName());
@@ -186,7 +186,16 @@ void UpdateChecker::onDownloadFinished()
             qWarning() << "Warning: File size is 0 bytes!";
             emit downloadCompleted(false, fileInfo.absoluteFilePath());
         } else {
+            m_downloadedFilePath = fileInfo.absoluteFilePath();
             emit downloadCompleted(true, fileInfo.absoluteFilePath());
+            
+            // If in auto-install mode, proceed with installation
+            if (m_autoInstallMode) {
+                qDebug() << "Auto-install mode enabled, starting installation...";
+                QTimer::singleShot(1000, this, [this]() {
+                    performAutoInstall(m_downloadedFilePath);
+                });
+            }
         }
     } else {
         qCritical() << "Download failed with error code:" << error;
@@ -195,6 +204,10 @@ void UpdateChecker::onDownloadFinished()
         // Remove empty file in case of error
         m_downloadFile->remove();
         emit downloadCompleted(false, "");
+    
+        if (m_autoInstallMode) 
+            emit installationError("Échec du téléchargement : " + m_currentReply->errorString());
+        
     }
 
     // Clean up
@@ -340,4 +353,221 @@ QString UpdateChecker::buildDownloadUrl(const QString& version)
     QString downloadUrl = GITHUB_PAGES_BASE_URL + "downloads/fast-backtest-app-windows-v" + version + ".zip";
     qDebug() << "Built download URL:" << downloadUrl;
     return downloadUrl;
+}
+
+// New method for download and auto-install
+void UpdateChecker::downloadAndInstallUpdate(const QString& version)
+{
+    qDebug() << "Starting download and install for version:" << version;
+    
+    // Enable auto-install mode
+    m_autoInstallMode = true;
+    
+    // Start the download
+    downloadLatestRelease(version);
+}
+
+bool UpdateChecker::extractZipFile(const QString& zipFilePath, const QString& extractPath)
+{
+    qDebug() << "Extracting ZIP file:" << zipFilePath << "to:" << extractPath;
+    emit installationProgress("Extraction du fichier ZIP...");
+    
+    // Create the extraction directory
+    QDir extractDir;
+    if (!extractDir.mkpath(extractPath)) {
+        qCritical() << "Cannot create extraction directory:" << extractPath;
+        return false;
+    }
+    
+#ifdef Q_OS_WIN
+    // On Windows, use PowerShell to extract the ZIP
+    QProcess extractProcess;
+    QString command = "powershell.exe";
+    QStringList arguments;
+    arguments << "-Command" 
+              << QString("Expand-Archive -Path \"%1\" -DestinationPath \"%2\" -Force")
+                 .arg(zipFilePath)
+                 .arg(extractPath);
+    
+    qDebug() << "Running extraction command:" << command << arguments.join(" ");
+    
+    extractProcess.start(command, arguments);
+    if (!extractProcess.waitForStarted()) {
+        qCritical() << "Failed to start extraction process";
+        return false;
+    }
+    
+    if (!extractProcess.waitForFinished(60000)) { // 60 seconds timeout
+        qCritical() << "Extraction process timed out";
+        extractProcess.kill();
+        return false;
+    }
+    
+    if (extractProcess.exitCode() != 0) {
+        qCritical() << "Extraction failed with exit code:" << extractProcess.exitCode();
+        qCritical() << "Error output:" << extractProcess.readAllStandardError();
+        return false;
+    }
+    
+#else
+    // On Linux/Mac, use unzip command
+    QProcess extractProcess;
+    QString command = "unzip";
+    QStringList arguments;
+    arguments << "-o" << zipFilePath << "-d" << extractPath;
+    
+    qDebug() << "Running extraction command:" << command << arguments.join(" ");
+    
+    extractProcess.start(command, arguments);
+    if (!extractProcess.waitForFinished(60000)) {
+        qCritical() << "Extraction process timed out or failed";
+        return false;
+    }
+    
+    if (extractProcess.exitCode() != 0) {
+        qCritical() << "Extraction failed with exit code:" << extractProcess.exitCode();
+        return false;
+    }
+#endif
+    
+    qDebug() << "ZIP extraction completed successfully";
+    emit installationProgress("Extraction terminée avec succès");
+    return true;
+}
+
+void UpdateChecker::performAutoInstall(const QString& zipFilePath)
+{
+    qDebug() << "Starting auto-installation process for:" << zipFilePath;
+    emit installationProgress("Début de l'installation...");
+    
+    try {
+        // 1. Create temporary extraction directory
+        QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString extractPath = tempDir + "/fast-backtest-app-update";
+        
+        qDebug() << "Temp extraction path:" << extractPath;
+        
+        // Clean up any existing temp directory
+        QDir oldTempDir(extractPath);
+        if (oldTempDir.exists()) {
+            oldTempDir.removeRecursively();
+        }
+        
+        // 2. Extract the ZIP file
+        if (!extractZipFile(zipFilePath, extractPath)) {
+            emit installationError("Échec de l'extraction du fichier ZIP");
+            return;
+        }
+        
+        // 3. Find the extracted executable
+        QString extractedExePath;
+        QDirIterator it(extractPath, QStringList() << "*.exe", QDir::Files, QDirIterator::Subdirectories);
+        while (it.hasNext()) {
+            QString exePath = it.next();
+            QFileInfo fileInfo(exePath);
+            if (fileInfo.baseName().contains("backtest", Qt::CaseInsensitive)) {
+                extractedExePath = exePath;
+                break;
+            }
+        }
+        
+        if (extractedExePath.isEmpty()) {
+            emit installationError("Impossible de trouver l'exécutable dans le fichier extrait");
+            return;
+        }
+        
+        qDebug() << "Found extracted executable:" << extractedExePath;
+        emit installationProgress("Exécutable trouvé, préparation de l'installation...");
+        
+        // 4. Get current application info
+        QString currentAppPath = QCoreApplication::applicationFilePath();
+        QString currentAppDir = QCoreApplication::applicationDirPath();
+        QString backupDir = currentAppDir + "_backup_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+        
+        qDebug() << "Current app path:" << currentAppPath;
+        qDebug() << "Current app dir:" << currentAppDir;
+        qDebug() << "Backup dir:" << backupDir;
+        
+        // 5. Create installer script
+        QString scriptPath;
+        
+#ifdef Q_OS_WIN
+        scriptPath = tempDir + "/install_update.bat";
+        QFile script(scriptPath);
+        if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&script);
+            out << "@echo off\n";
+            out << "echo Waiting for application to close...\n";
+            out << "timeout /t 3 /nobreak >nul\n";
+            out << "echo Creating backup...\n";
+            out << "move \"" << currentAppDir << "\" \"" << backupDir << "\"\n";
+            out << "echo Copying new version...\n";
+            out << "xcopy \"" << QFileInfo(extractedExePath).absolutePath() << "\" \"" << currentAppDir << "\" /E /I /H /Y\n";
+            out << "echo Starting new version...\n";
+            out << "start \"\" \"" << currentAppPath << "\"\n";
+            out << "echo Cleaning up...\n";
+            out << "timeout /t 2 /nobreak >nul\n";
+            out << "rmdir /s /q \"" << extractPath << "\"\n";
+            out << "del \"" << zipFilePath << "\"\n";
+            out << "del \"%~f0\"\n";  // Delete the script itself
+            script.close();
+        }
+#else
+        scriptPath = tempDir + "/install_update.sh";
+        QFile script(scriptPath);
+        if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&script);
+            out << "#!/bin/bash\n";
+            out << "echo \"Waiting for application to close...\"\n";
+            out << "sleep 3\n";
+            out << "echo \"Creating backup...\"\n";
+            out << "mv \"" << currentAppDir << "\" \"" << backupDir << "\"\n";
+            out << "echo \"Copying new version...\"\n";
+            out << "cp -r \"" << QFileInfo(extractedExePath).absolutePath() << "\" \"" << currentAppDir << "\"\n";
+            out << "chmod +x \"" << currentAppPath << "\"\n";
+            out << "echo \"Starting new version...\"\n";
+            out << "\"" << currentAppPath << "\" &\n";
+            out << "echo \"Cleaning up...\"\n";
+            out << "sleep 2\n";
+            out << "rm -rf \"" << extractPath << "\"\n";
+            out << "rm \"" << zipFilePath << "\"\n";
+            out << "rm \"$0\"\n";  // Delete the script itself
+            script.close();
+            
+            // Make script executable
+            QProcess::execute("chmod", QStringList() << "+x" << scriptPath);
+        }
+#endif
+        
+        if (!QFile::exists(scriptPath)) {
+            emit installationError("Impossible de créer le script d'installation");
+            return;
+        }
+        
+        emit installationProgress("Script d'installation créé, fermeture de l'application...");
+        
+        // 6. Start the installer script
+        qDebug() << "Starting installer script:" << scriptPath;
+        
+#ifdef Q_OS_WIN
+        QProcess::startDetached("cmd.exe", QStringList() << "/C" << scriptPath);
+#else
+        QProcess::startDetached("bash", QStringList() << scriptPath);
+#endif
+        
+        emit installationCompleted(true, "Installation en cours... L'application va redémarrer.");
+        
+        // 7. Close the current application after a short delay
+        QTimer::singleShot(2000, []() {
+            qDebug() << "Closing application for update installation...";
+            QApplication::quit();
+        });
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Exception during auto-install:" << e.what();
+        emit installationError(QString("Erreur lors de l'installation: %1").arg(e.what()));
+    }
+    
+    // Reset auto-install mode
+    m_autoInstallMode = false;
 }

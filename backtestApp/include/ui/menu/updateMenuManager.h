@@ -36,10 +36,14 @@ private slots:
     void onUpdateCheckError(const QString& errorMessage);
     void onDownloadCompleted(bool success, const QString& filePath);
     void onDownloadError(const QString& errorMessage);
+    void onInstallationProgress(const QString& message);
+    void onInstallationCompleted(bool success, const QString& message);
+    void onInstallationError(const QString& errorMessage);
 
 private:
     QAction* m_checkForUpdatesAction;
     UpdateChecker* m_updateChecker;
     QString m_pendingDownloadVersion;  // Version to download if user agrees
+    QProgressDialog* m_progressDialog; // Dialogue de progression pour l'installation
 
 };

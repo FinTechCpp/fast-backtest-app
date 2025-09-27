@@ -31,6 +31,11 @@ public:
     // Minimal download method
     void downloadLatestRelease(const QString& version);
     
+    // Auto-install methods
+    void downloadAndInstallUpdate(const QString& version);
+    bool extractZipFile(const QString& zipFilePath, const QString& extractPath);
+    void performAutoInstall(const QString& extractedPath);
+    
     // Version comparison
     static bool isNewerVersion(const QString& currentVersion, const QString& latestVersion);
     
@@ -45,6 +50,9 @@ signals:
     void downloadError(const QString& errorMessage);
     void updateCheckCompleted(bool updateAvailable, const QString& latestVersion, const QString& currentVersion);
     void updateCheckError(const QString& errorMessage);
+    void installationProgress(const QString& message);
+    void installationCompleted(bool success, const QString& message);
+    void installationError(const QString& errorMessage);
 
 private slots:
     void onDownloadFinished();
@@ -66,4 +74,8 @@ private:
     // Version checking
     QNetworkReply* m_versionCheckReply;
     QString extractVersionFromHtml(const QString& html);
+    
+    // Installation variables
+    bool m_autoInstallMode;
+    QString m_downloadedFilePath;
 };

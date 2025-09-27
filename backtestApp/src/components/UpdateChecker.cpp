@@ -21,47 +21,201 @@
 #include <QTemporaryDir>
 #include <QTemporaryFile>
 #include <QDateTime>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+#include <QUrl>
+#include <QVersionNumber>
+#include <QDirIterator>
+#include <QThread>
 #include "version.h"  
 
-// Constants
-const QUrl UpdateChecker::GITHUB_PAGES_RELEASES_URL = QUrl(QStringLiteral("https://fintechcpp.github.io/fast-backtest-app-releases/"));
+// DOWNLOAD_URL example for version 1.0.0.19 : https://fintechcpp.github.io/fast-backtest-app-releases/downloads/fast-backtest-app-windows-v1.0.0.19.zip
 
-const QStringList UpdateChecker::USER_PRESERVE_DIRS = {
-    "marketData",
-    "images"
-};
-
-const QStringList UpdateChecker::USER_PRESERVE_FILES = {
-    "backtest_config.ini"
-};
+// Constant centralized for GitHub Pages URL
+const QString UpdateChecker::GITHUB_PAGES_BASE_URL = QStringLiteral("https://fintechcpp.github.io/fast-backtest-app-releases/");
 
 UpdateChecker::UpdateChecker(QObject* parent)
-    : QObject(parent),
-      m_networkManager(new QNetworkAccessManager(this)),
-      m_currentReply(nullptr),
-      m_tempDir(nullptr),
-      m_timeoutTimer(new QTimer(this))
+    : QObject(parent)
+    , m_networkManager(nullptr)
+    , m_currentReply(nullptr)
+    , m_downloadFile(nullptr)
+    , m_progressCount(0)
+    , m_versionCheckReply(nullptr)
+    , m_autoInstallMode(false)
+    , m_downloadedFilePath()
 {
-    // Configure timeout timer
-    m_timeoutTimer->setSingleShot(true);
-    connect(m_timeoutTimer, &QTimer::timeout, this, &UpdateChecker::onTimeoutOccurred);
-    
-    qDebug() << "UpdateChecker created";
+    qDebug() << "UpdateChecker constructor called";
+
+    // Create the network manager
+    m_networkManager = new QNetworkAccessManager(this);
+    qDebug() << "Network manager created";
 }
 
 UpdateChecker::~UpdateChecker()
 {
-    if (m_timeoutTimer) {
-        m_timeoutTimer->stop();
-    }
+    qDebug() << "UpdateChecker destructor called";
+
+    // Clean up download resources
     if (m_currentReply) {
         m_currentReply->abort();
         m_currentReply->deleteLater();
+        m_currentReply = nullptr;
     }
-    if (m_tempDir) {
-        delete m_tempDir;
+
+    // Clean up version check resources
+    if (m_versionCheckReply) {
+        m_versionCheckReply->abort();
+        m_versionCheckReply->deleteLater();
+        m_versionCheckReply = nullptr;
     }
-    qDebug() << "UpdateChecker destroyed";
+    
+    if (m_downloadFile) {
+        m_downloadFile->close();
+        delete m_downloadFile;
+        m_downloadFile = nullptr;
+    }
+}
+
+
+
+void UpdateChecker::downloadLatestRelease(const QString& version)
+{
+    qDebug() << "Starting download latest release...";
+    qDebug() << "Version to download:" << version;
+
+    // Download URL construction with centralized method
+    QString url = buildDownloadUrl(version);
+    qDebug() << "URL:" << url;
+
+    // Create the request
+    QUrl downloadUrl(url);
+    QNetworkRequest request;
+    request.setUrl(downloadUrl);
+    request.setHeader(QNetworkRequest::UserAgentHeader, "Mozilla/5.0 Test App");
+    request.setRawHeader("Accept", "*/*");
+    
+    qDebug() << "Starting download...";
+
+    // Create a file to save the download
+    m_downloadFile = new QFile("downloaded_update.zip");
+    if (!m_downloadFile->open(QIODevice::WriteOnly)) {
+        qCritical() << "Cannot open file for writing:" << m_downloadFile->fileName();
+        emit downloadError("Cannot open file for writing");
+        return;
+    }
+
+    // Reset progress counter
+    m_progressCount = 0;
+
+    // Start the download
+    m_currentReply = m_networkManager->get(request);
+
+    // Connect signals
+    connect(m_currentReply, &QNetworkReply::downloadProgress,
+            this, &UpdateChecker::onDownloadProgress);
+    
+    connect(m_currentReply, &QNetworkReply::readyRead, 
+            this, &UpdateChecker::onReadyRead);
+    
+    connect(m_currentReply, &QNetworkReply::errorOccurred, 
+            this, &UpdateChecker::onDownloadError);
+    
+    connect(m_currentReply, &QNetworkReply::finished, 
+            this, &UpdateChecker::onDownloadFinished);
+
+    // Show request information 
+    qDebug() << "Request URL:" << request.url().toString();
+    qDebug() << "User-Agent:" << request.header(QNetworkRequest::UserAgentHeader).toString();
+    qDebug() << "Waiting for download to complete...";
+}
+
+void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+{
+    m_progressCount++;
+    if (m_progressCount % 10 == 0) { // Show only every 10 events
+        if (bytesTotal > 0) {
+            int percent = (bytesReceived * 100) / bytesTotal;
+            qDebug() << "Progress:" << bytesReceived << "/" << bytesTotal << "(" << percent << "%)";
+        } else {
+            qDebug() << "Progress:" << bytesReceived << "bytes received";
+        }
+    }
+}
+
+void UpdateChecker::onReadyRead()
+{
+    if (!m_currentReply || !m_downloadFile) 
+        return;
+    
+    QByteArray data = m_currentReply->readAll();
+    if (!data.isEmpty()) {
+        qint64 written = m_downloadFile->write(data);
+        qDebug() << "Wrote" << written << "bytes to file";
+    }
+}
+
+void UpdateChecker::onDownloadError(QNetworkReply::NetworkError error)
+{
+    qWarning() << "Network error occurred:" << error;
+    qWarning() << "Error string:" << (m_currentReply ? m_currentReply->errorString() : "Unknown error");
+    emit downloadError(m_currentReply ? m_currentReply->errorString() : "Unknown network error");
+}
+
+void UpdateChecker::onDownloadFinished()
+{
+    qDebug() << "Download finished signal received";
+    
+    if (!m_currentReply || !m_downloadFile) {
+        qWarning() << "Download finished but reply or file is null";
+        return;
+    }
+
+    // Close the file
+    m_downloadFile->close();
+
+    // Check the result
+    QNetworkReply::NetworkError error = m_currentReply->error();
+    if (error == QNetworkReply::NoError) {
+        QFileInfo fileInfo(m_downloadFile->fileName());
+        qDebug() << "Download completed successfully!";
+        qDebug() << "File saved as:" << fileInfo.absoluteFilePath();
+        qDebug() << "File size:" << fileInfo.size() << "bytes";
+        
+        if (fileInfo.size() == 0) {
+            qWarning() << "Warning: File size is 0 bytes!";
+            emit downloadCompleted(false, fileInfo.absoluteFilePath());
+        } else {
+            m_downloadedFilePath = fileInfo.absoluteFilePath();
+            emit downloadCompleted(true, fileInfo.absoluteFilePath());
+            
+            // If in auto-install mode, proceed with installation
+            if (m_autoInstallMode) {
+                qDebug() << "Auto-install mode enabled, starting installation...";
+                QTimer::singleShot(1000, this, [this]() {
+                    performAutoInstall(m_downloadedFilePath);
+                });
+            }
+        }
+    } else {
+        qCritical() << "Download failed with error code:" << error;
+        qCritical() << "Error description:" << m_currentReply->errorString();
+
+        // Remove empty file in case of error
+        m_downloadFile->remove();
+        emit downloadCompleted(false, "");
+    
+        if (m_autoInstallMode) 
+            emit installationError("Échec du téléchargement : " + m_currentReply->errorString());
+        
+    }
+
+    // Clean up
+    m_currentReply->deleteLater();
+    m_currentReply = nullptr;
+    
+    delete m_downloadFile;
+    m_downloadFile = nullptr;
 }
 
 QString UpdateChecker::currentVersion()
@@ -69,693 +223,351 @@ QString UpdateChecker::currentVersion()
     return QString(APP_VERSION);
 }
 
-void UpdateChecker::abortDownload()
-{
-    qDebug() << "abortDownload() called";
-    qDebug() << "Current reply is null:" << (m_currentReply == nullptr);
-    
-    if (m_timeoutTimer) {
-        m_timeoutTimer->stop();
-        qDebug() << "Timeout timer stopped";
-    }
-    if (m_currentReply) {
-        qInfo() << "Aborting download...";
-        qDebug() << "Reply state before abort - running:" << m_currentReply->isRunning() << "finished:" << m_currentReply->isFinished();
-        m_currentReply->abort();
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-        qDebug() << "Reply set to nullptr after abort";
-    } else {
-        qDebug() << "No current reply to abort";
-    }
-}
-
+// New method to check for updates
 void UpdateChecker::checkForUpdates()
 {
-    qInfo() << "Checking for updates...";
-    qInfo() << "Current version:" << currentVersion();
+    qDebug() << "Starting update check...";
+    
+    if (m_versionCheckReply) {
+        qWarning() << "Version check already in progress";
+        return;
+    }
+    
+    // URL of the GitHub Pages page
+    qDebug() << "Checking version at URL:" << GITHUB_PAGES_BASE_URL;
+    
+    // Create the request
+    QUrl checkUrl(GITHUB_PAGES_BASE_URL);
+    QNetworkRequest request;
+    request.setUrl(checkUrl);
+    request.setHeader(QNetworkRequest::UserAgentHeader, "Fast-Backtest-App UpdateChecker");
+    request.setRawHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
 
-    // Cancel any ongoing request
-    if (m_currentReply) {
-        m_currentReply->abort();
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-    }
-    
-    // Stop any existing timeout
-    if (m_timeoutTimer) {
-        m_timeoutTimer->stop();
-    }
-    
-    // Create network request
-    QNetworkRequest request(GITHUB_PAGES_RELEASES_URL);
-    request.setHeader(QNetworkRequest::UserAgentHeader, 
-                     QString("FastBacktestApp/%1").arg(currentVersion()));
-    
-    // Set reasonable timeout
-    request.setTransferTimeout(10000); // 10 seconds
-    
-    // Make the request
-    m_currentReply = m_networkManager->get(request);
-    
-    // Start timeout timer (15 seconds total timeout)
-    m_timeoutTimer->start(15000);
-    
+    // Start the request
+    m_versionCheckReply = m_networkManager->get(request);
+
     // Connect signals
-    connect(m_currentReply, &QNetworkReply::finished,
-            this, &UpdateChecker::onUpdateCheckFinished);
-
-    qDebug() << "Request sent to:" << GITHUB_PAGES_RELEASES_URL.toString();
+    connect(m_versionCheckReply, &QNetworkReply::finished,
+            this, &UpdateChecker::onVersionCheckFinished);
+    
+    connect(m_versionCheckReply, &QNetworkReply::errorOccurred, 
+            this, &UpdateChecker::onVersionCheckError);
+    
+    qDebug() << "Version check request started";
 }
 
-void UpdateChecker::onUpdateCheckFinished()
+void UpdateChecker::onVersionCheckFinished()
 {
-    // Stop timeout timer
-    if (m_timeoutTimer) {
-        m_timeoutTimer->stop();
-    }
+    qDebug() << "Version check finished";
     
-    if (!m_currentReply) {
-        qWarning() << "Null reply in onUpdateCheckFinished";
+    if (!m_versionCheckReply) {
+        qWarning() << "Version check reply is null";
         return;
     }
-    
-    QNetworkReply::NetworkError error = m_currentReply->error();
-    
+
+    // Check for errors
+    QNetworkReply::NetworkError error = m_versionCheckReply->error();
     if (error != QNetworkReply::NoError) {
-        QString errorString = m_currentReply->errorString();
-        qWarning() << "Erreur réseau:" << errorString;
-        emit updateCheckFailed(errorString);
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
+        qCritical() << "Version check failed with error:" << error;
+        qCritical() << "Error description:" << m_versionCheckReply->errorString();
+        emit updateCheckError(m_versionCheckReply->errorString());
+        m_versionCheckReply->deleteLater();
+        m_versionCheckReply = nullptr;
         return;
     }
     
-    // Read the response
-    QByteArray responseData = m_currentReply->readAll();
-    QString html = QString::fromUtf8(responseData);
+    // Read the HTML content
+    QByteArray htmlData = m_versionCheckReply->readAll();
+    QString html = QString::fromUtf8(htmlData);
+    
+    qDebug() << "Received HTML data, size:" << htmlData.size() << "bytes";
 
-    qDebug() << "Response received, size:" << responseData.size() << "bytes";
-    qDebug() << "HTML content preview:" << html.left(500) << "...";
-
-    // Extract version and download URL from HTML
+    // Extract the version from the HTML
     QString latestVersion = extractVersionFromHtml(html);
-    QString downloadUrl = extractDownloadUrlFromHtml(html);
+    QString currentVersionStr = currentVersion();
     
-    if (latestVersion.isEmpty() || downloadUrl.isEmpty()) {
-        qWarning() << "Impossible to extract version or download URL";
-        emit updateCheckFailed("Unable to parse server response");
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-        return;
-    }
+    qDebug() << "Current version:" << currentVersionStr;
+    qDebug() << "Latest version:" << latestVersion;
     
-    qInfo() << "Version found:" << latestVersion;
-    qInfo() << "Download URL:" << downloadUrl;
-
-    // Store the information
-    m_latestVersion = latestVersion;
-    m_downloadUrl = downloadUrl;
-    
-    // Compare versions
-    if (isNewerVersion(latestVersion, currentVersion())) {
-        qInfo() << "New version available:" << latestVersion;
-        emit updateAvailable(latestVersion, downloadUrl);
+    if (latestVersion.isEmpty()) {
+        qWarning() << "Could not extract version from HTML";
+        emit updateCheckError("Could not extract version information from server");
     } else {
-        qInfo() << "No update available";
-        emit noUpdateAvailable();
+        // Compare versions
+        bool updateAvailable = isNewerVersion(currentVersionStr, latestVersion);
+        qDebug() << "Update available:" << updateAvailable;
+        emit updateCheckCompleted(updateAvailable, latestVersion, currentVersionStr);
     }
-    
-    m_currentReply->deleteLater();
-    m_currentReply = nullptr;
+
+    // Clean up
+    m_versionCheckReply->deleteLater();
+    m_versionCheckReply = nullptr;
+}
+
+void UpdateChecker::onVersionCheckError(QNetworkReply::NetworkError error)
+{
+    qWarning() << "Version check network error occurred:" << error;
+    qWarning() << "Error string:" << (m_versionCheckReply ? m_versionCheckReply->errorString() : "Unknown error");
+    emit updateCheckError(m_versionCheckReply ? m_versionCheckReply->errorString() : "Unknown network error");
 }
 
 QString UpdateChecker::extractVersionFromHtml(const QString& html)
 {
-    // Look for version pattern like "v1.0.0.11" in the HTML
-    QRegularExpression versionRegex("<span class=\"version-tag\">v([\\d\\.]+)</span>");
-    QRegularExpressionMatch match = versionRegex.match(html);
+    qDebug() << "Extracting version from HTML...";
+
+    // Search for the pattern: <span class="version-tag">v1.0.0.19</span>
+    QRegularExpression regex("<span class=\"version-tag\">v([\\d\\.]+)</span>");
+    QRegularExpressionMatch match = regex.match(html);
     
     if (match.hasMatch()) {
-        QString version = match.captured(1);
-        qDebug() << "Version extracted:" << version;
+        QString version = match.captured(1);  // Capture without the 'v'
+        qDebug() << "Extracted version:" << version;
         return version;
+    } else {
+        qWarning() << "Version pattern not found in HTML";
+        qDebug() << "HTML preview (first 500 chars):" << html.left(500);
+        return QString();
     }
-
-    // Try alternative patterns if the first one doesn't work
-    QRegularExpression altVersionRegex("Version Stable v([\\d\\.]+)");
-    QRegularExpressionMatch altMatch = altVersionRegex.match(html);
-    
-    if (altMatch.hasMatch()) {
-        QString version = altMatch.captured(1);
-        qDebug() << "Version extracted (alternative pattern):" << version;
-        return version;
-    }
-
-    qWarning() << "Version not found in HTML";
-    qDebug() << "Searching for version patterns in HTML...";
-    
-    // Debug: show any version-like patterns found
-    QRegularExpression debugRegex("v?([\\d]+\\.[\\d]+\\.[\\d]+\\.[\\d]+)");
-    QRegularExpressionMatchIterator it = debugRegex.globalMatch(html);
-    while (it.hasNext()) {
-        QRegularExpressionMatch debugMatch = it.next();
-        qDebug() << "Found version-like pattern:" << debugMatch.captured(0);
-    }
-    
-    return QString();
 }
 
-QString UpdateChecker::extractDownloadUrlFromHtml(const QString& html)
+bool UpdateChecker::isNewerVersion(const QString& currentVersion, const QString& latestVersion)
 {
-    // First, try to find download URL from GitHub Pages (preferred)
-    QRegularExpression pagesUrlRegex("<a href=\"(https://fintechcpp\\.github\\.io/fast-backtest-app-releases/downloads/[^\"]*\\.zip)\" class=\"button\">");
-    QRegularExpressionMatch pagesMatch = pagesUrlRegex.match(html);
+    qDebug() << "Comparing versions: current=" << currentVersion << "latest=" << latestVersion;
+
+    // Use QVersionNumber for comparison
+    QVersionNumber currentVer = QVersionNumber::fromString(currentVersion);
+    QVersionNumber latestVer = QVersionNumber::fromString(latestVersion);
     
-    if (pagesMatch.hasMatch()) {
-        QString url = pagesMatch.captured(1);
-        qDebug() << "Download URL extracted from GitHub Pages:" << url;
-        return url;
-    }
-
-    // Try to find ANY download URL pattern and convert it to GitHub Pages
-    QRegularExpression anyUrlRegex("<a href=\"(https://github\\.com/[^/]+/[^/]+/releases/download/[^\"]*([^/]+\\.zip))\" class=\"button\">");
-    QRegularExpressionMatch anyMatch = anyUrlRegex.match(html);
+    qDebug() << "Parsed current version:" << currentVer.toString();
+    qDebug() << "Parsed latest version:" << latestVer.toString();
     
-    if (anyMatch.hasMatch()) {
-        QString originalUrl = anyMatch.captured(1);
-        QString filename = anyMatch.captured(2); // Just the filename
-        
-        // Convert any GitHub release URL to GitHub Pages URL
-        QString pagesUrl = QString("https://fintechcpp.github.io/fast-backtest-app-releases/downloads/%1").arg(filename);
-        
-        qDebug() << "Found GitHub release URL:" << originalUrl;
-        qDebug() << "Converting to GitHub Pages URL:" << pagesUrl;
-        return pagesUrl;
-    }
-
-    // Fallback: look for any ZIP file mentioned in the HTML and construct the GitHub Pages URL
-    QRegularExpression filenameRegex("(fast-backtest-app-windows-v[\\d\\.]+\\.zip)");
-    QRegularExpressionMatch filenameMatch = filenameRegex.match(html);
+    bool isNewer = QVersionNumber::compare(latestVer, currentVer) > 0;
+    qDebug() << "Is newer version available:" << isNewer;
     
-    if (filenameMatch.hasMatch()) {
-        QString filename = filenameMatch.captured(1);
-        QString pagesUrl = QString("https://fintechcpp.github.io/fast-backtest-app-releases/downloads/%1").arg(filename);
-        
-        qDebug() << "Found filename in HTML:" << filename;
-        qDebug() << "Constructing GitHub Pages URL:" << pagesUrl;
-        return pagesUrl;
-    }
-
-    qWarning() << "Download URL not found in HTML";
-    qDebug() << "HTML content for debugging:";
-    qDebug() << html;
-    
-    return QString();
-}
-
-bool UpdateChecker::isNewerVersion(const QString& latestVersion, const QString& currentVersion)
-{
-    QVersionNumber latest = QVersionNumber::fromString(latestVersion);
-    QVersionNumber current = QVersionNumber::fromString(currentVersion);
-
-    qDebug() << "Comparing versions:";
-    qDebug() << "  Current:" << current.toString();
-    qDebug() << "  Latest:" << latest.toString();
-
-    bool isNewer = QVersionNumber::compare(latest, current) > 0;
-    qDebug() << "  Result: new version =" << isNewer;
-
     return isNewer;
 }
 
-void UpdateChecker::downloadAndInstallUpdate(const QString& downloadUrl)
+QString UpdateChecker::buildDownloadUrl(const QString& version)
 {
-    qInfo() << "Starting download:" << downloadUrl;
-
-    // Cancel any ongoing request
-    if (m_currentReply) {
-        m_currentReply->abort();
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-    }
-    
-    // Stop any existing timeout
-    if (m_timeoutTimer) {
-        m_timeoutTimer->stop();
-    }
-    
-    // Create temporary directory
-    if (m_tempDir) {
-        delete m_tempDir;
-    }
-    m_tempDir = new QTemporaryDir();
-    
-    if (!m_tempDir->isValid()) {
-        qCritical() << "Impossible to create temporary directory";
-        emit updateFailed("Impossible to create temporary directory");
-        return;
-    }
-    
-    // Set download path
-    QString fileName = QUrl(downloadUrl).fileName();
-    if (fileName.isEmpty()) {
-        fileName = QString("fast-backtest-app-windows-v%1.zip").arg(m_latestVersion);
-    }
-    m_downloadPath = m_tempDir->filePath(fileName);
-
-    qDebug() << "Downloading to:" << m_downloadPath;
-
-    // Create network request
-    QNetworkRequest request(downloadUrl);
-    request.setHeader(QNetworkRequest::UserAgentHeader, 
-                     QString("FastBacktestApp/%1").arg(currentVersion()));
-    
-    // Add some additional headers to ensure proper download
-    request.setRawHeader("Accept", "application/octet-stream, */*");
-    request.setRawHeader("Connection", "keep-alive");
-    
-    // Set a shorter timeout for large file downloads
-    request.setTransferTimeout(30000); // 30 seconds (reduced from 60)
-
-    // Enable automatic redirect following
-    request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
-    
-    qDebug() << "Making network request to:" << downloadUrl;
-    
-    // Make the request
-    m_currentReply = m_networkManager->get(request);
-    
-    // Start timeout timer (60 seconds total timeout for download)
-    m_timeoutTimer->start(60000);
-    
-    // Connect signals
-    connect(m_currentReply, &QNetworkReply::finished,
-            this, &UpdateChecker::onDownloadFinished);
-    connect(m_currentReply, &QNetworkReply::downloadProgress,
-            this, &UpdateChecker::onDownloadProgress);
-    connect(m_currentReply, &QNetworkReply::errorOccurred,
-            this, [this](QNetworkReply::NetworkError error) {
-                qWarning() << "Network error during download:" << error << m_currentReply->errorString();
-                if (error == QNetworkReply::ContentNotFoundError) {
-                    qCritical() << "File not found (404) - the executable may not have been uploaded to GitHub Pages yet";
-                    emit updateFailed("File not found on server. The update may not be available yet.");
-                }
-            });
-    
-    // Add connection to track when reply is destroyed
-    connect(m_currentReply, &QObject::destroyed, this, [this]() {
-        qCritical() << "CRITICAL: QNetworkReply was destroyed unexpectedly!";
-        qCritical() << "This should not happen during normal operation";
-    });
-    
-    // Add connection to track SSL errors
-    connect(m_currentReply, &QNetworkReply::sslErrors, this, [this](const QList<QSslError> &errors) {
-        qWarning() << "SSL errors occurred:";
-        for (const QSslError &error : errors) {
-            qWarning() << "SSL Error:" << error.errorString();
-        }
-    });
-
-    qInfo() << "Download started...";
-    qDebug() << "Network reply created, checking initial state...";
-    qDebug() << "Reply is running:" << m_currentReply->isRunning();
-    qDebug() << "Reply is finished:" << m_currentReply->isFinished();
-    qDebug() << "Reply error:" << m_currentReply->error();
-    qDebug() << "Reply URL:" << m_currentReply->url().toString();
-    qDebug() << "Request headers count:" << m_currentReply->request().rawHeaderList().size();
-    qDebug() << "Timeout timer active:" << m_timeoutTimer->isActive();
-    qDebug() << "Timeout timer remaining:" << m_timeoutTimer->remainingTime() << "ms";
-    
-    // Add a debug timer to check status every 5 seconds
-    QTimer* debugTimer = new QTimer(this);
-    debugTimer->setInterval(5000); // 5 seconds
-    connect(debugTimer, &QTimer::timeout, this, [this, debugTimer]() {
-        if (m_currentReply) {
-            qDebug() << "=== Download Status Update ===";
-            qDebug() << "Reply is running:" << m_currentReply->isRunning();
-            qDebug() << "Reply is finished:" << m_currentReply->isFinished();
-            qDebug() << "Reply error:" << m_currentReply->error();
-            qDebug() << "Bytes received:" << m_currentReply->bytesAvailable();
-            qDebug() << "HTTP status:" << m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-            qDebug() << "Timeout timer remaining:" << m_timeoutTimer->remainingTime() << "ms";
-            qDebug() << "============================";
-        } else {
-            qDebug() << "Debug timer: m_currentReply is null, stopping timer";
-            debugTimer->stop();
-            debugTimer->deleteLater();
-        }
-    });
-    debugTimer->start();
-    
-    // Add connection to track when the reply starts receiving data
-    connect(m_currentReply, &QNetworkReply::readyRead, this, [this]() {
-        static bool firstDataReceived = false;
-        if (!firstDataReceived) {
-            qInfo() << "First data received from server - download is working!";
-            qDebug() << "Bytes available:" << m_currentReply->bytesAvailable();
-            firstDataReceived = true;
-        }
-    });
-    
-    // Add connection to track metadata received
-    connect(m_currentReply, &QNetworkReply::metaDataChanged, this, [this]() {
-        qDebug() << "Metadata received:";
-        qDebug() << "Content-Type:" << m_currentReply->header(QNetworkRequest::ContentTypeHeader).toString();
-        qDebug() << "Content-Length:" << m_currentReply->header(QNetworkRequest::ContentLengthHeader).toLongLong();
-        qDebug() << "HTTP Status:" << m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        qDebug() << "HTTP Reason:" << m_currentReply->attribute(QNetworkRequest::HttpReasonPhraseAttribute).toString();
-        
-        // Check if we're getting redirected
-        QVariant redirectUrl = m_currentReply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-        if (redirectUrl.isValid()) {
-            qDebug() << "Redirect to:" << redirectUrl.toString();
-        }
-        
-        // Check if we got a 404 or other error status
-        int httpStatus = m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-        if (httpStatus >= 400) {
-            qCritical() << "HTTP Error Status:" << httpStatus;
-            qCritical() << "This will likely cause the download to fail";
-        }
-        
-        // Check if the content length is valid
-        qint64 contentLength = m_currentReply->header(QNetworkRequest::ContentLengthHeader).toLongLong();
-        if (contentLength <= 0) {
-            qWarning() << "Content-Length is 0 or invalid - this might cause issues";
-        } else {
-            qDebug() << "Expected download size:" << contentLength << "bytes";
-        }
-    });
-    
-    // Force the event loop to process the request
-    QCoreApplication::processEvents();
-    
-    qDebug() << "After processEvents() - Reply state:";
-    qDebug() << "Reply is running:" << m_currentReply->isRunning();
-    qDebug() << "Reply is finished:" << m_currentReply->isFinished();
-    qDebug() << "Reply error:" << m_currentReply->error();
+    // Build the download URL from the version
+    QString downloadUrl = GITHUB_PAGES_BASE_URL + "downloads/fast-backtest-app-windows-v" + version + ".zip";
+    qDebug() << "Built download URL:" << downloadUrl;
+    return downloadUrl;
 }
 
-void UpdateChecker::onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal)
+// New method for download and auto-install
+void UpdateChecker::downloadAndInstallUpdate(const QString& version)
 {
-    qDebug() << "Download progress called - Received:" << bytesReceived << "Total:" << bytesTotal;
+    qDebug() << "Starting download and install for version:" << version;
     
-    if (bytesTotal <= 0) {
-        qDebug() << "bytesTotal <= 0, returning early";
-        return;
-    }
+    // Enable auto-install mode
+    m_autoInstallMode = true;
     
-    int percentage = static_cast<int>((bytesReceived * 100) / bytesTotal);
-    qDebug() << "Calculated percentage:" << percentage;
-    
-    emit downloadProgress(percentage);
-    
-    if (percentage % 10 == 0) { // Log every 10%
-        qInfo() << "Download progress:" << percentage << "%";
-    }
+    // Start the download
+    downloadLatestRelease(version);
 }
 
-void UpdateChecker::onDownloadFinished()
+bool UpdateChecker::extractZipFile(const QString& zipFilePath, const QString& extractPath)
 {
-    // Stop timeout timer
-    if (m_timeoutTimer) {
-        m_timeoutTimer->stop();
-    }
+    qDebug() << "Extracting ZIP file:" << zipFilePath << "to:" << extractPath;
+    emit installationProgress("Extraction du fichier ZIP...");
     
-    qDebug() << "onDownloadFinished() called";
-    qDebug() << "ENTRY: m_currentReply is null:" << (m_currentReply == nullptr);
-    
-    if (!m_currentReply) {
-        qWarning() << "Null reply in onDownloadFinished";
-        return;
-    }
-    
-    QNetworkReply::NetworkError error = m_currentReply->error();
-    int httpStatus = m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    
-    qDebug() << "Download finished with error code:" << error;
-    qDebug() << "HTTP status code:" << httpStatus;
-    qDebug() << "Reply URL:" << m_currentReply->url().toString();
-    qDebug() << "Reply operation:" << m_currentReply->operation();
-    qDebug() << "Reply bytes available:" << m_currentReply->bytesAvailable();
-    qDebug() << "Reply is finished:" << m_currentReply->isFinished();
-    qDebug() << "Reply is running:" << m_currentReply->isRunning();
-    
-    if (error != QNetworkReply::NoError) {
-        QString errorString = m_currentReply->errorString();
-        qCritical() << "Download error:" << errorString;
-        qCritical() << "HTTP status:" << httpStatus;
-        
-        if (httpStatus == 404) {
-            emit updateFailed("File not found on server (404). The update may not be available yet, or the file wasn't uploaded to GitHub Pages.");
-        } else {
-            emit updateFailed(QString("Download error: %1 (HTTP %2)").arg(errorString).arg(httpStatus));
-        }
-        
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-        return;
-    }
-    
-    // Save the downloaded file
-    QByteArray data = m_currentReply->readAll();
-    QFile file(m_downloadPath);
-    
-    if (!file.open(QIODevice::WriteOnly)) {
-        qCritical() << "Impossible to write file:" << m_downloadPath;
-        emit updateFailed("Impossible to save downloaded file");
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-        return;
-    }
-    
-    qint64 written = file.write(data);
-    file.close();
-    
-    if (written != data.size()) {
-        qCritical() << "Incomplete file write";
-        emit updateFailed("Incomplete download");
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-        return;
-    }
-    
-    qInfo() << "Download finished:" << m_downloadPath;
-    qInfo() << "File size:" << data.size() << "bytes";
-    
-    // Install the update
-    if (installUpdate(m_downloadPath)) {
-        emit updateCompleted();
-    } else {
-        emit updateFailed("Installation failed");
-    }
-    
-    m_currentReply->deleteLater();
-    m_currentReply = nullptr;
-}
-
-void UpdateChecker::onTimeoutOccurred()
-{
-    qWarning() << "Timeout occurred during network request";
-    qDebug() << "Timeout handler called - m_currentReply is null:" << (m_currentReply == nullptr);
-    
-    if (m_currentReply) {
-        qDebug() << "Reply state at timeout - running:" << m_currentReply->isRunning() << "finished:" << m_currentReply->isFinished();
-        qDebug() << "Reply error at timeout:" << m_currentReply->error();
-        m_currentReply->abort();
-        m_currentReply->deleteLater();
-        m_currentReply = nullptr;
-        qDebug() << "Reply set to nullptr after timeout";
-    } else {
-        qDebug() << "No reply to timeout";
-    }
-    
-    emit updateFailed("Network timeout occurred. Please check your internet connection and try again.");
-}
-
-bool UpdateChecker::verifyChecksum(const QString& filePath, const QString& expectedChecksum)
-{
-    // For now, we'll skip checksum verification since it's not easily available from the HTML
-    // In a future version, we could add checksum information to the GitHub Pages site
-    Q_UNUSED(filePath)
-    Q_UNUSED(expectedChecksum)
-
-    qDebug() << "Checksum verification skipped for now";
-    return true;
-}
-
-bool UpdateChecker::installUpdate(const QString& zipPath)
-{
-    qInfo() << "Installing update from:" << zipPath;
-
-    // Get current application directory
-    QString currentDir = QCoreApplication::applicationDirPath();
-    qDebug() << "Current application directory:" << currentDir;
-
-    // Create backup directory
-    QString backupDir = currentDir + "_backup_" + QString::number(QDateTime::currentMSecsSinceEpoch());
-    if (!QDir().mkpath(backupDir)) {
-        qCritical() << "Impossible to create backup directory:" << backupDir;
+    // Create the extraction directory
+    QDir extractDir;
+    if (!extractDir.mkpath(extractPath)) {
+        qCritical() << "Cannot create extraction directory:" << extractPath;
         return false;
     }
     
-    // Preserve user files
-    preserveUserFiles(currentDir, backupDir);
-    
-    // Extract the ZIP file to a temporary location
-    QString extractDir = m_tempDir->filePath("extracted");
-    if (!QDir().mkpath(extractDir)) {
-        qCritical() << "Impossible to create extract directory:" << extractDir;
-        return false;
-    }
-    
-    // Use PowerShell to extract the ZIP file (Windows)
+#ifdef Q_OS_WIN
+    // On Windows, use PowerShell to extract the ZIP
     QProcess extractProcess;
-    QString extractCommand = QString(
-        "powershell.exe -Command \"Expand-Archive -Path '%1' -DestinationPath '%2' -Force\""
-    ).arg(zipPath, extractDir);
-
-    qDebug() << "Extraction command:" << extractCommand;
-
-    extractProcess.start(extractCommand);
-    if (!extractProcess.waitForFinished(30000)) { // 30 seconds timeout
-        qCritical() << "Timeout while extracting ZIP";
+    QString command = "powershell.exe";
+    QStringList arguments;
+    arguments << "-Command" 
+              << QString("Expand-Archive -Path \"%1\" -DestinationPath \"%2\" -Force")
+                 .arg(zipFilePath)
+                 .arg(extractPath);
+    
+    qDebug() << "Running extraction command:" << command << arguments.join(" ");
+    
+    extractProcess.start(command, arguments);
+    if (!extractProcess.waitForStarted()) {
+        qCritical() << "Failed to start extraction process";
+        return false;
+    }
+    
+    if (!extractProcess.waitForFinished(60000)) { // 60 seconds timeout
+        qCritical() << "Extraction process timed out";
+        extractProcess.kill();
         return false;
     }
     
     if (extractProcess.exitCode() != 0) {
-        qCritical() << "Error while extracting:" << extractProcess.readAllStandardError();
-        return false;
-    }
-
-    qInfo() << "Extraction finished";
-
-    // Find the extracted directory (it should contain the application files)
-    QDir extractedDir(extractDir);
-    QStringList subDirs = extractedDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    
-    QString sourceDir = extractDir;
-    if (!subDirs.isEmpty()) {
-        // If there's a subdirectory, use it as the source
-        sourceDir = extractedDir.absoluteFilePath(subDirs.first());
-    }
-
-    qDebug() << "Source directory for installation:" << sourceDir;
-
-    // Copy new files to application directory
-    if (!copyDirectoryRecursively(sourceDir, currentDir)) {
-        qCritical() << "Failed to copy new files";
+        qCritical() << "Extraction failed with exit code:" << extractProcess.exitCode();
+        qCritical() << "Error output:" << extractProcess.readAllStandardError();
         return false;
     }
     
-    // Restore user files
-    restoreUserFiles(backupDir, currentDir);
-
-    qInfo() << "Installation completed successfully";
+#else
+    // On Linux/Mac, use unzip command
+    QProcess extractProcess;
+    QString command = "unzip";
+    QStringList arguments;
+    arguments << "-o" << zipFilePath << "-d" << extractPath;
+    
+    qDebug() << "Running extraction command:" << command << arguments.join(" ");
+    
+    extractProcess.start(command, arguments);
+    if (!extractProcess.waitForFinished(60000)) {
+        qCritical() << "Extraction process timed out or failed";
+        return false;
+    }
+    
+    if (extractProcess.exitCode() != 0) {
+        qCritical() << "Extraction failed with exit code:" << extractProcess.exitCode();
+        return false;
+    }
+#endif
+    
+    qDebug() << "ZIP extraction completed successfully";
+    emit installationProgress("Extraction terminée avec succès");
     return true;
 }
 
-void UpdateChecker::preserveUserFiles(const QString& oldPath, const QString& backupPath)
+void UpdateChecker::performAutoInstall(const QString& zipFilePath)
 {
-    qDebug() << "Preserving user files from" << oldPath << "to" << backupPath;
-
-    // Preserve directories
-    for (const QString& dirName : USER_PRESERVE_DIRS) {
-        QString sourceDir = QDir(oldPath).absoluteFilePath(dirName);
-        QString targetDir = QDir(backupPath).absoluteFilePath(dirName);
+    qDebug() << "Starting auto-installation process for:" << zipFilePath;
+    emit installationProgress("Début de l'installation...");
+    
+    try {
+        // 1. Create temporary extraction directory
+        QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        QString extractPath = tempDir + "/fast-backtest-app-update";
         
-        if (QDir(sourceDir).exists()) {
-            qDebug() << "Preserving directory:" << dirName;
-            copyDirectoryRecursively(sourceDir, targetDir);
-        }
-    }
-    
-    // Preserve files
-    for (const QString& fileName : USER_PRESERVE_FILES) {
-        QString sourceFile = QDir(oldPath).absoluteFilePath(fileName);
-        QString targetFile = QDir(backupPath).absoluteFilePath(fileName);
+        qDebug() << "Temp extraction path:" << extractPath;
         
-        if (QFile::exists(sourceFile)) {
-            qDebug() << "Preserving file:" << fileName;
-            QDir().mkpath(QFileInfo(targetFile).absolutePath());
-            QFile::copy(sourceFile, targetFile);
-        }
-    }
-}
-
-void UpdateChecker::restoreUserFiles(const QString& backupPath, const QString& targetPath)
-{
-    qDebug() << "Restoring user files from" << backupPath << "to" << targetPath;
-    
-    // Restore directories
-    for (const QString& dirName : USER_PRESERVE_DIRS) {
-        QString sourceDir = QDir(backupPath).absoluteFilePath(dirName);
-        QString targetDir = QDir(targetPath).absoluteFilePath(dirName);
-        
-        if (QDir(sourceDir).exists()) {
-            qDebug() << "Restoring directory:" << dirName;
-            // Remove target directory if it exists
-            QDir(targetDir).removeRecursively();
-            copyDirectoryRecursively(sourceDir, targetDir);
-        }
-    }
-    
-    // Restore files
-    for (const QString& fileName : USER_PRESERVE_FILES) {
-        QString sourceFile = QDir(backupPath).absoluteFilePath(fileName);
-        QString targetFile = QDir(targetPath).absoluteFilePath(fileName);
-        
-        if (QFile::exists(sourceFile)) {
-            qDebug() << "Restoring file:" << fileName;
-            QFile::remove(targetFile); // Remove if exists
-            QFile::copy(sourceFile, targetFile);
-        }
-    }
-    
-    // Clean up backup directory
-    QDir(backupPath).removeRecursively();
-}
-
-bool UpdateChecker::copyDirectoryRecursively(const QString& sourceDir, const QString& targetDir)
-{
-    QDir source(sourceDir);
-    if (!source.exists()) {
-        return false;
-    }
-    
-    QDir target(targetDir);
-    if (!target.exists()) {
-        target.mkpath(".");
-    }
-    
-    // Copy files
-    QStringList files = source.entryList(QDir::Files);
-    for (const QString& fileName : files) {
-        QString sourcePath = source.absoluteFilePath(fileName);
-        QString targetPath = target.absoluteFilePath(fileName);
-        
-        // Remove target file if it exists
-        if (QFile::exists(targetPath)) {
-            QFile::remove(targetPath);
+        // Clean up any existing temp directory
+        QDir oldTempDir(extractPath);
+        if (oldTempDir.exists()) {
+            oldTempDir.removeRecursively();
         }
         
-        if (!QFile::copy(sourcePath, targetPath)) {
-            qWarning() << "Failed to copy file:" << sourcePath << "->" << targetPath;
-            return false;
+        // 2. Extract the ZIP file
+        if (!extractZipFile(zipFilePath, extractPath)) {
+            emit installationError("Échec de l'extraction du fichier ZIP");
+            return;
         }
-    }
-    
-    // Copy subdirectories recursively
-    QStringList dirs = source.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
-    for (const QString& dirName : dirs) {
-        QString sourcePath = source.absoluteFilePath(dirName);
-        QString targetPath = target.absoluteFilePath(dirName);
         
-        if (!copyDirectoryRecursively(sourcePath, targetPath)) {
-            return false;
+        // 3. Find the extracted executable
+        QString extractedExePath;
+        QDirIterator it(extractPath, QStringList() << "*.exe", QDir::Files, QDirIterator::Subdirectories);
+        while (it.hasNext()) {
+            QString exePath = it.next();
+            QFileInfo fileInfo(exePath);
+            if (fileInfo.baseName().contains("backtest", Qt::CaseInsensitive)) {
+                extractedExePath = exePath;
+                break;
+            }
         }
+        
+        if (extractedExePath.isEmpty()) {
+            emit installationError("Impossible de trouver l'exécutable dans le fichier extrait");
+            return;
+        }
+        
+        qDebug() << "Found extracted executable:" << extractedExePath;
+        emit installationProgress("Exécutable trouvé, préparation de l'installation...");
+        
+        // 4. Get current application info
+        QString currentAppPath = QCoreApplication::applicationFilePath();
+        QString currentAppDir = QCoreApplication::applicationDirPath();
+        QString backupDir = currentAppDir + "_backup_" + QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+        
+        qDebug() << "Current app path:" << currentAppPath;
+        qDebug() << "Current app dir:" << currentAppDir;
+        qDebug() << "Backup dir:" << backupDir;
+        
+        // 5. Create installer script
+        QString scriptPath;
+        
+#ifdef Q_OS_WIN
+        scriptPath = tempDir + "/install_update.bat";
+        QFile script(scriptPath);
+        if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&script);
+            out << "@echo off\n";
+            out << "echo Waiting for application to close...\n";
+            out << "timeout /t 3 /nobreak >nul\n";
+            out << "echo Creating backup...\n";
+            out << "move \"" << currentAppDir << "\" \"" << backupDir << "\"\n";
+            out << "echo Copying new version...\n";
+            out << "xcopy \"" << QFileInfo(extractedExePath).absolutePath() << "\" \"" << currentAppDir << "\" /E /I /H /Y\n";
+            out << "echo Starting new version...\n";
+            out << "start \"\" \"" << currentAppPath << "\"\n";
+            out << "echo Cleaning up...\n";
+            out << "timeout /t 2 /nobreak >nul\n";
+            out << "rmdir /s /q \"" << extractPath << "\"\n";
+            out << "del \"" << zipFilePath << "\"\n";
+            out << "del \"%~f0\"\n";  // Delete the script itself
+            script.close();
+        }
+#else
+        scriptPath = tempDir + "/install_update.sh";
+        QFile script(scriptPath);
+        if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            QTextStream out(&script);
+            out << "#!/bin/bash\n";
+            out << "echo \"Waiting for application to close...\"\n";
+            out << "sleep 3\n";
+            out << "echo \"Creating backup...\"\n";
+            out << "mv \"" << currentAppDir << "\" \"" << backupDir << "\"\n";
+            out << "echo \"Copying new version...\"\n";
+            out << "cp -r \"" << QFileInfo(extractedExePath).absolutePath() << "\" \"" << currentAppDir << "\"\n";
+            out << "chmod +x \"" << currentAppPath << "\"\n";
+            out << "echo \"Starting new version...\"\n";
+            out << "\"" << currentAppPath << "\" &\n";
+            out << "echo \"Cleaning up...\"\n";
+            out << "sleep 2\n";
+            out << "rm -rf \"" << extractPath << "\"\n";
+            out << "rm \"" << zipFilePath << "\"\n";
+            out << "rm \"$0\"\n";  // Delete the script itself
+            script.close();
+            
+            // Make script executable
+            QProcess::execute("chmod", QStringList() << "+x" << scriptPath);
+        }
+#endif
+        
+        if (!QFile::exists(scriptPath)) {
+            emit installationError("Impossible de créer le script d'installation");
+            return;
+        }
+        
+        emit installationProgress("Script d'installation créé, fermeture de l'application...");
+        
+        // 6. Start the installer script
+        qDebug() << "Starting installer script:" << scriptPath;
+        
+#ifdef Q_OS_WIN
+        QProcess::startDetached("cmd.exe", QStringList() << "/C" << scriptPath);
+#else
+        QProcess::startDetached("bash", QStringList() << scriptPath);
+#endif
+        
+        emit installationCompleted(true, "Installation en cours... L'application va redémarrer.");
+        
+        // 7. Close the current application after a short delay
+        QTimer::singleShot(2000, []() {
+            qDebug() << "Closing application for update installation...";
+            QApplication::quit();
+        });
+        
+    } catch (const std::exception& e) {
+        qCritical() << "Exception during auto-install:" << e.what();
+        emit installationError(QString("Erreur lors de l'installation: %1").arg(e.what()));
     }
     
-    return true;
+    // Reset auto-install mode
+    m_autoInstallMode = false;
 }

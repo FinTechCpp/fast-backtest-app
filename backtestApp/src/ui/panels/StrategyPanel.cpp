@@ -1,7 +1,9 @@
-#include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
+#include "ui/panels/StrategyPanel.h"
+
+#include "ui/panels/FiltersWidget.h"
 #include <QDebug>
 
-StrategyBasePanel::StrategyBasePanel(QWidget* parent)
+StrategyPanel::StrategyPanel(QWidget* parent)
     : ConfigPanel("Paramètres de base", parent)
 {
     // Initialiser le tableau des jours de trading (Lun-Ven activés par défaut)
@@ -12,7 +14,7 @@ StrategyBasePanel::StrategyBasePanel(QWidget* parent)
     setupUI();
 }
 
-void StrategyBasePanel::setupUI() {    
+void StrategyPanel::setupUI() {    
     // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
     QVBoxLayout* baseLayout = new QVBoxLayout(this);
 
@@ -25,6 +27,21 @@ void StrategyBasePanel::setupUI() {
     addBinding(PropertyBinderFactory::createBoolBinding(
         enableLoggingCheck,
         &m_config.enable_logging
+    ));
+
+    // Section Direction de trading
+    QHBoxLayout* directionLayout = new QHBoxLayout();
+    directionLayout->addWidget(new QLabel("Direction de trading:", this));
+    QComboBox* strategyDirectionCombo = new QComboBox(this);
+    strategyDirectionCombo->addItems({"", "Long", "Short"});
+    strategyDirectionCombo->setCurrentIndex(1); // Long par défaut
+    directionLayout->addWidget(strategyDirectionCombo);
+
+    baseLayout->addLayout(directionLayout);
+
+    addBinding(PropertyBinderFactory::createEnumComboBinding(
+        strategyDirectionCombo,
+        &m_config.tradeDirection
     ));
 
     // Section SL/TP
@@ -88,7 +105,21 @@ void StrategyBasePanel::setupUI() {
         slAtrMultiplierSpin,
         &m_config.stop_loss_atr_multiplier
     ));
-    
+
+    // Paramètres ATR - Coefficient Min/Max SL pour delta
+    QDoubleSpinBox* slMinmaxCoefAtr = new QDoubleSpinBox(this);
+    slMinmaxCoefAtr->setDecimals(2);
+    slMinmaxCoefAtr->setRange(0, 1000.0);
+    slMinmaxCoefAtr->setValue(5.0);
+    slMinmaxCoefAtr->setEnabled(false);
+    slMinmaxCoefAtr->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
+    slLayout->addRow(new QLabel("Coefficient Delta Min/Max:", this), slMinmaxCoefAtr);
+
+    addBinding(PropertyBinderFactory::createDoubleBinding(
+        slMinmaxCoefAtr,
+        &m_config.sl_minmax_delta_coef_atr
+    ));
+
     // Paramètres Min/Max SL
     QSpinBox* slMinmaxPeriodsSpin = new QSpinBox(this);
     slMinmaxPeriodsSpin->setRange(1, 1000);
@@ -112,7 +143,7 @@ void StrategyBasePanel::setupUI() {
     
     addBinding(PropertyBinderFactory::createDoubleBinding(
         slMinmaxDeltaSpin,
-        &m_config.sl_minmax_delta
+        &m_config.sl_minmax_delta_coef_atr
     ));
     
     // SL minimum
@@ -281,13 +312,13 @@ void StrategyBasePanel::setupUI() {
                     "QSpinBox { background-color: #ffffff; color: #000000; }" : 
                     "QSpinBox { background-color: #f0f0f0; color: #888888; }");
                 
-                slMinmaxDeltaSpin->setEnabled(isMinMax);
-                slMinmaxDeltaSpin->setStyleSheet(isMinMax ? 
+                slMinmaxCoefAtr->setEnabled(isMinMax);
+                slMinmaxCoefAtr->setStyleSheet(isMinMax ? 
                     "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
                     "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
                 
                 // Mettre à jour le statut de la période ATR
-                bool atrNeeded = isAtr || (tpMethodCombo->currentIndex() == 1);
+                bool atrNeeded = isAtr || isMinMax || (tpMethodCombo->currentIndex() == 1);
                 atrPeriodSpin->setEnabled(atrNeeded);
                 atrPeriodSpin->setStyleSheet(atrNeeded ? 
                     "QSpinBox { background-color: #ffffff; color: #000000; }" : 
@@ -339,7 +370,7 @@ void StrategyBasePanel::setupUI() {
                     "QSpinBox { background-color: #f0f0f0; color: #888888; }");
                 
                 // Mettre à jour le statut de la période ATR
-                bool atrNeeded = isAtr || (slMethodCombo->currentIndex() == 1);
+                bool atrNeeded = isAtr || (slMethodCombo->currentIndex() == 1) || (slMethodCombo->currentIndex() == 2);
                 atrPeriodSpin->setEnabled(atrNeeded);
                 atrPeriodSpin->setStyleSheet(atrNeeded ? 
                     "QSpinBox { background-color: #ffffff; color: #000000; }" : 
@@ -555,6 +586,20 @@ void StrategyBasePanel::setupUI() {
     
     riskGroup->setLayout(riskLayout);
     baseLayout->addWidget(riskGroup);
+
+
+    // Section de configuration des filtres
+    FiltersWidget* filtersWidget = new FiltersWidget(this);
+    filtersWidget->setFilters(m_config.filters);
+    QVBoxLayout* filtersLayout = new QVBoxLayout();
+    filtersLayout->addWidget(filtersWidget);
+    baseLayout->addLayout(filtersLayout);
+
+    addBinding(PropertyBinderFactory::createFiltersBinding(
+        filtersWidget,
+        &m_config.filters
+    ));
     
     setLayout(baseLayout);
 }
+

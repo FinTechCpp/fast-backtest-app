@@ -200,12 +200,12 @@ void ChartControlPanel::setupIndicatorControls() {
     m_addIndicatorButton->setFixedWidth(50);
     
     m_indicatorTypeCombo = new QComboBox();
-    m_indicatorTypeCombo->addItem("RSI", "RSI");
-    m_indicatorTypeCombo->addItem("EMA", "EMA");
-    m_indicatorTypeCombo->addItem("Supertrend", "SUPERTREND");
-    m_indicatorTypeCombo->addItem("Stochastic", "STOCH");
-    m_indicatorTypeCombo->addItem("ATR", "ATR");
-    m_indicatorTypeCombo->addItem("Points Pivots", "PivotPoints");
+    m_indicatorTypeCombo->addItem("RSI", static_cast<int>(indicators::Type::RSI));
+    m_indicatorTypeCombo->addItem("EMA", static_cast<int>(indicators::Type::EMA));
+    m_indicatorTypeCombo->addItem("Supertrend", static_cast<int>(indicators::Type::SUPERTREND));
+    m_indicatorTypeCombo->addItem("Stochastic", static_cast<int>(indicators::Type::STOCHASTIC));
+    m_indicatorTypeCombo->addItem("ATR", static_cast<int>(indicators::Type::ATR));
+    m_indicatorTypeCombo->addItem("Points Pivots", static_cast<int>(indicators::Type::PIVOTPOINTS));
 
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
     addIndicatorLayout->addWidget(m_addIndicatorButton);
@@ -224,29 +224,29 @@ void ChartControlPanel::onIndicatorTypeSelected(int index) {
 void ChartControlPanel::onAddIndicatorClicked() {
     if (!m_chartWidget) return;
     
-    QString indicatorType = m_indicatorTypeCombo->currentData().toString();
+    int indicatorType = m_indicatorTypeCombo->currentData().toInt();
 
-    if (indicatorType == "RSI") {
+    if (indicatorType == static_cast<int>(indicators::Type::RSI)) {
         indicators::RSIInstance rsi;
         m_chartWidget->addIndicator(std::move(rsi));
     }
-    else if (indicatorType == "EMA") {
+    else if (indicatorType == static_cast<int>(indicators::Type::EMA)) {
         indicators::EMAInstance ema;
         m_chartWidget->addIndicator(std::move(ema));
     }
-    else if (indicatorType == "SUPERTREND") {
+    else if (indicatorType == static_cast<int>(indicators::Type::SUPERTREND)) {
         indicators::SuperTrendInstance supertrend;
         m_chartWidget->addIndicator(std::move(supertrend));
     }
-    else if (indicatorType == "STOCH") {
+    else if (indicatorType == static_cast<int>(indicators::Type::STOCHASTIC)) {
         indicators::StochasticInstance stochastic;
         m_chartWidget->addIndicator(std::move(stochastic));
     }
-    else if (indicatorType == "ATR") {
+    else if (indicatorType == static_cast<int>(indicators::Type::ATR)) {
         indicators::ATRInstance atr;
         m_chartWidget->addIndicator(std::move(atr));
     }
-    else if (indicatorType == "PivotPoints") {
+    else if (indicatorType == static_cast<int>(indicators::Type::PIVOTPOINTS)) {
         indicators::PivotPointsInstance pivotPoints;
         m_chartWidget->addIndicator(std::move(pivotPoints));
     }

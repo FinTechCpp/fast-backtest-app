@@ -3,12 +3,13 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QTime>
+#include <QCoreApplication>
 
 #include "components/Managers/ProfileManager.h"
 #include "components/Managers/BacktestResultManager.h"
 #include "components/updateChecker.h"
 #include "ui/panels/generalParamsPanel.h"
-#include "ui/panels/strategySpecificPanels/strategyBasePanel.h"
+#include "ui/panels/StrategyPanel.h"
 #include "ui/menu/profileMenuManager.h"
 #include "ui/menu/dataMenuManager.h"
 #include "ui/menu/updateMenuManager.h"
@@ -18,16 +19,14 @@
 #include "ui/views/histogramView.h"
 #include "components/Managers/resultManager.h"
 #include "components/backtestRunner.h"
+#include "components/Utils/SerializationUtils.hpp"
 
 
 App::App() : QMainWindow() {
     // Set window properties
     setWindowTitle("Backtest Dashboard C++");
     resize(2100, 1300);
-    
-    // Initialize strategy map FIRST
-    initStrategyMap();
-    
+        
     // Initialize configuration manager SECOND
     m_configManager = new ProfileManager(this);
 
@@ -45,8 +44,6 @@ App::App() : QMainWindow() {
     createControlPanel();
     createResultsArea();
     setupConnections();
-
-    updateStrategySpecificPanel();
 
     createActions();
     createMenus();
@@ -104,12 +101,6 @@ App::~App()
     qDebug() << "App destructor called";
 }
 
-void App::initStrategyMap()
-{
-    m_strategyMap["BuyHeikinGreenBA"] = "BuyHeikinGreenBA";
-    m_strategyMap["SellHeikinRedBA"] = "SellHeikinRedBA";
-}
-
 void App::createControlPanel() {
     // Create the control panel widget with fixed width
     m_controlPanel = new QWidget();
@@ -126,23 +117,8 @@ void App::createControlPanel() {
     m_controlPanelLayout->addWidget(m_generalParamsPanel);
     
     // Strategy base panel
-    m_strategyBasePanel = new StrategyBasePanel(m_controlPanel);
-    m_controlPanelLayout->addWidget(m_strategyBasePanel);
-    
-    // Strategy-specific panel container
-    m_strategyPanelStack = new QStackedWidget();
-    m_controlPanelLayout->addWidget(m_strategyPanelStack);
-    
-    // Create all strategy-specific panels in advance
-    m_buyHeikinGreenPanel = new BuyHeikinGreenPanel(m_controlPanel);
-    m_sellHeikinRedPanel = new SellHeikinRedPanel(m_controlPanel);
-    
-    // Add all panels to the stack
-    m_strategyPanelStack->addWidget(m_buyHeikinGreenPanel);
-    m_strategyPanelStack->addWidget(m_sellHeikinRedPanel);
-    
-    // Initialize strategy-specific panels
-    // updateStrategySpecificPanel();
+    m_strategyPanel = new StrategyPanel(m_controlPanel);
+    m_controlPanelLayout->addWidget(m_strategyPanel);
     
     // Create scroll area and add to splitter
     m_controlPanelScrollArea = new QScrollArea();
@@ -166,31 +142,12 @@ void App::createResultsArea()
 
 void App::setupConnections()
 {
-    // Connect strategy change
-    if (m_generalParamsPanel) {
-        connect(m_generalParamsPanel, &GeneralParamsPanel::strategyChanged,
-                this, &App::onStrategyChanged);
-    }
-
     // Connect BacktestRunner
     if (m_backtestRunner) {
         connect(m_backtestRunner, &BacktestRunner::backtestCompleted,
                 this, &App::onBacktestCompleted);
         connect(m_backtestRunner, &BacktestRunner::backtestError,
                 this, &App::onBacktestError);
-    }
-}
-
-void App::updateStrategySpecificPanel() {
-    std::string selectedStrategy = m_generalParamsPanel->getConfig().strategyName;
-    qInfo() << "Updating strategy-specific panel for:" << QString::fromStdString(selectedStrategy);
-
-    // Select the appropriate panel in the stack
-    if (selectedStrategy == "BuyHeikinGreenBA") {
-        m_strategyPanelStack->setCurrentWidget(m_buyHeikinGreenPanel);
-    } 
-    else if (selectedStrategy == "SellHeikinRedBA") {
-        m_strategyPanelStack->setCurrentWidget(m_sellHeikinRedPanel);
     }
 }
 
@@ -218,23 +175,12 @@ GeneralParamsConfig App::getGeneralParamsConfig() const {
     return GeneralParamsConfig();
 }
 
-StrategyBaseConfig App::getStrategyBaseConfig() const {
-    if (m_strategyBasePanel)
-        return m_strategyBasePanel->getConfig();
-    return StrategyBaseConfig();
+StrategyConfig App::getStrategyConfig() const {
+    if (m_strategyPanel)
+        return m_strategyPanel->getConfig();
+    return StrategyConfig();
 }
 
-BuyHeikinGreenConfig App::getBuyHeikinGreenConfig() const {
-    if (m_buyHeikinGreenPanel)
-        return m_buyHeikinGreenPanel->getConfig();
-    return BuyHeikinGreenConfig();
-}
-
-SellHeikinRedConfig App::getSellHeikinRedConfig() const {
-    if (m_sellHeikinRedPanel)
-        return m_sellHeikinRedPanel->getConfig();
-    return SellHeikinRedConfig();
-}
 
 void App::setGeneralParamsConfig(const GeneralParamsConfig& config) {
     if (m_generalParamsPanel) {
@@ -242,150 +188,10 @@ void App::setGeneralParamsConfig(const GeneralParamsConfig& config) {
     }
 }
 
-void App::setStrategyBaseConfig(const StrategyBaseConfig& config) {
-    if (m_strategyBasePanel) {
-        m_strategyBasePanel->setConfig(config);
+void App::setStrategyConfig(const StrategyConfig& config) {
+    if (m_strategyPanel) {
+        m_strategyPanel->setConfig(config);
     }
-}
-
-void App::setBuyHeikinGreenConfig(const BuyHeikinGreenConfig& config) {
-    if (m_buyHeikinGreenPanel) {
-        m_buyHeikinGreenPanel->setConfig(config);
-    }
-}
-
-void App::setSellHeikinRedConfig(const SellHeikinRedConfig& config) {
-    if (m_sellHeikinRedPanel) {
-        m_sellHeikinRedPanel->setConfig(config);
-    }
-}
-
-std::vector<std::unique_ptr<indicators::IndicatorBase>> App::readFromStrategyPanelToIndicatorInstances() const {
-    std::vector<std::unique_ptr<indicators::IndicatorBase>> indicators;
-
-    GeneralParamsConfig generalConfig = getGeneralParamsConfig();
-    StrategyBaseConfig baseConfig = getStrategyBaseConfig();
-
-
-    if (baseConfig.sl_method == StopLossMethod::ATR || baseConfig.tp_method == TakeProfitMethod::ATR) {
-        auto atrInstance = std::make_unique<indicators::ATRInstance>();
-        atrInstance->period = baseConfig.atr_period;
-        atrInstance->useLogScale = true;
-        indicators.push_back(std::move(atrInstance));
-    }
-
-    if (baseConfig.tp_method == TakeProfitMethod::SuperTrend) {
-        auto superTrendInstance = std::make_unique<indicators::SuperTrendInstance>();
-        superTrendInstance->period = baseConfig.tp_supertrend_atr_period;
-        superTrendInstance->multiplier = baseConfig.tp_supertrend_multiplier;
-        indicators.push_back(std::move(superTrendInstance));
-    }
-
-    QString strategyName = QString::fromStdString(generalConfig.strategyName);
-
-
-    if (strategyName.contains("BuyHeikinGreen", Qt::CaseInsensitive)) {
-        BuyHeikinGreenConfig config = getBuyHeikinGreenConfig();
-
-        if (config.use_ema_short_filter) {
-            auto emaShortInstance = std::make_unique<indicators::EMAInstance>();
-            emaShortInstance->period = config.ema_short_period;
-            indicators.push_back(std::move(emaShortInstance));
-        }
-
-        if (config.use_ema_long_filter) {
-            auto emaLongInstance = std::make_unique<indicators::EMAInstance>();
-            emaLongInstance->period = config.ema_long_period;
-            indicators.push_back(std::move(emaLongInstance));
-        }
-
-        if (config.use_rsi_filter) {
-            auto rsiInstance = std::make_unique<indicators::RSIInstance>();
-            rsiInstance->period = config.rsi_period;
-            rsiInstance->overboughtLevel = 70.0;  // Default value
-            rsiInstance->oversoldLevel = config.rsi_threshold;
-            indicators.push_back(std::move(rsiInstance));
-        }
-
-        if (config.use_stoch_filter) {
-            auto stochInstance = std::make_unique<indicators::StochasticInstance>();
-            stochInstance->fastKPeriod = config.stoch_fastk;
-            stochInstance->slowKPeriod = config.stoch_slowk;
-            stochInstance->slowDPeriod = config.stoch_slowd;
-            stochInstance->overboughtLevel = 80.0;  // Default value
-            stochInstance->oversoldLevel = config.stoch_threshold;
-            indicators.push_back(std::move(stochInstance));
-        }
-
-        if (config.use_supertrend_filter) {
-            auto superTrendInstance = std::make_unique<indicators::SuperTrendInstance>();
-            superTrendInstance->period = config.supertrend_atr_period;
-            superTrendInstance->multiplier = config.supertrend_multiplier;
-            indicators.push_back(std::move(superTrendInstance));
-        }
-
-        if (config.use_atr_filter) {
-            auto atrFilterInstance = std::make_unique<indicators::ATRInstance>();
-            atrFilterInstance->period = config.atr_filter_period;
-            atrFilterInstance->useLogScale = true;
-            indicators.push_back(std::move(atrFilterInstance));
-        }
-    }
-    else if (strategyName.contains("SellHeikinRed", Qt::CaseInsensitive)) {
-        SellHeikinRedConfig config = getSellHeikinRedConfig();
-
-        if (config.use_ema_short_filter) {
-            auto emaShortInstance = std::make_unique<indicators::EMAInstance>();
-            emaShortInstance->period = config.ema_short_period;
-            indicators.push_back(std::move(emaShortInstance));
-        }
-
-        if (config.use_ema_long_filter) {
-            auto emaLongInstance = std::make_unique<indicators::EMAInstance>();
-            emaLongInstance->period = config.ema_long_period;
-            indicators.push_back(std::move(emaLongInstance));
-        }
-
-        if (config.use_rsi_filter) {
-            auto rsiInstance = std::make_unique<indicators::RSIInstance>();
-            rsiInstance->period = config.rsi_period;
-            rsiInstance->overboughtLevel = config.rsi_threshold;
-            rsiInstance->oversoldLevel = 30.0;  // Default value
-            indicators.push_back(std::move(rsiInstance));
-        }
-
-        if (config.use_stoch_filter) {
-            auto stochInstance = std::make_unique<indicators::StochasticInstance>();
-            stochInstance->fastKPeriod = config.stoch_fastk;
-            stochInstance->slowKPeriod = config.stoch_slowk;
-            stochInstance->slowDPeriod = config.stoch_slowd;
-            stochInstance->overboughtLevel = config.stoch_threshold;
-            stochInstance->oversoldLevel = 20.0;  // Default value
-            indicators.push_back(std::move(stochInstance));
-        }
-
-        if (config.use_supertrend_filter) {
-            auto superTrendInstance = std::make_unique<indicators::SuperTrendInstance>();
-            superTrendInstance->period = config.supertrend_atr_period;
-            superTrendInstance->multiplier = config.supertrend_multiplier;
-            indicators.push_back(std::move(superTrendInstance));
-        }
-
-        if (config.use_atr_filter) {
-            auto atrFilterInstance = std::make_unique<indicators::ATRInstance>();
-            atrFilterInstance->period = config.atr_filter_period;
-            atrFilterInstance->useLogScale = true;
-            indicators.push_back(std::move(atrFilterInstance));
-        }
-    }
-
-    // on supprime les doublons dans le vector indicators
-    // auto end = std::unique(indicators.begin(), indicators.end(), [](const indicators::IndicatorBase& a, const indicators::IndicatorBase& b) {
-    //     return a == b;
-    // });
-    // indicators.erase(end, indicators.end());
-
-    return indicators;
 }
 
 void App::setBacktestResults(std::unique_ptr<BacktestResults> results) {
@@ -394,13 +200,6 @@ void App::setBacktestResults(std::unique_ptr<BacktestResults> results) {
     if (m_resultManager) {
         m_resultManager->updateAllViews(m_backtestResults.get());
     }
-}
-
-// Slots implementation
-void App::onStrategyChanged(const QString& strategy)
-{
-    Q_UNUSED(strategy)
-    updateStrategySpecificPanel();
 }
 
 void App::onRunBacktest()

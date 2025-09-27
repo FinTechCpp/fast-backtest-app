@@ -205,12 +205,13 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         config.version = QCoreApplication::applicationVersion().toStdString();
         config.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate).toStdString();
 
-        BacktestResults* currentResults = m_mainWindow->getBacktestResults();
+        const BacktestResults& currentResults = m_mainWindow->getBacktestResults();
 
-        // config.indicatorInstances = m_mainWindow->readFromStrategyPanelToIndicatorInstances();
-        config.stats = currentResults ? currentResults->stats : be::Stats();
-        config.candles = currentResults ? currentResults->data->getCandles() : std::vector<be::Candle>();
-        
+        config.generalParams = currentResults.generalConfig;
+        config.strategyConfig = currentResults.strategyConfig;
+        config.candles = currentResults.data->getCandles();
+        config.stats = currentResults.stats;
+
         // Sauvegarder le résultat
         m_resultManager->saveBacktestResult(config, m_mainWindow);
     }
@@ -257,10 +258,13 @@ void BacktestResultMenuManager::onLoadResult()
 
                 std::unique_ptr<BacktestResults> results = std::make_unique<BacktestResults>();
 
-                results->stats = config.stats;
+                results->generalConfig = config.generalParams;
+                results->strategyConfig = config.strategyConfig;
                 results->data = std::make_shared<be::Data>(config.candles);
-                // results->indicatorInstances = std::move(config.indicatorInstances);
+                results->stats = config.stats;
 
+                m_mainWindow->setGeneralParamsConfig(config.generalParams);
+                m_mainWindow->setStrategyConfig(config.strategyConfig);
                 m_mainWindow->setBacktestResults(std::move(results));
 
                 // Mettre à jour l'état du menu

@@ -11,10 +11,10 @@
 class UpdateChecker;
 
 /**
- * @brief Gestionnaire de menu des mises à jour
- * 
- * Cette classe gère le menu "Mise à jour" dans la barre de menu principale
- * avec les actions pour vérifier et gérer les mises à jour.
+ * @brief Update menu manager
+ *
+ * This class manages the "Update" menu in the main menu bar
+ * with actions to check for and manage updates.
  */
 class UpdateMenuManager : public QObject
 {
@@ -25,37 +25,25 @@ public:
     ~UpdateMenuManager();
 
     /**
-     * @brief Crée le menu Mise à jour dans la barre de menu
-     * @param menuBar La barre de menu où ajouter le menu
+     * @brief Creates the Update menu in the menu bar
+     * @param menuBar The menu bar to add the menu to
      */
     void createUpdateMenu(QMenuBar* menuBar);
 
-    // Ajouter cette méthode
-    void checkForUpdatesAuto();
-
 private slots:
     void onCheckForUpdates();
-    void onUpdateAvailable(const QString& version, const QString& downloadUrl);
-    void onNoUpdateAvailable();
-    void onUpdateCheckFailed(const QString& error);
-    void onDownloadProgress(int percentage);
-    void onUpdateCompleted();
-    void onUpdateFailed(const QString& error);
+    void onUpdateCheckCompleted(bool updateAvailable, const QString& latestVersion, const QString& currentVersion);
+    void onUpdateCheckError(const QString& errorMessage);
+    void onDownloadCompleted(bool success, const QString& filePath);
+    void onDownloadError(const QString& errorMessage);
+    void onInstallationProgress(const QString& message);
+    void onInstallationCompleted(bool success, const QString& message);
+    void onInstallationError(const QString& errorMessage);
 
 private:
-    void createActions();
-    void reconnectSignals();
-    
-    // Menu et actions
-    QMenu* m_updateMenu;
-    QAction* m_checkUpdateAction;
-    QAction* m_aboutVersionAction;
-    
-    // Composants de mise à jour
+    QAction* m_checkForUpdatesAction;
     UpdateChecker* m_updateChecker;
-    QProgressDialog* m_progressDialog;
-    
-    // Variables d'état
-    QString m_latestVersion;
-    QString m_downloadUrl;
+    QString m_pendingDownloadVersion;  // Version to download if user agrees
+    QProgressDialog* m_progressDialog; // Dialogue de progression pour l'installation
+
 };

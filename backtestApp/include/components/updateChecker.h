@@ -25,47 +25,57 @@ public:
     // Static method to get current app version
     static QString currentVersion();
     
-    // Public methods
+    // Version checking methods
     void checkForUpdates();
-    void downloadAndInstallUpdate(const QString& downloadUrl);
-    void abortDownload();
+    
+    // Minimal download method
+    void downloadLatestRelease(const QString& version);
+    
+    // Auto-install methods
+    void downloadAndInstallUpdate(const QString& version);
+    bool extractZipFile(const QString& zipFilePath, const QString& extractPath);
+    void performAutoInstall(const QString& extractedPath);
+    
+    // Version comparison
+    static bool isNewerVersion(const QString& currentVersion, const QString& latestVersion);
+    
+    // Utility methods
+    static QString buildDownloadUrl(const QString& version);
+    
+    // Constants publiques
+    static const QString GITHUB_PAGES_BASE_URL;
 
 signals:
-    void updateAvailable(const QString& version, const QString& downloadUrl);
-    void noUpdateAvailable();
-    void updateCheckFailed(const QString& error);
-    void downloadProgress(int percentage);
-    void updateCompleted();
-    void updateFailed(const QString& error);
+    void downloadCompleted(bool success, const QString& filePath);
+    void downloadError(const QString& errorMessage);
+    void updateCheckCompleted(bool updateAvailable, const QString& latestVersion, const QString& currentVersion);
+    void updateCheckError(const QString& errorMessage);
+    void installationProgress(const QString& message);
+    void installationCompleted(bool success, const QString& message);
+    void installationError(const QString& errorMessage);
 
 private slots:
-    void onUpdateCheckFinished();
     void onDownloadFinished();
+    void onDownloadError(QNetworkReply::NetworkError error);
     void onDownloadProgress(qint64 bytesReceived, qint64 bytesTotal);
-    void onTimeoutOccurred();
+    void onReadyRead();
+    
+    // Version check slots
+    void onVersionCheckFinished();
+    void onVersionCheckError(QNetworkReply::NetworkError error);
 
-private:
-    // Private methods
-    bool isNewerVersion(const QString& latestVersion, const QString& currentVersion);
-    QString extractVersionFromHtml(const QString& html);
-    QString extractDownloadUrlFromHtml(const QString& html);
-    bool verifyChecksum(const QString& filePath, const QString& expectedChecksum);
-    bool installUpdate(const QString& zipPath);
-    void preserveUserFiles(const QString& oldPath, const QString& newPath);
-    void restoreUserFiles(const QString& oldPath, const QString& newPath);
-    bool copyDirectoryRecursively(const QString& sourceDir, const QString& targetDir);
-
-    // Private members
+private:    
+    // Network components
     QNetworkAccessManager* m_networkManager;
     QNetworkReply* m_currentReply;
-    QString m_latestVersion;
-    QString m_downloadUrl;
-    QString m_downloadPath;
-    QTemporaryDir* m_tempDir;
-    QTimer* m_timeoutTimer;
+    QFile* m_downloadFile;
+    int m_progressCount;
     
-    // Constants
-    static const QUrl GITHUB_PAGES_RELEASES_URL;
-    static const QStringList USER_PRESERVE_DIRS;
-    static const QStringList USER_PRESERVE_FILES;
+    // Version checking
+    QNetworkReply* m_versionCheckReply;
+    QString extractVersionFromHtml(const QString& html);
+    
+    // Installation variables
+    bool m_autoInstallMode;
+    QString m_downloadedFilePath;
 };

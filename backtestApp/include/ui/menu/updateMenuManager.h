@@ -30,32 +30,13 @@ public:
      */
     void createUpdateMenu(QMenuBar* menuBar);
 
-    // Ajouter cette méthode
-    void checkForUpdatesAuto();
-
 private slots:
-    void onCheckForUpdates();
-    void onUpdateAvailable(const QString& version, const QString& downloadUrl);
-    void onNoUpdateAvailable();
-    void onUpdateCheckFailed(const QString& error);
-    void onDownloadProgress(int percentage);
-    void onUpdateCompleted();
-    void onUpdateFailed(const QString& error);
+    void onTestDownload();
+    void onDownloadCompleted(bool success, const QString& filePath);
+    void onDownloadError(const QString& errorMessage);
 
 private:
-    void createActions();
-    void reconnectSignals();
-    
-    // Menu et actions
-    QMenu* m_updateMenu;
-    QAction* m_checkUpdateAction;
-    QAction* m_aboutVersionAction;
-    
-    // Composants de mise à jour
+    QAction* m_testDownloadAction;
     UpdateChecker* m_updateChecker;
-    QProgressDialog* m_progressDialog;
-    
-    // Variables d'état
-    QString m_latestVersion;
-    QString m_downloadUrl;
+
 };

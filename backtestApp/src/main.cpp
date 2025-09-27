@@ -205,30 +205,6 @@ int main(int argc, char *argv[])
     qInfo() << "=== Application starting ===";
     qInfo() << "Arguments:" << QStringList(argv, argv + argc);
 
-    // ==== Version check ====
-    UpdateChecker updateChecker;
-    QObject::connect(&updateChecker, &UpdateChecker::updateAvailable, 
-        [&](const QString& newVersion, const QString& downloadUrl) {
-            qInfo() << "Update available:" << newVersion;
-
-            // Ask the user if they want to update
-            QMessageBox msgBox;
-            msgBox.setIcon(QMessageBox::Information);
-            msgBox.setText(QString("A new version (%1) is available.").arg(newVersion));
-            msgBox.setInformativeText("Do you want to download and install it now?");
-            msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-            msgBox.setDefaultButton(QMessageBox::Yes);
-            
-            if (msgBox.exec() == QMessageBox::Yes) {
-                // Download and install the update
-                updateChecker.downloadAndInstallUpdate(downloadUrl);
-            }
-        });
-
-    // Start the update check
-    //updateChecker.checkForUpdates(); // Disabled for now
-    //==== Wait for the update check to finish ====
-
     // Register custom types for Qt
     qRegisterMetaType<OHLCBar>("OHLCBar");
     qRegisterMetaType<std::vector<OHLCBar>>("std::vector<OHLCBar>");

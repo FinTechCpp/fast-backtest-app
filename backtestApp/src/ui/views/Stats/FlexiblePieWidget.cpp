@@ -6,7 +6,7 @@ FlexiblePieWidget::FlexiblePieWidget(QWidget *parent)
     : QWidget(parent)
     , m_startAngle(90 * 16)   // Par défaut, commence en haut (90°)
     , m_angleSpan(360)         // Par défaut, cercle complet
-    , m_innerRadiusRatio(0.7) // Ratio du rayon intérieur
+    , m_innerRadiusRatio(0.65) // Ratio du rayon intérieur
     , m_centerText("N/A")
     , m_textSuffix("")
     , m_textColor(0, 0, 0)    // Noir par défaut
@@ -15,18 +15,18 @@ FlexiblePieWidget::FlexiblePieWidget(QWidget *parent)
     // Définir un fond transparent
     setAttribute(Qt::WA_TranslucentBackground);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
-    setMinimumSize(120, 120);
+    setMinimumSize(140, 140);
 }
 
 QSize FlexiblePieWidget::sizeHint() const
 {
     // Pour un demi-cercle, on suggère un format plus large
-    return QSize(120, 120);
+    return QSize(140, 140);
 }
 
 QSize FlexiblePieWidget::minimumSizeHint() const
 {
-    return QSize(120, 120);
+    return QSize(140, 140);
 }
 
 void FlexiblePieWidget::setStartAngle(int degrees)
@@ -163,7 +163,7 @@ void FlexiblePieWidget::paintEvent(QPaintEvent *event)
     
     // Définir la police pour le texte central
     QFont font = painter.font();
-    font.setBold(true);
+    // font.setBold(true);
     
     // Ajuster la taille de police
     int fontSize = radius / 4 * m_fontSizeRatio;

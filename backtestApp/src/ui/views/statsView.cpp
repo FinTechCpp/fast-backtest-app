@@ -68,6 +68,24 @@ void StatsView::setupUI() {
     // --------------------------------------
     // m_equityCurveWidget = new EquityCurveWidget();
     // m_statsLayout->addWidget(m_equityCurveWidget);
+    m_profitFactorWidget = new RatioWidget();
+    m_profitFactorWidget->setColors(QColor(0, 200, 0), QColor(200, 0, 0), QColor(0, 200, 0));
+    m_statsLayout->addWidget(m_profitFactorWidget);
+
+    m_grossProfitWidget = new SimpleTextWidget();
+    m_grossProfitWidget->setColors(QColor(0, 200, 0), QColor(0, 200, 0).lighter(230));
+    m_grossProfitWidget->setSuffix(" €");
+    m_statsLayout->addWidget(m_grossProfitWidget);
+
+    m_grossLossWidget = new SimpleTextWidget();
+    m_grossLossWidget->setColors(QColor(200, 0, 0), QColor(200, 0, 0).lighter(230));
+    m_grossLossWidget->setSuffix(" €");
+    m_statsLayout->addWidget(m_grossLossWidget);
+
+    m_exposureWidget = new SemiCircleRatioWidget();
+    m_exposureWidget->setColors(QColor(128, 179, 255), QColor(209, 212, 230), QColor(0, 0, 0));
+    m_exposureWidget->setSuffix(" %");
+    m_statsLayout->addWidget(m_exposureWidget);
 
     m_timelineWidget = new TimelineWidget();
     m_statsLayout->addWidget(m_timelineWidget);
@@ -148,6 +166,17 @@ void StatsView::updateData(BacktestResults* results)
     for (auto widget : m_statsWidgets) {
         widget->updateContent(m_currentResults->stats);
     }
+
+    m_profitFactorWidget->setStatText(QString::number(m_currentResults->stats.profitFactor, 'f', 2));
+    m_profitFactorWidget->setGreenProportion(
+        std::clamp((m_currentResults->stats.grossProfit / (m_currentResults->stats.grossLoss + m_currentResults->stats.grossProfit)), 0.0, 1.0)
+    );
+
+    m_grossProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.grossProfit));
+    m_grossLossWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(-m_currentResults->stats.grossLoss));
+
+    m_exposureWidget->setStatText(QString::number(std::clamp(m_currentResults->stats.exposureTimePct, 0.0, 100.0), 'f', 2));
+    m_exposureWidget->setProportion(std::clamp(m_currentResults->stats.exposureTimePct / 100.0, 0.0, 1.0));
 }
 
 void StatsView::clear() {
@@ -158,4 +187,10 @@ void StatsView::clear() {
     }
     
     m_currentResults = nullptr;
+
+    m_profitFactorWidget->setStatText("--");
+    m_profitFactorWidget->setGreenProportion(0.5);
+
+    m_grossProfitWidget->setStatText("--");
+    m_grossLossWidget->setStatText("--");
 }

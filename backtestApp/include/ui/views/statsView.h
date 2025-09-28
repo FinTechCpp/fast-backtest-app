@@ -31,6 +31,10 @@
 #include "ui/views/Stats/MonthlyPerformanceWidget.h"
 #include "ui/views/Stats/DrawdownComparisonWidget.h"
 
+#include "ui/views/Stats/RatioWidget.h"
+#include "ui/views/Stats/SemiCircleRatioWidget.h"
+#include "ui/views/Stats/SimpleTextWidget.h"
+
 
 
 #include <cmath>
@@ -91,6 +95,12 @@ private:
     RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
     MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
+
+    RatioWidget* m_profitFactorWidget = nullptr;
+    RatioWidget* m_successRateWidget = nullptr;
+    SemiCircleRatioWidget* m_exposureWidget = nullptr;
+    SimpleTextWidget* m_grossProfitWidget = nullptr;
+    SimpleTextWidget* m_grossLossWidget = nullptr;
 
     std::vector<StatsBaseWidget*> m_statsWidgets;
 

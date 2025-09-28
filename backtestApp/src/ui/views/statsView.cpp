@@ -68,9 +68,23 @@ void StatsView::setupUI() {
     // --------------------------------------
     // m_equityCurveWidget = new EquityCurveWidget();
     // m_statsLayout->addWidget(m_equityCurveWidget);
-    m_profitFactorWidget = new RatioWidget();
-    m_profitFactorWidget->setColors(QColor(0, 200, 0), QColor(200, 0, 0), QColor(0, 200, 0));
+
+    m_tradeDistributionWidget = new FlexiblePieWidget();
+    m_tradeDistributionWidget->setCenterTextColor(QColor(0, 200, 0));
+    m_tradeDistributionWidget->setCenterTextSuffix(" %");
+    m_statsLayout->addWidget(m_tradeDistributionWidget);
+    
+    m_profitFactorWidget = new FlexiblePieWidget();
+    m_profitFactorWidget->setCenterTextColor(QColor(0, 200, 0));
     m_statsLayout->addWidget(m_profitFactorWidget);
+
+    m_exposureWidget = new FlexiblePieWidget();
+    m_exposureWidget->setStartAngle(180);
+    m_exposureWidget->setAngleSpan(180);
+    m_exposureWidget->setCenterTextColor(QColor(0, 0, 0));
+    m_exposureWidget->setCenterTextSuffix(" %");
+    m_statsLayout->addWidget(m_exposureWidget);
+
 
     m_grossProfitWidget = new SimpleTextWidget();
     m_grossProfitWidget->setColors(QColor(0, 200, 0), QColor(0, 200, 0).lighter(230));
@@ -82,10 +96,6 @@ void StatsView::setupUI() {
     m_grossLossWidget->setSuffix(" €");
     m_statsLayout->addWidget(m_grossLossWidget);
 
-    m_exposureWidget = new SemiCircleRatioWidget();
-    m_exposureWidget->setColors(QColor(128, 179, 255), QColor(209, 212, 230), QColor(0, 0, 0));
-    m_exposureWidget->setSuffix(" %");
-    m_statsLayout->addWidget(m_exposureWidget);
 
     m_timelineWidget = new TimelineWidget();
     m_statsLayout->addWidget(m_timelineWidget);
@@ -167,16 +177,43 @@ void StatsView::updateData(BacktestResults* results)
         widget->updateContent(m_currentResults->stats);
     }
 
-    m_profitFactorWidget->setStatText(QString::number(m_currentResults->stats.profitFactor, 'f', 2));
-    m_profitFactorWidget->setGreenProportion(
-        std::clamp((m_currentResults->stats.grossProfit / (m_currentResults->stats.grossLoss + m_currentResults->stats.grossProfit)), 0.0, 1.0)
+    m_profitFactorWidget->setCenterText(QString::number(m_currentResults->stats.profitFactor, 'f', 2));
+    m_profitFactorWidget->clearSegments();
+    m_profitFactorWidget->addSegment(
+        std::clamp((m_currentResults->stats.grossProfit / (m_currentResults->stats.grossLoss + m_currentResults->stats.grossProfit)), 0.0, 1.0),
+        QColor(0, 200, 0)
     );
+    m_profitFactorWidget->addSegment(
+        std::clamp((m_currentResults->stats.grossLoss / (m_currentResults->stats.grossLoss + m_currentResults->stats.grossProfit)), 0.0, 1.0),
+        QColor(200, 0, 0)
+    );
+
+    m_exposureWidget->setCenterText(QString::number(std::clamp(m_currentResults->stats.exposureTimePct, 0.0, 100.0), 'f', 2));
+    m_exposureWidget->clearSegments();
+    m_exposureWidget->addSegment(std::clamp(m_currentResults->stats.exposureTimePct / 100.0, 0.0, 1.0), QColor(128, 179, 255)); // QColor(128, 179, 255), QColor(209, 212, 230)
+    m_exposureWidget->addSegment(std::clamp(1.0 - m_currentResults->stats.exposureTimePct / 100.0, 0.0, 1.0), QColor(209, 212, 230));
+
+    unsigned int totalTrades = m_currentResults->stats.numTrades;
+    if (totalTrades > 0) {
+        double TP = (static_cast<double>(m_currentResults->stats.numTPTrades) / totalTrades);
+        double SL = (static_cast<double>(m_currentResults->stats.numSLTrades) / totalTrades);
+        double BE = (static_cast<double>(m_currentResults->stats.numBETrades) / totalTrades);
+        double manual = (static_cast<double>(m_currentResults->stats.numManualTrades) / totalTrades);
+        double unknown = (static_cast<double>(m_currentResults->stats.numUnknownTrades) / totalTrades);
+        
+        m_tradeDistributionWidget->clearSegments();
+        m_tradeDistributionWidget->addSegment(TP, QColor(0, 200, 0));
+        m_tradeDistributionWidget->addSegment(SL, QColor(200, 0, 0));
+        m_tradeDistributionWidget->addSegment(BE, QColor(10, 100, 200));
+        m_tradeDistributionWidget->addSegment(manual, QColor(127, 140, 141));
+        m_tradeDistributionWidget->addSegment(unknown, QColor(44, 62, 80));
+
+        m_tradeDistributionWidget->setCenterText(QString::number(TP * 100.0, 'f', 2));
+    }
+
 
     m_grossProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.grossProfit));
     m_grossLossWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(-m_currentResults->stats.grossLoss));
-
-    m_exposureWidget->setStatText(QString::number(std::clamp(m_currentResults->stats.exposureTimePct, 0.0, 100.0), 'f', 2));
-    m_exposureWidget->setProportion(std::clamp(m_currentResults->stats.exposureTimePct / 100.0, 0.0, 1.0));
 }
 
 void StatsView::clear() {
@@ -188,8 +225,14 @@ void StatsView::clear() {
     
     m_currentResults = nullptr;
 
-    m_profitFactorWidget->setStatText("--");
-    m_profitFactorWidget->setGreenProportion(0.5);
+    m_profitFactorWidget->setCenterText("--");
+    m_profitFactorWidget->clearSegments();
+    
+    m_exposureWidget->setCenterText("--");
+    m_exposureWidget->clearSegments();
+    
+    m_tradeDistributionWidget->setCenterText("--");
+    m_tradeDistributionWidget->clearSegments();
 
     m_grossProfitWidget->setStatText("--");
     m_grossLossWidget->setStatText("--");

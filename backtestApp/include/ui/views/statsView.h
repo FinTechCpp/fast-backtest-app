@@ -31,8 +31,7 @@
 #include "ui/views/Stats/MonthlyPerformanceWidget.h"
 #include "ui/views/Stats/DrawdownComparisonWidget.h"
 
-#include "ui/views/Stats/RatioWidget.h"
-#include "ui/views/Stats/SemiCircleRatioWidget.h"
+#include "ui/views/Stats/FlexiblePieWidget.h"
 #include "ui/views/Stats/SimpleTextWidget.h"
 
 
@@ -96,9 +95,9 @@ private:
     TradesTableWidget* m_tradesTableWidget = nullptr;
     MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
 
-    RatioWidget* m_profitFactorWidget = nullptr;
-    RatioWidget* m_successRateWidget = nullptr;
-    SemiCircleRatioWidget* m_exposureWidget = nullptr;
+    FlexiblePieWidget* m_profitFactorWidget = nullptr;
+    FlexiblePieWidget* m_exposureWidget = nullptr;
+    FlexiblePieWidget* m_tradeDistributionWidget = nullptr;
     SimpleTextWidget* m_grossProfitWidget = nullptr;
     SimpleTextWidget* m_grossLossWidget = nullptr;
 

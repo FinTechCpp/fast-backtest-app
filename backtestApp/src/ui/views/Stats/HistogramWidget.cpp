@@ -218,8 +218,8 @@ HistogramWidget::HistogramWidget(const QString& title, QWidget* parent)
     // Créer le widget de contenu
     m_contentWidget = new QWidget(this);
     m_contentLayout = new QVBoxLayout(m_contentWidget);
-    m_contentLayout->setContentsMargins(5, 5, 5, 5);
-    m_contentLayout->setSpacing(5);
+    m_contentLayout->setContentsMargins(1, 1, 1, 1);
+    m_contentLayout->setSpacing(0);
             
     // ComboBox pour sélectionner l'unité de temps
     m_timeUnitCombo = new QComboBox(this);
@@ -228,13 +228,25 @@ HistogramWidget::HistogramWidget(const QString& title, QWidget* parent)
     m_timeUnitCombo->setFixedWidth(100);
 
     // Style pour avoir des coins carrés
-    m_timeUnitCombo->setStyleSheet(
-        "QComboBox {"
-        "  border-radius: 0px;"       // Coins parfaitement carrés (était 1px)
-        "  border: 1px solid black;"  // Bordure noire
-        "  padding: 2px 10px 2px 5px;"
-        "}"
-    );
+    // m_timeUnitCombo->setStyleSheet(
+    //     "QComboBox {"
+    //     "  border-radius: 0px;"       // Coins parfaitement carrés (était 1px)
+    //     "  border: 1px solid black;"  // Bordure noire
+    //     "  padding: 2px 10px 2px 5px;"
+    //     "}"
+    //     "QComboBox::drop-down {"
+    //     "  border: none;"  /* Supprimer la bordure du bouton déroulant */
+    //     "  width: 20px;"   /* Largeur fixe pour la zone de la flèche */
+    //     "}"
+    //     "QComboBox::down-arrow {"
+    //     "  width: 0;"
+    //     "  height: 0;"
+    //     "  border-left: 4px solid transparent;"  /* Côté gauche du triangle */
+    //     "  border-right: 4px solid transparent;" /* Côté droit du triangle */
+    //     "  border-top: 4px solid black;"         /* Base du triangle (en haut) */
+    //     "  margin-right: 5px;"                   /* Marge à droite pour le positionnement */
+    //     "}"
+    // );
 
     connect(m_timeUnitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &HistogramWidget::updateHistogram);
@@ -481,12 +493,34 @@ void HistogramWidget::createChart(const GroupedData& data)
     
     // Créer les axes
     QBarCategoryAxis* axisX = new QBarCategoryAxis();
-    axisX->append(data.categories);
+
+    // Limiter le nombre de labels affichés pour garder une bonne lisibilité
+    const int maxLabels = 10;  // Nombre maximum de labels à afficher
+    int categoryCount = data.categories.size();
     
-    // Rotation des labels si nécessaire
-    if (data.categories.size() > 10) {
-        axisX->setLabelsAngle(-45);
+    if (categoryCount <= maxLabels) {
+        // Afficher toutes les catégories si leur nombre est inférieur à maxLabels
+        axisX->append(data.categories);
+    } else {
+        // Calculer le pas pour ne pas dépasser maxLabels
+        int step = (categoryCount + maxLabels - 1) / maxLabels;  // Arrondi supérieur
+        
+        // Créer une liste modifiée où certaines catégories sont remplacées par des chaînes vides
+        QStringList visibleCategories = data.categories;
+        
+        for (int i = 0; i < categoryCount; ++i) {
+            if (i % step != 0) {
+                // Remplacer les labels à masquer par des chaînes vides
+                visibleCategories[i] = "";
+            }
+        }
+        
+        // Appliquer la liste modifiée
+        axisX->append(visibleCategories);
     }
+    
+    // Toujours garder les labels horizontaux
+    axisX->setLabelsAngle(0);
     
     QValueAxis* axisY = new QValueAxis();
     

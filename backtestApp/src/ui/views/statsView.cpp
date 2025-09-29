@@ -72,6 +72,7 @@ void StatsView::setupUI() {
     QGridLayout* gridLayout = new QGridLayout();
     gridLayout->setContentsMargins(0, 0, 0, 0);
     gridLayout->setSpacing(0);
+    // m_statsContent->setStyleSheet("background-color: lightgray;");
 
     // --------------------------------------
     // Ligne 0

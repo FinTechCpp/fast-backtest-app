@@ -98,7 +98,7 @@ void TitledWidget::paintEvent(QPaintEvent* event)
     // Dessiner le titre s'il est visible
     if (m_titleVisible && !m_title.isEmpty()) {
         QFont titleFont = font();
-        titleFont.setPointSize(8); // Petite taille pour le titre
+        titleFont.setPointSize(11); // Petite taille pour le titre
         painter.setFont(titleFont);
 
         QFontMetrics fm(titleFont);
@@ -122,17 +122,18 @@ void TitledWidget::paintEvent(QPaintEvent* event)
         QRect titleRect(0, 0, textWidth, textHeight);
         painter.setRenderHint(QPainter::Antialiasing, false);
         painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(Qt::black, 1)); // Utilise la couleur du titre pour le contour
+        painter.setPen(QPen(QColor(160, 160, 160), 1)); // Utilise la couleur du titre pour le contour
         painter.drawRect(titleRect);
 
         // Réactiver l'antialiasing pour le texte
         painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.setPen(QPen(Qt::black, 1));
         painter.drawText(QRect(0, 0, textWidth, textHeight), Qt::AlignCenter, m_title);
     }
 
     // Dessiner le contour du widget
     painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setPen(QPen(Qt::black, 1)); // Couleur et épaisseur du contour
+    painter.setPen(QPen(QColor(160, 160, 160), 1)); // Couleur et épaisseur du contour
     painter.setBrush(Qt::NoBrush);
     painter.drawRect(rect().adjusted(0, 0, -1, -1)); // Ajuster pour que le contour soit à l'intérieur
 

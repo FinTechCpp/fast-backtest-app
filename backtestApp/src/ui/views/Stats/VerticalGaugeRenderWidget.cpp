@@ -174,35 +174,60 @@ void VerticalGaugeRenderWidget::paintContent(QPainter& painter, const QRect& con
 {    
     painter.setRenderHint(QPainter::Antialiasing, false);
 
-    int w = contentRect.width();
-    int h = contentRect.height();
+    // Définir les dimensions et marges de base
     int gaugeWidth = 45;        // Largeur fixe pour la jauge
-    int legendSpace = 60;   // Espace pour les légendes à gauche
-    int gaugeX = contentRect.left() + legendSpace + 5;  // Position X de la jauge (décalée pour avoir de l'espace à gauche)
-    int padding = contentRect.top() + 10;           // Marge en haut et en bas
-    int legendPadding = 10;     // Espace entre la jauge et le début de la légende
+    int legendSpaceLeft = 70;   // Espace pour les légendes à gauche
+    int legendSpaceRight = legendSpaceLeft;  // Espace pour les légendes à droite
+    int textHeight = 20;        // Hauteur du texte max/min
+    int padding = 10;           // Marge verticale réduite
+
+    // Largeur totale nécessaire pour le widget
+    int totalRequiredWidth = legendSpaceLeft + gaugeWidth + legendSpaceRight;
     
-    // Calculer la plage symétrique autour de zéro
-    double maxAbsValue = std::max(std::abs(m_tpMax), std::abs(m_slMin));
-    double minValue = -maxAbsValue;
-    double maxValue = maxAbsValue;
+    // Calculer les offsets pour centrer le contenu horizontalement
+    int offsetX = (contentRect.width() - totalRequiredWidth) / 2;
     
-    // Tracer le fond de la jauge
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(Qt::white);
-    painter.drawRect(gaugeX, padding, gaugeWidth, h - 2 * padding);
+    // Hauteur effective pour la jauge (avec juste l'espace pour les textes, sans marge supplémentaire)
+    int effectiveHeight = contentRect.height() - 2 * padding - 2 * textHeight;
     
-    // Position Y du zéro (milieu de la jauge)
-    // int zeroY = padding + (h - 2 * padding) / 2;
-    int zeroY = contentRect.top() + (h / 2);
+    // Position de la jauge, centrée horizontalement
+    int gaugeX = contentRect.left() + offsetX + legendSpaceLeft;
+    int gaugeTop = contentRect.top() + padding + textHeight; // Début de la jauge après le texte max
+    
+    // Récupérer les valeurs max et min pour l'échelle
+    double posMax = m_tpMax;
+    double negMin = m_slMin;
+    
+    // Éviter les divisions par zéro
+    if (posMax == 0) posMax = 0.1;
+    if (negMin == 0) negMin = -0.1;
+    
+    // Calculer la plage totale
+    double totalRange = posMax - negMin;
+    
+    // Calculer la position du zéro en proportion de la plage totale
+    // Le zéro se situe à |negMin| / (|negMin| + posMax) depuis le haut
+    double zeroRatio = std::abs(posMax) / totalRange;
+    int zeroY = gaugeTop + (int)(effectiveHeight * zeroRatio);
+    
+    // Fonction modifiée pour convertir les valeurs en positions Y
+    auto valueToYScaled = [gaugeTop, zeroY, effectiveHeight, posMax, negMin](double value) -> int {
+        if (value >= 0) {
+            // Au-dessus du zéro
+            return zeroY - (int)(value / posMax * (zeroY - gaugeTop));
+        } else {
+            // En dessous du zéro
+            return zeroY + (int)(value / negMin * (gaugeTop + effectiveHeight - zeroY));
+        }
+    };
     
     // Calculer les positions Y des valeurs
-    int tpMaxY = valueToY(m_tpMax, minValue, maxValue, h - 2 * padding) + padding;
-    int tpAvgY = valueToY(m_tpAvg, minValue, maxValue, h - 2 * padding) + padding;
-    int tpMedianY = valueToY(m_tpMedian, minValue, maxValue, h - 2 * padding) + padding;
-    int slAvgY = valueToY(m_slAvg, minValue, maxValue, h - 2 * padding) + padding;
-    int slMinY = valueToY(m_slMin, minValue, maxValue, h - 2 * padding) + padding;
-    int slMedianY = valueToY(m_slMedian, minValue, maxValue, h - 2 * padding) + padding;
+    int tpMaxY = valueToYScaled(m_tpMax);
+    int tpAvgY = valueToYScaled(m_tpAvg);
+    int tpMedianY = valueToYScaled(m_tpMedian);
+    int slAvgY = valueToYScaled(m_slAvg);
+    int slMinY = valueToYScaled(m_slMin);
+    int slMedianY = valueToYScaled(m_slMedian);
     
     // Partie supérieure de la jauge (TP)
     if (m_tpAvg > 0) {
@@ -238,6 +263,10 @@ void VerticalGaugeRenderWidget::paintContent(QPainter& painter, const QRect& con
         }
     }
     
+    // Ligne horizontale pour le zéro (optionnelle)
+    painter.setPen(Qt::gray);
+    painter.drawLine(gaugeX, zeroY, gaugeX + gaugeWidth, zeroY);
+    
     // Ligne horizontale pour la médiane TP (pointillés verts)
     if (m_tpMedian > 0) {
         painter.setPen(QPen(m_medianTpColor, 1, Qt::DashLine));
@@ -251,107 +280,68 @@ void VerticalGaugeRenderWidget::paintContent(QPainter& painter, const QRect& con
     }
     
     // Configuration de la police pour les étiquettes
-    painter.setPen(m_textColor);
     painter.setRenderHint(QPainter::Antialiasing, true);
     QFont valueFont = painter.font();
-    valueFont.setPointSize(13); // Réduire légèrement la taille de police pour les deux séries d'étiquettes
+    valueFont.setPointSize(10);
     painter.setFont(valueFont);
     
+    // --- DESSIN DES ÉTIQUETTES MAX ET MIN (AU-DESSUS ET EN-DESSOUS) ---
+    
+    // Max Profit au-dessus de la jauge - directement au-dessus
+    if (m_tpMax > 0) {
+        QString maxProfitText = QString("Max Profit: %1 €").arg(m_tpMax, 0, 'f', 1);
+        QRect maxProfitRect(gaugeX - gaugeWidth, gaugeTop - textHeight, 
+                          gaugeWidth * 3, textHeight);
+        painter.setPen(m_tpMaxColor.darker(150));
+        painter.drawText(maxProfitRect, Qt::AlignCenter, maxProfitText);
+    }
+    
+    // Max Loss en-dessous de la jauge - directement en-dessous
+    if (m_slMin < 0) {
+        QString maxLossText = QString("Max Loss: %1 €").arg(m_slMin, 0, 'f', 1);
+        QRect maxLossRect(gaugeX - gaugeWidth, 
+                        gaugeTop + effectiveHeight, 
+                        gaugeWidth * 3, textHeight);
+        painter.setPen(m_slMinColor.darker(150));
+        painter.drawText(maxLossRect, Qt::AlignCenter, maxLossText);
+    }
+    
+    // --- DESSIN DES ÉTIQUETTES MOYENNE (SUR LE CÔTÉ) ---
+    
     // Définir les positions X pour les légendes
-    int leftLegendX = 5;                         // Légendes de gauche (pourcentages)
-    int rightLegendX = gaugeX + gaugeWidth + legendPadding; // Légendes de droite (valeurs absolues)
-    int textWidth = 55;                          // Largeur des zones de texte
+    int leftLegendX = gaugeX - 10;
+    int rightLegendX = gaugeX + gaugeWidth + 10;
     
-    // Hauteur standard d'une étiquette
-    const int labelHeight = 20;
+    // Hauteur de l'étiquette de moyenne
+    const int avgLabelHeight = 40;
     
-    // --- AJUSTEMENT DES POSITIONS POUR ÉVITER LES CHEVAUCHEMENTS ---
-    
-    // 1. Positions initiales des étiquettes
-    int tpMaxLabelY = tpMaxY - labelHeight/2;
-    int tpAvgLabelY = tpAvgY - labelHeight/2;
-    int slAvgLabelY = slAvgY - labelHeight/2;
-    int slMinLabelY = slMinY - labelHeight/2;
-    
-    // 2. Vérifier et corriger le chevauchement entre max TP et avg TP
-    if (m_tpMax > 0 && m_tpAvg > 0 && std::abs(tpMaxLabelY - tpAvgLabelY) < labelHeight) {
-        int overlap = labelHeight - std::abs(tpMaxLabelY - tpAvgLabelY);
-        int adjustment = overlap / 2;
-        
-        tpMaxLabelY -= adjustment; // Déplacer le max vers le haut
-        tpAvgLabelY += adjustment; // Déplacer la moyenne vers le bas
-    }
-    
-    // 3. Vérifier et corriger le chevauchement entre avg SL et min SL
-    if (m_slMin < 0 && m_slAvg < 0 && std::abs(slMinLabelY - slAvgLabelY) < labelHeight) {
-        int overlap = labelHeight - std::abs(slMinLabelY - slAvgLabelY);
-        int adjustment = overlap / 2;
-        
-        slMinLabelY += adjustment; // Déplacer le min vers le bas
-        slAvgLabelY -= adjustment; // Déplacer la moyenne vers le haut
-    }
-    
-    // --- DESSIN DES ÉTIQUETTES POURCENTAGE (GAUCHE) ---
-    
-    // Étiquettes pourcentage pour la partie TP (trades gagnants)
-    if (m_tpMax > 0) {
-        QRect maxPrcRect(leftLegendX, tpMaxLabelY, textWidth, labelHeight);
-        painter.setPen(m_tpMaxColor.darker(150));
-        painter.drawText(maxPrcRect, Qt::AlignRight | Qt::AlignVCenter, 
-                      QString("%1%").arg(m_tpMaxPrc, 0, 'f', 2));
-    }
-    
+    // Moyenne TP (côté gauche)
     if (m_tpAvg > 0) {
-        QRect avgPrcRect(leftLegendX, tpAvgLabelY, textWidth, labelHeight);
+        // S'assurer que le texte ne dépasse pas la zone de la jauge
+        int avgY = qBound(
+            gaugeTop + avgLabelHeight/2,        // Minimum Y
+            tpAvgY,                             // Position idéale
+            zeroY - avgLabelHeight/2            // Maximum Y
+        );
+        
+        QRect avgRect(leftLegendX - 60, avgY - avgLabelHeight/2, 60, avgLabelHeight);
         painter.setPen(m_tpAvgColor.darker(120));
-        painter.drawText(avgPrcRect, Qt::AlignRight | Qt::AlignVCenter, 
-                      QString("%1%").arg(m_tpAvgPrc, 0, 'f', 2));
+        painter.drawText(avgRect, Qt::AlignRight | Qt::AlignVCenter, 
+                      QString("Moyenne\n%1 €").arg(m_tpAvg, 0, 'f', 1));
     }
     
-    // Étiquettes pourcentage pour la partie SL (trades perdants)
+    // Moyenne SL (côté droit)
     if (m_slAvg < 0) {
-        QRect avgPrcRect(leftLegendX, slAvgLabelY, textWidth, labelHeight);
-        painter.setPen(m_slAvgColor.darker(120));
-        painter.drawText(avgPrcRect, Qt::AlignRight | Qt::AlignVCenter, 
-                      QString("%1%").arg(m_slAvgPrc, 0, 'f', 2));
-    }
-    
-    if (m_slMin < 0) {
-        QRect minPrcRect(leftLegendX, slMinLabelY, textWidth, labelHeight);
-        painter.setPen(m_slMinColor.darker(150));
-        painter.drawText(minPrcRect, Qt::AlignRight | Qt::AlignVCenter, 
-                      QString("%1%").arg(m_slMinPrc, 0, 'f', 2));
-    }
-    
-    // --- DESSIN DES ÉTIQUETTES VALEURS ABSOLUES (DROITE) ---
-    
-    // Étiquettes pour la partie TP (trades gagnants)
-    if (m_tpMax > 0) {
-        QRect maxRect(rightLegendX, tpMaxLabelY, textWidth, labelHeight);
-        painter.setPen(m_tpMaxColor.darker(150));
-        painter.drawText(maxRect, Qt::AlignLeft | Qt::AlignVCenter, 
-                       QString("%1").arg(m_tpMax, 0, 'f', 1));
-    }
-    
-    if (m_tpAvg > 0) {
-        QRect avgRect(rightLegendX, tpAvgLabelY, textWidth, labelHeight);
-        painter.setPen(m_tpAvgColor.darker(120));
-        painter.drawText(avgRect, Qt::AlignLeft | Qt::AlignVCenter, 
-                       QString("%1").arg(m_tpAvg, 0, 'f', 1));
-    }
-    
-    // Étiquettes pour la partie SL (trades perdants)
-    if (m_slAvg < 0) {
-        QRect avgRect(rightLegendX, slAvgLabelY, textWidth, labelHeight);
+        // S'assurer que le texte ne dépasse pas la zone de la jauge
+        int avgY = qBound(
+            zeroY + avgLabelHeight/2,                 // Minimum Y
+            slAvgY,                                   // Position idéale
+            gaugeTop + effectiveHeight - avgLabelHeight/2  // Maximum Y
+        );
+        
+        QRect avgRect(rightLegendX, avgY - avgLabelHeight/2, 60, avgLabelHeight);
         painter.setPen(m_slAvgColor.darker(120));
         painter.drawText(avgRect, Qt::AlignLeft | Qt::AlignVCenter, 
-                       QString("%1").arg(m_slAvg, 0, 'f', 1));
-    }
-    
-    if (m_slMin < 0) {
-        QRect minRect(rightLegendX, slMinLabelY, textWidth, labelHeight);
-        painter.setPen(m_slMinColor.darker(150));
-        painter.drawText(minRect, Qt::AlignLeft | Qt::AlignVCenter, 
-                       QString("%1").arg(m_slMin, 0, 'f', 1));
+                      QString("Moyenne\n%1 €").arg(m_slAvg, 0, 'f', 1));
     }
 }

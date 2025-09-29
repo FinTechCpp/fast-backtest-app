@@ -275,6 +275,8 @@ void StatsView::updateData(BacktestResults* results)
 
 
     m_pnlGaugeWidget->updateContent(m_currentResults->stats);
+
+    std::cout << m_currentResults->stats.tradesPerDay << std::endl;
 }
 
 void StatsView::clear() {

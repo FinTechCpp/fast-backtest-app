@@ -98,11 +98,11 @@ private:
     bool isModelReady() const;
 
     /**
-     * @brief Load an AI model from file
-     * @param modelPath Path to the model file
-     * @param modelType Type of model to load (auto-detected if not specified)
+     * @brief Load an AI model with API key configuration
+     * @param apiKey API key for cloud-based AI service
+     * @param modelType Type of model to load
      */
-    bool loadAIModel(const QString& modelPath, ai::ModelFactory::ModelType modelType = ai::ModelFactory::ModelType::Auto);
+    bool loadAIModel(const QString& apiKey, ai::ModelFactory::ModelType modelType = ai::ModelFactory::ModelType::MistralAI);
 
     /**
      * @brief Get information about the currently loaded model

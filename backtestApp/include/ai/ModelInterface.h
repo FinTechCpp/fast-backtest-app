@@ -11,7 +11,7 @@ namespace ai {
  * @brief Generic interface for AI model inference
  * 
  * This interface provides a unified way to interact with different AI models
- * regardless of the underlying implementation (llama.cpp, OpenVINO, etc.)
+ * regardless of the underlying implementation (OpenVINO, etc.)
  */
 class ModelInterface {
 public:
@@ -23,6 +23,19 @@ public:
      * @return True if loading was successful
      */
     virtual bool loadModel(const QString& modelPath) = 0;
+
+    /**
+     * @brief Set API key for cloud-based models
+     * @param apiKey The API key
+     * @return True if API key set successfully
+     */
+    virtual bool setApiKey(const QString& apiKey) { Q_UNUSED(apiKey); return false; }
+    
+    /**
+     * @brief Test API connection for cloud-based models
+     * @return True if connection successful
+     */
+    virtual bool testApiConnection() { return false; }
 
     /**
      * @brief Run inference on the given prompt
@@ -55,7 +68,7 @@ class ModelFactory {
 public:
     enum class ModelType {
         Auto,        // Auto-detect from file extension
-        LlamaCpp,    // llama.cpp GGUF models
+        MistralAI,   // Mistral AI API
     };
 
     /**

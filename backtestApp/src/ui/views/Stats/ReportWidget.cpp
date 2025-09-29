@@ -11,6 +11,7 @@
 #include <QDebug>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QInputDialog>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -20,7 +21,7 @@ ReportWidget::ReportWidget(QWidget* parent)
     : StatsBaseWidget(parent)
     , m_hasValidStats(false)
     , m_hasValidConfig(false)
-    , m_currentModelType(ai::ModelFactory::ModelType::LlamaCpp)
+    , m_currentModelType(ai::ModelFactory::ModelType::MistralAI)
 {
     setupUI();
     
@@ -76,11 +77,11 @@ void ReportWidget::setupUI()
     
     m_modelTypeLabel = new QLabel("AI Model Type:");
     m_modelTypeCombo = new QComboBox();
-    m_modelTypeCombo->addItem("Llama.cpp (GGUF)", static_cast<int>(ai::ModelFactory::ModelType::LlamaCpp));
-    m_modelTypeCombo->setCurrentIndex(0); // Start with Llama.cpp
+    m_modelTypeCombo->addItem("Mistral AI (API)", static_cast<int>(ai::ModelFactory::ModelType::MistralAI));
+    m_modelTypeCombo->setCurrentIndex(0); // Start with Mistral AI
 
-    m_loadModelButton = new QPushButton("🗂️ Load Model");
-    m_loadModelButton->setToolTip("Load an AI model from file");
+    m_loadModelButton = new QPushButton("� Configure API Key");
+    m_loadModelButton->setToolTip("Configure Mistral AI API key");
     m_loadModelButton->setStyleSheet(
         "QPushButton {"
         "    background-color: #3498db;"
@@ -165,12 +166,12 @@ void ReportWidget::setupUI()
     m_reportDisplay->setPlaceholderText(
         "AI-generated strategy analysis will appear here.\n\n"
         "The analysis will include:\n"
-        "• Overall strategy performance assessment\n"
-        "• Key strengths and weaknesses identification\n"
-        "• Risk analysis and recommendations\n"
-        "• Parameter optimization suggestions\n"
-        "• Comparative insights and market conditions\n\n"
-        "Choose your AI model type and click 'Generate AI Analysis' after running a backtest."
+        "• Profil génétique de la stratégie\n"
+        "• Signature comportementale\n"
+        "• Forces cachées et vulnérabilités\n"
+        "• Projection comportementale\n"
+        "• Philosophie sous-jacente\n\n"
+        "Configure your Mistral AI API key and click 'Generate AI Analysis' after running a backtest."
     );
     
     m_scrollArea->setWidget(m_reportDisplay);
@@ -251,33 +252,19 @@ void ReportWidget::onLoadModelClicked()
     auto modelType = static_cast<ai::ModelFactory::ModelType>(
         m_modelTypeCombo->itemData(selectedIndex).toInt());
     
-    // Determine file filter based on model type
-    QString filter;
-    QString dialogTitle;
+    // For Mistral AI, we need to configure the API key
+    bool ok;
+    QString apiKey = QInputDialog::getText(this, "Mistral AI Configuration",
+                                         "Enter your Mistral AI API key:", QLineEdit::Password,
+                                         "", &ok);
     
-    switch (modelType) {
-        case ai::ModelFactory::ModelType::LlamaCpp:
-            filter = "GGUF Models (*.gguf);;Binary Models (*.bin);;All Files (*)";
-            dialogTitle = "Select Llama.cpp Model File";
-            break;
-        default:
-            filter = "All Model Files (*.gguf *.bin);;All Files (*)";
-            dialogTitle = "Select AI Model File";
-            break;
-    }
-    
-    QString modelPath = QFileDialog::getOpenFileName(
-        this, dialogTitle, 
-        QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
-        filter);
-    
-    if (!modelPath.isEmpty()) {
-        if (loadAIModel(modelPath, modelType)) {
-            QMessageBox::information(this, "Model Loaded", 
-                QString("Successfully loaded AI model:\n%1").arg(getCurrentModelInfo()));
+    if (ok && !apiKey.isEmpty()) {
+        if (loadAIModel(apiKey, modelType)) {
+            QMessageBox::information(this, "API Configured", 
+                "Successfully configured Mistral AI API connection.");
         } else {
-            QMessageBox::warning(this, "Load Failed", 
-                "Failed to load the selected model. Check the model format and try again.");
+            QMessageBox::warning(this, "Configuration Failed", 
+                "Failed to configure Mistral AI API. Please check your API key.");
         }
     }
 }
@@ -331,50 +318,59 @@ QString ReportWidget::createAnalysisPrompt(const be::Stats& stats,
                                           const StrategyConfig& Config) const
 {
     QString prompt = QString(
-        "You are an expert quantitative analyst specializing in trading strategy evaluation. "
-        "Analyze the following backtest results and strategy configuration to provide comprehensive insights.\n\n"
+        "Tu es un analyste quantitatif expert spécialisé dans l'évaluation de stratégies de trading. "
+        "Analyse les statistiques de backtest suivantes pour révéler les caractéristiques profondes de cette stratégie.\n\n"
         
-        "# TRADING STRATEGY BACKTEST ANALYSIS\n\n"
+        "# ANALYSE SYNTHÉTIQUE DE STRATÉGIE DE TRADING\n\n"
         
-        "## Backtest Statistics:\n%1\n\n"
+        "## Données de Performance:\n%1\n\n"
         
-        "## Strategy Configuration:\n%2\n\n"
+        "## Configuration Stratégique:\n%2\n\n"
         
-        "## Analysis Requirements:\n"
-        "Please provide a detailed analysis covering:\n\n"
+        "## Mission d'Analyse:\n"
+        "NE PAS répéter les statistiques - elles sont déjà visibles à l'utilisateur. "
+        "Ton rôle est d'INTERPRÉTER ces chiffres pour révéler la PERSONNALITÉ de cette stratégie.\n\n"
         
-        "### 1. OVERALL PERFORMANCE ASSESSMENT\n"
-        "- Overall strategy effectiveness and profitability\n"
-        "- Risk-adjusted returns evaluation\n"
-        "- Consistency of performance\n\n"
+        "### 🧬 PROFIL GÉNÉTIQUE DE LA STRATÉGIE\n"
+        "À partir des ratios de performance, détermine quel TYPE de stratégie c'est :\n"
+        "- Stratégie agressive vs conservatrice (indices : Sharpe, Sortino, Calmar)\n"
+        "- Stratégie haute fréquence vs position (indices : nombre de trades, exposure time)\n"
+        "- Stratégie momentum vs contrarian (indices : win rate, profit factor)\n"
+        "- Stratégie risk-on vs défensive (indices : drawdown, volatilité)\n\n"
         
-        "### 2. KEY STRENGTHS\n"
-        "- What aspects of the strategy work well\n"
-        "- Strong performance metrics\n"
-        "- Robust risk management elements\n\n"
+        "### 🔍 SIGNATURE COMPORTEMENTALE\n"
+        "Que révèlent les patterns cachés :\n"
+        "- Pourquoi cette combinaison win rate / profit factor ? Qu'est-ce que ça dit sur la logique ?\n"
+        "- Le ratio SQN révèle-t-il une stratégie robuste ou chanceux ?\n"
+        "- L'exposure time indique-t-il une stratégie selective ou opportuniste ?\n"
+        "- Les drawdowns sont-ils cohérents avec le style ou cachent-ils un problème ?\n\n"
         
-        "### 3. IDENTIFIED WEAKNESSES\n"
-        "- Performance gaps and concerns\n"
-        "- Risk management issues\n"
-        "- Suboptimal parameters or settings\n\n"
+        "### ⚡ FORCES CACHÉES\n"
+        "Qu'est-ce qui rend cette stratégie UNIQUE et EFFICACE :\n"
+        "- Quel est son 'superpouvoir' principal révélé par les métriques ?\n"
+        "- Pourquoi elle surperforme (ou sous-performe) vs buy & hold ?\n"
+        "- Quelle compétence spécifique démontre-t-elle ?\n\n"
         
-        "### 4. RISK ANALYSIS\n"
-        "- Drawdown patterns and recovery\n"
-        "- Risk metrics evaluation (Sharpe, Sortino, etc.)\n"
-        "- Position sizing and leverage assessment\n\n"
+        "### 🎯 VULNÉRABILITÉS CRITIQUES\n"
+        "Où réside sa FAIBLESSE fondamentale :\n"
+        "- Quel ratio révèle sa talon d'Achille ?\n"
+        "- Dans quelles conditions de marché elle s'effondrerait ?\n"
+        "- Quel est le piège caché dans ses bonnes performances ?\n\n"
         
-        "### 5. OPTIMIZATION RECOMMENDATIONS\n"
-        "- Specific parameter adjustments\n"
-        "- Risk management improvements\n"
-        "- Strategy refinement suggestions\n\n"
+        "### 🔮 PROJECTION COMPORTEMENTALE\n"
+        "Comment elle se comporterait en conditions réelles :\n"
+        "- Sa robustesse psychologique (supporterait-elle la pression réelle ?)\n"
+        "- Sa capacité d'adaptation aux changements de marché\n"
+        "- Ses chances de survie à long terme\n\n"
         
-        "### 6. MARKET CONDITIONS SUITABILITY\n"
-        "- Market environments where strategy excels\n"
-        "- Potential vulnerabilities in different conditions\n\n"
+        "### 🧠 PHILOSOPHIE SOUS-JACENTE\n"
+        "Quelle vision du marché cette stratégie incarne-t-elle :\n"
+        "- Croit-elle aux tendances ou aux retournements ?\n"
+        "- Privilégie-t-elle la régularité ou les gros coups ?\n"
+        "- Quelle est sa théorie implicite sur les inefficiences de marché ?\n\n"
         
-        "Format your response with clear headings and bullet points. "
-        "Be specific with numbers and provide actionable insights. "
-        "Keep the analysis professional but accessible.\n"
+        "IMPORTANT : Sois perspicace, utilise une approche de profiling psychologique de la stratégie. "
+        "Révèle ce que les chiffres ne disent pas explicitement. Adopte un ton analytique mais accessible.\n"
     )
     .arg(formatStatsForPrompt(stats))
     .arg(formatConfigForPrompt(Config));
@@ -450,25 +446,33 @@ bool ReportWidget::isModelReady() const
     return m_inferenceManager && m_inferenceManager.get() != nullptr;
 }
 
-bool ReportWidget::loadAIModel(const QString& modelPath, ai::ModelFactory::ModelType modelType)
+bool ReportWidget::loadAIModel(const QString& apiKey, ai::ModelFactory::ModelType modelType)
 {
     try {
         auto model = ai::ModelFactory::createModel(modelType);
         
-        if (!model->loadModel(modelPath)) {
-            qWarning() << "Failed to load model:" << model->getLastError();
-            return false;
+        // For Mistral AI, set the API key and test connection
+        if (modelType == ai::ModelFactory::ModelType::MistralAI) {
+            if (!model->setApiKey(apiKey)) {
+                qWarning() << "Failed to set API key";
+                return false;
+            }
+            
+            if (!model->testApiConnection()) {
+                qWarning() << "Failed to connect to Mistral AI API:" << model->getLastError();
+                return false;
+            }
         }
         
         m_inferenceManager->setModel(std::move(model));
-        m_currentModelPath = modelPath;
+        m_currentModelPath = "Mistral AI API";
         m_currentModelType = modelType;
         
         updateModelStatus();
         return true;
         
     } catch (const std::exception& e) {
-        qWarning() << "Exception loading model:" << e.what();
+        qWarning() << "Exception configuring model:" << e.what();
         return false;
     }
 }
@@ -476,11 +480,16 @@ bool ReportWidget::loadAIModel(const QString& modelPath, ai::ModelFactory::Model
 QString ReportWidget::getCurrentModelInfo() const
 {
     if (!m_inferenceManager) {
-        return "No model loaded";
+        return "Aucun modèle configuré";
     }
     
-    return QString("Model: %1\nPath: %2\nType: %3")
-        .arg("Generic AI Model")  // Would get from model interface in real implementation
+    if (m_currentModelType == ai::ModelFactory::ModelType::MistralAI) {
+        return QString("Modèle: Mistral AI\nAPI: %1\nAnalyse: Profil psychologique en français")
+            .arg(m_currentModelPath);
+    }
+    
+    return QString("Modèle: %1\nChemin: %2\nType: %3")
+        .arg("IA Générique")
         .arg(m_currentModelPath)
         .arg(static_cast<int>(m_currentModelType));
 }

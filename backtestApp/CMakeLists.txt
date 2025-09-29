@@ -27,7 +27,7 @@ target_include_directories(backtestapp
         ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include 
         ${CMAKE_SOURCE_DIR}/ThirdParty/ChartDirector/include
         ${CMAKE_SOURCE_DIR}/ThirdParty/ChartDirector/src
-        ${CMAKE_SOURCE_DIR}/ThirdParty/llama.cpp/include
+        ${CMAKE_SOURCE_DIR}/ThirdParty/cpr/include
         ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -64,7 +64,7 @@ target_link_libraries(backtestapp
         backtestEngine
         strategies
         chartdirector
-        llama
+        cpr::cpr
 )
 
 # For Windows compilation (native or cross-compilation)
@@ -118,48 +118,36 @@ if(WIN32 OR CMAKE_CROSSCOMPILING)
         )
     endif()
     
-    # Copy llama.cpp DLLs using the same approach as chartdir70.dll
-    if(BUILD_SHARED_LIBS)
-        # Copy llama.dll
-        add_custom_command(TARGET backtestapp POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/llama.dll"
-            "$<TARGET_FILE_DIR:backtestapp>"
-            COMMENT "Copying llama.dll"
-        )
-        
-        # Copy ggml.dll
-        add_custom_command(TARGET backtestapp POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/ggml.dll"
-            "$<TARGET_FILE_DIR:backtestapp>"
-            COMMENT "Copying ggml.dll"
-        )
-        
-        # Copy ggml-base.dll
-        add_custom_command(TARGET backtestapp POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/ggml-base.dll"
-            "$<TARGET_FILE_DIR:backtestapp>"
-            COMMENT "Copying ggml-base.dll"
-        )
-        
-        # Copy ggml-cpu.dll
-        add_custom_command(TARGET backtestapp POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_BINARY_DIR}/bin/$<CONFIG>/ggml-cpu.dll"
-            "$<TARGET_FILE_DIR:backtestapp>"
-            COMMENT "Copying ggml-cpu.dll"
-        )
-        
-        # Copy spdlog.dll
-        add_custom_command(TARGET backtestapp POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CMAKE_BINARY_DIR}/ThirdParty/spdlog/$<CONFIG>/spdlog.dll"
-            "$<TARGET_FILE_DIR:backtestapp>"
-            COMMENT "Copying spdlog.dll"
-        )
-    endif()
+    # Copy CPR and spdlog DLLs from their build directories
+    add_custom_command(TARGET backtestapp POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:cpr::cpr>"
+        "$<TARGET_FILE_DIR:backtestapp>"
+        COMMENT "Copy cpr.dll to the executable directory"
+    )
+    
+    add_custom_command(TARGET backtestapp POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:spdlog::spdlog>"
+        "$<TARGET_FILE_DIR:backtestapp>"
+        COMMENT "Copy spdlog.dll to the executable directory"
+    )
+    
+    # Copy libcurl.dll (dependency of CPR)
+    add_custom_command(TARGET backtestapp POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_BINARY_DIR}/_deps/curl-build/lib/Release/libcurl.dll"
+        "$<TARGET_FILE_DIR:backtestapp>"
+        COMMENT "Copy libcurl.dll to the executable directory"
+    )
+    
+    # Copy zlib1.dll (dependency of libcurl)
+    add_custom_command(TARGET backtestapp POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_BINARY_DIR}/_deps/zlib-build/Release/zlib1.dll"
+        "$<TARGET_FILE_DIR:backtestapp>"
+        COMMENT "Copy zlib1.dll to the executable directory"
+    )
 endif()
 
 # Install the executable and its dependencies

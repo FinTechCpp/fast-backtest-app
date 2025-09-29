@@ -133,7 +133,14 @@ add_subdirectory(ThirdParty/spdlog)
 # include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include)
 add_subdirectory(ThirdParty/Strategies)
 add_subdirectory(ThirdParty/ChartDirector)
-add_subdirectory(ThirdParty/llama.cpp)
+
+# Configure CPR options before adding subdirectory
+set(CPR_USE_SYSTEM_CURL OFF CACHE BOOL "" FORCE)
+set(CPR_CURL_USE_LIBPSL OFF CACHE BOOL "" FORCE)
+set(CPR_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(CPR_BUILD_TESTS_SSL OFF CACHE BOOL "" FORCE)
+set(CPR_ENABLE_SSL ON CACHE BOOL "" FORCE)
+add_subdirectory(ThirdParty/cpr)
 
 # Add sub-projects (libraries)
 add_subdirectory(ThirdParty/fast-backtest-engine)

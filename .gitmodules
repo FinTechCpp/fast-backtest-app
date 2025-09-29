@@ -11,6 +11,7 @@
 [submodule "ThirdParty/fast-backtest-engine"]
 	path = ThirdParty/fast-backtest-engine
 	url = https://github.com/FinTechCpp/fast-backtest-engine.git
-[submodule "ThirdParty/llama.cpp"]
-	path = ThirdParty/llama.cpp
-	url = https://github.com/FinTechCpp/llama.cpp.git
+
+[submodule "ThirdParty/cpr"]
+	path = ThirdParty/cpr
+	url = https://github.com/libcpr/cpr.git

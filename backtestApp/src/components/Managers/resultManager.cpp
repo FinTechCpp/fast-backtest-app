@@ -139,23 +139,23 @@ void ResultManager::setupViews()
 {
     // Créer les vues (elles sont des widgets, donc directement utilisables)
     m_statsView = new StatsView(this);
-    m_histogramView = new HistogramView(this);
+    // m_histogramView = new HistogramView(this);
     m_chartView = new ChartView(this);
     
     // Vérifier que les vues ont été créées
-    if (!m_statsView || !m_histogramView || !m_chartView) {
+    if (!m_statsView || !m_chartView) {
         qCritical() << "Erreur lors de la création des vues";
         return;
     }
     
     // Ajouter les vues comme onglets (les vues SONT des widgets)
     m_tabWidget->addTab(m_statsView, "📊 Statistiques");
-    m_tabWidget->addTab(m_histogramView, "📊 Histogramme PnL");
+    // m_tabWidget->addTab(m_histogramView, "📊 Histogramme PnL");
     m_tabWidget->addTab(m_chartView, "📈 Graphiques");
     
     // Ajouter au map pour faciliter l'accès
     m_views["stats"] = m_statsView;
-    m_views["histogram"] = m_histogramView;
+    // m_views["histogram"] = m_histogramView;
     m_views["chart"] = m_chartView;
 }
 

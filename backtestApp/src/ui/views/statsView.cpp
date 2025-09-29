@@ -69,76 +69,129 @@ void StatsView::setupUI() {
     // m_equityCurveWidget = new EquityCurveWidget();
     // m_statsLayout->addWidget(m_equityCurveWidget);
 
+    QGridLayout* gridLayout = new QGridLayout();
+    gridLayout->setContentsMargins(0, 0, 0, 0);
+    gridLayout->setSpacing(0);
 
-    QHBoxLayout* topLayout = new QHBoxLayout();
-    topLayout->setContentsMargins(0, 0, 0, 0);
-    topLayout->setSpacing(0);
+    // --------------------------------------
+    // Ligne 0
+    // --------------------------------------
+    m_timeInfoWidget = new KeyValueListWidget("Informations temporelles");
+    m_timeInfoWidget->addItem("Début ", "--", Qt::black);
+    m_timeInfoWidget->addItem("Fin   ", "--", Qt::black);
+    m_timeInfoWidget->setMinimumHeight(m_timeInfoWidget->sizeHint().height());
+    gridLayout->addWidget(m_timeInfoWidget, 0, 0, 1, 3); // S'étend sur les trois colonnes
 
-    QVBoxLayout* topRowLayout = new QVBoxLayout();
-    topRowLayout->setContentsMargins(0, 0, 0, 0);
-    topRowLayout->setSpacing(0);
 
+    // --------------------------------------
+    // Ligne 1
+    // --------------------------------------
     m_netProfitWidget = new SimpleTextWidget("Net Profit");
     m_netProfitWidget->setStatColors(QColor(0, 150, 0));
     m_netProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
     m_netProfitWidget->setSuffix(" %");
-    topRowLayout->addWidget(m_netProfitWidget);
+    gridLayout->addWidget(m_netProfitWidget, 1, 0, 1, 2); // S'étend sur 2 colonnes
 
-    QGridLayout* pieChartsLayout = new QGridLayout();
-    pieChartsLayout->setContentsMargins(0, 0, 0, 0);
-    pieChartsLayout->setSpacing(0);
+    m_pnlGaugeWidget = new VerticalGaugeRenderWidget("PnL Distribution");
+    gridLayout->addWidget(m_pnlGaugeWidget, 1, 2, 4, 1);
 
+
+    // --------------------------------------
+    // Ligne 2
+    // --------------------------------------
     m_tradeDistributionWidget = new FlexiblePieWidget("Trade Distribution");
     m_tradeDistributionWidget->setCenterTextColor(QColor(0, 150, 0));
     m_tradeDistributionWidget->setCenterTextSuffix(" %");
-    pieChartsLayout->addWidget(m_tradeDistributionWidget, 0, 0);
+    gridLayout->addWidget(m_tradeDistributionWidget, 2, 0);
     
     m_profitFactorWidget = new FlexiblePieWidget("Profit Factor");
     m_profitFactorWidget->setCenterTextColor(QColor(0, 150, 0));
-    pieChartsLayout->addWidget(m_profitFactorWidget, 0, 1);
+    gridLayout->addWidget(m_profitFactorWidget, 2, 1);
 
 
-    QVBoxLayout* profitLossLayout = new QVBoxLayout();
-    profitLossLayout->setContentsMargins(0, 0, 0, 0);
-    profitLossLayout->setSpacing(0);
+    // --------------------------------------
+    // Ligne 3 et 4
+    // --------------------------------------
+    m_keyValueListWidget = new KeyValueListWidget("Trade details");
+    m_keyValueListWidget->addItem("Total ", "--", QColor(0, 0, 0));
+    m_keyValueListWidget->addItem("Take Profit ", "-- %", QColor(0, 150, 0));
+    m_keyValueListWidget->addItem("Break Even ", "-- %", QColor(0, 0, 150));
+    m_keyValueListWidget->addItem("Stop Loss ", "-- %", QColor(150, 0, 0));
+    m_keyValueListWidget->addItem("Manual ", "-- %", Qt::black);
+    m_keyValueListWidget->setMinimumSize(m_keyValueListWidget->sizeHint());
+    gridLayout->addWidget(m_keyValueListWidget, 3, 0, 2, 1); // S'étend sur 2 lignes
+
     m_grossProfitWidget = new SimpleTextWidget("Gross Profit");
     m_grossProfitWidget->setStatColors(QColor(0, 150, 0));
     m_grossProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
     m_grossProfitWidget->setSuffix(" €");
-    profitLossLayout->addWidget(m_grossProfitWidget);
-
-    m_keyValueListWidget = new KeyValueListWidget("Trade details");
-    m_keyValueListWidget->addItem("Total", "--", QColor(0, 0, 0));
-    m_keyValueListWidget->addItem("Take Profit", "-- %", QColor(0, 150, 0));
-    m_keyValueListWidget->addItem("Break Even", "-- %", QColor(0, 0, 150));
-    m_keyValueListWidget->addItem("Stop Loss", "-- %", QColor(150, 0, 0));
-    m_keyValueListWidget->addItem("Manual", "-- %", Qt::black);
-    m_keyValueListWidget->setMinimumHeight(140);
-    pieChartsLayout->addWidget(m_keyValueListWidget, 1, 0);
+    gridLayout->addWidget(m_grossProfitWidget, 3, 1);
 
     m_grossLossWidget = new SimpleTextWidget("Gross Loss");
     m_grossLossWidget->setStatColors(QColor(150, 0, 0));
     m_grossLossWidget->setBackgroundColor(QColor(150, 0, 0).lighter(300));
     m_grossLossWidget->setSuffix(" €");
-    profitLossLayout->addWidget(m_grossLossWidget);
-    pieChartsLayout->addLayout(profitLossLayout, 1, 1);
+    gridLayout->addWidget(m_grossLossWidget, 4, 1);
 
-    topRowLayout->addLayout(pieChartsLayout);
-    topLayout->addLayout(topRowLayout);
+    // --------------------------------------
+    // Ligne 5
+    // --------------------------------------
+    m_maxDDWidget = new SimpleTextWidget("Max Drawdown");
+    m_maxDDWidget->setStatColors(QColor(150, 0, 0));
+    m_maxDDWidget->setSuffix(" %");
+    gridLayout->addWidget(m_maxDDWidget, 5, 0);
 
-    m_pnlGaugeWidget = new VerticalGaugeRenderWidget("PnL Distribution");
-    topLayout->addWidget(m_pnlGaugeWidget);
+    m_maxDDDurationWidget = new SimpleTextWidget("Max Drawdown Duration");
+    m_maxDDDurationWidget->setStatColors(Qt::black);
+    gridLayout->addWidget(m_maxDDDurationWidget, 5, 1);
 
-    m_statsLayout->addLayout(topLayout);
+    m_maxTradeDurationWidget = new SimpleTextWidget("Max Trade Duration");
+    m_maxTradeDurationWidget->setStatColors(Qt::black);
+    gridLayout->addWidget(m_maxTradeDurationWidget, 5, 2);
 
 
+    // --------------------------------------
+    // Ligne 6
+    // --------------------------------------
+    m_averageDDWidget = new SimpleTextWidget("Average Drawdown");
+    m_averageDDWidget->setStatColors(QColor(150, 0, 0));
+    m_averageDDWidget->setSuffix(" %");
+    gridLayout->addWidget(m_averageDDWidget, 6, 0);
+
+    m_averageDDDurationWidget = new SimpleTextWidget("Average Drawdown Duration");
+    m_averageDDDurationWidget->setStatColors(Qt::black);
+    gridLayout->addWidget(m_averageDDDurationWidget, 6, 1);
+    
+    m_averageTradeDurationWidget = new SimpleTextWidget("Average Trade Duration");
+    m_averageTradeDurationWidget->setStatColors(Qt::black);
+    gridLayout->addWidget(m_averageTradeDurationWidget, 6, 2);
+
+
+    // --------------------------------------
+    // Ligne 7
+    // --------------------------------------
     m_exposureWidget = new FlexiblePieWidget("Exposure Time");
     m_exposureWidget->setStartAngle(180);
     m_exposureWidget->setAngleSpan(180);
     m_exposureWidget->setCenterTextColor(QColor(0, 0, 0));
     m_exposureWidget->setCenterTextSuffix(" %");
-    m_statsLayout->addWidget(m_exposureWidget);
+    gridLayout->addWidget(m_exposureWidget, 7, 0);
 
+
+    m_histogramWidget = new HistogramWidget("Returns Distribution");
+    gridLayout->addWidget(m_histogramWidget, 7, 1, 2, 2);
+
+    // --------------------------------------
+    // Ligne 8
+    // --------------------------------------
+    m_averageTradePerDayWidget = new SimpleTextWidget("Average Trade Per Day");
+    m_averageTradePerDayWidget->setStatColors(QColor(0, 150, 0));
+    gridLayout->addWidget(m_averageTradePerDayWidget, 8, 0);
+
+
+
+
+    m_statsLayout->addLayout(gridLayout);
 
 
     m_timelineWidget = new TimelineWidget();
@@ -219,6 +272,11 @@ void StatsView::updateData(BacktestResults* results)
         widget->updateContent(m_currentResults->stats);
     }
 
+    m_timeInfoWidget->updateValue("Début ", "  " + QString::fromStdString(m_currentResults->stats.start.toString()));
+    m_timeInfoWidget->updateValue("Fin   ", "  " + QString::fromStdString(m_currentResults->stats.end.toString()));
+
+
+
     m_netProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.returnPct));
     // Peut etre integrer cette mécanique dans le widget directement
     if (m_currentResults->stats.returnPct > 0) {
@@ -267,16 +325,26 @@ void StatsView::updateData(BacktestResults* results)
     m_grossProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.grossProfit));
     m_grossLossWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(-m_currentResults->stats.grossLoss));
 
-    m_keyValueListWidget->updateValue("Total", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.numTrades));
-    m_keyValueListWidget->updateValue("Take Profit", QString::number(m_currentResults->stats.pctTPTrades, 'f', 2) + " %");
-    m_keyValueListWidget->updateValue("Break Even", QString::number(m_currentResults->stats.pctBETrades, 'f', 2) + " %");
-    m_keyValueListWidget->updateValue("Stop Loss", QString::number(m_currentResults->stats.pctSLTrades, 'f', 2) + " %");
-    m_keyValueListWidget->updateValue("Manual", QString::number(m_currentResults->stats.pctManualTrades, 'f', 2) + " %");
+    m_keyValueListWidget->updateValue("Total ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.numTrades));
+    m_keyValueListWidget->updateValue("Take Profit ", QString::number(m_currentResults->stats.pctTPTrades, 'f', 2) + " %");
+    m_keyValueListWidget->updateValue("Break Even ", QString::number(m_currentResults->stats.pctBETrades, 'f', 2) + " %");
+    m_keyValueListWidget->updateValue("Stop Loss ", QString::number(m_currentResults->stats.pctSLTrades, 'f', 2) + " %");
+    m_keyValueListWidget->updateValue("Manual ", QString::number(m_currentResults->stats.pctManualTrades, 'f', 2) + " %");
 
 
     m_pnlGaugeWidget->updateContent(m_currentResults->stats);
 
-    std::cout << m_currentResults->stats.tradesPerDay << std::endl;
+    m_maxDDWidget->setStatText(QString::number(m_currentResults->stats.maxDrawdownPct, 'f', 2));
+    m_averageDDWidget->setStatText(QString::number(m_currentResults->stats.avgDrawdownPct, 'f', 2));
+    m_maxDDDurationWidget->setStatText(QString::fromStdString(m_currentResults->stats.maxDrawdownDuration.toString()));
+    m_averageDDDurationWidget->setStatText(QString::fromStdString(m_currentResults->stats.avgDrawdownDuration.toString()));
+    m_maxTradeDurationWidget->setStatText(QString::fromStdString(m_currentResults->stats.maxTradeDuration.toString()));
+    m_averageTradeDurationWidget->setStatText(QString::fromStdString(m_currentResults->stats.avgTradeDuration.toString()));
+
+
+    m_averageTradePerDayWidget->setStatText(QString::number(m_currentResults->stats.tradesPerDay, 'f', 2));
+
+    m_histogramWidget->updateData(m_currentResults);
 }
 
 void StatsView::clear() {

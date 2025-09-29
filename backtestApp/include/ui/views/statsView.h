@@ -34,6 +34,7 @@
 #include "ui/views/Stats/SimpleTextWidget.h"
 #include "ui/views/Stats/KeyValueListWidget.h"
 #include "ui/views/Stats/VerticalGaugeRenderWidget.h"
+#include "ui/views/Stats/HistogramWidget.h"
 
 
 
@@ -102,10 +103,22 @@ private:
     SimpleTextWidget* m_netProfitWidget = nullptr;
     SimpleTextWidget* m_grossProfitWidget = nullptr;
     SimpleTextWidget* m_grossLossWidget = nullptr;
+
+    SimpleTextWidget* m_maxDDWidget = nullptr;
+    SimpleTextWidget* m_averageDDWidget = nullptr;
+    SimpleTextWidget* m_maxDDDurationWidget = nullptr;
+    SimpleTextWidget* m_averageDDDurationWidget = nullptr;
+    SimpleTextWidget* m_maxTradeDurationWidget = nullptr;
+    SimpleTextWidget* m_averageTradeDurationWidget = nullptr;
+
+    SimpleTextWidget* m_averageTradePerDayWidget = nullptr;
     
     KeyValueListWidget* m_keyValueListWidget = nullptr;
+    KeyValueListWidget* m_timeInfoWidget = nullptr;
 
     VerticalGaugeRenderWidget* m_pnlGaugeWidget = nullptr;
+
+    HistogramWidget* m_histogramWidget = nullptr;
 
     std::vector<StatsBaseWidget*> m_statsWidgets;
 

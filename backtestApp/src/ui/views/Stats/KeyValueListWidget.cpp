@@ -183,8 +183,8 @@ void KeyValueListWidget::paintContent(QPainter& painter, const QRect& contentRec
     int marginY = 10; // Marge minimale verticale
     
     // Centrer le contenu, mais s'assurer qu'il ne dépasse pas les marges
-    int startX = qMax(marginX, (contentRect.width() - contentWidth) / 2);
-    int startY = qMax(marginY, (contentRect.height() - contentHeight) / 2);
+    int startX = qMax(marginX, (contentRect.left() + contentRect.width() - contentWidth) / 2);
+    int startY = qMax(marginY, (contentRect.top() + contentRect.height() - contentHeight) / 2);
     
     // Position y courante
     int y = startY + lineHeight/2; // Commencer avec un espace pour la première ligne

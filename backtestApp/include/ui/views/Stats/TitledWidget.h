@@ -23,6 +23,10 @@ public:
     void setTitleBackgroundColor(const QColor& color);
     void setTitleVisible(bool visible);
     void setBackgroundColor(const QColor& color);
+    
+    // Widget compagnon à côté du titre
+    void setTitleCompanionWidget(QWidget* widget);
+    QWidget* titleCompanionWidget() const { return m_titleCompanionWidget; }
 
 protected:
     void paintEvent(QPaintEvent* event) override;
@@ -39,4 +43,7 @@ private:
     QColor m_titleBackgroundColor;
     QColor m_backgroundColor;
     bool m_titleVisible;
+    
+    // Widget compagnon qui sera affiché à côté du titre
+    QWidget* m_titleCompanionWidget;
 };

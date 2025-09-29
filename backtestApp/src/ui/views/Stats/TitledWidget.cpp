@@ -9,6 +9,7 @@ TitledWidget::TitledWidget(const QString& title, QWidget *parent)
     , m_titleBackgroundColor(Qt::transparent) // Transparent
     , m_titleVisible(!title.isEmpty())
     , m_backgroundColor(Qt::transparent) // Transparent
+    , m_titleCompanionWidget(nullptr)
 {
     // setMinimumSize(100, 100);
     // setMinimumSize(140, 140);
@@ -55,6 +56,24 @@ void TitledWidget::setBackgroundColor(const QColor& color)
     }
 }
 
+void TitledWidget::setTitleCompanionWidget(QWidget* widget)
+{
+    // Si un widget existe déjà, le supprimer
+    if (m_titleCompanionWidget) {
+        m_titleCompanionWidget->setParent(nullptr);
+        m_titleCompanionWidget->deleteLater();
+    }
+    
+    m_titleCompanionWidget = widget;
+    
+    if (m_titleCompanionWidget) {
+        m_titleCompanionWidget->setParent(this);
+        m_titleCompanionWidget->show();
+    }
+    
+    update();
+}
+
 QRect TitledWidget::contentRect() const
 {
     QRect rect = this->rect();
@@ -85,6 +104,19 @@ void TitledWidget::paintEvent(QPaintEvent* event)
         QFontMetrics fm(titleFont);
         int textWidth = fm.horizontalAdvance(m_title) + 10; // Largeur du texte + marge
         int textHeight = fm.height() + 4; // Hauteur du texte + marge
+        
+        // Ajuster la largeur de la zone de titre si un widget compagnon est présent
+        int titleBoxWidth = textWidth;
+        if (m_titleCompanionWidget && m_titleCompanionWidget->isVisible()) {
+            titleBoxWidth += m_titleCompanionWidget->width() + 15;  // Largeur du widget + marge
+            m_titleCompanionWidget->setGeometry(
+                textWidth + 1,  // Position X: après le titre avec une marge
+                1,          // Position Y: centré verticalement dans la barre de titre
+                m_titleCompanionWidget->sizeHint().width(),
+                textHeight  // Hauteur légèrement réduite pour l'esthétique
+            );
+        }
+
 
         // Dessiner le fond du titre
         QRect titleRect(0, 0, textWidth, textHeight);
@@ -95,7 +127,7 @@ void TitledWidget::paintEvent(QPaintEvent* event)
 
         // Réactiver l'antialiasing pour le texte
         painter.setRenderHint(QPainter::Antialiasing, true);
-        painter.drawText(titleRect, Qt::AlignCenter, m_title);
+        painter.drawText(QRect(0, 0, textWidth, textHeight), Qt::AlignCenter, m_title);
     }
 
     // Dessiner le contour du widget

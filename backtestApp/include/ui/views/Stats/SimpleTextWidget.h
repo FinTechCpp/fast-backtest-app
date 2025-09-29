@@ -1,24 +1,22 @@
 #pragma once
 
-#include <QWidget>
-#include <QString>
-#include <QColor>
+#include "ui/views/Stats/TitledWidget.h"
 
-class SimpleTextWidget : public QWidget
+class SimpleTextWidget : public TitledWidget
 {
     Q_OBJECT
 
 public:
-    explicit SimpleTextWidget(QWidget *parent = nullptr);
+    explicit SimpleTextWidget(const QString& title = QString(), QWidget *parent = nullptr);
 
     // Getters
     QString statText() const { return m_statText; }
     QColor textColor() const { return m_textColor; }
-    QColor backgroundColor() const { return m_backgroundColor; }
+    // QColor backgroundColor() const { return m_backgroundColor; }
     
     // Setters
     void setStatText(const QString &text);
-    void setColors(const QColor &textColor, const QColor &backgroundColor);
+    void setStatColors(const QColor &textColor);
     
     // Configuration supplémentaire
     void setSuffix(const QString &suffix); // Pour ajouter un % ou autre
@@ -29,7 +27,7 @@ public:
     static QString formatWithThousandsSeparator(double value, int precision = 2);
 
 protected:
-    void paintEvent(QPaintEvent *event) override;
+    void paintContent(QPainter& painter, const QRect& contentRect) override;
 
 private:
 

@@ -2,12 +2,12 @@
 #include <numeric>
 #include <QDebug>
 
-FlexiblePieWidget::FlexiblePieWidget(QWidget *parent)
-    : QWidget(parent)
+FlexiblePieWidget::FlexiblePieWidget(const QString& title, QWidget *parent)
+    : TitledWidget(title, parent)
     , m_startAngle(90 * 16)   // Par défaut, commence en haut (90°)
     , m_angleSpan(360)         // Par défaut, cercle complet
     , m_innerRadiusRatio(0.65) // Ratio du rayon intérieur
-    , m_centerText("N/A")
+    , m_centerText("--")
     , m_textSuffix("")
     , m_textColor(0, 0, 0)    // Noir par défaut
     , m_fontSizeRatio(1.0)
@@ -110,20 +110,19 @@ void FlexiblePieWidget::clearSegments()
     update();
 }
 
-void FlexiblePieWidget::paintEvent(QPaintEvent *event)
-{
-    Q_UNUSED(event);
-    
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
-    
+void FlexiblePieWidget::paintContent(QPainter& painter, const QRect& contentRect)
+{    
     // Calculer le rayon et le centre du cercle
-    int size = qMin(width(), height());
+    int size = qMin(contentRect.width(), contentRect.height());
     int radius = size / 2 - 5; // Marge de 5 pixels
     
     // Adapter la géométrie pour les formes partielles
-    QRectF outerRect = QRectF(width()/2 - radius, height()/2 - radius, radius * 2, radius * 2);
-    
+    QRectF outerRect = QRectF(
+        contentRect.left() + contentRect.width()/2 - radius, 
+        contentRect.top() + contentRect.height()/2 - radius, 
+        radius * 2, radius * 2
+    );
+
     // Dessiner les segments si disponibles
     if (!m_segments.empty()) {
         int currentAngle = m_startAngle;
@@ -131,17 +130,18 @@ void FlexiblePieWidget::paintEvent(QPaintEvent *event)
         
         // Parcourir chaque segment
         for (const auto& segment : m_segments) {
-            if (segment.proportion > 0) {
-                // Calculer l'angle pour ce segment proportionnellement à l'angle max
-                int sweepAngle = -static_cast<int>(segment.proportion * m_angleSpan * 16 - offsetAngle);
-                
-                painter.setPen(Qt::NoPen);
-                painter.setBrush(segment.color);
-                painter.drawPie(outerRect, currentAngle, sweepAngle);
-                
-                // Mettre à jour l'angle pour le segment suivant
-                currentAngle += sweepAngle - offsetAngle;
-            }
+            if (segment.proportion <= 0)
+                continue;
+
+            // Calculer l'angle pour ce segment proportionnellement à l'angle max
+            int sweepAngle = -static_cast<int>(segment.proportion * m_angleSpan * 16 - offsetAngle);
+            
+            painter.setPen(Qt::NoPen);
+            painter.setBrush(segment.color);
+            painter.drawPie(outerRect, currentAngle, sweepAngle);
+            
+            // Mettre à jour l'angle pour le segment suivant
+            currentAngle += sweepAngle - offsetAngle;
         }
     } else {
         // Aucun segment, dessiner un cercle gris
@@ -156,8 +156,12 @@ void FlexiblePieWidget::paintEvent(QPaintEvent *event)
     
     // Dessiner le cercle intérieur
     int innerRadius = radius * m_innerRadiusRatio;
-    QRectF innerRect = QRectF(width()/2 - innerRadius, height()/2 - innerRadius, innerRadius * 2, innerRadius * 2);
-    
+    QRectF innerRect = QRectF(
+        contentRect.left() + contentRect.width()/2 - innerRadius,
+        contentRect.top() + contentRect.height()/2 - innerRadius, 
+        innerRadius * 2, innerRadius * 2
+    );
+        
     painter.setBrush(palette().color(QPalette::Window));
     painter.drawEllipse(innerRect);
     

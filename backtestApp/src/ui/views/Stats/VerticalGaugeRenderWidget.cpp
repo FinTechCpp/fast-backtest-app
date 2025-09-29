@@ -1,81 +1,43 @@
-#include "ui/views/Stats/PnLGaugeWidget.h"
+#include "ui/views/Stats/VerticalGaugeRenderWidget.h"
 #include <algorithm>
 #include <numeric>
 #include <QDebug>
 #include <QGroupBox>
 #include <QFontMetrics>
 
-// VerticalGaugeWidget Implementation
-// ===============================
 
-PnLGaugeWidget::PnLGaugeWidget(QWidget* parent)
-    : StatsBaseWidget(parent),
+VerticalGaugeRenderWidget::VerticalGaugeRenderWidget(const QString& title, QWidget* parent)
+    : TitledWidget(title, parent),
       m_tpAvg(0.0),
       m_tpMax(0.0),
       m_tpMedian(0.0),
       m_slAvg(0.0),
       m_slMin(0.0),
       m_slMedian(0.0),
-      m_tpCount(0),
-      m_slCount(0)
+      m_tpAvgPrc(0.0),
+      m_tpMaxPrc(0.0),
+      m_tpMedianPrc(0.0),
+      m_slAvgPrc(0.0),
+      m_slMinPrc(0.0),
+      m_slMedianPrc(0.0)
 {
-    setupUI();
+    // Initialiser les couleurs
+    m_tpAvgColor = QColor(0, 150, 0);       // Vert foncé
+    m_tpMaxColor = QColor(100, 255, 100);   // Vert clair
+    m_slAvgColor = QColor(150, 0, 0);       // Rouge foncé
+    m_slMinColor = QColor(255, 100, 100);   // Rouge clair
+    m_lineColor = QColor(0, 0, 0);          // Noir
+    m_textColor = QColor(40, 40, 40);       // Gris foncé
+    m_medianTpColor = QColor(0, 100, 0);    // Vert foncé
+    m_medianSlColor = QColor(100, 0, 0);    // Rouge foncé
+    
+    // Définir la taille et la politique de taille - plus large pour inclure la légende
+    setMinimumSize(220, 300);  // Augmenté de 40 à 150 pour avoir de l'espace pour la légende
+    setMaximumWidth(240);      // Augmenté de 60 à 180
+    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
 }
 
-PnLGaugeWidget::~PnLGaugeWidget()
-{
-    // Qt gère automatiquement la libération de mémoire des widgets enfants
-}
-
-void PnLGaugeWidget::setupUI()
-{
-    // Layout principal
-    m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(0, 0, 0, 0);
-    
-    // Titre du widget
-    m_titleLabel = new QLabel("Distribution Relative des P&L");
-    QFont titleFont = m_titleLabel->font();
-    titleFont.setBold(true);
-    m_titleLabel->setFont(titleFont);
-    m_titleLabel->setAlignment(Qt::AlignCenter);
-    m_mainLayout->addWidget(m_titleLabel);
-    
-    // Layout pour la jauge et les statistiques complémentaires
-    m_contentLayout = new QHBoxLayout();
-    m_contentLayout->setSpacing(10);
-    
-    // Widget de la jauge - maintenant avec sa propre légende
-    m_gaugeWidget = new VerticalGaugeRenderWidget();
-    m_contentLayout->addWidget(m_gaugeWidget);
-    
-    // Widget pour les statistiques complémentaires
-    m_legendWidget = new QWidget();
-    m_legendLayout = new QVBoxLayout(m_legendWidget);
-    m_legendLayout->setSpacing(5);
-    m_legendLayout->setContentsMargins(0, 10, 0, 10);
-    
-    // Statistiques combinées
-    QGroupBox* statsGroupBox = new QGroupBox("Informations complémentaires");
-    QGridLayout* statsLayout = new QGridLayout(statsGroupBox);
-    
-    // Ratio et edge
-    m_ratioLabel = new QLabel("Ratio Gain/Perte: N/A");
-    statsLayout->addWidget(m_ratioLabel, 4, 0, 1, 2);
-    
-    m_edgeLabel = new QLabel("Edge: N/A");
-    statsLayout->addWidget(m_edgeLabel, 5, 0, 1, 2);
-    
-    m_legendLayout->addWidget(statsGroupBox);
-    m_legendLayout->addStretch();
-    
-    m_contentLayout->addWidget(m_legendWidget);
-    
-    // Ajouter le layout de contenu au layout principal
-    m_mainLayout->addLayout(m_contentLayout);
-}
-
-void PnLGaugeWidget::updateContent(const be::Stats& stats)
+void VerticalGaugeRenderWidget::updateContent(const be::Stats& stats)
 {
     if (stats.trades.empty()) {
         clear();
@@ -111,12 +73,12 @@ void PnLGaugeWidget::updateContent(const be::Stats& stats)
     }
     
     // Stocker le nombre de trades
-    m_tpCount = tpPLs.size();
-    m_slCount = slPLs.size();
-    
+    size_t tpCount = tpPLs.size();
+    size_t slCount = slPLs.size();
+
     // Calcul des statistiques pour les trades gagnants (TP)
     if (!tpPLs.empty()) {
-        m_tpAvg = std::accumulate(tpPLs.begin(), tpPLs.end(), 0.0) / double(tpPLs.size());
+        m_tpAvg = std::accumulate(tpPLs.begin(), tpPLs.end(), 0.0) / double(tpCount);
         m_tpAvgPrc = std::accumulate(tpPLsPrc.begin(), tpPLsPrc.end(), 0.0) / double(tpPLsPrc.size());
         m_tpMax = *std::max_element(tpPLs.begin(), tpPLs.end());
         m_tpMaxPrc = *std::max_element(tpPLsPrc.begin(), tpPLsPrc.end());
@@ -176,151 +138,6 @@ void PnLGaugeWidget::updateContent(const be::Stats& stats)
         m_slMedianPrc = 0.0;
     }
     
-    // Informations détaillées sur les meilleurs/pires trades
-    if (bestTrade) {
-        m_bestTradeInfo = QString("%1 (%2)")
-            .arg(QString::number(bestTrade->pl, 'f', 2))
-            .arg(QString::fromStdString(bestTrade->tag));
-    } else {
-        m_bestTradeInfo = "N/A";
-    }
-    
-    if (worstTrade) {
-        m_worstTradeInfo = QString("%1 (%2)")
-            .arg(QString::number(worstTrade->pl, 'f', 2))
-            .arg(QString::fromStdString(worstTrade->tag));
-    } else {
-        m_worstTradeInfo = "N/A";
-    }
-    
-    // Mettre à jour la jauge
-    m_gaugeWidget->setValues(m_tpAvg, m_tpMax, m_tpMedian, m_slAvg, m_slMin, m_slMedian,
-                        m_tpAvgPrc, m_tpMaxPrc, m_tpMedianPrc, m_slAvgPrc, m_slMinPrc, m_slMedianPrc);    
-    // Mettre à jour les labels
-    updateLabels();
-}
-
-void PnLGaugeWidget::updateLabels()
-{    
-    // Calculer et afficher le ratio gain/perte
-    double absRatio = 0.0;
-    if (m_slAvg < 0 && m_tpAvg > 0) {
-        absRatio = m_tpAvg / std::abs(m_slAvg);
-        m_ratioLabel->setText(QString("Ratio Gain/Perte: %1").arg(absRatio, 0, 'f', 2));
-        
-        // Définir la couleur en fonction du ratio
-        if (absRatio >= 2.0) {
-            m_ratioLabel->setStyleSheet("color: green; font-weight: bold;");
-        } else if (absRatio >= 1.0) {
-            m_ratioLabel->setStyleSheet("color: darkgreen;");
-        } else {
-            m_ratioLabel->setStyleSheet("color: red;");
-        }
-    } else {
-        m_ratioLabel->setText("Ratio Gain/Perte: N/A");
-        m_ratioLabel->setStyleSheet("");
-    }
-    
-    // Calculer et afficher l'edge
-    if (m_tpCount > 0 && m_slCount > 0) {
-        double winRate = static_cast<double>(m_tpCount) / (m_tpCount + m_slCount);
-        double edge = (winRate * m_tpAvg) - ((1 - winRate) * std::abs(m_slAvg));
-        
-        m_edgeLabel->setText(QString("Edge: %1").arg(edge, 0, 'f', 2));
-        
-        if (edge > 0) {
-            m_edgeLabel->setStyleSheet("color: green;");
-        } else {
-            m_edgeLabel->setStyleSheet("color: red;");
-        }
-    } else {
-        m_edgeLabel->setText("Edge: N/A");
-        m_edgeLabel->setStyleSheet("");
-    }
-}
-
-void PnLGaugeWidget::clear()
-{
-    // Réinitialiser toutes les valeurs
-    m_tpAvg = 0.0;
-    m_tpMax = 0.0;
-    m_tpMedian = 0.0;
-    m_slAvg = 0.0;
-    m_slMin = 0.0;
-    m_slMedian = 0.0;
-    m_tpCount = 0;
-    m_slCount = 0;
-    m_bestTradeInfo = "N/A";
-    m_worstTradeInfo = "N/A";
-    
-    // Réinitialiser le widget de la jauge
-    m_gaugeWidget->clear();
-    
-    // Réinitialiser les labels
-    m_ratioLabel->setText("Ratio Gain/Perte: N/A");
-    m_ratioLabel->setStyleSheet("");
-    m_edgeLabel->setText("Edge: N/A");
-    m_edgeLabel->setStyleSheet("");
-}
-
-
-
-
-
-// ===========================================================
-// VerticalGaugeRenderWidget Implementation
-// ===========================================================
-
-VerticalGaugeRenderWidget::VerticalGaugeRenderWidget(QWidget* parent)
-    : QWidget(parent),
-      m_tpAvg(0.0),
-      m_tpMax(0.0),
-      m_tpMedian(0.0),
-      m_slAvg(0.0),
-      m_slMin(0.0),
-      m_slMedian(0.0),
-      m_tpAvgPrc(0.0),
-      m_tpMaxPrc(0.0),
-      m_tpMedianPrc(0.0),
-      m_slAvgPrc(0.0),
-      m_slMinPrc(0.0),
-      m_slMedianPrc(0.0)
-{
-    // Initialiser les couleurs
-    m_tpAvgColor = QColor(0, 150, 0);       // Vert foncé
-    m_tpMaxColor = QColor(100, 255, 100);   // Vert clair
-    m_slAvgColor = QColor(150, 0, 0);       // Rouge foncé
-    m_slMinColor = QColor(255, 100, 100);   // Rouge clair
-    m_lineColor = QColor(0, 0, 0);          // Noir
-    m_textColor = QColor(40, 40, 40);       // Gris foncé
-    m_medianTpColor = QColor(0, 100, 0);    // Vert foncé
-    m_medianSlColor = QColor(100, 0, 0);    // Rouge foncé
-    
-    // Définir la taille et la politique de taille - plus large pour inclure la légende
-    setMinimumSize(220, 300);  // Augmenté de 40 à 150 pour avoir de l'espace pour la légende
-    setMaximumWidth(240);      // Augmenté de 60 à 180
-    setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-}
-
-void VerticalGaugeRenderWidget::setValues(double tpAvg, double tpMax, double tpMedian,
-                                        double slAvg, double slMin, double slMedian,
-                                        double tpAvgPrc, double tpMaxPrc, double tpMedianPrc,
-                                        double slAvgPrc, double slMinPrc, double slMedianPrc)
-{
-    m_tpAvg = tpAvg;
-    m_tpMax = tpMax;
-    m_tpMedian = tpMedian;
-    m_slAvg = slAvg;
-    m_slMin = slMin;
-    m_slMedian = slMedian;
-    
-    m_tpAvgPrc = tpAvgPrc;
-    m_tpMaxPrc = tpMaxPrc;
-    m_tpMedianPrc = tpMedianPrc;
-    m_slAvgPrc = slAvgPrc;
-    m_slMinPrc = slMinPrc;
-    m_slMedianPrc = slMedianPrc;
-    
     update();
 }
 
@@ -353,19 +170,16 @@ int VerticalGaugeRenderWidget::valueToY(double value, double minValue, double ma
     return height - static_cast<int>(normalizedValue * height);
 }
 
-void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
-{
-    Q_UNUSED(event);
-    
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
-    
-    int w = width();
-    int h = height();
+void VerticalGaugeRenderWidget::paintContent(QPainter& painter, const QRect& contentRect)
+{    
+    painter.setRenderHint(QPainter::Antialiasing, false);
+
+    int w = contentRect.width();
+    int h = contentRect.height();
     int gaugeWidth = 45;        // Largeur fixe pour la jauge
-    int leftLegendSpace = 60;   // Espace pour les légendes à gauche
-    int gaugeX = leftLegendSpace + 5;  // Position X de la jauge (décalée pour avoir de l'espace à gauche)
-    int padding = 15;           // Marge en haut et en bas
+    int legendSpace = 60;   // Espace pour les légendes à gauche
+    int gaugeX = contentRect.left() + legendSpace + 5;  // Position X de la jauge (décalée pour avoir de l'espace à gauche)
+    int padding = contentRect.top() + 10;           // Marge en haut et en bas
     int legendPadding = 10;     // Espace entre la jauge et le début de la légende
     
     // Calculer la plage symétrique autour de zéro
@@ -374,12 +188,13 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
     double maxValue = maxAbsValue;
     
     // Tracer le fond de la jauge
-    painter.setPen(QPen(m_lineColor, 1));
+    painter.setPen(Qt::NoPen);
     painter.setBrush(Qt::white);
     painter.drawRect(gaugeX, padding, gaugeWidth, h - 2 * padding);
     
     // Position Y du zéro (milieu de la jauge)
-    int zeroY = padding + (h - 2 * padding) / 2;
+    // int zeroY = padding + (h - 2 * padding) / 2;
+    int zeroY = contentRect.top() + (h / 2);
     
     // Calculer les positions Y des valeurs
     int tpMaxY = valueToY(m_tpMax, minValue, maxValue, h - 2 * padding) + padding;
@@ -393,6 +208,7 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
     if (m_tpAvg > 0) {
         // Partie moyenne (vert foncé)
         QRect tpAvgRect(gaugeX, tpAvgY, gaugeWidth, zeroY - tpAvgY);
+        painter.setPen(m_tpAvgColor);
         painter.setBrush(m_tpAvgColor);
         painter.drawRect(tpAvgRect);
         
@@ -400,6 +216,7 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
         if (m_tpMax > m_tpAvg) {
             QRect tpMaxRect(gaugeX, tpMaxY, gaugeWidth, tpAvgY - tpMaxY);
             painter.setBrush(m_tpMaxColor);
+            painter.setPen(m_tpAvgColor);
             painter.drawRect(tpMaxRect);
         }
     }
@@ -409,19 +226,17 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
         // Partie moyenne (rouge foncé)
         QRect slAvgRect(gaugeX, zeroY, gaugeWidth, slAvgY - zeroY);
         painter.setBrush(m_slAvgColor);
+        painter.setPen(m_slAvgColor);
         painter.drawRect(slAvgRect);
         
         // Partie minimum (rouge clair)
         if (m_slMin < m_slAvg) {
             QRect slMinRect(gaugeX, slAvgY, gaugeWidth, slMinY - slAvgY);
             painter.setBrush(m_slMinColor);
+            painter.setPen(m_slAvgColor);
             painter.drawRect(slMinRect);
         }
     }
-    
-    // Ligne horizontale au niveau zéro
-    painter.setPen(QPen(m_lineColor, 2));
-    painter.drawLine(gaugeX - 5, zeroY, gaugeX + gaugeWidth + 5, zeroY);
     
     // Ligne horizontale pour la médiane TP (pointillés verts)
     if (m_tpMedian > 0) {
@@ -437,6 +252,7 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
     
     // Configuration de la police pour les étiquettes
     painter.setPen(m_textColor);
+    painter.setRenderHint(QPainter::Antialiasing, true);
     QFont valueFont = painter.font();
     valueFont.setPointSize(13); // Réduire légèrement la taille de police pour les deux séries d'étiquettes
     painter.setFont(valueFont);
@@ -492,11 +308,6 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
                       QString("%1%").arg(m_tpAvgPrc, 0, 'f', 2));
     }
     
-    // Étiquette du zéro (côté gauche)
-    QRect zeroPrcRect(leftLegendX, zeroY - labelHeight/2, textWidth, labelHeight);
-    painter.setPen(m_textColor);
-    painter.drawText(zeroPrcRect, Qt::AlignRight | Qt::AlignVCenter, "0%");
-    
     // Étiquettes pourcentage pour la partie SL (trades perdants)
     if (m_slAvg < 0) {
         QRect avgPrcRect(leftLegendX, slAvgLabelY, textWidth, labelHeight);
@@ -528,11 +339,6 @@ void VerticalGaugeRenderWidget::paintEvent(QPaintEvent* event)
         painter.drawText(avgRect, Qt::AlignLeft | Qt::AlignVCenter, 
                        QString("%1").arg(m_tpAvg, 0, 'f', 1));
     }
-    
-    // Étiquette du zéro (côté droit)
-    QRect zeroRect(rightLegendX, zeroY - labelHeight/2, textWidth, labelHeight);
-    painter.setPen(m_textColor);
-    painter.drawText(zeroRect, Qt::AlignLeft | Qt::AlignVCenter, "0");
     
     // Étiquettes pour la partie SL (trades perdants)
     if (m_slAvg < 0) {

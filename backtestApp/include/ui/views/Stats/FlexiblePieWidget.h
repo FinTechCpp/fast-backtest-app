@@ -1,11 +1,6 @@
 #pragma once
 
-#include <QWidget>
-#include <QString>
-#include <QColor>
-#include <QPaintEvent>
-#include <QPainter>
-#include <QRectF>
+#include "ui/views/Stats/TitledWidget.h"
 #include <vector>
 
 // Structure pour définir un segment
@@ -16,12 +11,12 @@ struct PieSegment {
     PieSegment(double p, const QColor& c) : proportion(p), color(c) {}
 };
 
-class FlexiblePieWidget : public QWidget
+class FlexiblePieWidget : public TitledWidget
 {
     Q_OBJECT
 
 public:
-    explicit FlexiblePieWidget(QWidget *parent = nullptr);
+    explicit FlexiblePieWidget(const QString& title = QString(), QWidget *parent = nullptr);
     
     // Configuration de base
     void setStartAngle(int degrees); // 0° = est, 90° = haut, 180° = ouest
@@ -45,7 +40,7 @@ public:
     QSize minimumSizeHint() const override;
 
 protected:
-    void paintEvent(QPaintEvent *event) override;
+    void paintContent(QPainter& painter, const QRect& contentRect) override;
 
 private:
     // Configuration géométrique

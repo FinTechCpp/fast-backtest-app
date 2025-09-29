@@ -69,32 +69,76 @@ void StatsView::setupUI() {
     // m_equityCurveWidget = new EquityCurveWidget();
     // m_statsLayout->addWidget(m_equityCurveWidget);
 
-    m_tradeDistributionWidget = new FlexiblePieWidget();
-    m_tradeDistributionWidget->setCenterTextColor(QColor(0, 200, 0));
-    m_tradeDistributionWidget->setCenterTextSuffix(" %");
-    m_statsLayout->addWidget(m_tradeDistributionWidget);
-    
-    m_profitFactorWidget = new FlexiblePieWidget();
-    m_profitFactorWidget->setCenterTextColor(QColor(0, 200, 0));
-    m_statsLayout->addWidget(m_profitFactorWidget);
 
-    m_exposureWidget = new FlexiblePieWidget();
+    QHBoxLayout* topLayout = new QHBoxLayout();
+    topLayout->setContentsMargins(0, 0, 0, 0);
+    topLayout->setSpacing(0);
+
+    QVBoxLayout* topRowLayout = new QVBoxLayout();
+    topRowLayout->setContentsMargins(0, 0, 0, 0);
+    topRowLayout->setSpacing(0);
+
+    m_netProfitWidget = new SimpleTextWidget("Net Profit");
+    m_netProfitWidget->setStatColors(QColor(0, 150, 0));
+    m_netProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
+    m_netProfitWidget->setSuffix(" %");
+    topRowLayout->addWidget(m_netProfitWidget);
+
+    QGridLayout* pieChartsLayout = new QGridLayout();
+    pieChartsLayout->setContentsMargins(0, 0, 0, 0);
+    pieChartsLayout->setSpacing(0);
+
+    m_tradeDistributionWidget = new FlexiblePieWidget("Trade Distribution");
+    m_tradeDistributionWidget->setCenterTextColor(QColor(0, 150, 0));
+    m_tradeDistributionWidget->setCenterTextSuffix(" %");
+    pieChartsLayout->addWidget(m_tradeDistributionWidget, 0, 0);
+    
+    m_profitFactorWidget = new FlexiblePieWidget("Profit Factor");
+    m_profitFactorWidget->setCenterTextColor(QColor(0, 150, 0));
+    pieChartsLayout->addWidget(m_profitFactorWidget, 0, 1);
+
+
+    QVBoxLayout* profitLossLayout = new QVBoxLayout();
+    profitLossLayout->setContentsMargins(0, 0, 0, 0);
+    profitLossLayout->setSpacing(0);
+    m_grossProfitWidget = new SimpleTextWidget("Gross Profit");
+    m_grossProfitWidget->setStatColors(QColor(0, 150, 0));
+    m_grossProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
+    m_grossProfitWidget->setSuffix(" €");
+    profitLossLayout->addWidget(m_grossProfitWidget);
+
+    m_keyValueListWidget = new KeyValueListWidget("Trade details");
+    m_keyValueListWidget->addItem("Total", "--", QColor(0, 0, 0));
+    m_keyValueListWidget->addItem("Take Profit", "-- %", QColor(0, 150, 0));
+    m_keyValueListWidget->addItem("Break Even", "-- %", QColor(0, 0, 150));
+    m_keyValueListWidget->addItem("Stop Loss", "-- %", QColor(150, 0, 0));
+    m_keyValueListWidget->addItem("Manual", "-- %", Qt::black);
+    m_keyValueListWidget->setMinimumHeight(140);
+    pieChartsLayout->addWidget(m_keyValueListWidget, 1, 0);
+
+    m_grossLossWidget = new SimpleTextWidget("Gross Loss");
+    m_grossLossWidget->setStatColors(QColor(150, 0, 0));
+    m_grossLossWidget->setBackgroundColor(QColor(150, 0, 0).lighter(300));
+    m_grossLossWidget->setSuffix(" €");
+    profitLossLayout->addWidget(m_grossLossWidget);
+    pieChartsLayout->addLayout(profitLossLayout, 1, 1);
+
+    topRowLayout->addLayout(pieChartsLayout);
+    topLayout->addLayout(topRowLayout);
+
+    m_pnlGaugeWidget = new VerticalGaugeRenderWidget("PnL Distribution");
+    topLayout->addWidget(m_pnlGaugeWidget);
+
+    m_statsLayout->addLayout(topLayout);
+
+
+    m_exposureWidget = new FlexiblePieWidget("Exposure Time");
     m_exposureWidget->setStartAngle(180);
     m_exposureWidget->setAngleSpan(180);
     m_exposureWidget->setCenterTextColor(QColor(0, 0, 0));
     m_exposureWidget->setCenterTextSuffix(" %");
     m_statsLayout->addWidget(m_exposureWidget);
 
-
-    m_grossProfitWidget = new SimpleTextWidget();
-    m_grossProfitWidget->setColors(QColor(0, 200, 0), QColor(0, 200, 0).lighter(230));
-    m_grossProfitWidget->setSuffix(" €");
-    m_statsLayout->addWidget(m_grossProfitWidget);
-
-    m_grossLossWidget = new SimpleTextWidget();
-    m_grossLossWidget->setColors(QColor(200, 0, 0), QColor(200, 0, 0).lighter(230));
-    m_grossLossWidget->setSuffix(" €");
-    m_statsLayout->addWidget(m_grossLossWidget);
 
 
     m_timelineWidget = new TimelineWidget();
@@ -112,12 +156,11 @@ void StatsView::setupUI() {
     tradesClosureLayout->setSpacing(10);
     
     m_tradeClosureWidget = new TradeClosureWidget();
-    m_pnlGaugeWidget = new PnLGaugeWidget();
+    
     m_tradingHeatmapWidget = new TradingHeatmapWidget();
     // m_drawdownComparisonWidget = new DrawdownComparisonWidget();
     
     tradesClosureLayout->addWidget(m_tradeClosureWidget, /*stretch=*/2);
-    tradesClosureLayout->addWidget(m_pnlGaugeWidget, /*stretch=*/1);
     tradesClosureLayout->addWidget(m_tradingHeatmapWidget, /*stretch=*/2);
     // tradesClosureLayout->addWidget(m_drawdownComparisonWidget, /*stretch=*/2);
 
@@ -154,7 +197,6 @@ void StatsView::setupUI() {
     m_statsWidgets.push_back(m_ratioGaugesWidget);
     m_statsWidgets.push_back(m_tradeClosureWidget);
     // m_statsWidgets.push_back(m_drawdownComparisonWidget);
-    m_statsWidgets.push_back(m_pnlGaugeWidget);
     // m_statsWidgets.push_back(m_plDistributionWidget);
     m_statsWidgets.push_back(m_tradingHeatmapWidget);
     // m_statsWidgets.push_back(m_riskReturnMapWidget);
@@ -175,6 +217,16 @@ void StatsView::updateData(BacktestResults* results)
 
     for (auto widget : m_statsWidgets) {
         widget->updateContent(m_currentResults->stats);
+    }
+
+    m_netProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.returnPct));
+    // Peut etre integrer cette mécanique dans le widget directement
+    if (m_currentResults->stats.returnPct > 0) {
+        m_netProfitWidget->setStatColors(QColor(0, 150, 0));
+        m_netProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
+    } else {
+        m_netProfitWidget->setStatColors(QColor(150, 0, 0));
+        m_netProfitWidget->setBackgroundColor(QColor(150, 0, 0).lighter(300));
     }
 
     m_profitFactorWidget->setCenterText(QString::number(m_currentResults->stats.profitFactor, 'f', 2));
@@ -214,6 +266,15 @@ void StatsView::updateData(BacktestResults* results)
 
     m_grossProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.grossProfit));
     m_grossLossWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(-m_currentResults->stats.grossLoss));
+
+    m_keyValueListWidget->updateValue("Total", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.numTrades));
+    m_keyValueListWidget->updateValue("Take Profit", QString::number(m_currentResults->stats.pctTPTrades, 'f', 2) + " %");
+    m_keyValueListWidget->updateValue("Break Even", QString::number(m_currentResults->stats.pctBETrades, 'f', 2) + " %");
+    m_keyValueListWidget->updateValue("Stop Loss", QString::number(m_currentResults->stats.pctSLTrades, 'f', 2) + " %");
+    m_keyValueListWidget->updateValue("Manual", QString::number(m_currentResults->stats.pctManualTrades, 'f', 2) + " %");
+
+
+    m_pnlGaugeWidget->updateContent(m_currentResults->stats);
 }
 
 void StatsView::clear() {
@@ -236,4 +297,6 @@ void StatsView::clear() {
 
     m_grossProfitWidget->setStatText("--");
     m_grossLossWidget->setStatText("--");
+
+    m_pnlGaugeWidget->clear();
 }

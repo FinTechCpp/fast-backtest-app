@@ -27,12 +27,13 @@
 #include "ui/views/Stats/TradesTableWidget.h"
 #include "ui/views/Stats/RatioGaugesContainerWidget.h"
 #include "ui/views/Stats/PLDistributionWidget.h"
-#include "ui/views/Stats/PnLGaugeWidget.h"
 #include "ui/views/Stats/MonthlyPerformanceWidget.h"
 #include "ui/views/Stats/DrawdownComparisonWidget.h"
 
 #include "ui/views/Stats/FlexiblePieWidget.h"
 #include "ui/views/Stats/SimpleTextWidget.h"
+#include "ui/views/Stats/KeyValueListWidget.h"
+#include "ui/views/Stats/VerticalGaugeRenderWidget.h"
 
 
 
@@ -88,18 +89,23 @@ private:
     MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
     TradeClosureWidget* m_tradeClosureWidget = nullptr;
-    PnLGaugeWidget* m_pnlGaugeWidget = nullptr;
     PLDistributionWidget* m_plDistributionWidget = nullptr;
     RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
     RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
     MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
-
+    
     FlexiblePieWidget* m_profitFactorWidget = nullptr;
     FlexiblePieWidget* m_exposureWidget = nullptr;
     FlexiblePieWidget* m_tradeDistributionWidget = nullptr;
+    
+    SimpleTextWidget* m_netProfitWidget = nullptr;
     SimpleTextWidget* m_grossProfitWidget = nullptr;
     SimpleTextWidget* m_grossLossWidget = nullptr;
+    
+    KeyValueListWidget* m_keyValueListWidget = nullptr;
+
+    VerticalGaugeRenderWidget* m_pnlGaugeWidget = nullptr;
 
     std::vector<StatsBaseWidget*> m_statsWidgets;
 

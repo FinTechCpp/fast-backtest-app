@@ -3,11 +3,11 @@
 #include <QFontMetrics>
 #include <QPaintEvent>
 
-SimpleTextWidget::SimpleTextWidget(QWidget *parent)
-    : QWidget(parent)
-    , m_statText("N/A")
+SimpleTextWidget::SimpleTextWidget(const QString& title, QWidget *parent)
+    : TitledWidget(title, parent)
+    , m_statText("--")
     , m_textColor(0, 0, 0)       // Noir par défaut
-    , m_backgroundColor(240, 240, 240)  // Gris clair par défaut
+    , m_backgroundColor(Qt::transparent)  // Transparent par défaut
     , m_suffix("")
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -50,11 +50,10 @@ void SimpleTextWidget::setStatText(const QString &text)
     }
 }
 
-void SimpleTextWidget::setColors(const QColor &textColor, const QColor &backgroundColor)
+void SimpleTextWidget::setStatColors(const QColor &textColor)
 {
-    if (m_textColor != textColor || m_backgroundColor != backgroundColor) {
+    if (m_textColor != textColor) {
         m_textColor = textColor;
-        m_backgroundColor = backgroundColor;
         update();  // Déclencher un repaint
     }
 }
@@ -77,18 +76,10 @@ QSize SimpleTextWidget::minimumSizeHint() const
     return QSize(60, 40);
 }
 
-void SimpleTextWidget::paintEvent(QPaintEvent *event)
-{
-    Q_UNUSED(event);
-    
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
-    
+void SimpleTextWidget::paintContent(QPainter& painter, const QRect& contentRect)
+{    
     // Dessiner le rectangle de fond
-    QRect rect = this->rect().adjusted(2, 2, -2, -2); // Marge de 2 pixels
-    painter.setPen(Qt::NoPen);
-    painter.setBrush(m_backgroundColor);
-    painter.drawRoundedRect(rect, 5, 5); // Coins arrondis
+    QRect rect = contentRect.adjusted(2, 2, -2, -2); // Marge de 2 pixels
     
     // Définir la police pour le texte
     QFont font = painter.font();

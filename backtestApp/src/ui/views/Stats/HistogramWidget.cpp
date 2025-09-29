@@ -498,29 +498,13 @@ void HistogramWidget::createChart(const GroupedData& data)
     const int maxLabels = 10;  // Nombre maximum de labels à afficher
     int categoryCount = data.categories.size();
     
-    if (categoryCount <= maxLabels) {
-        // Afficher toutes les catégories si leur nombre est inférieur à maxLabels
-        axisX->append(data.categories);
-    } else {
-        // Calculer le pas pour ne pas dépasser maxLabels
-        int step = (categoryCount + maxLabels - 1) / maxLabels;  // Arrondi supérieur
-        
-        // Créer une liste modifiée où certaines catégories sont remplacées par des chaînes vides
-        QStringList visibleCategories = data.categories;
-        
-        for (int i = 0; i < categoryCount; ++i) {
-            if (i % step != 0) {
-                // Remplacer les labels à masquer par des chaînes vides
-                visibleCategories[i] = "";
-            }
-        }
-        
-        // Appliquer la liste modifiée
-        axisX->append(visibleCategories);
-    }
+    // Afficher toutes les catégories si leur nombre est inférieur à maxLabels
+    axisX->append(data.categories);
     
     // Toujours garder les labels horizontaux
-    axisX->setLabelsAngle(0);
+    if (categoryCount > maxLabels) {
+        axisX->setLabelsAngle(-45.0);
+    }
     
     QValueAxis* axisY = new QValueAxis();
     

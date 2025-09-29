@@ -83,6 +83,11 @@ void StatsView::setupUI() {
     m_timeInfoWidget->setMinimumHeight(m_timeInfoWidget->sizeHint().height());
     gridLayout->addWidget(m_timeInfoWidget, 0, 0, 1, 3); // S'étend sur les trois colonnes
 
+    // Ajouter un stretch qui s'étend sur les 3 colonnes (par exemple à la ligne 9)
+    // TODO a remplacer par le reste des widgets des statistiques
+    QSpacerItem* horizontalSpacer = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+    gridLayout->addItem(horizontalSpacer, 0, 4, 8, 3);  // ligne 0, colonne 4, hauteur 8, largeur 3
+
 
     // --------------------------------------
     // Ligne 1
@@ -187,6 +192,7 @@ void StatsView::setupUI() {
     // --------------------------------------
     m_averageTradePerDayWidget = new SimpleTextWidget("Average Trade Per Day");
     m_averageTradePerDayWidget->setStatColors(QColor(0, 150, 0));
+    m_averageTradePerDayWidget->setMinimumHeight(m_exposureWidget->sizeHint().height());
     gridLayout->addWidget(m_averageTradePerDayWidget, 8, 0);
 
 
@@ -326,7 +332,7 @@ void StatsView::updateData(BacktestResults* results)
     m_grossProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.grossProfit));
     m_grossLossWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(-m_currentResults->stats.grossLoss));
 
-    m_keyValueListWidget->updateValue("Total ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.numTrades));
+    m_keyValueListWidget->updateValue("Total ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.numTrades, 0));
     m_keyValueListWidget->updateValue("Take Profit ", QString::number(m_currentResults->stats.pctTPTrades, 'f', 2) + " %");
     m_keyValueListWidget->updateValue("Break Even ", QString::number(m_currentResults->stats.pctBETrades, 'f', 2) + " %");
     m_keyValueListWidget->updateValue("Stop Loss ", QString::number(m_currentResults->stats.pctSLTrades, 'f', 2) + " %");

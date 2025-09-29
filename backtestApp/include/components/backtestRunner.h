@@ -22,7 +22,6 @@
 #include "data.hpp"
 
 #include "strategy.hpp"
-// #include "buy_heikin_green.hpp"
 
 // Forward declarations
 class App;

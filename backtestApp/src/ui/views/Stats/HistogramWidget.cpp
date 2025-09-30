@@ -495,8 +495,14 @@ void HistogramWidget::createChart(const GroupedData& data)
     int categoryCount = data.categories.size();
     
     // Afficher toutes les catégories si leur nombre est inférieur à maxLabels
+    // int off = 28;
+    // axisX->append(data.categories[0 + off]);
+    // axisX->append(data.categories[1 + off]);
+    // axisX->append(data.categories[2 + off]);
+    // axisX->append(data.categories[3 + off]);
+
     axisX->append(data.categories);
-    
+
     // Toujours garder les labels horizontaux
     // if (categoryCount > maxLabels) {
     //     axisX->setLabelsAngle(-45.0);
@@ -519,7 +525,7 @@ void HistogramWidget::createChart(const GroupedData& data)
     }
     
     m_chart->addAxis(axisX, Qt::AlignBottom);
-    m_chart->addAxis(axisY, Qt::AlignLeft);
+    m_chart->addAxis(axisY, Qt::AlignRight);
     
     barSeries->attachAxis(axisX);
     barSeries->attachAxis(axisY);
@@ -572,7 +578,18 @@ QString HistogramWidget::generatePeriodKey(const QDateTime& dateTime, const QStr
     QDate date = dateTime.date();
     
     if (timeUnit == "Jour") {
-        return date.toString("dd/MM/yyyy");
+        // Si c'est le premier du mois on affiche le mois en toute lettre
+        // si on est le premier janvier on affiche l'année
+        // sinon on affiche juste le jour
+
+        if (date == QDate(date.year(), 1, 1)) {
+            return date.toString("yyyy");
+        }
+        else if (date.day() == 1) {
+            return date.toString("MMM");
+        }
+
+        return date.toString("dd");
     }
     else if (timeUnit == "Semaine") {
         QDate weekStart = date.addDays(-(date.dayOfWeek() - 1));

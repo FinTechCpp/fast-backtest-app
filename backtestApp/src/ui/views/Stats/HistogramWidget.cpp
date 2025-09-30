@@ -582,14 +582,14 @@ QString HistogramWidget::generatePeriodKey(const QDateTime& dateTime, const QStr
         // si on est le premier janvier on affiche l'année
         // sinon on affiche juste le jour
 
-        if (date == QDate(date.year(), 1, 1)) {
-            return date.toString("yyyy");
-        }
-        else if (date.day() == 1) {
-            return date.toString("MMM");
-        }
+        // if (date == QDate(date.year(), 1, 1)) {
+        //     return date.toString("yyyy");
+        // }
+        // else if (date.day() == 1) {
+        //     return date.toString("MMM");
+        // }
 
-        return date.toString("dd");
+        return date.toString("dd/MM/yyyy");
     }
     else if (timeUnit == "Semaine") {
         QDate weekStart = date.addDays(-(date.dayOfWeek() - 1));

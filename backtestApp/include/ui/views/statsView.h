@@ -35,6 +35,7 @@
 #include "ui/views/Stats/KeyValueListWidget.h"
 #include "ui/views/Stats/VerticalGaugeRenderWidget.h"
 #include "ui/views/Stats/HistogramWidget.h"
+#include "ui/views/Stats/EquityWidget.h"
 
 
 
@@ -95,6 +96,9 @@ private:
     RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
     MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
+
+
+    EquityWidget* m_equityWidget = nullptr;
     
     FlexiblePieWidget* m_profitFactorWidget = nullptr;
     FlexiblePieWidget* m_exposureWidget = nullptr;

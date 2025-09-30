@@ -85,9 +85,11 @@ void StatsView::setupUI() {
 
     // Ajouter un stretch qui s'étend sur les 3 colonnes (par exemple à la ligne 9)
     // TODO a remplacer par le reste des widgets des statistiques
-    QSpacerItem* horizontalSpacer = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    gridLayout->addItem(horizontalSpacer, 0, 4, 8, 3);  // ligne 0, colonne 4, hauteur 8, largeur 3
+    // QSpacerItem* horizontalSpacer = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
+    // gridLayout->addItem(horizontalSpacer, 0, 4, 8, 3);  // ligne 0, colonne 4, hauteur 8, largeur 3
 
+    m_equityWidget = new EquityWidget();
+    gridLayout->addWidget(m_equityWidget, 0, 4, 3, 3);
 
     // --------------------------------------
     // Ligne 1
@@ -357,6 +359,8 @@ void StatsView::updateData(BacktestResults* results)
     m_averageTradePerDayWidget->setStatText(QString::number(m_currentResults->stats.tradesPerDay, 'f', 2));
 
     m_histogramWidget->updateData(m_currentResults);
+
+    m_equityWidget->setPoints(m_currentResults->stats.equityCurve);
 }
 
 void StatsView::clear() {

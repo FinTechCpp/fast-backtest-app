@@ -45,12 +45,12 @@ void EquityCurveWidget::updateContent(const be::Stats& stats) {
     
     // Ajouter les points de la courbe d'équité
     int pointCount = stats.equityCurve.size();
-    // for (int i = 0; i < 100; i++) {
-    //     equitySeries->append(i, stats.equityCurve[i]);
-    // }
+    for (int i = 0; i < 100; i++) {
+        equitySeries->append(i, stats.equityCurve[i]);
+    }
     
-    equitySeries->append((qreal)0, (qreal)initialEquity);
-    equitySeries->append((qreal)1, (qreal)finalEquity);
+    // equitySeries->append((qreal)0, (qreal)initialEquity);
+    // equitySeries->append((qreal)1, (qreal)finalEquity);
 
     // Créer un nouveau graphique (pour éviter les problèmes avec l'ancien)
     QChart *chart = new QChart();
@@ -74,28 +74,28 @@ void EquityCurveWidget::updateContent(const be::Stats& stats) {
     equitySeries->setPen(equityPen);
 
     // Ajouter la série au graphique
-    // chart->addSeries(equitySeries);
+    chart->addSeries(equitySeries);
     
     // Ajouter uniquement les points de départ et d'arrivée
-    QScatterSeries *initialPoint = new QScatterSeries();
-    initialPoint->setName("Initial");
-    initialPoint->setMarkerShape(QScatterSeries::MarkerShapeCircle);
-    initialPoint->setMarkerSize(10);
-    initialPoint->setColor(QColor(52, 152, 219)); // Bleu
-    initialPoint->append(0, initialEquity);
-    chart->addSeries(initialPoint);
-    initialPoint->attachAxis(axisX);
-    initialPoint->attachAxis(axisY);
+    // QScatterSeries *initialPoint = new QScatterSeries();
+    // initialPoint->setName("Initial");
+    // initialPoint->setMarkerShape(QScatterSeries::MarkerShapeCircle);
+    // initialPoint->setMarkerSize(10);
+    // initialPoint->setColor(QColor(52, 152, 219)); // Bleu
+    // initialPoint->append(0, initialEquity);
+    // chart->addSeries(initialPoint);
+    // initialPoint->attachAxis(axisX);
+    // initialPoint->attachAxis(axisY);
     
-    QScatterSeries *finalPoint = new QScatterSeries();
-    finalPoint->setName("Final");
-    finalPoint->setMarkerShape(QScatterSeries::MarkerShapeCircle);
-    finalPoint->setMarkerSize(10);
-    finalPoint->setColor(QColor(46, 204, 113)); // Vert
-    finalPoint->append(pointCount - 1, finalEquity);
-    chart->addSeries(finalPoint);
-    finalPoint->attachAxis(axisX);
-    finalPoint->attachAxis(axisY);
+    // QScatterSeries *finalPoint = new QScatterSeries();
+    // finalPoint->setName("Final");
+    // finalPoint->setMarkerShape(QScatterSeries::MarkerShapeCircle);
+    // finalPoint->setMarkerSize(10);
+    // finalPoint->setColor(QColor(46, 204, 113)); // Vert
+    // finalPoint->append(pointCount - 1, finalEquity);
+    // chart->addSeries(finalPoint);
+    // finalPoint->attachAxis(axisX);
+    // finalPoint->attachAxis(axisY);
     
     // Légende en bas avec seulement les 2 séries importantes
     chart->legend()->setVisible(true);

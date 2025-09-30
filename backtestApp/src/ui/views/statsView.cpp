@@ -199,6 +199,7 @@ void StatsView::setupUI() {
     m_averageTradePerDayWidget->setBackgroundIconOpacity(0.6);
     m_averageTradePerDayWidget->setFontSize(18);
     m_averageTradePerDayWidget->setTextOffsetY(0);
+    m_averageTradePerDayWidget->setUseBoldFont(false);
     gridLayout->addWidget(m_averageTradePerDayWidget, 8, 0);
 
 

@@ -6,6 +6,7 @@
 #include <QPaintEvent>
 #include <QPainter>
 #include <QRect>
+#include <QIcon>
 
 class TitledWidget : public QWidget
 {
@@ -28,6 +29,20 @@ public:
     void setTitleCompanionWidget(QWidget* widget);
     QWidget* titleCompanionWidget() const { return m_titleCompanionWidget; }
 
+
+    // Ajout des méthodes pour l'icône de fond
+    void setBackgroundIcon(const QIcon& icon);
+    QIcon backgroundIcon() const { return m_backgroundIcon; }
+    
+    // Options de personnalisation de l'icône
+    void setBackgroundIconSize(const QSize& size);
+    QSize backgroundIconSize() const { return m_backgroundIconSize; }
+    void setBackgroundIconAlignment(Qt::Alignment alignment);
+    Qt::Alignment backgroundIconAlignment() const { return m_backgroundIconAlignment; }
+    void setBackgroundIconOpacity(qreal opacity);
+    qreal backgroundIconOpacity() const { return m_backgroundIconOpacity; }
+
+
 protected:
     void paintEvent(QPaintEvent* event) override;
     
@@ -46,4 +61,10 @@ private:
     
     // Widget compagnon qui sera affiché à côté du titre
     QWidget* m_titleCompanionWidget;
+
+    // Icône de fond et ses propriétés
+    QIcon m_backgroundIcon;
+    QSize m_backgroundIconSize;
+    Qt::Alignment m_backgroundIconAlignment;
+    qreal m_backgroundIconOpacity;
 };

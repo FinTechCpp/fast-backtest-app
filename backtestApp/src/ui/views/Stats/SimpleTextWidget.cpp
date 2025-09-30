@@ -9,6 +9,10 @@ SimpleTextWidget::SimpleTextWidget(const QString& title, QWidget *parent)
     , m_textColor(0, 0, 0)       // Noir par défaut
     , m_backgroundColor(Qt::transparent)  // Transparent par défaut
     , m_suffix("")
+    , m_fontSize(0)
+    , m_useBoldFont(true)
+    , m_textOffsetX(0)
+    , m_textOffsetY(0)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     setMinimumSize(100, 60);
@@ -66,6 +70,47 @@ void SimpleTextWidget::setSuffix(const QString &suffix)
     }
 }
 
+void SimpleTextWidget::setFontSize(int fontSize)
+{
+    if (m_fontSize != fontSize) {
+        m_fontSize = fontSize;
+        update();  // Déclencher un repaint
+    }
+}
+
+void SimpleTextWidget::setUseBoldFont(bool useBold)
+{
+    if (m_useBoldFont != useBold) {
+        m_useBoldFont = useBold;
+        update();  // Déclencher un repaint
+    }
+}
+
+void SimpleTextWidget::setTextOffset(int x, int y)
+{
+    if (m_textOffsetX != x || m_textOffsetY != y) {
+        m_textOffsetX = x;
+        m_textOffsetY = y;
+        update();  // Déclencher un repaint
+    }
+}
+
+void SimpleTextWidget::setTextOffsetX(int x)
+{
+    if (m_textOffsetX != x) {
+        m_textOffsetX = x;
+        update();  // Déclencher un repaint
+    }
+}
+
+void SimpleTextWidget::setTextOffsetY(int y)
+{
+    if (m_textOffsetY != y) {
+        m_textOffsetY = y;
+        update();  // Déclencher un repaint
+    }
+}
+
 QSize SimpleTextWidget::sizeHint() const
 {
     return QSize(120, 60);
@@ -83,15 +128,22 @@ void SimpleTextWidget::paintContent(QPainter& painter, const QRect& contentRect)
     
     // Définir la police pour le texte
     QFont font = painter.font();
-    font.setBold(true);
+    font.setBold(m_useBoldFont);
     
     // Ajuster la taille de police en fonction de la taille du widget
-    int fontSize = qMin(width(), height()) / 4;
-    font.setPointSize(fontSize);
+    if (m_fontSize > 0) {
+        font.setPointSize(m_fontSize);
+    } else {
+        int fontSize = qMin(width(), height()) / 4;
+        font.setPointSize(fontSize);
+    }
     painter.setFont(font);
+
+    QRect textRect = rect.adjusted(m_textOffsetX, m_textOffsetY, m_textOffsetX, m_textOffsetY);
+
     
     // Afficher le texte au centre
     painter.setPen(m_textColor);
     QString displayText = m_statText + m_suffix;
-    painter.drawText(rect, Qt::AlignCenter, displayText);
+    painter.drawText(textRect, Qt::AlignCenter, displayText);
 }

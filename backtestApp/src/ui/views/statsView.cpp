@@ -193,6 +193,12 @@ void StatsView::setupUI() {
     m_averageTradePerDayWidget = new SimpleTextWidget("Average Trade Per Day");
     m_averageTradePerDayWidget->setStatColors(QColor(0, 150, 0));
     m_averageTradePerDayWidget->setMinimumHeight(m_exposureWidget->sizeHint().height());
+    m_averageTradePerDayWidget->setBackgroundIcon(QIcon(":/icons/24hClock7.png"));
+    m_averageTradePerDayWidget->setBackgroundIconSize(QSize(120, 120));
+    m_averageTradePerDayWidget->setBackgroundIconAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+    m_averageTradePerDayWidget->setBackgroundIconOpacity(0.6);
+    m_averageTradePerDayWidget->setFontSize(18);
+    m_averageTradePerDayWidget->setTextOffsetY(0);
     gridLayout->addWidget(m_averageTradePerDayWidget, 8, 0);
 
 

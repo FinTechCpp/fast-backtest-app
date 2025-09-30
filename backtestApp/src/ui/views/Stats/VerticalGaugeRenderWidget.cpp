@@ -264,25 +264,26 @@ void VerticalGaugeRenderWidget::paintContent(QPainter& painter, const QRect& con
     }
     
     // Ligne horizontale pour le zéro (optionnelle)
-    painter.setPen(Qt::gray);
-    painter.drawLine(gaugeX, zeroY, gaugeX + gaugeWidth, zeroY);
+    // painter.setPen(Qt::gray);
+    // painter.drawLine(gaugeX, zeroY, gaugeX + gaugeWidth, zeroY);
     
     // Ligne horizontale pour la médiane TP (pointillés verts)
-    if (m_tpMedian > 0) {
-        painter.setPen(QPen(m_medianTpColor, 1, Qt::DashLine));
-        painter.drawLine(gaugeX, tpMedianY, gaugeX + gaugeWidth, tpMedianY);
-    }
+    // if (m_tpMedian > 0) {
+    //     painter.setPen(QPen(m_medianTpColor, 1, Qt::DashLine));
+    //     painter.drawLine(gaugeX, tpMedianY, gaugeX + gaugeWidth, tpMedianY);
+    // }
     
-    // Ligne horizontale pour la médiane SL (pointillés rouges)
-    if (m_slMedian < 0) {
-        painter.setPen(QPen(m_medianSlColor, 1, Qt::DashLine));
-        painter.drawLine(gaugeX, slMedianY, gaugeX + gaugeWidth, slMedianY);
-    }
+    // // Ligne horizontale pour la médiane SL (pointillés rouges)
+    // if (m_slMedian < 0) {
+    //     painter.setPen(QPen(m_medianSlColor, 1, Qt::DashLine));
+    //     painter.drawLine(gaugeX, slMedianY, gaugeX + gaugeWidth, slMedianY);
+    // }
     
     // Configuration de la police pour les étiquettes
     painter.setRenderHint(QPainter::Antialiasing, true);
     QFont valueFont = painter.font();
     valueFont.setPointSize(10);
+    valueFont.setWeight(m_fontWeight);
     painter.setFont(valueFont);
     
     // --- DESSIN DES ÉTIQUETTES MAX ET MIN (AU-DESSUS ET EN-DESSOUS) ---

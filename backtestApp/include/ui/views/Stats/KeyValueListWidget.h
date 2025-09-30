@@ -46,9 +46,6 @@ public:
     void setValueAlignment(Qt::Alignment alignment);
     void setSpacing(int spacing);
     void setKeyTextWidth(int width); // Force une largeur spécifique (0 = auto)
-
-    void setFontPointSize(int size);
-    int fontPointSize() const { return m_fontSize; }
     
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -60,7 +57,6 @@ private:
     QList<KeyValueItem> m_items;
     Qt::Alignment m_keyAlignment;
     Qt::Alignment m_valueAlignment;
-    int m_fontSize;     // Taille de police en points
     int m_spacing;
     int m_keyTextWidth;  // Largeur fixe pour les clés (0 = auto)
     

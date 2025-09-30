@@ -167,7 +167,7 @@ void FlexiblePieWidget::paintContent(QPainter& painter, const QRect& contentRect
     
     // Définir la police pour le texte central
     QFont font = painter.font();
-    // font.setBold(true);
+    font.setWeight(m_fontWeight);
     
     // Ajuster la taille de police
     int fontSize = radius / 4 * m_fontSizeRatio;

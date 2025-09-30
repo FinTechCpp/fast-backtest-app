@@ -9,8 +9,6 @@ SimpleTextWidget::SimpleTextWidget(const QString& title, QWidget *parent)
     , m_textColor(0, 0, 0)       // Noir par défaut
     , m_backgroundColor(Qt::transparent)  // Transparent par défaut
     , m_suffix("")
-    , m_fontSize(0)
-    , m_useBoldFont(true)
     , m_textOffsetX(0)
     , m_textOffsetY(0)
 {
@@ -70,22 +68,6 @@ void SimpleTextWidget::setSuffix(const QString &suffix)
     }
 }
 
-void SimpleTextWidget::setFontSize(int fontSize)
-{
-    if (m_fontSize != fontSize) {
-        m_fontSize = fontSize;
-        update();  // Déclencher un repaint
-    }
-}
-
-void SimpleTextWidget::setUseBoldFont(bool useBold)
-{
-    if (m_useBoldFont != useBold) {
-        m_useBoldFont = useBold;
-        update();  // Déclencher un repaint
-    }
-}
-
 void SimpleTextWidget::setTextOffset(int x, int y)
 {
     if (m_textOffsetX != x || m_textOffsetY != y) {
@@ -128,7 +110,7 @@ void SimpleTextWidget::paintContent(QPainter& painter, const QRect& contentRect)
     
     // Définir la police pour le texte
     QFont font = painter.font();
-    font.setBold(m_useBoldFont);
+    font.setWeight(m_fontWeight);
     
     // Ajuster la taille de police en fonction de la taille du widget
     if (m_fontSize > 0) {

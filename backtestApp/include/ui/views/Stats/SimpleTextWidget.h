@@ -17,8 +17,6 @@ public:
     // Setters
     void setStatText(const QString &text);
     void setStatColors(const QColor &textColor);
-    void setFontSize(int fontSize);
-    void setUseBoldFont(bool useBold);
     
     // Configuration supplémentaire
     void setSuffix(const QString &suffix); // Pour ajouter un % ou autre
@@ -44,8 +42,6 @@ private:
     QColor m_textColor;          // Couleur du texte
     QColor m_backgroundColor;    // Couleur de fond
     QString m_suffix;            // Suffixe (%, x, etc.)
-    bool m_useBoldFont;          // Utiliser une police en gras
-    int m_fontSize;              // Taille de la police
     int m_textOffsetX;           // Décalage horizontal du texte
     int m_textOffsetY;           // Décalage vertical du texte
 };

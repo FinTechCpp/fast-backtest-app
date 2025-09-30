@@ -13,6 +13,8 @@ TitledWidget::TitledWidget(const QString& title, QWidget *parent)
     , m_backgroundIconSize(64, 64) // Taille par défaut de l'icône
     , m_backgroundIconAlignment(Qt::AlignCenter) // Centré par défaut
     , m_backgroundIconOpacity(0.15) // Opacité légère par défaut
+    , m_fontWeight(QFont::DemiBold)
+    , m_fontSize(0)
 {
     // setMinimumSize(100, 100);
     // setMinimumSize(140, 140);
@@ -56,6 +58,22 @@ void TitledWidget::setBackgroundColor(const QColor& color)
     if (m_backgroundColor != color) {
         m_backgroundColor = color;
         update();
+    }
+}
+
+void TitledWidget::setFontWeight(QFont::Weight weight)
+{
+    if (m_fontWeight != weight) {
+        m_fontWeight = weight;
+        update();
+    }
+}
+
+void TitledWidget::setFontSize(int fontSize)
+{
+    if (m_fontSize != fontSize) {
+        m_fontSize = fontSize;
+        update();  // Déclencher un repaint
     }
 }
 

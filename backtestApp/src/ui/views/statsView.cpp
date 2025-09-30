@@ -198,8 +198,6 @@ void StatsView::setupUI() {
     m_averageTradePerDayWidget->setBackgroundIconAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
     m_averageTradePerDayWidget->setBackgroundIconOpacity(0.6);
     m_averageTradePerDayWidget->setFontSize(18);
-    m_averageTradePerDayWidget->setTextOffsetY(0);
-    m_averageTradePerDayWidget->setUseBoldFont(false);
     gridLayout->addWidget(m_averageTradePerDayWidget, 8, 0);
 
 
@@ -312,7 +310,7 @@ void StatsView::updateData(BacktestResults* results)
         QColor(200, 0, 0)
     );
 
-    m_exposureWidget->setCenterText(QString::number(std::clamp(m_currentResults->stats.exposureTimePct, 0.0, 100.0), 'f', 2));
+    m_exposureWidget->setCenterText(QString::number(std::clamp(m_currentResults->stats.exposureTimePct, 0.0, 100.0), 'f', 1));
     m_exposureWidget->clearSegments();
     m_exposureWidget->addSegment(std::clamp(m_currentResults->stats.exposureTimePct / 100.0, 0.0, 1.0), QColor(128, 179, 255)); // QColor(128, 179, 255), QColor(209, 212, 230)
     m_exposureWidget->addSegment(std::clamp(1.0 - m_currentResults->stats.exposureTimePct / 100.0, 0.0, 1.0), QColor(209, 212, 230));
@@ -332,7 +330,7 @@ void StatsView::updateData(BacktestResults* results)
         m_tradeDistributionWidget->addSegment(manual, QColor(127, 140, 141));
         m_tradeDistributionWidget->addSegment(unknown, QColor(44, 62, 80));
 
-        m_tradeDistributionWidget->setCenterText(QString::number(TP * 100.0, 'f', 2));
+        m_tradeDistributionWidget->setCenterText(QString::number(TP * 100.0, 'f', 1));
     }
 
 

@@ -9,9 +9,9 @@ KeyValueListWidget::KeyValueListWidget(const QString& title, QWidget* parent)
     , m_valueAlignment(Qt::AlignLeft | Qt::AlignVCenter)
     , m_spacing(5)
     , m_keyTextWidth(0) // Auto par défaut
-    , m_fontSize(12)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+    m_fontSize = 12;
 }
 
 void KeyValueListWidget::addItem(const QString& key, const QString& value, const QColor& color)
@@ -88,14 +88,6 @@ void KeyValueListWidget::setKeyTextWidth(int width)
     }
 }
 
-void KeyValueListWidget::setFontPointSize(int size)
-{
-    if (m_fontSize != size && size > 0) {
-        m_fontSize = size;
-        update();
-    }
-}
-
 QSize KeyValueListWidget::sizeHint() const
 {
     if (m_items.isEmpty()) {
@@ -105,6 +97,8 @@ QSize KeyValueListWidget::sizeHint() const
     // Recalculer la taille en fonction du contenu
     QFont font;
     font.setPointSize(m_fontSize);
+    font.setWeight(m_fontWeight);
+
     QFontMetrics fm(font);
     
     int maxKeyWidth = calculateMaxKeyWidth(fm);
@@ -156,6 +150,7 @@ void KeyValueListWidget::paintContent(QPainter& painter, const QRect& contentRec
     // Configuration du texte avec la taille personnalisée
     QFont font = painter.font();
     font.setPointSize(m_fontSize);
+    font.setWeight(m_fontWeight);
     painter.setFont(font);
     
     QFontMetrics fm(font);

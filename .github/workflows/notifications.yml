@@ -1,15 +1,18 @@
-name: Discord Notification
+name: Discord Notifications
 
 on:
   push:
     branches:
       - '**'   # Every branch
+  release:
+    types: [published]
 
 jobs:
-  notify-discord:
+  notify-discord-commit:
     runs-on: ubuntu-latest
+    if: github.event_name == 'push'
     steps:
-      - name: Send Discord notification
+      - name: Send Discord commit notification
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
@@ -22,3 +25,85 @@ jobs:
                -X POST \
                -d "{\"content\": \"$MESSAGE\"}" \
                "$DISCORD_WEBHOOK_URL"
+
+  notify-discord-release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+      - name: Send Discord release notification
+        env:
+          DISCORD_WEBHOOK_RELEASES_URL: ${{ secrets.DISCORD_WEBHOOK_RELEASES_URL }}
+        run: |
+          # Extract version from tag (remove 'v' prefix if present)
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION_CLEAN="${VERSION#v}"
+          
+          # Build URLs
+          RELEASE_URL="${{ github.event.release.html_url }}"
+          DOWNLOAD_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads/fast-backtest-app-windows-v${VERSION_CLEAN}.zip"
+          COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+          SHORT_SHA="${{ github.sha }}"
+          SHORT_SHA="${SHORT_SHA:0:7}"
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          # Get release body (truncated if too long)
+          RELEASE_BODY="${{ github.event.release.body }}"
+          RELEASE_BODY_TRUNCATED="${RELEASE_BODY:0:500}"
+          if [ ${#RELEASE_BODY} -gt 500 ]; then
+            RELEASE_BODY_TRUNCATED="${RELEASE_BODY_TRUNCATED}..."
+          fi
+          
+          # Create Discord embed message for release
+          cat << EOF > discord_payload.json
+          {
+            "embeds": [
+              {
+                "title": "🚀 Nouvelle Release - fast-backtest-app ${VERSION}",
+                "description": "Une nouvelle version de l'application est disponible !",
+                "color": 65280,
+                "fields": [
+                  {
+                    "name": "📦 Version",
+                    "value": "${VERSION}",
+                    "inline": true
+                  },
+                  {
+                    "name": "👤 Auteur",
+                    "value": "${{ github.event.release.author.login }}",
+                    "inline": true
+                  },
+                  {
+                    "name": "📅 Date",
+                    "value": "${TIMESTAMP}",
+                    "inline": true
+                  },
+                  {
+                    "name": "🔗 Commit",
+                    "value": "[${SHORT_SHA}](${COMMIT_URL})",
+                    "inline": true
+                  },
+                  {
+                    "name": "📥 Téléchargement",
+                    "value": "[Télécharger ${VERSION}](${DOWNLOAD_URL})",
+                    "inline": false
+                  },
+                  {
+                    "name": "📋 Page de Release",
+                    "value": "[Voir sur GitHub](${RELEASE_URL})",
+                    "inline": false
+                  }
+                ],
+                "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")",
+                "footer": {
+                  "text": "fast-backtest-app • GitHub Actions"
+                }
+              }
+            ]
+          }
+          EOF
+          
+          # Send notification to Discord
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d @discord_payload.json \
+               "$DISCORD_WEBHOOK_RELEASES_URL"

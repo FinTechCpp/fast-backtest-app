@@ -270,6 +270,86 @@ jobs:
         git commit -m "Update download URL and upload executable for version v$env:VERSION"
         git push
 
+    - name: Send Discord Release Notification
+      if: github.ref == 'refs/heads/main'
+      env:
+        DISCORD_WEBHOOK_RELEASES_URL: ${{ secrets.DISCORD_WEBHOOK_RELEASES_URL }}
+        VERSION: ${{ steps.version.outputs.version }}
+        ARCHIVE_NAME: ${{ env.ARCHIVE_NAME }}
+        SHORT_SHA: ${{ github.sha }}
+      run: |
+        $releaseUrl = "https://github.com/${{ github.repository }}/releases/tag/v$env:VERSION"
+        $downloadUrl = "https://fintechcpp.github.io/fast-backtest-app-releases/downloads/$env:ARCHIVE_NAME"
+        $commitUrl = "https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+        $shortSha = $env:SHORT_SHA.Substring(0, 7)
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
+        
+        # Create Discord embed message for release
+        $embedData = @{
+          embeds = @(
+            @{
+              title = "🚀 Nouvelle Release - fast-backtest-app v$env:VERSION"
+              description = "Une nouvelle version de l'application est disponible !"
+              color = 65280  # Green color
+              fields = @(
+                @{
+                  name = "📦 Version"
+                  value = "v$env:VERSION"
+                  inline = $true
+                },
+                @{
+                  name = "💾 Taille"
+                  value = "$([math]::Round($env:DOWNLOAD_SIZE / 1MB, 2)) MB"
+                  inline = $true
+                },
+                @{
+                  name = "🛠️ Qt Version"
+                  value = "${{ env.QT_VERSION }}"
+                  inline = $true
+                },
+                @{
+                  name = "🔧 Build Type"
+                  value = "${{ env.BUILD_TYPE }}"
+                  inline = $true
+                },
+                @{
+                  name = "📅 Date"
+                  value = $timestamp
+                  inline = $true
+                },
+                @{
+                  name = "🔗 Commit"
+                  value = "[$shortSha]($commitUrl)"
+                  inline = $true
+                },
+                @{
+                  name = "📥 Téléchargement"
+                  value = "[Télécharger v$env:VERSION]($downloadUrl)"
+                  inline = $false
+                },
+                @{
+                  name = "📋 Page de Release"
+                  value = "[Voir sur GitHub]($releaseUrl)"
+                  inline = $false
+                }
+              )
+              timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+              footer = @{
+                text = "fast-backtest-app • GitHub Actions"
+              }
+            }
+          )
+        } | ConvertTo-Json -Depth 10
+        
+        # Send notification to Discord
+        try {
+          Invoke-RestMethod -Uri $env:DISCORD_WEBHOOK_RELEASES_URL -Method Post -Body $embedData -ContentType "application/json"
+          echo "✅ Discord notification sent successfully"
+        } catch {
+          echo "❌ Failed to send Discord notification: $($_.Exception.Message)"
+          echo "Webhook URL exists: $($null -ne $env:DISCORD_WEBHOOK_RELEASES_URL)"
+        }
+
     - name: Build Summary
       env:
         VERSION: ${{ steps.version.outputs.version }}

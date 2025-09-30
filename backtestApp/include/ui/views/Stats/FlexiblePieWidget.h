@@ -24,7 +24,6 @@ public:
     void setCenterText(const QString &text);
     void setCenterTextColor(const QColor &color);
     void setCenterTextSuffix(const QString &suffix);
-    void setCenterTextFontSizeRatio(double ratio); // >1 plus grand, <1 plus petit
     
     // Gestion des segments
     void addSegment(double proportion, const QColor &color);
@@ -52,7 +51,6 @@ private:
     QString m_centerText;
     QString m_textSuffix;
     QColor m_textColor;
-    double m_fontSizeRatio;
     
     // Segments
     std::vector<PieSegment> m_segments;

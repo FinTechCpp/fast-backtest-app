@@ -258,16 +258,18 @@ HistogramWidget::HistogramWidget(const QString& title, QWidget* parent)
     m_chart = new QChart();
     m_chart->setAnimationOptions(QChart::SeriesAnimations);
     m_chart->legend()->setVisible(false);
-    m_chart->setBackgroundVisible(false);
+    m_chart->setBackgroundVisible(true);
+    // m_chart->setBackgroundBrush(Qt::yellow);
     m_chart->setMargins(QMargins(0, 0, 0, 0));
     
     // Créer la vue du graphique
     m_chartView = new InteractiveChartView(m_chart, m_contentWidget);
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setBackgroundBrush(Qt::transparent);
+    m_chartView->setContentsMargins(0, 0, 0, 0);
     
     // Ajouter la vue au layout
-    m_contentLayout->addWidget(m_chartView, 1);
+    m_contentLayout->addWidget(m_chartView);
 }
 
 HistogramWidget::~HistogramWidget()
@@ -361,20 +363,14 @@ std::vector<HistogramWidget::TradeInfo> HistogramWidget::extractTradesFromResult
         return trades;
     }
     
-    try {
-        for (const auto& trade : results->stats.trades) {
-            TradeInfo info;
-            info.exitTime = QDateTime(
-                QDate(trade.exitDate.year, trade.exitDate.month, trade.exitDate.day),
-                QTime(trade.exitDate.hour, trade.exitDate.minute, trade.exitDate.second)
-            );
-            info.pnl = trade.pl;
-            info.isLong = trade.size > 0;
-            trades.push_back(info);
-        }
-    }
-    catch (const std::exception& e) {
-        qCritical() << "Exception lors de l'extraction des trades:" << e.what();
+    for (const auto& trade : results->stats.trades) {
+        TradeInfo info;
+        info.exitTime = QDateTime(
+            QDate(trade.exitDate.year, trade.exitDate.month, trade.exitDate.day),
+            QTime(trade.exitDate.hour, trade.exitDate.minute, trade.exitDate.second)
+        );
+        info.pnl = trade.pl;
+        trades.push_back(info);
     }
     
     return trades;
@@ -502,9 +498,12 @@ void HistogramWidget::createChart(const GroupedData& data)
     axisX->append(data.categories);
     
     // Toujours garder les labels horizontaux
-    if (categoryCount > maxLabels) {
-        axisX->setLabelsAngle(-45.0);
-    }
+    // if (categoryCount > maxLabels) {
+    //     axisX->setLabelsAngle(-45.0);
+    // }
+
+    axisX->setLabelsVisible(false);
+
     
     QValueAxis* axisY = new QValueAxis();
     

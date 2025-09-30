@@ -35,6 +35,8 @@ VerticalGaugeRenderWidget::VerticalGaugeRenderWidget(const QString& title, QWidg
     setMinimumSize(220, 300);  // Augmenté de 40 à 150 pour avoir de l'espace pour la légende
     setMaximumWidth(240);      // Augmenté de 60 à 180
     setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+
+    m_fontSize = 10;
 }
 
 void VerticalGaugeRenderWidget::updateContent(const be::Stats& stats)
@@ -282,7 +284,7 @@ void VerticalGaugeRenderWidget::paintContent(QPainter& painter, const QRect& con
     // Configuration de la police pour les étiquettes
     painter.setRenderHint(QPainter::Antialiasing, true);
     QFont valueFont = painter.font();
-    valueFont.setPointSize(10);
+    valueFont.setPointSize(m_fontSize);
     valueFont.setWeight(m_fontWeight);
     painter.setFont(valueFont);
     

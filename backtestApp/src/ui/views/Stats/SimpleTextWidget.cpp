@@ -14,6 +14,8 @@ SimpleTextWidget::SimpleTextWidget(const QString& title, QWidget *parent)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     setMinimumSize(100, 60);
+
+    m_fontSize = 15;
 }
 
 QString SimpleTextWidget::formatWithThousandsSeparator(double value, int precision) {

@@ -10,12 +10,13 @@ FlexiblePieWidget::FlexiblePieWidget(const QString& title, QWidget *parent)
     , m_centerText("--")
     , m_textSuffix("")
     , m_textColor(0, 0, 0)    // Noir par défaut
-    , m_fontSizeRatio(1.0)
 {
     // Définir un fond transparent
     setAttribute(Qt::WA_TranslucentBackground);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     setMinimumSize(140, 140);
+
+    m_fontSize = 14; // Taille de police par défaut
 }
 
 QSize FlexiblePieWidget::sizeHint() const
@@ -67,14 +68,6 @@ void FlexiblePieWidget::setCenterTextSuffix(const QString &suffix)
 {
     if (m_textSuffix != suffix) {
         m_textSuffix = suffix;
-        update();
-    }
-}
-
-void FlexiblePieWidget::setCenterTextFontSizeRatio(double ratio)
-{
-    if (ratio > 0 && m_fontSizeRatio != ratio) {
-        m_fontSizeRatio = ratio;
         update();
     }
 }
@@ -170,8 +163,7 @@ void FlexiblePieWidget::paintContent(QPainter& painter, const QRect& contentRect
     font.setWeight(m_fontWeight);
     
     // Ajuster la taille de police
-    int fontSize = radius / 4 * m_fontSizeRatio;
-    font.setPointSize(fontSize);
+    font.setPointSize(m_fontSize);
     painter.setFont(font);
     
     // Afficher le texte au centre

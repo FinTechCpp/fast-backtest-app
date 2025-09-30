@@ -93,7 +93,6 @@ private:
     struct TradeInfo {
         QDateTime exitTime;
         double pnl;
-        bool isLong;
     };
     
     // Structure pour stocker les données groupées

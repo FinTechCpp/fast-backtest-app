@@ -8,8 +8,8 @@
 
 static constexpr double EPSILON_D = 1e-9;
 
-EquityWidget::EquityWidget(QWidget *parent)
-    : QWidget(parent),
+EquityWidget::EquityWidget(const QString& title, QWidget *parent)
+    : TitledWidget(title, parent),
       m_xmin(0), m_xmax(1), m_ymin(0), m_ymax(1),
       m_showCrosshair(false)
 {
@@ -80,33 +80,14 @@ void EquityWidget::updateBounds()
     }
 }
 
-QPointF EquityWidget::mapToWidget(const QPointF &pt) const
+void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
 {
-    double w = width() - m_leftMargin - m_rightMargin;
-    double h = height() - m_topMargin - m_bottomMargin;
-    double x = m_leftMargin + (pt.x() - m_xmin) / (m_xmax - m_xmin) * w;
-    double y = m_topMargin + (1.0 - (pt.y() - m_ymin) / (m_ymax - m_ymin)) * h;
-    return QPointF(x, y);
-}
-
-QPointF EquityWidget::mapToWorld(const QPointF &pixel) const
-{
-    double w = width() - m_leftMargin - m_rightMargin;
-    double h = height() - m_topMargin - m_bottomMargin;
-    double nx = (pixel.x() - m_leftMargin) / w;
-    double ny = 1.0 - (pixel.y() - m_topMargin) / h;
-    double wx = m_xmin + nx * (m_xmax - m_xmin);
-    double wy = m_ymin + ny * (m_ymax - m_ymin);
-    return QPointF(wx, wy);
-}
-
-void EquityWidget::paintEvent(QPaintEvent * /*event*/)
-{
-    QPainter painter(this);
+    m_contentRect = contentRect.adjusted(m_margin, m_margin, -m_margin, -m_margin);
+    
     painter.setRenderHint(QPainter::Antialiasing, true);
 
     // background
-    painter.fillRect(rect(), Qt::white);
+    painter.fillRect(m_contentRect, Qt::white);
 
     // draw grid
     drawGrid(painter);
@@ -137,20 +118,45 @@ void EquityWidget::paintEvent(QPaintEvent * /*event*/)
         crossPen.setWidth(1);
         painter.setPen(crossPen);
 
+        // Convertir la position de la souris en coordonnées relatives à drawRect
+        QPoint relativeMousePos = m_mousePos - contentRect.topLeft() - QPoint(m_margin, m_margin);
+
         // vertical
-        painter.drawLine(m_mousePos.x(), m_topMargin, m_mousePos.x(), height() - m_bottomMargin);
+        painter.drawLine(relativeMousePos.x(), m_contentRect.top(),
+                         relativeMousePos.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
         // horizontal
-        painter.drawLine(m_leftMargin, m_mousePos.y(), width() - m_rightMargin, m_mousePos.y());
+        painter.drawLine(m_leftMargin, relativeMousePos.y(),
+                         m_contentRect.width() - m_rightMargin, relativeMousePos.y());
 
         // small info box with world coordinates
-        QPointF world = mapToWorld(m_mousePos);
+        QPointF world = mapToWorld(relativeMousePos);
         QString info = QString("(%1, %2)").arg(world.x(), 0, 'g', 6).arg(world.y(), 0, 'g', 6);
-        QRect infoRect(m_mousePos.x() + 10, m_mousePos.y() - 20, 120, 18);
-        painter.fillRect(infoRect, QColor(255,255,255,230));
+        QRect infoRect(relativeMousePos.x() + 10, relativeMousePos.y() - 20, 120, 18);
+        painter.fillRect(infoRect, QColor(255,255,224,230));
         painter.setPen(Qt::black);
         painter.drawRect(infoRect);
         painter.drawText(infoRect.adjusted(4,0,-4,0), Qt::AlignVCenter | Qt::AlignLeft, info);
     }
+}
+
+QPointF EquityWidget::mapToWidget(const QPointF &pt) const
+{
+    double w = m_contentRect.width() - m_leftMargin - m_rightMargin;
+    double h = m_contentRect.height() - m_topMargin - m_bottomMargin;
+    double x = m_contentRect.left() + m_leftMargin + (pt.x() - m_xmin) / (m_xmax - m_xmin) * w;
+    double y = m_contentRect.top() + m_topMargin + (1.0 - (pt.y() - m_ymin) / (m_ymax - m_ymin)) * h;
+    return QPointF(x, y);
+}
+
+QPointF EquityWidget::mapToWorld(const QPointF &pixel) const
+{
+    double w = m_contentRect.width() - m_leftMargin - m_rightMargin;
+    double h = m_contentRect.height() - m_topMargin - m_bottomMargin;
+    double nx = (pixel.x() - m_contentRect.left() - m_leftMargin) / w;
+    double ny = 1.0 - (pixel.y() - m_contentRect.top() - m_topMargin) / h;
+    double wx = m_xmin + nx * (m_xmax - m_xmin);
+    double wy = m_ymin + ny * (m_ymax - m_ymin);
+    return QPointF(wx, wy);
 }
 
 void EquityWidget::drawGrid(QPainter &painter)
@@ -185,16 +191,16 @@ void EquityWidget::drawGrid(QPainter &painter)
     double xstart = std::floor(m_xmin / xstep) * xstep;
     for (double x = xstart; x <= m_xmax; x += xstep) {
         QPointF p1 = mapToWidget(QPointF(x, m_ymin));
-        QPointF p2 = mapToWidget(QPointF(x, m_ymax));
-        painter.drawLine(QPointF(p1.x(), m_topMargin), QPointF(p1.x(), height() - m_bottomMargin));
+        painter.drawLine(QPointF(p1.x(), m_contentRect.top() + m_topMargin), 
+                         QPointF(p1.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin));
     }
 
-    // horizontal lines
+    // horizontal lines - inchangé, toujours de gauche à droite
     double ystart = std::floor(m_ymin / ystep) * ystep;
     for (double y = ystart; y <= m_ymax; y += ystep) {
         QPointF p1 = mapToWidget(QPointF(m_xmin, y));
-        QPointF p2 = mapToWidget(QPointF(m_xmax, y));
-        painter.drawLine(QPointF(m_leftMargin, p1.y()), QPointF(width() - m_rightMargin, p1.y()));
+        painter.drawLine(QPointF(m_contentRect.left() + m_leftMargin, p1.y()), 
+                         QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin, p1.y()));
     }
 }
 
@@ -241,13 +247,20 @@ void EquityWidget::drawAxes(QPainter &painter)
     painter.setPen(axisPen);
 
     // draw X axis at bottom (leave margin for labels)
-    painter.drawLine(m_leftMargin, height() - m_bottomMargin, width() - m_rightMargin, height() - m_bottomMargin);
-    // draw Y axis at left
-    painter.drawLine(m_leftMargin, m_topMargin, m_leftMargin, height() - m_bottomMargin);
+    painter.drawLine(m_contentRect.left() + m_leftMargin, 
+                     m_contentRect.top() + m_contentRect.height() - m_bottomMargin, 
+                     m_contentRect.left() + m_contentRect.width() - m_rightMargin, 
+                     m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
+    
+    // draw Y axis at RIGHT (instead of left)
+    painter.drawLine(m_contentRect.left() + m_contentRect.width() - m_rightMargin, 
+                     m_contentRect.top() + m_topMargin, 
+                     m_contentRect.left() + m_contentRect.width() - m_rightMargin, 
+                     m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
 
     // ticks and labels
-    const int xTicks = 6;      // Nombre de graduations sur l'axe X
-    const int yTicks = 5;      // Réduit à 5 graduations pour l'axe Y (plus lisible)
+    const int xTicks = 6;
+    const int yTicks = 5;
     
     double xrange = m_xmax - m_xmin;
     double yrange = m_ymax - m_ymin;
@@ -258,14 +271,14 @@ void EquityWidget::drawAxes(QPainter &painter)
 
     QFontMetrics fm(font());
 
-    // Axe X - pas de changement majeur ici
+    // Axe X - inchangé
     for (int i = 0; i <= xTicks; ++i) {
         double xv = m_xmin + i * xstep;
         QPointF wp = mapToWidget(QPointF(xv, m_ymin));
         // tick
-        painter.drawLine(QPointF(wp.x(), height() - m_bottomMargin), QPointF(wp.x(), height() - m_bottomMargin + 4));
+        painter.drawLine(QPointF(wp.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin), 
+                         QPointF(wp.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin + 4));
         // label
-        // Simplifier la notation pour les index (positions)
         QString txt;
         if (std::abs(xv - std::round(xv)) < 0.001) {
             txt = QString::number(static_cast<int>(xv));
@@ -274,19 +287,22 @@ void EquityWidget::drawAxes(QPainter &painter)
         }
         
         int tw = fm.horizontalAdvance(txt);
-        painter.drawText(QPointF(wp.x() - tw/2, height() - 6), txt);
+        painter.drawText(QPointF(wp.x() - tw/2, m_contentRect.top() + m_contentRect.height() - 6), txt);
     }
 
-    // Axe Y - avec formatage amélioré
+    // Axe Y - MODIFIÉ pour afficher à droite
     for (int i = 0; i <= yTicks; ++i) {
         double yv = m_ymin + i * ystep;
-        QPointF wp = mapToWidget(QPointF(m_xmin, yv));
-        // tick
-        painter.drawLine(QPointF(m_leftMargin - 4, wp.y()), QPointF(m_leftMargin, wp.y()));
-        // label (right-aligned) avec formatage amélioré
+        QPointF wp = mapToWidget(QPointF(m_xmax, yv));  // Utiliser m_xmax au lieu de m_xmin
+        
+        // tick - à droite maintenant
+        painter.drawLine(QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin, wp.y()), 
+                         QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin + 4, wp.y()));
+        
+        // label - aligné à gauche après le tick (à droite du graphique)
         QString txt = formatValue(yv);
-        int tw = fm.horizontalAdvance(txt);
-        painter.drawText(QPointF(m_leftMargin - 6 - tw, wp.y() + fm.ascent()/2 - 2), txt);
+        painter.drawText(QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin + 8, 
+                                wp.y() + fm.ascent()/2 - 2), txt);
     }
 }
 
@@ -296,14 +312,34 @@ void EquityWidget::resizeEvent(QResizeEvent *event)
 }
 
 void EquityWidget::mouseMoveEvent(QMouseEvent *event)
-{
+{    
+    // Enregistrer la position globale de la souris
     m_mousePos = event->pos();
-    // clamp within plotting area
-    if (m_mousePos.x() < m_leftMargin) m_mousePos.setX(m_leftMargin);
-    if (m_mousePos.x() > width() - m_rightMargin) m_mousePos.setX(width() - m_rightMargin);
-    if (m_mousePos.y() < m_topMargin) m_mousePos.setY(m_topMargin);
-    if (m_mousePos.y() > height() - m_bottomMargin) m_mousePos.setY(height() - m_bottomMargin);
+    
+    // Vérifier que la position est dans contentRect
+    if (!m_contentRect.contains(m_mousePos)) {
+        m_showCrosshair = false;
+        update();
+        return;
+    }
+    
+    // Clamp dans la zone de tracé
+    QPoint relativePos = m_mousePos;
+    // Ajuster pour la marge
+    // relativePos.rx() -= m_margin;
+    // relativePos.ry() -= m_margin;
 
+    if (relativePos.x() < m_contentRect.left() + m_leftMargin) 
+        relativePos.setX(m_contentRect.left() + m_leftMargin);
+    if (relativePos.x() > m_contentRect.top() + m_contentRect.width() - m_rightMargin)
+        relativePos.setX(m_contentRect.top() + m_contentRect.width() - m_rightMargin);
+    if (relativePos.y() < m_contentRect.top() + m_topMargin)
+        relativePos.setY(m_contentRect.top() + m_topMargin);
+    if (relativePos.y() > m_contentRect.top() + m_contentRect.height() - m_bottomMargin)
+        relativePos.setY(m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
+
+    // Réajuster en tenant compte de la marge
+    m_mousePos = m_contentRect.topLeft() + QPoint(relativePos.x() + m_margin, relativePos.y() + m_margin);
     m_showCrosshair = true;
     update();
 }

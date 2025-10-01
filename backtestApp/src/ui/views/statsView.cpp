@@ -88,7 +88,7 @@ void StatsView::setupUI() {
     // QSpacerItem* horizontalSpacer = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
     // gridLayout->addItem(horizontalSpacer, 0, 4, 8, 3);  // ligne 0, colonne 4, hauteur 8, largeur 3
 
-    m_equityWidget = new EquityWidget();
+    m_equityWidget = new EquityWidget("Equity Curve");
     gridLayout->addWidget(m_equityWidget, 0, 4, 3, 3);
 
     // --------------------------------------

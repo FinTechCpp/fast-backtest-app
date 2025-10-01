@@ -77,8 +77,8 @@ namespace cereal {
            cereal::make_nvp("open", candle.open),
            cereal::make_nvp("high", candle.high),
            cereal::make_nvp("low", candle.low),
-           cereal::make_nvp("close", candle.close),
-           cereal::make_nvp("volume", candle.volume));
+           cereal::make_nvp("close", candle.close));
+        //    cereal::make_nvp("volume", candle.volume));
     }
 
     template<class Archive>
@@ -317,6 +317,7 @@ namespace cereal {
         
         // Le décalage historique s'applique à toutes les catégories
         ar(cereal::make_nvp("historicalOffset", valueSource.historicalOffset));
+        // ar(cereal::make_nvp("description", valueSource.description));
     }
 
     // Parameter structures

@@ -198,16 +198,25 @@ void UpdateChecker::onDownloadFinished()
             }
         }
     } else {
+        QString errorMsg = QString("Erreur de téléchargement (Code: %1): %2")
+                          .arg(static_cast<int>(error))
+                          .arg(m_currentReply->errorString());
+        
         qCritical() << "Download failed with error code:" << error;
         qCritical() << "Error description:" << m_currentReply->errorString();
+        qCritical() << "HTTP status code:" << m_currentReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 
         // Remove empty file in case of error
-        m_downloadFile->remove();
+        if (m_downloadFile) {
+            m_downloadFile->remove();
+        }
         emit downloadCompleted(false, "");
     
-        if (m_autoInstallMode) 
-            emit installationError("Échec du téléchargement : " + m_currentReply->errorString());
-        
+        if (m_autoInstallMode) {
+            emit installationError("Échec du téléchargement : " + errorMsg);
+        } else {
+            emit downloadError(errorMsg);
+        }
     }
 
     // Clean up
@@ -459,14 +468,16 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
             return;
         }
         
-        // 3. Find the extracted executable
+        // 3. Find the extracted executable and verify the structure
         QString extractedExePath;
+        QString extractedDir;
         QDirIterator it(extractPath, QStringList() << "*.exe", QDir::Files, QDirIterator::Subdirectories);
         while (it.hasNext()) {
             QString exePath = it.next();
             QFileInfo fileInfo(exePath);
             if (fileInfo.baseName().contains("backtest", Qt::CaseInsensitive)) {
                 extractedExePath = exePath;
+                extractedDir = fileInfo.absolutePath();
                 break;
             }
         }
@@ -477,7 +488,19 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
         }
         
         qDebug() << "Found extracted executable:" << extractedExePath;
-        emit installationProgress("Exécutable trouvé, préparation de l'installation...");
+        qDebug() << "Extracted directory:" << extractedDir;
+        
+        // Verify that we have a proper directory structure
+        QDir sourceDir(extractedDir);
+        QStringList sourceFiles = sourceDir.entryList(QDir::Files | QDir::Dirs | QDir::NoDotAndDotDot);
+        qDebug() << "Source files found:" << sourceFiles.size() << "items";
+        
+        if (sourceFiles.isEmpty()) {
+            emit installationError("Le répertoire extrait est vide");
+            return;
+        }
+        
+        emit installationProgress("Structure vérifiée, préparation de l'installation...");
         
         // 4. Get current application info
         QString currentAppPath = QCoreApplication::applicationFilePath();
@@ -497,19 +520,81 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
         if (script.open(QIODevice::WriteOnly | QIODevice::Text)) {
             QTextStream out(&script);
             out << "@echo off\n";
-            out << "echo Waiting for application to close...\n";
-            out << "timeout /t 3 /nobreak >nul\n";
-            out << "echo Creating backup...\n";
-            out << "move \"" << currentAppDir << "\" \"" << backupDir << "\"\n";
-            out << "echo Copying new version...\n";
-            out << "xcopy \"" << QFileInfo(extractedExePath).absolutePath() << "\" \"" << currentAppDir << "\" /E /I /H /Y\n";
-            out << "echo Starting new version...\n";
+            out << "setlocal enabledelayedexpansion\n";
+            out << "echo [INSTALLER] Waiting for application to close...\n";
+            out << "timeout /t 5 /nobreak >nul\n";
+            
+            // Wait for the executable to be unlocked
+            out << ":WAIT_LOOP\n";
+            out << "tasklist /FI \"IMAGENAME eq " << QFileInfo(currentAppPath).fileName() << "\" 2>nul | find /I /N \"" << QFileInfo(currentAppPath).fileName() << "\">nul\n";
+            out << "if \"%ERRORLEVEL%\"==\"0\" (\n";
+            out << "    echo [INSTALLER] Application still running, waiting...\n";
+            out << "    timeout /t 2 /nobreak >nul\n";
+            out << "    goto WAIT_LOOP\n";
+            out << ")\n";
+            
+            out << "echo [INSTALLER] Creating backup directory...\n";
+            out << "if exist \"" << backupDir << "\" (\n";
+            out << "    echo [INSTALLER] Removing old backup...\n";
+            out << "    rmdir /s /q \"" << backupDir << "\"\n";
+            out << ")\n";
+            
+            out << "echo [INSTALLER] Creating backup of current installation...\n";
+            out << "mkdir \"" << backupDir << "\"\n";
+            out << "if not exist \"" << backupDir << "\" (\n";
+            out << "    echo [INSTALLER] ERROR: Failed to create backup directory\n";
+            out << "    pause\n";
+            out << "    exit /b 1\n";
+            out << ")\n";
+            
+            // Copy current files to backup instead of moving the whole directory
+            out << "xcopy \"" << currentAppDir << "\\*\" \"" << backupDir << "\\\" /E /I /H /Y >nul 2>&1\n";
+            out << "if !errorlevel! neq 0 (\n";
+            out << "    echo [INSTALLER] WARNING: Backup creation had issues, continuing anyway...\n";
+            out << ")\n";
+            
+            out << "echo [INSTALLER] Installing new version...\n";
+            
+            // Get the source directory from the extracted executable
+            QString sourceDir = extractedDir;
+            
+            // Remove old files (except backup) and copy new ones
+            out << "for /f \"delims=\" %%i in ('dir /b \"" << currentAppDir << "\\\" 2^>nul') do (\n";
+            out << "    if not \"%%i\"==\"" << QFileInfo(backupDir).fileName() << "\" (\n";
+            out << "        if exist \"" << currentAppDir << "\\%%i\\\" (\n";
+            out << "            rmdir /s /q \"" << currentAppDir << "\\%%i\" >nul 2>&1\n";
+            out << "        ) else (\n";
+            out << "            del /f /q \"" << currentAppDir << "\\%%i\" >nul 2>&1\n";
+            out << "        )\n";
+            out << "    )\n";
+            out << ")\n";
+            
+            out << "echo [INSTALLER] Copying new files...\n";
+            out << "xcopy \"" << sourceDir << "\\*\" \"" << currentAppDir << "\\\" /E /I /H /Y\n";
+            out << "if !errorlevel! neq 0 (\n";
+            out << "    echo [INSTALLER] ERROR: Failed to copy new files\n";
+            out << "    echo [INSTALLER] Attempting to restore backup...\n";
+            out << "    xcopy \"" << backupDir << "\\*\" \"" << currentAppDir << "\\\" /E /I /H /Y\n";
+            out << "    pause\n";
+            out << "    exit /b 1\n";
+            out << ")\n";
+            
+            out << "echo [INSTALLER] Verifying installation...\n";
+            out << "if not exist \"" << currentAppPath << "\" (\n";
+            out << "    echo [INSTALLER] ERROR: New executable not found, restoring backup...\n";
+            out << "    xcopy \"" << backupDir << "\\*\" \"" << currentAppDir << "\\\" /E /I /H /Y\n";
+            out << "    pause\n";
+            out << "    exit /b 1\n";
+            out << ")\n";
+            
+            out << "echo [INSTALLER] Starting new version...\n";
             out << "start \"\" \"" << currentAppPath << "\"\n";
-            out << "echo Cleaning up...\n";
-            out << "timeout /t 2 /nobreak >nul\n";
-            out << "rmdir /s /q \"" << extractPath << "\"\n";
-            out << "del \"" << zipFilePath << "\"\n";
-            out << "del \"%~f0\"\n";  // Delete the script itself
+            out << "echo [INSTALLER] Cleaning up...\n";
+            out << "timeout /t 3 /nobreak >nul\n";
+            out << "rmdir /s /q \"" << extractPath << "\" >nul 2>&1\n";
+            out << "del /f /q \"" << zipFilePath << "\" >nul 2>&1\n";
+            out << "echo [INSTALLER] Update completed successfully!\n";
+            out << "del \"%~f0\" >nul 2>&1\n";  // Delete the script itself
             script.close();
         }
 #else
@@ -557,8 +642,8 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
         
         emit installationCompleted(true, "Installation en cours... L'application va redémarrer.");
         
-        // 7. Close the current application after a short delay
-        QTimer::singleShot(2000, []() {
+        // 7. Close the current application after a longer delay to ensure script starts properly
+        QTimer::singleShot(5000, []() {
             qDebug() << "Closing application for update installation...";
             QApplication::quit();
         });

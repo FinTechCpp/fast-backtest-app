@@ -13,7 +13,7 @@ ATRDialog::~ATRDialog()
 void ATRDialog::setupUI() {
     // Période
     m_periodSpinBox = new QSpinBox();
-    m_periodSpinBox->setRange(2, 100);
+    m_periodSpinBox->setRange(2, 1000);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
     // Hauteur

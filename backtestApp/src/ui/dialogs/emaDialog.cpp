@@ -14,7 +14,7 @@ void EMADialog::setupUI()
 {
     // Période
     m_periodSpinBox = new QSpinBox();
-    m_periodSpinBox->setRange(2, 200);
+    m_periodSpinBox->setRange(2, 3000);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
     // Couleur de la ligne

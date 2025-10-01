@@ -16,7 +16,7 @@ instead of timezone conversion to avoid daylight saving time complications.
 This ensures consistent data timeframes (e.g., 15:30-22:00) throughout the year.
 You can adjust this offset if needed to match your local market hours.
 */
-static const int CONSTANT_OFFSET_HOURS = 2;
+static const int CONSTANT_OFFSET_HOURS = 6;
 
 
 // Declaration of the static variable for the cache
@@ -891,13 +891,17 @@ std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
         return nullptr;
     }
     
-    // Create the timestamp without timezone conversion, then apply a constant offset
-    // to have the data between 15:30 and 22:00 (New York market hours)
+    // Step 1: Create UTC timestamp from parsed values
+    QDateTime utcTimestamp(QDate(year, month, day), QTime(hour, minute, second), QTimeZone::utc());
 
-    QDateTime timestamp(QDate(year, month, day), QTime(hour, minute, second), QTimeZone::UTC);
+    // Step 2: Convert UTC to New York time (handles EST/EDT automatically)
+    // Use static QTimeZone to avoid recreating it 500k+ times per file load
+    static QTimeZone nyTimeZone("America/New_York");
+    QDateTime nyTimestamp = utcTimestamp.toTimeZone(nyTimeZone);
 
-    // Apply a constant offset to simulate the New York -> desired local time shift
-    timestamp = timestamp.addSecs(CONSTANT_OFFSET_HOURS * 3600);
+    // Step 3: Add display offset (+6h) to get constant 15:30-22:00 range
+    // NY market 09:30-16:00 + 6h = 15:30-22:00 display
+    QDateTime timestamp = nyTimestamp.addSecs(CONSTANT_OFFSET_HOURS * 3600);
 
     // Optimization: find all commas in a single pass
     const QChar* ptr = line.constData();

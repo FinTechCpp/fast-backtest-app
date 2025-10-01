@@ -186,9 +186,9 @@ void ChartView::updateData(BacktestResults* results) {
     showChartWidget();
 
     // Configurer les indicateurs de stratégie
-    m_leftPanel->configureIndicatorInstances(
-        extractIndicatorsFromFilters(results->strategyConfig)
-    );
+    // m_leftPanel->configureIndicatorInstances(
+    //     extractIndicatorsFromFilters(results->strategyConfig)
+    // );
     
     // Actualiser la liste des indicateurs
     m_leftPanel->refreshIndicatorsList();

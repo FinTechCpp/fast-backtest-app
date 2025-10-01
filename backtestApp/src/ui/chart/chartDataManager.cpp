@@ -11,32 +11,71 @@ ChartDataManager::~ChartDataManager() {
 void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, const std::vector<be::TradeData>& trades, const std::vector<double>& equityCurve) {
     if (!data) return;
 
-    m_aggregatedOHLCVCache.fill(chart::AggregatedOHLCV());
-    {
-        const std::vector<be::Date>& dates = data->getDates();
-        m_datesCache = dates;
-
-        std::vector<double>& rawTimestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
-        std::vector<std::vector<size_t>> oneToOneMapping = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].rawIndicesMapping;
-
-        rawTimestamps.reserve(dates.size());
-        oneToOneMapping.resize(dates.size());
-
-        for (size_t i = 0; i < dates.size(); ++i) {
-            rawTimestamps.push_back(dateToChartTimestamp(dates[i]));
-            oneToOneMapping[i] = {i};
+    // Vérifier si les données sont différentes des données actuelles
+    bool dataChanged = true;
+    
+    // Si nous avons des données en cache, vérifier si elles ont changé
+    if (m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid) {
+        // Vérifier si la taille a changé
+        if (m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close.size() == data->getClose().size()) {
+            // Vérifier quelques points pour voir si les données sont identiques
+            // Nous vérifions le premier, le dernier et un point au milieu
+            const std::vector<double>& cachedClose = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+            const std::vector<double>& newClose = data->getClose();
+            
+            size_t size = cachedClose.size();
+            dataChanged = false;
+            
+            // Vérifier le premier point
+            if (std::abs(cachedClose[0] - newClose[0]) > 1e-10) {
+                dataChanged = true;
+            } 
+            // Vérifier le dernier point
+            else if (std::abs(cachedClose[size-1] - newClose[size-1]) > 1e-10) {
+                dataChanged = true;
+            }
+            // Vérifier un point au milieu
+            else if (std::abs(cachedClose[size/2] - newClose[size/2]) > 1e-10) {
+                dataChanged = true;
+            }
         }
     }
-    m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].open = data->getOpen();
-    m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high = data->getHigh();
-    m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low = data->getLow();
-    m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close = data->getClose();
-    m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].volume = data->getVolume();
-    m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid = true; // Les données brutes sont toujours valides
 
-    updateHeikinAshiCache();
-    
-    m_aggregatedIndicatorsCache.fill(chart::IndicatorData());
+    // Si les données ont changé, mettre à jour le cache OHLCV et recalculer les indicateurs
+    if (dataChanged) {
+        m_aggregatedOHLCVCache.fill(chart::AggregatedOHLCV());
+        {
+            const std::vector<be::Date>& dates = data->getDates();
+            m_datesCache = dates;
+
+            std::vector<double>& rawTimestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
+            std::vector<std::vector<size_t>> oneToOneMapping = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].rawIndicesMapping;
+
+            rawTimestamps.reserve(dates.size());
+            oneToOneMapping.resize(dates.size());
+
+            for (size_t i = 0; i < dates.size(); ++i) {
+                rawTimestamps.push_back(dateToChartTimestamp(dates[i]));
+                oneToOneMapping[i] = {i};
+            }
+        }
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].open = data->getOpen();
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high = data->getHigh();
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low = data->getLow();
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close = data->getClose();
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].volume = data->getVolume();
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid = true; // Les données brutes sont toujours valides
+
+        updateHeikinAshiCache();
+        
+        m_aggregatedIndicatorsCache.fill(chart::IndicatorData());
+        
+        
+        // Recalculer tous les indicateurs existants
+        for (const auto& indicator : m_indicators) {
+            calculateIndicator(*indicator);
+        }
+    }
 
 
 
@@ -54,7 +93,13 @@ void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, cons
         // Stocker les indices raw
         m_tradeIndices[i][static_cast<size_t>(chart::AggregationLevel::Raw)] = {entryBar, exitBar};
     }
-    
+
+    // Si le niveau d'agrégation a déjà été calculé, recalculer les indices des trades
+    for (size_t i = 1; i < static_cast<size_t>(chart::AggregationLevel::Count); ++i) {
+        if (m_aggregatedOHLCVCache[i].isValid) {
+            precalculateTradeIndices(static_cast<chart::AggregationLevel>(i));
+        }
+    }
     
     
     if (equityCurve.empty()) return;
@@ -259,6 +304,11 @@ void ChartDataManager::aggregateOHLCV(chart::AggregationLevel level) {
     // Précalculer les indices des trades pour ce nouveau niveau d'agrégation
     if (!m_trades.empty() && level != chart::AggregationLevel::Raw) {
         precalculateTradeIndices(level);
+
+        // CORRECTION: Parcourir tous les points pivots pour ce niveau
+        for (auto& [pivotId, periods] : m_pivotPeriods) {
+            precalculatePivotIndices(periods, level);
+        }
     }
 }
 
@@ -812,13 +862,6 @@ void ChartDataManager::calculateIndicator(const indicators::IndicatorBase &confi
             aggregated.validPivotPointsIds.erase(pivotConfig->id);
         return;
     }
-
-    // // Synchroniser avec tous les niveaux d'agrégation existants dans le cache
-    // for (auto& [level, aggregatedData] : m_aggregationCache) {
-    //     if (aggregatedData.isValid && level != chart::AggregationLevel::Raw) {
-    //         synchronizeIndicatorToAggregation(config, level);
-    //     }
-    // }
 }
 
 chart::AggregationLevel ChartDataManager::determineStartingAggregationLevel(const DoubleArray& timestamps) const {

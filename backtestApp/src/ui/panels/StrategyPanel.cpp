@@ -133,19 +133,6 @@ void StrategyPanel::setupUI() {
         &m_config.sl_minmax_periods
     ));
     
-    QDoubleSpinBox* slMinmaxDeltaSpin = new QDoubleSpinBox(this);
-    slMinmaxDeltaSpin->setDecimals(2);
-    slMinmaxDeltaSpin->setRange(0, 1000.0);
-    slMinmaxDeltaSpin->setValue(5.0);
-    slMinmaxDeltaSpin->setEnabled(false);
-    slMinmaxDeltaSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    slLayout->addRow(new QLabel("Delta Min/Max:", this), slMinmaxDeltaSpin);
-    
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        slMinmaxDeltaSpin,
-        &m_config.sl_minmax_delta_coef_atr
-    ));
-    
     // SL minimum
     QDoubleSpinBox* minStopLossDistanceSpin = new QDoubleSpinBox(this);
     minStopLossDistanceSpin->setDecimals(4);

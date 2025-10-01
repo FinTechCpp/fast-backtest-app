@@ -4,9 +4,9 @@ name: Windows Release Build
 
 on:
   push:
-    branches: [ main, releases ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, releases ]
+    branches: [ main ]
 
 env:
   BUILD_TYPE: Release
@@ -358,15 +358,9 @@ jobs:
       run: |
         echo "## ✅ Build Successful" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        if ("${{ github.ref }}" -eq "refs/heads/main") {
-          echo "**Executable uploaded to GitHub Pages:** [Download v$env:VERSION](https://fintechcpp.github.io/fast-backtest-app-releases/downloads/$env:ARCHIVE_NAME)" >> $env:GITHUB_STEP_SUMMARY
-          echo "" >> $env:GITHUB_STEP_SUMMARY
-          echo "**Official Release:** [GitHub Release v$env:VERSION](https://github.com/${{ github.repository }}/releases/tag/v$env:VERSION)" >> $env:GITHUB_STEP_SUMMARY
-        } else {
-          echo "**Development Build** (no release created)" >> $env:GITHUB_STEP_SUMMARY
-          echo "" >> $env:GITHUB_STEP_SUMMARY
-          echo "**Artifact:** Available in GitHub Actions artifacts for download" >> $env:GITHUB_STEP_SUMMARY
-        }
+        echo "**Executable uploaded to GitHub Pages:** [Download v$env:VERSION](https://fintechcpp.github.io/fast-backtest-app-releases/downloads/$env:ARCHIVE_NAME)" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "**Official Release:** [GitHub Release v$env:VERSION](https://github.com/${{ github.repository }}/releases/tag/v$env:VERSION)" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**Build Details:**" >> $env:GITHUB_STEP_SUMMARY
         echo "- Version: $env:VERSION" >> $env:GITHUB_STEP_SUMMARY
@@ -375,6 +369,4 @@ jobs:
         echo "- Qt Version: ${{ env.QT_VERSION }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- Build Type: ${{ env.BUILD_TYPE }}" >> $env:GITHUB_STEP_SUMMARY
         echo "- Archive: $env:ARCHIVE_NAME" >> $env:GITHUB_STEP_SUMMARY
-        if ("${{ github.ref }}" -eq "refs/heads/main") {
-          echo "- Public Download: https://fintechcpp.github.io/fast-backtest-app-releases/#download" >> $env:GITHUB_STEP_SUMMARY
-        }
+        echo "- Public Download: https://fintechcpp.github.io/fast-backtest-app-releases/#download" >> $env:GITHUB_STEP_SUMMARY

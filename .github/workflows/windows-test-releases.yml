@@ -192,9 +192,9 @@ jobs:
         echo "" >> $env:GITHUB_STEP_SUMMARY
         
         if ($env:CUSTOM_VERSION -and $env:CUSTOM_VERSION -ne "") {
-          echo "⚙️ **Version personnalisée utilisée:** $env:VERSION" >> $env:GITHUB_STEP_SUMMARY
+          echo "⚙️ **Version personnalisee utilisee:** $env:VERSION" >> $env:GITHUB_STEP_SUMMARY
         } else {
-          echo "� **Version du fichier VERSION:** $env:VERSION" >> $env:GITHUB_STEP_SUMMARY
+          echo "📄 **Version du fichier VERSION:** $env:VERSION" >> $env:GITHUB_STEP_SUMMARY
         }
         
         echo "" >> $env:GITHUB_STEP_SUMMARY
@@ -207,16 +207,16 @@ jobs:
         echo "- Checksum SHA256: \`$env:CHECKSUM\`" >> $env:GITHUB_STEP_SUMMARY
         echo "- Taille: $([math]::Round($env:DOWNLOAD_SIZE / 1MB, 2)) MB" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
-        echo "**📥 Téléchargement:**" >> $env:GITHUB_STEP_SUMMARY
+        echo "📥 Telechargement:**" >> $env:GITHUB_STEP_SUMMARY
         echo "Deux artifacts sont disponibles ci-dessus:" >> $env:GITHUB_STEP_SUMMARY
-        echo "1. **Dossier décompressé** - Pour tester directement" >> $env:GITHUB_STEP_SUMMARY
-        echo "2. **Archive ZIP** - Pour tester l'installation complète" >> $env:GITHUB_STEP_SUMMARY
+        echo "1. **Dossier decompresse** - Pour tester directement" >> $env:GITHUB_STEP_SUMMARY
+        echo "2. **Archive ZIP** - Pour tester l'installation complete" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**🔧 Utilisation:**" >> $env:GITHUB_STEP_SUMMARY
-        echo "1. Modifiez le fichier \`VERSION\` avec la version souhaitée" >> $env:GITHUB_STEP_SUMMARY
+        echo "1. Modifiez le fichier \`VERSION\` avec la version souhaitee" >> $env:GITHUB_STEP_SUMMARY
         echo "2. Committez et poussez sur la branche \`releases\`" >> $env:GITHUB_STEP_SUMMARY
         echo "3. Téléchargez le ZIP ou le dossier depuis les artifacts" >> $env:GITHUB_STEP_SUMMARY
-        echo "4. Testez en conditions réelles (mise à jour, fonctionnalités, etc.)" >> $env:GITHUB_STEP_SUMMARY
+        echo "4. Testez en conditions reelles (mise a jour, fonctionnalites, etc.)" >> $env:GITHUB_STEP_SUMMARY
         echo "" >> $env:GITHUB_STEP_SUMMARY
         echo "**💡 Astuce:**" >> $env:GITHUB_STEP_SUMMARY
-        echo "Pour une version ponctuelle, utilisez 'Run workflow' et entrez la version désirée (écrase le fichier VERSION)" >> $env:GITHUB_STEP_SUMMARY
+        echo "Pour une version ponctuelle, utilisez 'Run workflow' et entrez la version desiree (ecrase le fichier VERSION)" >> $env:GITHUB_STEP_SUMMARY

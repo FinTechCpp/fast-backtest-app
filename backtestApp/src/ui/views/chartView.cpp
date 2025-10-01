@@ -185,6 +185,13 @@ void ChartView::updateData(BacktestResults* results) {
     // Afficher le widget de graphique
     showChartWidget();
 
+    // A la place de faire cela on informe le panel des arriver des potentiel candidat pour des indicateur et le panel PROPOSE
+    // les indicateur a l'utilisteur sous forme de question. par exmeple si on utilise un EMA 30 : 
+    // sous la liste des indicateur actife on affiche un bouton "[EMA 30] => X"
+    // avec la fleche pour application de l'indicateur et cela ajoute l'indicateur au graphique
+    // la crois elle supprime la suggestion
+    // a chaque changement de stratégie on efface l'ancienne liste de proposition et on la reconstruit
+    // Cela permet a l'utilisateur de conserver sa configuration d'indicateur tout en aillant une option dynamique pour ajouter les indicateur utiliser pendant le backtest
     // Configurer les indicateurs de stratégie
     // m_leftPanel->configureIndicatorInstances(
     //     extractIndicatorsFromFilters(results->strategyConfig)

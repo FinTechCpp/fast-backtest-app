@@ -221,7 +221,7 @@ void StrategyPanel::setupUI() {
     
     // Paramètres SuperTrend - Période ATR
     QSpinBox* tpSupertrendAtrPeriodSpin = new QSpinBox(this);
-    tpSupertrendAtrPeriodSpin->setRange(1, 100);
+    tpSupertrendAtrPeriodSpin->setRange(1, 1000);
     tpSupertrendAtrPeriodSpin->setValue(14);
     tpSupertrendAtrPeriodSpin->setEnabled(false);
     tpSupertrendAtrPeriodSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
@@ -235,7 +235,7 @@ void StrategyPanel::setupUI() {
     // Paramètres SuperTrend - Multiplicateur
     QDoubleSpinBox* tpSupertrendMultiplierSpin = new QDoubleSpinBox(this);
     tpSupertrendMultiplierSpin->setDecimals(1);
-    tpSupertrendMultiplierSpin->setRange(0.1, 100.0);
+    tpSupertrendMultiplierSpin->setRange(0.1, 1000.0);
     tpSupertrendMultiplierSpin->setSingleStep(0.1);
     tpSupertrendMultiplierSpin->setValue(3.0);
     tpSupertrendMultiplierSpin->setEnabled(false);
@@ -552,7 +552,7 @@ void StrategyPanel::setupUI() {
     
     QDoubleSpinBox* breakEvenThresholdSpin = new QDoubleSpinBox(this);
     breakEvenThresholdSpin->setDecimals(2);
-    breakEvenThresholdSpin->setRange(0.0, 1.0);
+    breakEvenThresholdSpin->setRange(0.0, 10.0);
     breakEvenThresholdSpin->setSingleStep(0.05);
     breakEvenThresholdSpin->setValue(0.7);
     breakEvenThresholdSpin->setEnabled(false);
@@ -566,7 +566,7 @@ void StrategyPanel::setupUI() {
     
     QDoubleSpinBox* breakEvenOffsetSpin = new QDoubleSpinBox(this);
     breakEvenOffsetSpin->setDecimals(3);
-    breakEvenOffsetSpin->setRange(-5.0, 5.0);
+    breakEvenOffsetSpin->setRange(-50.0, 50.0);
     breakEvenOffsetSpin->setSingleStep(0.05);
     breakEvenOffsetSpin->setValue(0.0);
     breakEvenOffsetSpin->setSuffix("‰");

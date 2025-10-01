@@ -55,7 +55,7 @@ public:
         async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
             "async_file_logger",       // Logger name
             "logs/Strategies/GenericStrategy_async.log",      // Log file path
-            100 * 1024 * 1024,          // Max file size (100 MB)
+            30 * 1024 * 1024,          // Max file size (100 MB)
             1
         );
         async_file->set_level(spdlog::level::debug);

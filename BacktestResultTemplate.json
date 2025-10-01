@@ -128,7 +128,7 @@
           "exitPrice": "number",
           "entryBar": "number (bar index for entry)",
           "exitBar": "number (bar index for exit)",
-          "entryTime": {
+          "entryDate": {
             "year": "number",
             "month": "number",
             "day": "number",
@@ -136,7 +136,7 @@
             "minute": "number",
             "second": "number"
           },
-          "exitTime": {
+          "exitDate": {
             "year": "number",
             "month": "number",
             "day": "number",

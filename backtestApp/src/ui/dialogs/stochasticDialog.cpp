@@ -13,17 +13,17 @@ StochasticDialog::~StochasticDialog()
 void StochasticDialog::setupUI() {
     // Période Fast K
     m_fastKPeriodSpinBox = new QSpinBox();
-    m_fastKPeriodSpinBox->setRange(2, 100);
+    m_fastKPeriodSpinBox->setRange(2, 1000);
     m_formLayout->addRow("Fast K Period:", m_fastKPeriodSpinBox);
     
     // Période Slow K
     m_slowKPeriodSpinBox = new QSpinBox();
-    m_slowKPeriodSpinBox->setRange(1, 100);
+    m_slowKPeriodSpinBox->setRange(1, 1000);
     m_formLayout->addRow("Slow K Period:", m_slowKPeriodSpinBox);
     
     // Période Slow D
     m_slowDPeriodSpinBox = new QSpinBox();
-    m_slowDPeriodSpinBox->setRange(1, 100);
+    m_slowDPeriodSpinBox->setRange(1, 1000);
     m_formLayout->addRow("Slow D Period:", m_slowDPeriodSpinBox);
     
     // Hauteur
@@ -34,12 +34,12 @@ void StochasticDialog::setupUI() {
     
     // Niveau de surachat
     m_overboughtLevelSpinBox = new QSpinBox();
-    m_overboughtLevelSpinBox->setRange(50, 100);
+    m_overboughtLevelSpinBox->setRange(0, 100);
     m_formLayout->addRow("Overbought Level:", m_overboughtLevelSpinBox);
     
     // Niveau de survente
     m_oversoldLevelSpinBox = new QSpinBox();
-    m_oversoldLevelSpinBox->setRange(0, 50);
+    m_oversoldLevelSpinBox->setRange(0, 100);
     m_formLayout->addRow("Oversold Level:", m_oversoldLevelSpinBox);
     
     // Couleur de la ligne K

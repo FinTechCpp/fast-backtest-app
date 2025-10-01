@@ -88,7 +88,7 @@ void StatsView::setupUI() {
     // QSpacerItem* horizontalSpacer = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
     // gridLayout->addItem(horizontalSpacer, 0, 4, 8, 3);  // ligne 0, colonne 4, hauteur 8, largeur 3
 
-    m_equityWidget = new EquityWidget();
+    m_equityWidget = new EquityWidget("Equity Curve");
     gridLayout->addWidget(m_equityWidget, 0, 4, 3, 3);
 
     // --------------------------------------
@@ -97,7 +97,7 @@ void StatsView::setupUI() {
     m_netProfitWidget = new SimpleTextWidget("Net Profit");
     m_netProfitWidget->setStatColors(QColor(0, 150, 0));
     m_netProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
-    m_netProfitWidget->setSuffix(" %");
+    m_netProfitWidget->setSuffix(" €");
     gridLayout->addWidget(m_netProfitWidget, 1, 0, 1, 2); // S'étend sur 2 colonnes
 
     m_pnlGaugeWidget = new VerticalGaugeRenderWidget("PnL Distribution");
@@ -291,9 +291,9 @@ void StatsView::updateData(BacktestResults* results)
 
 
 
-    m_netProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.returnPct));
+    m_netProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityFinal - m_currentResults->stats.equityInitial));
     // Peut etre integrer cette mécanique dans le widget directement
-    if (m_currentResults->stats.returnPct > 0) {
+    if (m_currentResults->stats.equityFinal - m_currentResults->stats.equityInitial > 0) {
         m_netProfitWidget->setStatColors(QColor(0, 150, 0));
         m_netProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
     } else {

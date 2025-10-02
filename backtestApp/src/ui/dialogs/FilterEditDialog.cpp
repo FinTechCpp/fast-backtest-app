@@ -172,7 +172,7 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     
     // Décalage historique commun à toutes les catégories
     m_leftHistoricalOffsetSpin = new QSpinBox(parent);
-    m_leftHistoricalOffsetSpin->setRange(0, 100);
+    m_leftHistoricalOffsetSpin->setRange(0, 200);
     m_leftHistoricalOffsetSpin->setValue(0);
     m_leftHistoricalOffsetSpin->setSuffix(" barres");
     categoryLayout->addRow("Décalage historique:", m_leftHistoricalOffsetSpin);
@@ -218,7 +218,7 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftEMAWidget = new QWidget(m_leftIndicatorWidget);
     QFormLayout* emaLayout = new QFormLayout(m_leftEMAWidget);
     m_leftEMAPeriodSpin = new QSpinBox(m_leftEMAWidget);
-    m_leftEMAPeriodSpin->setRange(1, 500);
+    m_leftEMAPeriodSpin->setRange(1, 3000);
     m_leftEMAPeriodSpin->setValue(20);
     emaLayout->addRow("Période:", m_leftEMAPeriodSpin);
     m_leftEMAWidget->setVisible(false);
@@ -228,7 +228,7 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftRSIWidget = new QWidget(m_leftIndicatorWidget);
     QFormLayout* rsiLayout = new QFormLayout(m_leftRSIWidget);
     m_leftRSIPeriodSpin = new QSpinBox(m_leftRSIWidget);
-    m_leftRSIPeriodSpin->setRange(1, 500);
+    m_leftRSIPeriodSpin->setRange(1, 1000);
     m_leftRSIPeriodSpin->setValue(14);
     rsiLayout->addRow("Période:", m_leftRSIPeriodSpin);
     m_leftRSIWidget->setVisible(false);
@@ -238,13 +238,13 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftStochasticWidget = new QWidget(m_leftIndicatorWidget);
     QFormLayout* stochLayout = new QFormLayout(m_leftStochasticWidget);
     m_leftStochFastKSpin = new QSpinBox(m_leftStochasticWidget);
-    m_leftStochFastKSpin->setRange(1, 500);
+    m_leftStochFastKSpin->setRange(1, 1000);
     m_leftStochFastKSpin->setValue(14);
     m_leftStochSlowKSpin = new QSpinBox(m_leftStochasticWidget);
-    m_leftStochSlowKSpin->setRange(1, 500);
+    m_leftStochSlowKSpin->setRange(1, 1000);
     m_leftStochSlowKSpin->setValue(3);
     m_leftStochSlowDSpin = new QSpinBox(m_leftStochasticWidget);
-    m_leftStochSlowDSpin->setRange(1, 500);
+    m_leftStochSlowDSpin->setRange(1, 1000);
     m_leftStochSlowDSpin->setValue(3);
     stochLayout->addRow("Période FastK:", m_leftStochFastKSpin);
     stochLayout->addRow("Période SlowK:", m_leftStochSlowKSpin);
@@ -256,7 +256,7 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftATRWidget = new QWidget(m_leftIndicatorWidget);
     QFormLayout* atrLayout = new QFormLayout(m_leftATRWidget);
     m_leftATRPeriodSpin = new QSpinBox(m_leftATRWidget);
-    m_leftATRPeriodSpin->setRange(1, 500);
+    m_leftATRPeriodSpin->setRange(1, 1000);
     m_leftATRPeriodSpin->setValue(14);
     m_leftATRUseLogCheck = new QCheckBox("Utiliser ATR logarithmique", m_leftATRWidget);
     atrLayout->addRow("Période:", m_leftATRPeriodSpin);
@@ -268,11 +268,11 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftSuperTrendWidget = new QWidget(m_leftIndicatorWidget);
     QFormLayout* stLayout = new QFormLayout(m_leftSuperTrendWidget);
     m_leftSuperTrendPeriodSpin = new QSpinBox(m_leftSuperTrendWidget);
-    m_leftSuperTrendPeriodSpin->setRange(1, 500);
+    m_leftSuperTrendPeriodSpin->setRange(1, 1000);
     m_leftSuperTrendPeriodSpin->setValue(10);
     m_leftSuperTrendMultiplierSpin = new QDoubleSpinBox(m_leftSuperTrendWidget);
-    m_leftSuperTrendMultiplierSpin->setRange(0.1, 100.0);
-    m_leftSuperTrendMultiplierSpin->setSingleStep(0.1);
+    m_leftSuperTrendMultiplierSpin->setRange(0.1, 1000.0);
+    m_leftSuperTrendMultiplierSpin->setSingleStep(1);
     m_leftSuperTrendMultiplierSpin->setValue(3.0);
     stLayout->addRow("Période ATR:", m_leftSuperTrendPeriodSpin);
     stLayout->addRow("Multiplicateur:", m_leftSuperTrendMultiplierSpin);
@@ -358,7 +358,7 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightEMAWidget = new QWidget(m_rightIndicatorWidget);
     QFormLayout* emaLayout = new QFormLayout(m_rightEMAWidget);
     m_rightEMAPeriodSpin = new QSpinBox(m_rightEMAWidget);
-    m_rightEMAPeriodSpin->setRange(1, 500);
+    m_rightEMAPeriodSpin->setRange(1, 1000);
     m_rightEMAPeriodSpin->setValue(20);
     emaLayout->addRow("Période:", m_rightEMAPeriodSpin);
     m_rightEMAWidget->setVisible(false);
@@ -368,7 +368,7 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightRSIWidget = new QWidget(m_rightIndicatorWidget);
     QFormLayout* rsiLayout = new QFormLayout(m_rightRSIWidget);
     m_rightRSIPeriodSpin = new QSpinBox(m_rightRSIWidget);
-    m_rightRSIPeriodSpin->setRange(1, 500);
+    m_rightRSIPeriodSpin->setRange(1, 1000);
     m_rightRSIPeriodSpin->setValue(14);
     rsiLayout->addRow("Période:", m_rightRSIPeriodSpin);
     m_rightRSIWidget->setVisible(false);
@@ -378,13 +378,13 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightStochasticWidget = new QWidget(m_rightIndicatorWidget);
     QFormLayout* stochLayout = new QFormLayout(m_rightStochasticWidget);
     m_rightStochFastKSpin = new QSpinBox(m_rightStochasticWidget);
-    m_rightStochFastKSpin->setRange(1, 500);
+    m_rightStochFastKSpin->setRange(1, 1000);
     m_rightStochFastKSpin->setValue(14);
     m_rightStochSlowKSpin = new QSpinBox(m_rightStochasticWidget);
-    m_rightStochSlowKSpin->setRange(1, 500);
+    m_rightStochSlowKSpin->setRange(1, 1000);
     m_rightStochSlowKSpin->setValue(3);
     m_rightStochSlowDSpin = new QSpinBox(m_rightStochasticWidget);
-    m_rightStochSlowDSpin->setRange(1, 500);
+    m_rightStochSlowDSpin->setRange(1, 1000);
     m_rightStochSlowDSpin->setValue(3);
     stochLayout->addRow("Période FastK:", m_rightStochFastKSpin);
     stochLayout->addRow("Période SlowK:", m_rightStochSlowKSpin);
@@ -396,7 +396,7 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightATRWidget = new QWidget(m_rightIndicatorWidget);
     QFormLayout* atrLayout = new QFormLayout(m_rightATRWidget);
     m_rightATRPeriodSpin = new QSpinBox(m_rightATRWidget);
-    m_rightATRPeriodSpin->setRange(1, 500);
+    m_rightATRPeriodSpin->setRange(1, 1000);
     m_rightATRPeriodSpin->setValue(14);
     m_rightATRUseLogCheck = new QCheckBox("Utiliser ATR logarithmique", m_rightATRWidget);
     atrLayout->addRow("Période:", m_rightATRPeriodSpin);
@@ -408,11 +408,11 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightSuperTrendWidget = new QWidget(m_rightIndicatorWidget);
     QFormLayout* stLayout = new QFormLayout(m_rightSuperTrendWidget);
     m_rightSuperTrendPeriodSpin = new QSpinBox(m_rightSuperTrendWidget);
-    m_rightSuperTrendPeriodSpin->setRange(1, 500);
+    m_rightSuperTrendPeriodSpin->setRange(1, 1000);
     m_rightSuperTrendPeriodSpin->setValue(10);
     m_rightSuperTrendMultiplierSpin = new QDoubleSpinBox(m_rightSuperTrendWidget);
-    m_rightSuperTrendMultiplierSpin->setRange(0.1, 10.0);
-    m_rightSuperTrendMultiplierSpin->setSingleStep(0.1);
+    m_rightSuperTrendMultiplierSpin->setRange(0.1, 1000.0);
+    m_rightSuperTrendMultiplierSpin->setSingleStep(1);
     m_rightSuperTrendMultiplierSpin->setValue(3.0);
     stLayout->addRow("Période ATR:", m_rightSuperTrendPeriodSpin);
     stLayout->addRow("Multiplicateur:", m_rightSuperTrendMultiplierSpin);
@@ -474,7 +474,7 @@ void FilterEditDialog::setupTemporalLogicUI(QWidget* parent)
     QFormLayout* temporalLayout = new QFormLayout(parent);
     
     m_lookbackPeriodsSpin = new QSpinBox(parent);
-    m_lookbackPeriodsSpin->setRange(1, 100);
+    m_lookbackPeriodsSpin->setRange(1, 200);
     m_lookbackPeriodsSpin->setValue(1);
     temporalLayout->addRow("Barres à vérifier:", m_lookbackPeriodsSpin);
     

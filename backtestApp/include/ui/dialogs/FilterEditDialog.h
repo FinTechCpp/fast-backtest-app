@@ -25,6 +25,7 @@ private slots:
     void onRightValueCategoryChanged(int index);
     void onLeftIndicatorTypeChanged(int index);
     void onRightIndicatorTypeChanged(int index);
+    void onLookbackPeriodsChanged(int value);
     void onOkButtonClicked();
     void onCancelButtonClicked();
     void updatePreview();
@@ -99,6 +100,7 @@ private:
     
     // Widgets pour la logique temporelle
     QComboBox* m_temporalLogicCombo;
+    QLabel* m_temporalLogicLabel;
     QSpinBox* m_lookbackPeriodsSpin;
     
     // Widget pour l'aperçu du filtre

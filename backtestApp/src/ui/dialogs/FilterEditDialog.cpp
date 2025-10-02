@@ -86,6 +86,9 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::onRightValueCategoryChanged);
     connect(m_rightIndicatorTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::onRightIndicatorTypeChanged);
+    connect(m_lookbackPeriodsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+        this, &FilterEditDialog::onLookbackPeriodsChanged);
+
     
     // Connecter tous les widgets à updatePreview()
     connect(m_leftPriceTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
@@ -461,16 +464,20 @@ void FilterEditDialog::setupTemporalLogicUI(QWidget* parent)
 {
     QFormLayout* temporalLayout = new QFormLayout(parent);
     
-    m_temporalLogicCombo = new QComboBox(parent);
-    m_temporalLogicCombo->addItem("Actuel", static_cast<int>(filter::TemporalLogic::CURRENT));
-    m_temporalLogicCombo->addItem("Au moins une fois dans les N dernières barres", static_cast<int>(filter::TemporalLogic::ANY_OF));
-    m_temporalLogicCombo->addItem("Toutes les N dernières barres", static_cast<int>(filter::TemporalLogic::ALL_OF));
-    temporalLayout->addRow("Logique temporelle:", m_temporalLogicCombo);
-    
     m_lookbackPeriodsSpin = new QSpinBox(parent);
     m_lookbackPeriodsSpin->setRange(1, 100);
     m_lookbackPeriodsSpin->setValue(1);
     temporalLayout->addRow("Barres à vérifier:", m_lookbackPeriodsSpin);
+    
+    m_temporalLogicCombo = new QComboBox(parent);
+    m_temporalLogicCombo->addItem("Toutes les N dernières périodes", static_cast<int>(filter::TemporalLogic::ALL_OF));
+    m_temporalLogicCombo->addItem("Au moins une fois dans les N dernières périodes", static_cast<int>(filter::TemporalLogic::ANY_OF));
+
+
+    m_temporalLogicLabel = new QLabel("Logique temporelle:", parent);
+    temporalLayout->addRow(m_temporalLogicLabel, m_temporalLogicCombo);
+
+    onLookbackPeriodsChanged(m_lookbackPeriodsSpin->value());
 }
 
 void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filter::IndicatorType type)
@@ -655,6 +662,23 @@ void FilterEditDialog::onRightIndicatorTypeChanged(int index)
     updatePreview();
 }
 
+void FilterEditDialog::onLookbackPeriodsChanged(int value)
+{
+    bool showTemporalCombo = (value > 1);
+    m_temporalLogicCombo->setVisible(showTemporalCombo);
+    m_temporalLogicLabel->setVisible(showTemporalCombo);
+
+    if (showTemporalCombo) {
+        // Met à jour dynamiquement le texte des items du combo
+        m_temporalLogicCombo->setItemText(
+            0, QString("Toutes les %1 dernières périodes").arg(value)
+        );
+        m_temporalLogicCombo->setItemText(
+            1, QString("Au moins une fois dans les %1 dernières périodes").arg(value)
+        );
+    }
+}
+
 void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
 {
     m_filter = filter;
@@ -768,6 +792,7 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
     // Mettre à jour la visibilité
     onLeftValueCategoryChanged(leftCategoryIndex);
     onRightValueCategoryChanged(rightCategoryIndex);
+    onLookbackPeriodsChanged(filter.lookbackPeriods);
     
     updatePreview();
 }

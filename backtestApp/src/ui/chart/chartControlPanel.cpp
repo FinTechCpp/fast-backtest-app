@@ -251,7 +251,7 @@ void ChartControlPanel::createSuggestionWidget(std::unique_ptr<indicators::Indic
     item.widget = suggestionWidget;
     item.label = nameLabel;
     item.indicator = std::move(indicator);
-    int newIndex = m_suggestions.size();
+    int newIndex = static_cast<int>(m_suggestions.size());
     
     // Bouton pour ajouter l'indicateur
     QPushButton* addButton = new QPushButton("→");
@@ -335,19 +335,21 @@ void ChartControlPanel::onRejectSuggestion(int index) {
     m_suggestions.erase(m_suggestions.begin() + index);
     
     // Mettre à jour les indices dans les lambdas pour les éléments restants
-    for (size_t i = index; i < m_suggestions.size(); ++i) {
+    for (int i = index; i < static_cast<int>(m_suggestions.size()); ++i) {
         // Déconnecter les anciennes connexions
-        if (m_suggestions[i].addButton) {
-            m_suggestions[i].addButton->disconnect();
-            connect(m_suggestions[i].addButton, &QPushButton::clicked, [this, i]() {
-                this->onAddSuggestedIndicator(i);
+        if (m_suggestions[static_cast<size_t>(i)].addButton) {
+            m_suggestions[static_cast<size_t>(i)].addButton->disconnect();
+            int captureIndex = i;
+            connect(m_suggestions[static_cast<size_t>(i)].addButton, &QPushButton::clicked, [this, captureIndex]() {
+                this->onAddSuggestedIndicator(captureIndex);
             });
         }
 
-        if (m_suggestions[i].rejectButton) {
-            m_suggestions[i].rejectButton->disconnect();
-            connect(m_suggestions[i].rejectButton, &QPushButton::clicked, [this, i]() {
-                this->onRejectSuggestion(i);
+        if (m_suggestions[static_cast<size_t>(i)].rejectButton) {
+            m_suggestions[static_cast<size_t>(i)].rejectButton->disconnect();
+            int captureIndex = i;
+            connect(m_suggestions[static_cast<size_t>(i)].rejectButton, &QPushButton::clicked, [this, captureIndex]() {
+                this->onRejectSuggestion(captureIndex);
             });
         }
     }

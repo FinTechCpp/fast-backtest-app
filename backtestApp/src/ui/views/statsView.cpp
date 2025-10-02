@@ -291,7 +291,19 @@ void StatsView::updateData(BacktestResults* results)
 
 
 
-    m_netProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityFinal - m_currentResults->stats.equityInitial));
+    // Afficher le net profit en euros ET en pourcentage (par rapport à equityInitial)
+    double netProfit = m_currentResults->stats.equityFinal - m_currentResults->stats.equityInitial;
+    QString euroText = SimpleTextWidget::formatWithThousandsSeparator(netProfit);
+    QString pctText;
+    if (m_currentResults->stats.equityInitial != 0.0) {
+        double pct = (netProfit / m_currentResults->stats.equityInitial) * 100.0;
+        pctText = QString::number(pct, 'f', 2);
+    } else {
+        pctText = "--";
+    }
+    // On retire le suffixe automatique pour construire une chaîne unique "€ (xx %)"
+    m_netProfitWidget->setSuffix("");
+    m_netProfitWidget->setStatText(euroText + " € (" + pctText + " %)");
     // Peut etre integrer cette mécanique dans le widget directement
     if (m_currentResults->stats.equityFinal - m_currentResults->stats.equityInitial > 0) {
         m_netProfitWidget->setStatColors(QColor(0, 150, 0));

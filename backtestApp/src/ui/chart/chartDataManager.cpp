@@ -215,7 +215,7 @@ void ChartDataManager::aggregateOHLCV(chart::AggregationLevel level) {
     std::vector<double> volumeCopy = sourceData.volume;
     
     // Créer l'ArrayMath pour l'agrégation
-    ArrayMath timestampsMath(DoubleArray(timestampsCopy.data(), timestampsCopy.size()));
+    ArrayMath timestampsMath(vectorToDoubleArray(timestampsCopy));
 
     if (!configureAggregationSelector(timestampsMath, level)) {
         aggregatedData.isValid = false;
@@ -249,27 +249,27 @@ void ChartDataManager::aggregateOHLCV(chart::AggregationLevel level) {
     
     // Agréger les données OHLCV avec les stratégies appropriées
     DoubleArray times = timestampsMath.aggregate(
-        DoubleArray(timestampsCopy.data(), timestampsCopy.size()), 
+        vectorToDoubleArray(timestampsCopy), 
         Chart::AggregateFirst);
     
     DoubleArray open = timestampsMath.aggregate(
-        DoubleArray(openCopy.data(), openCopy.size()), 
+        vectorToDoubleArray(openCopy), 
         Chart::AggregateFirst);
     
     DoubleArray high = timestampsMath.aggregate(
-        DoubleArray(highCopy.data(), highCopy.size()), 
+        vectorToDoubleArray(highCopy), 
         Chart::AggregateMax);
     
     DoubleArray low = timestampsMath.aggregate(
-        DoubleArray(lowCopy.data(), lowCopy.size()), 
+        vectorToDoubleArray(lowCopy), 
         Chart::AggregateMin);
     
     DoubleArray close = timestampsMath.aggregate(
-        DoubleArray(closeCopy.data(), closeCopy.size()), 
+        vectorToDoubleArray(closeCopy), 
         Chart::AggregateLast);
     
     DoubleArray volume = timestampsMath.aggregate(
-        DoubleArray(volumeCopy.data(), volumeCopy.size()), 
+        vectorToDoubleArray(volumeCopy), 
         Chart::AggregateSum);
 
     // Vérifier que tous les tableaux agrégés ont la même taille

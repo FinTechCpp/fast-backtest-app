@@ -44,9 +44,9 @@ void EquityCurveWidget::updateContent(const be::Stats& stats) {
     double finalEquity = stats.equityFinal;
     
     // Ajouter les points de la courbe d'équité
-    int pointCount = stats.equityCurve.size();
-    for (int i = 0; i < 100; i++) {
-        equitySeries->append(i, stats.equityCurve[i]);
+    auto pointCount = stats.equityCurve.size();
+    for (size_t i = 0; i < pointCount; ++i) {
+        equitySeries->append(static_cast<qreal>(i), static_cast<qreal>(stats.equityCurve[i]));
     }
     
     // equitySeries->append((qreal)0, (qreal)initialEquity);

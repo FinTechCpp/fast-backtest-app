@@ -150,7 +150,7 @@ QWidget* FiltersWidget::createFilterWidget(size_t index, const filter::GenericFi
 void FiltersWidget::addFilterWidget(size_t index, const filter::GenericFilter& filter)
 {
     QWidget* widget = createFilterWidget(index, filter);
-    m_filtersLayout->insertWidget(index, widget);
+    m_filtersLayout->insertWidget(static_cast<int>(index), widget);
 }
 
 void FiltersWidget::updateFilterWidget(size_t index)

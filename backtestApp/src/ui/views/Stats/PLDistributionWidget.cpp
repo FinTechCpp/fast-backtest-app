@@ -113,7 +113,7 @@ void PLDistributionWidget::computeStatistics(const std::vector<be::TradeData>& t
         }
     }
     
-    m_totalTrades = m_plValues.size();
+    m_totalTrades = static_cast<int>(m_plValues.size());
     
     // Calculer les statistiques
     if (!m_positiveValues.empty()) {

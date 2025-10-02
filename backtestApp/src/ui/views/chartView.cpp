@@ -196,6 +196,10 @@ void ChartView::updateData(BacktestResults* results) {
     // m_leftPanel->configureIndicatorInstances(
     //     extractIndicatorsFromFilters(results->strategyConfig)
     // );
+
+    m_leftPanel->suggestIndicatorsFromStrategy(
+        extractIndicatorsFromFilters(results->strategyConfig)
+    );
     
     // Actualiser la liste des indicateurs
     m_leftPanel->refreshIndicatorsList();

@@ -236,10 +236,11 @@ namespace indicators {
         // Type type_; // Type d'indicateur
         bool visible = true; // Si l'indicateur est visible
 
-        virtual bool needsRecalculation(const IndicatorBase& other) const = 0;
+        virtual bool isCalculationParamsEqual(const IndicatorBase& other) const = 0;
         
         // Nouvelle méthode pour obtenir le nom d'affichage de l'indicateur
         virtual QString getDisplayName() const = 0;
+        virtual std::unique_ptr<IndicatorBase> clone() const = 0;
 
         virtual void setDefaults() = 0;
 
@@ -274,10 +275,14 @@ namespace indicators {
         int upperColor;         // Couleur pour la zone de surachat
         int lowerColor;         // Couleur pour la zone de survente
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const RSIInstance* otherRSI = dynamic_cast<const RSIInstance*>(&other);
-            if (!otherRSI) return true;
-            return period != otherRSI->period;
+            if (!otherRSI) return false;
+            return period == otherRSI->period;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<RSIInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -302,10 +307,14 @@ namespace indicators {
         int period;            // Période de l'EMA
         int color;             // Couleur de la ligne (bleu par défaut)
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const EMAInstance* otherEMA = dynamic_cast<const EMAInstance*>(&other);
-            if (!otherEMA) return true;
-            return period != otherEMA->period;
+            if (!otherEMA) return false;
+            return period == otherEMA->period;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<EMAInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -327,10 +336,14 @@ namespace indicators {
         int upColor;           // Couleur de la ligne (vert par défaut)
         int downColor;         // Couleur de la ligne (rouge par défaut)
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const SuperTrendInstance* otherST = dynamic_cast<const SuperTrendInstance*>(&other);
-            if (!otherST) return true;
-            return period != otherST->period || multiplier != otherST->multiplier;
+            if (!otherST) return false;
+            return period == otherST->period && multiplier == otherST->multiplier;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<SuperTrendInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -358,12 +371,16 @@ namespace indicators {
         int overboughtLevel;    // Niveau de surachat
         int oversoldLevel;      // Niveau de survente
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const StochasticInstance* otherStochastic = dynamic_cast<const StochasticInstance*>(&other);
-            if (!otherStochastic) return true;
-            return fastKPeriod != otherStochastic->fastKPeriod ||
-                slowKPeriod != otherStochastic->slowKPeriod ||
-                slowDPeriod != otherStochastic->slowDPeriod;
+            if (!otherStochastic) return false;
+            return fastKPeriod == otherStochastic->fastKPeriod &&
+                slowKPeriod == otherStochastic->slowKPeriod &&
+                slowDPeriod == otherStochastic->slowDPeriod;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<StochasticInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -391,10 +408,14 @@ namespace indicators {
         int color;             // Couleur de la ligne (vert foncé par défaut)
         bool useLogScale;      // Indique si l'échelle logarithmique est utilisée
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const ATRInstance* otherATR = dynamic_cast<const ATRInstance*>(&other);
-            if (!otherATR) return true;
-            return period != otherATR->period || useLogScale != otherATR->useLogScale;
+            if (!otherATR) return false;
+            return period == otherATR->period && useLogScale == otherATR->useLogScale;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<ATRInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -463,10 +484,14 @@ namespace indicators {
         bool showLabels = true;                         // Afficher les étiquettes des niveaux
 
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const PivotPointsInstance* otherPP = dynamic_cast<const PivotPointsInstance*>(&other);
             if (!otherPP) return true;
-            return periodType != otherPP->periodType || calculationMethod != otherPP->calculationMethod;
+            return periodType == otherPP->periodType && calculationMethod == otherPP->calculationMethod;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<PivotPointsInstance>(*this);
         }
         
         QString getDisplayName() const override {

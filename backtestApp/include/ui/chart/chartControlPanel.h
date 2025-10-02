@@ -25,6 +25,7 @@ public:
 
     void refreshIndicatorsList();
     void configureIndicatorInstances(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators);
+    void suggestIndicatorsFromStrategy(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators);
     void setChartWidget(ChartWidget* chartWidget);
     
     // Nouvelle méthode pour mettre à jour l'état de comparaison dans l'UI
@@ -51,6 +52,11 @@ private slots:
     void onIndicatorAdded(int id, const QString& name);
     void onIndicatorChanged(int id, const QString& name);
     void onIndicatorRemoved(int id);
+
+    // Nouveaux slots pour les suggestions
+    void onAddSuggestedIndicator(int index);
+    void onRejectSuggestion(int index);
+    void onClearAllSuggestions();
 
 private:
     void setupUI();
@@ -92,4 +98,25 @@ private:
         }
         return false;
     }
+
+    // Nouveaux attributs pour la section des suggestions
+    QGroupBox* m_suggestionsGroup;
+    QVBoxLayout* m_suggestionsLayout;
+    QPushButton* m_clearSuggestionsButton;
+    
+    struct SuggestionItem {
+        QWidget* widget;
+        QPushButton* addButton;
+        QPushButton* rejectButton;
+        QLabel* label;
+        std::unique_ptr<indicators::IndicatorBase> indicator;
+    };
+    
+    std::vector<SuggestionItem> m_suggestions;
+    
+    // Nouvelle méthode pour créer un widget de suggestion
+    void createSuggestionWidget(std::unique_ptr<indicators::IndicatorBase> indicator);
+    
+    // Méthode pour vérifier si un indicateur similaire existe déjà
+    bool hasSimilarIndicator(const indicators::IndicatorBase* indicator) const;
 };

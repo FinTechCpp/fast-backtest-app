@@ -99,11 +99,11 @@ public:
 
         if (!indicator) return false;
 
-        bool needsRecalculation = indicator->needsRecalculation(config);
+        bool isCalculationParamsEqual = indicator->isCalculationParamsEqual(config);
 
         *indicator = config; // Met à jour la configuration de l'indicateur
 
-        if (needsRecalculation)
+        if (!isCalculationParamsEqual)
             calculateIndicator(config);
 
         return true;

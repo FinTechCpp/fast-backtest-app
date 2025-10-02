@@ -44,9 +44,15 @@ void FilterEditDialog::setupUI()
     horizontalLayout->addWidget(operatorGroup, 1);  // Ratio 1
     
     // Groupe pour la partie droite
-    QGroupBox* rightGroup = new QGroupBox("Valeur de droite", this);
-    setupRightValueUI(rightGroup);
-    horizontalLayout->addWidget(rightGroup, 3);  // Ratio 3
+    m_rightGroup = new QGroupBox("Valeur de droite", this);
+    setupRightValueUI(m_rightGroup);
+    horizontalLayout->addWidget(m_rightGroup, 3);  // Ratio 3
+
+    // Ajoute un placeholder invisible à la place du groupe de droite
+    m_rightPlaceholder = new QWidget(this);
+    m_rightPlaceholder->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    m_rightPlaceholder->setVisible(false);
+    horizontalLayout->addWidget(m_rightPlaceholder, 3); // Même ratio que rightGroup
     
     mainLayout->addLayout(horizontalLayout);
     
@@ -86,6 +92,7 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::onRightValueCategoryChanged);
     connect(m_rightIndicatorTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::onRightIndicatorTypeChanged);
+    connect(m_operatorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &FilterEditDialog::onComparisonOpChanged);
     connect(m_lookbackPeriodsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
         this, &FilterEditDialog::onLookbackPeriodsChanged);
 
@@ -456,6 +463,8 @@ void FilterEditDialog::setupOperatorUI(QWidget* parent)
     m_operatorCombo->addItem("!=", static_cast<int>(filter::ComparisonOperator::NOT_EQUAL));
     m_operatorCombo->addItem("Croise au-dessus", static_cast<int>(filter::ComparisonOperator::CROSSES_ABOVE));
     m_operatorCombo->addItem("Croise en-dessous", static_cast<int>(filter::ComparisonOperator::CROSSES_BELOW));
+    m_operatorCombo->addItem("Est Vrai", static_cast<int>(filter::ComparisonOperator::TRUE));
+    m_operatorCombo->addItem("Est Faux", static_cast<int>(filter::ComparisonOperator::FALSE));
 
     operatorLayout->addRow("Opérateur:", m_operatorCombo);
 }
@@ -661,6 +670,19 @@ void FilterEditDialog::onRightIndicatorTypeChanged(int index)
     updateIndicatorParamsVisibility(m_rightIndicatorWidget, type);
     updatePreview();
 }
+
+void FilterEditDialog::onComparisonOpChanged(int index) {
+    filter::ComparisonOperator op = static_cast<filter::ComparisonOperator>(m_operatorCombo->itemData(index).toInt());
+
+    bool isBoolOp = (op == filter::ComparisonOperator::TRUE || op == filter::ComparisonOperator::FALSE);
+
+    // Affiche ou masque le groupe de droite et le placeholder
+    m_rightGroup->setVisible(!isBoolOp);
+    m_rightPlaceholder->setVisible(isBoolOp);
+
+    updatePreview();
+}
+
 
 void FilterEditDialog::onLookbackPeriodsChanged(int value)
 {

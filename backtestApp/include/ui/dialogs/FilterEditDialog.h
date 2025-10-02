@@ -5,6 +5,7 @@
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
+#include <QGroupBox>
 #include <QLabel>
 #include <QTabWidget>
 #include "common.h"
@@ -25,6 +26,7 @@ private slots:
     void onRightValueCategoryChanged(int index);
     void onLeftIndicatorTypeChanged(int index);
     void onRightIndicatorTypeChanged(int index);
+    void onComparisonOpChanged(int index);
     void onLookbackPeriodsChanged(int value);
     void onOkButtonClicked();
     void onCancelButtonClicked();
@@ -68,6 +70,8 @@ private:
     QDoubleSpinBox* m_leftSuperTrendMultiplierSpin;
     
     // Widgets pour le côté droit
+    QGroupBox* m_rightGroup;
+    QWidget* m_rightPlaceholder;
     QComboBox* m_rightCategoryCombo;
     QWidget* m_rightPriceWidget;
     QWidget* m_rightIndicatorWidget;

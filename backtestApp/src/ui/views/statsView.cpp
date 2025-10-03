@@ -372,7 +372,12 @@ void StatsView::updateData(BacktestResults* results)
 
     m_histogramWidget->updateData(m_currentResults);
 
-    m_equityWidget->setPoints(m_currentResults->stats.equityCurve);
+    std::vector<be::Date> dates(m_currentResults->candles.size());
+    for (size_t i = 0; i < m_currentResults->candles.size(); ++i) {
+        dates[i] = m_currentResults->candles[i].date;
+    }
+
+    m_equityWidget->setPoints(dates, m_currentResults->stats.equityCurve);
 }
 
 void StatsView::clear() {

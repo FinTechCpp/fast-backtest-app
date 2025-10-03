@@ -18,7 +18,7 @@ public:
 
     // Replace points (will be sorted by X and filtered for consecutive duplicates in Y)
     void setPoints(const QVector<QPointF>& pts);
-    void setPoints(const std::vector<be::Stats::EquityPoint>& equityCurve);
+    void setPoints(const std::vector<be::Date>& dates, const std::vector<be::Stats::EquityPoint>& equityCurve);
     QVector<QPointF> points() const { return m_points; }
 
 
@@ -30,11 +30,19 @@ protected:
 
 
 private:
-    QVector<QPointF> m_points; // sorted, filtered
+    struct DateLabel {
+        double position;  // Position X sur l'axe
+        QString text;     // Texte à afficher
+        int importance;   // Niveau d'importance: 3=année, 2=mois, 1=jour
+    };
+
+    QVector<QPointF> m_points;
+    std::vector<be::Date> m_dates;  // Dates correspondant aux points
+    
+    // Nouvelle méthode pour générer les labels de dates intelligents
+    std::vector<DateLabel> generateDateLabels() const;
 
 
-    // world bounds
-    double m_xmin, m_xmax, m_ymin, m_ymax;
     void updateBounds();
 
 
@@ -49,13 +57,13 @@ private:
     QPointF mapToWidget(const QPointF &pt) const;
     QPointF mapToWorld(const QPointF &pixel) const;
 
+    double m_xmin, m_xmax, m_ymin, m_ymax;
+    QRect m_contentRect;
 
     // layout margins to leave space for axis labels
     const int m_leftMargin = 10;      // Réduit car plus de labels à gauche
     const int m_bottomMargin = 30;
     const int m_rightMargin = 80;     // Augmenté pour les labels Y à droite
     const int m_topMargin = 10;
-
-    QRect m_contentRect;
-    int m_margin = 5;
+    const int m_margin = 5;
 };

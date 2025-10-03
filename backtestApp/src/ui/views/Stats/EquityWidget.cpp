@@ -5,6 +5,7 @@
 #include <QtMath>
 #include <algorithm>
 #include <QPainterPath>
+#include <set>
 
 static constexpr double EPSILON_D = 1e-9;
 
@@ -45,8 +46,11 @@ void EquityWidget::setPoints(const QVector<QPointF>& pts)
     update();
 }
 
-void EquityWidget::setPoints(const std::vector<be::Stats::EquityPoint>& equityCurve) {
+void EquityWidget::setPoints(const std::vector<be::Date>& dates, const std::vector<be::Stats::EquityPoint>& equityCurve) {
     QVector<QPointF> newPoints;
+
+    // CA c'est pas opti mais bon... a corriger plus tard
+    m_dates = dates; // Stocker les dates pour un usage futur
     
     // Si le tableau contient uniquement des valeurs Y
     if (!equityCurve.empty()) {
@@ -55,8 +59,141 @@ void EquityWidget::setPoints(const std::vector<be::Stats::EquityPoint>& equityCu
             newPoints.append(QPointF(static_cast<double>(equityCurve[i].index), equityCurve[i].value));
         }
     }
+
+    // Dernier point
+    newPoints.append(QPointF(static_cast<double>(m_dates.size()), equityCurve.back().value));
     
     setPoints(newPoints);
+}
+
+std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
+    std::vector<DateLabel> labels;
+    
+    if (m_dates.empty()) {
+        return labels;
+    }
+
+    // Tables de conversion mois -> texte
+    static const QStringList monthNames = {"", "Jan", "Fév", "Mar", "Avr", "Mai", "Juin", 
+                                          "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"};
+    
+    // Déterminer la plage totale des dates
+    be::Date startDate;
+    be::Date endDate;
+    bool validDatesFound = false;
+
+    for (const auto& date : m_dates) {
+        if (date.year > 0) {
+            if (!validDatesFound) {
+                startDate = date;
+                endDate = date;
+                validDatesFound = true;
+            } else {
+                endDate = date;
+            }
+        }
+    }
+    
+    // Si aucune date valide trouvée
+    if (!validDatesFound) {
+        return labels;
+    }
+    
+    // Calculer la durée entre la première et la dernière date
+    // Nouveau: seuil de 2 ans au lieu de 1 an
+    bool isMoreThanTwoYears = false;
+    if (endDate.year > startDate.year + 2 || 
+        (endDate.year == startDate.year + 2 && endDate.month >= startDate.month)) {
+        isMoreThanTwoYears = true;
+    }
+
+    int totalMonthsDiff = (endDate.year - startDate.year) * 12 + (endDate.month - startDate.month);
+    bool isMoreThanTwoMonths = totalMonthsDiff > 2;
+    
+    // Parcourir les dates pour créer les labels
+    int lastYear = m_dates[0].year;
+    int lastMonth = m_dates[0].month;
+    int lastDay = m_dates[0].day;
+
+    for (size_t i = 0; i < m_dates.size(); ++i) {
+        const be::Date& date = m_dates[i];
+        if (date.year <= 0) continue;  // Date invalide
+        
+        int year = static_cast<int>(date.year);
+        int month = static_cast<int>(date.month);
+        int day = static_cast<int>(date.day);
+        
+        bool addLabel = false;
+        QString labelText;
+        int importance = 0;
+        
+        // Si période > 2 ans : uniquement les années
+        if (isMoreThanTwoYears) {
+            // Années uniquement
+            if (year != lastYear) {
+                labelText = QString::number(year);
+                importance = 3; // Année
+                addLabel = true;
+                lastYear = year;
+                lastMonth = -1;
+            }
+        }
+        // Si période > 2 mois et <= 2 ans : tous les mois ET les années
+        else if (isMoreThanTwoMonths) {
+            // Année si elle change
+            if (year != lastYear) {
+                labelText = QString::number(year);
+                importance = 3; // Année
+                addLabel = true;
+                lastYear = year;
+                lastMonth = -1; // Réinitialiser pour afficher le mois qui suit
+            }
+            
+            // Tous les mois (si ce n'est pas le même que le dernier affiché)
+            else if (month != lastMonth) {
+                labelText = monthNames[month];
+                importance = 2; // Mois
+                addLabel = true;
+            }
+            
+            // Mémoriser le dernier mois affiché
+            if (addLabel) {
+                lastMonth = month;
+            }
+        }
+        // Si période <= 2 mois : tous les jours, mois et années
+        else {
+            // Année si elle change
+            if (year != lastYear) {
+                labelText = QString::number(year);
+                importance = 3; // Année
+                addLabel = true;
+                lastYear = year;
+                lastMonth = -1; // Réinitialiser pour afficher le mois qui suit
+            }
+            // Mois si il change
+            else if (month != lastMonth) {
+                labelText = monthNames[month];
+                importance = 2; // Mois
+                addLabel = true;
+                lastMonth = month;
+                lastDay = day;
+            }
+            // Jour (toujours)
+            else if (day != lastDay) {
+                labelText = QString::number(static_cast<int>(date.day));
+                importance = 1; // Jour
+                addLabel = true;
+                lastDay = day;
+            }
+        }
+        
+        if (addLabel) {
+            labels.push_back({static_cast<double>(i), labelText, importance});
+        }
+    }
+    
+    return labels;
 }
 
 void EquityWidget::updateBounds()
@@ -254,51 +391,70 @@ void EquityWidget::drawAxes(QPainter &painter)
                      m_contentRect.left() + m_contentRect.width() - m_rightMargin, 
                      m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
 
-    // ticks and labels
-    const int xTicks = 6;
-    const int yTicks = 5;
-    
-    double xrange = m_xmax - m_xmin;
-    double yrange = m_ymax - m_ymin;
-    if (xrange <= 0 || yrange <= 0) return;
-
-    double xstep = xrange / xTicks;
-    double ystep = yrange / yTicks;
 
     QFontMetrics fm(font());
 
-    // Axe X - inchangé
-    for (int i = 0; i <= xTicks; ++i) {
-        double xv = m_xmin + i * xstep;
-        QPointF wp = mapToWidget(QPointF(xv, m_ymin));
-        // tick
-        painter.drawLine(QPointF(wp.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin), 
-                         QPointF(wp.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin + 4));
-        // label
-        QString txt;
-        if (std::abs(xv - std::round(xv)) < 0.001) {
-            txt = QString::number(static_cast<int>(xv));
-        } else {
-            txt = QString::number(xv, 'f', 1);
-        }
-        
-        int tw = fm.horizontalAdvance(txt);
-        painter.drawText(QPointF(wp.x() - tw/2, m_contentRect.top() + m_contentRect.height() - 6), txt);
-    }
-
-    // Axe Y - MODIFIÉ pour afficher à droite
+    // Axe Y - Labels de valeurs
+    const int yTicks = 5;
+    double yrange = m_ymax - m_ymin;
+    if (yrange <= 0) return;
+    
+    double ystep = yrange / yTicks;
+    
     for (int i = 0; i <= yTicks; ++i) {
         double yv = m_ymin + i * ystep;
-        QPointF wp = mapToWidget(QPointF(m_xmax, yv));  // Utiliser m_xmax au lieu de m_xmin
+        QPointF wp = mapToWidget(QPointF(m_xmax, yv));
         
-        // tick - à droite maintenant
+        // tick - à droite
         painter.drawLine(QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin, wp.y()), 
                          QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin + 4, wp.y()));
         
-        // label - aligné à gauche après le tick (à droite du graphique)
+        // label - aligné à gauche après le tick
         QString txt = formatValue(yv);
         painter.drawText(QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin + 8, 
-                                wp.y() + fm.ascent()/2 - 2), txt);
+                               wp.y() + fm.ascent()/2 - 2), txt);
+    }
+
+    // Axe X - Utiliser les labels de date intelligents
+    if (!m_dates.empty()) {
+        // Générer les labels de date intelligents
+        auto dateLabels = generateDateLabels();
+        
+        for (const auto& label : dateLabels) {
+            // Mapper l'indice à la position dans le widget
+            double xPos = label.position;
+            if (xPos >= 0 && xPos < m_dates.size()) {
+                QPointF wp = mapToWidget(QPointF(xPos, m_ymin));
+                
+                // Dessiner le trait vertical
+                painter.drawLine(QPointF(wp.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin), 
+                                QPointF(wp.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin + 4));
+                
+                // Adapter le style selon l'importance
+                QFont labelFont = painter.font();
+                if (label.importance == 3) {
+                    // Année: gras
+                    labelFont.setBold(true);
+                    painter.setFont(labelFont);
+                } else if (label.importance == 2) {
+                    // Mois: normal
+                    labelFont.setBold(false);
+                    painter.setFont(labelFont);
+                } else {
+                    // Jour: plus petit
+                    labelFont.setBold(false);
+                    labelFont.setPointSize(labelFont.pointSize() - 1);
+                    painter.setFont(labelFont);
+                }
+
+                // Dessiner le texte
+                int tw = fm.horizontalAdvance(label.text);
+                painter.drawText(QPointF(wp.x() - tw/2, m_contentRect.top() + m_contentRect.height() - 6), label.text);
+                
+                // Restaurer la police
+                painter.setFont(font());
+            }
+        }
     }
 }
 

@@ -209,7 +209,7 @@ void BacktestResultMenuManager::onSaveCurrentResult()
 
         config.generalParams = currentResults.generalConfig;
         config.strategyConfig = currentResults.strategyConfig;
-        config.candles = currentResults.data->getCandles();
+        config.candles = currentResults.candles;
         config.stats = currentResults.stats;
 
         // Sauvegarder le résultat
@@ -261,7 +261,7 @@ void BacktestResultMenuManager::onLoadResult()
 
                 results->generalConfig = config.generalParams;
                 results->strategyConfig = config.strategyConfig;
-                results->data = std::make_shared<be::Data>(config.candles);
+                results->candles = config.candles;
                 results->stats = config.stats;
 
                 m_mainWindow->setGeneralParamsConfig(config.generalParams);

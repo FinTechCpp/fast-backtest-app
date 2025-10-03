@@ -35,13 +35,14 @@ struct BacktestResultConfig {
     std::string name;
     std::string version;
     std::string createdAt;
+
+    // Backtest Results : a remplacer par la structure BacktestResults directement ?
     GeneralParamsConfig generalParams;
     StrategyConfig strategyConfig;
     be::Stats stats;
     // c'est vraiment lourd, il faudrait plutot une reference vers des données, ensuite en verifie que les données chargées étaient bien celles de l'enregistrement
     std::vector<be::Candle> candles;
 
-    // peut etre ajouter la configuration du profile utiliser pour le backtest en question ?
 
     template<class Archive>
     void serialize(Archive & ar) {

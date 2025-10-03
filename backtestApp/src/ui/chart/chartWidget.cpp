@@ -62,7 +62,7 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
         return;
     }
 
-    m_dataManager.setData(results->data, results->stats.trades, results->stats.equityCurve);
+    m_dataManager.setData(results->candles, results->stats.trades, results->stats.equityCurve);
 
     updateChartDisplay(ViewPortMode::USE_CURRENT);
 }

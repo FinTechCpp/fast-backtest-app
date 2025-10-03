@@ -8,8 +8,8 @@ ChartDataManager::ChartDataManager() {
 ChartDataManager::~ChartDataManager() {
 }
 
-void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, const std::vector<be::TradeData>& trades, const std::vector<double>& equityCurve) {
-    if (!data) return;
+void ChartDataManager::setData(const std::vector<be::Candle>& candles, const std::vector<be::TradeData>& trades, const std::vector<double>& equityCurve) {
+    if (candles.empty()) return;
 
     // Vérifier si les données sont différentes des données actuelles
     bool dataChanged = true;
@@ -17,25 +17,24 @@ void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, cons
     // Si nous avons des données en cache, vérifier si elles ont changé
     if (m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid) {
         // Vérifier si la taille a changé
-        if (m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close.size() == data->getClose().size()) {
+        if (m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close.size() == candles.size()) {
             // Vérifier quelques points pour voir si les données sont identiques
             // Nous vérifions le premier, le dernier et un point au milieu
             const std::vector<double>& cachedClose = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
-            const std::vector<double>& newClose = data->getClose();
             
             size_t size = cachedClose.size();
             dataChanged = false;
             
             // Vérifier le premier point
-            if (std::abs(cachedClose[0] - newClose[0]) > 1e-10) {
+            if (std::abs(cachedClose[0] - candles[0].close) > 1e-10) {
                 dataChanged = true;
             } 
             // Vérifier le dernier point
-            else if (std::abs(cachedClose[size-1] - newClose[size-1]) > 1e-10) {
+            else if (std::abs(cachedClose[size-1] - candles[size-1].close) > 1e-10) {
                 dataChanged = true;
             }
             // Vérifier un point au milieu
-            else if (std::abs(cachedClose[size/2] - newClose[size/2]) > 1e-10) {
+            else if (std::abs(cachedClose[size/2] - candles[size/2].close) > 1e-10) {
                 dataChanged = true;
             }
         }
@@ -43,27 +42,41 @@ void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, cons
 
     // Si les données ont changé, mettre à jour le cache OHLCV et recalculer les indicateurs
     if (dataChanged) {
+        m_datesCache.resize(candles.size());
+        std::vector<double> m_openCache(candles.size());
+        std::vector<double> m_highCache(candles.size());
+        std::vector<double> m_lowCache(candles.size());
+        std::vector<double> m_closeCache(candles.size());
+        std::vector<double> m_volumeCache(candles.size());
+
+        for (size_t i = 0; i < candles.size(); ++i) {
+            m_datesCache[i] = candles[i].date;
+            m_openCache[i] = candles[i].open;
+            m_highCache[i] = candles[i].high;
+            m_lowCache[i] = candles[i].low;
+            m_closeCache[i] = candles[i].close;
+            m_volumeCache[i] = candles[i].volume;
+        }
+
+
         m_aggregatedOHLCVCache.fill(chart::AggregatedOHLCV());
         {
-            const std::vector<be::Date>& dates = data->getDates();
-            m_datesCache = dates;
-
             std::vector<double>& rawTimestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
             std::vector<std::vector<size_t>> oneToOneMapping = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].rawIndicesMapping;
 
-            rawTimestamps.reserve(dates.size());
-            oneToOneMapping.resize(dates.size());
+            rawTimestamps.reserve(m_datesCache.size());
+            oneToOneMapping.resize(m_datesCache.size());
 
-            for (size_t i = 0; i < dates.size(); ++i) {
-                rawTimestamps.push_back(dateToChartTimestamp(dates[i]));
+            for (size_t i = 0; i < m_datesCache.size(); ++i) {
+                rawTimestamps.push_back(dateToChartTimestamp(m_datesCache[i]));
                 oneToOneMapping[i] = {i};
             }
         }
-        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].open = data->getOpen();
-        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high = data->getHigh();
-        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low = data->getLow();
-        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close = data->getClose();
-        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].volume = data->getVolume();
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].open = std::move(m_openCache);
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high = std::move(m_highCache);
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low = std::move(m_lowCache);
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close = std::move(m_closeCache);
+        m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].volume = std::move(m_volumeCache);
         m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid = true; // Les données brutes sont toujours valides
 
         updateHeikinAshiCache();
@@ -105,7 +118,7 @@ void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, cons
     if (equityCurve.empty()) return;
     
     size_t numPoints = equityCurve.size();
-    size_t numBars = data->size();
+    size_t numBars = candles.size();
     
     // Réinitialiser les données d'équité
     m_equityData = chart::EquityData();
@@ -121,7 +134,7 @@ void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, cons
     double lastValue = equityCurve[0];
     
     // Toujours ajouter le premier point
-    m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(0).date));
+    m_equityData.timestamps.push_back(dateToChartTimestamp(candles[0].date));
     m_equityData.equity_values.push_back(lastValue);
     
     // Parcourir le reste des points
@@ -131,8 +144,8 @@ void ChartDataManager::setData(const std::shared_ptr<const be::Data>& data, cons
         // Si la valeur a changé ou si c'est le dernier point, l'ajouter
         if (std::abs(currentValue - lastValue) <= 1e-10 && i != numPoints - 1)
             continue;
-        
-        m_equityData.timestamps.push_back(dateToChartTimestamp(data->at(i).date));
+
+        m_equityData.timestamps.push_back(dateToChartTimestamp(candles[i].date));
         m_equityData.equity_values.push_back(currentValue);
         lastValue = currentValue;
     }

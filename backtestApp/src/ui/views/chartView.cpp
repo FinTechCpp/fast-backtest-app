@@ -174,7 +174,7 @@ void ChartView::setupUI()
 void ChartView::updateData(BacktestResults* results) {
     m_currentResults = results;
 
-    if (!results || !results->data) {
+    if (!results || results->candles.empty()) {
         clear();
         showPlaceholder("Aucune donnée disponible");
         return;

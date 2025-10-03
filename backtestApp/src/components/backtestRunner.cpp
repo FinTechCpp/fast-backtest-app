@@ -138,15 +138,15 @@ void BacktestRunner::onBacktestFinished(BacktestResults* results) {
     m_isRunning = false;
     resetUI();
     
-    if (!results || !results->data) {
+    if (!results || results->candles.empty()) {
         qCritical() << "Pas de résultats de backtest reçus";
         showError("Aucun résultat de backtest reçu");
         return;
     }
     
     qInfo() << "Backtest terminé avec succès, transmission des résultats";
-    qDebug() << "Taille des données reçues:" << results->data->size() << "barres";
-    
+    qDebug() << "Taille des données reçues:" << results->candles.size() << "barres";
+
     // Afficher les statistiques d'exécution
     if (!m_lastChrono.isEmpty() && m_lastTotalCandles > 0) {
         qint64 elapsedMs = QTime::fromString(m_lastChrono, "mm:ss.zz").msecsTo(QTime(0, 0, 0)) * -1;
@@ -228,7 +228,7 @@ void BacktestWorker::run()
         
     // Créer un objet BacktestResults pour stocker les résultats
     m_results = std::make_unique<BacktestResults>();
-    m_results->data = data;
+    m_results->candles = data->getCandles(); // Stocker les chandeliers
     m_results->generalConfig = generalConfig; // Stocker la configuration générale du backtest
     m_results->strategyConfig = m_mainWindow->getStrategyConfig(); // Stocker la configuration de base de la stratégie
     

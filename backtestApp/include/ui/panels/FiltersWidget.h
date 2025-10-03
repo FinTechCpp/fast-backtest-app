@@ -39,7 +39,7 @@ private slots:
 
 private:
     void setupUI();
-    void addFilterWidget(size_t index, const filter::GenericFilter& filter);
+    void addFilterWidget(size_t index, filter::GenericFilter& filter);
     void updateFilterWidget(size_t index);
     QWidget* createFilterWidget(size_t index, const filter::GenericFilter& filter);
     void removeGaps();

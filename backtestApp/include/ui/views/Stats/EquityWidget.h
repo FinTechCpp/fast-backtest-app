@@ -4,6 +4,7 @@
 #include <QVector>
 #include <QPointF>
 #include "ui/views/Stats/TitledWidget.h"
+#include "stats.hpp"
 
 
 // TODO : il faut donner au widget les date relatives aux points X pour afficher les labels d'axe X correctement (dates et plus indices des points)
@@ -17,7 +18,7 @@ public:
 
     // Replace points (will be sorted by X and filtered for consecutive duplicates in Y)
     void setPoints(const QVector<QPointF>& pts);
-    void setPoints(const std::vector<double>& pts);
+    void setPoints(const std::vector<be::Stats::EquityPoint>& equityCurve);
     QVector<QPointF> points() const { return m_points; }
 
 

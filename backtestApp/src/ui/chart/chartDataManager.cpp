@@ -8,7 +8,7 @@ ChartDataManager::ChartDataManager() {
 ChartDataManager::~ChartDataManager() {
 }
 
-void ChartDataManager::setData(const std::vector<be::Candle>& candles, const std::vector<be::TradeData>& trades, const std::vector<double>& equityCurve) {
+void ChartDataManager::setData(const std::vector<be::Candle>& candles, const std::vector<be::TradeData>& trades, const std::vector<be::Stats::EquityPoint>& equityCurve) {
     if (candles.empty()) return;
 
     // Vérifier si les données sont différentes des données actuelles
@@ -123,31 +123,21 @@ void ChartDataManager::setData(const std::vector<be::Candle>& candles, const std
     // Réinitialiser les données d'équité
     m_equityData = chart::EquityData();
     
-    // Valider les tailles
-    if (numPoints != numBars) return;
-    
     // Préallouer pour le pire cas
     m_equityData.timestamps.reserve(numPoints);
     m_equityData.equity_values.reserve(numPoints);
     
-    // Compresser les données en ne gardant que les points où l'équité change
-    double lastValue = equityCurve[0];
-    
-    // Toujours ajouter le premier point
-    m_equityData.timestamps.push_back(dateToChartTimestamp(candles[0].date));
-    m_equityData.equity_values.push_back(lastValue);
-    
     // Parcourir le reste des points
-    for (size_t i = 1; i < numPoints; ++i) {
-        double currentValue = equityCurve[i];
-        
-        // Si la valeur a changé ou si c'est le dernier point, l'ajouter
-        if (std::abs(currentValue - lastValue) <= 1e-10 && i != numPoints - 1)
-            continue;
+    for (size_t i = 0; i < numPoints; ++i) {
+        be::Stats::EquityPoint currentValue = equityCurve[i];
 
-        m_equityData.timestamps.push_back(dateToChartTimestamp(candles[i].date));
-        m_equityData.equity_values.push_back(currentValue);
-        lastValue = currentValue;
+        // S'assurer que l'index est dans les limites
+        if (currentValue.index >= numBars) {
+            break;
+        }
+
+        m_equityData.timestamps.push_back(dateToChartTimestamp(candles[currentValue.index].date));
+        m_equityData.equity_values.push_back(currentValue.value);
     }
 }
 

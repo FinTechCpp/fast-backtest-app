@@ -21,7 +21,7 @@ public:
     ~ChartDataManager();
 
     // Méthodes pour la gestion des données
-    void setData(const std::vector<be::Candle>& data, const std::vector<be::TradeData>& trades, const std::vector<double>& equityCurve);
+    void setData(const std::vector<be::Candle>& data, const std::vector<be::TradeData>& trades, const std::vector<be::Stats::EquityPoint>& equityCurve);
     chart::AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
     
     // Accesseurs

@@ -162,6 +162,7 @@ namespace cereal {
            cereal::make_nvp("maxDrawdownDuration", stats.maxDrawdownDuration),
            cereal::make_nvp("avgDrawdownDuration", stats.avgDrawdownDuration),
            cereal::make_nvp("numTrades", stats.numTrades),
+           cereal::make_nvp("tradesPerDay", stats.tradesPerDay),
            cereal::make_nvp("numTPTrades", stats.numTPTrades),
            cereal::make_nvp("pctTPTrades", stats.pctTPTrades),
            cereal::make_nvp("numSLTrades", stats.numSLTrades),
@@ -178,13 +179,27 @@ namespace cereal {
            cereal::make_nvp("maxTradeDuration", stats.maxTradeDuration),
            cereal::make_nvp("avgTradeDuration", stats.avgTradeDuration),
            cereal::make_nvp("profitFactor", stats.profitFactor),
+           cereal::make_nvp("grossProfit", stats.grossProfit),
+           cereal::make_nvp("grossLoss", stats.grossLoss),
            cereal::make_nvp("expectancyPct", stats.expectancyPct),
            cereal::make_nvp("sqn", stats.sqn),
            cereal::make_nvp("kellyCriterion", stats.kellyCriterion));
+           cereal::make_nvp("avgMAE", stats.avgMAE);
+           cereal::make_nvp("maxMAE", stats.maxMAE);
+           cereal::make_nvp("ulcerIndex", stats.ulcerIndex);
+           cereal::make_nvp("ulcerPerformanceIndex", stats.ulcerPerformanceIndex);
+           cereal::make_nvp("skewness", stats.skewness);
+           cereal::make_nvp("kurtosis", stats.kurtosis);
+           cereal::make_nvp("omegaRatio", stats.omegaRatio);
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, be::Stats::EquityPoint & point) {
+        ar(cereal::make_nvp("index", point.index),
+           cereal::make_nvp("value", point.value));
     }
     
     // Sérialisation pour StrategyConfig
-    // TODO il faudra ajouter les filtres et la direction
     template<class Archive>
     void serialize(Archive & ar, StrategyConfig & config) {
         ar(cereal::make_nvp("name", config.name),

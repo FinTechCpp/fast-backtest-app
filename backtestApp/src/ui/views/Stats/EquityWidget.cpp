@@ -45,18 +45,14 @@ void EquityWidget::setPoints(const QVector<QPointF>& pts)
     update();
 }
 
-void EquityWidget::setPoints(const std::vector<double>& pts) {
+void EquityWidget::setPoints(const std::vector<be::Stats::EquityPoint>& equityCurve) {
     QVector<QPointF> newPoints;
     
     // Si le tableau contient uniquement des valeurs Y
-    if (!pts.empty()) {
+    if (!equityCurve.empty()) {
         // Créer des points avec X = index et Y = valeur
-        for (size_t i = 0; i < pts.size(); ++i) {
-            if (i > 0 && qFuzzyCompare(pts[i], pts[i-1])) {
-                // Ignorer les points consécutifs avec la même valeur Y
-                continue;
-            }
-            newPoints.append(QPointF(static_cast<double>(i), pts[i]));
+        for (size_t i = 0; i < equityCurve.size(); ++i) {
+            newPoints.append(QPointF(static_cast<double>(equityCurve[i].index), equityCurve[i].value));
         }
     }
     

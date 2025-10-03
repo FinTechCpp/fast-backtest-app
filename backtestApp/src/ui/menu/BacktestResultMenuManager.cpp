@@ -205,7 +205,7 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         config.version = QCoreApplication::applicationVersion().toStdString();
         config.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate).toStdString();
 
-        const BacktestResults& currentResults = m_mainWindow->getBacktestResults();
+        BacktestResults currentResults = m_mainWindow->getBacktestResults();
 
         config.generalParams = currentResults.generalConfig;
         config.strategyConfig = currentResults.strategyConfig;

@@ -59,6 +59,7 @@ private:
     QWidget* m_leftStochasticWidget;
     QWidget* m_leftATRWidget;
     QWidget* m_leftSuperTrendWidget;
+    QWidget* m_leftCCIWidget;
     QSpinBox* m_leftEMAPeriodSpin;
     QSpinBox* m_leftRSIPeriodSpin;
     QSpinBox* m_leftStochFastKSpin;
@@ -68,6 +69,7 @@ private:
     QCheckBox* m_leftATRUseLogCheck;
     QSpinBox* m_leftSuperTrendPeriodSpin;
     QDoubleSpinBox* m_leftSuperTrendMultiplierSpin;
+    QSpinBox* m_leftCCIPeriodSpin;
     
     // Widgets pour le côté droit
     QGroupBox* m_rightGroup;
@@ -89,6 +91,7 @@ private:
     QWidget* m_rightStochasticWidget;
     QWidget* m_rightATRWidget;
     QWidget* m_rightSuperTrendWidget;
+    QWidget* m_rightCCIWidget;
     QSpinBox* m_rightEMAPeriodSpin;
     QSpinBox* m_rightRSIPeriodSpin;
     QSpinBox* m_rightStochFastKSpin;
@@ -98,6 +101,7 @@ private:
     QCheckBox* m_rightATRUseLogCheck;
     QSpinBox* m_rightSuperTrendPeriodSpin;
     QDoubleSpinBox* m_rightSuperTrendMultiplierSpin;
+    QSpinBox* m_rightCCIPeriodSpin;
     
     // Widgets pour l'opérateur
     QComboBox* m_operatorCombo;

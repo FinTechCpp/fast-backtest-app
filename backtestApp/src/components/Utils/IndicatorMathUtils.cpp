@@ -357,6 +357,53 @@ std::vector<double> IndicatorMathUtils::calculateATR(
     return atrValues;
 }
 
+std::vector<double> IndicatorMathUtils::calculateCCI(
+    const std::vector<double>& highData,
+    const std::vector<double>& lowData,
+    const std::vector<double>& closeData,
+    int period)
+{
+    size_t dataSize = closeData.size();
+    std::vector<double> cciValues(dataSize, 0.0);
+
+    if (dataSize < static_cast<size_t>(period)) {
+        return cciValues;
+    }
+
+    // Calculate Typical Price (TP) = (High + Low + Close) / 3
+    std::vector<double> typicalPrice(dataSize);
+    for (size_t i = 0; i < dataSize; ++i) {
+        typicalPrice[i] = (highData[i] + lowData[i] + closeData[i]) / 3.0;
+    }
+
+    // Calculate CCI for each point
+    for (size_t i = period - 1; i < dataSize; ++i) {
+        // Calculate Simple Moving Average of Typical Price
+        double smaTP = 0.0;
+        for (int j = 0; j < period; ++j) {
+            smaTP += typicalPrice[i - j];
+        }
+        smaTP /= period;
+
+        // Calculate Mean Deviation
+        double meanDeviation = 0.0;
+        for (int j = 0; j < period; ++j) {
+            meanDeviation += std::abs(typicalPrice[i - j] - smaTP);
+        }
+        meanDeviation /= period;
+
+        // Calculate CCI
+        // CCI = (Typical Price - SMA(TP)) / (0.015 * Mean Deviation)
+        if (meanDeviation != 0.0) {
+            cciValues[i] = (typicalPrice[i] - smaTP) / (0.015 * meanDeviation);
+        } else {
+            cciValues[i] = 0.0;
+        }
+    }
+
+    return cciValues;
+}
+
 std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::calculatePivotPoints(
     const std::vector<double>& openData,
     const std::vector<double>& highData,

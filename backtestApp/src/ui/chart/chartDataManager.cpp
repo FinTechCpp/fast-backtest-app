@@ -392,6 +392,15 @@ void ChartDataManager::aggregateIndicators(chart::AggregationLevel level) {
             }
         }
     }
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].cciValues) {
+        if (!aggregated.isCciValid(id)) {
+            std::vector<double> cciData = aggregateVector(values, level, Chart::AggregateLast);
+            if (!cciData.empty()) {
+                aggregated.cciValues[id] = std::move(cciData);
+                aggregated.validCciIds.insert(id);
+            }
+        }
+    }
 }
 
 std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> &data, chart::AggregationLevel level, int aggregateMethod) const {
@@ -500,6 +509,21 @@ void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
 
     // Mettre à jour le cache des indicateurs actifs
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].atrValues[id] = std::move(atrValues);
+}
+
+void ChartDataManager::calculateCCI(int id, int period) {
+    // Vérifier si les données nécessaires sont disponibles
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || period < 2) return;
+
+    // Obtenir les prix
+    const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
+    const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
+    const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+
+    std::vector<double> cciValues = IndicatorMathUtils::calculateCCI(highPrices, lowPrices, closePrices, period);
+
+    // Mettre à jour le cache des indicateurs actifs
+    m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].cciValues[id] = std::move(cciValues);
 }
 
 void ChartDataManager::calculatePivotPoints(const indicators::PivotPointsInstance& config) {
@@ -857,6 +881,12 @@ void ChartDataManager::calculateIndicator(const indicators::IndicatorBase &confi
         calculateATR(atrConfig->id, atrConfig->period, atrConfig->useLogScale);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validAtrIds.erase(atrConfig->id);
+        return;
+    }
+    if (const indicators::CCIInstance* cciConfig = dynamic_cast<const indicators::CCIInstance*>(&config)) {
+        calculateCCI(cciConfig->id, cciConfig->period);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validCciIds.erase(cciConfig->id);
         return;
     }
     if (const indicators::PivotPointsInstance* pivotConfig = dynamic_cast<const indicators::PivotPointsInstance*>(&config)) {

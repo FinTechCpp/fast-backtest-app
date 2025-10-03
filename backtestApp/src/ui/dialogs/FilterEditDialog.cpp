@@ -209,6 +209,7 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftIndicatorTypeCombo->addItem("ATR", static_cast<int>(filter::IndicatorType::ATR));
     m_leftIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
     m_leftIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
+    m_leftIndicatorTypeCombo->addItem("CCI", static_cast<int>(filter::IndicatorType::CCI));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_leftIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
     
@@ -278,6 +279,16 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     stLayout->addRow("Multiplicateur:", m_leftSuperTrendMultiplierSpin);
     m_leftSuperTrendWidget->setVisible(false);
     indicatorLayout->addWidget(m_leftSuperTrendWidget);
+    
+    // CCI
+    m_leftCCIWidget = new QWidget(m_leftIndicatorWidget);
+    QFormLayout* cciLeftLayout = new QFormLayout(m_leftCCIWidget);
+    m_leftCCIPeriodSpin = new QSpinBox(m_leftCCIWidget);
+    m_leftCCIPeriodSpin->setRange(1, 1000);
+    m_leftCCIPeriodSpin->setValue(20);
+    cciLeftLayout->addRow("Période:", m_leftCCIPeriodSpin);
+    m_leftCCIWidget->setVisible(false);
+    indicatorLayout->addWidget(m_leftCCIWidget);
     
     m_leftIndicatorWidget->setVisible(false);
     leftLayout->addWidget(m_leftIndicatorWidget);
@@ -350,6 +361,7 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightIndicatorTypeCombo->addItem("ATR", static_cast<int>(filter::IndicatorType::ATR));
     m_rightIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
     m_rightIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
+    m_rightIndicatorTypeCombo->addItem("CCI", static_cast<int>(filter::IndicatorType::CCI));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_rightIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
     
@@ -418,6 +430,16 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     stLayout->addRow("Multiplicateur:", m_rightSuperTrendMultiplierSpin);
     m_rightSuperTrendWidget->setVisible(false);
     indicatorLayout->addWidget(m_rightSuperTrendWidget);
+    
+    // CCI
+    m_rightCCIWidget = new QWidget(m_rightIndicatorWidget);
+    QFormLayout* cciRightLayout = new QFormLayout(m_rightCCIWidget);
+    m_rightCCIPeriodSpin = new QSpinBox(m_rightCCIWidget);
+    m_rightCCIPeriodSpin->setRange(1, 1000);
+    m_rightCCIPeriodSpin->setValue(20);
+    cciRightLayout->addRow("Période:", m_rightCCIPeriodSpin);
+    m_rightCCIWidget->setVisible(false);
+    indicatorLayout->addWidget(m_rightCCIWidget);
     
     m_rightIndicatorWidget->setVisible(false);
     rightLayout->addWidget(m_rightIndicatorWidget);
@@ -497,12 +519,14 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_leftStochasticWidget->setVisible(type == filter::IndicatorType::STOCHASTIC_K || type == filter::IndicatorType::STOCHASTIC_D);
         m_leftATRWidget->setVisible(type == filter::IndicatorType::ATR);
         m_leftSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
+        m_leftCCIWidget->setVisible(type == filter::IndicatorType::CCI);
     } else if (container == m_rightIndicatorWidget) {
         m_rightEMAWidget->setVisible(type == filter::IndicatorType::EMA);
         m_rightRSIWidget->setVisible(type == filter::IndicatorType::RSI);
         m_rightStochasticWidget->setVisible(type == filter::IndicatorType::STOCHASTIC_K || type == filter::IndicatorType::STOCHASTIC_D);
         m_rightATRWidget->setVisible(type == filter::IndicatorType::ATR);
         m_rightSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
+        m_rightCCIWidget->setVisible(type == filter::IndicatorType::CCI);
     }
 }
 
@@ -546,6 +570,9 @@ filter::ValueSource FilterEditDialog::getLeftValueSource() const
                         m_leftSuperTrendPeriodSpin->value(),
                         m_leftSuperTrendMultiplierSpin->value()
                     );
+                    break;
+                case filter::IndicatorType::CCI:
+                    source.cciParams = filter::CCIParams(m_leftCCIPeriodSpin->value());
                     break;
                 default:
                     break;
@@ -601,6 +628,9 @@ filter::ValueSource FilterEditDialog::getRightValueSource() const
                         m_rightSuperTrendPeriodSpin->value(),
                         m_rightSuperTrendMultiplierSpin->value()
                     );
+                    break;
+                case filter::IndicatorType::CCI:
+                    source.cciParams = filter::CCIParams(m_rightCCIPeriodSpin->value());
                     break;
                 default:
                     break;
@@ -738,6 +768,9 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                 case filter::IndicatorType::SUPERTREND_DIRECTION:
                     m_leftSuperTrendPeriodSpin->setValue(filter.leftValue.supertrendParams.atrPeriod);
                     m_leftSuperTrendMultiplierSpin->setValue(filter.leftValue.supertrendParams.multiplier);
+                    break;
+                case filter::IndicatorType::CCI:
+                    m_leftCCIPeriodSpin->setValue(filter.leftValue.cciParams.period);
                     break;
                 default:
                     break;

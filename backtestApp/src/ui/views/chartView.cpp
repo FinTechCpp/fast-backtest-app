@@ -217,7 +217,6 @@ void ChartView::zoomToTrade(const be::TradeData& trade) {
     m_chartWidget->zoomToTrade(trade);
 }
 
-// Dans ChartView.cpp, ajoutez cette méthode
 std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndicatorsFromFilters(const StrategyConfig& strategyConfig) {
     std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances;
         
@@ -273,6 +272,12 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
                 supertrend->period = source.supertrendParams.atrPeriod;
                 supertrend->multiplier = source.supertrendParams.multiplier;
                 addIfNotPresent(std::move(supertrend));
+                break;
+            }
+            case filter::IndicatorType::CCI: {
+                auto cci = std::make_unique<indicators::CCIInstance>();
+                cci->period = source.cciParams.period;
+                addIfNotPresent(std::move(cci));
                 break;
             }
             default:

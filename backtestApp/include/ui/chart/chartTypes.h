@@ -96,6 +96,7 @@ namespace chart {
         std::set<int> validStochasticIds;
         std::set<int> validAtrIds;
         std::set<int> validPivotPointsIds;
+        std::set<int> validCciIds;
 
         // Données des indicateurs
         std::map<int, std::vector<double>> rsiValues;
@@ -103,6 +104,7 @@ namespace chart {
         std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
+        std::map<int, std::vector<double>> cciValues;
 
         AggregationLevel level;
         
@@ -113,6 +115,7 @@ namespace chart {
         bool isStochasticValid(int id) const { return validStochasticIds.find(id) != validStochasticIds.end(); }
         bool isAtrValid(int id) const { return validAtrIds.find(id) != validAtrIds.end(); }
         bool isPivotPointsValid(int id) const { return validPivotPointsIds.find(id) != validPivotPointsIds.end(); }
+        bool isCciValid(int id) const { return validCciIds.find(id) != validCciIds.end(); }
     };
 
     struct EquityData {
@@ -130,7 +133,8 @@ namespace indicators {
         STOCHASTIC,
         ATR, 
         SUPERTREND,
-        PIVOTPOINTS
+        PIVOTPOINTS,
+        CCI
     };
 
     // Il faudrait faire des structure pour contenir uniquement les info techenique qui vont servir a CALCULER l'indicateur
@@ -210,6 +214,13 @@ namespace indicators {
             bool operator==(const PivotPoints& other) const = default;
             bool operator!=(const PivotPoints& other) const = default;
         };
+        
+        struct CCI {
+            int period = 20;
+
+            bool operator==(const CCI& other) const = default;
+            bool operator!=(const CCI& other) const = default;
+        };
     }
 
     struct IndicatorSignal {        
@@ -223,6 +234,7 @@ namespace indicators {
             params::ATR atr;
             params::SuperTrend supertrend;
             params::PivotPoints pivotpoints;
+            params::CCI cci;
             
             ParamsUnion() {} // Union nécessite un constructeur par défaut
             ~ParamsUnion() {} // Et un destructeur
@@ -590,6 +602,49 @@ namespace indicators {
             periodType = PivotPeriodType::Daily;
 
             calculationMethod = PivotCalculationMethod::HLC;
+        }
+    };
+
+    struct CCIInstance : public IndicatorBase {
+        CCIInstance() : IndicatorBase() {
+            setDefaults();
+        }
+
+        CCIInstance(params::CCI p) : IndicatorBase() {
+            setDefaults();
+            period = p.period;
+        }
+
+        int period;            // Période du CCI
+        int height;            // Hauteur du panneau
+        int color;             // Couleur de la ligne principale
+        int upperLevel;        // Niveau supérieur (typiquement +100)
+        int lowerLevel;        // Niveau inférieur (typiquement -100)
+        int upperColor;        // Couleur pour la zone supérieure
+        int lowerColor;        // Couleur pour la zone inférieure
+
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
+            const CCIInstance* otherCCI = dynamic_cast<const CCIInstance*>(&other);
+            if (!otherCCI) return false;
+            return period == otherCCI->period;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<CCIInstance>(*this);
+        }
+        
+        QString getDisplayName() const override {
+            return QString("CCI (%1)").arg(period);
+        }
+
+        void setDefaults() override {
+            period = 20;
+            height = 120;
+            color = 0xFFA500;      // Orange
+            upperLevel = 100;
+            lowerLevel = -100;
+            upperColor = 0xff6666; // Rouge clair
+            lowerColor = 0x6666ff; // Bleu clair
         }
     };
 }

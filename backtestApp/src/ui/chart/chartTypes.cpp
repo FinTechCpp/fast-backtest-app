@@ -12,6 +12,7 @@ CEREAL_REGISTER_TYPE(indicators::EMAInstance)
 CEREAL_REGISTER_TYPE(indicators::StochasticInstance)
 CEREAL_REGISTER_TYPE(indicators::ATRInstance)
 CEREAL_REGISTER_TYPE(indicators::SuperTrendInstance)
+CEREAL_REGISTER_TYPE(indicators::CCIInstance)
 CEREAL_REGISTER_TYPE(indicators::PivotPointsInstance)
 
 // Déclarer les relations hiérarchiques

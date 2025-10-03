@@ -125,6 +125,11 @@ private:
         const ChartDataManager& dataManager, 
         const chart::AggregationInfo& aggregationInfo);
 
+    void addCCIToChart(FinanceChart* chart, 
+        const indicators::CCIInstance& cci, 
+        const ChartDataManager& dataManager, 
+        const chart::AggregationInfo& aggregationInfo);
+
     void addPivotPointsToChart(XYChart* mainChart,
         const indicators::PivotPointsInstance& pivotPoints,
         const ChartDataManager& dataManager,

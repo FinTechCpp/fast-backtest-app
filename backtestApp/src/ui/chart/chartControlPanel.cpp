@@ -8,6 +8,7 @@
 #include "ui/dialogs/stochasticDialog.h"
 #include "ui/dialogs/atrDialog.h"
 #include "ui/dialogs/pivotPointsDialog.h"
+#include "ui/dialogs/cciDialog.h"
 
 ChartControlPanel::ChartControlPanel(QWidget* parent)
     : QWidget(parent)
@@ -310,6 +311,8 @@ void ChartControlPanel::onAddSuggestedIndicator(int index) {
         m_chartWidget->addIndicator(*supertrend);
     } else if (const indicators::PivotPointsInstance* pivotPoints = dynamic_cast<const indicators::PivotPointsInstance*>(indicator)) {
         m_chartWidget->addIndicator(*pivotPoints);
+    } else if (const indicators::CCIInstance* cci = dynamic_cast<const indicators::CCIInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*cci);
     }
     
     // Rejeter la suggestion après l'avoir ajoutée
@@ -419,6 +422,7 @@ void ChartControlPanel::setupIndicatorControls() {
     m_indicatorTypeCombo->addItem("Stochastic", static_cast<int>(indicators::Type::STOCHASTIC));
     m_indicatorTypeCombo->addItem("ATR", static_cast<int>(indicators::Type::ATR));
     m_indicatorTypeCombo->addItem("Points Pivots", static_cast<int>(indicators::Type::PIVOTPOINTS));
+    m_indicatorTypeCombo->addItem("CCI", static_cast<int>(indicators::Type::CCI));
 
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
     addIndicatorLayout->addWidget(m_addIndicatorButton);
@@ -462,6 +466,9 @@ void ChartControlPanel::onAddIndicatorClicked() {
     else if (indicatorType == static_cast<int>(indicators::Type::PIVOTPOINTS)) {
         indicators::PivotPointsInstance pivotPoints;
         m_chartWidget->addIndicator(std::move(pivotPoints));
+    } else if (indicatorType == static_cast<int>(indicators::Type::CCI)) {
+        indicators::CCIInstance cci;
+        m_chartWidget->addIndicator(std::move(cci));
     }
 }
 
@@ -505,6 +512,7 @@ void ChartControlPanel::onEditIndicator(int id) {
     if (tryOpenDialog<indicators::StochasticInstance, StochasticDialog>(id)) return;
     if (tryOpenDialog<indicators::ATRInstance, ATRDialog>(id)) return;
     if (tryOpenDialog<indicators::PivotPointsInstance, PivotPointsDialog>(id)) return;
+    if (tryOpenDialog<indicators::CCIInstance, CCIDialog>(id)) return;
 }
 
 void ChartControlPanel::onRemoveIndicator(int id) {
@@ -594,6 +602,8 @@ void ChartControlPanel::configureIndicatorInstances(const std::vector<std::uniqu
             m_chartWidget->addIndicator(*supertrend);
         } else if (const indicators::PivotPointsInstance* pivotPoints = dynamic_cast<const indicators::PivotPointsInstance*>(indicator.get())) {
             m_chartWidget->addIndicator(*pivotPoints);
+        } else if (const indicators::CCIInstance* cci = dynamic_cast<const indicators::CCIInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*cci);
         }
     }
 }

@@ -115,6 +115,22 @@ public:
         bool useLogScale = false
     );
 
+    /**
+     * @brief Calculates the CCI (Commodity Channel Index) indicator
+     *
+     * @param highData The high prices
+     * @param lowData The low prices
+     * @param closeData The closing prices
+     * @param period The period for CCI calculation
+     * @return std::vector<double> The calculated CCI values
+     */
+    static std::vector<double> calculateCCI(
+        const std::vector<double>& highData,
+        const std::vector<double>& lowData,
+        const std::vector<double>& closeData,
+        int period
+    );
+
     static std::vector<indicators::PivotPointsInstance::PivotPeriod> calculatePivotPoints(
         const std::vector<double>& openData,
         const std::vector<double>& highData,

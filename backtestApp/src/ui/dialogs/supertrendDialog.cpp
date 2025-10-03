@@ -15,12 +15,13 @@ void SupertrendDialog::setupUI()
     // Période
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 200);
+    m_periodSpinBox->setSingleStep(1);
     m_formLayout->addRow("ATR Period:", m_periodSpinBox);
     
     // Multiplicateur
     m_multiplierSpinBox = new QDoubleSpinBox();
     m_multiplierSpinBox->setRange(0.1, 200.0);
-    m_multiplierSpinBox->setSingleStep(0.1);
+    m_multiplierSpinBox->setSingleStep(1);
     m_multiplierSpinBox->setDecimals(1);
     m_formLayout->addRow("Multiplier:", m_multiplierSpinBox);
     

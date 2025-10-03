@@ -149,6 +149,7 @@ private:
     void calculateSupertrend(int id, int period, double multiplier);
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void calculateATR(int id, int period, bool useLogScale = false);
+    void calculateCCI(int id, int period);
     // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
     void calculatePivotPoints(const indicators::PivotPointsInstance& config);
 

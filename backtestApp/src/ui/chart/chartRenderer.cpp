@@ -100,6 +100,11 @@ void ChartRenderer::createOrUpdateChart(
     for (const indicators::ATRInstance* atr : dataManager.getIndicatorsOfType<indicators::ATRInstance>())
         if (atr->visible)
             subChartsTotalHeight += atr->height;
+
+    // 5. Espace pour CCI
+    for (const indicators::CCIInstance* cci : dataManager.getIndicatorsOfType<indicators::CCIInstance>())
+        if (cci->visible)
+            subChartsTotalHeight += cci->height;
     
     // 2. Ajouter le graphique principal
     int mainChartHeight = std::max(300, config.chartHeight - subChartsTotalHeight);
@@ -169,6 +174,12 @@ void ChartRenderer::createOrUpdateChart(
     for (const indicators::ATRInstance* atr : dataManager.getIndicatorsOfType<indicators::ATRInstance>()) {
         if (atr->visible) {
             addATRToChart(m_financeChart.get(), *atr, dataManager, aggregationInfo);
+        }
+    }
+    // CCI
+    for (const indicators::CCIInstance* cci : dataManager.getIndicatorsOfType<indicators::CCIInstance>()) {
+        if (cci->visible) {
+            addCCIToChart(m_financeChart.get(), *cci, dataManager, aggregationInfo);
         }
     }
 
@@ -1063,6 +1074,55 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     // Configurer l'échelle de l'axe Y
     double maxATR = *std::max_element(atrData.begin() + startIndex, atrData.begin() + endIndex);
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
+}
+
+void ChartRenderer::addCCIToChart(FinanceChart* chart, 
+                                const indicators::CCIInstance& cci, 
+                                const ChartDataManager& dataManager, 
+                                const chart::AggregationInfo& aggregationInfo)
+{
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
+
+    // Utiliser les données agrégées
+    const auto& cciMap = dataManager.getAggregatedIndicators(aggregationInfo.level).cciValues;
+    auto it = cciMap.find(cci.id);
+    
+    // Vérifier si les données agrégées sont disponibles
+    if (it == cciMap.end()) return;
+
+    const std::vector<double>& cciData = it->second;
+
+    if (cciData.empty() || startIndex >= cciData.size()) return;
+
+    // Limiter le nombre de points à afficher
+    size_t endIndex = std::min(startIndex + pointsToShow, cciData.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
+
+    // Extraire les données CCI visibles du cache
+    DoubleArray cciArray(&cciData[startIndex], actualPoints);
+
+    // Ajouter le graphique d'indicateur
+    XYChart* c = chart->addIndicator(cci.height);
+    
+    // Configurer et ajouter le CCI
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "CCI (%d)", cci.period);
+    LineLayer* layer = chart->addLineIndicator2(c, cciArray, cci.color, buffer);
+    layer->setFastLineMode(true);
+
+    // Ajouter les seuils (lignes horizontales pour +100 et -100)
+    chart->addThreshold(c, layer, cci.upperLevel, cci.upperColor, cci.lowerLevel, cci.lowerColor);
+
+    // Configurer l'échelle de l'axe Y avec des marges
+    double minCCI = *std::min_element(cciData.begin() + startIndex, cciData.begin() + endIndex);
+    double maxCCI = *std::max_element(cciData.begin() + startIndex, cciData.begin() + endIndex);
+    
+    // Étendre les limites pour inclure les niveaux standard (-200 à +200 avec marge)
+    double yMin = std::min(minCCI, static_cast<double>(cci.lowerLevel)) * 1.2;
+    double yMax = std::max(maxCCI, static_cast<double>(cci.upperLevel)) * 1.2;
+    c->yAxis()->setLinearScale(yMin, yMax);
 }
 
 void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::PivotPointsInstance &pivotPoints, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)

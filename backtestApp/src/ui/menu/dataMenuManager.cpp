@@ -196,7 +196,7 @@ void DataMenuManager::onImportFromAPI()
     qDebug() << "Import depuis API demandé";
     
     // URL de l'API pour récupérer la liste des fichiers de données de marché
-    QUrl apiUrl("http://10.8.0.1:9004/market-data");
+    QUrl apiUrl("http://10.25.0.1:9004/market-data");
     
     QNetworkRequest request(apiUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");

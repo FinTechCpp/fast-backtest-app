@@ -577,7 +577,7 @@ void StrategyPanel::setupUI() {
     baseLayout->addWidget(riskGroup);
 
 
-    // Section de configuration des filtres
+    // Section de configuration des filtres d'entrée
     FiltersWidget* filtersWidget = new FiltersWidget(this);
     filtersWidget->setFilters(m_config.filters);
     QVBoxLayout* filtersLayout = new QVBoxLayout();
@@ -587,6 +587,20 @@ void StrategyPanel::setupUI() {
     addBinding(PropertyBinderFactory::createFiltersBinding(
         filtersWidget,
         &m_config.filters
+    ));
+
+    // Section de configuration des filtres de revente (liquidation)
+    QGroupBox* resaleGroup = new QGroupBox("Filtres de revente / liquidation", this);
+    QVBoxLayout* resaleLayout = new QVBoxLayout(resaleGroup);
+    FiltersWidget* resaleFiltersWidget = new FiltersWidget(this);
+    resaleFiltersWidget->setFilters(m_config.resale_filters);
+    resaleLayout->addWidget(resaleFiltersWidget);
+    resaleGroup->setLayout(resaleLayout);
+    baseLayout->addWidget(resaleGroup);
+
+    addBinding(PropertyBinderFactory::createFiltersBinding(
+        resaleFiltersWidget,
+        &m_config.resale_filters
     ));
     
     setLayout(baseLayout);

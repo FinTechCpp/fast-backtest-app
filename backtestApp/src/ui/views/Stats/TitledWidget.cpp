@@ -95,6 +95,13 @@ void TitledWidget::setTitleCompanionWidget(QWidget* widget)
     update();
 }
 
+void TitledWidget::setTitleCompanionWidgetVisible(bool visible)
+{
+    if (m_titleCompanionWidget) {
+        m_titleCompanionWidget->setVisible(visible);
+    }
+}
+
 void TitledWidget::setBackgroundIcon(const QIcon& icon)
 {
     m_backgroundIcon = icon;

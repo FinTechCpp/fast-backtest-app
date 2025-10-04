@@ -122,13 +122,13 @@ void MetricsContainerWidget::initializeMetrics() {
         //     [](const be::Stats& s) { return s.numBETrades <= s.numTPTrades ? MetricStatus::Neutral : MetricStatus::Bad; },
         //     [](const be::Stats& s) { return QString::number(s.pctBETrades, 'f', 1) + "% (" + QString::number(s.numBETrades) + ")"; }
         // },
-        {"equity_final_summary", "Capital final:", "Montant final du capital", Section::Summary,
-            [](const be::Stats& s) { 
-                return s.equityFinal > s.equityInitial ? MetricStatus::Good : 
-                      (s.equityFinal < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityFinal, 'f', 2)); }
-        },
+        // {"equity_final_summary", "Capital final:", "Montant final du capital", Section::Summary,
+        //     [](const be::Stats& s) { 
+        //         return s.equityFinal > s.equityInitial ? MetricStatus::Good : 
+        //               (s.equityFinal < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityFinal, 'f', 2)); }
+        // },
         // {"equity_peak_summary", "Capital maximal:", "Montant maximal atteint par le capital", Section::Summary,
         //     [](const be::Stats& s) { 
         //         return s.equityPeak > s.equityInitial ? MetricStatus::Good : 
@@ -163,14 +163,14 @@ void MetricsContainerWidget::initializeMetrics() {
         //     [](const be::Stats& s) { return MetricStatus::Neutral; },
         //     [](const be::Stats& s) { return QString::number(s.numTrades); }
         // },
-        {"best_trade_summary", "Meilleur trade:", "Pourcentage de gain du meilleur trade", Section::Summary,
-            [](const be::Stats& s) { return MetricStatus::Good; },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.bestTradePct, 'f', 2)); }
-        },
-        {"worst_trade_summary", "Pire trade:", "Pourcentage de perte du pire trade", Section::Summary,
-            [](const be::Stats& s) { return MetricStatus::Bad; },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.worstTradePct, 'f', 2)); }
-        },
+        // {"best_trade_summary", "Meilleur trade:", "Pourcentage de gain du meilleur trade", Section::Summary,
+        //     [](const be::Stats& s) { return MetricStatus::Good; },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.bestTradePct, 'f', 2)); }
+        // },
+        // {"worst_trade_summary", "Pire trade:", "Pourcentage de perte du pire trade", Section::Summary,
+        //     [](const be::Stats& s) { return MetricStatus::Bad; },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.worstTradePct, 'f', 2)); }
+        // },
 
         // Section temporelle
         // {"start", "Début:", "Date de début du backtest", "time",

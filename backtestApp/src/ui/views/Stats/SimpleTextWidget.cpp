@@ -11,11 +11,29 @@ SimpleTextWidget::SimpleTextWidget(const QString& title, QWidget *parent)
     , m_suffix("")
     , m_textOffsetX(0)
     , m_textOffsetY(0)
+    , m_statTextBis("")
+    , m_suffixBis("")
+    , m_showBis(false)
+    , m_checkBoxString("Afficher le texte secondaire")
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     setMinimumSize(100, 60);
 
     m_fontSize = 15;
+
+    // QCheckBox pour switcher entre m_statText et m_statTextBis
+    m_checkBox = new QCheckBox(m_checkBoxString);
+    m_checkBox->setChecked(m_showBis);
+
+    // Connecter le signal toggled de la QCheckBox à un slot lambda
+    connect(m_checkBox, &QCheckBox::toggled, this, [this](bool checked) {
+        m_showBis = checked;
+        update();  // Redessiner le widget
+    });
+
+    // Ajouter la QCheckBox comme widget compagnon dans le titre
+    setTitleCompanionWidget(m_checkBox);
+    setTitleCompanionWidgetVisible(false);
 }
 
 QString SimpleTextWidget::formatWithThousandsSeparator(double value, int precision) {
@@ -54,6 +72,23 @@ void SimpleTextWidget::setStatText(const QString &text)
     }
 }
 
+void SimpleTextWidget::setCheckBoxBisString(const QString &text)
+{
+    if (m_checkBoxString != text) {
+        m_checkBoxString = text;
+        m_checkBox->setText(text);
+        setTitleCompanionWidgetVisible(true);
+        update();  // Déclencher un repaint
+    }
+}
+
+void SimpleTextWidget::setStatTextBis(const QString &text) {
+    if (m_statTextBis != text) {
+        m_statTextBis = text;
+        update();  // Déclencher un repaint
+    }
+}
+
 void SimpleTextWidget::setStatColors(const QColor &textColor)
 {
     if (m_textColor != textColor) {
@@ -66,6 +101,14 @@ void SimpleTextWidget::setSuffix(const QString &suffix)
 {
     if (m_suffix != suffix) {
         m_suffix = suffix;
+        update();
+    }
+}
+
+void SimpleTextWidget::setSuffixBis(const QString &suffix)
+{
+    if (m_suffixBis != suffix) {
+        m_suffixBis = suffix;
         update();
     }
 }
@@ -128,6 +171,13 @@ void SimpleTextWidget::paintContent(QPainter& painter, const QRect& contentRect)
     
     // Afficher le texte au centre
     painter.setPen(m_textColor);
-    QString displayText = m_statText + m_suffix;
-    painter.drawText(textRect, Qt::AlignCenter, displayText);
+    QString displayText;
+
+    if (m_showBis && !m_statTextBis.isEmpty()) {
+        displayText = m_statTextBis + m_suffixBis;
+        painter.drawText(textRect, Qt::AlignCenter | Qt::TextWordWrap, displayText);
+    } else {
+        displayText = m_statText + m_suffix;
+        painter.drawText(textRect, Qt::AlignCenter, displayText);
+    }
 }

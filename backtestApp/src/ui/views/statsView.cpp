@@ -99,6 +99,8 @@ void StatsView::setupUI() {
     m_netProfitWidget->setStatColors(QColor(0, 150, 0));
     m_netProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
     m_netProfitWidget->setSuffix(" €");
+    m_netProfitWidget->setSuffixBis(" %");
+    m_netProfitWidget->setCheckBoxBisString("Percentage");
     gridLayout->addWidget(m_netProfitWidget, 1, 0, 1, 2); // S'étend sur 2 colonnes
 
     m_pnlGaugeWidget = new VerticalGaugeRenderWidget("PnL Distribution");
@@ -276,9 +278,9 @@ void StatsView::updateData(BacktestResults* results)
     } else {
         pctText = "--";
     }
-    // On retire le suffixe automatique pour construire une chaîne unique "€ (xx %)"
-    m_netProfitWidget->setSuffix("");
-    m_netProfitWidget->setStatText(euroText + " € (" + pctText + " %)");
+
+    m_netProfitWidget->setStatText(euroText);
+    m_netProfitWidget->setStatTextBis(pctText);
     // Peut etre integrer cette mécanique dans le widget directement
     if (m_currentResults->stats.equityFinal - m_currentResults->stats.equityInitial > 0) {
         m_netProfitWidget->setStatColors(QColor(0, 150, 0));

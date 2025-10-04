@@ -33,6 +33,7 @@ public:
     
     // Widget compagnon à côté du titre
     void setTitleCompanionWidget(QWidget* widget);
+    void setTitleCompanionWidgetVisible(bool visible);
     QWidget* titleCompanionWidget() const { return m_titleCompanionWidget; }
 
 

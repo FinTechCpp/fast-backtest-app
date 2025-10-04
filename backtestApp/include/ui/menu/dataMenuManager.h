@@ -15,6 +15,8 @@
 class DataLoader;
 class App;
 
+#include <QNetworkInterface>
+
 /**
  * @brief Gestionnaire de menu des données dans la barre de menu
  * 
@@ -42,6 +44,9 @@ private slots:
     // Slots pour les requêtes HTTP
     void onMarketDataListReceived();
     void onFileDownloadFinished();
+
+    // Vérifier la connectivité VPN (basique)
+    bool isVpnConnected();
 
 private:
     // Menu principal

@@ -16,6 +16,7 @@
 #include <QNetworkRequest>
 #include <QDateTime>
 #include "components/Utils/dataLoader.h"
+#include <QNetworkInterface>
 
 DataMenuManager::DataMenuManager(QObject* parent)
     : QObject(parent)
@@ -64,13 +65,13 @@ void DataMenuManager::createDataMenu(QMenuBar* menuBar)
 void DataMenuManager::createActions()
 {
     // Action Importer CSV
-    m_importCSVAction = new QAction(tr("&Importer CSV..."), this);
+    m_importCSVAction = new QAction(tr("&Importer fichier local..."), this);
     m_importCSVAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
-    m_importCSVAction->setStatusTip(tr("Importer des données OHLC depuis un fichier CSV"));
+   m_importCSVAction->setStatusTip(tr("Importer des données OHLC depuis un fichier CSV")); 
     connect(m_importCSVAction, &QAction::triggered, this, &DataMenuManager::onImportCSV);
     
     // Action Importer depuis API
-    m_importAPIAction = new QAction(tr("Importer depuis &API..."), this);
+    m_importAPIAction = new QAction(tr("Télécharger depuis &API (Connexion VPN requise)..."), this);
     m_importAPIAction->setStatusTip(tr("Télécharger des données depuis une API"));
     connect(m_importAPIAction, &QAction::triggered, this, &DataMenuManager::onImportFromAPI);
     
@@ -195,6 +196,31 @@ void DataMenuManager::onImportFromAPI()
 {
     qDebug() << "Import depuis API demandé";
     
+    // Avant d'essayer de contacter l'API, vérifier si une interface VPN active est présente
+    while (true) {
+        if (isVpnConnected()) 
+            break; // tout va bien     
+
+        // Demander à l'utilisateur ce qu'il souhaite faire
+        QMessageBox msgBox(qobject_cast<QWidget*>(parent()));
+        msgBox.setWindowTitle(tr("Connexion VPN requise"));
+        msgBox.setText(tr("Aucune interface VPN détectée. Une connexion VPN est généralement requise pour accéder à l'API de données."));
+        QPushButton* retryButton = msgBox.addButton(tr("Réessayer"), QMessageBox::AcceptRole);
+        QPushButton* cancelButton = msgBox.addButton(QMessageBox::Cancel);
+        msgBox.setDefaultButton(retryButton);
+        msgBox.exec();
+
+        if (msgBox.clickedButton() == retryButton) {
+            // Boucle et re-vérifie
+            QApplication::processEvents();
+            continue;
+        } else {
+            // Annuler l'opération
+            qDebug() << "Import depuis API annulé par l'utilisateur";
+            return;
+        }
+    }
+
     // URL de l'API pour récupérer la liste des fichiers de données de marché
     QUrl apiUrl("http://10.25.0.1:9004/market-data");
     
@@ -209,6 +235,28 @@ void DataMenuManager::onImportFromAPI()
     connect(reply, &QNetworkReply::finished, this, &DataMenuManager::onMarketDataListReceived);
     
     qDebug() << "Requête envoyée vers:" << apiUrl.toString();
+}
+
+bool DataMenuManager::isVpnConnected()
+{
+    // Méthode simple: vérifier si une interface réseau contient "tun" ou "tap" ou "ppp" ou "wg" indiquant une interface VPN
+    const QList<QNetworkInterface>& ifaces = QNetworkInterface::allInterfaces();
+    for (const QNetworkInterface& iface : ifaces) {
+        if (!(iface.flags() & QNetworkInterface::IsUp)) 
+            continue;
+
+        QString name = iface.humanReadableName().toLower();
+        QString ifaceName = iface.name().toLower();
+
+        if (name.contains("tun") || name.contains("tap") || name.contains("ppp") || name.contains("wg") ||
+            ifaceName.contains("tun") || ifaceName.contains("tap") || ifaceName.contains("ppp") || ifaceName.contains("wg")) {
+            qDebug() << "Interface VPN détectée:" << iface.name() << "(" << iface.humanReadableName() << ")";
+            return true;
+        }
+    }
+
+    qDebug() << "Aucune interface VPN détectée";
+    return false;
 }
 
 

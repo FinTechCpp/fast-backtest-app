@@ -633,7 +633,7 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         progress->setLabelText(tr("Téléchargement de %1...").arg(filename));
         
         // Construire l'URL de téléchargement
-        QUrl downloadUrl(QString("http://10.8.0.1:9004/download-market-data/%1").arg(filename));
+        QUrl downloadUrl(QString("http://10.25.0.1:9004/download-market-data/%1").arg(filename));
         
         QNetworkRequest request(downloadUrl);
         QNetworkReply* downloadReply = m_networkManager->get(request);

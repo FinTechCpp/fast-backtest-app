@@ -300,12 +300,12 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
         addIfNotPresent(std::move(atr));
     }
 
-    if (strategyConfig.tp_method == TakeProfitMethod::SuperTrend) {
+/*     if (strategyConfig.tp_method == TakeProfitMethod::SuperTrend) {
         auto supertrend = std::make_unique<indicators::SuperTrendInstance>();
         supertrend->period = strategyConfig.tp_supertrend_atr_period;
         supertrend->multiplier = strategyConfig.tp_supertrend_multiplier;
         addIfNotPresent(std::move(supertrend));
-    }
+    } */
     
     return indicatorInstances;
 }

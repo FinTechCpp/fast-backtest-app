@@ -215,7 +215,7 @@ void StrategyPanel::setupUI() {
         &m_config.tp_sl_ratio
     ));
     
-    // Paramètres SuperTrend - Période ATR
+/*     // Paramètres SuperTrend - Période ATR
     QSpinBox* tpSupertrendAtrPeriodSpin = new QSpinBox(this);
     tpSupertrendAtrPeriodSpin->setRange(1, 1000);
     tpSupertrendAtrPeriodSpin->setValue(14);
@@ -243,7 +243,7 @@ void StrategyPanel::setupUI() {
     addBinding(PropertyBinderFactory::createDoubleBinding(
         tpSupertrendMultiplierSpin,
         &m_config.tp_supertrend_multiplier
-    ));
+    )); */
     
     // Paramètres RL - Périodes de lookback
     QSpinBox* rlLookbackPeriodsSpin = new QSpinBox(this);
@@ -258,7 +258,7 @@ void StrategyPanel::setupUI() {
         &m_config.rl_lookback_periods
     ));
 
-    // Paramètres nth Heikin-Ashi - Nombre de bougies opposées
+/*     // Paramètres nth Heikin-Ashi - Nombre de bougies opposées
     QSpinBox* nthHeikinAshiCountSpin = new QSpinBox(this);
     nthHeikinAshiCountSpin->setRange(1, 50);
     nthHeikinAshiCountSpin->setValue(3);
@@ -270,7 +270,7 @@ void StrategyPanel::setupUI() {
     addBinding(PropertyBinderFactory::createIntBinding(
         nthHeikinAshiCountSpin,
         &m_config.nth_heikin_ashi_count
-    ));
+    )); */
     
     // TP minimum
     QDoubleSpinBox* minTakeProfitDistanceSpin = new QDoubleSpinBox(this);
@@ -326,10 +326,9 @@ void StrategyPanel::setupUI() {
         bool isFixed = (index == 0);
         bool isAtr = (index == 1);
         bool isRatio = (index == 2);
-        bool isSupertrend = (index == 3);
+       // bool isSupertrend = (index == 3);
         bool isRL = (index == 4);
-        bool isNthHeikinAshi = (index == 5);
-
+        //bool isNthHeikinAshi = (index == 5);
         // Fixed distance
         tpDistanceLabel->setVisible(isFixed);
         takeProfitDistanceSpin->setVisible(isFixed);
@@ -342,19 +341,19 @@ void StrategyPanel::setupUI() {
         tpSlRatioLabel->setVisible(isRatio);
         tpSlRatioSpin->setVisible(isRatio);
 
-        // SuperTrend params
+/*         // SuperTrend params
         tpSupertrendAtrLabel->setVisible(isSupertrend);
         tpSupertrendAtrPeriodSpin->setVisible(isSupertrend);
         tpSupertrendMultiplierLabel->setVisible(isSupertrend);
-        tpSupertrendMultiplierSpin->setVisible(isSupertrend);
+        tpSupertrendMultiplierSpin->setVisible(isSupertrend); */
 
         // RL
         rlLookbackLabel->setVisible(isRL);
         rlLookbackPeriodsSpin->setVisible(isRL);
 
-        // Nth Heikin-Ashi
+/*         // Nth Heikin-Ashi
         nthHeikinAshiLabel->setVisible(isNthHeikinAshi);
-        nthHeikinAshiCountSpin->setVisible(isNthHeikinAshi);
+        nthHeikinAshiCountSpin->setVisible(isNthHeikinAshi); */
 
         // Update common ATR period visibility depending on SL method too
         bool atrNeeded = isAtr || (slMethodCombo->currentIndex() == 1) || (slMethodCombo->currentIndex() == 2);

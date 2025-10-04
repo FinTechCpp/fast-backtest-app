@@ -53,9 +53,11 @@ void StrategyPanel::setupUI() {
     QSpinBox* atrPeriodSpin = new QSpinBox(this);
     atrPeriodSpin->setRange(1, 1000);
     atrPeriodSpin->setValue(14);
-    atrPeriodSpin->setEnabled(false);
-    atrPeriodSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    atrLayout->addRow(new QLabel("Période ATR:", this), atrPeriodSpin);
+    // hidden by default; shown only when an ATR-based method is selected
+    atrPeriodSpin->setVisible(false);
+    QLabel* atrLabel = new QLabel("Période ATR:", this);
+    atrLabel->setVisible(false);
+    atrLayout->addRow(atrLabel, atrPeriodSpin);
     slTpLayout->addLayout(atrLayout);
     
     addBinding(PropertyBinderFactory::createIntBinding(
@@ -84,7 +86,8 @@ void StrategyPanel::setupUI() {
     stopLossDistanceSpin->setRange(0, 10000);
     stopLossDistanceSpin->setSingleStep(1);
     stopLossDistanceSpin->setValue(20);
-    slLayout->addRow(new QLabel("Distance [pts]:", this), stopLossDistanceSpin);
+    QLabel* slDistanceLabel = new QLabel("Distance [pts]:", this);
+    slLayout->addRow(slDistanceLabel, stopLossDistanceSpin);
     
     addBinding(PropertyBinderFactory::createDoubleBinding(
         stopLossDistanceSpin,
@@ -97,9 +100,10 @@ void StrategyPanel::setupUI() {
     slAtrMultiplierSpin->setRange(0.1, 1000.0);
     slAtrMultiplierSpin->setSingleStep(0.1);
     slAtrMultiplierSpin->setValue(2.0);
-    slAtrMultiplierSpin->setEnabled(false);
-    slAtrMultiplierSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    slLayout->addRow(new QLabel("Multiplicateur ATR SL:", this), slAtrMultiplierSpin);
+    slAtrMultiplierSpin->setVisible(false);
+    QLabel* slAtrMultiplierLabel = new QLabel("Multiplicateur ATR SL:", this);
+    slAtrMultiplierLabel->setVisible(false);
+    slLayout->addRow(slAtrMultiplierLabel, slAtrMultiplierSpin);
     
     addBinding(PropertyBinderFactory::createDoubleBinding(
         slAtrMultiplierSpin,
@@ -111,9 +115,10 @@ void StrategyPanel::setupUI() {
     slMinmaxCoefAtr->setDecimals(2);
     slMinmaxCoefAtr->setRange(0, 1000.0);
     slMinmaxCoefAtr->setValue(5.0);
-    slMinmaxCoefAtr->setEnabled(false);
-    slMinmaxCoefAtr->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    slLayout->addRow(new QLabel("Coefficient Delta Min/Max:", this), slMinmaxCoefAtr);
+    slMinmaxCoefAtr->setVisible(false);
+    QLabel* slMinmaxCoefLabel = new QLabel("Coefficient Delta Min/Max:", this);
+    slMinmaxCoefLabel->setVisible(false);
+    slLayout->addRow(slMinmaxCoefLabel, slMinmaxCoefAtr);
 
     addBinding(PropertyBinderFactory::createDoubleBinding(
         slMinmaxCoefAtr,
@@ -124,9 +129,10 @@ void StrategyPanel::setupUI() {
     QSpinBox* slMinmaxPeriodsSpin = new QSpinBox(this);
     slMinmaxPeriodsSpin->setRange(1, 1000);
     slMinmaxPeriodsSpin->setValue(5);
-    slMinmaxPeriodsSpin->setEnabled(false);
-    slMinmaxPeriodsSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    slLayout->addRow(new QLabel("Périodes Min/Max:", this), slMinmaxPeriodsSpin);
+    slMinmaxPeriodsSpin->setVisible(false);
+    QLabel* slMinmaxPeriodsLabel = new QLabel("Périodes Min/Max:", this);
+    slMinmaxPeriodsLabel->setVisible(false);
+    slLayout->addRow(slMinmaxPeriodsLabel, slMinmaxPeriodsSpin);
     
     addBinding(PropertyBinderFactory::createIntBinding(
         slMinmaxPeriodsSpin,
@@ -169,7 +175,8 @@ void StrategyPanel::setupUI() {
     takeProfitDistanceSpin->setRange(0, 10000);
     takeProfitDistanceSpin->setSingleStep(1);
     takeProfitDistanceSpin->setValue(30);
-    tpLayout->addRow(new QLabel("Distance [pts]:", this), takeProfitDistanceSpin);
+    QLabel* tpDistanceLabel = new QLabel("Distance [pts]:", this);
+    tpLayout->addRow(tpDistanceLabel, takeProfitDistanceSpin);
     
     addBinding(PropertyBinderFactory::createDoubleBinding(
         takeProfitDistanceSpin,
@@ -182,9 +189,10 @@ void StrategyPanel::setupUI() {
     tpAtrMultiplierSpin->setRange(0, 1000.0);
     tpAtrMultiplierSpin->setSingleStep(0.1);
     tpAtrMultiplierSpin->setValue(3.0);
-    tpAtrMultiplierSpin->setEnabled(false);
-    tpAtrMultiplierSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Multiplicateur ATR TP:", this), tpAtrMultiplierSpin);
+    tpAtrMultiplierSpin->setVisible(false);
+    QLabel* tpAtrMultiplierLabel = new QLabel("Multiplicateur ATR TP:", this);
+    tpAtrMultiplierLabel->setVisible(false);
+    tpLayout->addRow(tpAtrMultiplierLabel, tpAtrMultiplierSpin);
     
     addBinding(PropertyBinderFactory::createDoubleBinding(
         tpAtrMultiplierSpin,
@@ -197,9 +205,10 @@ void StrategyPanel::setupUI() {
     tpSlRatioSpin->setRange(0.1, 100.0);
     tpSlRatioSpin->setSingleStep(0.1);
     tpSlRatioSpin->setValue(2.0);
-    tpSlRatioSpin->setEnabled(false);
-    tpSlRatioSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Ratio TP/SL:", this), tpSlRatioSpin);
+    tpSlRatioSpin->setVisible(false);
+    QLabel* tpSlRatioLabel = new QLabel("Ratio TP/SL:", this);
+    tpSlRatioLabel->setVisible(false);
+    tpLayout->addRow(tpSlRatioLabel, tpSlRatioSpin);
     
     addBinding(PropertyBinderFactory::createDoubleBinding(
         tpSlRatioSpin,
@@ -210,9 +219,10 @@ void StrategyPanel::setupUI() {
     QSpinBox* tpSupertrendAtrPeriodSpin = new QSpinBox(this);
     tpSupertrendAtrPeriodSpin->setRange(1, 1000);
     tpSupertrendAtrPeriodSpin->setValue(14);
-    tpSupertrendAtrPeriodSpin->setEnabled(false);
-    tpSupertrendAtrPeriodSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Période ATR SuperTrend:", this), tpSupertrendAtrPeriodSpin);
+    tpSupertrendAtrPeriodSpin->setVisible(false);
+    QLabel* tpSupertrendAtrLabel = new QLabel("Période ATR SuperTrend:", this);
+    tpSupertrendAtrLabel->setVisible(false);
+    tpLayout->addRow(tpSupertrendAtrLabel, tpSupertrendAtrPeriodSpin);
     
     addBinding(PropertyBinderFactory::createIntBinding(
         tpSupertrendAtrPeriodSpin,
@@ -225,9 +235,10 @@ void StrategyPanel::setupUI() {
     tpSupertrendMultiplierSpin->setRange(0.1, 1000.0);
     tpSupertrendMultiplierSpin->setSingleStep(0.1);
     tpSupertrendMultiplierSpin->setValue(3.0);
-    tpSupertrendMultiplierSpin->setEnabled(false);
-    tpSupertrendMultiplierSpin->setStyleSheet("QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Multiplicateur SuperTrend:", this), tpSupertrendMultiplierSpin);
+    tpSupertrendMultiplierSpin->setVisible(false);
+    QLabel* tpSupertrendMultiplierLabel = new QLabel("Multiplicateur SuperTrend:", this);
+    tpSupertrendMultiplierLabel->setVisible(false);
+    tpLayout->addRow(tpSupertrendMultiplierLabel, tpSupertrendMultiplierSpin);
     
     addBinding(PropertyBinderFactory::createDoubleBinding(
         tpSupertrendMultiplierSpin,
@@ -237,9 +248,10 @@ void StrategyPanel::setupUI() {
     // Paramètres RL - Périodes de lookback
     QSpinBox* rlLookbackPeriodsSpin = new QSpinBox(this);
     rlLookbackPeriodsSpin->setRange(1, 150);
-    rlLookbackPeriodsSpin->setEnabled(false);
-    rlLookbackPeriodsSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Périodes lookback RL:", this), rlLookbackPeriodsSpin);
+    rlLookbackPeriodsSpin->setVisible(false);
+    QLabel* rlLookbackLabel = new QLabel("Périodes lookback RL:", this);
+    rlLookbackLabel->setVisible(false);
+    tpLayout->addRow(rlLookbackLabel, rlLookbackPeriodsSpin);
     
     addBinding(PropertyBinderFactory::createIntBinding(
         rlLookbackPeriodsSpin,
@@ -250,9 +262,10 @@ void StrategyPanel::setupUI() {
     QSpinBox* nthHeikinAshiCountSpin = new QSpinBox(this);
     nthHeikinAshiCountSpin->setRange(1, 50);
     nthHeikinAshiCountSpin->setValue(3);
-    nthHeikinAshiCountSpin->setEnabled(false);
-    nthHeikinAshiCountSpin->setStyleSheet("QSpinBox { background-color: #f0f0f0; color: #888888; }");
-    tpLayout->addRow(new QLabel("Nb bougies Heikin-Ashi:", this), nthHeikinAshiCountSpin);
+    nthHeikinAshiCountSpin->setVisible(false);
+    QLabel* nthHeikinAshiLabel = new QLabel("Nb bougies Heikin-Ashi:", this);
+    nthHeikinAshiLabel->setVisible(false);
+    tpLayout->addRow(nthHeikinAshiLabel, nthHeikinAshiCountSpin);
     
     addBinding(PropertyBinderFactory::createIntBinding(
         nthHeikinAshiCountSpin,
@@ -278,91 +291,80 @@ void StrategyPanel::setupUI() {
     baseLayout->addWidget(slTpGroup);
     
     // Connecter les signaux pour activer/désactiver les widgets en fonction des sélections
-    connect(slMethodCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            [=](int index) {
-                bool isFixed = (index == 0);
-                bool isAtr = (index == 1);
-                bool isMinMax = (index == 2);
-                
-                stopLossDistanceSpin->setEnabled(isFixed);
-                stopLossDistanceSpin->setStyleSheet(isFixed ? 
-                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                slAtrMultiplierSpin->setEnabled(isAtr);
-                slAtrMultiplierSpin->setStyleSheet(isAtr ? 
-                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                slMinmaxPeriodsSpin->setEnabled(isMinMax);
-                slMinmaxPeriodsSpin->setStyleSheet(isMinMax ? 
-                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                slMinmaxCoefAtr->setEnabled(isMinMax);
-                slMinmaxCoefAtr->setStyleSheet(isMinMax ? 
-                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                // Mettre à jour le statut de la période ATR
-                bool atrNeeded = isAtr || isMinMax || (tpMethodCombo->currentIndex() == 1);
-                atrPeriodSpin->setEnabled(atrNeeded);
-                atrPeriodSpin->setStyleSheet(atrNeeded ? 
-                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
-            });
+    // Update function for SL method visibility
+    auto updateSlMethodVisibility = [=](int index) {
+        bool isFixed = (index == 0);
+        bool isAtr = (index == 1);
+        bool isMinMax = (index == 2);
+
+        // Fixed distance
+        slDistanceLabel->setVisible(isFixed);
+        stopLossDistanceSpin->setVisible(isFixed);
+
+        // ATR multiplier
+        slAtrMultiplierLabel->setVisible(isAtr);
+        slAtrMultiplierSpin->setVisible(isAtr);
+
+        // Min/Max params
+        slMinmaxPeriodsLabel->setVisible(isMinMax);
+        slMinmaxPeriodsSpin->setVisible(isMinMax);
+        slMinmaxCoefLabel->setVisible(isMinMax);
+        slMinmaxCoefAtr->setVisible(isMinMax);
+
+        // Update common ATR period visibility depending on TP method too
+        bool atrNeeded = isAtr || isMinMax || (tpMethodCombo->currentIndex() == 1);
+        atrLabel->setVisible(atrNeeded);
+        atrPeriodSpin->setVisible(atrNeeded);
+    };
+
+    connect(slMethodCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), updateSlMethodVisibility);
+    // initialize
+    updateSlMethodVisibility(slMethodCombo->currentIndex());
     
-    connect(tpMethodCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            [=](int index) {
-                bool isFixed = (index == 0);
-                bool isAtr = (index == 1);
-                bool isRatio = (index == 2);
-                bool isSupertrend = (index == 3);
-                bool isRL = (index == 4);
-                bool isNthHeikinAshi = (index == 5);
-                
-                takeProfitDistanceSpin->setEnabled(isFixed);
-                takeProfitDistanceSpin->setStyleSheet(isFixed ? 
-                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                tpAtrMultiplierSpin->setEnabled(isAtr);
-                tpAtrMultiplierSpin->setStyleSheet(isAtr ? 
-                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                tpSlRatioSpin->setEnabled(isRatio);
-                tpSlRatioSpin->setStyleSheet(isRatio ? 
-                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                tpSupertrendAtrPeriodSpin->setEnabled(isSupertrend);
-                tpSupertrendAtrPeriodSpin->setStyleSheet(isSupertrend ? 
-                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                tpSupertrendMultiplierSpin->setEnabled(isSupertrend);
-                tpSupertrendMultiplierSpin->setStyleSheet(isSupertrend ? 
-                    "QDoubleSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QDoubleSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                rlLookbackPeriodsSpin->setEnabled(isRL);
-                rlLookbackPeriodsSpin->setStyleSheet(isRL ? 
-                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                nthHeikinAshiCountSpin->setEnabled(isNthHeikinAshi);
-                nthHeikinAshiCountSpin->setStyleSheet(isNthHeikinAshi ? 
-                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
-                
-                // Mettre à jour le statut de la période ATR
-                bool atrNeeded = isAtr || (slMethodCombo->currentIndex() == 1) || (slMethodCombo->currentIndex() == 2);
-                atrPeriodSpin->setEnabled(atrNeeded);
-                atrPeriodSpin->setStyleSheet(atrNeeded ? 
-                    "QSpinBox { background-color: #ffffff; color: #000000; }" : 
-                    "QSpinBox { background-color: #f0f0f0; color: #888888; }");
-            });
+    // Update function for TP method visibility
+    auto updateTpMethodVisibility = [=](int index) {
+        bool isFixed = (index == 0);
+        bool isAtr = (index == 1);
+        bool isRatio = (index == 2);
+        bool isSupertrend = (index == 3);
+        bool isRL = (index == 4);
+        bool isNthHeikinAshi = (index == 5);
+
+        // Fixed distance
+        tpDistanceLabel->setVisible(isFixed);
+        takeProfitDistanceSpin->setVisible(isFixed);
+
+        // ATR multiplier
+        tpAtrMultiplierLabel->setVisible(isAtr);
+        tpAtrMultiplierSpin->setVisible(isAtr);
+
+        // Ratio TP/SL
+        tpSlRatioLabel->setVisible(isRatio);
+        tpSlRatioSpin->setVisible(isRatio);
+
+        // SuperTrend params
+        tpSupertrendAtrLabel->setVisible(isSupertrend);
+        tpSupertrendAtrPeriodSpin->setVisible(isSupertrend);
+        tpSupertrendMultiplierLabel->setVisible(isSupertrend);
+        tpSupertrendMultiplierSpin->setVisible(isSupertrend);
+
+        // RL
+        rlLookbackLabel->setVisible(isRL);
+        rlLookbackPeriodsSpin->setVisible(isRL);
+
+        // Nth Heikin-Ashi
+        nthHeikinAshiLabel->setVisible(isNthHeikinAshi);
+        nthHeikinAshiCountSpin->setVisible(isNthHeikinAshi);
+
+        // Update common ATR period visibility depending on SL method too
+        bool atrNeeded = isAtr || (slMethodCombo->currentIndex() == 1) || (slMethodCombo->currentIndex() == 2);
+        atrLabel->setVisible(atrNeeded);
+        atrPeriodSpin->setVisible(atrNeeded);
+    };
+
+    connect(tpMethodCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), updateTpMethodVisibility);
+    // initialize
+    updateTpMethodVisibility(tpMethodCombo->currentIndex());
     
     // Section Heures de trading
     QGroupBox* tradingHoursGroup = new QGroupBox("Heures de trading", this);

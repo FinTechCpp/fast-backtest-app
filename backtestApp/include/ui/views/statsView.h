@@ -18,17 +18,13 @@
 #include <memory>
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
-#include "ui/views/Stats/EquityCurveWidget.h"
-#include "ui/views/Stats/TimeLineWidget.h"
 #include "ui/views/Stats/MetricsContainerWidget.h"
-#include "ui/views/Stats/TradeClosureWidget.h"
 #include "ui/views/Stats/TradingHeatmapWidget.h"
 #include "ui/views/Stats/RiskReturnMapWidget.h"
 #include "ui/views/Stats/TradesTableWidget.h"
 #include "ui/views/Stats/RatioGaugesContainerWidget.h"
 #include "ui/views/Stats/PLDistributionWidget.h"
 #include "ui/views/Stats/MonthlyPerformanceWidget.h"
-#include "ui/views/Stats/DrawdownComparisonWidget.h"
 
 #include "ui/views/Stats/FlexiblePieWidget.h"
 #include "ui/views/Stats/SimpleTextWidget.h"
@@ -85,15 +81,10 @@ protected:
 
 private:
     // ==================== Membres privés ====================
-    DrawdownComparisonWidget* m_drawdownComparisonWidget = nullptr;
-    EquityCurveWidget* m_equityCurveWidget = nullptr;
-    TimelineWidget* m_timelineWidget = nullptr;
     MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
-    TradeClosureWidget* m_tradeClosureWidget = nullptr;
     PLDistributionWidget* m_plDistributionWidget = nullptr;
     RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
-    RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
     MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
 

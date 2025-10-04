@@ -118,10 +118,10 @@ void MetricsContainerWidget::initializeMetrics() {
         //     [](const be::Stats& s) { return MetricStatus::Good; },
         //     [](const be::Stats& s) { return QString::number(s.pctTPTrades, 'f', 1) + "% (" + QString::number(s.numTPTrades) + ")"; }
         // },
-        {"BE_trades_summary", "Trades sur break-even:", "Nombre de trades sur break-even", Section::Summary,
-            [](const be::Stats& s) { return s.numBETrades <= s.numTPTrades ? MetricStatus::Neutral : MetricStatus::Bad; },
-            [](const be::Stats& s) { return QString::number(s.pctBETrades, 'f', 1) + "% (" + QString::number(s.numBETrades) + ")"; }
-        },
+        // {"BE_trades_summary", "Trades sur break-even:", "Nombre de trades sur break-even", Section::Summary,
+        //     [](const be::Stats& s) { return s.numBETrades <= s.numTPTrades ? MetricStatus::Neutral : MetricStatus::Bad; },
+        //     [](const be::Stats& s) { return QString::number(s.pctBETrades, 'f', 1) + "% (" + QString::number(s.numBETrades) + ")"; }
+        // },
         {"equity_final_summary", "Capital final:", "Montant final du capital", Section::Summary,
             [](const be::Stats& s) { 
                 return s.equityFinal > s.equityInitial ? MetricStatus::Good : 
@@ -147,22 +147,22 @@ void MetricsContainerWidget::initializeMetrics() {
         //     [](const be::Stats& s) { return MetricStatus::Neutral; },
         //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.maxDrawdownPct, 'f', 2)); }
         // },
-        {"avg_drawdown_summary", "Drawdown moyen:", "Perte moyenne depuis un sommet précédent", Section::Summary,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgDrawdownPct, 'f', 2)); }
-        },
-        {"max_drawdown_duration_summary", "Durée DD max:", "Durée de la plus longue période de drawdown", Section::Summary,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString::fromStdString(s.maxDrawdownDuration.toString()); }
-        },
-        {"avg_drawdown_duration_summary", "Durée DD moyenne:", "Durée moyenne des périodes de drawdown", Section::Summary,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString::fromStdString(s.avgDrawdownDuration.toString()); }
-        },
-        {"total_trades_summary", "Nombre de trades:", "Nombre total de transactions effectuées", Section::Summary,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString::number(s.numTrades); }
-        },
+        // {"avg_drawdown_summary", "Drawdown moyen:", "Perte moyenne depuis un sommet précédent", Section::Summary,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgDrawdownPct, 'f', 2)); }
+        // },
+        // {"max_drawdown_duration_summary", "Durée DD max:", "Durée de la plus longue période de drawdown", Section::Summary,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString::fromStdString(s.maxDrawdownDuration.toString()); }
+        // },
+        // {"avg_drawdown_duration_summary", "Durée DD moyenne:", "Durée moyenne des périodes de drawdown", Section::Summary,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString::fromStdString(s.avgDrawdownDuration.toString()); }
+        // },
+        // {"total_trades_summary", "Nombre de trades:", "Nombre total de transactions effectuées", Section::Summary,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString::number(s.numTrades); }
+        // },
         {"best_trade_summary", "Meilleur trade:", "Pourcentage de gain du meilleur trade", Section::Summary,
             [](const be::Stats& s) { return MetricStatus::Good; },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.bestTradePct, 'f', 2)); }
@@ -261,18 +261,18 @@ void MetricsContainerWidget::initializeMetrics() {
         //     [](const be::Stats& s) { return MetricStatus::Neutral; },
         //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.maxDrawdownPct, 'f', 2)); }
         // },
-        {"avg_drawdown", "Drawdown moyen:", "Perte moyenne depuis un sommet précédent", Section::Risk,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgDrawdownPct, 'f', 2)); }
-        },
-        {"max_drawdown_duration", "Durée DD max:", "Durée de la plus longue période de drawdown", Section::Risk,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString::fromStdString(s.maxDrawdownDuration.toString()); }
-        },
-        {"avg_drawdown_duration", "Durée DD moyenne:", "Durée moyenne des périodes de drawdown", Section::Risk,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString::fromStdString(s.avgDrawdownDuration.toString()); }
-        },
+        // {"avg_drawdown", "Drawdown moyen:", "Perte moyenne depuis un sommet précédent", Section::Risk,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgDrawdownPct, 'f', 2)); }
+        // },
+        // {"max_drawdown_duration", "Durée DD max:", "Durée de la plus longue période de drawdown", Section::Risk,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString::fromStdString(s.maxDrawdownDuration.toString()); }
+        // },
+        // {"avg_drawdown_duration", "Durée DD moyenne:", "Durée moyenne des périodes de drawdown", Section::Risk,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString::fromStdString(s.avgDrawdownDuration.toString()); }
+        // },
         {"sharpe_ratio", "Ratio de Sharpe:", "Rendement excédentaire par unité de risque total", Section::Risk,
             [](const be::Stats& s) {
                 if (std::isnan(s.sharpeRatio)) return MetricStatus::NA;
@@ -312,20 +312,20 @@ void MetricsContainerWidget::initializeMetrics() {
         },
         
         // Section général (trades)
-        {"total_trades", "Nombre de trades:", "Nombre total de transactions effectuées", Section::General,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString::number(s.numTrades); }
-        },
-        {"profit_factor", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)", Section::General,
-            [](const be::Stats& s) {
-                if (std::isnan(s.profitFactor)) return MetricStatus::NA;
-                return s.profitFactor > 1.1 ? MetricStatus::Good : 
-                      (s.profitFactor < 0.9 ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) {
-                return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
-            }
-        },
+        // {"total_trades", "Nombre de trades:", "Nombre total de transactions effectuées", Section::General,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString::number(s.numTrades); }
+        // },
+        // {"profit_factor", "Facteur de profit:", "Ratio des gains sur les pertes (>1 est profitable)", Section::General,
+        //     [](const be::Stats& s) {
+        //         if (std::isnan(s.profitFactor)) return MetricStatus::NA;
+        //         return s.profitFactor > 1.1 ? MetricStatus::Good : 
+        //               (s.profitFactor < 0.9 ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) {
+        //         return std::isnan(s.profitFactor) ? QString("N/A") : QString::number(s.profitFactor, 'f', 2);
+        //     }
+        // },
         // {"TP_trades", "Trades sur take-profit:", "Nombre de trades sur take-profit", Section::General,
         //     [](const be::Stats& s) { return MetricStatus::Good; },
         //     [](const be::Stats& s) { return QString::number(s.pctTPTrades, 'f', 1) + "% (" + QString::number(s.numTPTrades) + ")"; }
@@ -357,21 +357,21 @@ void MetricsContainerWidget::initializeMetrics() {
             [](const be::Stats& s) { return MetricStatus::Bad; },
             [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.worstTradePct, 'f', 2)); }
         },
-        {"avg_trade", "Trade moyen:", "Rendement moyen par trade", Section::General,
-            [](const be::Stats& s) {
-                return s.avgTradePct > 0 ? MetricStatus::Good : 
-                      (s.avgTradePct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgTradePct, 'f', 2)); }
-        },
-        {"max_trade_duration", "Durée max trade:", "Durée maximale d'un trade", Section::General,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString::fromStdString(s.maxTradeDuration.toString()); }
-        },
-        {"avg_trade_duration", "Durée moy trade:", "Durée moyenne d'un trade", Section::General,
-            [](const be::Stats& s) { return MetricStatus::Neutral; },
-            [](const be::Stats& s) { return QString::fromStdString(s.avgTradeDuration.toString()); }
-        },
+        // {"avg_trade", "Trade moyen:", "Rendement moyen par trade", Section::General,
+        //     [](const be::Stats& s) {
+        //         return s.avgTradePct > 0 ? MetricStatus::Good : 
+        //               (s.avgTradePct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.avgTradePct, 'f', 2)); }
+        // },
+        // {"max_trade_duration", "Durée max trade:", "Durée maximale d'un trade", Section::General,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString::fromStdString(s.maxTradeDuration.toString()); }
+        // },
+        // {"avg_trade_duration", "Durée moy trade:", "Durée moyenne d'un trade", Section::General,
+        //     [](const be::Stats& s) { return MetricStatus::Neutral; },
+        //     [](const be::Stats& s) { return QString::fromStdString(s.avgTradeDuration.toString()); }
+        // },
         // {"expectancy", "Espérance:", "Gain moyen attendu par trade", Section::General,
         //     [](const be::Stats& s) {
         //         return s.expectancyPct > 0 ? MetricStatus::Good : 

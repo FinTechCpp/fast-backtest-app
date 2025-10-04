@@ -80,6 +80,7 @@ void StatsView::setupUI() {
     m_timeInfoWidget = new KeyValueListWidget("Informations temporelles");
     m_timeInfoWidget->addItem("Début ", "--", Qt::black);
     m_timeInfoWidget->addItem("Fin   ", "--", Qt::black);
+    m_timeInfoWidget->addItem("Durée ", "--", Qt::black);
     m_timeInfoWidget->setMinimumHeight(m_timeInfoWidget->sizeHint().height());
     gridLayout->addWidget(m_timeInfoWidget, 0, 0, 1, 3); // S'étend sur les trois colonnes
 
@@ -204,15 +205,7 @@ void StatsView::setupUI() {
 
 
 
-
     m_statsLayout->addLayout(gridLayout);
-
-
-    m_timelineWidget = new TimelineWidget();
-    m_statsLayout->addWidget(m_timelineWidget);
-
-    m_ratioGaugesWidget = new RatioGaugesContainerWidget();
-    m_statsLayout->addWidget(m_ratioGaugesWidget);
 
     m_metricsWidget = new MetricsContainerWidget();
     m_statsLayout->addWidget(m_metricsWidget);
@@ -221,28 +214,16 @@ void StatsView::setupUI() {
     QHBoxLayout* tradesClosureLayout = new QHBoxLayout();
     tradesClosureLayout->setContentsMargins(0, 0, 0, 0);
     tradesClosureLayout->setSpacing(10);
-    
-    m_tradeClosureWidget = new TradeClosureWidget();
-    
+        
     m_tradingHeatmapWidget = new TradingHeatmapWidget();
-    // m_drawdownComparisonWidget = new DrawdownComparisonWidget();
     
-    tradesClosureLayout->addWidget(m_tradeClosureWidget, /*stretch=*/2);
     tradesClosureLayout->addWidget(m_tradingHeatmapWidget, /*stretch=*/2);
-    // tradesClosureLayout->addWidget(m_drawdownComparisonWidget, /*stretch=*/2);
 
     m_statsLayout->addLayout(tradesClosureLayout);
-
-    // m_plDistributionWidget = new PLDistributionWidget();
-    // m_statsLayout->addWidget(m_plDistributionWidget);
 
 
     m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
     m_statsLayout->addWidget(m_monthlyPerformanceWidget);
-
-
-    // m_riskReturnMapWidget = new RiskReturnMapWidget();
-    // m_statsLayout->addWidget(m_riskReturnMapWidget);
 
     m_tradesTableWidget = new TradesTableWidget();
     m_statsLayout->addWidget(m_tradesTableWidget);
@@ -258,15 +239,8 @@ void StatsView::setupUI() {
     m_mainLayout->addWidget(m_scrollStats);
 
     // 4. STOCKAGE DES WIDGETS POUR MISES À JOUR/RESET
-    // m_statsWidgets.push_back(m_equityCurveWidget);
-    m_statsWidgets.push_back(m_timelineWidget);
     m_statsWidgets.push_back(m_metricsWidget);
-    m_statsWidgets.push_back(m_ratioGaugesWidget);
-    m_statsWidgets.push_back(m_tradeClosureWidget);
-    // m_statsWidgets.push_back(m_drawdownComparisonWidget);
-    // m_statsWidgets.push_back(m_plDistributionWidget);
     m_statsWidgets.push_back(m_tradingHeatmapWidget);
-    // m_statsWidgets.push_back(m_riskReturnMapWidget);
     m_statsWidgets.push_back(m_tradesTableWidget);
     m_statsWidgets.push_back(m_monthlyPerformanceWidget);
 }
@@ -288,6 +262,7 @@ void StatsView::updateData(BacktestResults* results)
 
     m_timeInfoWidget->updateValue("Début ", "  " + QString::fromStdString(m_currentResults->stats.start.toString()));
     m_timeInfoWidget->updateValue("Fin   ", "  " + QString::fromStdString(m_currentResults->stats.end.toString()));
+    m_timeInfoWidget->updateValue("Durée ", "  " + QString::fromStdString(m_currentResults->stats.duration.toString()));
 
 
 

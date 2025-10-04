@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLinearGradient>
+#include <QCheckBox>
 #include "ui/views/Stats/TitledWidget.h"
 
 #include "stats.hpp"
@@ -50,4 +51,6 @@ private:
     QColor m_medianSlColor; // Couleur de la ligne de médiane SL
     QColor m_lineColor;     // Couleur des lignes
     QColor m_textColor;     // Couleur du texte
+
+    QCheckBox* m_showPercentageCheckbox; // Checkbox pour afficher en pourcentage ou en valeur absolue
 };

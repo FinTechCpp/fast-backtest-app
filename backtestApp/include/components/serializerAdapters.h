@@ -310,7 +310,9 @@ namespace cereal {
                     case filter::IndicatorType::SUPERTREND_DIRECTION:
                         ar(cereal::make_nvp("supertrendParams", valueSource.supertrendParams));
                         break;
-                        
+                    case filter::IndicatorType::CCI:
+                        ar(cereal::make_nvp("cciParams", valueSource.cciParams));
+                        break;
                     case filter::IndicatorType::PIVOT_POINT:
                         // Pas de paramètre spécifique pour ce type
                         break;
@@ -364,5 +366,10 @@ namespace cereal {
     void serialize(Archive & ar, filter::SuperTrendParams & params) {
         ar(cereal::make_nvp("atrPeriod", params.atrPeriod),
            cereal::make_nvp("multiplier", params.multiplier));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::CCIParams & params) {
+        ar(cereal::make_nvp("period", params.period));
     }
 }

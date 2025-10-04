@@ -8,7 +8,7 @@ ChartDataManager::ChartDataManager() {
 ChartDataManager::~ChartDataManager() {
 }
 
-void ChartDataManager::setData(const std::vector<be::Candle>& candles, const std::vector<be::TradeData>& trades, const std::vector<be::Stats::EquityPoint>& equityCurve) {
+void ChartDataManager::setData(const std::vector<be::Candle>& candles, const std::vector<be::TradeData>& trades, const std::vector<be::EquityPoint>& equityCurve) {
     if (candles.empty()) return;
 
     // Vérifier si les données sont différentes des données actuelles
@@ -129,7 +129,7 @@ void ChartDataManager::setData(const std::vector<be::Candle>& candles, const std
     
     // Parcourir le reste des points
     for (size_t i = 0; i < numPoints; ++i) {
-        be::Stats::EquityPoint currentValue = equityCurve[i];
+        be::EquityPoint currentValue = equityCurve[i];
 
         // S'assurer que l'index est dans les limites
         if (currentValue.index >= numBars) {

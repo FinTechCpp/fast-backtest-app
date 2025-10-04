@@ -46,7 +46,14 @@ void EquityWidget::setPoints(const QVector<QPointF>& pts)
     update();
 }
 
-void EquityWidget::setPoints(const std::vector<be::Date>& dates, const std::vector<be::Stats::EquityPoint>& equityCurve) {
+void EquityWidget::setPoints(const std::vector<be::Date>& dates, const std::vector<be::EquityPoint>& equityCurve) {
+    if (dates.empty() || equityCurve.empty()) {
+        m_points.clear();
+        updateBounds();
+        update();
+        return;
+    }
+    
     QVector<QPointF> newPoints;
 
     // CA c'est pas opti mais bon... a corriger plus tard

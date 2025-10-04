@@ -194,7 +194,7 @@ namespace cereal {
     }
 
     template<class Archive>
-    void serialize(Archive & ar, be::Stats::EquityPoint & point) {
+    void serialize(Archive & ar, be::EquityPoint & point) {
         ar(cereal::make_nvp("index", point.index),
            cereal::make_nvp("value", point.value));
     }

@@ -18,7 +18,7 @@ public:
 
     // Replace points (will be sorted by X and filtered for consecutive duplicates in Y)
     void setPoints(const QVector<QPointF>& pts);
-    void setPoints(const std::vector<be::Date>& dates, const std::vector<be::Stats::EquityPoint>& equityCurve);
+    void setPoints(const std::vector<be::Date>& dates, const std::vector<be::EquityPoint>& equityCurve);
     QVector<QPointF> points() const { return m_points; }
 
 

@@ -465,11 +465,6 @@ void EquityWidget::drawAxes(QPainter &painter)
     }
 }
 
-void EquityWidget::resizeEvent(QResizeEvent *event)
-{
-    QWidget::resizeEvent(event);
-}
-
 void EquityWidget::mouseMoveEvent(QMouseEvent *event)
 {    
     // Enregistrer la position globale de la souris

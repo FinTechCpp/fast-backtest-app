@@ -24,7 +24,6 @@ public:
 
 protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
-    void resizeEvent(QResizeEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
 

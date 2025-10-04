@@ -7,8 +7,8 @@
 #include <algorithm>
 #include <cmath> // Pour std::fabs
 
-TradingHeatmapWidget::TradingHeatmapWidget(QWidget* parent)
-    : StatsBaseWidget(parent),
+TradingHeatmapWidget::TradingHeatmapWidget(const QString& title, QWidget* parent)
+    : TitledWidget(title, parent),
       m_minValue(0.0),
       m_maxValue(0.0),
       m_minHour(24),
@@ -31,37 +31,11 @@ TradingHeatmapWidget::TradingHeatmapWidget(QWidget* parent)
         }
     }
     
-    // Créer le groupe box principal
-    m_mainLayout = new QVBoxLayout(this);
-    m_mainLayout->setContentsMargins(0, 0, 0, 0);
-
-    m_titleLabel = new QLabel("Analyse des Performances par Heure et Jour");
-    QFont titleFont = m_titleLabel->font();
-    titleFont.setBold(true);
-    m_titleLabel->setFont(titleFont);
-    m_titleLabel->setAlignment(Qt::AlignCenter);
-    m_mainLayout->addWidget(m_titleLabel);
-
+    // Initialiser les noms des jours
+    m_dayNames = {"Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"};
     
-    // Créer la scène et la vue pour la heatmap (une seule scène qui contiendra tout)
-    m_scene = new QGraphicsScene(this);
-    m_view = new QGraphicsView(m_scene);
-    m_view->setRenderHint(QPainter::Antialiasing, true);
-    m_view->setMinimumHeight(400);
-    m_view->setMinimumWidth(600); // Plus large pour accommoder la légende
-    m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    m_view->setAlignment(Qt::AlignCenter);
-    
-    // Ajouter la vue au layout
-    m_mainLayout->addWidget(m_view);
-    
-    // Installer un filtre d'événements pour gérer le redimensionnement
-    m_view->viewport()->installEventFilter(this);
-
-
-    setAttribute(Qt::WA_TranslucentBackground);
-    setStyleSheet("background: transparent;");
+    // Définir une taille minimale recommandée
+    setMinimumSize(600, 400);
 }
 
 int TradingHeatmapWidget::getDayOfWeek(const be::Date& date) {
@@ -214,77 +188,91 @@ QColor TradingHeatmapWidget::getColorForValue(double value) {
     }
 }
 
-void TradingHeatmapWidget::buildHeatmap() {
-    // Effacer la scène
-    m_scene->clear();
-    
+void TradingHeatmapWidget::paintContent(QPainter& painter, const QRect& contentRect) {
     // Calculer le nombre d'heures à afficher
     int numHoursToShow = m_maxHour - m_minHour + 1;
     
-    // Ajuster la taille des cellules en fonction du nombre d'heures à afficher
-    int adjustedCellSize = std::min(CELL_SIZE, 400 / numHoursToShow);
-    
-    // Marge pour les labels
-    int leftMargin = 50;  // Augmenté pour accommoder les labels d'heures
-    int topMargin = 70;
-    
-    // Ajouter un titre global centré au-dessus de la heatmap
-    int totalTrades = 0;
-    for (int h = m_minHour; h <= m_maxHour; h++) {
-        for (int d = 0; d < DAYS_IN_WEEK; d++) {
-            totalTrades += m_tradeCountData[h][d];
-        }
+    // Si aucune donnée, rien à dessiner
+    if (m_activeDayIndices.empty() || numHoursToShow <= 0) {
+        painter.drawText(contentRect, Qt::AlignCenter, "Pas de données à afficher");
+        return;
     }
+    
+    // Marges et taille des cellules
+    int leftMargin = 60;  // Marge pour les labels d'heure
+    int topMargin = 40;   // Marge pour les labels de jour
+    int rightMargin = 120; // Marge pour la légende
+    int bottomMargin = 20;
+    
+    // Calculer la taille des cellules en fonction de l'espace disponible
+    int availableWidth = contentRect.width() - leftMargin - rightMargin;
+    int availableHeight = contentRect.height() - topMargin - bottomMargin;
+    
+    int cellWidth = std::min(CELL_SIZE, availableWidth / std::max(1, static_cast<int>(m_activeDayIndices.size())));
+    int cellHeight = std::min(CELL_SIZE, availableHeight / numHoursToShow);
+    int cellSize = std::min(cellWidth, cellHeight);
+    int cellSpacing = 1; // Espace entre les cellules
+    
+    // Calculer la position de départ (centrage horizontal)
+    int startX = contentRect.left() + leftMargin;
+    int startY = contentRect.top() + topMargin;
+    
+    // Calculer la largeur totale de la heatmap
+    int heatmapWidth = m_activeDayIndices.size() * (cellSize + cellSpacing) - cellSpacing;
     
     // Dessiner les labels des jours (en haut)
+    painter.save();
+    QFont dayFont = painter.font();
+    dayFont.setBold(true);
+    painter.setFont(dayFont);
+    
     for (size_t i = 0; i < m_activeDayIndices.size(); i++) {
         int d = m_activeDayIndices[i];
-        QGraphicsTextItem* dayLabel = m_scene->addText(m_dayNames[d]);
-        QFont dayFont = dayLabel->font();
-        dayLabel->setFont(dayFont);
-        
-        // Centrer le texte sur la colonne
-        QRectF textRect = dayLabel->boundingRect();
-        dayLabel->setPos(leftMargin + i * (adjustedCellSize + CELL_SPACING) + 
-                        (adjustedCellSize - textRect.width())/2, topMargin - 25);
+        QString dayName = m_dayNames[d];
+        QRect textRect(startX + i * (cellSize + cellSpacing), 
+                      startY - 25, 
+                      cellSize, 
+                      20);
+        painter.drawText(textRect, Qt::AlignCenter, dayName);
     }
+    painter.restore();
     
-    // Dessiner les bordures d'heures aux limites des cellules
-    for (int h = m_minHour; h <= m_maxHour + 1; h++) {  // +1 pour ajouter la dernière limite
-        int rowIndex = h - m_minHour;
-        
-        // Position Y de la limite
-        int y = topMargin + rowIndex * (adjustedCellSize + CELL_SPACING);
-        
-        // Ajouter le label d'heure à gauche
-        QGraphicsTextItem* hourLabel = m_scene->addText(QString::number(h) + "h");
-        QFont hourFont = hourLabel->font();
-        hourLabel->setFont(hourFont);
-        
-        // Aligner à droite de la ligne
-        hourLabel->setPos(leftMargin - hourLabel->boundingRect().width() - 5, y - hourLabel->boundingRect().height() / 2);
-    }
+    // Dessiner les labels des heures (à gauche)
+    painter.save();
+    QFont hourFont = painter.font();
+    painter.setFont(hourFont);
     
-    // Dessiner la heatmap - seulement pour la plage pertinente
     for (int h = m_minHour; h <= m_maxHour; h++) {
         int rowIndex = h - m_minHour;
+        int y = startY + rowIndex * (cellSize + cellSpacing) + cellSize/2;
+        
+        QString hourText = QString::number(h) + "h";
+        QRect textRect(startX - 50, y - 10, 45, 20);
+        painter.drawText(textRect, Qt::AlignRight | Qt::AlignVCenter, hourText);
+    }
+    painter.restore();
+    
+    // Dessiner la heatmap
+    for (int h = m_minHour; h <= m_maxHour; h++) {
+        int rowIndex = h - m_minHour;
+        
         for (size_t i = 0; i < m_activeDayIndices.size(); i++) {
             int d = m_activeDayIndices[i];
-
+            
             // Position de la cellule
-            int x = leftMargin + i * (adjustedCellSize + CELL_SPACING);
-            int y = topMargin + rowIndex * (adjustedCellSize + CELL_SPACING);
+            int x = startX + i * (cellSize + cellSpacing);
+            int y = startY + rowIndex * (cellSize + cellSpacing);
+            
+            // Créer le rectangle de la cellule
+            QRect cellRect(x, y, cellSize, cellSize);
             
             // Vérifier s'il y a des trades pour cette cellule
             if (m_tradeCountData[h][d] <= 0) {
                 // Cellule grise pour les périodes sans trades
-                m_scene->addRect(
-                    x, y, adjustedCellSize, adjustedCellSize,
-                    QPen(Qt::NoPen), QBrush(QColor(240, 240, 240))
-                );
+                painter.fillRect(cellRect, QColor(240, 240, 240));
                 continue;
             }
-
+            
             // Calculer l'espérance et la variance
             int count = m_tradeCountData[h][d];
             double totalPnL = m_performanceData[h][d];
@@ -295,133 +283,95 @@ void TradingHeatmapWidget::buildHeatmap() {
             double variance = meanOfSquares - (expectation * expectation);
             double stddev = variance > 0 ? std::sqrt(variance) : 0.0; // Écart-type
             
+            // Couleur de la cellule basée sur l'espérance
             QColor cellColor = getColorForValue(expectation);
+            painter.fillRect(cellRect, cellColor);
             
-            // Ajouter un rectangle avec une bordure fine
-            QGraphicsRectItem* cell = m_scene->addRect(
-                x, y, adjustedCellSize, adjustedCellSize,
-                QPen(Qt::NoPen), QBrush(cellColor)
-            );
-
-            // Modifier le tooltip pour inclure espérance et écart-type
-            QString tooltipText = QString("Jour: %1\nHeure: %2h - %3h\nEspérance: %4 €\nÉcart-type: %5 €\nTrades: %6")
-                                    .arg(m_dayNames[d])
-                                    .arg(h)
-                                    .arg(h+1)
-                                    .arg(expectation, 0, 'f', 2)
-                                    .arg(stddev, 0, 'f', 2)
-                                    .arg(count);
-            cell->setToolTip(tooltipText);
-
-            // Afficher l'espérance et l'écart-type dans la cellule
-            // Format: E=XX.XX
-            //         V=XX.XX
+            // Texte pour l'espérance et l'écart-type
             QString expText = QString("%1").arg(expectation, 0, 'f', 1);
-            QGraphicsTextItem* expTextItem = m_scene->addText(expText);
-            QFont expFont = expTextItem->font();
-            expFont.setPointSize(10); // Taille de police plus grande pour l'espérance
-            expFont.setBold(true);
-            expTextItem->setFont(expFont);
-
             QString stddevText = QString("%1").arg(stddev, 0, 'f', 0);
-            QGraphicsTextItem* stddevTextItem = m_scene->addText(stddevText);
-            QFont stddevFont = stddevTextItem->font();
-            stddevFont.setPointSize(8); // Taille de police plus petite pour l'écart-type
-            stddevTextItem->setFont(stddevFont);
-
-            // Centrer les textes dans la cellule
-            QRectF expRect = expTextItem->boundingRect();
-            QRectF stddevRect = stddevTextItem->boundingRect();
-
-            // Positionner l'espérance au milieu-haut
-            expTextItem->setPos(
-                x + (adjustedCellSize - expRect.width())/2,
-                y + adjustedCellSize * 0.25 - expRect.height()/2
-            );
-
-            // Positionner l'écart-type au milieu-bas
-            stddevTextItem->setPos(
-                x + (adjustedCellSize - stddevRect.width())/2,
-                y + adjustedCellSize * 0.75 - stddevRect.height()/2
-            );
             
             // Ajuster la couleur du texte pour la lisibilité
             QColor textColor = QColor::fromHsv(cellColor.hue(), 
-                                              cellColor.saturation(),
-                                              cellColor.value() < 128 ? 240 : 30);
-            expTextItem->setDefaultTextColor(textColor);
-            stddevTextItem->setDefaultTextColor(textColor);
+                                               cellColor.saturation(),
+                                               cellColor.value() < 128 ? 240 : 30);
+            
+            // Dessiner l'espérance (en haut)
+            painter.save();
+            QFont expFont = painter.font();
+            expFont.setBold(true);
+            expFont.setPointSize(10);
+            painter.setFont(expFont);
+            painter.setPen(textColor);
+            painter.drawText(QRect(x, y, cellSize, cellSize/2), 
+                            Qt::AlignCenter, 
+                            expText);
+            
+            // Dessiner l'écart-type (en bas)
+            QFont stddevFont = painter.font();
+            stddevFont.setPointSize(8);
+            painter.setFont(stddevFont);
+            painter.drawText(QRect(x, y + cellSize/2, cellSize, cellSize/2), 
+                            Qt::AlignCenter, 
+                            stddevText);
+            painter.restore();
         }
     }
     
-    // *** LÉGENDE VERTICALE DANS LE MÊME CANVAS ***
-    
-    // Position de départ de la légende (à droite de la heatmap avec une marge fixe)
-    int heatmapRightX = leftMargin + m_activeDayIndices.size() * (adjustedCellSize + CELL_SPACING);
-    int fixedMargin = 40; // Marge fixe entre la heatmap et la légende
-    
-    int legendX = heatmapRightX + fixedMargin;
-    int legendY = topMargin;
-    int legendWidth = 30;
-    int legendHeight = numHoursToShow * (adjustedCellSize + CELL_SPACING) - CELL_SPACING;
+    // Dessiner la légende verticale
+    int legendX = startX + heatmapWidth + 40;
+    int legendY = startY;
+    int legendWidth = 20;
+    int legendHeight = numHoursToShow * (cellSize + cellSpacing) - cellSpacing;
     
     // Titre de la légende
-    QGraphicsTextItem* legendTitle = m_scene->addText("E/σ (€)");
-    QFont legendTitleFont = legendTitle->font();
-    legendTitle->setFont(legendTitleFont);
-    legendTitle->setPos(legendX, legendY - 35);
+    painter.save();
+    painter.drawText(QRect(legendX, legendY - 25, 80, 20), 
+                    Qt::AlignLeft | Qt::AlignVCenter, 
+                    "E/σ (€)");
     
-    // Gradient vertical (de bas en haut)
+    // Rectangle du gradient
     QLinearGradient gradient(0, legendY + legendHeight, 0, legendY);
+    gradient.setColorAt(0.0, getColorForValue(m_minValue));
+    gradient.setColorAt(0.25, getColorForValue(m_minValue/2));
+    gradient.setColorAt(0.5, getColorForValue(0.0));
+    gradient.setColorAt(0.75, getColorForValue(m_maxValue/2));
+    gradient.setColorAt(1.0, getColorForValue(m_maxValue));
     
-    // Points d'arrêt pour le gradient (rouge-orange-jaune-vert)
-    gradient.setColorAt(0.0, getColorForValue(m_minValue));        // Rouge pour min
-    gradient.setColorAt(0.25, getColorForValue(m_minValue/2));     // Orange
-    gradient.setColorAt(0.5, getColorForValue(0.0));               // Jaune pour zéro
-    gradient.setColorAt(0.75, getColorForValue(m_maxValue/2));     // Jaune-vert
-    gradient.setColorAt(1.0, getColorForValue(m_maxValue));        // Vert pour max
+    QRect gradientRect(legendX, legendY, legendWidth, legendHeight);
+    painter.fillRect(gradientRect, gradient);
+    painter.drawRect(gradientRect);
     
-    // Rectangle du gradient avec bordure
-    m_scene->addRect(legendX, legendY, legendWidth, legendHeight, 
-                    QPen(Qt::black, 1), QBrush(gradient));
+    // Labels de la légende
+    QFont valueFont = painter.font();
+    painter.setFont(valueFont);
     
-    // Labels des valeurs à droite du rectangle
-    
-    // Maximum (en haut)
-    QGraphicsTextItem* maxText = m_scene->addText(QString("%1 €").arg(m_maxValue, 0, 'f', 2));
-    QFont valueFont = maxText->font();
-    maxText->setFont(valueFont);
-    maxText->setPos(legendX + legendWidth + 5, legendY - maxText->boundingRect().height()/2);
+    // Maximum
+    painter.drawText(QRect(legendX + legendWidth + 5, legendY - 10, 80, 20),
+                    Qt::AlignLeft | Qt::AlignVCenter,
+                    QString("%1 €").arg(m_maxValue, 0, 'f', 2));
     
     // Quart positif
-    QGraphicsTextItem* quarterPosText = m_scene->addText(QString("%1 €").arg(m_maxValue/2, 0, 'f', 2));
-    quarterPosText->setFont(valueFont);
-    quarterPosText->setPos(legendX + legendWidth + 5, 
-                          legendY + legendHeight/4 - quarterPosText->boundingRect().height()/2);
+    painter.drawText(QRect(legendX + legendWidth + 5, legendY + legendHeight/4 - 10, 80, 20),
+                    Qt::AlignLeft | Qt::AlignVCenter,
+                    QString("%1 €").arg(m_maxValue/2, 0, 'f', 2));
     
-    // Zéro (milieu)
-    QGraphicsTextItem* zeroText = m_scene->addText("0 €");
-    zeroText->setFont(valueFont);
-    zeroText->setPos(legendX + legendWidth + 5, 
-                    legendY + legendHeight/2 - zeroText->boundingRect().height()/2);
+    // Zéro
+    painter.drawText(QRect(legendX + legendWidth + 5, legendY + legendHeight/2 - 10, 80, 20),
+                    Qt::AlignLeft | Qt::AlignVCenter,
+                    "0 €");
     
     // Quart négatif
-    QGraphicsTextItem* quarterNegText = m_scene->addText(QString("%1 €").arg(m_minValue/2, 0, 'f', 2));
-    quarterNegText->setFont(valueFont);
-    quarterNegText->setPos(legendX + legendWidth + 5, 
-                          legendY + 3*legendHeight/4 - quarterNegText->boundingRect().height()/2);
+    painter.drawText(QRect(legendX + legendWidth + 5, legendY + 3*legendHeight/4 - 10, 80, 20),
+                    Qt::AlignLeft | Qt::AlignVCenter,
+                    QString("%1 €").arg(m_minValue/2, 0, 'f', 2));
     
-    // Minimum (en bas)
-    QGraphicsTextItem* minText = m_scene->addText(QString("%1 €").arg(m_minValue, 0, 'f', 2));
-    minText->setFont(valueFont);
-    minText->setPos(legendX + legendWidth + 5, 
-                   legendY + legendHeight - minText->boundingRect().height()/2);
+    // Minimum
+    painter.drawText(QRect(legendX + legendWidth + 5, legendY + legendHeight - 10, 80, 20),
+                    Qt::AlignLeft | Qt::AlignVCenter,
+                    QString("%1 €").arg(m_minValue, 0, 'f', 2));
     
-    // Ajuster la vue pour afficher toute la scène
-    QRectF boundingRect = m_scene->itemsBoundingRect();
-    m_scene->setSceneRect(boundingRect);
-    m_view->fitInView(boundingRect, Qt::KeepAspectRatio);
-    m_view->centerOn(boundingRect.center());
+    painter.restore();
 }
 
 bool TradingHeatmapWidget::eventFilter(QObject* watched, QEvent* event) {
@@ -433,47 +383,16 @@ bool TradingHeatmapWidget::eventFilter(QObject* watched, QEvent* event) {
     return QWidget::eventFilter(watched, event);
 }
 
-void TradingHeatmapWidget::updateContent(const be::Stats& stats) {
-    if (stats.trades.empty()) {
+void TradingHeatmapWidget::updateContent(const std::vector<be::TradeData>& trades) {
+    if (trades.empty()) {
         return;
     }
     
     // Analyser les trades par heure et jour
-    analyzeTradesByTimeAndDay(stats.trades);
+    analyzeTradesByTimeAndDay(trades);
     
     // Construire la heatmap
-    buildHeatmap();
-    
-    qDebug() << "Heatmap mise à jour avec" << stats.trades.size() << "trades"
-             << "couvrant les heures" << m_minHour << "à" << m_maxHour
-             << "Échelle de PnL: [" << m_minValue << "," << m_maxValue << "]";
+    // buildHeatmap();
+    update();
 }
 
-void TradingHeatmapWidget::clear() {
-    // Réinitialiser les données
-    for (int h = 0; h < HOURS_IN_DAY; h++) {
-        for (int d = 0; d < DAYS_IN_WEEK; d++) {
-            m_performanceData[h][d] = 0.0;
-            m_tradeCountData[h][d] = 0;
-            m_squaredSumData[h][d] = 0.0;
-        }
-    }
-
-    m_activeDays.clear();
-    m_activeDayIndices.clear();
-    
-    // Effacer la scène
-    m_scene->clear();
-}
-
-void TradingHeatmapWidget::resizeEvent(QResizeEvent* event) {
-    QWidget::resizeEvent(event);
-    
-    // Réajuster la vue au contenu après redimensionnement si elle contient des éléments
-    if (m_scene && !m_scene->items().isEmpty()) {
-        QRectF bounds = m_scene->itemsBoundingRect();
-        if (!bounds.isEmpty()) {
-            m_view->fitInView(bounds, Qt::KeepAspectRatio);
-        }
-    }
-}

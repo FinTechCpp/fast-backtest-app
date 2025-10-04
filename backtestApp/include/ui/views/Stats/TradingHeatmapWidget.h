@@ -13,19 +13,19 @@
 #include <QResizeEvent>
 #include <QMap>
 
-#include "ui/views/Stats/StatsBaseWidget.h"
+#include "ui/views/Stats/TitledWidget.h"
+#include "stats.hpp"
 
-class TradingHeatmapWidget : public StatsBaseWidget {
+class TradingHeatmapWidget : public TitledWidget {
     Q_OBJECT
 
 public:
-    explicit TradingHeatmapWidget(QWidget* parent = nullptr);
-    
-    void updateContent(const be::Stats& stats) override;
-    void clear() override;
+    explicit TradingHeatmapWidget(const QString& title = QString(), QWidget* parent = nullptr);
+
+    void updateContent(const std::vector<be::TradeData>& trades);
 
 protected:
-    void resizeEvent(QResizeEvent* event) override;
+    void paintContent(QPainter& painter, const QRect& contentRect) override;
     bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
@@ -42,7 +42,6 @@ private:
     QColor getColorForValue(double value);
 
     // Composants d'interface
-    // QGroupBox* m_groupBox;
     QVBoxLayout* m_mainLayout;
     QLabel* m_titleLabel;
     QGraphicsScene* m_scene;

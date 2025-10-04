@@ -121,7 +121,7 @@ void StatsView::setupUI() {
 
 
     // --------------------------------------
-    // Ligne 3 et 4
+    // Ligne 3
     // --------------------------------------
     m_keyValueListWidget = new KeyValueListWidget("Trade details");
     m_keyValueListWidget->addItem("Total ", "--", QColor(0, 0, 0));
@@ -138,6 +138,16 @@ void StatsView::setupUI() {
     m_grossProfitWidget->setSuffix(" €");
     gridLayout->addWidget(m_grossProfitWidget, 3, 1);
 
+
+    m_tradingHeatmapWidget = new TradingHeatmapWidget("Trading Heatmap");
+    gridLayout->addWidget(m_tradingHeatmapWidget, 3, 4, 4, 1);
+
+
+
+
+    // --------------------------------------
+    // Ligne 4
+    // --------------------------------------
     m_grossLossWidget = new SimpleTextWidget("Gross Loss");
     m_grossLossWidget->setStatColors(QColor(150, 0, 0));
     m_grossLossWidget->setBackgroundColor(QColor(150, 0, 0).lighter(300));
@@ -213,15 +223,15 @@ void StatsView::setupUI() {
     m_statsLayout->addWidget(m_metricsWidget);
 
     
-    QHBoxLayout* tradesClosureLayout = new QHBoxLayout();
-    tradesClosureLayout->setContentsMargins(0, 0, 0, 0);
-    tradesClosureLayout->setSpacing(10);
+    // QHBoxLayout* tradesClosureLayout = new QHBoxLayout();
+    // tradesClosureLayout->setContentsMargins(0, 0, 0, 0);
+    // tradesClosureLayout->setSpacing(10);
         
-    m_tradingHeatmapWidget = new TradingHeatmapWidget();
+    // m_tradingHeatmapWidget = new TradingHeatmapWidget();
     
-    tradesClosureLayout->addWidget(m_tradingHeatmapWidget, /*stretch=*/2);
+    // tradesClosureLayout->addWidget(m_tradingHeatmapWidget, /*stretch=*/2);
 
-    m_statsLayout->addLayout(tradesClosureLayout);
+    // m_statsLayout->addLayout(tradesClosureLayout);
 
 
     m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
@@ -242,7 +252,6 @@ void StatsView::setupUI() {
 
     // 4. STOCKAGE DES WIDGETS POUR MISES À JOUR/RESET
     m_statsWidgets.push_back(m_metricsWidget);
-    m_statsWidgets.push_back(m_tradingHeatmapWidget);
     m_statsWidgets.push_back(m_tradesTableWidget);
     m_statsWidgets.push_back(m_monthlyPerformanceWidget);
 }
@@ -355,6 +364,8 @@ void StatsView::updateData(BacktestResults* results)
     }
 
     m_equityWidget->setPoints(dates, m_currentResults->stats.equityCurve);
+
+    m_tradingHeatmapWidget->updateContent(m_currentResults->stats.trades);
 }
 
 void StatsView::clear() {

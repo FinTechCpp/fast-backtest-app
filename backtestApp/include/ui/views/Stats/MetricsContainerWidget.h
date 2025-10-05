@@ -19,7 +19,6 @@ public:
 
 private:
     enum class Section {
-        Summary,
         Performance,
         Risk,
         General
@@ -44,8 +43,6 @@ private:
     QVBoxLayout* m_mainLayout;
     
     // Les trois groupes de métriques
-    QGroupBox* m_summaryGroup;
-    QVBoxLayout* m_summaryLayout;
     QGroupBox* m_performanceGroup;
     QVBoxLayout* m_performanceLayout;
     QGroupBox* m_riskGroup;

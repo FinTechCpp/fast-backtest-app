@@ -8,9 +8,6 @@ MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     m_mainLayout = new QVBoxLayout(this);
 
     // Créer les groupes
-    m_summaryGroup = new QGroupBox("Résumé du Backtest");
-    m_summaryLayout = new QVBoxLayout(m_summaryGroup);
-
     m_performanceGroup = new QGroupBox("Résultats et Performance");
     m_performanceLayout = new QVBoxLayout(m_performanceGroup);
     
@@ -23,7 +20,6 @@ MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     // Layout horizontal pour contenir les trois groupes
     QHBoxLayout* groupsLayout = new QHBoxLayout();
     groupsLayout->setContentsMargins(0, 0, 0, 0);
-    groupsLayout->addWidget(m_summaryGroup);
     groupsLayout->addWidget(m_performanceGroup);
     groupsLayout->addWidget(m_riskGroup);
     groupsLayout->addWidget(m_generalGroup);
@@ -69,7 +65,6 @@ MetricsContainerWidget::MetricsContainerWidget(QWidget* parent)
     initializeMetrics();
     
     // Créer les widgets pour chaque section
-    createMetricWidgets(Section::Summary, m_summaryLayout);
     createMetricWidgets(Section::Performance, m_performanceLayout);
     createMetricWidgets(Section::Risk, m_riskLayout);
     createMetricWidgets(Section::General, m_generalLayout);

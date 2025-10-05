@@ -135,6 +135,13 @@ public:
         // Update the strategy signal with the new latest candle by executing strategy logic
         Signal* signal = strategy->update_candle(candle);
 
+
+        DateTime dtBreakPoint{2024, 11, 05, Time{17, 52, 0}};
+
+        if (candle.ohlc.date >= dtBreakPoint) {
+            int a = 0;
+        }
+
         if (!signal)
             return; // No signal to process
 

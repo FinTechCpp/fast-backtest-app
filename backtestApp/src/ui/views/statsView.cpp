@@ -140,7 +140,7 @@ void StatsView::setupUI() {
 
 
     m_tradingHeatmapWidget = new TradingHeatmapWidget("Trading Heatmap");
-    gridLayout->addWidget(m_tradingHeatmapWidget, 3, 4, 4, 1);
+    gridLayout->addWidget(m_tradingHeatmapWidget, 3, 4, 5, 1);
 
 
 

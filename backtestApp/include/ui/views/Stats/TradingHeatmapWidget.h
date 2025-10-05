@@ -26,7 +26,10 @@ public:
 
 protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
-    bool eventFilter(QObject* watched, QEvent* event) override;
+
+    void enterEvent(QEnterEvent* event) override;
+    void leaveEvent(QEvent*) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
     // Calcule le jour de la semaine à partir d'une date (0 = lundi, 6 = dimanche)
@@ -34,9 +37,6 @@ private:
     
     // Analyse les trades pour extraire les performances par heure et jour
     void analyzeTradesByTimeAndDay(const std::vector<be::TradeData>& trades);
-    
-    // Construit la heatmap à partir des données analysées
-    void buildHeatmap();
     
     // Retourne une couleur en fonction de la valeur (gradient rouge-blanc-vert)
     QColor getColorForValue(double value);
@@ -61,7 +61,7 @@ private:
     // Constantes
     static constexpr int HOURS_IN_DAY = 24;
     static constexpr int DAYS_IN_WEEK = 7;
-    static constexpr int CELL_SIZE = 40;
+    static constexpr int CELL_SIZE = 45;
     static constexpr int CELL_SPACING = 0;
     
     // Noms des jours pour l'affichage
@@ -69,4 +69,11 @@ private:
     QStringList m_dayNames{"Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"};
     QVector<bool> m_activeDays; // Indique quels jours ont des trades
     QVector<int> m_activeDayIndices; // Indices des jours actifs pour l'affichage
+
+    // Variables pour le suivi de la souris
+    QPoint m_mousePos;
+    bool m_mouseOver = false;
+    int m_activeCell_col = -1;
+    int m_activeCell_row = -1;
+    QRect m_cellsArea; // Rectangle englobant toute la zone des cellules
 };

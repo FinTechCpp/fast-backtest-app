@@ -35,8 +35,8 @@ private:
     bool last_trade_closed = false;
     double last_trade_pnl = 0.0;
     
-    // Logger
-    std::shared_ptr<spdlog::logger> async_file;
+    // // Logger
+    // std::shared_ptr<spdlog::logger> async_file;
     
 public:
     /**
@@ -47,32 +47,10 @@ public:
      * @param strategyConfig Configuration of the strategy
      * @param generic_config Configuration specific to the Generic strategy
      */
-    StrategyAdapter(std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, const StrategyConfig& strategyConfig) 
+    StrategyAdapter(std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, const StrategyConfig& strategyConfig, std::function<void(const std::string&)> logCallback = nullptr)
     : be::Strategy(broker, data) {
         strategy = std::make_unique<::Strategy>(strategyConfig);
-
-        spdlog::drop("async_file_logger"); // Drop the previous logger if it exists
-        async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
-            "async_file_logger",       // Logger name
-            "logs/Strategies/GenericStrategy_async.log",      // Log file path
-            30 * 1024 * 1024,          // Max file size (100 MB)
-            1
-        );
-        async_file->set_level(spdlog::level::debug);
-
-        auto log_callback = [this](const std::string& message, int level) {
-            spdlog::level::level_enum spdlog_level = spdlog::level::info;
-            switch (level) {
-                case static_cast<int>(LogLevel::DEBUG):   spdlog_level = spdlog::level::debug; break;
-                case static_cast<int>(LogLevel::INFO):    spdlog_level = spdlog::level::info; break;
-                case static_cast<int>(LogLevel::WARNING): spdlog_level = spdlog::level::warn; break;
-                case static_cast<int>(LogLevel::FATAL):   spdlog_level = spdlog::level::err; break;
-            }
-            
-            this->async_file->log(spdlog_level, "{}", message);
-        };
-
-        strategy->set_log_callback(log_callback);
+        strategy->set_log_callback(logCallback);
     }
     
     /**
@@ -82,8 +60,6 @@ public:
      * the strategy to initialize itself with historical data.
      */
     void init() override {
-        async_file->debug("GenericStrategyAdapter init() called");
-        // Initialize the strategy
     }
     
     /**
@@ -167,8 +143,6 @@ public:
                 signal->stop_loss, 
                 signal->take_profit
             );
-            async_file->info("BUY signal executed: qty={}, SL={}, TP={}", 
-                           signal->quantity, signal->stop_loss, signal->take_profit);
         }
         else if (trades.empty() && signal->type == SignalType::SELL && signal->quantity > 0) {
             // Process a sell signal
@@ -181,8 +155,6 @@ public:
                 signal->stop_loss, 
                 signal->take_profit
             );
-            async_file->info("SELL signal executed: qty={}, SL={}, TP={}", 
-                           signal->quantity, signal->stop_loss, signal->take_profit);
         }
     }
 };

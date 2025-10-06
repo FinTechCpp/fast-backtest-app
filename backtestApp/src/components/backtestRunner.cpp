@@ -237,7 +237,7 @@ void BacktestWorker::run()
     
     
     // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
-    auto strategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data) {
+    auto strategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, std::function<void(const std::string&)> logCallback) {
         GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
         StrategyConfig strategyConfig = m_mainWindow->getStrategyConfig();
         strategyConfig.cash = generalParams.cash;
@@ -247,7 +247,20 @@ void BacktestWorker::run()
         std::cout << strategyConfig << std::endl;
 
         // Création directe de la stratégie
-        return std::make_shared<StrategyAdapter>(broker, data, strategyConfig);
+        return std::make_shared<StrategyAdapter>(broker, data, strategyConfig, logCallback);
+    };
+
+    spdlog::drop("async_file_logger_BE"); // S'assurer qu'il n'existe pas déjà
+    std::shared_ptr<spdlog::logger> async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
+        "async_file_logger_BE",       // Logger name
+        "logs/backtestEngine/backtestExecution.log",      // Log file path
+        30 * 1024 * 1024,          // Max file size (30 MB)
+        1
+    );
+    async_file->set_level(spdlog::level::debug);
+
+    auto logCallback = [async_file](const std::string& msg) {
+        async_file->log(spdlog::level::debug, msg);
     };
 
 
@@ -255,16 +268,17 @@ void BacktestWorker::run()
     
     // Créer et exécuter le backtest
     be::Backtest backtest(
-        data,               // Données historiques
-        strategyFactory,    // Factory de stratégie
+        data,                             // Données historiques
+        strategyFactory,                  // Factory de stratégie
         generalConfig.cash,               // Capital initial
         generalConfig.spread,             // Spread
         generalConfig.commission,         // Commission
-        margin,                // Marge (défaut: 1.0)
+        margin,                           // Marge
         generalConfig.tradeOnClose,       // Trade à la clôture
         generalConfig.hedging,            // Hedging
         generalConfig.exclusiveOrders,    // Ordres exclusifs
-        generalConfig.finalizeTrades      // Finalisation des trades
+        generalConfig.finalizeTrades,     // Finalisation des trades
+        logCallback                       // Fonction de logging
     );
     
     backtest.setProgressCallback([this, &timer](size_t current, size_t total) {

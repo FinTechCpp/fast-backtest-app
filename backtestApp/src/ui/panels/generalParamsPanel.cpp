@@ -4,6 +4,8 @@
 #include <QDate>
 #include <QDateEdit>
 #include <QDebug>
+#include <filesystem>
+#include <set>
 
 GeneralParamsPanel::GeneralParamsPanel(QWidget* parent)
     : ConfigPanel<GeneralParamsConfig>("Paramètres généraux", parent)
@@ -18,7 +20,29 @@ void GeneralParamsPanel::setupUI()
     
     // Symbole
     QComboBox* symbolCombo = new QComboBox(this);
-    symbolCombo->addItems({"NDX", "EUR", "SPX"});
+
+    // Dynamically populate symbols from the project's marketData directory.
+    // Symbol is defined as the prefix before the first underscore in the filename.
+
+    const std::filesystem::path marketDataDir = std::filesystem::path("./marketData");
+    std::set<QString> symbols;
+
+    if (std::filesystem::exists(marketDataDir) && std::filesystem::is_directory(marketDataDir)) {
+        for (const auto& entry : std::filesystem::directory_iterator(marketDataDir)) {
+            if (!entry.is_regular_file()) continue;
+            const auto filename = entry.path().filename().string();
+            auto pos = filename.find('_');
+            if (pos == std::string::npos) continue;
+            const std::string prefix = filename.substr(0, pos);
+            if (!prefix.empty()) symbols.insert(QString::fromStdString(prefix));
+        }
+    }
+    if (!symbols.empty()) 
+        for (const auto& s : symbols) symbolCombo->addItem(s);
+    else 
+        qWarning() << "No market data files found in ./marketData directory.";
+                   
+
     paramsLayout->addRow(new QLabel("Symbole:", this), symbolCombo);
     
     // Binding pour le symbole

@@ -263,8 +263,6 @@ void BacktestWorker::run()
         async_file->log(spdlog::level::debug, msg);
     };
 
-
-    double margin = 1 / generalConfig.leverage_limit; // Calculer la marge à partir du levier
     
     // Créer et exécuter le backtest
     be::Backtest backtest(
@@ -273,7 +271,7 @@ void BacktestWorker::run()
         generalConfig.cash,               // Capital initial
         generalConfig.spread,             // Spread
         generalConfig.commission,         // Commission
-        margin,                           // Marge
+        generalConfig.leverage_limit,     // Levier
         generalConfig.tradeOnClose,       // Trade à la clôture
         generalConfig.hedging,            // Hedging
         generalConfig.exclusiveOrders,    // Ordres exclusifs

@@ -153,13 +153,20 @@ void ProfileMenuManager::updateProfileList()
     qDebug() << "Profil actuel:" << currentProfile;
     
     for (const QString& profile : profiles) {
+        // Create a simple activation action (not checkable) for each profile
         QAction* action = new QAction(profile, this);
-        action->setCheckable(true);
-        action->setChecked(profile == currentProfile);
         action->setData(profile);
-        
+        // Keep actions enabled so the user can reload the same profile multiple times.
+        action->setEnabled(true);
+        // Visually mark the active profile by appending a small label to the text
+        if (profile == currentProfile) {
+            action->setText(profile + " (actif)");
+        } else {
+            action->setText(profile);
+        }
+
         connect(action, &QAction::triggered, this, &ProfileMenuManager::onLoadProfile);
-        
+
         m_loadProfileSubmenu->addAction(action);
         m_profileActions[profile] = action;
         
@@ -171,9 +178,18 @@ void ProfileMenuManager::updateProfileList()
 
 void ProfileMenuManager::onProfileChanged(const QString& profileName)
 {
-    // Mettre à jour les coches dans le menu
+    // Mettre à jour l'affichage des actions : mettre à jour le texte pour indiquer le profil actif
     for (auto it = m_profileActions.begin(); it != m_profileActions.end(); ++it) {
-        it.value()->setChecked(it.key() == profileName);
+        const QString& name = it.key();
+        QAction* action = it.value();
+        if (!action) continue;
+        if (name == profileName) {
+            action->setText(name + " (actif)");
+        } else {
+            action->setText(name);
+        }
+        // Keep all actions enabled so user can reload any profile at any time
+        action->setEnabled(true);
     }
     
     // Désactiver la suppression pour le profil DEFAULT
@@ -230,8 +246,7 @@ void ProfileMenuManager::onLoadProfile()
     QAction* action = qobject_cast<QAction*>(sender());
     if (action && m_configManager) {
         QString profileName = action->data().toString();
-        if (!profileName.isEmpty()) {
+        if (!profileName.isEmpty()) 
             m_configManager->onProfileChanged(profileName);
-        }
     }
 }

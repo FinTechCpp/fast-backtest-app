@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(ig_trading_bot VERSION 1.0)
+project(fast-backtest-app VERSION 1.0)
 
 # Global configuration
 set(CMAKE_CXX_STANDARD 20)

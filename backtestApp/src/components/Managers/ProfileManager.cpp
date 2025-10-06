@@ -444,7 +444,6 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
 
 void ProfileManager::onProfileChanged(const QString& profileName)
 {
-    if (profileName != m_currentProfile) {
-        applyProfileToUI(profileName);
-    }
+    // Always apply the profile to allow re-loading the same profile multiple times
+    applyProfileToUI(profileName);
 }

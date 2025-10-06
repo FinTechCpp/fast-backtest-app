@@ -67,6 +67,16 @@ void App::createMenus()
     m_profileMenuManager->setConfigManager(m_configManager);
     m_profileMenuManager->createProfileMenu(m_menuBar);
 
+    // Connect profile change signal to update the indicator label
+    if (m_configManager && m_profileIndicator) {
+        connect(m_configManager, &ProfileManager::profileChanged, this, [this](const QString& profile){
+            if (m_profileIndicator)
+                m_profileIndicator->setText(tr("Profil actif: %1").arg(profile));
+        });
+        // Ensure the indicator displays the current profile at startup
+        m_profileIndicator->setText(tr("Profil actif: %1").arg(m_configManager->getCurrentProfile()));
+    }
+
     // Create the data menu manager
     m_dataMenuManager = new DataMenuManager(this);
     m_dataMenuManager->createDataMenu(m_menuBar);
@@ -111,6 +121,50 @@ void App::createControlPanel() {
     // Backtest runner
     m_backtestRunner = new BacktestRunner(this);
     m_controlPanelLayout->addLayout(m_backtestRunner->getLayout());
+    
+    // Profile indicator - afficher le profil actif entre le BacktestRunner et les panels
+    QWidget* profileRow = new QWidget(this);
+    QHBoxLayout* profileRowLayout = new QHBoxLayout(profileRow);
+    // Make the profileRow look like the grey rounded box
+    profileRow->setStyleSheet("QWidget#profileRow { background-color: #f0f4f8; border: 1px solid #cbd5e1; border-radius: 6px; }");
+    profileRow->setObjectName("profileRow");
+    profileRowLayout->setContentsMargins(6, 6, 6, 6);
+    profileRowLayout->setSpacing(8);
+
+    m_profileIndicator = new QLabel(this);
+    m_profileIndicator->setMinimumHeight(28);
+    m_profileIndicator->setStyleSheet("QLabel { background: transparent; color: #333; }");
+    m_profileIndicator->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+
+    // Small reset button to reload the current profile (inside the grey box)
+    m_profileResetButton = new QPushButton(tr("Reset"), this);
+    m_profileResetButton->setToolTip(tr("Recharger le profil actif"));
+    m_profileResetButton->setFixedSize(70, 28);
+    m_profileResetButton->setStyleSheet("QPushButton { font-size: 11px; padding: 2px 6px; }");
+
+    // Initial text
+    if (m_configManager)
+        m_profileIndicator->setText(tr("Profil actif: %1").arg(m_configManager->getCurrentProfile()));
+    else
+        m_profileIndicator->setText(tr("Profil actif: -"));
+
+    // Connect reset button to reload the current profile
+    connect(m_profileResetButton, &QPushButton::clicked, this, [this]() {
+        if (m_configManager) {
+            QString current = m_configManager->getCurrentProfile();
+            if (!current.isEmpty()) {
+                // Call ProfileManager::onProfileChanged to reapply the profile
+                m_configManager->onProfileChanged(current);
+            }
+        }
+    });
+
+    // Add indicator and button to the row (indicator expands, button stays compact)
+    profileRowLayout->addWidget(m_profileIndicator, 1);
+    profileRowLayout->addWidget(m_profileResetButton, 0, Qt::AlignRight | Qt::AlignVCenter);
+
+    // Add the profile row to the control panel
+    m_controlPanelLayout->addWidget(profileRow);
     
     // General parameters panel
     m_generalParamsPanel = new GeneralParamsPanel(m_controlPanel);

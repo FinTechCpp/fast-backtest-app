@@ -123,6 +123,10 @@ private:
     QPushButton* m_runButton;
     QProgressBar* m_progressBar;
     QLabel* m_statusLabel;
+    // Profile indicator shown in the control panel
+    QLabel* m_profileIndicator = nullptr;
+    // Small button to reset/reload the current profile
+    QPushButton* m_profileResetButton = nullptr;
     
     // Private methods
     void createControlPanel();

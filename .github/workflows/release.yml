@@ -348,25 +348,31 @@ jobs:
           libxkbcommon-x11-dev \
           libatspi2.0-dev
 
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
       with:
-        version: ${{ env.QT_VERSION }}
-        host: linux
-        target: desktop
-        arch: gcc_64
-        modules: qtcharts
-        cache: true
-        aqtversion: '==3.1.7'
-        setup-python: true
+        python-version: '3.11'
+
+    - name: Install aqtinstall
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install aqtinstall==3.1.*
+
+    - name: Install Qt 6.8.3 with aqtinstall
+      run: |
+        python3 -m aqt install-qt linux desktop 6.8.3 gcc_64 -m qtcharts --outputdir ${{ github.workspace }}/Qt
+        
+        # Set environment variables for subsequent steps
+        echo "Qt6_DIR=${{ github.workspace }}/Qt/6.8.3/gcc_64/lib/cmake/Qt6" >> $GITHUB_ENV
+        echo "${{ github.workspace }}/Qt/6.8.3/gcc_64/bin" >> $GITHUB_PATH
 
     - name: Verify Qt installation
       run: |
-        echo "Using Qt version $QT_VERSION"
-        which qmake || echo "qmake not found"
-        qmake --version || true
-        echo "Qt6_DIR=${Qt6_DIR:-$Qt6_DIR (not set?)}"
-        ls -l $Qt6_DIR || echo "Qt6_DIR directory not found"
+        echo "Qt version: ${{ env.QT_VERSION }}"
+        echo "Qt6_DIR: $Qt6_DIR"
+        echo "PATH: $PATH"
+        ls -la ${{ github.workspace }}/Qt/6.8.3/gcc_64/
+        qmake --version
 
     - name: Create build directory
       run: mkdir -p build

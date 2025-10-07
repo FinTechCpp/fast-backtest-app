@@ -316,6 +316,7 @@ jobs:
     - name: Set version
       run: |
         echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
+        echo "QT_VERSION=${{ env.QT_VERSION }}" >> $GITHUB_ENV
 
     - name: Install system dependencies
       run: |
@@ -323,6 +324,7 @@ jobs:
         sudo apt-get install -y \
           build-essential \
           cmake \
+          ninja-build \
           libgl1-mesa-dev \
           libxkbcommon-x11-0 \
           libxcb-icccm4 \
@@ -355,12 +357,16 @@ jobs:
         arch: gcc_64
         modules: qtcharts
         cache: true
+        aqtversion: '==3.1.7'
+        setup-python: true
 
     - name: Verify Qt installation
       run: |
-        echo "Qt version: ${{ env.QT_VERSION }}"
-        echo "Qt6_DIR: $Qt6_DIR"
-        qmake --version
+        echo "Using Qt version $QT_VERSION"
+        which qmake || echo "qmake not found"
+        qmake --version || true
+        echo "Qt6_DIR=${Qt6_DIR:-$Qt6_DIR (not set?)}"
+        ls -l $Qt6_DIR || echo "Qt6_DIR directory not found"
 
     - name: Create build directory
       run: mkdir -p build

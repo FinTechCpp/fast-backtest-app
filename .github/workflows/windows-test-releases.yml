@@ -3,10 +3,8 @@
 name: Windows Test Build (releases branch)
 
 on:
-  push:
-    branches: [ releases ]
-  pull_request:
-    branches: [ releases ]
+  # Disabled automatic triggers (push/pull_request) temporarily.
+  # Only the manual workflow_dispatch defined below will remain active.
   workflow_dispatch:
     inputs:
       custom_version:

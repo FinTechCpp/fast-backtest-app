@@ -27,21 +27,7 @@ jobs:
       id: version
       run: |
         # Get the latest existing tag
-        las                {
-                  "name": "📦 Version",
-                  "value": "v${{ env.VERSION }}",
-                  "inline": true
-                },
-                {
-                  "name": "🛠️ Qt Version",
-                  "value": "6.8.3 (Win/Mac), 6.7.2 (Linux)",
-                  "inline": true
-                },
-                {
-                  "name": "🔧 Build Type",
-                  "value": "${{ env.BUILD_TYPE }}",
-                  "inline": true
-                },ribe --tags --abbrev=0 2>/dev/null || echo "")
+        lastTag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
         
         if [ -z "$lastTag" ]; then
           # If no tag exists, use the base version from the VERSION file

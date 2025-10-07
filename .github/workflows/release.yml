@@ -356,7 +356,7 @@ jobs:
     - name: Install aqtinstall
       run: |
         python3 -m pip install --upgrade pip
-        pip install aqtinstall==3.1.*
+        pip install aqtinstall==3.3.*
 
     - name: Install Qt 6.8.3 with aqtinstall
       run: |

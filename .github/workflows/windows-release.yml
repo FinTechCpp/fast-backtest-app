@@ -317,7 +317,7 @@ jobs:
       run: |
         echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
 
-    - name: Install system dependencies and Qt
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -331,17 +331,36 @@ jobs:
           libxcb-render-util0 \
           libxcb-xinerama0 \
           libxcb-cursor0 \
-          qt6-base-dev \
-          qt6-charts-dev \
-          libqt6charts6 \
-          qmake6 \
-          qt6-base-dev-tools
+          libfontconfig1-dev \
+          libfreetype6-dev \
+          libx11-dev \
+          libx11-xcb-dev \
+          libxext-dev \
+          libxfixes-dev \
+          libxi-dev \
+          libxrender-dev \
+          libxcb1-dev \
+          libxcb-glx0-dev \
+          libxcb-util0-dev \
+          libxkbcommon-dev \
+          libxkbcommon-x11-dev \
+          libatspi2.0-dev
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: linux
+        target: desktop
+        arch: gcc_64
+        modules: qtcharts
+        cache: true
 
     - name: Verify Qt installation
       run: |
-        echo "Qt version: $(qmake6 -query QT_VERSION)"
-        qmake6 -query QT_INSTALL_PREFIX
-        qmake6 -query QT_INSTALL_LIBS
+        echo "Qt version: ${{ env.QT_VERSION }}"
+        echo "Qt6_DIR: $Qt6_DIR"
+        qmake --version
 
     - name: Create build directory
       run: mkdir -p build
@@ -351,7 +370,7 @@ jobs:
       run: |
         cmake .. \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-          -DCMAKE_PREFIX_PATH="/usr/lib/x86_64-linux-gnu/qt6"
+          -DCMAKE_PREFIX_PATH="$Qt6_DIR"
 
     - name: Build project
       working-directory: build
@@ -372,8 +391,9 @@ jobs:
     - name: Create distribution folder
       run: |
         DIST_DIR="fast-backtest-app-linux"
-        QT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
-        QT_PLUGINS_PATH="/usr/lib/x86_64-linux-gnu/qt6/plugins"
+        QT_ROOT=$(dirname "$Qt6_DIR")
+        QT_LIB_PATH="$QT_ROOT/lib"
+        QT_PLUGINS_PATH="$QT_ROOT/plugins"
         
         mkdir -p "$DIST_DIR/bin"
         mkdir -p "$DIST_DIR/lib"
@@ -381,7 +401,7 @@ jobs:
         # Copy executable
         cp build/backtestApp/backtestapp "$DIST_DIR/bin/"
         
-        # Copy Qt libraries from system installation
+        # Copy Qt libraries
         cp -P "$QT_LIB_PATH/libQt6Core.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         cp -P "$QT_LIB_PATH/libQt6Gui.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         cp -P "$QT_LIB_PATH/libQt6Widgets.so"* "$DIST_DIR/lib/" 2>/dev/null || true
@@ -391,7 +411,7 @@ jobs:
         cp -P "$QT_LIB_PATH/libQt6OpenGL.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         cp -P "$QT_LIB_PATH/libQt6OpenGLWidgets.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         
-        # Copy additional required libraries
+        # Copy additional Qt dependencies
         cp -P "$QT_LIB_PATH/libicui18n.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         cp -P "$QT_LIB_PATH/libicuuc.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         cp -P "$QT_LIB_PATH/libicudata.so"* "$DIST_DIR/lib/" 2>/dev/null || true
@@ -528,9 +548,9 @@ jobs:
           - Compatible with Intel and Apple Silicon
           - Installation: Mount DMG and drag app to Applications
           
-          🐧 **Linux** (Ubuntu 24.04+)
+          🐧 **Linux** (Ubuntu/Debian)
           - Executable: `backtestapp`
-          - Qt Version: 6.8.3 (from Ubuntu repositories)
+          - Qt Version: 6.8.3
           - Includes Qt libraries
           - Installation: Extract tar.gz and run `./backtestapp.sh`
 

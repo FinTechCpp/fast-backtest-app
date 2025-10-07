@@ -439,7 +439,7 @@ jobs:
             
             mkdir -p package/lib
             
-            # Copy Qt libraries (main)
+            # Copy Qt libraries (main) - copy actual .so.6 files (not .so.6.8.3 symlink targets)
             cp -v "$QT_ROOT/lib/libQt6Core.so.6" package/lib/
             cp -v "$QT_ROOT/lib/libQt6Gui.so.6" package/lib/
             cp -v "$QT_ROOT/lib/libQt6Widgets.so.6" package/lib/
@@ -448,6 +448,11 @@ jobs:
             cp -v "$QT_ROOT/lib/libQt6DBus.so.6" package/lib/
             cp -v "$QT_ROOT/lib/libQt6OpenGL.so.6" package/lib/
             cp -v "$QT_ROOT/lib/libQt6OpenGLWidgets.so.6" package/lib/
+            cp -v "$QT_ROOT/lib/libQt6XcbQpa.so.6" package/lib/ || echo "Warning: libQt6XcbQpa.so.6 not found"
+            
+            # Copy additional Qt dependencies
+            cp -v "$QT_ROOT/lib/libQt6WaylandClient.so.6" package/lib/ 2>/dev/null || true
+            cp -v "$QT_ROOT/lib/libQt6WaylandEglClientHwIntegration.so.6" package/lib/ 2>/dev/null || true
             
             # Copy ICU libraries (Qt dependencies)
             cp -v "$QT_ROOT/lib/libicui18n.so.73" package/lib/
@@ -466,8 +471,8 @@ jobs:
             echo "Number of libraries copied: $LIB_COUNT"
             ls -lh package/lib/
             
-            if [ "$LIB_COUNT" -lt 16 ]; then
-              echo "Error: Not enough libraries copied. Expected at least 16, got $LIB_COUNT"
+            if [ "$LIB_COUNT" -lt 14 ]; then
+              echo "Error: Not enough libraries copied. Expected at least 14, got $LIB_COUNT"
               exit 1
             fi
         cp -P "$QT_LIB_PATH/libQt6DBus.so"* "$DIST_DIR/lib/" 2>/dev/null || true

@@ -432,57 +432,30 @@ jobs:
         # Copy executable
         cp build/backtestApp/backtestapp "$DIST_DIR/bin/"
         
-        # Package libraries
-            QT_ROOT=$(dirname $(dirname $(dirname "$Qt6_DIR")))
-            echo "QT_ROOT: $QT_ROOT"
-            echo "Qt6_DIR: $Qt6_DIR"
-            
-            mkdir -p package/lib
-            
-            # Copy Qt libraries (main) - copy actual .so.6 files (not .so.6.8.3 symlink targets)
-            cp -v "$QT_ROOT/lib/libQt6Core.so.6" package/lib/
-            cp -v "$QT_ROOT/lib/libQt6Gui.so.6" package/lib/
-            cp -v "$QT_ROOT/lib/libQt6Widgets.so.6" package/lib/
-            cp -v "$QT_ROOT/lib/libQt6Charts.so.6" package/lib/
-            cp -v "$QT_ROOT/lib/libQt6Network.so.6" package/lib/
-            cp -v "$QT_ROOT/lib/libQt6DBus.so.6" package/lib/
-            cp -v "$QT_ROOT/lib/libQt6OpenGL.so.6" package/lib/
-            cp -v "$QT_ROOT/lib/libQt6OpenGLWidgets.so.6" package/lib/
-            cp -v "$QT_ROOT/lib/libQt6XcbQpa.so.6" package/lib/ || echo "Warning: libQt6XcbQpa.so.6 not found"
-            
-            # Copy additional Qt dependencies
-            cp -v "$QT_ROOT/lib/libQt6WaylandClient.so.6" package/lib/ 2>/dev/null || true
-            cp -v "$QT_ROOT/lib/libQt6WaylandEglClientHwIntegration.so.6" package/lib/ 2>/dev/null || true
-            
-            # Copy ICU libraries (Qt dependencies)
-            cp -v "$QT_ROOT/lib/libicui18n.so.73" package/lib/
-            cp -v "$QT_ROOT/lib/libicuuc.so.73" package/lib/
-            cp -v "$QT_ROOT/lib/libicudata.so.73" package/lib/
-            
-            # Copy ChartDirector libraries
-            cp -v build/ThirdParty/ChartDirector/libchartdirector.so package/lib/
-            cp -v ThirdParty/ChartDirector/lib/libchartdir.so.7.0 package/lib/
-            
-            # Copy ONNX Runtime library
-            cp -v ThirdParty/Strategies/ThirdParty/ONNXRuntime/lib/linux/libonnxruntime.so.1 package/lib/
-            
-            # Verify libraries were copied
-            LIB_COUNT=$(ls -1 package/lib/*.so* 2>/dev/null | wc -l)
-            echo "Number of libraries copied: $LIB_COUNT"
-            ls -lh package/lib/
-            
-            if [ "$LIB_COUNT" -lt 14 ]; then
-              echo "Error: Not enough libraries copied. Expected at least 14, got $LIB_COUNT"
-              exit 1
-            fi
-        cp -P "$QT_LIB_PATH/libQt6DBus.so"* "$DIST_DIR/lib/" 2>/dev/null || true
-        cp -P "$QT_LIB_PATH/libQt6OpenGL.so"* "$DIST_DIR/lib/" 2>/dev/null || true
-        cp -P "$QT_LIB_PATH/libQt6OpenGLWidgets.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        # Copy Qt libraries (main)
+        cp -v "$QT_LIB_PATH/libQt6Core.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6Gui.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6Widgets.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6Charts.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6Network.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6DBus.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6OpenGL.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6OpenGLWidgets.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6XcbQpa.so.6" "$DIST_DIR/lib/" || echo "Warning: libQt6XcbQpa.so.6 not found"
         
-        # Copy additional Qt dependencies
-        cp -P "$QT_LIB_PATH/libicui18n.so"* "$DIST_DIR/lib/" 2>/dev/null || true
-        cp -P "$QT_LIB_PATH/libicuuc.so"* "$DIST_DIR/lib/" 2>/dev/null || true
-        cp -P "$QT_LIB_PATH/libicudata.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        # Copy ICU libraries (Qt dependencies)
+        cp -v "$QT_LIB_PATH/libicui18n.so.73" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libicuuc.so.73" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libicudata.so.73" "$DIST_DIR/lib/"
+        
+        # Copy ChartDirector libraries
+        cp -v build/ThirdParty/ChartDirector/libchartdirector.so "$DIST_DIR/lib/"
+        cp -v ThirdParty/ChartDirector/lib/libchartdir.so.7.0 "$DIST_DIR/lib/"
+        
+        # Copy ONNX Runtime library
+        cp -v ThirdParty/Strategies/ThirdParty/ONNXRuntime/lib/linux/libonnxruntime.so.1 "$DIST_DIR/lib/"
+        
+        # Copy additional Qt dependencies (optional)
         cp -P "$QT_LIB_PATH/libdouble-conversion.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         cp -P "$QT_LIB_PATH/libpcre2-16.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         
@@ -503,13 +476,13 @@ jobs:
         ls -lh "$DIST_DIR/lib/" | head -20
         LIBCOUNT=$(ls -1 "$DIST_DIR/lib/" | wc -l)
         echo "Total libraries copied: $LIBCOUNT"
-        if [ $LIBCOUNT -lt 5 ]; then
-          echo "❌ ERROR: Too few libraries copied ($LIBCOUNT)"
+        if [ $LIBCOUNT -lt 14 ]; then
+          echo "❌ ERROR: Too few libraries copied ($LIBCOUNT). Expected at least 14."
           echo "QT_LIB_PATH was: $QT_LIB_PATH"
           ls -la "$QT_LIB_PATH" || echo "QT_LIB_PATH does not exist"
           exit 1
         fi
-        echo "✅ Libraries successfully copied"
+        echo "✅ Libraries successfully copied ($LIBCOUNT files)"
         
         # Create launch script
         cat > "$DIST_DIR/backtestapp.sh" << 'EOF'

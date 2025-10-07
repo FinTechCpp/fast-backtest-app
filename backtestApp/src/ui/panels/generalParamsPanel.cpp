@@ -13,19 +13,12 @@ GeneralParamsPanel::GeneralParamsPanel(QWidget* parent)
     setupUI();
 }
 
-void GeneralParamsPanel::setupUI()
+void GeneralParamsPanel::refreshSymbols()
 {
-    // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
-    QFormLayout* paramsLayout = new QFormLayout(this);
-    
-    // Symbole
-    QComboBox* symbolCombo = new QComboBox(this);
+    if (!m_symbolCombo) return;
 
-    // Dynamically populate symbols from the project's marketData directory.
-    // Symbol is defined as the prefix before the first underscore in the filename.
-
-    const std::filesystem::path marketDataDir = std::filesystem::path("./marketData");
-    std::set<QString> symbols;
+    const std::filesystem::path marketDataDir = std::filesystem::path(m_marketDataDir.toStdString());
+    std::set<std::string> prefixes;
 
     if (std::filesystem::exists(marketDataDir) && std::filesystem::is_directory(marketDataDir)) {
         for (const auto& entry : std::filesystem::directory_iterator(marketDataDir)) {
@@ -34,20 +27,57 @@ void GeneralParamsPanel::setupUI()
             auto pos = filename.find('_');
             if (pos == std::string::npos) continue;
             const std::string prefix = filename.substr(0, pos);
-            if (!prefix.empty()) symbols.insert(QString::fromStdString(prefix));
+            if (!prefix.empty()) prefixes.insert(prefix);
         }
     }
-    if (!symbols.empty()) 
-        for (const auto& s : symbols) symbolCombo->addItem(s);
-    else 
-        qWarning() << "No market data files found in ./marketData directory.";
+
+    // Preserve current selection if possible
+    const QString current = m_symbolCombo->currentText();
+
+    m_symbolCombo->blockSignals(true);
+    m_symbolCombo->clear();
+    for (const auto& p : prefixes) m_symbolCombo->addItem(QString::fromStdString(p));
+    m_symbolCombo->blockSignals(false);
+
+    if (!current.isEmpty()) {
+        const int idx = m_symbolCombo->findText(current);
+        if (idx != -1) m_symbolCombo->setCurrentIndex(idx);
+    }
+
+    if (prefixes.empty()) {
+        qWarning() << "No market data files found in" << m_marketDataDir;
+    }
+}
+
+void GeneralParamsPanel::setupUI()
+{
+    // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
+    QFormLayout* paramsLayout = new QFormLayout(this);
+    
+    // Symbole
+    m_symbolCombo = new QComboBox(this);
+
+    // Dynamically populate symbols from the project's marketData directory.
+    // Symbol is defined as the prefix before the first underscore in the filename.
+
+    // Populate initial symbols and setup watcher
+    refreshSymbols();
+
+    // Watch the marketData directory so that when files are added/removed we refresh the list
+    if (std::filesystem::exists(m_marketDataDir.toStdString()) && std::filesystem::is_directory(m_marketDataDir.toStdString())) {
+        m_watcher.addPath(m_marketDataDir);
+    } else {
+        // still add the path so creation of the directory triggers an update if the path doesn't exist yet
+        m_watcher.addPath(m_marketDataDir);
+    }
+    connect(&m_watcher, &QFileSystemWatcher::directoryChanged, this, &GeneralParamsPanel::refreshSymbols);
                    
 
-    paramsLayout->addRow(new QLabel("Symbole:", this), symbolCombo);
+    paramsLayout->addRow(new QLabel("Symbole:", this), m_symbolCombo);
     
     // Binding pour le symbole
     addBinding(PropertyBinderFactory::createStringComboBinding(
-        symbolCombo,
+        m_symbolCombo,
         &m_config.symbol)
     );
     

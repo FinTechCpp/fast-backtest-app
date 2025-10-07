@@ -16,6 +16,7 @@
 #include "ui/panels/ConfigPanel.h"
 #include <sstream>
 #include <string>
+#include <QFileSystemWatcher>
 
 
 struct GeneralParamsConfig {
@@ -69,5 +70,11 @@ public:
 
 private:
     void setupUI();
+    void refreshSymbols();
+
+    // UI member so we can update it when marketData changes
+    QComboBox* m_symbolCombo = nullptr;
+    QFileSystemWatcher m_watcher;
+    QString m_marketDataDir = QStringLiteral("./marketData");
 };
 

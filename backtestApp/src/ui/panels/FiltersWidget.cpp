@@ -5,9 +5,10 @@
 #include <QLabel>
 #include <QMessageBox>
 
-FiltersWidget::FiltersWidget(QWidget* parent)
+FiltersWidget::FiltersWidget(QWidget* parent, const QString& groupTitle)
     : QWidget(parent)
 {
+    m_groupTitle = groupTitle;
     setupUI();
 }
 
@@ -17,7 +18,7 @@ void FiltersWidget::setupUI()
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     
     // Création du groupe contenant les filtres
-    m_groupBox = new QGroupBox("Filtres de stratégie", this);
+    m_groupBox = new QGroupBox(m_groupTitle.isEmpty() ? QStringLiteral("Filtres de stratégie") : m_groupTitle, this);
     QVBoxLayout* groupLayout = new QVBoxLayout(m_groupBox);
     
     // Bouton d'ajout de filtre

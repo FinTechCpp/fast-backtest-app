@@ -360,7 +360,7 @@ jobs:
 
     - name: Install Qt 6.8.3 with aqtinstall
       run: |
-        python3 -m aqt install-qt linux desktop 6.8.3 gcc_64 -m qtcharts --outputdir ${{ github.workspace }}/Qt
+        python3 -m aqt install-qt linux desktop 6.8.3 linux_gcc_64 -m qtcharts --outputdir ${{ github.workspace }}/Qt
         
         # Set environment variables for subsequent steps
         echo "Qt6_DIR=${{ github.workspace }}/Qt/6.8.3/gcc_64/lib/cmake/Qt6" >> $GITHUB_ENV

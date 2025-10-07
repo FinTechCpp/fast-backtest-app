@@ -415,9 +415,16 @@ jobs:
     - name: Create distribution folder
       run: |
         DIST_DIR="fast-backtest-app-linux"
-        QT_ROOT=$(dirname "$Qt6_DIR")
+        # Qt6_DIR points to .../Qt/6.8.3/gcc_64/lib/cmake/Qt6
+        # We need to go up to .../Qt/6.8.3/gcc_64
+        QT_ROOT=$(dirname $(dirname $(dirname "$Qt6_DIR")))
         QT_LIB_PATH="$QT_ROOT/lib"
         QT_PLUGINS_PATH="$QT_ROOT/plugins"
+        
+        echo "Qt6_DIR: $Qt6_DIR"
+        echo "QT_ROOT: $QT_ROOT"
+        echo "QT_LIB_PATH: $QT_LIB_PATH"
+        echo "QT_PLUGINS_PATH: $QT_PLUGINS_PATH"
         
         mkdir -p "$DIST_DIR/bin"
         mkdir -p "$DIST_DIR/lib"
@@ -453,6 +460,19 @@ jobs:
         if [ -d "$QT_PLUGINS_PATH/xcbglintegrations" ]; then
           cp -r "$QT_PLUGINS_PATH/xcbglintegrations" "$DIST_DIR/plugins/"
         fi
+        
+        # Verify libraries were copied
+        echo "Checking copied Qt libraries:"
+        ls -lh "$DIST_DIR/lib/" | head -20
+        LIBCOUNT=$(ls -1 "$DIST_DIR/lib/" | wc -l)
+        echo "Total libraries copied: $LIBCOUNT"
+        if [ $LIBCOUNT -lt 5 ]; then
+          echo "❌ ERROR: Too few libraries copied ($LIBCOUNT)"
+          echo "QT_LIB_PATH was: $QT_LIB_PATH"
+          ls -la "$QT_LIB_PATH" || echo "QT_LIB_PATH does not exist"
+          exit 1
+        fi
+        echo "✅ Libraries successfully copied"
         
         # Create launch script
         cat > "$DIST_DIR/backtestapp.sh" << 'EOF'

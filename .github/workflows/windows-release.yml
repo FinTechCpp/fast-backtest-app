@@ -317,7 +317,7 @@ jobs:
       run: |
         echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
 
-    - name: Install system dependencies
+    - name: Install system dependencies and Qt
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -330,23 +330,18 @@ jobs:
           libxcb-keysyms1 \
           libxcb-render-util0 \
           libxcb-xinerama0 \
-          libxcb-cursor0
-
-    - name: Install Qt
-      uses: jurplel/install-qt-action@v4
-      with:
-        version: ${{ env.QT_VERSION }}
-        host: linux
-        target: desktop
-        arch: gcc_64
-        modules: qtcharts
-        cache: true
+          libxcb-cursor0 \
+          qt6-base-dev \
+          qt6-charts-dev \
+          libqt6charts6 \
+          qmake6 \
+          qt6-base-dev-tools
 
     - name: Verify Qt installation
       run: |
-        echo "Qt version: ${{ env.QT_VERSION }}"
-        echo "Qt6_DIR: $Qt6_DIR"
-        qmake --version
+        echo "Qt version: $(qmake6 -query QT_VERSION)"
+        qmake6 -query QT_INSTALL_PREFIX
+        qmake6 -query QT_INSTALL_LIBS
 
     - name: Create build directory
       run: mkdir -p build
@@ -356,7 +351,7 @@ jobs:
       run: |
         cmake .. \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
-          -DCMAKE_PREFIX_PATH="$Qt6_DIR"
+          -DCMAKE_PREFIX_PATH="/usr/lib/x86_64-linux-gnu/qt6"
 
     - name: Build project
       working-directory: build
@@ -377,6 +372,8 @@ jobs:
     - name: Create distribution folder
       run: |
         DIST_DIR="fast-backtest-app-linux"
+        QT_LIB_PATH="/usr/lib/x86_64-linux-gnu"
+        QT_PLUGINS_PATH="/usr/lib/x86_64-linux-gnu/qt6/plugins"
         
         mkdir -p "$DIST_DIR/bin"
         mkdir -p "$DIST_DIR/lib"
@@ -384,20 +381,34 @@ jobs:
         # Copy executable
         cp build/backtestApp/backtestapp "$DIST_DIR/bin/"
         
-        # Copy Qt libraries
-        QT_LIBS_PATH="$Qt6_DIR/lib"
-        cp -P "$QT_LIBS_PATH/libQt6Core.so"* "$DIST_DIR/lib/" || true
-        cp -P "$QT_LIBS_PATH/libQt6Gui.so"* "$DIST_DIR/lib/" || true
-        cp -P "$QT_LIBS_PATH/libQt6Widgets.so"* "$DIST_DIR/lib/" || true
-        cp -P "$QT_LIBS_PATH/libQt6Charts.so"* "$DIST_DIR/lib/" || true
-        cp -P "$QT_LIBS_PATH/libQt6Network.so"* "$DIST_DIR/lib/" || true
-        cp -P "$QT_LIBS_PATH/libQt6DBus.so"* "$DIST_DIR/lib/" || true
+        # Copy Qt libraries from system installation
+        cp -P "$QT_LIB_PATH/libQt6Core.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libQt6Gui.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libQt6Widgets.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libQt6Charts.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libQt6Network.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libQt6DBus.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libQt6OpenGL.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libQt6OpenGLWidgets.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        
+        # Copy additional required libraries
+        cp -P "$QT_LIB_PATH/libicui18n.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libicuuc.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libicudata.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libdouble-conversion.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libpcre2-16.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         
         # Copy Qt plugins
         mkdir -p "$DIST_DIR/plugins"
-        cp -r "$Qt6_DIR/plugins/platforms" "$DIST_DIR/plugins/" || true
-        cp -r "$Qt6_DIR/plugins/platformthemes" "$DIST_DIR/plugins/" || true
-        cp -r "$Qt6_DIR/plugins/xcbglintegrations" "$DIST_DIR/plugins/" || true
+        if [ -d "$QT_PLUGINS_PATH/platforms" ]; then
+          cp -r "$QT_PLUGINS_PATH/platforms" "$DIST_DIR/plugins/"
+        fi
+        if [ -d "$QT_PLUGINS_PATH/platformthemes" ]; then
+          cp -r "$QT_PLUGINS_PATH/platformthemes" "$DIST_DIR/plugins/"
+        fi
+        if [ -d "$QT_PLUGINS_PATH/xcbglintegrations" ]; then
+          cp -r "$QT_PLUGINS_PATH/xcbglintegrations" "$DIST_DIR/plugins/"
+        fi
         
         # Create launch script
         cat > "$DIST_DIR/backtestapp.sh" << 'EOF'
@@ -517,8 +528,9 @@ jobs:
           - Compatible with Intel and Apple Silicon
           - Installation: Mount DMG and drag app to Applications
           
-          🐧 **Linux** (Ubuntu/Debian)
+          🐧 **Linux** (Ubuntu 24.04+)
           - Executable: `backtestapp`
+          - Qt Version: 6.8.3 (from Ubuntu repositories)
           - Includes Qt libraries
           - Installation: Extract tar.gz and run `./backtestapp.sh`
 

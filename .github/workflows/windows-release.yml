@@ -27,7 +27,21 @@ jobs:
       id: version
       run: |
         # Get the latest existing tag
-        lastTag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        las                {
+                  "name": "📦 Version",
+                  "value": "v${{ env.VERSION }}",
+                  "inline": true
+                },
+                {
+                  "name": "🛠️ Qt Version",
+                  "value": "6.8.3 (Win/Mac), 6.7.2 (Linux)",
+                  "inline": true
+                },
+                {
+                  "name": "🔧 Build Type",
+                  "value": "${{ env.BUILD_TYPE }}",
+                  "inline": true
+                },ribe --tags --abbrev=0 2>/dev/null || echo "")
         
         if [ -z "$lastTag" ]; then
           # If no tag exists, use the base version from the VERSION file
@@ -218,7 +232,7 @@ jobs:
         cmake .. \
           -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
           -DCMAKE_PREFIX_PATH="$Qt6_DIR" \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3
 
     - name: Build project
       working-directory: build
@@ -507,11 +521,14 @@ jobs:
           
           🪟 **Windows** (64-bit)
           - Executable: `backtestapp.exe`
+          - Qt Version: 6.8.3
           - Includes all Qt DLLs and dependencies
           - Installation: Extract ZIP and run `backtestapp.exe`
           
-          🍎 **macOS** (Intel & Apple Silicon)
+          🍎 **macOS** (13.3+ Ventura and later)
           - App Bundle: `FastBacktestApp.app`
+          - Qt Version: 6.8.3
+          - Compatible with Intel and Apple Silicon
           - Installation: Mount DMG and drag app to Applications
           
           🐧 **Linux** (Ubuntu/Debian)

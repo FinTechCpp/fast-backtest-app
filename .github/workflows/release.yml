@@ -432,12 +432,44 @@ jobs:
         # Copy executable
         cp build/backtestApp/backtestapp "$DIST_DIR/bin/"
         
-        # Copy Qt libraries
-        cp -P "$QT_LIB_PATH/libQt6Core.so"* "$DIST_DIR/lib/" 2>/dev/null || true
-        cp -P "$QT_LIB_PATH/libQt6Gui.so"* "$DIST_DIR/lib/" 2>/dev/null || true
-        cp -P "$QT_LIB_PATH/libQt6Widgets.so"* "$DIST_DIR/lib/" 2>/dev/null || true
-        cp -P "$QT_LIB_PATH/libQt6Charts.so"* "$DIST_DIR/lib/" 2>/dev/null || true
-        cp -P "$QT_LIB_PATH/libQt6Network.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        # Package libraries
+            QT_ROOT=$(dirname $(dirname $(dirname "$Qt6_DIR")))
+            echo "QT_ROOT: $QT_ROOT"
+            echo "Qt6_DIR: $Qt6_DIR"
+            
+            mkdir -p package/lib
+            
+            # Copy Qt libraries (main)
+            cp -v "$QT_ROOT/lib/libQt6Core.so.6" package/lib/
+            cp -v "$QT_ROOT/lib/libQt6Gui.so.6" package/lib/
+            cp -v "$QT_ROOT/lib/libQt6Widgets.so.6" package/lib/
+            cp -v "$QT_ROOT/lib/libQt6Charts.so.6" package/lib/
+            cp -v "$QT_ROOT/lib/libQt6Network.so.6" package/lib/
+            cp -v "$QT_ROOT/lib/libQt6DBus.so.6" package/lib/
+            cp -v "$QT_ROOT/lib/libQt6OpenGL.so.6" package/lib/
+            cp -v "$QT_ROOT/lib/libQt6OpenGLWidgets.so.6" package/lib/
+            
+            # Copy ICU libraries (Qt dependencies)
+            cp -v "$QT_ROOT/lib/libicui18n.so.73" package/lib/
+            cp -v "$QT_ROOT/lib/libicuuc.so.73" package/lib/
+            cp -v "$QT_ROOT/lib/libicudata.so.73" package/lib/
+            
+            # Copy ChartDirector libraries
+            cp -v build/ThirdParty/ChartDirector/libchartdirector.so package/lib/
+            cp -v ThirdParty/ChartDirector/lib/libchartdir.so.7.0 package/lib/
+            
+            # Copy ONNX Runtime library
+            cp -v ThirdParty/Strategies/ThirdParty/ONNXRuntime/lib/linux/libonnxruntime.so.1 package/lib/
+            
+            # Verify libraries were copied
+            LIB_COUNT=$(ls -1 package/lib/*.so* 2>/dev/null | wc -l)
+            echo "Number of libraries copied: $LIB_COUNT"
+            ls -lh package/lib/
+            
+            if [ "$LIB_COUNT" -lt 16 ]; then
+              echo "Error: Not enough libraries copied. Expected at least 16, got $LIB_COUNT"
+              exit 1
+            fi
         cp -P "$QT_LIB_PATH/libQt6DBus.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         cp -P "$QT_LIB_PATH/libQt6OpenGL.so"* "$DIST_DIR/lib/" 2>/dev/null || true
         cp -P "$QT_LIB_PATH/libQt6OpenGLWidgets.so"* "$DIST_DIR/lib/" 2>/dev/null || true

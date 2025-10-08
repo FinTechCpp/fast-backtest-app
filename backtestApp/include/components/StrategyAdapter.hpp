@@ -160,7 +160,7 @@ public:
             // );
         }
         else if (trades.empty() && signal->type == SignalType::SELL && signal->quantity > 0) {
-            Process a sell signal
+            // Process a sell signal
             sell(
                 signal->quantity,
                 0,

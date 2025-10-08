@@ -4,6 +4,10 @@
 #include <QDate>
 #include <QDateEdit>
 #include <QDebug>
+#include "components/Utils/dataLoader.h"
+#include <QCoreApplication>
+#include <QDir>
+#include <QFileInfo>
 #include <filesystem>
 #include <set>
 
@@ -56,21 +60,60 @@ void GeneralParamsPanel::setupUI()
     
     // Symbole
     m_symbolCombo = new QComboBox(this);
-
     // Dynamically populate symbols from the project's marketData directory.
     // Symbol is defined as the prefix before the first underscore in the filename.
 
-    // Populate initial symbols and setup watcher
+    // Resolve market data directory early so refreshSymbols and the watcher use
+    // a consistent, absolute path. Prefer DataLoader (reads QSettings and
+    // performs a search), fall back to applicationDirPath-based heuristics.
+    QString detected = DataLoader::findMarketDataDirectory();
+    if (!detected.isEmpty()) {
+        m_marketDataDir = detected;
+        qDebug() << "GeneralParamsPanel: Using marketData dir from DataLoader():" << m_marketDataDir;
+    } else {
+        // If m_marketDataDir is empty or relative, try to resolve it relative to the exe dir
+        QString appDir = QCoreApplication::applicationDirPath();
+        if (m_marketDataDir.isEmpty()) {
+            // Try common locations under the exe dir and its parents (similar to DataLoader)
+            QDir cur(appDir);
+            bool found = false;
+            do {
+                QString candidate = cur.absoluteFilePath("marketData");
+                if (QDir(candidate).exists()) {
+                    m_marketDataDir = candidate;
+                    qDebug() << "GeneralParamsPanel: Found marketData under parent tree:" << m_marketDataDir;
+                    found = true;
+                    break;
+                }
+            } while (cur.cdUp());
+
+            if (!found) {
+                qWarning() << "GeneralParamsPanel: could not auto-discover marketData directory. m_marketDataDir is empty or not set.";
+            }
+        } else {
+            // Convert relative path to absolute based on application dir
+            QDir given(m_marketDataDir);
+            if (!given.isAbsolute()) {
+                QString abs = QDir(appDir).absoluteFilePath(m_marketDataDir);
+                m_marketDataDir = abs;
+                qDebug() << "GeneralParamsPanel: Converted relative m_marketDataDir to absolute:" << m_marketDataDir;
+            }
+        }
+    }
+
+    // Populate initial symbols and setup watcher (use resolved m_marketDataDir)
     refreshSymbols();
 
-    // Watch the marketData directory so that when files are added/removed we refresh the list
-    if (std::filesystem::exists(m_marketDataDir.toStdString()) && std::filesystem::is_directory(m_marketDataDir.toStdString())) {
-        m_watcher.addPath(m_marketDataDir);
+    // Add watcher using the resolved path so directory changes trigger refresh
+    if (m_marketDataDir.isEmpty()) {
+        qWarning() << "GeneralParamsPanel: marketData directory is empty - QFileSystemWatcher not added.";
     } else {
-        // still add the path so creation of the directory triggers an update if the path doesn't exist yet
+        if (!QFileInfo(m_marketDataDir).isDir()) {
+            qWarning() << "GeneralParamsPanel: marketData path does not exist (watcher will still watch path):" << m_marketDataDir;
+        }
         m_watcher.addPath(m_marketDataDir);
+        connect(&m_watcher, &QFileSystemWatcher::directoryChanged, this, &GeneralParamsPanel::refreshSymbols);
     }
-    connect(&m_watcher, &QFileSystemWatcher::directoryChanged, this, &GeneralParamsPanel::refreshSymbols);
                    
 
     paramsLayout->addRow(new QLabel("Symbole:", this), m_symbolCombo);

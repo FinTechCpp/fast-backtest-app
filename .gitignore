@@ -1,5 +1,4 @@
 # User-specific configuration files
-*backtest_config.ini
 .env
 
 # C++ build files
@@ -10,14 +9,13 @@ dist/
 
 # Debug and development files
 docs/
-*.pyc
-*.egg-info*
 *.log
 perf.data
 perf.data.old
 
 # OHLC files
-live_interface/candles_history.json
+*.csv
+*.parquet
 
 # macOS specific files
 *.DS_Store

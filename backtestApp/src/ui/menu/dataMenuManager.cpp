@@ -242,16 +242,47 @@ bool DataMenuManager::isVpnConnected()
     // Méthode simple: vérifier si une interface réseau contient "tun" ou "tap" ou "ppp" ou "wg" indiquant une interface VPN
     const QList<QNetworkInterface>& ifaces = QNetworkInterface::allInterfaces();
     for (const QNetworkInterface& iface : ifaces) {
-        if (!(iface.flags() & QNetworkInterface::IsUp)) 
+        // Skip interfaces that aren't up or have no address
+        if (!(iface.flags() & QNetworkInterface::IsUp))
             continue;
 
         QString name = iface.humanReadableName().toLower();
         QString ifaceName = iface.name().toLower();
+        QString descr = iface.humanReadableName().toLower();
 
+        // Common indicators in interface names/descriptions
         if (name.contains("tun") || name.contains("tap") || name.contains("ppp") || name.contains("wg") ||
-            ifaceName.contains("tun") || ifaceName.contains("tap") || ifaceName.contains("ppp") || ifaceName.contains("wg")) {
-            qDebug() << "Interface VPN détectée:" << iface.name() << "(" << iface.humanReadableName() << ")";
+            ifaceName.contains("tun") || ifaceName.contains("tap") || ifaceName.contains("ppp") || ifaceName.contains("wg") ||
+            descr.contains("openvpn") || descr.contains("vpn") || descr.contains("tap-windows") || descr.contains("tunnel")) {
+            qDebug() << "Interface VPN détectée (nom/description):" << iface.name() << "(" << iface.humanReadableName() << ")";
             return true;
+        }
+
+        // Check addresses assigned to the interface for private ranges commonly used by VPNs (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+        const QList<QNetworkAddressEntry>& addrs = iface.addressEntries();
+        for (const QNetworkAddressEntry& entry : addrs) {
+            QHostAddress addr = entry.ip();
+            if (addr.protocol() == QAbstractSocket::IPv4Protocol) {
+                quint32 ip = addr.toIPv4Address();
+                quint8 a = (ip >> 24) & 0xFF;
+                quint8 b = (ip >> 16) & 0xFF;
+
+                // 10.0.0.0/8
+                if (a == 10) {
+                    qDebug() << "Interface VPN détectée (adresse IPv4 privée 10.x):" << iface.name() << addr.toString();
+                    return true;
+                }
+                // 172.16.0.0/12 -> 172.16.0.0 - 172.31.255.255
+                if (a == 172 && b >= 16 && b <= 31) {
+                    qDebug() << "Interface VPN détectée (adresse IPv4 privée 172.16-31):" << iface.name() << addr.toString();
+                    return true;
+                }
+                // 192.168.0.0/16
+                if (a == 192 && b == 168) {
+                    qDebug() << "Interface VPN détectée (adresse IPv4 privée 192.168.x):" << iface.name() << addr.toString();
+                    return true;
+                }
+            }
         }
     }
 

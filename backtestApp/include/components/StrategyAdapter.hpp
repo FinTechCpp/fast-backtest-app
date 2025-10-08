@@ -96,6 +96,8 @@ public:
             candle.position.entry_price = current_trade->entryPrice();
             // Calculate take profit price from the trade's TP order
             if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
+            // if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limitPrice();
+
         }
 
         // Get a reference to closedTrades instead of a copy
@@ -131,6 +133,8 @@ public:
             // Récupérer le prix de trigger depuis le signal
             double triggerPrice = signal->price > 0 ? signal->price : 0.0;
             bool success = current_trade->setBreakEven(signal->new_sl, triggerPrice);
+
+            // _broker->setBreakEven(current_trade, signal->new_sl, triggerPrice);
         }
         else if (trades.empty() && signal->type == SignalType::BUY && signal->quantity > 0) {
             // Process a buy signal
@@ -143,9 +147,20 @@ public:
                 signal->stop_loss, 
                 signal->take_profit
             );
+
+            // _broker->submitOrder(
+            //     signal->quantity, 
+            //     be::OrderSide::BUY, 
+            //     be::OrderType::MARKET, 
+            //     std::nullopt, 
+            //     std::nullopt, 
+            //     be::SLValue::points(signal->stop_loss), 
+            //     be::TPValue::points(signal->take_profit), 
+            //     nullptr
+            // );
         }
         else if (trades.empty() && signal->type == SignalType::SELL && signal->quantity > 0) {
-            // Process a sell signal
+            Process a sell signal
             sell(
                 signal->quantity,
                 0,
@@ -155,6 +170,17 @@ public:
                 signal->stop_loss, 
                 signal->take_profit
             );
+
+            // _broker->submitOrder(
+            //     signal->quantity, 
+            //     be::OrderSide::SELL, 
+            //     be::OrderType::MARKET, 
+            //     std::nullopt, 
+            //     std::nullopt, 
+            //     be::SLValue::points(signal->stop_loss), 
+            //     be::TPValue::points(signal->take_profit), 
+            //     nullptr
+            // );
         }
     }
 };

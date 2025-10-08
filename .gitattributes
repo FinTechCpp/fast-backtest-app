@@ -1,2 +1,1 @@
 marketData/* filter=lfs diff=lfs merge=lfs -text
-backtest_interface/PyQt/dist/app filter=lfs diff=lfs merge=lfs -text

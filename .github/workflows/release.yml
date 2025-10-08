@@ -62,10 +62,6 @@ jobs:
         submodules: recursive
         fetch-depth: 0
         token: ${{ secrets.SUBMODULE_PAT }}
-        lfs: true
-
-    - name: Checkout LFS files in submodules
-      run: git submodule foreach --recursive 'git lfs pull || true'
 
     - name: Set version
       run: |
@@ -192,10 +188,6 @@ jobs:
         submodules: recursive
         fetch-depth: 0
         token: ${{ secrets.SUBMODULE_PAT }}
-        lfs: true
-
-    - name: Checkout LFS files in submodules
-      run: git submodule foreach --recursive 'git lfs pull || true'
 
     - name: Set version
       run: |
@@ -320,10 +312,6 @@ jobs:
         submodules: recursive
         fetch-depth: 0
         token: ${{ secrets.SUBMODULE_PAT }}
-        lfs: true
-
-    - name: Checkout LFS files in submodules
-      run: git submodule foreach --recursive 'git lfs pull || true'
 
     - name: Set version
       run: |

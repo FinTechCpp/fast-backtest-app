@@ -8,6 +8,7 @@
 
 #include "backtest.hpp"
 #include "broker.hpp"
+#include "components/SyntheticStrategy.hpp"
 
 BacktestRunner::BacktestRunner(QObject* parent)
     : QObject(parent)
@@ -250,9 +251,14 @@ void BacktestWorker::run()
         return std::make_shared<StrategyAdapter>(broker, data, strategyConfig, logCallback);
     };
 
-    spdlog::drop("async_file_logger_BE"); // S'assurer qu'il n'existe pas déjà
+    auto syntheticStrategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, std::function<void(const std::string&)> logCallback) {
+        // Création directe de la stratégie
+        return std::make_shared<SyntheticStrategy>(broker, data);
+    };
+
+    spdlog::drop("BE"); // S'assurer qu'il n'existe pas déjà
     std::shared_ptr<spdlog::logger> async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
-        "async_file_logger_BE",       // Logger name
+        "BE",       // Logger name
         "logs/backtestEngine/backtestExecution.log",      // Log file path
         30 * 1024 * 1024,          // Max file size (30 MB)
         1
@@ -267,7 +273,7 @@ void BacktestWorker::run()
     // Créer et exécuter le backtest
     be::Backtest backtest(
         data,                             // Données historiques
-        strategyFactory,                  // Factory de stratégie
+        syntheticStrategyFactory,                  // Factory de stratégie
         generalConfig.cash,               // Capital initial
         generalConfig.spread,             // Spread
         generalConfig.commission,         // Commission

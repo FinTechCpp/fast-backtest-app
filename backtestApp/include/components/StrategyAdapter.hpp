@@ -95,8 +95,8 @@ public:
         if (current_trade) {
             candle.position.entry_price = current_trade->entryPrice();
             // Calculate take profit price from the trade's TP order
-            if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
-            // if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limitPrice();
+            // if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
+            if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limitPrice();
 
         }
 
@@ -137,50 +137,28 @@ public:
             // _broker->setBreakEven(current_trade, signal->new_sl, triggerPrice);
         }
         else if (trades.empty() && signal->type == SignalType::BUY && signal->quantity > 0) {
-            // Process a buy signal
-            buy(
-                signal->quantity,
-                0,
-                0,
-                0,
-                0,
-                signal->stop_loss, 
-                signal->take_profit
+            _broker->submitOrder(
+                signal->quantity, 
+                be::OrderSide::BUY, 
+                be::OrderType::MARKET, 
+                std::nullopt, 
+                std::nullopt, 
+                be::SLValue::points(signal->stop_loss), 
+                be::TPValue::points(signal->take_profit), 
+                nullptr
             );
-
-            // _broker->submitOrder(
-            //     signal->quantity, 
-            //     be::OrderSide::BUY, 
-            //     be::OrderType::MARKET, 
-            //     std::nullopt, 
-            //     std::nullopt, 
-            //     be::SLValue::points(signal->stop_loss), 
-            //     be::TPValue::points(signal->take_profit), 
-            //     nullptr
-            // );
         }
         else if (trades.empty() && signal->type == SignalType::SELL && signal->quantity > 0) {
-            // Process a sell signal
-            sell(
-                signal->quantity,
-                0,
-                0,
-                0,
-                0,
-                signal->stop_loss, 
-                signal->take_profit
+            _broker->submitOrder(
+                signal->quantity, 
+                be::OrderSide::SELL, 
+                be::OrderType::MARKET, 
+                std::nullopt, 
+                std::nullopt, 
+                be::SLValue::points(signal->stop_loss), 
+                be::TPValue::points(signal->take_profit), 
+                nullptr
             );
-
-            // _broker->submitOrder(
-            //     signal->quantity, 
-            //     be::OrderSide::SELL, 
-            //     be::OrderType::MARKET, 
-            //     std::nullopt, 
-            //     std::nullopt, 
-            //     be::SLValue::points(signal->stop_loss), 
-            //     be::TPValue::points(signal->take_profit), 
-            //     nullptr
-            // );
         }
     }
 };

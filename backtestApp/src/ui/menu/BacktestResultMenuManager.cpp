@@ -213,8 +213,8 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         config.stats = currentResults.stats;
 
         // Sauvegarder le résultat
-        m_resultManager->saveBacktestResult(config, m_mainWindow);
-        // m_resultManager->saveBacktestResult(config, m_mainWindow, SerializationUtils::FileFormat::JSON);
+        // m_resultManager->saveBacktestResult(config, m_mainWindow);
+        m_resultManager->saveBacktestResult(config, m_mainWindow, SerializationUtils::FileFormat::JSON);
     }
 }
 

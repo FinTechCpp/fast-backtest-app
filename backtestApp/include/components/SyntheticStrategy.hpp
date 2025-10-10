@@ -25,7 +25,15 @@ public:
     void next() override {  
         candleCount++;
 
-        if (candleCount == 8 || candleCount == 28) 
+        if (candleCount == 5) {
+            _broker->closeAllTrades();
+        }
+
+        if (candleCount == 42) {
+            int breakPoint = 0;
+        }
+
+        if (candleCount == 1 || candleCount == 8 || candleCount == 28 || candleCount == 40 || candleCount == 42) 
             _broker->submitOrder(
                 1, 
                 be::OrderSide::BUY, 
@@ -37,58 +45,45 @@ public:
                 nullptr
             );
 
-        if (candleCount == 48) 
+        if (candleCount == 88 || candleCount == 108) 
             _broker->submitOrder(
                 1, 
                 be::OrderSide::BUY, 
                 be::OrderType::MARKET, 
                 std::nullopt, 
                 std::nullopt, 
-                be::SLValue::price(920), 
-                be::TPValue::price(1100), 
+                be::SLValue::price(970), 
+                be::TPValue::price(1030), 
                 nullptr
             );
 
-        if (candleCount == 68) 
+        if (candleCount == 125) {
+            _broker->closeAllTrades();
+        }
+
+        if (candleCount == 121 || candleCount == 128 || candleCount == 148) 
             _broker->submitOrder(
                 1, 
-                be::OrderSide::BUY, 
+                be::OrderSide::SELL, 
                 be::OrderType::MARKET, 
                 std::nullopt, 
                 std::nullopt, 
-                be::SLValue::price(900), 
-                be::TPValue::price(1062), 
+                be::SLValue::price(1100), 
+                be::TPValue::price(900), 
                 nullptr
             );
 
-        // if (candleCount % 10 == 8) {
-        //     // _broker->cancelAllTrades();
-        //     // _broker->cancelAllOrders();
-        // }
-        // else if (candleCount % 20 == 10) {
-        //     _broker->submitOrder(
-        //         1, 
-        //         be::OrderSide::SELL, 
-        //         be::OrderType::MARKET, 
-        //         std::nullopt, 
-        //         std::nullopt, 
-        //         be::SLValue::price(1100), 
-        //         be::TPValue::price(900), 
-        //         nullptr
-        //     );
-        // }
-        // else if (candleCount % 20 == 0) {
-        //     _broker->submitOrder(
-        //         1, 
-        //         be::OrderSide::BUY, 
-        //         be::OrderType::MARKET, 
-        //         std::nullopt, 
-        //         std::nullopt, 
-        //         be::SLValue::price(900), 
-        //         be::TPValue::price(1100), 
-        //         nullptr
-        //     );
-        // }
+        if (candleCount == 208 || candleCount == 228) 
+            _broker->submitOrder(
+                1, 
+                be::OrderSide::SELL, 
+                be::OrderType::MARKET, 
+                std::nullopt, 
+                std::nullopt, 
+                be::SLValue::price(1030), 
+                be::TPValue::price(970), 
+                nullptr
+            );
     }
 };
 

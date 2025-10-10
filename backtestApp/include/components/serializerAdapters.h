@@ -183,14 +183,14 @@ namespace cereal {
            cereal::make_nvp("grossLoss", stats.grossLoss),
            cereal::make_nvp("expectancyPct", stats.expectancyPct),
            cereal::make_nvp("sqn", stats.sqn),
-           cereal::make_nvp("kellyCriterion", stats.kellyCriterion));
-           cereal::make_nvp("avgMAE", stats.avgMAE);
-           cereal::make_nvp("maxMAE", stats.maxMAE);
-           cereal::make_nvp("ulcerIndex", stats.ulcerIndex);
-           cereal::make_nvp("ulcerPerformanceIndex", stats.ulcerPerformanceIndex);
-           cereal::make_nvp("skewness", stats.skewness);
-           cereal::make_nvp("kurtosis", stats.kurtosis);
-           cereal::make_nvp("omegaRatio", stats.omegaRatio);
+           cereal::make_nvp("kellyCriterion", stats.kellyCriterion),
+           cereal::make_nvp("avgMAE", stats.avgMAE),
+           cereal::make_nvp("maxMAE", stats.maxMAE),
+           cereal::make_nvp("ulcerIndex", stats.ulcerIndex),
+           cereal::make_nvp("ulcerPerformanceIndex", stats.ulcerPerformanceIndex),
+           cereal::make_nvp("skewness", stats.skewness),
+           cereal::make_nvp("kurtosis", stats.kurtosis),
+           cereal::make_nvp("omegaRatio", stats.omegaRatio));
     }
 
     template<class Archive>

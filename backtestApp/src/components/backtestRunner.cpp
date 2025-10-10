@@ -273,7 +273,7 @@ void BacktestWorker::run()
     // Créer et exécuter le backtest
     be::Backtest backtest(
         data,                             // Données historiques
-        syntheticStrategyFactory,                  // Factory de stratégie
+        strategyFactory,                  // Factory de stratégie
         generalConfig.cash,               // Capital initial
         generalConfig.spread,             // Spread
         generalConfig.commission,         // Commission

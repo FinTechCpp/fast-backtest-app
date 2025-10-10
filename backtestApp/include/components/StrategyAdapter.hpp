@@ -125,9 +125,7 @@ public:
 
         // Process the signal if there is one
         if (signal->type == SignalType::LIQUIDATE) {
-            for (const auto& trade : trades) {
-                trade->close();
-            }
+            _broker->closeAllTrades();
         }
         else if (signal->type == SignalType::MOVE_SL) {
             // Récupérer le prix de trigger depuis le signal

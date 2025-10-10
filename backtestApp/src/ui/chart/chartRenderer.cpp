@@ -510,7 +510,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
     tpslbeSegments.reserve(estimatedMarkers * 3);
 
     for (const auto& trade : trades) {
-        bool isLong = trade.wasLong();
+        bool isLong = trade.side == be::OrderSide::BUY;
         
         // Déterminer le résultat du trade
         be::CloseReason closeReason = trade.closeReason;
@@ -697,7 +697,7 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
     // Compter les trades par fenêtre fixe
     for (size_t i = 0; i < trades.size(); ++i) {
         const auto& trade = trades[i];
-        bool isLong = trade.wasLong();
+        bool isLong = trade.side == be::OrderSide::BUY;
         
         // Récupérer l'indice agrégé pour ce trade
         std::optional<std::pair<size_t, size_t>> aggregatedIndices = dataManager.getTradeAggregatedIndices(i, level);

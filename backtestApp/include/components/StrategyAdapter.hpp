@@ -107,18 +107,18 @@ public:
         // Only if new trades have been closed
         if (currentTradeCount > last_closed_trade_count) {
             last_closed_trade_count = currentTradeCount;
-            candle.position.closed_trade_pnl = closedTrades.back()->pl();
+            candle.position.closed_trade_pnl = closedTrades.back().pl;
         }
 
         // Update the strategy signal with the new latest candle by executing strategy logic
         Signal* signal = strategy->update_candle(candle);
 
 
-        DateTime dtBreakPoint{2024, 11, 05, Time{17, 52, 0}};
+        // DateTime dtBreakPoint{2024, 11, 05, Time{17, 52, 0}};
 
-        if (candle.ohlc.date >= dtBreakPoint) {
-            int a = 0;
-        }
+        // if (candle.ohlc.date >= dtBreakPoint) {
+        //     int a = 0;
+        // }
 
         if (!signal)
             return; // No signal to process

@@ -45,7 +45,7 @@ public:
                 nullptr
             );
 
-        if (candleCount == 88 || candleCount == 108) 
+        if (candleCount == 60 || candleCount == 88 || candleCount == 108) 
             _broker->submitOrder(
                 1, 
                 be::OrderSide::BUY, 

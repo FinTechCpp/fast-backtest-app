@@ -215,36 +215,6 @@ void StrategyPanel::setupUI() {
         &m_config.tp_sl_ratio
     ));
     
-/*     // Paramètres SuperTrend - Période ATR
-    QSpinBox* tpSupertrendAtrPeriodSpin = new QSpinBox(this);
-    tpSupertrendAtrPeriodSpin->setRange(1, 1000);
-    tpSupertrendAtrPeriodSpin->setValue(14);
-    tpSupertrendAtrPeriodSpin->setVisible(false);
-    QLabel* tpSupertrendAtrLabel = new QLabel("Période ATR SuperTrend:", this);
-    tpSupertrendAtrLabel->setVisible(false);
-    tpLayout->addRow(tpSupertrendAtrLabel, tpSupertrendAtrPeriodSpin);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        tpSupertrendAtrPeriodSpin,
-        &m_config.tp_supertrend_atr_period
-    ));
-    
-    // Paramètres SuperTrend - Multiplicateur
-    QDoubleSpinBox* tpSupertrendMultiplierSpin = new QDoubleSpinBox(this);
-    tpSupertrendMultiplierSpin->setDecimals(1);
-    tpSupertrendMultiplierSpin->setRange(0.1, 1000.0);
-    tpSupertrendMultiplierSpin->setSingleStep(0.1);
-    tpSupertrendMultiplierSpin->setValue(3.0);
-    tpSupertrendMultiplierSpin->setVisible(false);
-    QLabel* tpSupertrendMultiplierLabel = new QLabel("Multiplicateur SuperTrend:", this);
-    tpSupertrendMultiplierLabel->setVisible(false);
-    tpLayout->addRow(tpSupertrendMultiplierLabel, tpSupertrendMultiplierSpin);
-    
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        tpSupertrendMultiplierSpin,
-        &m_config.tp_supertrend_multiplier
-    )); */
-    
     // Paramètres RL - Périodes de lookback
     QSpinBox* rlLookbackPeriodsSpin = new QSpinBox(this);
     rlLookbackPeriodsSpin->setRange(1, 150);
@@ -257,20 +227,6 @@ void StrategyPanel::setupUI() {
         rlLookbackPeriodsSpin,
         &m_config.rl_lookback_periods
     ));
-
-/*     // Paramètres nth Heikin-Ashi - Nombre de bougies opposées
-    QSpinBox* nthHeikinAshiCountSpin = new QSpinBox(this);
-    nthHeikinAshiCountSpin->setRange(1, 50);
-    nthHeikinAshiCountSpin->setValue(3);
-    nthHeikinAshiCountSpin->setVisible(false);
-    QLabel* nthHeikinAshiLabel = new QLabel("Nb bougies Heikin-Ashi:", this);
-    nthHeikinAshiLabel->setVisible(false);
-    tpLayout->addRow(nthHeikinAshiLabel, nthHeikinAshiCountSpin);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        nthHeikinAshiCountSpin,
-        &m_config.nth_heikin_ashi_count
-    )); */
     
     // TP minimum
     QDoubleSpinBox* minTakeProfitDistanceSpin = new QDoubleSpinBox(this);
@@ -341,19 +297,9 @@ void StrategyPanel::setupUI() {
         tpSlRatioLabel->setVisible(isRatio);
         tpSlRatioSpin->setVisible(isRatio);
 
-/*         // SuperTrend params
-        tpSupertrendAtrLabel->setVisible(isSupertrend);
-        tpSupertrendAtrPeriodSpin->setVisible(isSupertrend);
-        tpSupertrendMultiplierLabel->setVisible(isSupertrend);
-        tpSupertrendMultiplierSpin->setVisible(isSupertrend); */
-
         // RL
         rlLookbackLabel->setVisible(isRL);
         rlLookbackPeriodsSpin->setVisible(isRL);
-
-/*         // Nth Heikin-Ashi
-        nthHeikinAshiLabel->setVisible(isNthHeikinAshi);
-        nthHeikinAshiCountSpin->setVisible(isNthHeikinAshi); */
 
         // Update common ATR period visibility depending on SL method too
         bool atrNeeded = isAtr || (slMethodCombo->currentIndex() == 1) || (slMethodCombo->currentIndex() == 2);

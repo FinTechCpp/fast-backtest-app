@@ -30,7 +30,7 @@
 #include <QThread>
 #include "version.h"  
 
-// DOWNLOAD_URL example for version 1.0.0.19 : https://fintechcpp.github.io/fast-backtest-app-releases/downloads/fast-backtest-app-windows-v1.0.0.19.zip
+// DOWNLOAD_URL example for version 1.0.0.19 for windows release : https://fintechcpp.github.io/fast-backtest-app-releases/downloads/fast-backtest-app-windows-v1.0.0.19.zip
 
 // Constant centralized for GitHub Pages URL
 const QString UpdateChecker::GITHUB_PAGES_BASE_URL = QStringLiteral("https://fintechcpp.github.io/fast-backtest-app-releases/");

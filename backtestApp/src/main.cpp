@@ -50,9 +50,8 @@ void messageHandler(QtMsgType type, const QMessageLogContext& /*context*/, const
     }
 
     // Write to console if requested
-    if (g_consoleOutput) {
+    if (g_consoleOutput) 
         std::cout << msg.toStdString() << std::endl;
-    }
 }
 
 // Find the project root directory
@@ -66,15 +65,13 @@ QString findProjectRoot()
         QString currentPath = currentDir.absolutePath();
         
         // Check if the current directory is the project root
-        if (currentDir.dirName() == "fast-backtest-app") {
+        if (currentDir.dirName() == "fast-backtest-app") 
             return currentPath;
-        }
 
         // Check for a fast-backtest-app subdirectory
         QString igTradingBotPath = currentDir.absoluteFilePath("fast-backtest-app");
-        if (QFileInfo(igTradingBotPath).isDir()) {
+        if (QFileInfo(igTradingBotPath).isDir()) 
             return igTradingBotPath;
-        }
         
     } while (currentDir.cdUp());
     
@@ -213,27 +210,18 @@ int main(int argc, char *argv[])
     qRegisterMetaType<BacktestResults*>("BacktestResults*");
     qInfo() << "Custom types registered in Qt";
 
-    try {
-        // Create and show the main window
-        qInfo() << "Creating main window...";
-        App mainWindow;
-        mainWindow.show();
+    // Create and show the main window
+    qInfo() << "Creating main window...";
+    App mainWindow;
+    mainWindow.show();
 
-        qInfo() << "Application ready";
+    qInfo() << "Application ready";
 
-        // Run the event loop
-        int result = app.exec();
+    // Run the event loop
+    int result = app.exec();
 
-        // Clean up logs before exiting
-        cleanupLogging();
-        
-        return result;
-    }
-    catch (const std::exception& e) {
-        qCritical() << "Error initializing application:" << e.what();
-        QMessageBox::critical(nullptr, "Error", 
-            QString("An error occurred: %1").arg(e.what()));
-        cleanupLogging();
-        return -1;
-    }
+    // Clean up logs before exiting
+    cleanupLogging();
+    
+    return result;
 }

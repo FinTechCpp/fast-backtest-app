@@ -35,9 +35,8 @@
             "type": "shell",
             "command": "${workspaceFolder}/build_and_run.sh",
             "args": [
-                "--no-run",
-                "--clean"
-            ],
+                "--no-run"
+                        ],
             "group": "build",
             "presentation": {
                 "reveal": "always",

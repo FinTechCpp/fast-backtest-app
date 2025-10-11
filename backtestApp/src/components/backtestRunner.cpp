@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QApplication>
+#include <sstream>
 
 #include "components/backtestRunner.h"
 #include "ui/app.h"
@@ -235,21 +236,6 @@ void BacktestWorker::run()
     qDebug() << "Données disponibles:" << data->size() << "barres";
     qDebug() << "Démarrage du backtest C++...";
     
-    
-    // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
-    auto strategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, std::function<void(const std::string&)> logCallback) {
-        GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
-        StrategyConfig strategyConfig = m_mainWindow->getStrategyConfig();
-        strategyConfig.cash = generalParams.cash;
-        strategyConfig.leverage_limit = generalParams.leverage_limit;
-
-        std::cout << generalParams << std::endl;
-        std::cout << strategyConfig << std::endl;
-
-        // Création directe de la stratégie
-        return std::make_shared<StrategyAdapter>(broker, data, strategyConfig, logCallback);
-    };
-
     spdlog::drop("async_file_logger_BE"); // S'assurer qu'il n'existe pas déjà
     std::shared_ptr<spdlog::logger> async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
         "async_file_logger_BE",       // Logger name
@@ -258,6 +244,25 @@ void BacktestWorker::run()
         1
     );
     async_file->set_level(spdlog::level::debug);
+
+    // Créer la factory pour le backtest (une closure qui capture le créateur, l'app et le logger)
+    auto strategyFactory = [this, async_file](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, std::function<void(const std::string&)> logCallback) {
+        GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
+        StrategyConfig strategyConfig = m_mainWindow->getStrategyConfig();
+        strategyConfig.cash = generalParams.cash;
+        strategyConfig.leverage_limit = generalParams.leverage_limit;
+
+        // Use string conversion instead of passing StrategyConfig directly to spdlog/fmt
+        std::ostringstream gp_ss;
+        gp_ss << generalParams;
+        std::ostringstream sc_ss;
+        sc_ss << strategyConfig;
+        async_file->log(spdlog::level::info, "General config:\n{}", gp_ss.str());
+        async_file->log(spdlog::level::info, "Strategy config:\n{}", sc_ss.str());
+
+        // Création directe de la stratégie
+        return std::make_shared<StrategyAdapter>(broker, data, strategyConfig, logCallback);
+    };
 
     auto logCallback = [async_file](const std::string& msg) {
         async_file->log(spdlog::level::debug, msg);

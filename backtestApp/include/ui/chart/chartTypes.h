@@ -122,6 +122,25 @@ namespace chart {
         std::vector<double> timestamps;
         std::vector<double> equity_values;
     };
+
+    // Marker types for drawing tools
+    enum class MarkerType {
+        Check,   // Green check mark
+        Error    // Red error mark
+    };
+
+    // Structure to store a marker placed on the chart
+    struct ChartMarker {
+        size_t barIndex;   // Absolute bar index in raw data
+        double price;      // Y coordinate (price)
+        MarkerType type;   // Type of marker
+        
+        bool operator==(const ChartMarker& other) const {
+            return barIndex == other.barIndex && 
+                   price == other.price && 
+                   type == other.type;
+        }
+    };
 }
 
 

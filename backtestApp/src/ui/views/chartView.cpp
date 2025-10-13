@@ -172,6 +172,10 @@ void ChartView::setupUI()
 }
 
 void ChartView::updateData(BacktestResults* results) {
+    // Sauvegarder les markers du backtest actuel avant de changer
+    if (m_currentResults) 
+        m_currentResults->userMarkers = m_chartWidget->getMarkers();
+    
     m_currentResults = results;
 
     if (!results || results->candles.empty()) {
@@ -181,6 +185,10 @@ void ChartView::updateData(BacktestResults* results) {
     }
 
     m_chartWidget->setBacktestResults(results);
+    
+    // Restaurer les markers sauvegardés pour ce backtest
+    if (!results->userMarkers.empty()) 
+        m_chartWidget->setMarkers(results->userMarkers);
     
     // Afficher le widget de graphique
     showChartWidget();

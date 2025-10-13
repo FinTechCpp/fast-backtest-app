@@ -23,4 +23,5 @@ struct BacktestResults {
     StrategyConfig strategyConfig; // Strategy configuration used in the backtest
     std::vector<be::Candle> candles;
     be::Stats stats;                  // Backtest statistics
+    std::vector<chart::ChartMarker> userMarkers; // User-placed markers on the chart
 };

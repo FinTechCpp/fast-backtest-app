@@ -49,6 +49,10 @@ private slots:
     void onExitComparisonClicked();   // Nouveau slot pour le bouton de sortie
     void onAggregationSliderChanged(int value);
 
+    void onCheckMarkerToggled(bool checked);
+    void onErrorMarkerToggled(bool checked);
+    void onClearMarkersClicked();
+
     void onIndicatorAdded(int id, const QString& name);
     void onIndicatorChanged(int id, const QString& name);
     void onIndicatorRemoved(int id);
@@ -66,6 +70,11 @@ private:
     QLabel* m_settingsTitle;
     QComboBox* m_chartTypeCombo;
     QToolButton* m_rulerToolButton;
+    
+    // Boutons pour les outils de dessin
+    QToolButton* m_checkMarkerButton;
+    QToolButton* m_errorMarkerButton;
+    QPushButton* m_clearMarkersButton;
     
     // Nouveaux boutons de comparaison
     QPushButton* m_transferDataButton;

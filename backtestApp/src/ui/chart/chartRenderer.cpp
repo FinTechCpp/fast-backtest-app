@@ -205,6 +205,9 @@ void ChartRenderer::createOrUpdateChart(
         // 0 ms
     }
 
+    // 6. Ajouter les markers dessinés par l'utilisateur
+    addUserMarkers(mainChart, dataManager.getMarkers(), aggregationInfo);
+
     // std::cout << "Avant " << mainChart->getYCoor(20000) << std::endl;
 
     // Mettre à jour le graphique dans le viewer
@@ -1234,6 +1237,52 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::
             }
         }
     }
+}
+
+void ChartRenderer::addUserMarkers(XYChart* mainChart, 
+                                 const std::vector<chart::ChartMarker>& markers,
+                                 const chart::AggregationInfo& aggregationInfo) {
+    if (markers.empty() || !mainChart) {
+        return;
+    }
+
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t length = aggregationInfo.pointCount;
+    
+    // Séparer les markers par type, en convertissant indices absolus -> relatifs
+    std::vector<std::pair<double, double>> checkMarkers;
+    std::vector<std::pair<double, double>> errorMarkers;
+    
+    // Pour chaque marker, vérifier s'il est visible et convertir en indice relatif
+    for (const auto& marker : markers) {
+        // Vérifier si le marker est dans la fenêtre visible
+        bool isVisible = (marker.barIndex >= startIndex && 
+                         marker.barIndex < startIndex + length);
+        
+        if (!isVisible) continue;
+        
+        // Convertir l'indice absolu en indice relatif (exactement comme les trades)
+        double relativeIndex = static_cast<double>(marker.barIndex - startIndex);
+        
+        if (marker.type == chart::MarkerType::Check) {
+            checkMarkers.push_back({relativeIndex, marker.price});
+        } else if (marker.type == chart::MarkerType::Error) {
+            errorMarkers.push_back({relativeIndex, marker.price});
+        }
+    }
+    
+    // Ajouter les markers de type Check (vert)
+    if (!checkMarkers.empty()) {
+        addMarkers(mainChart, checkMarkers, "Check Markers", 
+                  Chart::CircleShape, 16, 0x00BB00);
+    }
+    
+    // Ajouter les markers de type Error (rouge)
+    if (!errorMarkers.empty()) {
+        addMarkers(mainChart, errorMarkers, "Error Markers", 
+                  Chart::Cross2Shape(), 16, 0xBB0000);
+    }
+
 }
 
 ScatterLayer* ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<double, double>> &markers,

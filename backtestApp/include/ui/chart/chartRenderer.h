@@ -135,6 +135,11 @@ private:
         const ChartDataManager& dataManager,
         const chart::AggregationInfo& aggregationInfo);
 
+    // Méthode pour ajouter les markers dessinés par l'utilisateur
+    void addUserMarkers(XYChart* mainChart,
+                       const std::vector<chart::ChartMarker>& markers,
+                       const chart::AggregationInfo& aggregationInfo);
+
     // Utilitaires
     ScatterLayer* addMarkers(XYChart* chart, 
                    const std::vector<std::pair<double, double>>& markers, 

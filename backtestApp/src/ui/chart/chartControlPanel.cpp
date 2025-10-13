@@ -138,6 +138,74 @@ void ChartControlPanel::setupUI()
     
     leftPanelLayout->addWidget(m_rulerToolButton);
 
+    // Boutons pour les outils de dessin de markers
+    QLabel* drawToolsLabel = new QLabel("Outils de Dessin");
+    drawToolsLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
+    leftPanelLayout->addWidget(drawToolsLabel);
+
+    QHBoxLayout* drawToolsLayout = new QHBoxLayout();
+    drawToolsLayout->setSpacing(5);
+    
+    // Bouton pour le marker Check
+    m_checkMarkerButton = new QToolButton();
+    m_checkMarkerButton->setIcon(QIcon(":/icons/check.png"));
+    m_checkMarkerButton->setIconSize(QSize(32, 32));
+    m_checkMarkerButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    m_checkMarkerButton->setCheckable(true);
+    m_checkMarkerButton->setToolTip("Placer des marqueurs de validation");
+    m_checkMarkerButton->setStyleSheet(
+        "QToolButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+        "QToolButton:checked {"
+        "    background-color:rgb(0, 141, 0);"
+        "}"
+    );
+    
+    // Bouton pour le marker Error
+    m_errorMarkerButton = new QToolButton();
+    m_errorMarkerButton->setIcon(QIcon(":/icons/error.png"));
+    m_errorMarkerButton->setIconSize(QSize(32, 32));
+    m_errorMarkerButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    m_errorMarkerButton->setCheckable(true);
+    m_errorMarkerButton->setToolTip("Placer des marqueurs d'erreur");
+    m_errorMarkerButton->setStyleSheet(
+        "QToolButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+        "QToolButton:checked {"
+        "    background-color:rgb(200, 0, 0);"
+        "}"
+    );
+    
+    // Bouton pour effacer tous les markers
+    m_clearMarkersButton = new QPushButton("Effacer");
+    m_clearMarkersButton->setIcon(QIcon::fromTheme("edit-clear"));
+    m_clearMarkersButton->setToolTip("Effacer tous les marqueurs");
+    m_clearMarkersButton->setStyleSheet(
+        "QPushButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+    );
+    
+    drawToolsLayout->addWidget(m_checkMarkerButton);
+    drawToolsLayout->addWidget(m_errorMarkerButton);
+    drawToolsLayout->addWidget(m_clearMarkersButton);
+    leftPanelLayout->addLayout(drawToolsLayout);
+    
+    connect(m_checkMarkerButton, &QToolButton::toggled, this, &ChartControlPanel::onCheckMarkerToggled);
+    connect(m_errorMarkerButton, &QToolButton::toggled, this, &ChartControlPanel::onErrorMarkerToggled);
+    connect(m_clearMarkersButton, &QPushButton::clicked, this, &ChartControlPanel::onClearMarkersClicked);
+
     // Layout horizontal pour les boutons de comparaison
     m_comparisonButtonsLayout = new QHBoxLayout();
     m_comparisonButtonsLayout->setSpacing(5);
@@ -554,6 +622,11 @@ void ChartControlPanel::onChartTypeChanged(int index) {
 }
 
 void ChartControlPanel::onRulerToolToggled(bool checked) {
+    if (checked) {
+        // Désactiver les outils de dessin de markers
+        m_checkMarkerButton->setChecked(false);
+        m_errorMarkerButton->setChecked(false);
+    }
     emit rulerToolToggled(checked);
 }
 
@@ -616,5 +689,43 @@ void ChartControlPanel::setComparisonMode(bool enabled) {
         m_transferDataButton->setText("Actualiser");
     } else {
         m_transferDataButton->setText("Copier");
+    }
+}
+
+void ChartControlPanel::onCheckMarkerToggled(bool checked) {
+    if (checked) {
+        // Désactiver l'autre bouton de marker et la règle
+        m_errorMarkerButton->setChecked(false);
+        m_rulerToolButton->setChecked(false);
+        
+        if (m_chartWidget) {
+            m_chartWidget->setMarkerDrawingEnabled(true, chart::MarkerType::Check);
+        }
+    } else {
+        if (m_chartWidget) {
+            m_chartWidget->setMarkerDrawingEnabled(false);
+        }
+    }
+}
+
+void ChartControlPanel::onErrorMarkerToggled(bool checked) {
+    if (checked) {
+        // Désactiver l'autre bouton de marker et la règle
+        m_checkMarkerButton->setChecked(false);
+        m_rulerToolButton->setChecked(false);
+        
+        if (m_chartWidget) {
+            m_chartWidget->setMarkerDrawingEnabled(true, chart::MarkerType::Error);
+        }
+    } else {
+        if (m_chartWidget) {
+            m_chartWidget->setMarkerDrawingEnabled(false);
+        }
+    }
+}
+
+void ChartControlPanel::onClearMarkersClicked() {
+    if (m_chartWidget) {
+        m_chartWidget->clearAllMarkers();
     }
 }

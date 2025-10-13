@@ -955,3 +955,17 @@ DoubleArray ChartDataManager::vectorToDoubleArray(const std::vector<double>& vec
 void ChartDataManager::removeAllIndicators() {
     m_indicators.clear();
 }
+
+void ChartDataManager::addMarker(const chart::ChartMarker& marker) {
+    m_markers.push_back(marker);
+}
+
+void ChartDataManager::removeMarker(size_t index) {
+    if (index < m_markers.size()) {
+        m_markers.erase(m_markers.begin() + index);
+    }
+}
+
+void ChartDataManager::clearAllMarkers() {
+    m_markers.clear();
+}

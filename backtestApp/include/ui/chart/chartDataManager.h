@@ -68,6 +68,13 @@ public:
     
     void removeAllIndicators();
 
+    // Marker management
+    void addMarker(const chart::ChartMarker& marker);
+    void removeMarker(size_t index);
+    void clearAllMarkers();
+    const std::vector<chart::ChartMarker>& getMarkers() const { return m_markers; }
+    void setMarkers(const std::vector<chart::ChartMarker>& markers) { m_markers = markers; }
+
 
     // Ici il faut implementer le vole de données avec move
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<indicators::IndicatorBase, T>>>
@@ -173,6 +180,7 @@ private:
     std::vector<be::TradeData> m_trades;
     std::vector<std::array<std::pair<size_t, size_t>, static_cast<size_t>(chart::AggregationLevel::Count)>> m_tradeIndices; // Indices pour chaque trade
     chart::EquityData m_equityData;
+    std::vector<chart::ChartMarker> m_markers; // User-placed markers on the chart
 
     // ID unique global pour tous les types d'indicateurs
     int m_nextIndicatorId = 1;

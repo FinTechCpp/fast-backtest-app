@@ -279,8 +279,7 @@ void BacktestWorker::run()
         generalConfig.commission,         // Commission
         generalConfig.leverage_limit,     // Levier
         generalConfig.tradeOnClose,       // Trade à la clôture
-        generalConfig.hedging,            // Hedging
-        generalConfig.exclusiveOrders,    // Ordres exclusifs
+        generalConfig.positionMode,       // Mode de position (Hedging ou Netting)
         generalConfig.finalizeTrades,     // Finalisation des trades
         logCallback                       // Fonction de logging
     );

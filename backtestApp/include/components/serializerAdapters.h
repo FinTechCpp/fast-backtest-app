@@ -256,8 +256,7 @@ namespace cereal {
            cereal::make_nvp("commission", config.commission),
            cereal::make_nvp("leverage_limit", config.leverage_limit),
            cereal::make_nvp("tradeOnClose", config.tradeOnClose),
-           cereal::make_nvp("hedging", config.hedging),
-           cereal::make_nvp("exclusiveOrders", config.exclusiveOrders),
+           cereal::make_nvp("positionMode", config.positionMode),
            cereal::make_nvp("finalizeTrades", config.finalizeTrades));
     }
 

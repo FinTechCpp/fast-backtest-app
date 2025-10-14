@@ -17,6 +17,7 @@
 #include <sstream>
 #include <string>
 #include <QFileSystemWatcher>
+#include "beTypes.h"
 
 
 struct GeneralParamsConfig {
@@ -30,8 +31,7 @@ struct GeneralParamsConfig {
     double commission;
     double leverage_limit;
     bool tradeOnClose;
-    bool hedging;
-    bool exclusiveOrders;
+    be::PositionMode positionMode;
     bool finalizeTrades;
 };
 
@@ -48,8 +48,7 @@ inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& con
        << "  commission: " << config.commission << ", \n"
        << "  leverage_limit: " << config.leverage_limit << ", \n"
        << "  tradeOnClose: " << config.tradeOnClose << ", \n"
-       << "  hedging: " << config.hedging << ", \n"
-       << "  exclusiveOrders: " << config.exclusiveOrders << ", \n"
+       << "  positionMode: " << (config.positionMode == be::PositionMode::Hedging ? "Hedging" : "Netting") << ", \n"
        << "  finalizeTrades: " << config.finalizeTrades << "\n"
        << "}\n";
     return os;

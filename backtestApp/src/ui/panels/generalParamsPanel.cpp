@@ -229,26 +229,16 @@ void GeneralParamsPanel::setupUI()
         &m_config.tradeOnClose)
     );
 
-    // Hedging
-    QCheckBox* hedgingCheck = new QCheckBox("Hedging", this);
-    hedgingCheck->setChecked(false);
-    paramsLayout->addRow(hedgingCheck);
+    // Position mode
+    QComboBox* positionModeCombo = new QComboBox(this);
+    positionModeCombo->addItems({"Hedging", "Netting"});
+    positionModeCombo->setCurrentIndex(0);
+    paramsLayout->addRow(new QLabel("Position Mode:", this), positionModeCombo);
 
-    // Binding pour hedging
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        hedgingCheck,
-        &m_config.hedging)
-    );
-
-    // Exclusive orders
-    QCheckBox* exclusiveOrdersCheck = new QCheckBox("Exclusive orders", this);
-    exclusiveOrdersCheck->setChecked(true);
-    paramsLayout->addRow(exclusiveOrdersCheck);
-
-    // Binding pour exclusive orders
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        exclusiveOrdersCheck,
-        &m_config.exclusiveOrders)
+    // Binding pour le position mode
+    addBinding(PropertyBinderFactory::createEnumComboBinding<be::PositionMode>(
+        positionModeCombo,
+        &m_config.positionMode)
     );
 
     // Finalize trades

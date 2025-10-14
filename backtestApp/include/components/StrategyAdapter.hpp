@@ -114,7 +114,7 @@ public:
         Signal* signal = strategy->update_candle(candle);
 
 
-        // DateTime dtBreakPoint{2024, 11, 05, Time{17, 52, 0}};
+        // DateTime dtBreakPoint{2022, 8, 8, Time{21, 59, 0}};
 
         // if (candle.ohlc.date >= dtBreakPoint) {
         //     int a = 0;

@@ -483,6 +483,7 @@ void TradingHeatmapWidget::paintContent(QPainter& painter, const QRect& contentR
 
 void TradingHeatmapWidget::updateContent(const std::vector<be::TradeData>& trades) {
     if (trades.empty()) {
+        clear();
         return;
     }
     
@@ -491,3 +492,26 @@ void TradingHeatmapWidget::updateContent(const std::vector<be::TradeData>& trade
     update();
 }
 
+void TradingHeatmapWidget::clear() {
+    // Réinitialiser toutes les données de la heatmap
+    for (int h = 0; h < HOURS_IN_DAY; h++) {
+        for (int d = 0; d < DAYS_IN_WEEK; d++) {
+            m_performanceData[h][d] = 0.0;
+            m_tradeCountData[h][d] = 0;
+            m_squaredSumData[h][d] = 0.0;
+        }
+    }
+    m_minValue = 0.0;
+    m_maxValue = 0.0;
+    m_minHour = 24;
+    m_maxHour = 0;
+    m_activeDays.clear();
+    m_activeDays.resize(DAYS_IN_WEEK, false);
+    m_activeDayIndices.clear();
+    m_mousePos = QPoint();
+    m_mouseOver = false;
+    m_activeCell_col = -1;
+    m_activeCell_row = -1;
+    m_cellsArea = QRect();
+    update();
+}

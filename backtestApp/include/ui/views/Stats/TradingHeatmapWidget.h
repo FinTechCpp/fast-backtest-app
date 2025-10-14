@@ -23,6 +23,7 @@ public:
     explicit TradingHeatmapWidget(const QString& title = QString(), QWidget* parent = nullptr);
 
     void updateContent(const std::vector<be::TradeData>& trades);
+    void clear();
 
 protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;

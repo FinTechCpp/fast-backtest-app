@@ -205,71 +205,56 @@ QString InteractiveChartView::createTooltipText(const QString& category, double 
     return tooltipText;
 }
 
+
+
 // Implémentation de HistogramWidget
 HistogramWidget::HistogramWidget(const QString& title, QWidget* parent)
     : TitledWidget(title, parent)
-    , m_contentWidget(nullptr)
-    , m_contentLayout(nullptr)
+    , m_stackWidget(new QStackedWidget(this))
+    , m_placeholderLabel(new QLabel("Aucun trade à afficher", this))
     , m_timeUnitCombo(nullptr)
     , m_chartView(nullptr)
     , m_chart(nullptr)
     , m_currentResults(nullptr)
 {
-    // Créer le widget de contenu
-    m_contentWidget = new QWidget(this);
-    m_contentLayout = new QVBoxLayout(m_contentWidget);
-    m_contentLayout->setContentsMargins(1, 1, 1, 1);
-    m_contentLayout->setSpacing(0);
-            
     // ComboBox pour sélectionner l'unité de temps
     m_timeUnitCombo = new QComboBox(this);
     m_timeUnitCombo->addItems({"Jour", "Semaine", "Mois", "Trimestre", "Année"});
-    m_timeUnitCombo->setCurrentIndex(0);  // Jour par défaut
+    m_timeUnitCombo->setCurrentIndex(0);
     m_timeUnitCombo->setFixedWidth(100);
-
-    // Style pour avoir des coins carrés
-    // m_timeUnitCombo->setStyleSheet(
-    //     "QComboBox {"
-    //     "  border-radius: 0px;"       // Coins parfaitement carrés (était 1px)
-    //     "  border: 1px solid black;"  // Bordure noire
-    //     "  padding: 2px 10px 2px 5px;"
-    //     "}"
-    //     "QComboBox::drop-down {"
-    //     "  border: none;"  /* Supprimer la bordure du bouton déroulant */
-    //     "  width: 20px;"   /* Largeur fixe pour la zone de la flèche */
-    //     "}"
-    //     "QComboBox::down-arrow {"
-    //     "  width: 0;"
-    //     "  height: 0;"
-    //     "  border-left: 4px solid transparent;"  /* Côté gauche du triangle */
-    //     "  border-right: 4px solid transparent;" /* Côté droit du triangle */
-    //     "  border-top: 4px solid black;"         /* Base du triangle (en haut) */
-    //     "  margin-right: 5px;"                   /* Marge à droite pour le positionnement */
-    //     "}"
-    // );
-
     connect(m_timeUnitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &HistogramWidget::updateHistogram);
-        
-    // Ajouter le combo box comme widget compagnon du titre
     setTitleCompanionWidget(m_timeUnitCombo);
-    
+
+    // Placeholder centré
+    m_placeholderLabel->setAlignment(Qt::AlignCenter);
+    m_placeholderLabel->setStyleSheet("color: gray; font-size: 16px;");
+    m_placeholderLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
     // Créer le graphique
     m_chart = new QChart();
     m_chart->setAnimationOptions(QChart::SeriesAnimations);
     m_chart->legend()->setVisible(false);
     m_chart->setBackgroundVisible(true);
-    // m_chart->setBackgroundBrush(Qt::yellow);
     m_chart->setMargins(QMargins(0, 0, 0, 0));
-    
+
     // Créer la vue du graphique
-    m_chartView = new InteractiveChartView(m_chart, m_contentWidget);
+    m_chartView = new InteractiveChartView(m_chart, this);
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setBackgroundBrush(Qt::transparent);
     m_chartView->setContentsMargins(0, 0, 0, 0);
-    
-    // Ajouter la vue au layout
-    m_contentLayout->addWidget(m_chartView);
+
+    // Ajoute les widgets au stack
+    m_stackWidget->addWidget(m_chartView);        // index 0
+    m_stackWidget->addWidget(m_placeholderLabel); // index 1
+    m_stackWidget->setContentsMargins(1, 1, 1, 1);
+
+    // Utilise le stack comme layout principal
+    QVBoxLayout* layout = new QVBoxLayout(this);
+    layout->setContentsMargins(1, 1, 1, 1);
+    layout->setSpacing(0);
+    layout->addWidget(m_stackWidget);
+    setLayout(layout);
 }
 
 HistogramWidget::~HistogramWidget()
@@ -292,19 +277,8 @@ HistogramWidget::~HistogramWidget()
 
 void HistogramWidget::paintContent(QPainter& painter, const QRect& contentRect)
 {
-    // Le contenu est géré par les widgets enfants
-    if (m_contentWidget) {
-        m_contentWidget->setGeometry(contentRect);
-    }
-}
-
-void HistogramWidget::resizeEvent(QResizeEvent* event)
-{
-    TitledWidget::resizeEvent(event);
-    
-    // Ajuster la taille du widget de contenu
-    if (m_contentWidget) {
-        m_contentWidget->setGeometry(contentRect());
+    if (m_stackWidget) {
+        m_stackWidget->setGeometry(contentRect);
     }
 }
 
@@ -328,7 +302,8 @@ void HistogramWidget::clear()
 void HistogramWidget::updateHistogram()
 {
     if (!m_currentResults || !m_timeUnitCombo) {
-        m_chart->setTitle("Aucun trade à afficher");
+        m_placeholderLabel->setText("Aucun trade à afficher");
+        m_stackWidget->setCurrentWidget(m_placeholderLabel);
         return;
     }
     
@@ -336,7 +311,8 @@ void HistogramWidget::updateHistogram()
     std::vector<TradeInfo> trades = extractTradesFromResults(m_currentResults);
     
     if (trades.empty()) {
-        m_chart->setTitle("Aucun trade à afficher");
+        m_placeholderLabel->setText("Aucun trade à afficher");
+        m_stackWidget->setCurrentWidget(m_placeholderLabel);
         return;
     }
     
@@ -347,11 +323,13 @@ void HistogramWidget::updateHistogram()
     GroupedData groupedData = groupDataByTimeUnit(trades, timeUnit);
     
     if (groupedData.categories.isEmpty()) {
-        m_chart->setTitle("Impossible de regrouper les données");
+        m_placeholderLabel->setText("Impossible de regrouper les données");
+        m_stackWidget->setCurrentWidget(m_placeholderLabel);
         return;
     }
     
     // Créer le graphique
+    m_stackWidget->setCurrentWidget(m_chartView);
     createChart(groupedData);
 }
 

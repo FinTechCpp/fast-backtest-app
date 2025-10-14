@@ -316,6 +316,7 @@ void StatsView::updateData(BacktestResults* results)
     m_exposureWidget->addSegment(std::clamp(1.0 - m_currentResults->stats.exposureTimePct / 100.0, 0.0, 1.0), QColor(209, 212, 230));
 
     unsigned int totalTrades = m_currentResults->stats.numTrades;
+    m_tradeDistributionWidget->clearSegments();
     if (totalTrades > 0) {
         double TP = (static_cast<double>(m_currentResults->stats.numTPTrades) / totalTrades);
         double SL = (static_cast<double>(m_currentResults->stats.numSLTrades) / totalTrades);
@@ -323,7 +324,6 @@ void StatsView::updateData(BacktestResults* results)
         double manual = (static_cast<double>(m_currentResults->stats.numManualTrades) / totalTrades);
         double unknown = (static_cast<double>(m_currentResults->stats.numUnknownTrades) / totalTrades);
         
-        m_tradeDistributionWidget->clearSegments();
         m_tradeDistributionWidget->addSegment(TP, QColor(0, 200, 0));
         m_tradeDistributionWidget->addSegment(SL, QColor(200, 0, 0));
         m_tradeDistributionWidget->addSegment(BE, QColor(10, 100, 200));
@@ -331,6 +331,9 @@ void StatsView::updateData(BacktestResults* results)
         m_tradeDistributionWidget->addSegment(unknown, QColor(44, 62, 80));
 
         m_tradeDistributionWidget->setCenterText(QString::number(TP * 100.0, 'f', 1));
+    }
+    else {
+        m_tradeDistributionWidget->setCenterText("--");
     }
 
 

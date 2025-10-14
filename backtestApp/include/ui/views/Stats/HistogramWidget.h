@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QVBoxLayout>
+#include <QStackedWidget>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QComboBox>
@@ -73,17 +74,17 @@ public:
 
 protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
-    void resizeEvent(QResizeEvent* event) override;
     
 private slots:  
     void updateHistogram();
 
 private:
     // Widgets de l'interface
+    QStackedWidget* m_stackWidget = nullptr;
     QWidget* m_contentWidget;
-    QVBoxLayout* m_contentLayout;
-    QComboBox* m_timeUnitCombo;
+    QLabel* m_placeholderLabel = nullptr;
     InteractiveChartView* m_chartView;
+    QComboBox* m_timeUnitCombo;
     QChart* m_chart;
     
     // Données actuelles

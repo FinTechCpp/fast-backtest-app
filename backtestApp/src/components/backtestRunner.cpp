@@ -252,14 +252,6 @@ void BacktestWorker::run()
         strategyConfig.cash = generalParams.cash;
         strategyConfig.leverage_limit = generalParams.leverage_limit;
 
-        // Use string conversion instead of passing StrategyConfig directly to spdlog/fmt
-        std::ostringstream gp_ss;
-        gp_ss << generalParams;
-        std::ostringstream sc_ss;
-        sc_ss << strategyConfig;
-        async_file->log(spdlog::level::info, "General config:\n{}", gp_ss.str());
-        async_file->log(spdlog::level::info, "Strategy config:\n{}", sc_ss.str());
-
         // Création directe de la stratégie
         return std::make_shared<StrategyAdapter>(broker, data, strategyConfig, logCallback);
     };

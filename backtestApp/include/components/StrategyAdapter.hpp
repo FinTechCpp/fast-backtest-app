@@ -51,6 +51,8 @@ public:
     : be::Strategy(broker, data) {
         strategy = std::make_unique<::Strategy>(strategyConfig);
         strategy->set_log_callback(logCallback);
+        // Log de la configuration après avoir configuré le callback
+        strategy->log_configuration();
     }
     
     /**

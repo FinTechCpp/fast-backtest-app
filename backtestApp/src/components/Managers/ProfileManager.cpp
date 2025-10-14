@@ -413,7 +413,7 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
 
     // Default file name with profile name and timestamp
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-    QString defaultFileName = QString("backtest_config_%1_%2.json").arg(targetProfile).arg(timestamp);
+    QString defaultFileName = QString("config_%1_%2.json").arg(targetProfile).arg(timestamp);
     
     QString fileName = QFileDialog::getSaveFileName(parentWidget,
                                                    QString("Exporter la configuration - Profil: %1").arg(targetProfile),

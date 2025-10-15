@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      is_beta: ${{ steps.version.outputs.is_beta }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,6 +27,12 @@ jobs:
     - name: Calculate version
       id: version
       run: |
+        # Determine if this is a beta build (releases branch)
+        IS_BETA="false"
+        if [[ "${{ github.ref }}" == "refs/heads/releases" ]]; then
+          IS_BETA="true"
+        fi
+        
         # Get the latest existing tag
         lastTag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
         
@@ -41,10 +48,17 @@ jobs:
           version=$(echo $lastVersion | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
         fi
         
+        # Add beta suffix for releases branch
+        if [ "$IS_BETA" == "true" ]; then
+          version="${version}-beta"
+        fi
+        
         echo "VERSION=$version" >> $GITHUB_ENV
         echo "version=$version" >> $GITHUB_OUTPUT
+        echo "is_beta=$IS_BETA" >> $GITHUB_OUTPUT
         echo "Last tag: $lastTag"
         echo "New version: $version"
+        echo "Is beta: $IS_BETA"
 
   build-windows:
     runs-on: windows-latest
@@ -527,7 +541,6 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     needs: [calculate-version, build-windows, build-macos, build-linux]
-    if: github.ref == 'refs/heads/main'
     permissions:
       contents: write
       packages: write
@@ -539,6 +552,7 @@ jobs:
     - name: Set version
       run: |
         echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
+        echo "IS_BETA=${{ needs.calculate-version.outputs.is_beta }}" >> $GITHUB_ENV
 
     - name: Download all artifacts
       uses: actions/download-artifact@v4
@@ -558,7 +572,7 @@ jobs:
         echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
         echo "COMMIT_MSG=$COMMIT_MSG" >> $GITHUB_ENV
 
-    - name: Create Release
+    - name: Create GitHub Release (Stable only)
       if: github.ref == 'refs/heads/main'
       uses: softprops/action-gh-release@v2
       with:
@@ -612,18 +626,16 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Checkout releases repository
-      if: github.ref == 'refs/heads/main'
       uses: actions/checkout@v4
       with:
         repository: FinTechCpp/fast-backtest-app-releases
         path: releases-repo
         token: ${{ secrets.RELEASE_REPO_PAT }}
 
-    - name: Upload executable ZIP to GitHub Pages
-      if: github.ref == 'refs/heads/main'
+    - name: Upload executable to GitHub Pages
       env:
-        VERSION: ${{ steps.version.outputs.version }}
-        ARCHIVE_NAME: ${{ env.ARCHIVE_NAME }}
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+        IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
       run: |
         # Create downloads directory if it doesn't exist
         mkdir -p releases-repo/downloads
@@ -633,63 +645,101 @@ jobs:
         cp artifacts/fast-backtest-app-macos/* releases-repo/downloads/ || true
         cp artifacts/fast-backtest-app-linux/* releases-repo/downloads/ || true
         
-        # Create "latest" versions for easy access
+        # Create "latest" or "beta-latest" versions depending on branch
         cd releases-repo/downloads
-        for file in fast-backtest-app-windows-v*.zip; do
-          [ -f "$file" ] && cp "$file" fast-backtest-app-windows-latest.zip
-        done
-        for file in fast-backtest-app-macos-v*.dmg; do
-          [ -f "$file" ] && cp "$file" fast-backtest-app-macos-latest.dmg
-        done
-        for file in fast-backtest-app-linux-v*.tar.gz; do
-          [ -f "$file" ] && cp "$file" fast-backtest-app-linux-latest.tar.gz
-        done
+        
+        if [ "$IS_BETA" == "true" ]; then
+          # Beta builds - create beta-latest versions
+          for file in fast-backtest-app-windows-v*-beta.zip; do
+            [ -f "$file" ] && cp "$file" fast-backtest-app-windows-beta-latest.zip
+          done
+          for file in fast-backtest-app-macos-v*-beta.dmg; do
+            [ -f "$file" ] && cp "$file" fast-backtest-app-macos-beta-latest.dmg
+          done
+          for file in fast-backtest-app-linux-v*-beta.tar.gz; do
+            [ -f "$file" ] && cp "$file" fast-backtest-app-linux-beta-latest.tar.gz
+          done
+        else
+          # Stable builds - create latest versions
+          for file in fast-backtest-app-windows-v*.zip; do
+            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-windows-latest.zip
+          done
+          for file in fast-backtest-app-macos-v*.dmg; do
+            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-macos-latest.dmg
+          done
+          for file in fast-backtest-app-linux-v*.tar.gz; do
+            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-linux-latest.tar.gz
+          done
+        fi
         
         echo "Uploaded all platform executables to GitHub Pages"
         ls -lh
 
     - name: Update download URLs in website
+      env:
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+        IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
       run: |
         HTML_FILE="releases-repo/index.html"
-        VERSION="${{ env.VERSION }}"
-        
-        # Find archive names
-        WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | head -1 | xargs basename)
-        MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | head -1 | xargs basename)
-        LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | head -1 | xargs basename)
-        
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
         
-        # Update version tag
-        sed -i "s|<span class=\"version-tag\">v[0-9.]*</span>|<span class=\"version-tag\">v${VERSION}</span>|g" "$HTML_FILE"
-        
-        # Update Windows download link
-        if [ -n "$WIN_ARCHIVE" ]; then
-          sed -i "s|<a href=\"[^\"]*\" class=\"button\">Télécharger pour Windows</a>|<a href=\"${BASE_URL}/${WIN_ARCHIVE}\" class=\"button\">Télécharger pour Windows</a>|g" "$HTML_FILE"
+        if [ "$IS_BETA" == "true" ]; then
+          # Update beta version tag
+          sed -i "s|<span class=\"version-tag beta\">beta-latest</span>|<span class=\"version-tag beta\">$VERSION</span>|g" "$HTML_FILE"
+          
+          # Find beta archive names
+          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
+          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
+          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
+          
+          # Update beta download links
+          if [ -n "$WIN_ARCHIVE" ]; then
+            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta Windows</a>|<a href=\"${BASE_URL}/${WIN_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta Windows</a>|g" "$HTML_FILE"
+          fi
+          if [ -n "$MAC_ARCHIVE" ]; then
+            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta macOS</a>|<a href=\"${BASE_URL}/${MAC_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta macOS</a>|g" "$HTML_FILE"
+          fi
+          if [ -n "$LINUX_ARCHIVE" ]; then
+            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta Linux</a>|<a href=\"${BASE_URL}/${LINUX_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta Linux</a>|g" "$HTML_FILE"
+          fi
+        else
+          # Update stable version tag
+          sed -i "s|<span class=\"version-tag\">v[0-9.]*</span>|<span class=\"version-tag\">v${VERSION}</span>|g" "$HTML_FILE"
+          
+          # Find stable archive names
+          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          
+          # Update stable download links
+          if [ -n "$WIN_ARCHIVE" ]; then
+            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour Windows<\/a>/s||<a href=\"${BASE_URL}/${WIN_ARCHIVE}\" class=\"button\">Télécharger pour Windows</a>|" "$HTML_FILE"
+          fi
+          if [ -n "$MAC_ARCHIVE" ]; then
+            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour macOS<\/a>/s||<a href=\"${BASE_URL}/${MAC_ARCHIVE}\" class=\"button\">Télécharger pour macOS</a>|" "$HTML_FILE"
+          fi
+          if [ -n "$LINUX_ARCHIVE" ]; then
+            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour Linux<\/a>/s||<a href=\"${BASE_URL}/${LINUX_ARCHIVE}\" class=\"button\">Télécharger pour Linux</a>|" "$HTML_FILE"
+          fi
         fi
         
-        # Update macOS download link (if exists in HTML)
-        if [ -n "$MAC_ARCHIVE" ]; then
-          sed -i "s|<a href=\"[^\"]*\" class=\"button\">Télécharger pour macOS</a>|<a href=\"${BASE_URL}/${MAC_ARCHIVE}\" class=\"button\">Télécharger pour macOS</a>|g" "$HTML_FILE"
-        fi
-        
-        # Update Linux download link (if exists in HTML)
-        if [ -n "$LINUX_ARCHIVE" ]; then
-          sed -i "s|<a href=\"[^\"]*\" class=\"button\">Télécharger pour Linux</a>|<a href=\"${BASE_URL}/${LINUX_ARCHIVE}\" class=\"button\">Télécharger pour Linux</a>|g" "$HTML_FILE"
-        fi
-        
-        echo "Updated download URLs"
+        echo "Updated download URLs for $([ \"$IS_BETA\" == \"true\" ] && echo \"beta\" || echo \"stable\") version"
 
     - name: Commit and push changes to releases repository
-      if: github.ref == 'refs/heads/main'
       env:
-        VERSION: ${{ steps.version.outputs.version }}
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+        IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
       run: |
         cd releases-repo
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add .
-        git commit -m "Update download URLs and upload executables for version v${{ env.VERSION }}"
+        
+        if [ "$IS_BETA" == "true" ]; then
+          git commit -m "Update beta download URLs and upload executables for version $VERSION"
+        else
+          git commit -m "Update download URLs and upload executables for version v$VERSION"
+        fi
         git push
 
     - name: Send Discord Release Notification
@@ -792,7 +842,110 @@ jobs:
           echo "⚠️ Discord webhook URL not configured"
         fi
 
+    - name: Send Discord Beta Notification
+      if: github.ref == 'refs/heads/releases'
+      env:
+        DISCORD_WEBHOOK_RELEASES_URL: ${{ secrets.DISCORD_WEBHOOK_RELEASES_URL }}
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+      run: |
+        COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+        SHORT_SHA="${{ env.SHORT_SHA }}"
+        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
+        
+        # Find archive names and sizes
+        WIN_ARCHIVE=$(ls artifacts/fast-backtest-app-windows/*.zip 2>/dev/null | head -1 | xargs basename)
+        MAC_ARCHIVE=$(ls artifacts/fast-backtest-app-macos/*.dmg 2>/dev/null | head -1 | xargs basename)
+        LINUX_ARCHIVE=$(ls artifacts/fast-backtest-app-linux/*.tar.gz 2>/dev/null | head -1 | xargs basename)
+        
+        WIN_SIZE=$([ -f "artifacts/fast-backtest-app-windows/$WIN_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-windows/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
+        MAC_SIZE=$([ -f "artifacts/fast-backtest-app-macos/$MAC_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-macos/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
+        LINUX_SIZE=$([ -f "artifacts/fast-backtest-app-linux/$LINUX_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-linux/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
+        
+        # Create Discord embed message for beta release
+        cat <<EOF > discord_payload.json
+        {
+          "embeds": [
+            {
+              "title": "🧪 Nouvelle Build Beta - fast-backtest-app $VERSION",
+              "description": "Une nouvelle version beta est disponible pour test !",
+              "color": 16753920,
+              "fields": [
+                {
+                  "name": "📦 Version",
+                  "value": "$VERSION",
+                  "inline": true
+                },
+                {
+                  "name": "⚙️ Qt Version",
+                  "value": "${{ env.QT_VERSION }}",
+                  "inline": true
+                },
+                {
+                  "name": "🔨 Build Type",
+                  "value": "${{ env.BUILD_TYPE }}",
+                  "inline": true
+                },
+                {
+                  "name": "📅 Date",
+                  "value": "$TIMESTAMP",
+                  "inline": true
+                },
+                {
+                  "name": "🔗 Commit",
+                  "value": "[$SHORT_SHA]($COMMIT_URL)",
+                  "inline": true
+                },
+                {
+                  "name": "\u200B",
+                  "value": "\u200B",
+                  "inline": false
+                },
+                {
+                  "name": "🪟 Windows (64-bit)",
+                  "value": "**Taille:** $WIN_SIZE\n[Télécharger]($BASE_URL/$WIN_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "🍎 macOS (Intel & Apple Silicon)",
+                  "value": "**Taille:** $MAC_SIZE\n[Télécharger]($BASE_URL/$MAC_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "🐧 Linux (Ubuntu/Debian)",
+                  "value": "**Taille:** $LINUX_SIZE\n[Télécharger]($BASE_URL/$LINUX_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "⚠️ Attention",
+                  "value": "Version de développement - peut contenir des bugs",
+                  "inline": false
+                }
+              ],
+              "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")",
+              "footer": {
+                "text": "fast-backtest-app • GitHub Actions • Beta"
+              }
+            }
+          ]
+        }
+        EOF
+        
+        # Send notification to Discord
+        if [ -n "$DISCORD_WEBHOOK_RELEASES_URL" ]; then
+          curl -H "Content-Type: application/json" \
+               -d @discord_payload.json \
+               "$DISCORD_WEBHOOK_RELEASES_URL"
+          echo "✅ Discord beta notification sent successfully"
+        else
+          echo "⚠️ Discord webhook URL not configured"
+        fi
+
     - name: Build Summary
+      env:
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+        IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
       run: |
         WIN_ARCHIVE=$(ls artifacts/fast-backtest-app-windows/*.zip 2>/dev/null | head -1 | xargs basename)
         MAC_ARCHIVE=$(ls artifacts/fast-backtest-app-macos/*.dmg 2>/dev/null | head -1 | xargs basename)
@@ -800,10 +953,11 @@ jobs:
         
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
         
-        cat >> $GITHUB_STEP_SUMMARY <<EOF
-        ## ✅ Multi-Platform Build Successful
+        if [ "$IS_BETA" == "true" ]; then
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+        ## ✅ Multi-Platform Beta Build Successful
         
-        **Version:** v${{ env.VERSION }}
+        **Version:** $VERSION (Beta)
         
         ### 📥 Downloads
         
@@ -815,7 +969,35 @@ jobs:
         
         ### 🔗 Links
         
-        - **Official Release:** [GitHub Release v${{ env.VERSION }}](https://github.com/${{ github.repository }}/releases/tag/v${{ env.VERSION }})
+        - **Public Downloads:** [GitHub Pages](https://fintechcpp.github.io/fast-backtest-app-releases/#download)
+        
+        ### 📋 Build Details
+        
+        - **Branch:** ${{ github.ref_name }}
+        - **Commit:** ${{ env.SHORT_SHA }}
+        - **Qt Version:** ${{ env.QT_VERSION }}
+        - **Build Type:** ${{ env.BUILD_TYPE }}
+        - **Type:** Beta (Development Build)
+        
+        ⚠️ **Note:** This is a beta build and may contain bugs. Use with caution.
+        EOF
+        else
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+        ## ✅ Multi-Platform Build Successful
+        
+        **Version:** v$VERSION
+        
+        ### 📥 Downloads
+        
+        | Platform | Archive | Download |
+        |----------|---------|----------|
+        | 🪟 Windows | $WIN_ARCHIVE | [Download]($BASE_URL/$WIN_ARCHIVE) |
+        | 🍎 macOS | $MAC_ARCHIVE | [Download]($BASE_URL/$MAC_ARCHIVE) |
+        | 🐧 Linux | $LINUX_ARCHIVE | [Download]($BASE_URL/$LINUX_ARCHIVE) |
+        
+        ### 🔗 Links
+        
+        - **Official Release:** [GitHub Release v$VERSION](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)
         - **Public Downloads:** [GitHub Pages](https://fintechcpp.github.io/fast-backtest-app-releases/#download)
         
         ### 📋 Build Details
@@ -825,3 +1007,4 @@ jobs:
         - **Qt Version:** ${{ env.QT_VERSION }}
         - **Build Type:** ${{ env.BUILD_TYPE }}
         EOF
+        fi

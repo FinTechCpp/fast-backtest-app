@@ -283,6 +283,8 @@ void BacktestWorker::run()
         generalConfig.executeLimitOnLimitPrice, // Exécuter les ordres limit au prix limite dans un gap
         generalConfig.executeStopOnOpen,      // Exécuter les ordres stop à l'ouverture dans un gap
         generalConfig.finalizeTrades,     // Finalisation des trades
+        generalConfig.spreadEntryRatio,   // Ratio du spread pour le prix d'entrée
+        generalConfig.minPositionStep,    // Taille minimale de position (quantification)
         logCallback                       // Fonction de logging
     );
     

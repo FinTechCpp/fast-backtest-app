@@ -29,14 +29,16 @@ struct GeneralParamsConfig {
     std::string period;
     QDateTime endDate;
     // BE
-    double cash;
-    double spread;
-    double commission;
+    double cash = 10000.0;
+    double spread = 0.100; // en pour mille
+    double commission = 0.0;
     double leverage_limit = 20.0;
     bool tradeOnClose = false;
     be::PositionMode positionMode = be::PositionMode::Netting;
     bool executeLimitOnLimitPrice = true;
     bool executeStopOnOpen = true;
+    double spreadEntryRatio = 0.5; // Ratio du spread utilisé pour le prix d'entrée (0.0 à 1.0)
+    double minPositionStep = 0.5; // Taille minimale de position (quantification)
     bool finalizeTrades = true;
 };
 
@@ -57,6 +59,7 @@ inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& con
        << "  finalizeTrades: " << config.finalizeTrades << ", \n"
        << "  executeLimitOnLimitPrice: " << config.executeLimitOnLimitPrice << ", \n"
        << "  executeStopOnOpen: " << config.executeStopOnOpen << "\n"
+       << "  spreadEntryRatio: " << config.spreadEntryRatio << "\n"
        << "}\n";
     return os;
 }

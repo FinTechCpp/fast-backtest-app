@@ -180,7 +180,39 @@ BacktestEngineDialog::BacktestEngineDialog(QWidget* parent)
     // Section des paramètres supplémentaires du backtest (colonne gauche)
     QGroupBox* additionalParamsGroupBox = new QGroupBox("Paramètres additionnels", this);
     QFormLayout* additionalParamsLayout = new QFormLayout(additionalParamsGroupBox);
+
+    // Spread (en pour mille)
+    m_spreadSpin = new QDoubleSpinBox(this);
+    m_spreadSpin->setDecimals(3);
+    m_spreadSpin->setRange(0, 10);
+    m_spreadSpin->setSingleStep(0.01);
+    m_spreadSpin->setValue(0.100);
+    additionalParamsLayout->addRow(new QLabel("Spread (‰):", this), m_spreadSpin);
+
+    // Ratio du spread utilisé pour le prix d'entrée
+    m_spreadEntryRatioSpin = new QDoubleSpinBox(this);
+    m_spreadEntryRatioSpin->setDecimals(2);
+    m_spreadEntryRatioSpin->setRange(0.0, 1.0);
+    m_spreadEntryRatioSpin->setSingleStep(0.05);
+    m_spreadEntryRatioSpin->setValue(0.5);
+    additionalParamsLayout->addRow(new QLabel("Ratio du spread pour prix d'entrée (0.0 - 1.0):", this), m_spreadEntryRatioSpin);
+
+    // Commission (en pourcentage)
+    m_commissionSpin = new QDoubleSpinBox(this);
+    m_commissionSpin->setDecimals(2);
+    m_commissionSpin->setRange(0.0, 100.0);
+    m_commissionSpin->setSingleStep(0.01);
+    m_commissionSpin->setValue(0.0);
+    additionalParamsLayout->addRow(new QLabel("Commission (%):", this), m_commissionSpin);
     
+    // Cash initial
+    m_cashSpin = new QDoubleSpinBox(this);
+    m_cashSpin->setDecimals(2);
+    m_cashSpin->setRange(1000, 10000000);
+    m_cashSpin->setSingleStep(1000);
+    m_cashSpin->setValue(10000);
+    additionalParamsLayout->addRow(new QLabel("Cash initial:", this), m_cashSpin);
+
     // Levier maximal
     m_leverageSpin = new QDoubleSpinBox(this);
     m_leverageSpin->setDecimals(2);
@@ -193,6 +225,14 @@ BacktestEngineDialog::BacktestEngineDialog(QWidget* parent)
     m_positionModeCombo = new QComboBox(this);
     m_positionModeCombo->addItems({"Hedging", "Netting"});
     additionalParamsLayout->addRow(new QLabel("Mode de position:", this), m_positionModeCombo);
+
+    // Taille minimale de position (quantification)
+    m_minPositionStepSpin = new QDoubleSpinBox(this);
+    m_minPositionStepSpin->setDecimals(2);
+    m_minPositionStepSpin->setRange(0.0, 10000);
+    m_minPositionStepSpin->setSingleStep(0.1);
+    m_minPositionStepSpin->setValue(0.5);
+    additionalParamsLayout->addRow(new QLabel("Quantification de position:", this), m_minPositionStepSpin);
     
     // Finalize Trades
     m_finalizeTradesCheck = new QCheckBox("Finaliser les trades en fin de backtest", this);
@@ -411,4 +451,54 @@ bool BacktestEngineDialog::finalizeTrades() const
 void BacktestEngineDialog::setFinalizeTrades(bool value)
 {
     m_finalizeTradesCheck->setChecked(value);
+}
+
+double BacktestEngineDialog::spread() const
+{
+    return m_spreadSpin->value();
+}
+
+void BacktestEngineDialog::setSpread(double value)
+{
+    m_spreadSpin->setValue(value);
+}
+
+double BacktestEngineDialog::commission() const
+{
+    return m_commissionSpin->value();
+}
+
+void BacktestEngineDialog::setCommission(double value)
+{
+    m_commissionSpin->setValue(value);
+}
+
+double BacktestEngineDialog::cash() const
+{
+    return m_cashSpin->value();
+}
+
+void BacktestEngineDialog::setCash(double value)
+{
+    m_cashSpin->setValue(value);
+}
+
+double BacktestEngineDialog::spreadEntryRatio() const
+{
+    return m_spreadEntryRatioSpin->value();
+}
+
+void BacktestEngineDialog::setSpreadEntryRatio(double value)
+{
+    m_spreadEntryRatioSpin->setValue(value);
+}
+
+double BacktestEngineDialog::minPositionStep() const
+{
+    return m_minPositionStepSpin->value();
+}
+
+void BacktestEngineDialog::setMinPositionStep(double value)
+{
+    m_minPositionStepSpin->setValue(value);
 }

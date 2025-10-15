@@ -58,6 +58,21 @@ public:
     
     bool finalizeTrades() const;
     void setFinalizeTrades(bool value);
+
+    double spread() const;
+    void setSpread(double value);
+
+    double commission() const;
+    void setCommission(double value);
+
+    double cash() const;
+    void setCash(double value);
+
+    double spreadEntryRatio() const;
+    void setSpreadEntryRatio(double value);
+
+    double minPositionStep() const;
+    void setMinPositionStep(double value);
     
 private:
     QRadioButton* m_stopOnOpenRadio;
@@ -75,8 +90,13 @@ private:
     CandleWidget* m_marketBuyWidget;
     CandleWidget* m_marketSellWidget;
     
+    QDoubleSpinBox* m_spreadSpin;
+    QDoubleSpinBox* m_commissionSpin;
+    QDoubleSpinBox* m_cashSpin;
     QDoubleSpinBox* m_leverageSpin;
+    QDoubleSpinBox* m_spreadEntryRatioSpin;
     QComboBox* m_positionModeCombo;
+    QDoubleSpinBox* m_minPositionStepSpin;
     QCheckBox* m_finalizeTradesCheck;
     
 private slots:

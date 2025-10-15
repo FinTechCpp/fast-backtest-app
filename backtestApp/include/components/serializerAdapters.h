@@ -260,6 +260,7 @@ namespace cereal {
            // TODO ajouter ces deux options dans le serializeur
         //    cereal::make_nvp("executeLimitOnLimitPrice", config.executeLimitOnLimitPrice),
         //    cereal::make_nvp("executeStopOnOpen", config.executeStopOnOpen),
+        //    cereal::make_nvp("spreadEntryRatio", config.spreadEntryRatio),
            cereal::make_nvp("finalizeTrades", config.finalizeTrades));
     }
 

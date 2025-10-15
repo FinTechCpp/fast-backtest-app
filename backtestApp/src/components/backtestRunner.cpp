@@ -280,6 +280,8 @@ void BacktestWorker::run()
         generalConfig.leverage_limit,     // Levier
         generalConfig.tradeOnClose,       // Trade à la clôture
         generalConfig.positionMode,       // Mode de position (Hedging ou Netting)
+        generalConfig.executeLimitOnLimitPrice, // Exécuter les ordres limit au prix limite dans un gap
+        generalConfig.executeStopOnOpen,      // Exécuter les ordres stop à l'ouverture dans un gap
         generalConfig.finalizeTrades,     // Finalisation des trades
         logCallback                       // Fonction de logging
     );

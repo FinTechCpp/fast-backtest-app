@@ -12,7 +12,7 @@
 CandleWidget::CandleWidget(OrderType type, QWidget* parent)
     : QWidget(parent), m_type(type)
 {
-    setMinimumSize(160, 180);
+    setMinimumSize(200, 200);
 }
 
 void CandleWidget::setExecuteOnLevel(bool executeOnLevel)
@@ -31,6 +31,7 @@ void CandleWidget::paintEvent(QPaintEvent* event)
     int w = width();
     int h = height();
     int midY = h / 2;
+    int labelHeight = 30;
     int offset = 10; // Marge du haut et du bas de chaque bougie
 
 
@@ -54,14 +55,14 @@ void CandleWidget::paintEvent(QPaintEvent* event)
         case OrderType::STOP_SELL: typeName = "STOP SELL"; break;
         case OrderType::LIMIT_BUY: typeName = "LIMIT BUY"; break;
         case OrderType::LIMIT_SELL: typeName = "LIMIT SELL"; break;
+        case OrderType::MARKET: typeName = "MARKET"; break;
     }
 
-    painter.drawText(rect().adjusted(0, 10, 0, -h + 30), Qt::AlignLeft, typeName);
+    painter.drawText(rect().adjusted(0, 10, 0, -h + labelHeight), Qt::AlignLeft, typeName);
 
     // Dessiner les bougies
     QColor prevColor, curColor;
     int levelY = midY; // Position Y du niveau d'ordre
-    bool isBuy = (m_type == OrderType::STOP_BUY || m_type == OrderType::LIMIT_BUY);
     bool isStop = (m_type == OrderType::STOP_BUY || m_type == OrderType::STOP_SELL);
 
     int candle1Top;
@@ -78,7 +79,7 @@ void CandleWidget::paintEvent(QPaintEvent* event)
         candle2Top = offset;
         candle2Open = candle2Top + 3 * candleHeight / 4;
     } 
-    else { // STOP_SELL ou LIMIT_BUY
+    else if (m_type == OrderType::STOP_SELL || m_type == OrderType::LIMIT_BUY) {
         // Bougies rouges descendantes
         prevColor = m_bearishColor; // Bougie précédente rouge
         curColor = m_bearishColor; // Bougie actuelle rouge
@@ -86,6 +87,16 @@ void CandleWidget::paintEvent(QPaintEvent* event)
         candle1Top = offset;
         candle2Top = midY + offset;
         candle2Open = candle2Top + candleHeight / 4;
+    }
+    else if (m_type == OrderType::MARKET) {
+        prevColor = m_bullishColor;
+        curColor = m_bearishColor;
+
+        candle1Top = midY - candleHeight / 4;
+        candle2Top = midY - candleHeight / 2;
+        candle2Open = candle2Top + candleHeight / 4;
+
+        // Il faut que le niveau de cloture soit a midY
     }
     
     int candle1Bottom = candle1Top + candleHeight;
@@ -118,17 +129,24 @@ void CandleWidget::paintEvent(QPaintEvent* event)
     // Mèche haute et basse
     painter.drawLine(candle2X, candle2Top, 
                      candle2X, candle2Bottom);
-    
-    // Dessiner le niveau d'ordre (STOP ou LIMIT) avec la couleur appropriée
-    QColor levelColor = isStop ? m_bearishColor.lighter(110) : m_bullishColor.lighter(110);
-    painter.setPen(QPen(levelColor, 2));
-    painter.drawLine(candle1X - m_candleWidth, levelY, 
-                     candle2X + m_candleWidth, levelY);
 
-    
+
     // Dessiner le point d'exécution avec une flèche
     int execY = m_executeOnLevel ? levelY : candle2Open;
-    int execX = m_executeOnLevel ? candle1X - m_candleWidth : candle2X;
+    int execX = m_executeOnLevel ? candle1X : candle2X;
+
+    if (m_type != OrderType::MARKET) {
+        // Dessiner le niveau d'ordre (STOP ou LIMIT) avec la couleur appropriée
+        QColor levelColor = isStop ? m_bearishColor.lighter(110) : m_bullishColor.lighter(110);
+        painter.setPen(QPen(levelColor, 2));
+        painter.drawLine(candle1X - m_candleWidth, levelY, 
+                        candle2X + m_candleWidth, levelY);
+
+        if (m_executeOnLevel) {
+            execX -= m_candleWidth; // Si exécution au niveau, la flèche est à gauche
+        }
+    }
+
 
     execX -= 5; // Décalage vers la gauche pour la flèche
     
@@ -148,20 +166,86 @@ BacktestEngineDialog::BacktestEngineDialog(QWidget* parent)
     : QDialog(parent)
 {
     setWindowTitle("Configuration avancée du backtest");
-    setMinimumSize(580, 700);
+    setMinimumSize(950, 750);
     
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
-    // Section STOP Orders
-    QGroupBox* stopGroupBox = new QGroupBox("Exécution des ordres STOP", this);
+    // Grid pour la partie supérieure (2x2)
+    QGridLayout* topGridLayout = new QGridLayout();
+    topGridLayout->setColumnStretch(0, 1); // Colonne gauche prend 50%
+    topGridLayout->setColumnStretch(1, 1); // Colonne droite prend 50%
+    topGridLayout->setHorizontalSpacing(10);
+    topGridLayout->setVerticalSpacing(10);
+
+    // Section des paramètres supplémentaires du backtest (colonne gauche)
+    QGroupBox* additionalParamsGroupBox = new QGroupBox("Paramètres additionnels", this);
+    QFormLayout* additionalParamsLayout = new QFormLayout(additionalParamsGroupBox);
+    
+    // Levier maximal
+    m_leverageSpin = new QDoubleSpinBox(this);
+    m_leverageSpin->setDecimals(2);
+    m_leverageSpin->setRange(1, 10000);
+    m_leverageSpin->setSingleStep(1);
+    m_leverageSpin->setValue(20);
+    additionalParamsLayout->addRow(new QLabel("Levier maximal:", this), m_leverageSpin);
+    
+    // Position Mode
+    m_positionModeCombo = new QComboBox(this);
+    m_positionModeCombo->addItems({"Hedging", "Netting"});
+    additionalParamsLayout->addRow(new QLabel("Mode de position:", this), m_positionModeCombo);
+    
+    // Finalize Trades
+    m_finalizeTradesCheck = new QCheckBox("Finaliser les trades en fin de backtest", this);
+    m_finalizeTradesCheck->setChecked(true);
+    additionalParamsLayout->addRow(m_finalizeTradesCheck);
+    
+    topGridLayout->addWidget(additionalParamsGroupBox, 0, 0);
+    
+    // Section Trade on Close (colonne droite)
+    QGroupBox* tradeOnCloseGroupBox = new QGroupBox("Trade on Close", this);
+    QVBoxLayout* tradeOnCloseLayout = new QVBoxLayout(tradeOnCloseGroupBox);
+    
+    QLabel* tradeOnCloseLabel = new QLabel(
+        "Si activé, les ordres MARKET sont exécutés au prix de clôture de la bougie précédente. "
+        "Sinon, ils sont exécutés au prix d'ouverture de la bougie actuelle.", this);
+    tradeOnCloseLabel->setWordWrap(true); // Important : permet le retour à la ligne automatique
+    tradeOnCloseLayout->addWidget(tradeOnCloseLabel);
+    
+    QButtonGroup* tradeOnCloseGroup = new QButtonGroup(this);
+    m_tradeOnCloseRadio = new QRadioButton("Activer Trade on Close", this);
+    m_tradeOnOpenRadio = new QRadioButton("Exécuter au prix d'ouverture", this);
+    tradeOnCloseGroup->addButton(m_tradeOnCloseRadio);
+    tradeOnCloseGroup->addButton(m_tradeOnOpenRadio);
+    
+    tradeOnCloseLayout->addWidget(m_tradeOnCloseRadio);
+    tradeOnCloseLayout->addWidget(m_tradeOnOpenRadio);
+    
+    // Visualisations Trade on Close
+    m_marketBuyWidget = new CandleWidget(CandleWidget::OrderType::MARKET, this);
+    // m_marketBuyWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    
+    tradeOnCloseLayout->addWidget(m_marketBuyWidget);
+    tradeOnCloseLayout->addStretch();
+    topGridLayout->addWidget(tradeOnCloseGroupBox, 0, 1);
+    
+    mainLayout->addLayout(topGridLayout);
+    
+    // Grid pour la partie inférieure (STOP et LIMIT côte à côte)
+    QGridLayout* bottomGridLayout = new QGridLayout();
+    bottomGridLayout->setColumnStretch(0, 1); // Colonne gauche prend 50%
+    bottomGridLayout->setColumnStretch(1, 1); // Colonne droite prend 50%
+    bottomGridLayout->setHorizontalSpacing(10);
+    
+    // Section STOP Orders (colonne gauche)
+    QGroupBox* stopGroupBox = new QGroupBox("Exécution des ordres STOP lors d'un gap", this);
     QVBoxLayout* stopLayout = new QVBoxLayout(stopGroupBox);
     
-    QLabel* stopLabel = new QLabel("Sélectionnez le niveau de prix auquel les ordres STOP seront exécutés:", this);
+    QLabel* stopLabel = new QLabel("Niveau de prix d'exécution:", this);
     stopLayout->addWidget(stopLabel);
     
     QButtonGroup* stopGroup = new QButtonGroup(this);
-    m_stopOnOpenRadio = new QRadioButton("Exécuter au prix d'ouverture (pire cas)", this);
-    m_stopOnLevelRadio = new QRadioButton("Exécuter au niveau du STOP", this);
+    m_stopOnOpenRadio = new QRadioButton("Prix d'ouverture (pire cas)", this);
+    m_stopOnLevelRadio = new QRadioButton("Niveau du STOP", this);
     stopGroup->addButton(m_stopOnOpenRadio);
     stopGroup->addButton(m_stopOnLevelRadio);
     
@@ -172,23 +256,26 @@ BacktestEngineDialog::BacktestEngineDialog(QWidget* parent)
     QHBoxLayout* stopVisualsLayout = new QHBoxLayout();
     m_stopSellWidget = new CandleWidget(CandleWidget::OrderType::STOP_SELL, this);
     m_stopBuyWidget = new CandleWidget(CandleWidget::OrderType::STOP_BUY, this);
+    // m_stopSellWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // m_stopBuyWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     stopVisualsLayout->addWidget(m_stopSellWidget);
     stopVisualsLayout->addWidget(m_stopBuyWidget);
     
     stopLayout->addLayout(stopVisualsLayout);
-    mainLayout->addWidget(stopGroupBox);
+    stopLayout->addStretch();
+    bottomGridLayout->addWidget(stopGroupBox, 0, 0);
     
-    // Section LIMIT Orders
-    QGroupBox* limitGroupBox = new QGroupBox("Exécution des ordres LIMIT", this);
+    // Section LIMIT Orders (colonne droite)
+    QGroupBox* limitGroupBox = new QGroupBox("Exécution des ordres LIMIT lors d'un gap", this);
     QVBoxLayout* limitLayout = new QVBoxLayout(limitGroupBox);
     
-    QLabel* limitLabel = new QLabel("Sélectionnez le niveau de prix auquel les ordres LIMIT seront exécutés:", this);
+    QLabel* limitLabel = new QLabel("Niveau de prix d'exécution:", this);
     limitLayout->addWidget(limitLabel);
     
     QButtonGroup* limitGroup = new QButtonGroup(this);
-    m_limitOnLevelRadio = new QRadioButton("Exécuter au niveau du LIMIT (pire cas)", this);
-    m_limitOnOpenRadio = new QRadioButton("Exécuter au prix d'ouverture", this);
+    m_limitOnLevelRadio = new QRadioButton("Niveau du LIMIT (pire cas)", this);
+    m_limitOnOpenRadio = new QRadioButton("Prix d'ouverture", this);
     limitGroup->addButton(m_limitOnLevelRadio);
     limitGroup->addButton(m_limitOnOpenRadio);
     
@@ -199,12 +286,17 @@ BacktestEngineDialog::BacktestEngineDialog(QWidget* parent)
     QHBoxLayout* limitVisualsLayout = new QHBoxLayout();
     m_limitSellWidget = new CandleWidget(CandleWidget::OrderType::LIMIT_SELL, this);
     m_limitBuyWidget = new CandleWidget(CandleWidget::OrderType::LIMIT_BUY, this);
+    // m_limitSellWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    // m_limitBuyWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     limitVisualsLayout->addWidget(m_limitSellWidget);
     limitVisualsLayout->addWidget(m_limitBuyWidget);
     
     limitLayout->addLayout(limitVisualsLayout);
-    mainLayout->addWidget(limitGroupBox);
+    limitLayout->addStretch();
+    bottomGridLayout->addWidget(limitGroupBox, 0, 1);
+    
+    mainLayout->addLayout(bottomGridLayout);
     
     // Boutons OK / Annuler
     QHBoxLayout* buttonLayout = new QHBoxLayout();
@@ -223,14 +315,18 @@ BacktestEngineDialog::BacktestEngineDialog(QWidget* parent)
     
     connect(m_stopOnOpenRadio, &QRadioButton::toggled, this, &BacktestEngineDialog::onStopExecutionChanged);
     connect(m_limitOnLevelRadio, &QRadioButton::toggled, this, &BacktestEngineDialog::onLimitExecutionChanged);
+    connect(m_tradeOnCloseRadio, &QRadioButton::toggled, this, &BacktestEngineDialog::onTradeOnCloseChanged);
+
     
     // Valeurs par défaut
     m_stopOnOpenRadio->setChecked(true);
     m_limitOnLevelRadio->setChecked(true);
+    m_tradeOnOpenRadio->setChecked(true);
     
     // Mettre à jour les visualisations
     onStopExecutionChanged();
     onLimitExecutionChanged();
+    onTradeOnCloseChanged();
 }
 
 void BacktestEngineDialog::onStopExecutionChanged()
@@ -267,4 +363,52 @@ void BacktestEngineDialog::setExecuteLimitOnLimitPrice(bool value)
 {
     m_limitOnLevelRadio->setChecked(value);
     m_limitOnOpenRadio->setChecked(!value);
+}
+
+void BacktestEngineDialog::onTradeOnCloseChanged()
+{
+    bool tradeOnClose = m_tradeOnCloseRadio->isChecked();
+    m_marketBuyWidget->setExecuteOnLevel(tradeOnClose);
+    // m_marketSellWidget->setExecuteOnLevel(tradeOnClose);
+}
+
+bool BacktestEngineDialog::tradeOnClose() const
+{
+    return m_tradeOnCloseRadio->isChecked();
+}
+
+void BacktestEngineDialog::setTradeOnClose(bool value)
+{
+    m_tradeOnCloseRadio->setChecked(value);
+    m_tradeOnOpenRadio->setChecked(!value);
+}
+
+double BacktestEngineDialog::leverageLimit() const
+{
+    return m_leverageSpin->value();
+}
+
+void BacktestEngineDialog::setLeverageLimit(double value)
+{
+    m_leverageSpin->setValue(value);
+}
+
+be::PositionMode BacktestEngineDialog::positionMode() const
+{
+    return static_cast<be::PositionMode>(m_positionModeCombo->currentIndex());
+}
+
+void BacktestEngineDialog::setPositionMode(be::PositionMode mode)
+{
+    m_positionModeCombo->setCurrentIndex(static_cast<int>(mode));
+}
+
+bool BacktestEngineDialog::finalizeTrades() const
+{
+    return m_finalizeTradesCheck->isChecked();
+}
+
+void BacktestEngineDialog::setFinalizeTrades(bool value)
+{
+    m_finalizeTradesCheck->setChecked(value);
 }

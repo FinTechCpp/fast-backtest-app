@@ -5,11 +5,15 @@
 #include <QWidget>
 #include <QRadioButton>
 #include <QPainter>
+#include <QFormLayout>
+#include <QDoubleSpinBox>
+#include <QComboBox>
+#include "beTypes.h"
 
 class CandleWidget : public QWidget {
     Q_OBJECT
 public:
-    enum class OrderType { STOP_BUY, STOP_SELL, LIMIT_BUY, LIMIT_SELL };
+    enum class OrderType { STOP_BUY, STOP_SELL, LIMIT_BUY, LIMIT_SELL, MARKET };
     
     CandleWidget(OrderType type, QWidget* parent = nullptr);
     
@@ -42,6 +46,18 @@ public:
     
     void setExecuteStopOnOpen(bool value);
     void setExecuteLimitOnLimitPrice(bool value);
+
+    bool tradeOnClose() const;
+    void setTradeOnClose(bool value);
+    
+    double leverageLimit() const;
+    void setLeverageLimit(double value);
+    
+    be::PositionMode positionMode() const;
+    void setPositionMode(be::PositionMode mode);
+    
+    bool finalizeTrades() const;
+    void setFinalizeTrades(bool value);
     
 private:
     QRadioButton* m_stopOnOpenRadio;
@@ -53,8 +69,19 @@ private:
     CandleWidget* m_stopSellWidget;
     CandleWidget* m_limitBuyWidget;
     CandleWidget* m_limitSellWidget;
+
+    QRadioButton* m_tradeOnCloseRadio;
+    QRadioButton* m_tradeOnOpenRadio;
+    CandleWidget* m_marketBuyWidget;
+    CandleWidget* m_marketSellWidget;
+    
+    QDoubleSpinBox* m_leverageSpin;
+    QComboBox* m_positionModeCombo;
+    QCheckBox* m_finalizeTradesCheck;
     
 private slots:
     void onStopExecutionChanged();
     void onLimitExecutionChanged();
+
+    void onTradeOnCloseChanged();
 };

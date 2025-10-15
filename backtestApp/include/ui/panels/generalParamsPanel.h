@@ -23,19 +23,21 @@
 
 struct GeneralParamsConfig {
     std::string strategyName;
+    // data
     std::string symbol;
     std::string interval;
     std::string period;
     QDateTime endDate;
+    // BE
     double cash;
     double spread;
     double commission;
-    double leverage_limit;
-    bool tradeOnClose;
-    be::PositionMode positionMode;
-    bool executeLimitOnLimitPrice;
-    bool executeStopOnOpen;
-    bool finalizeTrades;
+    double leverage_limit = 20.0;
+    bool tradeOnClose = false;
+    be::PositionMode positionMode = be::PositionMode::Netting;
+    bool executeLimitOnLimitPrice = true;
+    bool executeStopOnOpen = true;
+    bool finalizeTrades = true;
 };
 
 // surcharge de l'operateur << pour GeneralParamsConfig

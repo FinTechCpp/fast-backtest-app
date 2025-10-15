@@ -204,53 +204,53 @@ void GeneralParamsPanel::setupUI()
         &m_config.cash)
     );
 
-    // Levier maximal autorisé
-    QDoubleSpinBox* leverageSpin = new QDoubleSpinBox(this);
-    leverageSpin->setDecimals(2);
-    leverageSpin->setRange(1, 10000);
-    leverageSpin->setSingleStep(1);
-    leverageSpin->setValue(20);
-    paramsLayout->addRow(new QLabel("Levier maximal autorisé :", this), leverageSpin);
+    // // Levier maximal autorisé
+    // QDoubleSpinBox* leverageSpin = new QDoubleSpinBox(this);
+    // leverageSpin->setDecimals(2);
+    // leverageSpin->setRange(1, 10000);
+    // leverageSpin->setSingleStep(1);
+    // leverageSpin->setValue(20);
+    // paramsLayout->addRow(new QLabel("Levier maximal autorisé :", this), leverageSpin);
     
-    // Binding pour le levier
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        leverageSpin,
-        &m_config.leverage_limit)
-    );
+    // // Binding pour le levier
+    // addBinding(PropertyBinderFactory::createDoubleBinding(
+    //     leverageSpin,
+    //     &m_config.leverage_limit)
+    // );
 
-    // Trade on close
-    QCheckBox* tradeOnCloseCheck = new QCheckBox("Trade on close", this);
-    tradeOnCloseCheck->setChecked(false);
-    paramsLayout->addRow(tradeOnCloseCheck);
+    // // Trade on close
+    // QCheckBox* tradeOnCloseCheck = new QCheckBox("Trade on close", this);
+    // tradeOnCloseCheck->setChecked(false);
+    // paramsLayout->addRow(tradeOnCloseCheck);
 
-    // Binding pour trade on close
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        tradeOnCloseCheck,
-        &m_config.tradeOnClose)
-    );
+    // // Binding pour trade on close
+    // addBinding(PropertyBinderFactory::createBoolBinding(
+    //     tradeOnCloseCheck,
+    //     &m_config.tradeOnClose)
+    // );
 
-    // Position mode
-    QComboBox* positionModeCombo = new QComboBox(this);
-    positionModeCombo->addItems({"Hedging", "Netting"});
-    positionModeCombo->setCurrentIndex(0);
-    paramsLayout->addRow(new QLabel("Position Mode:", this), positionModeCombo);
+    // // Position mode
+    // QComboBox* positionModeCombo = new QComboBox(this);
+    // positionModeCombo->addItems({"Hedging", "Netting"});
+    // positionModeCombo->setCurrentIndex(0);
+    // paramsLayout->addRow(new QLabel("Position Mode:", this), positionModeCombo);
 
-    // Binding pour le position mode
-    addBinding(PropertyBinderFactory::createEnumComboBinding<be::PositionMode>(
-        positionModeCombo,
-        &m_config.positionMode)
-    );
+    // // Binding pour le position mode
+    // addBinding(PropertyBinderFactory::createEnumComboBinding<be::PositionMode>(
+    //     positionModeCombo,
+    //     &m_config.positionMode)
+    // );
 
-    // Finalize trades
-    QCheckBox* finalizeTradesCheck = new QCheckBox("Finalize trades", this);
-    finalizeTradesCheck->setChecked(true);
-    paramsLayout->addRow(finalizeTradesCheck);
+    // // Finalize trades
+    // QCheckBox* finalizeTradesCheck = new QCheckBox("Finalize trades", this);
+    // finalizeTradesCheck->setChecked(true);
+    // paramsLayout->addRow(finalizeTradesCheck);
 
-    // Binding pour finalize trades
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        finalizeTradesCheck,
-        &m_config.finalizeTrades)
-    );
+    // // Binding pour finalize trades
+    // addBinding(PropertyBinderFactory::createBoolBinding(
+    //     finalizeTradesCheck,
+    //     &m_config.finalizeTrades)
+    // );
 
     // Bouton de configuration avancée
     QPushButton* advancedConfigBtn = new QPushButton("Configuration avancée...", this);
@@ -272,11 +272,19 @@ void GeneralParamsPanel::openAdvancedConfigDialog()
     // Initialiser le dialogue avec les valeurs actuelles
     dialog.setExecuteStopOnOpen(m_config.executeStopOnOpen);
     dialog.setExecuteLimitOnLimitPrice(m_config.executeLimitOnLimitPrice);
+    dialog.setTradeOnClose(m_config.tradeOnClose);
+    dialog.setLeverageLimit(m_config.leverage_limit);
+    dialog.setPositionMode(m_config.positionMode);
+    dialog.setFinalizeTrades(m_config.finalizeTrades);
     
     // Exécuter le dialogue
     if (dialog.exec() == QDialog::Accepted) {
         // Récupérer les nouvelles valeurs
         m_config.executeStopOnOpen = dialog.executeStopOnOpen();
         m_config.executeLimitOnLimitPrice = dialog.executeLimitOnLimitPrice();
+        m_config.tradeOnClose = dialog.tradeOnClose();
+        m_config.leverage_limit = dialog.leverageLimit();
+        m_config.positionMode = dialog.positionMode();
+        m_config.finalizeTrades = dialog.finalizeTrades();
     }
 }

@@ -56,6 +56,29 @@ struct BacktestResultConfig {
     }
 };
 
+// Structure pour importer des résultats externes (sans stats pré-calculés)
+struct ExternalResultConfig {
+    std::string name;
+    std::string version;
+    std::string createdAt;
+
+    GeneralParamsConfig generalParams;
+    StrategyConfig strategyConfig;
+    std::vector<be::TradeData> trades;  // Trades directement au lieu de stats
+    std::vector<be::Candle> candles; 
+
+    template<class Archive>
+    void serialize(Archive & ar) {
+        ar(CEREAL_NVP(name),
+           CEREAL_NVP(version),
+           CEREAL_NVP(createdAt),
+           CEREAL_NVP(generalParams),
+           CEREAL_NVP(strategyConfig),
+           CEREAL_NVP(trades),
+           CEREAL_NVP(candles));
+    }
+};
+
 namespace cereal {
     template<class Archive>
     void serialize(Archive & ar, be::Duration & duration) {

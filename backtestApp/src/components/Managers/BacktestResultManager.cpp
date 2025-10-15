@@ -1,8 +1,13 @@
 #include "components/Managers/BacktestResultManager.h"
+#include "components/serializerAdapters.h"
+#include "stats.hpp"
+#include "data.hpp"
+#include "trade.hpp"
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QFile>
 #include <QInputDialog>
+#include <memory>
 
 BacktestResultManager::BacktestResultManager(QObject *parent, SerializationUtils::FileFormat defaultFormat)
     : QObject(parent), m_defaultFormat(defaultFormat)
@@ -311,6 +316,100 @@ bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
     return success;
 }
 
+bool BacktestResultManager::importExternalResult(QWidget* parentWidget)
+{
+    // Construire le filtre pour tous les formats supportés
+    QString filterString = "Tous les formats supportés (*.json *.bin);;";
+    filterString += "Fichiers JSON (*.json);;";
+    filterString += "Fichiers binaires (*.bin)";
+    
+    QString fileName = QFileDialog::getOpenFileName(parentWidget,
+        "Importer un résultat externe (sans stats pré-calculées)",
+        QDir::homePath(),
+        filterString);
+    
+    if (fileName.isEmpty()) {
+        return false; // Utilisateur a annulé
+    }
+    
+    if (!QFile::exists(fileName)) {
+        if (parentWidget) {
+            QMessageBox::warning(parentWidget, "Erreur", "Le fichier sélectionné n'existe pas.");
+        }
+        return false;
+    }
+    
+    // Charger le résultat externe et calculer les stats
+    BacktestResultConfig importedConfig;
+    bool loadSuccess = loadExternalResult(fileName, importedConfig);
+    
+    if (!loadSuccess) {
+        if (parentWidget) {
+            QMessageBox::warning(parentWidget, "Erreur d'importation", 
+                "Le fichier n'est pas un résultat externe valide (format ExternalResultConfig attendu).");
+        }
+        return false;
+    }
+    
+    // Demander le nom du résultat
+    bool ok;
+    QString resultName = QString::fromStdString(importedConfig.name);
+    
+    if (parentWidget) {
+        resultName = QInputDialog::getText(parentWidget, 
+            "Nom du résultat", 
+            "Entrez un nom pour ce résultat externe importé:",
+            QLineEdit::Normal,
+            resultName, &ok);
+        
+        if (!ok || resultName.isEmpty()) {
+            return false;
+        }
+    }
+    
+    // Mettre à jour le nom dans la configuration
+    importedConfig.name = resultName.toStdString();
+    
+    // Vérifier si ce nom existe déjà
+    if (resultExists(resultName, m_defaultFormat)) {
+        QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
+            "Résultat existant", 
+            QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        if (choice != QMessageBox::Yes) {
+            return false;
+        }
+    }
+    
+    // Sauvegarder le résultat importé dans le format par défaut
+    bool success = saveResult(resultName, importedConfig, m_defaultFormat);
+    
+    if (success) {
+        emit resultListUpdated();
+        if (parentWidget) {
+            QString statsInfo = QString(
+                "Résultat externe importé avec succès sous le nom '%1'.\n\n"
+                "Statistiques calculées:\n"
+                "- Nombre de trades: %2\n"
+                "- Net Profit: %3 (%4%)\n"
+                "- Profit Factor: %5")
+                .arg(resultName)
+                .arg(importedConfig.stats.numTrades)
+                .arg(importedConfig.stats.equityFinal - importedConfig.stats.equityInitial, 0, 'f', 2)
+                .arg(importedConfig.stats.returnPct, 0, 'f', 2)
+                .arg(importedConfig.stats.profitFactor, 0, 'f', 2);
+            
+            QMessageBox::information(parentWidget, "Import réussi", statsInfo);
+        }
+    } else if (parentWidget) {
+        QMessageBox::warning(parentWidget, "Erreur d'importation", 
+            "Échec de l'importation du résultat externe.");
+    }
+    
+    return success;
+}
+
 bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWidget* parentWidget, SerializationUtils::FileFormat format)
 {
     SerializationUtils::FileFormat actualFormat = (format == SerializationUtils::FileFormat::Auto) ? m_defaultFormat : format;
@@ -380,4 +479,42 @@ bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWid
     }
     
     return success;
+}
+
+bool BacktestResultManager::loadExternalResult(const QString& filePath, BacktestResultConfig& config)
+{
+    qDebug() << "Tentative de chargement d'un résultat externe depuis:" << filePath;
+    
+    ExternalResultConfig externalConfig;
+    
+    // Détecter le format du fichier
+    SerializationUtils::FileFormat format = SerializationUtils::FileFormat::JSON;
+    if (filePath.endsWith(".bin")) 
+        format = SerializationUtils::FileFormat::Binary;
+    
+    // Charger le fichier externe
+    if (!SerializationUtils::loadFromFile(filePath, externalConfig, format)) {
+        qCritical() << "Erreur lors du chargement du résultat externe";
+        return false;
+    }
+    
+    qInfo() << "Résultat externe chargé avec succès. Calcul des stats...";
+    
+    // Convertir ExternalResultConfig vers BacktestResultConfig
+    config.name = externalConfig.name;
+    config.version = externalConfig.version;
+    config.createdAt = externalConfig.createdAt;
+    config.generalParams = externalConfig.generalParams;
+    config.strategyConfig = externalConfig.strategyConfig;
+    config.candles = externalConfig.candles;
+    
+    // Créer une structure Data à partir des candles
+    be::Data data(externalConfig.candles);
+    
+    // Créer l'equity curve à partir des trades
+    std::vector<be::EquityPoint> equityCurve;
+    double currentEquity = config.generalParams.cash;
+    equityCurve.push_back({0, currentEquity});
+    
+    return true;
 }

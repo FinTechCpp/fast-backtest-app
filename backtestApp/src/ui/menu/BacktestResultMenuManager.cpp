@@ -16,6 +16,7 @@ BacktestResultMenuManager::BacktestResultMenuManager(App* parent)
     , m_saveResultAction(nullptr)
     , m_deleteResultAction(nullptr)
     , m_importAction(nullptr)
+    , m_importExternalAction(nullptr)
     , m_exportAction(nullptr)
     , m_openDirectoryAction(nullptr)
     , m_viewDetailsAction(nullptr)
@@ -46,6 +47,7 @@ void BacktestResultMenuManager::createResultMenu(QMenuBar* menuBar)
     
     m_resultMenu->addSeparator();
     m_resultMenu->addAction(m_importAction);
+    m_resultMenu->addAction(m_importExternalAction);  
     m_resultMenu->addAction(m_exportAction);
 
     // Ajouter un séparateur puis l'action pour ouvrir le dossier
@@ -73,9 +75,14 @@ void BacktestResultMenuManager::createActions()
     connect(m_deleteResultAction, &QAction::triggered, this, &BacktestResultMenuManager::onDeleteResult);
     
     // Action Importer
-    m_importAction = new QAction(tr("&Importer..."), this);
-    m_importAction->setStatusTip(tr("Importer un résultat de backtest"));
+    m_importAction = new QAction(tr("&Importer un résultat de backtest..."), this);
+    m_importAction->setStatusTip(tr("Importer un résultat de backtest complet (avec stats)"));
     connect(m_importAction, &QAction::triggered, this, &BacktestResultMenuManager::onImportResult);
+    
+    // Action Importer résultat externe
+    m_importExternalAction = new QAction(tr("Importer un résultat e&xterne..."), this);
+    m_importExternalAction->setStatusTip(tr("Importer un résultat externe (sans stats - seront calculées automatiquement)"));
+    connect(m_importExternalAction, &QAction::triggered, this, &BacktestResultMenuManager::onImportExternalResult);
     
     // Action Exporter
     m_exportAction = new QAction(tr("&Exporter..."), this);
@@ -236,6 +243,13 @@ void BacktestResultMenuManager::onImportResult()
             updateResultList();
         }
     }
+}
+
+void BacktestResultMenuManager::onImportExternalResult()
+{
+    if (m_resultManager) 
+        if (m_resultManager->importExternalResult(m_mainWindow)) 
+            updateResultList();
 }
 
 void BacktestResultMenuManager::onExportResult()

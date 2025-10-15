@@ -9,6 +9,7 @@
 
 #include "backtest.hpp"
 #include "broker.hpp"
+#include "components/SyntheticStrategy.hpp"
 
 BacktestRunner::BacktestRunner(QObject* parent)
     : QObject(parent)
@@ -235,10 +236,15 @@ void BacktestWorker::run()
     
     qDebug() << "Données disponibles:" << data->size() << "barres";
     qDebug() << "Démarrage du backtest C++...";
-    
-    spdlog::drop("async_file_logger_BE"); // S'assurer qu'il n'existe pas déjà
+
+    auto syntheticStrategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, std::function<void(const std::string&)> logCallback) {
+        // Création directe de la stratégie
+        return std::make_shared<SyntheticStrategy>(broker, data);
+    };
+
+    spdlog::drop("BE"); // S'assurer qu'il n'existe pas déjà
     std::shared_ptr<spdlog::logger> async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
-        "async_file_logger_BE",       // Logger name
+        "BE",       // Logger name
         "logs/backtestEngine/backtestExecution.log",      // Log file path
         30 * 1024 * 1024,          // Max file size (30 MB)
         1
@@ -270,9 +276,12 @@ void BacktestWorker::run()
         generalConfig.commission,         // Commission
         generalConfig.leverage_limit,     // Levier
         generalConfig.tradeOnClose,       // Trade à la clôture
-        generalConfig.hedging,            // Hedging
-        generalConfig.exclusiveOrders,    // Ordres exclusifs
+        generalConfig.positionMode,       // Mode de position (Hedging ou Netting)
+        generalConfig.executeLimitOnLimitPrice, // Exécuter les ordres limit au prix limite dans un gap
+        generalConfig.executeStopOnOpen,      // Exécuter les ordres stop à l'ouverture dans un gap
         generalConfig.finalizeTrades,     // Finalisation des trades
+        generalConfig.spreadEntryRatio,   // Ratio du spread pour le prix d'entrée
+        generalConfig.minPositionStep,    // Taille minimale de position (quantification)
         logCallback                       // Fonction de logging
     );
     

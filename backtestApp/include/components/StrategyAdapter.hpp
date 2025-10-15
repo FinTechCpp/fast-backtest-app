@@ -97,8 +97,8 @@ public:
         if (current_trade) {
             candle.position.entry_price = current_trade->entryPrice();
             // Calculate take profit price from the trade's TP order
-            if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
-            // if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limitPrice();
+            // if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
+            if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limitPrice();
 
         }
 
@@ -109,27 +109,25 @@ public:
         // Only if new trades have been closed
         if (currentTradeCount > last_closed_trade_count) {
             last_closed_trade_count = currentTradeCount;
-            candle.position.closed_trade_pnl = closedTrades.back()->pl();
+            candle.position.closed_trade_pnl = closedTrades.back().pl;
         }
 
         // Update the strategy signal with the new latest candle by executing strategy logic
         Signal* signal = strategy->update_candle(candle);
 
 
-        DateTime dtBreakPoint{2024, 11, 05, Time{17, 52, 0}};
+        // DateTime dtBreakPoint{2022, 8, 8, Time{21, 59, 0}};
 
-        if (candle.ohlc.date >= dtBreakPoint) {
-            int a = 0;
-        }
+        // if (candle.ohlc.date >= dtBreakPoint) {
+        //     int a = 0;
+        // }
 
         if (!signal)
             return; // No signal to process
 
         // Process the signal if there is one
         if (signal->type == SignalType::LIQUIDATE) {
-            for (const auto& trade : trades) {
-                trade->close();
-            }
+            _broker->closeAllTrades();
         }
         else if (signal->type == SignalType::MOVE_SL) {
             // Récupérer le prix de trigger depuis le signal
@@ -139,50 +137,28 @@ public:
             // _broker->setBreakEven(current_trade, signal->new_sl, triggerPrice);
         }
         else if (trades.empty() && signal->type == SignalType::BUY && signal->quantity > 0) {
-            // Process a buy signal
-            buy(
-                signal->quantity,
-                0,
-                0,
-                0,
-                0,
-                signal->stop_loss, 
-                signal->take_profit
+            _broker->submitOrder(
+                signal->quantity, 
+                be::OrderSide::BUY, 
+                be::OrderType::MARKET, 
+                std::nullopt, 
+                std::nullopt, 
+                be::SLValue::points(signal->stop_loss), 
+                be::TPValue::points(signal->take_profit), 
+                nullptr
             );
-
-            // _broker->submitOrder(
-            //     signal->quantity, 
-            //     be::OrderSide::BUY, 
-            //     be::OrderType::MARKET, 
-            //     std::nullopt, 
-            //     std::nullopt, 
-            //     be::SLValue::points(signal->stop_loss), 
-            //     be::TPValue::points(signal->take_profit), 
-            //     nullptr
-            // );
         }
         else if (trades.empty() && signal->type == SignalType::SELL && signal->quantity > 0) {
-            // Process a sell signal
-            sell(
-                signal->quantity,
-                0,
-                0,
-                0,
-                0,
-                signal->stop_loss, 
-                signal->take_profit
+            _broker->submitOrder(
+                signal->quantity, 
+                be::OrderSide::SELL, 
+                be::OrderType::MARKET, 
+                std::nullopt, 
+                std::nullopt, 
+                be::SLValue::points(signal->stop_loss), 
+                be::TPValue::points(signal->take_profit), 
+                nullptr
             );
-
-            // _broker->submitOrder(
-            //     signal->quantity, 
-            //     be::OrderSide::SELL, 
-            //     be::OrderType::MARKET, 
-            //     std::nullopt, 
-            //     std::nullopt, 
-            //     be::SLValue::points(signal->stop_loss), 
-            //     be::TPValue::points(signal->take_profit), 
-            //     nullptr
-            // );
         }
     }
 };

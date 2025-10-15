@@ -17,22 +17,29 @@
 #include <sstream>
 #include <string>
 #include <QFileSystemWatcher>
+#include "beTypes.h"
+#include "ui/dialogs/BacktestEngineDialog.h"
 
 
 struct GeneralParamsConfig {
     std::string strategyName;
+    // data
     std::string symbol;
     std::string interval;
     std::string period;
     QDateTime endDate;
-    double cash;
-    double spread;
-    double commission;
-    double leverage_limit;
-    bool tradeOnClose;
-    bool hedging;
-    bool exclusiveOrders;
-    bool finalizeTrades;
+    // BE
+    double cash = 10000.0;
+    double spread = 0.100; // en pour mille
+    double commission = 0.0;
+    double leverage_limit = 20.0;
+    bool tradeOnClose = false;
+    be::PositionMode positionMode = be::PositionMode::Netting;
+    bool executeLimitOnLimitPrice = true;
+    bool executeStopOnOpen = true;
+    double spreadEntryRatio = 0.5; // Ratio du spread utilisé pour le prix d'entrée (0.0 à 1.0)
+    double minPositionStep = 0.5; // Taille minimale de position (quantification)
+    bool finalizeTrades = true;
 };
 
 // surcharge de l'operateur << pour GeneralParamsConfig
@@ -48,9 +55,11 @@ inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& con
        << "  commission: " << config.commission << ", \n"
        << "  leverage_limit: " << config.leverage_limit << ", \n"
        << "  tradeOnClose: " << config.tradeOnClose << ", \n"
-       << "  hedging: " << config.hedging << ", \n"
-       << "  exclusiveOrders: " << config.exclusiveOrders << ", \n"
-       << "  finalizeTrades: " << config.finalizeTrades << "\n"
+       << "  positionMode: " << (config.positionMode == be::PositionMode::Hedging ? "Hedging" : "Netting") << ", \n"
+       << "  finalizeTrades: " << config.finalizeTrades << ", \n"
+       << "  executeLimitOnLimitPrice: " << config.executeLimitOnLimitPrice << ", \n"
+       << "  executeStopOnOpen: " << config.executeStopOnOpen << "\n"
+       << "  spreadEntryRatio: " << config.spreadEntryRatio << "\n"
        << "}\n";
     return os;
 }
@@ -71,6 +80,7 @@ public:
 private:
     void setupUI();
     void refreshSymbols();
+    void openAdvancedConfigDialog();
 
     // UI member so we can update it when marketData changes
     QComboBox* m_symbolCombo = nullptr;

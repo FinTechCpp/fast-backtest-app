@@ -163,102 +163,138 @@ void GeneralParamsPanel::setupUI()
         &m_config.endDate)
     );
     
-    // Spread (en pour mille)
-    QDoubleSpinBox* spreadSpin = new QDoubleSpinBox(this);
-    spreadSpin->setDecimals(3);
-    spreadSpin->setRange(0, 10);
-    spreadSpin->setSingleStep(0.001); 
-    spreadSpin->setValue(0.100);
-    paramsLayout->addRow(new QLabel("Spread (‰):", this), spreadSpin);
+    // // Spread (en pour mille)
+    // QDoubleSpinBox* spreadSpin = new QDoubleSpinBox(this);
+    // spreadSpin->setDecimals(3);
+    // spreadSpin->setRange(0, 10);
+    // spreadSpin->setSingleStep(0.001); 
+    // spreadSpin->setValue(0.100);
+    // paramsLayout->addRow(new QLabel("Spread (‰):", this), spreadSpin);
     
-    // Binding pour le spread
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        spreadSpin,
-        &m_config.spread)
-    );
+    // // Binding pour le spread
+    // addBinding(PropertyBinderFactory::createDoubleBinding(
+    //     spreadSpin,
+    //     &m_config.spread)
+    // );
 
-    QDoubleSpinBox* commissionSpin = new QDoubleSpinBox(this);
-    commissionSpin->setDecimals(2);
-    commissionSpin->setRange(0.0, 100.0);
-    commissionSpin->setSingleStep(0.01);
-    commissionSpin->setValue(0.0);
-    paramsLayout->addRow(new QLabel("Commission (%):", this), commissionSpin);
+    // QDoubleSpinBox* commissionSpin = new QDoubleSpinBox(this);
+    // commissionSpin->setDecimals(2);
+    // commissionSpin->setRange(0.0, 100.0);
+    // commissionSpin->setSingleStep(0.01);
+    // commissionSpin->setValue(0.0);
+    // paramsLayout->addRow(new QLabel("Commission (%):", this), commissionSpin);
 
-    // Binding pour la commission
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        commissionSpin,
-        &m_config.commission)
-    );
+    // // Binding pour la commission
+    // addBinding(PropertyBinderFactory::createDoubleBinding(
+    //     commissionSpin,
+    //     &m_config.commission)
+    // );
     
-    // Cash initial
-    QDoubleSpinBox* cashSpin = new QDoubleSpinBox(this);
-    cashSpin->setDecimals(2);
-    cashSpin->setRange(1000, 10000000);
-    cashSpin->setSingleStep(1000);
-    cashSpin->setValue(10000);
-    paramsLayout->addRow(new QLabel("Cash initial:", this), cashSpin);
+    // // Cash initial
+    // QDoubleSpinBox* cashSpin = new QDoubleSpinBox(this);
+    // cashSpin->setDecimals(2);
+    // cashSpin->setRange(1000, 10000000);
+    // cashSpin->setSingleStep(1000);
+    // cashSpin->setValue(10000);
+    // paramsLayout->addRow(new QLabel("Cash initial:", this), cashSpin);
     
-    // Binding pour le cash
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        cashSpin,
-        &m_config.cash)
-    );
+    // // Binding pour le cash
+    // addBinding(PropertyBinderFactory::createDoubleBinding(
+    //     cashSpin,
+    //     &m_config.cash)
+    // );
 
-    // Levier maximal autorisé
-    QDoubleSpinBox* leverageSpin = new QDoubleSpinBox(this);
-    leverageSpin->setDecimals(2);
-    leverageSpin->setRange(1, 10000);
-    leverageSpin->setSingleStep(1);
-    leverageSpin->setValue(20);
-    paramsLayout->addRow(new QLabel("Levier maximal autorisé :", this), leverageSpin);
+    // // Levier maximal autorisé
+    // QDoubleSpinBox* leverageSpin = new QDoubleSpinBox(this);
+    // leverageSpin->setDecimals(2);
+    // leverageSpin->setRange(1, 10000);
+    // leverageSpin->setSingleStep(1);
+    // leverageSpin->setValue(20);
+    // paramsLayout->addRow(new QLabel("Levier maximal autorisé :", this), leverageSpin);
     
-    // Binding pour le levier
-    addBinding(PropertyBinderFactory::createDoubleBinding(
-        leverageSpin,
-        &m_config.leverage_limit)
-    );
+    // // Binding pour le levier
+    // addBinding(PropertyBinderFactory::createDoubleBinding(
+    //     leverageSpin,
+    //     &m_config.leverage_limit)
+    // );
 
-    // Trade on close
-    QCheckBox* tradeOnCloseCheck = new QCheckBox("Trade on close", this);
-    tradeOnCloseCheck->setChecked(false);
-    paramsLayout->addRow(tradeOnCloseCheck);
+    // // Trade on close
+    // QCheckBox* tradeOnCloseCheck = new QCheckBox("Trade on close", this);
+    // tradeOnCloseCheck->setChecked(false);
+    // paramsLayout->addRow(tradeOnCloseCheck);
 
-    // Binding pour trade on close
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        tradeOnCloseCheck,
-        &m_config.tradeOnClose)
-    );
+    // // Binding pour trade on close
+    // addBinding(PropertyBinderFactory::createBoolBinding(
+    //     tradeOnCloseCheck,
+    //     &m_config.tradeOnClose)
+    // );
 
-    // Hedging
-    QCheckBox* hedgingCheck = new QCheckBox("Hedging", this);
-    hedgingCheck->setChecked(false);
-    paramsLayout->addRow(hedgingCheck);
+    // // Position mode
+    // QComboBox* positionModeCombo = new QComboBox(this);
+    // positionModeCombo->addItems({"Hedging", "Netting"});
+    // positionModeCombo->setCurrentIndex(0);
+    // paramsLayout->addRow(new QLabel("Position Mode:", this), positionModeCombo);
 
-    // Binding pour hedging
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        hedgingCheck,
-        &m_config.hedging)
-    );
+    // // Binding pour le position mode
+    // addBinding(PropertyBinderFactory::createEnumComboBinding<be::PositionMode>(
+    //     positionModeCombo,
+    //     &m_config.positionMode)
+    // );
 
-    // Exclusive orders
-    QCheckBox* exclusiveOrdersCheck = new QCheckBox("Exclusive orders", this);
-    exclusiveOrdersCheck->setChecked(true);
-    paramsLayout->addRow(exclusiveOrdersCheck);
+    // // Finalize trades
+    // QCheckBox* finalizeTradesCheck = new QCheckBox("Finalize trades", this);
+    // finalizeTradesCheck->setChecked(true);
+    // paramsLayout->addRow(finalizeTradesCheck);
 
-    // Binding pour exclusive orders
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        exclusiveOrdersCheck,
-        &m_config.exclusiveOrders)
-    );
+    // // Binding pour finalize trades
+    // addBinding(PropertyBinderFactory::createBoolBinding(
+    //     finalizeTradesCheck,
+    //     &m_config.finalizeTrades)
+    // );
 
-    // Finalize trades
-    QCheckBox* finalizeTradesCheck = new QCheckBox("Finalize trades", this);
-    finalizeTradesCheck->setChecked(true);
-    paramsLayout->addRow(finalizeTradesCheck);
+    // Bouton de configuration avancée
+    QPushButton* advancedConfigBtn = new QPushButton("Configuration avancée...", this);
+    paramsLayout->addRow(advancedConfigBtn);
+    
+    // Connexion du bouton
+    connect(advancedConfigBtn, &QPushButton::clicked, this, &GeneralParamsPanel::openAdvancedConfigDialog);
+    
+    // Par défaut, on initialise les options avancées
+    m_config.executeStopOnOpen = true; // pire cas par défaut
+    m_config.executeLimitOnLimitPrice = true; // pire cas par défaut
+}
 
-    // Binding pour finalize trades
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        finalizeTradesCheck,
-        &m_config.finalizeTrades)
-    );
+
+void GeneralParamsPanel::openAdvancedConfigDialog()
+{
+    BacktestEngineDialog dialog(this);
+    
+    // Initialiser le dialogue avec les valeurs actuelles
+    dialog.setExecuteStopOnOpen(m_config.executeStopOnOpen);
+    dialog.setExecuteLimitOnLimitPrice(m_config.executeLimitOnLimitPrice);
+    dialog.setTradeOnClose(m_config.tradeOnClose);
+    dialog.setLeverageLimit(m_config.leverage_limit);
+    dialog.setPositionMode(m_config.positionMode);
+    dialog.setFinalizeTrades(m_config.finalizeTrades);
+    dialog.setSpread(m_config.spread);
+    dialog.setCommission(m_config.commission);
+    dialog.setCash(m_config.cash);
+    dialog.setSpreadEntryRatio(m_config.spreadEntryRatio);
+    dialog.setMinPositionStep(m_config.minPositionStep);
+    
+    // Exécuter le dialogue
+    if (dialog.exec() == QDialog::Accepted) {
+        // Récupérer les nouvelles valeurs
+        m_config.executeStopOnOpen = dialog.executeStopOnOpen();
+        m_config.executeLimitOnLimitPrice = dialog.executeLimitOnLimitPrice();
+        m_config.tradeOnClose = dialog.tradeOnClose();
+        m_config.leverage_limit = dialog.leverageLimit();
+        m_config.positionMode = dialog.positionMode();
+        m_config.finalizeTrades = dialog.finalizeTrades();
+        m_config.spread = dialog.spread();
+        m_config.commission = dialog.commission();
+        m_config.cash = dialog.cash();
+        m_config.spreadEntryRatio = dialog.spreadEntryRatio();
+        m_config.minPositionStep = dialog.minPositionStep();
+    }
 }

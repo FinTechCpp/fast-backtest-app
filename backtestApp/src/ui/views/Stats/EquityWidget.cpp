@@ -16,32 +16,46 @@ EquityWidget::EquityWidget(const QString& title, QWidget *parent)
 {
     setMinimumSize(160, 120);
     setMouseTracking(true); // necessary to receive mouseMoveEvent without pressing buttons
+
+    // QCheckBox pour switcher entre m_statText et m_statTextBis
+    m_checkBox = new QCheckBox("Pourcentage", this);
+    m_checkBox->setChecked(false);
+
+    // Connecter le signal toggled de la QCheckBox à un slot lambda
+    connect(m_checkBox, &QCheckBox::toggled, this, [this](bool checked) {
+        updateBounds(); // Recalculer les limites avec le bon ensemble de points
+        update();       // Redessiner le widget
+    });
+
+    // Ajouter la QCheckBox comme widget compagnon dans le titre
+    setTitleCompanionWidget(m_checkBox);
 }
 
 void EquityWidget::setPoints(const QVector<QPointF>& pts)
 {
     if (pts.isEmpty()) {
         m_points.clear();
+        m_pointsPercent.clear(); // Vider aussi les points en pourcentage
         updateBounds();
         update();
         return;
     }
 
-    // Copier dans un std::vector pour le tri
     std::vector<QPointF> tmp;
     tmp.reserve(pts.size());
     for (const auto &p: pts) tmp.push_back(p);
 
-    // Trier les points par X croissant
     std::sort(tmp.begin(), tmp.end(), [](const QPointF &a, const QPointF &b){
         return a.x() < b.x();
     });
 
-    // Convertir le vecteur trié en QVector
     m_points.clear();
     m_points.reserve(tmp.size());
     for (const auto &p: tmp) m_points.push_back(p);
 
+    // Calculer les points en pourcentage
+    calculatePercentPoints();
+    
     updateBounds();
     update();
 }
@@ -49,6 +63,7 @@ void EquityWidget::setPoints(const QVector<QPointF>& pts)
 void EquityWidget::setPoints(const std::vector<be::Date>& dates, const std::vector<be::EquityPoint>& equityCurve) {
     if (dates.empty() || equityCurve.empty()) {
         m_points.clear();
+        m_pointsPercent.clear();
         updateBounds();
         update();
         return;
@@ -203,16 +218,41 @@ std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
     return labels;
 }
 
-void EquityWidget::updateBounds()
+void EquityWidget::calculatePercentPoints()
 {
     if (m_points.isEmpty()) {
+        m_pointsPercent.clear();
+        return;
+    }
+    
+    // Premier point (référence à 0%)
+    double initialValue = m_points.first().y();
+    if (std::abs(initialValue) < EPSILON_D) {
+        initialValue = 1.0; // Éviter la division par zéro
+    }
+    
+    m_pointsPercent.resize(m_points.size());
+    for (int i = 0; i < m_points.size(); ++i) {
+        double xval = m_points[i].x();
+        double yval = m_points[i].y();
+        double percentValue = (yval / initialValue - 1.0) * 100.0;
+        m_pointsPercent[i] = QPointF(xval, percentValue);
+    }
+}
+
+void EquityWidget::updateBounds()
+{
+    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
+    
+    if (activePoints.isEmpty()) {
         m_xmin = 0; m_xmax = 1;
         m_ymin = 0; m_ymax = 1;
         return;
     }
-    m_xmin = m_xmax = m_points[0].x();
-    m_ymin = m_ymax = m_points[0].y();
-    for (const auto &p : m_points) {
+    
+    m_xmin = m_xmax = activePoints[0].x();
+    m_ymin = m_ymax = activePoints[0].y();
+    for (const auto &p : activePoints) {
         m_xmin = qMin(m_xmin, p.x());
         m_xmax = qMax(m_xmax, p.x());
         m_ymin = qMin(m_ymin, p.y());
@@ -223,6 +263,9 @@ void EquityWidget::updateBounds()
 void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
 {
     m_contentRect = contentRect.adjusted(m_margin, m_margin, -m_margin, -m_margin);
+    
+    // Recalculer les limites selon le mode actuel
+    updateBounds();
     
     painter.setRenderHint(QPainter::Antialiasing, true);
 
@@ -235,13 +278,16 @@ void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
     // draw axes (ticks + labels)
     drawAxes(painter);
 
+    // Sélectionner le bon ensemble de points selon le mode
+    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
+
     // draw polyline connecting points (no squares on points)
-    if (!m_points.isEmpty()) {
+    if (!activePoints.isEmpty()) {
         QPainterPath path;
-        QPointF p0 = mapToWidget(m_points.front());
+        QPointF p0 = mapToWidget(activePoints.front());
         path.moveTo(p0);
-        for (int i = 1; i < m_points.size(); ++i) {
-            QPointF w = mapToWidget(m_points[i]);
+        for (int i = 1; i < activePoints.size(); ++i) {
+            QPointF w = mapToWidget(activePoints[i]);
             path.lineTo(w);
         }
 
@@ -251,26 +297,30 @@ void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
         painter.drawPath(path);
     }
 
-    // crosshair
+    // Code existant pour le crosshair...
     if (m_showCrosshair) {
         QPen crossPen(Qt::black);
         crossPen.setStyle(Qt::DashLine);
         crossPen.setWidth(1);
         painter.setPen(crossPen);
 
-        // Convertir la position de la souris en coordonnées relatives à drawRect
         QPoint relativeMousePos = m_mousePos - contentRect.topLeft() - QPoint(m_margin, m_margin);
 
-        // vertical
         painter.drawLine(relativeMousePos.x(), m_contentRect.top(),
                          relativeMousePos.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
-        // horizontal
         painter.drawLine(m_leftMargin, relativeMousePos.y(),
                          m_contentRect.width() - m_rightMargin, relativeMousePos.y());
 
-        // small info box with world coordinates
         QPointF world = mapToWorld(relativeMousePos);
-        QString info = QString("(%1, %2)").arg(world.x(), 0, 'g', 6).arg(world.y(), 0, 'g', 6);
+        QString info;
+        
+        // Formater différemment selon le mode
+        if (m_checkBox->isChecked()) {
+            info = QString("(%1, %2%)").arg(world.x(), 0, 'g', 6).arg(world.y(), 0, 'f', 2);
+        } else {
+            info = QString("(%1, %2)").arg(world.x(), 0, 'g', 6).arg(world.y(), 0, 'g', 6);
+        }
+        
         QRect infoRect(relativeMousePos.x() + 10, relativeMousePos.y() - 20, 120, 18);
         painter.fillRect(infoRect, QColor(255,255,224,230));
         painter.setPen(Qt::black);
@@ -344,13 +394,19 @@ void EquityWidget::drawGrid(QPainter &painter)
     }
 }
 
-QString formatValue(double value, bool useThousandsSeparator = true) {
+QString formatValue(double value, bool useThousandsSeparator = true, bool isPercent = false) {
     // Gérer les valeurs proches de zéro
     if (std::abs(value) < 0.01) {
-        return "0";
+        return isPercent ? "0%" : "0";
     }
 
-    // Trouver l'ordre de grandeur pour l'arrondi
+    // Si on est en mode pourcentage
+    if (isPercent) {
+        // Formater avec 2 décimales pour les pourcentages
+        return QString::number(value, 'f', 2) + "%";
+    }
+
+    // Trouver l'ordre de grandeur pour l'arrondi (reste du code inchangé)
     double absValue = std::abs(value);
     int digits = std::floor(std::log10(absValue));
     double factor;
@@ -416,8 +472,8 @@ void EquityWidget::drawAxes(QPainter &painter)
         painter.drawLine(QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin, wp.y()), 
                          QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin + 4, wp.y()));
         
-        // label - aligné à gauche après le tick
-        QString txt = formatValue(yv);
+        // label - aligné à gauche après le tick, formater selon le mode
+        QString txt = formatValue(yv, true, m_checkBox->isChecked());
         painter.drawText(QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin + 8, 
                                wp.y() + fm.ascent()/2 - 2), txt);
     }

@@ -361,7 +361,7 @@ void VerticalGaugeRenderWidget::paintContent(QPainter& painter, const QRect& con
     if (displayTpAvg > 0) {
         // S'assurer que le texte ne dépasse pas la zone de la jauge
         int avgY = qMax(
-            gaugeTop,        // Minimum Y
+            gaugeTop + avgLabelHeight/2,        // Minimum Y
             tpAvgY                             // Position idéale
         );
         
@@ -379,7 +379,7 @@ void VerticalGaugeRenderWidget::paintContent(QPainter& painter, const QRect& con
             gaugeTop + effectiveHeight - avgLabelHeight/2  // Maximum Y
         );
         
-        QRect avgRect(rightLegendX, slAvgY - avgLabelHeight/2, 60, avgLabelHeight);
+        QRect avgRect(rightLegendX, avgY - avgLabelHeight/2, 60, avgLabelHeight);
         painter.setPen(m_slAvgColor.darker(120));
         painter.drawText(avgRect, Qt::AlignLeft | Qt::AlignVCenter, 
                       QString("Moyenne\n%1 %2").arg(displaySlAvg, 0, 'f', precision).arg(suffix));

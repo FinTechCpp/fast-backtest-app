@@ -3,6 +3,7 @@
 #include <QWidget>
 #include <QVector>
 #include <QPointF>
+#include <QCheckBox>
 #include "ui/views/Stats/TitledWidget.h"
 #include "stats.hpp"
 
@@ -35,11 +36,14 @@ private:
         int importance;   // Niveau d'importance: 3=année, 2=mois, 1=jour
     };
 
+    QCheckBox* m_checkBox;
+
     QVector<QPointF> m_points;
+    QVector<QPointF> m_pointsPercent;
     std::vector<be::Date> m_dates;  // Dates correspondant aux points
     
-    // Nouvelle méthode pour générer les labels de dates intelligents
     std::vector<DateLabel> generateDateLabels() const;
+    void calculatePercentPoints(); // Calcule les points en pourcentage
 
 
     void updateBounds();

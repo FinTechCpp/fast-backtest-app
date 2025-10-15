@@ -18,6 +18,7 @@
 #include <string>
 #include <QFileSystemWatcher>
 #include "beTypes.h"
+#include "ui/dialogs/BacktestEngineDialog.h"
 
 
 struct GeneralParamsConfig {
@@ -32,6 +33,8 @@ struct GeneralParamsConfig {
     double leverage_limit;
     bool tradeOnClose;
     be::PositionMode positionMode;
+    bool executeLimitOnLimitPrice;
+    bool executeStopOnOpen;
     bool finalizeTrades;
 };
 
@@ -49,7 +52,9 @@ inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& con
        << "  leverage_limit: " << config.leverage_limit << ", \n"
        << "  tradeOnClose: " << config.tradeOnClose << ", \n"
        << "  positionMode: " << (config.positionMode == be::PositionMode::Hedging ? "Hedging" : "Netting") << ", \n"
-       << "  finalizeTrades: " << config.finalizeTrades << "\n"
+       << "  finalizeTrades: " << config.finalizeTrades << ", \n"
+       << "  executeLimitOnLimitPrice: " << config.executeLimitOnLimitPrice << ", \n"
+       << "  executeStopOnOpen: " << config.executeStopOnOpen << "\n"
        << "}\n";
     return os;
 }
@@ -70,6 +75,7 @@ public:
 private:
     void setupUI();
     void refreshSymbols();
+    void openAdvancedConfigDialog();
 
     // UI member so we can update it when marketData changes
     QComboBox* m_symbolCombo = nullptr;

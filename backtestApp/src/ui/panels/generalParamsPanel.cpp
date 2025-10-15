@@ -251,4 +251,32 @@ void GeneralParamsPanel::setupUI()
         finalizeTradesCheck,
         &m_config.finalizeTrades)
     );
+
+    // Bouton de configuration avancée
+    QPushButton* advancedConfigBtn = new QPushButton("Configuration avancée...", this);
+    paramsLayout->addRow(advancedConfigBtn);
+    
+    // Connexion du bouton
+    connect(advancedConfigBtn, &QPushButton::clicked, this, &GeneralParamsPanel::openAdvancedConfigDialog);
+    
+    // Par défaut, on initialise les options avancées
+    m_config.executeStopOnOpen = true; // pire cas par défaut
+    m_config.executeLimitOnLimitPrice = true; // pire cas par défaut
+}
+
+
+void GeneralParamsPanel::openAdvancedConfigDialog()
+{
+    BacktestEngineDialog dialog(this);
+    
+    // Initialiser le dialogue avec les valeurs actuelles
+    dialog.setExecuteStopOnOpen(m_config.executeStopOnOpen);
+    dialog.setExecuteLimitOnLimitPrice(m_config.executeLimitOnLimitPrice);
+    
+    // Exécuter le dialogue
+    if (dialog.exec() == QDialog::Accepted) {
+        // Récupérer les nouvelles valeurs
+        m_config.executeStopOnOpen = dialog.executeStopOnOpen();
+        m_config.executeLimitOnLimitPrice = dialog.executeLimitOnLimitPrice();
+    }
 }

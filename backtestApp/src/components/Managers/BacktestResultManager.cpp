@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QInputDialog>
 #include <memory>
+#include <algorithm>
 
 BacktestResultManager::BacktestResultManager(QObject *parent, SerializationUtils::FileFormat defaultFormat)
     : QObject(parent), m_defaultFormat(defaultFormat)
@@ -328,14 +329,12 @@ bool BacktestResultManager::importExternalResult(QWidget* parentWidget)
         QDir::homePath(),
         filterString);
     
-    if (fileName.isEmpty()) {
+    if (fileName.isEmpty()) 
         return false; // Utilisateur a annulé
-    }
     
     if (!QFile::exists(fileName)) {
-        if (parentWidget) {
+        if (parentWidget) 
             QMessageBox::warning(parentWidget, "Erreur", "Le fichier sélectionné n'existe pas.");
-        }
         return false;
     }
     
@@ -362,9 +361,8 @@ bool BacktestResultManager::importExternalResult(QWidget* parentWidget)
             QLineEdit::Normal,
             resultName, &ok);
         
-        if (!ok || resultName.isEmpty()) {
+        if (!ok || resultName.isEmpty()) 
             return false;
-        }
     }
     
     // Mettre à jour le nom dans la configuration
@@ -440,28 +438,25 @@ bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWid
     
     // Construire le filtre pour le format spécifié
     QString filterString;
-    if (actualFormat == SerializationUtils::FileFormat::JSON) {
+    if (actualFormat == SerializationUtils::FileFormat::JSON) 
         filterString = "Fichiers JSON (*.json)";
-    } else if (actualFormat == SerializationUtils::FileFormat::Binary) {
+    else if (actualFormat == SerializationUtils::FileFormat::Binary) 
         filterString = "Fichiers binaires (*.bin)";
-    } else {
+    else 
         filterString = "Tous les formats supportés (*.json *.bin);;Fichiers JSON (*.json);;Fichiers binaires (*.bin)";
-    }
     
     QString fileName = QFileDialog::getSaveFileName(parentWidget,
         QString("Exporter le résultat - %1").arg(resultName),
         QDir::homePath() + "/" + defaultFileName,
         filterString);
     
-    if (fileName.isEmpty()) {
+    if (fileName.isEmpty()) 
         return false; // Utilisateur a annulé
-    }
     
     // Si l'utilisateur a changé l'extension, détecter le nouveau format
     SerializationUtils::FileFormat selectedFormat = actualFormat;
-    if (format == SerializationUtils::FileFormat::Auto) {
+    if (format == SerializationUtils::FileFormat::Auto) 
         selectedFormat = SerializationUtils::detectFormatFromExtension(fileName);
-    }
     
     // Sauvegarde du résultat vers le fichier sélectionné
     bool success = SerializationUtils::saveToFile(fileName, config, selectedFormat);
@@ -508,13 +503,52 @@ bool BacktestResultManager::loadExternalResult(const QString& filePath, Backtest
     config.strategyConfig = externalConfig.strategyConfig;
     config.candles = externalConfig.candles;
     
+    // Validation
+    if (externalConfig.candles.empty()) {
+        qCritical() << "Aucune donnée de bougie trouvée dans le résultat externe";
+        return false;
+    }
+    
     // Créer une structure Data à partir des candles
     be::Data data(externalConfig.candles);
     
-    // Créer l'equity curve à partir des trades
+    // Construire la courbe d'équité à partir des trades
     std::vector<be::EquityPoint> equityCurve;
-    double currentEquity = config.generalParams.cash;
+    double initialEquity = config.generalParams.cash;
+    double currentEquity = initialEquity;
+    
+    // Point initial
     equityCurve.push_back({0, currentEquity});
+    
+    // Trier les trades par ordre de sortie (exitBar)
+    std::vector<be::TradeData> sortedTrades = externalConfig.trades;
+    std::sort(sortedTrades.begin(), sortedTrades.end(),
+              [](const be::TradeData& a, const be::TradeData& b) {
+                  return a.exitBar < b.exitBar;
+              });
+    
+    // Construire la courbe d'équité en ajoutant le P&L de chaque trade
+    for (const auto& trade : sortedTrades) {
+        currentEquity += trade.pl;
+        
+        // Ajouter un point d'équité à la sortie du trade
+        if (trade.exitBar < data.size()) 
+            equityCurve.push_back({trade.exitBar, currentEquity});
+    }
+    
+    // Ajouter un point final si nécessaire
+    if (equityCurve.back().index < data.size() - 1) 
+        equityCurve.push_back({data.size() - 1, currentEquity});
+    
+    qInfo() << "Courbe d'équité construite avec" << equityCurve.size() << "points";
+    qInfo() << "Calcul des statistiques pour" << sortedTrades.size() << "trades...";
+    
+    // Calculer les statistiques complètes
+    config.stats = be::computeStats(sortedTrades, equityCurve, data);
+    
+    qInfo() << "Statistiques calculées avec succès";
+    qInfo() << "- Nombre de trades:" << config.stats.numTrades;
+    qInfo() << "- Équité finale:" << config.stats.equityFinal;
     
     return true;
 }

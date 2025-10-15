@@ -152,15 +152,15 @@ void BacktestResultMenuManager::updateResultList()
     } else {
         for (const QString& result : results) {
             QAction* action = new QAction(result, this);
-            action->setCheckable(true);
-            action->setChecked(result == m_currentResult);
+            // Use non-checkable actions so clicking immediately applies the result
+            action->setCheckable(false);
             action->setData(result);
-            
+
             connect(action, &QAction::triggered, this, &BacktestResultMenuManager::onLoadResult);
-            
+
             m_loadResultSubmenu->addAction(action);
             m_resultActions[result] = action;
-            
+
             qDebug() << "Action créée pour le résultat:" << result;
         }
     }
@@ -170,12 +170,7 @@ void BacktestResultMenuManager::updateResultList()
 
 void BacktestResultMenuManager::onResultLoaded(const QString& resultName)
 {
-    // Mettre à jour les coches dans le menu
-    for (auto it = m_resultActions.begin(); it != m_resultActions.end(); ++it) {
-        it.value()->setChecked(it.key() == resultName);
-    }
-    
-    // Mettre à jour le nom du résultat courant
+    // Mettre à jour le nom du résultat courant (actions non-checkables maintenant)
     m_currentResult = resultName;
     
     // Activer les actions qui nécessitent un résultat chargé
@@ -238,11 +233,9 @@ void BacktestResultMenuManager::onDeleteResult()
 
 void BacktestResultMenuManager::onImportResult()
 {
-    if (m_resultManager) {
-        if (m_resultManager->importBacktestResult(m_mainWindow)) {
+    if (m_resultManager) 
+        if (m_resultManager->importBacktestResult(m_mainWindow)) 
             updateResultList();
-        }
-    }
 }
 
 void BacktestResultMenuManager::onImportExternalResult()
@@ -254,9 +247,8 @@ void BacktestResultMenuManager::onImportExternalResult()
 
 void BacktestResultMenuManager::onExportResult()
 {
-    if (m_resultManager && !m_currentResult.isEmpty()) {
+    if (m_resultManager && !m_currentResult.isEmpty()) 
         m_resultManager->exportBacktestResult(m_currentResult, m_mainWindow);
-    }
 }
 
 void BacktestResultMenuManager::onLoadResult()

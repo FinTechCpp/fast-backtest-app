@@ -97,6 +97,7 @@ namespace chart {
         std::set<int> validAtrIds;
         std::set<int> validPivotPointsIds;
         std::set<int> validCciIds;
+        std::set<int> validMacdIds;
 
         // Données des indicateurs
         std::map<int, std::vector<double>> rsiValues;
@@ -105,6 +106,7 @@ namespace chart {
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
         std::map<int, std::vector<double>> cciValues;
+        std::map<int, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>> macdValues; // macd_line, signal_line, histogram
 
         AggregationLevel level;
         
@@ -116,6 +118,7 @@ namespace chart {
         bool isAtrValid(int id) const { return validAtrIds.find(id) != validAtrIds.end(); }
         bool isPivotPointsValid(int id) const { return validPivotPointsIds.find(id) != validPivotPointsIds.end(); }
         bool isCciValid(int id) const { return validCciIds.find(id) != validCciIds.end(); }
+        bool isMacdValid(int id) const { return validMacdIds.find(id) != validMacdIds.end(); }
     };
 
     struct EquityData {
@@ -153,25 +156,9 @@ namespace indicators {
         ATR, 
         SUPERTREND,
         PIVOTPOINTS,
-        CCI
+        CCI,
+        MACD
     };
-
-    // Il faudrait faire des structure pour contenir uniquement les info techenique qui vont servir a CALCULER l'indicateur
-    // comme ca scela allege les methodes de calcule ET on utilise cela pour communiquer entre la strategy et le front plutot que :
-    /*
-    struct StrategyIndicator {
-        enum Type {
-            RSI,
-            EMA,
-            STOCHASTIC,
-            ATR,
-            SUPERTREND
-        };
-        
-        Type type;
-        std::map<std::string, double> params;  // Indicator parameters
-    };
-    */
 
     enum class PivotPeriodType {
         FourHour,   // Points pivots toutes les 4 heures
@@ -240,6 +227,19 @@ namespace indicators {
             bool operator==(const CCI& other) const = default;
             bool operator!=(const CCI& other) const = default;
         };
+
+        struct MACD {
+            int fastPeriod = 12;
+            int slowPeriod = 26;
+            int signalPeriod = 9;
+            std::string source = "close"; // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
+            std::string osc_ma_type = "EMA"; // Type de moyenne mobile pour l'oscillateur (SMA, EMA, WMA)
+            std::string signal_ma_type = "EMA"; // Type de moyenne mobile pour la ligne de signal (SMA, EMA, WMA)
+            int signal_smoothing = 1; // Lissage supplémentaire pour la ligne de signal
+
+            bool operator==(const MACD& other) const = default;
+            bool operator!=(const MACD& other) const = default;
+        };
     }
 
     struct IndicatorSignal {        
@@ -254,6 +254,7 @@ namespace indicators {
             params::SuperTrend supertrend;
             params::PivotPoints pivotpoints;
             params::CCI cci;
+            params::MACD macd;
             
             ParamsUnion() {} // Union nécessite un constructeur par défaut
             ~ParamsUnion() {} // Et un destructeur
@@ -664,6 +665,68 @@ namespace indicators {
             lowerLevel = -100;
             upperColor = 0xff6666; // Rouge clair
             lowerColor = 0x6666ff; // Bleu clair
+        }
+    };
+    struct MACDInstance : public IndicatorBase {
+        MACDInstance() : IndicatorBase() {
+            setDefaults();
+        }
+
+        MACDInstance(params::MACD p) : IndicatorBase() {
+            setDefaults();
+            fastPeriod = p.fastPeriod;
+            slowPeriod = p.slowPeriod;
+            signalPeriod = p.signalPeriod;
+            source = QString::fromStdString(p.source);
+            osc_ma_type = QString::fromStdString(p.osc_ma_type);
+            signal_ma_type = QString::fromStdString(p.signal_ma_type);
+            signal_smoothing = p.signal_smoothing;
+        }
+
+        int fastPeriod;        // Période rapide
+        int slowPeriod;        // Période lente
+        int signalPeriod;      // Période de la ligne de signal
+        QString source;        // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
+        QString osc_ma_type;   // Type de moyenne mobile pour l'oscillateur (SMA, EMA, WMA)
+        QString signal_ma_type;// Type de moyenne mobile pour la ligne de signal (SMA, EMA, WMA)
+        int signal_smoothing;  // Lissage supplémentaire pour la ligne de signal
+        int height;            // Hauteur du panneau
+        int macdColor;         // Couleur de la ligne MACD
+        int signalColor;       // Couleur de la ligne de signal
+        int histogramColor;    // Couleur de l'histogramme
+
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
+            const MACDInstance* otherMACD = dynamic_cast<const MACDInstance*>(&other);
+            if (!otherMACD) return false;
+            return fastPeriod == otherMACD->fastPeriod &&
+                   slowPeriod == otherMACD->slowPeriod &&
+                   signalPeriod == otherMACD->signalPeriod &&
+                   source == otherMACD->source &&
+                   osc_ma_type == otherMACD->osc_ma_type &&
+                   signal_ma_type == otherMACD->signal_ma_type &&
+                   signal_smoothing == otherMACD->signal_smoothing;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<MACDInstance>(*this);
+        }
+        
+        QString getDisplayName() const override {
+            return QString("MACD (%1,%2,%3)").arg(fastPeriod).arg(slowPeriod).arg(signalPeriod);
+        }
+
+        void setDefaults() override {
+            fastPeriod = 12;
+            slowPeriod = 26;
+            signalPeriod = 9;
+            source = "Close";
+            osc_ma_type = "EMA";
+            signal_ma_type = "EMA";
+            signal_smoothing = 0;
+            height = 200;
+            macdColor = 0x0000ff;      // Bleu
+            signalColor = 0xff0000;    // Rouge
+            histogramColor = 0x808080; // Gris
         }
     };
 }

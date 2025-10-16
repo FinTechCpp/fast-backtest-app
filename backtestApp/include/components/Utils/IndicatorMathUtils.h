@@ -131,6 +131,37 @@ public:
         int period
     );
 
+    /**
+     * @brief Calculates MACD (Moving Average Convergence Divergence) indicator
+     *
+     * Returns a tuple of three vectors: (macd_line, signal_line, histogram)
+     *
+     * Parameters mirror the MACD implementation in ThirdParty/Strategies/include/Indicators/macd.hpp:
+     *  - fastPeriod: fast EMA/SMA length
+     *  - slowPeriod: slow EMA/SMA length
+     *  - signalPeriod: signal line period
+     *  - source: "open"/"high"/"low"/"close" (default "close")
+     *  - oscMAType: "EMA" or "SMA" for oscillator moving averages (default "EMA")
+     *  - signalMAType: "EMA" or "SMA" for signal line moving average (default "EMA")
+     *  - signalSmoothing: optional smoothing length for signal (if 0 -> use signalPeriod)
+     */
+    static std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> calculateMACD(
+        const std::vector<double>& open,
+        const std::vector<double>& high,
+        const std::vector<double>& low,
+        const std::vector<double>& close,
+        int fastPeriod,
+        int slowPeriod,
+        int signalPeriod,
+        const std::string& source = "close",
+        const std::string& oscMAType = "EMA",
+        const std::string& signalMAType = "EMA",
+        int signalSmoothing = 0
+    );
+
+    /**
+     * @brief Calculates Pivot Points
+     */
     static std::vector<indicators::PivotPointsInstance::PivotPeriod> calculatePivotPoints(
         const std::vector<double>& openData,
         const std::vector<double>& highData,

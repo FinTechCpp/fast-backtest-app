@@ -105,7 +105,12 @@ void ChartRenderer::createOrUpdateChart(
     for (const indicators::CCIInstance* cci : dataManager.getIndicatorsOfType<indicators::CCIInstance>())
         if (cci->visible)
             subChartsTotalHeight += cci->height;
-    
+
+    // 6. Espace pour MACD
+    for (const indicators::MACDInstance* macd : dataManager.getIndicatorsOfType<indicators::MACDInstance>())
+        if (macd->visible)
+            subChartsTotalHeight += macd->height;
+
     // 2. Ajouter le graphique principal
     int mainChartHeight = std::max(300, config.chartHeight - subChartsTotalHeight);
     XYChart* mainChart = m_financeChart->addMainChart(mainChartHeight);
@@ -182,6 +187,11 @@ void ChartRenderer::createOrUpdateChart(
             addCCIToChart(m_financeChart.get(), *cci, dataManager, aggregationInfo);
         }
     }
+
+    // MACD
+    for (const indicators::MACDInstance* macd : dataManager.getIndicatorsOfType<indicators::MACDInstance>()) 
+        if (macd->visible) 
+            addMACDToChart(m_financeChart.get(), *macd, dataManager, aggregationInfo);
 
     // Points pivots
     for (const indicators::PivotPointsInstance* pivotPoints : dataManager.getIndicatorsOfType<indicators::PivotPointsInstance>()) {
@@ -1126,6 +1136,87 @@ void ChartRenderer::addCCIToChart(FinanceChart* chart,
     double yMin = std::min(minCCI, static_cast<double>(cci.lowerLevel)) * 1.2;
     double yMax = std::max(maxCCI, static_cast<double>(cci.upperLevel)) * 1.2;
     c->yAxis()->setLinearScale(yMin, yMax);
+}
+
+void ChartRenderer::addMACDToChart(FinanceChart* finance, const indicators::MACDInstance &macd, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo){
+    if (!finance) return;
+
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
+
+    // Récupérer les données MACD agrégées
+    const auto& macdMap = dataManager.getAggregatedIndicators(aggregationInfo.level).macdValues;
+    auto it = macdMap.find(macd.id);
+    if (it == macdMap.end()) return;
+
+    // Format attendu : tuple<macdLine, signalLine, histogram>
+    const auto& macdTuple = it->second;
+    const std::vector<double>& macdLine = std::get<0>(macdTuple);
+    const std::vector<double>& signalLine = std::get<1>(macdTuple);
+    const std::vector<double>& histLine   = std::get<2>(macdTuple);
+
+    if (macdLine.empty() || signalLine.empty() || histLine.empty()) return;
+    size_t available = std::min({ macdLine.size(), signalLine.size(), histLine.size() });
+    if (startIndex >= available) return;
+
+    size_t endIndex = std::min(startIndex + pointsToShow, available);
+    if (endIndex <= startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
+
+    // Extraire les portions visibles
+    DoubleArray macdArr(&macdLine[startIndex], actualPoints);
+    DoubleArray signalArr(&signalLine[startIndex], actualPoints);
+
+    // Construire histogrammes séparés pour positif/négatif
+    std::vector<double> posHist(actualPoints, Chart::NoValue);
+    std::vector<double> negHist(actualPoints, Chart::NoValue);
+    for (size_t i = 0; i < actualPoints; ++i) {
+        double v = histLine[startIndex + i];
+        if (v > 0) posHist[i] = v;
+        else if (v < 0) negHist[i] = v;
+        // zero will be left as NoValue (or could be shown on either)
+    }
+
+    DoubleArray posHistArr = ChartDataManager::vectorToDoubleArray(posHist);
+    DoubleArray negHistArr = ChartDataManager::vectorToDoubleArray(negHist);
+
+    // Ajouter la zone d'indicateur MACD
+    XYChart* c = finance->addIndicator(macd.height);
+    if (!c) return;
+
+    // Histogramme : positif en vert, négatif en rouge (ou utiliser histogramColor pour les deux)
+    int positiveColor = 0x00aa00; // Vert
+    int negativeColor = 0xaa0000; // Rouge
+    
+    BarLayer* posLayer = c->addBarLayer(posHistArr, positiveColor);
+    posLayer->setBarGap(Chart::TouchBar);
+    posLayer->setBorderColor(Chart::Transparent);
+    posLayer->set3D(0);
+
+    BarLayer* negLayer = c->addBarLayer(negHistArr, negativeColor);
+    negLayer->setBarGap(Chart::TouchBar);
+    negLayer->setBorderColor(Chart::Transparent);
+    negLayer->set3D(0);
+
+    // Lignes MACD et Signal
+    char labelBuf[128];
+    snprintf(labelBuf, sizeof(labelBuf), "MACD (%d,%d,%d)", macd.fastPeriod, macd.slowPeriod, macd.signalPeriod);
+    LineLayer* macdLineLayer = finance->addLineIndicator2(c, macdArr, macd.macdColor, labelBuf);
+    if (macdLineLayer) macdLineLayer->setFastLineMode(true);
+
+    snprintf(labelBuf, sizeof(labelBuf), "Signal (%d)", macd.signalPeriod);
+    LineLayer* signalLineLayer = finance->addLineIndicator2(c, signalArr, macd.signalColor, labelBuf);
+    if (signalLineLayer) signalLineLayer->setFastLineMode(true);
+
+    // Ajouter une marque/ligne à 0 pour repère
+    Mark* zeroMark = c->yAxis()->addMark(0.0, 0x000000, "");
+    if (zeroMark) {
+        zeroMark->setLineWidth(1);
+        zeroMark->setMarkColor(c->dashLineColor(0x000000, Chart::DashLine), 0xffffff);
+    }
+
+    // Laisser ChartDir gérer l'échelle Y (optionnel : petite marge)
+    // Ajuster si nécessaire : c->yAxis()->setMargin(...);
 }
 
 void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::PivotPointsInstance &pivotPoints, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)

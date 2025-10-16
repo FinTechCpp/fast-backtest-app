@@ -336,6 +336,15 @@ namespace cereal {
                     case filter::IndicatorType::CCI:
                         ar(cereal::make_nvp("cciParams", valueSource.cciParams));
                         break;
+                    case filter::IndicatorType::MACD_HISTOGRAM:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
+                    case filter::IndicatorType::MACD_SIGNAL:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
+                    case filter::IndicatorType::MACD_LINE:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
                     case filter::IndicatorType::PIVOT_POINT:
                         // Pas de paramètre spécifique pour ce type
                         break;
@@ -395,4 +404,16 @@ namespace cereal {
     void serialize(Archive & ar, filter::CCIParams & params) {
         ar(cereal::make_nvp("period", params.period));
     }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::MACDParams & params) {
+        ar(cereal::make_nvp("fast", params.fast),
+           cereal::make_nvp("slow", params.slow),
+           cereal::make_nvp("signal", params.signal),
+           cereal::make_nvp("source", params.source),
+           cereal::make_nvp("osc_ma_type", params.osc_ma_type),
+           cereal::make_nvp("signal_ma_type", params.signal_ma_type),
+           cereal::make_nvp("signal_smoothing", params.signal_smoothing));
+    }
+    
 }

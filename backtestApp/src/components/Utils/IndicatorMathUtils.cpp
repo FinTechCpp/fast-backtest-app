@@ -1,4 +1,5 @@
 #include "components/Utils/IndicatorMathUtils.h"
+#include <algorithm>
 
 std::vector<double> IndicatorMathUtils::calculateRSI(const std::vector<double>& closeData, int period)
 {
@@ -245,9 +246,8 @@ std::tuple<std::vector<double>, std::vector<double>> IndicatorMathUtils::calcula
     std::fill(kValues.begin(), kValues.end(), 50.0);
     std::fill(dValues.begin(), dValues.end(), 50.0);
     
-    if (dataSize < static_cast<size_t>(fastKPeriod)) {
+    if (dataSize < static_cast<size_t>(fastKPeriod)) 
         return {kValues, dValues};  // Pas assez de données pour calculer le Stochastic
-    }
     
     // Étape 1: Calculer le %K brut (Fast %K) - La formule est:
     // %K = 100 * (C - L14) / (H14 - L14)
@@ -402,6 +402,111 @@ std::vector<double> IndicatorMathUtils::calculateCCI(
     }
 
     return cciValues;
+}
+
+std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> IndicatorMathUtils::calculateMACD(
+    const std::vector<double>& open,
+    const std::vector<double>& high,
+    const std::vector<double>& low,
+    const std::vector<double>& closeData,
+    int fastPeriod,
+    int slowPeriod,
+    int signalPeriod,
+    const std::string& source,
+    const std::string& oscMAType,
+    const std::string& signalMAType,
+    int signalSmoothing)
+{
+    // Select the source data based on the source parameter
+    const std::vector<double>* sourceData = &closeData;
+    std::string sourceLower = source;
+    std::transform(sourceLower.begin(), sourceLower.end(), sourceLower.begin(), ::tolower);
+    
+    if (sourceLower == "open") sourceData = &open;
+    else if (sourceLower == "high") sourceData = &high;
+    else if (sourceLower == "low") sourceData = &low;
+    else sourceData = &closeData; // default to close
+    
+    // For now, we only support EMA-based MACD (ignoring oscMAType and signalMAType)
+    // TODO: Implement SMA support if needed
+    (void)oscMAType;
+    (void)signalMAType;
+    (void)signalSmoothing;
+
+    size_t n = sourceData->size();
+    std::vector<double> macdLine(n, 0.0);
+    std::vector<double> signalLine(n, 0.0);
+    std::vector<double> histogram(n, 0.0);
+
+    if (n == 0 || fastPeriod <= 0 || slowPeriod <= 0 || signalPeriod <= 0)
+        return {macdLine, signalLine, histogram};
+
+    // ensure fast < slow by convention (if caller swapped, still works)
+    // we compute EMA for both periods independently
+    double multFast = 2.0 / (fastPeriod + 1.0);
+    double multSlow = 2.0 / (slowPeriod + 1.0);
+    double multSignal = 2.0 / (signalPeriod + 1.0);
+
+    std::vector<double> fastEma(n, 0.0);
+    std::vector<double> slowEma(n, 0.0);
+
+    // seed fast EMA with SMA when enough points
+    if (n >= static_cast<size_t>(fastPeriod)) {
+        double sum = 0.0;
+        for (int i = 0; i < fastPeriod; ++i) sum += (*sourceData)[i];
+        fastEma[fastPeriod - 1] = sum / fastPeriod;
+        for (size_t i = fastPeriod; i < n; ++i) {
+            fastEma[i] = ((*sourceData)[i] - fastEma[i - 1]) * multFast + fastEma[i - 1];
+        }
+    }
+
+    // seed slow EMA with SMA when enough points
+    if (n >= static_cast<size_t>(slowPeriod)) {
+        double sum = 0.0;
+        for (int i = 0; i < slowPeriod; ++i) sum += (*sourceData)[i];
+        slowEma[slowPeriod - 1] = sum / slowPeriod;
+        for (size_t i = slowPeriod; i < n; ++i) {
+            slowEma[i] = ((*sourceData)[i] - slowEma[i - 1]) * multSlow + slowEma[i - 1];
+        }
+    }
+
+    // Build macd line where both EMAs are available
+    std::vector<double> macdHistory; macdHistory.reserve(n);
+    std::vector<size_t> macdIndexes; macdIndexes.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        bool fastReady = (i >= static_cast<size_t>(fastPeriod - 1));
+        bool slowReady = (i >= static_cast<size_t>(slowPeriod - 1));
+        if (fastReady && slowReady) {
+            macdLine[i] = fastEma[i] - slowEma[i];
+            macdHistory.push_back(macdLine[i]);
+            macdIndexes.push_back(i);
+        } else {
+            macdLine[i] = 0.0;
+        }
+    }
+
+    // Compute signal line as EMA over MACD history
+    if (!macdHistory.empty() && macdHistory.size() >= static_cast<size_t>(signalPeriod)) {
+        // initial SMA over first signalPeriod MACD values
+        double sum = 0.0;
+        for (int k = 0; k < signalPeriod; ++k) sum += macdHistory[k];
+        double sig = sum / signalPeriod;
+        // assign signal value to corresponding global index
+        size_t idx = macdIndexes[signalPeriod - 1];
+        signalLine[idx] = sig;
+        histogram[idx] = macdLine[idx] - sig;
+
+        // continue EMA on remaining macdHistory entries
+        for (size_t h = signalPeriod; h < macdHistory.size(); ++h) {
+            sig = (macdHistory[h] - sig) * multSignal + sig;
+            size_t globalIdx = macdIndexes[h];
+            signalLine[globalIdx] = sig;
+            histogram[globalIdx] = macdLine[globalIdx] - sig;
+        }
+    }
+
+    // For indices before signal initialized, signalLine & histogram remain 0.0 (consistent with other helpers)
+    return {macdLine, signalLine, histogram};
 }
 
 std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::calculatePivotPoints(

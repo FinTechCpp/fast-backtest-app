@@ -122,6 +122,18 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_leftSuperTrendMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
             this, &FilterEditDialog::updatePreview);
+    connect(m_leftCCIPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftCCIOverboughtSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftCCIOversoldSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftMACDFastPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftMACDSlowPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftMACDSignalPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
     
     connect(m_rightPriceTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
@@ -149,6 +161,18 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_rightSuperTrendMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
             this, &FilterEditDialog::updatePreview);
+    connect(m_rightCCIPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightCCIOverboughtSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightCCIOversoldSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightMACDFastPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightMACDSlowPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightMACDSignalPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview); 
     
     connect(m_operatorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
@@ -210,6 +234,9 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
     m_leftIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
     m_leftIndicatorTypeCombo->addItem("CCI", static_cast<int>(filter::IndicatorType::CCI));
+    m_leftIndicatorTypeCombo->addItem("MACD Histogramme", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
+    m_leftIndicatorTypeCombo->addItem("MACD Ligne MACD", static_cast<int>(filter::IndicatorType::MACD_LINE));
+    m_leftIndicatorTypeCombo->addItem("MACD Ligne Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_leftIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
     
@@ -287,11 +314,41 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftCCIPeriodSpin->setRange(1, 1000);
     m_leftCCIPeriodSpin->setValue(20);
     cciLeftLayout->addRow("Période:", m_leftCCIPeriodSpin);
+    // Valeurs de surachat / survente pour CCI (utilisées dans l'aperçu et la configuration)
+    m_leftCCIOverboughtSpin = new QDoubleSpinBox(m_leftCCIWidget);
+    m_leftCCIOverboughtSpin->setRange(-10000.0, 10000.0);
+    m_leftCCIOverboughtSpin->setDecimals(2);
+    m_leftCCIOverboughtSpin->setValue(100.0);
+    m_leftCCIOversoldSpin = new QDoubleSpinBox(m_leftCCIWidget);
+    m_leftCCIOversoldSpin->setRange(-10000.0, 10000.0);
+    m_leftCCIOversoldSpin->setDecimals(2);
+    m_leftCCIOversoldSpin->setValue(-100.0);
+    cciLeftLayout->addRow("Surachat (overbought):", m_leftCCIOverboughtSpin);
+    cciLeftLayout->addRow("Survente (oversold):", m_leftCCIOversoldSpin);
     m_leftCCIWidget->setVisible(false);
     indicatorLayout->addWidget(m_leftCCIWidget);
     
     m_leftIndicatorWidget->setVisible(false);
     leftLayout->addWidget(m_leftIndicatorWidget);
+
+    // MACD
+    m_leftMACDWidget = new QWidget(m_leftIndicatorWidget);
+    QFormLayout* macdLayout = new QFormLayout(m_leftMACDWidget);
+    m_leftMACDFastPeriodSpin = new QSpinBox(m_leftMACDWidget);
+    m_leftMACDFastPeriodSpin->setRange(1, 1000);
+    m_leftMACDFastPeriodSpin->setValue(12);
+    m_leftMACDSlowPeriodSpin = new QSpinBox(m_leftMACDWidget);
+    m_leftMACDSlowPeriodSpin->setRange(1, 1000);
+    m_leftMACDSlowPeriodSpin->setValue(26);
+    m_leftMACDSignalPeriodSpin = new QSpinBox(m_leftMACDWidget);
+    m_leftMACDSignalPeriodSpin->setRange(1, 1000);
+    m_leftMACDSignalPeriodSpin->setRange(1, 1000);
+    m_leftMACDSignalPeriodSpin->setValue(9);
+    macdLayout->addRow("Période Fast:", m_leftMACDFastPeriodSpin);
+    macdLayout->addRow("Période Slow:", m_leftMACDSlowPeriodSpin);
+    macdLayout->addRow("Période Signal:", m_leftMACDSignalPeriodSpin);
+    m_leftMACDWidget->setVisible(false);
+    indicatorLayout->addWidget(m_leftMACDWidget);
     
     // 3. Propriété bougie
     m_leftCandlePropertyWidget = new QWidget(parent);
@@ -362,6 +419,9 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
     m_rightIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
     m_rightIndicatorTypeCombo->addItem("CCI", static_cast<int>(filter::IndicatorType::CCI));
+    m_rightIndicatorTypeCombo->addItem("MACD Histogramme", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
+    m_rightIndicatorTypeCombo->addItem("MACD Ligne MACD", static_cast<int>(filter::IndicatorType::MACD_LINE));
+    m_rightIndicatorTypeCombo->addItem("MACD Ligne Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_rightIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
     
@@ -438,12 +498,41 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightCCIPeriodSpin->setRange(1, 1000);
     m_rightCCIPeriodSpin->setValue(20);
     cciRightLayout->addRow("Période:", m_rightCCIPeriodSpin);
+    // Valeurs de surachat / survente pour CCI côté droit
+    m_rightCCIOverboughtSpin = new QDoubleSpinBox(m_rightCCIWidget);
+    m_rightCCIOverboughtSpin->setRange(-10000.0, 10000.0);
+    m_rightCCIOverboughtSpin->setDecimals(2);
+    m_rightCCIOverboughtSpin->setValue(100.0);
+    m_rightCCIOversoldSpin = new QDoubleSpinBox(m_rightCCIWidget);
+    m_rightCCIOversoldSpin->setRange(-10000.0, 10000.0);
+    m_rightCCIOversoldSpin->setDecimals(2);
+    m_rightCCIOversoldSpin->setValue(-100.0);
+    cciRightLayout->addRow("Surachat (overbought):", m_rightCCIOverboughtSpin);
+    cciRightLayout->addRow("Survente (oversold):", m_rightCCIOversoldSpin);
     m_rightCCIWidget->setVisible(false);
     indicatorLayout->addWidget(m_rightCCIWidget);
     
     m_rightIndicatorWidget->setVisible(false);
     rightLayout->addWidget(m_rightIndicatorWidget);
-    
+
+    // MACD
+    m_rightMACDWidget = new QWidget(m_rightIndicatorWidget);
+    QFormLayout* macdLayout = new QFormLayout(m_rightMACDWidget);
+    m_rightMACDFastPeriodSpin = new QSpinBox(m_rightMACDWidget);
+    m_rightMACDFastPeriodSpin->setRange(1, 1000);   
+    m_rightMACDFastPeriodSpin->setValue(12);
+    m_rightMACDSlowPeriodSpin = new QSpinBox(m_rightMACDWidget);
+    m_rightMACDSlowPeriodSpin->setRange(1, 1000);
+    m_rightMACDSlowPeriodSpin->setValue(26);
+    m_rightMACDSignalPeriodSpin = new QSpinBox(m_rightMACDWidget);
+    m_rightMACDSignalPeriodSpin->setRange(1, 1000);
+    m_rightMACDSignalPeriodSpin->setValue(9);
+    macdLayout->addRow("Période Fast:", m_rightMACDFastPeriodSpin);
+    macdLayout->addRow("Période Slow:", m_rightMACDSlowPeriodSpin);
+    macdLayout->addRow("Période Signal:", m_rightMACDSignalPeriodSpin);
+    m_rightMACDWidget->setVisible(false);
+    indicatorLayout->addWidget(m_rightMACDWidget);
+
     // 3. Constante
     m_rightConstantWidget = new QWidget(parent);
     QFormLayout* constantLayout = new QFormLayout(m_rightConstantWidget);
@@ -520,6 +609,7 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_leftATRWidget->setVisible(type == filter::IndicatorType::ATR);
         m_leftSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
         m_leftCCIWidget->setVisible(type == filter::IndicatorType::CCI);
+        m_leftMACDWidget->setVisible(type == filter::IndicatorType::MACD_HISTOGRAM || type == filter::IndicatorType::MACD_LINE || type == filter::IndicatorType::MACD_SIGNAL);
     } else if (container == m_rightIndicatorWidget) {
         m_rightEMAWidget->setVisible(type == filter::IndicatorType::EMA);
         m_rightRSIWidget->setVisible(type == filter::IndicatorType::RSI);
@@ -527,6 +617,7 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_rightATRWidget->setVisible(type == filter::IndicatorType::ATR);
         m_rightSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
         m_rightCCIWidget->setVisible(type == filter::IndicatorType::CCI);
+        m_rightMACDWidget->setVisible(type == filter::IndicatorType::MACD_HISTOGRAM || type == filter::IndicatorType::MACD_LINE || type == filter::IndicatorType::MACD_SIGNAL);
     }
 }
 
@@ -573,6 +664,15 @@ filter::ValueSource FilterEditDialog::getLeftValueSource() const
                     break;
                 case filter::IndicatorType::CCI:
                     source.cciParams = filter::CCIParams(m_leftCCIPeriodSpin->value());
+                    break;
+                case filter::IndicatorType::MACD_HISTOGRAM:
+                case filter::IndicatorType::MACD_LINE:
+                case filter::IndicatorType::MACD_SIGNAL:
+                    source.macdParams = filter::MACDParams(
+                        m_leftMACDFastPeriodSpin->value(),
+                        m_leftMACDSlowPeriodSpin->value(),
+                        m_leftMACDSignalPeriodSpin->value()
+                    );
                     break;
                 default:
                     break;
@@ -631,6 +731,15 @@ filter::ValueSource FilterEditDialog::getRightValueSource() const
                     break;
                 case filter::IndicatorType::CCI:
                     source.cciParams = filter::CCIParams(m_rightCCIPeriodSpin->value());
+                    break;
+                case filter::IndicatorType::MACD_HISTOGRAM:
+                case filter::IndicatorType::MACD_LINE:
+                case filter::IndicatorType::MACD_SIGNAL:
+                    source.macdParams = filter::MACDParams(
+                        m_rightMACDFastPeriodSpin->value(),
+                        m_rightMACDSlowPeriodSpin->value(),
+                        m_rightMACDSignalPeriodSpin->value()
+                    );
                     break;
                 default:
                     break;
@@ -772,6 +881,13 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                 case filter::IndicatorType::CCI:
                     m_leftCCIPeriodSpin->setValue(filter.leftValue.cciParams.period);
                     break;
+                case filter::IndicatorType::MACD_HISTOGRAM:
+                case filter::IndicatorType::MACD_LINE:
+                case filter::IndicatorType::MACD_SIGNAL:
+                    m_leftMACDFastPeriodSpin->setValue(filter.leftValue.macdParams.fast);
+                    m_leftMACDSlowPeriodSpin->setValue(filter.leftValue.macdParams.slow);
+                    m_leftMACDSignalPeriodSpin->setValue(filter.leftValue.macdParams.signal);
+                    break;
                 default:
                     break;
             }
@@ -822,6 +938,16 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                 case filter::IndicatorType::SUPERTREND_DIRECTION:
                     m_rightSuperTrendPeriodSpin->setValue(filter.rightValue.supertrendParams.atrPeriod);
                     m_rightSuperTrendMultiplierSpin->setValue(filter.rightValue.supertrendParams.multiplier);
+                    break;
+                case filter::IndicatorType::CCI:
+                    m_rightCCIPeriodSpin->setValue(filter.rightValue.cciParams.period);
+                    break;
+                case filter::IndicatorType::MACD_HISTOGRAM:
+                case filter::IndicatorType::MACD_LINE:
+                case filter::IndicatorType::MACD_SIGNAL:
+                    m_rightMACDFastPeriodSpin->setValue(filter.rightValue.macdParams.fast);
+                    m_rightMACDSlowPeriodSpin->setValue(filter.rightValue.macdParams.slow);
+                    m_rightMACDSignalPeriodSpin->setValue(filter.rightValue.macdParams.signal);
                     break;
                 default:
                     break;

@@ -288,6 +288,16 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
                 addIfNotPresent(std::move(cci));
                 break;
             }
+            case filter::IndicatorType::MACD_HISTOGRAM:
+            case filter::IndicatorType::MACD_LINE:
+            case filter::IndicatorType::MACD_SIGNAL: {
+                auto macd = std::make_unique<indicators::MACDInstance>();
+                macd->fastPeriod = source.macdParams.fast;
+                macd->slowPeriod = source.macdParams.slow;
+                macd->signalPeriod = source.macdParams.signal;
+                addIfNotPresent(std::move(macd));
+                break;
+            }
             default:
                 break;
         }

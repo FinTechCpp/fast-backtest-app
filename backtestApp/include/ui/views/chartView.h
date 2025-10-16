@@ -35,6 +35,8 @@
 #include "ui/dialogs/supertrendDialog.h"
 #include "ui/dialogs/stochasticDialog.h"
 #include "ui/dialogs/atrDialog.h"
+#include "ui/dialogs/cciDialog.h"
+#include "ui/dialogs/macdDialog.h"
 #include "ui/dialogs/pivotPointsDialog.h"
 
 class App;

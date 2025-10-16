@@ -63,6 +63,20 @@ public:
         return std::make_unique<TypedPropertyBinder<QDoubleSpinBox, double>>(widget, property, setter, getter);
     }
 
+    // Créer un binding pour un QDoubleSpinBox et un float
+    static std::unique_ptr<PropertyBinder> createFloatBinding(QDoubleSpinBox* widget, float* property) {
+        auto setter = [](QDoubleSpinBox* w, const float& value) { w->setValue(static_cast<double>(value)); };
+        auto getter = [](QDoubleSpinBox* w) -> float { return static_cast<float>(w->value()); };
+        return std::make_unique<TypedPropertyBinder<QDoubleSpinBox, float>>(widget, property, setter, getter);
+    }
+
+    // Créer un binding pour un QLineEdit et un std::string
+    static std::unique_ptr<PropertyBinder> createStringBinding(QLineEdit* widget, std::string* property) {
+        auto setter = [](QLineEdit* w, const std::string& value) { w->setText(QString::fromStdString(value)); };
+        auto getter = [](QLineEdit* w) -> std::string { return w->text().toStdString(); };
+        return std::make_unique<TypedPropertyBinder<QLineEdit, std::string>>(widget, property, setter, getter);
+    }
+
     // Créer un binding pour un QTimeEdit et un Time
     static std::unique_ptr<PropertyBinder> createTimeBinding(QTimeEdit* widget, Time* property) {
         auto setter = [](QTimeEdit* w, const Time& value) { w->setTime(QTime(value.hour, value.minute, value.second)); };

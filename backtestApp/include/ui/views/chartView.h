@@ -38,6 +38,7 @@
 #include "ui/dialogs/cciDialog.h"
 #include "ui/dialogs/macdDialog.h"
 #include "ui/dialogs/pivotPointsDialog.h"
+#include "ui/dialogs/bbDialog.h"
 
 class App;
 class RSIDialog;

@@ -1,4 +1,5 @@
 #include "ui/chart/chartDataManager.h"
+#include "common.h"
 #include <QDebug>
 #include <iostream>
 
@@ -423,6 +424,25 @@ void ChartDataManager::aggregateIndicators(chart::AggregationLevel level) {
         }
 
     }
+
+    // Bollinger Bands
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].bbValues) {
+        if (!aggregated.isBbValid(id)) {
+            const auto& [middleBand, upperBand, lowerBand] = values;
+            std::vector<double> middleData = aggregateVector(middleBand, level, Chart::AggregateLast);
+            std::vector<double> upperData = aggregateVector(upperBand, level, Chart::AggregateLast);
+            std::vector<double> lowerData = aggregateVector(lowerBand, level, Chart::AggregateLast);
+            if (!middleData.empty() && !upperData.empty() && !lowerData.empty() &&
+                middleData.size() == upperData.size() && middleData.size() == lowerData.size()) {
+                aggregated.bbValues[id] = std::make_tuple(
+                    std::move(middleData),
+                    std::move(upperData),
+                    std::move(lowerData)
+                );
+                aggregated.validBbIds.insert(id);
+            }
+        }
+    }
 }
 
 std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> &data, chart::AggregationLevel level, int aggregateMethod) const {
@@ -548,7 +568,7 @@ void ChartDataManager::calculateCCI(int id, int period) {
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].cciValues[id] = std::move(cciValues);
 }
 
-void ChartDataManager::calculateMACD(int id, int fastPeriod, int slowPeriod, int signalPeriod, const std::string& source, const std::string& osc_ma_type, const std::string& signal_ma_type, int signal_smoothing) {
+void ChartDataManager::calculateMACD(int id, int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType oscMA, filter::MAType signalMA, int signal_smoothing) {
     // Vérifier si les données nécessaires sont disponibles
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || fastPeriod < 2 || slowPeriod < 2 || signalPeriod < 2) return;
 
@@ -564,11 +584,33 @@ void ChartDataManager::calculateMACD(int id, int fastPeriod, int slowPeriod, int
     std::tie(macdLine, signalLine, histogram) = IndicatorMathUtils::calculateMACD(
         openPrices, highPrices, lowPrices, closePrices,
         fastPeriod, slowPeriod, signalPeriod,
-        source, osc_ma_type, signal_ma_type, signal_smoothing
+        source, oscMA, signalMA, signal_smoothing
     );
 
     // Mettre à jour le cache des indicateurs actifs
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].macdValues[id] = std::make_tuple(std::move(macdLine), std::move(signalLine), std::move(histogram));
+}
+
+void ChartDataManager::calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType maType) {
+    // Vérifier si les données nécessaires sont disponibles
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || period < 2) return;
+
+    // Obtenir les prix selon la source
+    const std::vector<double>& openPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].open;
+    const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
+    const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
+    const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+
+    std::vector<double> middleBand;
+    std::vector<double> upperBand;
+    std::vector<double> lowerBand;
+    std::tie(middleBand, upperBand, lowerBand) = IndicatorMathUtils::calculateBollingerBands(
+        openPrices, highPrices, lowPrices, closePrices,
+        period, stdDevMultiplier, source, maType
+    );
+
+    // Mettre à jour le cache des indicateurs actifs
+    m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].bbValues[id] = std::make_tuple(std::move(middleBand), std::move(upperBand), std::move(lowerBand));
 }
 
 void ChartDataManager::calculatePivotPoints(const indicators::PivotPointsInstance& config) {
@@ -936,10 +978,17 @@ void ChartDataManager::calculateIndicator(const indicators::IndicatorBase &confi
     }
     if (const indicators::MACDInstance* macdConfig = dynamic_cast<const indicators::MACDInstance*>(&config)) {
         calculateMACD(macdConfig->id, macdConfig->fastPeriod, macdConfig->slowPeriod, macdConfig->signalPeriod,
-                      macdConfig->source.toStdString(), macdConfig->osc_ma_type.toStdString(), 
-                      macdConfig->signal_ma_type.toStdString(), macdConfig->signal_smoothing);
+                      macdConfig->source, macdConfig->osc_ma_type,
+                      macdConfig->signal_ma_type, macdConfig->signal_smoothing);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validMacdIds.erase(macdConfig->id);
+        return;
+    }
+    if (const indicators::BBInstance* bbConfig = dynamic_cast<const indicators::BBInstance*>(&config)) {
+        calculateBB(bbConfig->id, bbConfig->period, bbConfig->stddev_multiplier,
+                    bbConfig->source, bbConfig->ma_type);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validBbIds.erase(bbConfig->id);
         return;
     }
     if (const indicators::PivotPointsInstance* pivotConfig = dynamic_cast<const indicators::PivotPointsInstance*>(&config)) {

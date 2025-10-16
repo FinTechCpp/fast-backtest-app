@@ -1,4 +1,5 @@
 #include "components/Utils/IndicatorMathUtils.h"
+#include "common.h"
 #include <algorithm>
 
 std::vector<double> IndicatorMathUtils::calculateRSI(const std::vector<double>& closeData, int period)
@@ -408,25 +409,23 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> Indica
     const std::vector<double>& open,
     const std::vector<double>& high,
     const std::vector<double>& low,
-    const std::vector<double>& closeData,
+    const std::vector<double>& close,
     int fastPeriod,
     int slowPeriod,
     int signalPeriod,
-    const std::string& source,
-    const std::string& oscMAType,
-    const std::string& signalMAType,
+    filter::PriceType source,
+    filter::MAType oscMAType,
+    filter::MAType signalMAType,
     int signalSmoothing)
 {
     // Select the source data based on the source parameter
-    const std::vector<double>* sourceData = &closeData;
-    std::string sourceLower = source;
-    std::transform(sourceLower.begin(), sourceLower.end(), sourceLower.begin(), ::tolower);
-    
-    if (sourceLower == "open") sourceData = &open;
-    else if (sourceLower == "high") sourceData = &high;
-    else if (sourceLower == "low") sourceData = &low;
-    else sourceData = &closeData; // default to close
-    
+    const std::vector<double>* sourceData = &close;
+
+    if (source == filter::PriceType::OPEN) sourceData = &open;
+    else if (source == filter::PriceType::HIGH) sourceData = &high;
+    else if (source == filter::PriceType::LOW) sourceData = &low;
+    else sourceData = &close; // default to close
+
     // For now, we only support EMA-based MACD (ignoring oscMAType and signalMAType)
     // TODO: Implement SMA support if needed
     (void)oscMAType;
@@ -455,9 +454,7 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> Indica
         double sum = 0.0;
         for (int i = 0; i < fastPeriod; ++i) sum += (*sourceData)[i];
         fastEma[fastPeriod - 1] = sum / fastPeriod;
-        for (size_t i = fastPeriod; i < n; ++i) {
-            fastEma[i] = ((*sourceData)[i] - fastEma[i - 1]) * multFast + fastEma[i - 1];
-        }
+        for (size_t i = fastPeriod; i < n; ++i) fastEma[i] = ((*sourceData)[i] - fastEma[i - 1]) * multFast + fastEma[i - 1];
     }
 
     // seed slow EMA with SMA when enough points
@@ -465,9 +462,7 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> Indica
         double sum = 0.0;
         for (int i = 0; i < slowPeriod; ++i) sum += (*sourceData)[i];
         slowEma[slowPeriod - 1] = sum / slowPeriod;
-        for (size_t i = slowPeriod; i < n; ++i) {
-            slowEma[i] = ((*sourceData)[i] - slowEma[i - 1]) * multSlow + slowEma[i - 1];
-        }
+        for (size_t i = slowPeriod; i < n; ++i) slowEma[i] = ((*sourceData)[i] - slowEma[i - 1]) * multSlow + slowEma[i - 1];
     }
 
     // Build macd line where both EMAs are available
@@ -507,6 +502,68 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> Indica
 
     // For indices before signal initialized, signalLine & histogram remain 0.0 (consistent with other helpers)
     return {macdLine, signalLine, histogram};
+}
+
+std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> IndicatorMathUtils::calculateBollingerBands(
+    const std::vector<double>& open,
+    const std::vector<double>& high,
+    const std::vector<double>& low,
+    const std::vector<double>& close,
+    int period,
+    double stdDevMultiplier,
+    filter::PriceType source,
+    filter::MAType oscMAType
+) {
+    // Select source series
+    const std::vector<double>* src = &close;
+    if (source == filter::PriceType::OPEN)  src = &open;
+    else if (source == filter::PriceType::HIGH) src = &high;
+    else if (source == filter::PriceType::LOW)  src = &low;
+    // else keep close
+
+    size_t n = src->size();
+    std::vector<double> middle(n, 0.0);
+    std::vector<double> upper(n, 0.0);
+    std::vector<double> lower(n, 0.0);
+
+    if (n == 0 || period <= 0) return {middle, upper, lower};
+    if (n < static_cast<size_t>(period)) return {middle, upper, lower};
+
+    // Compute middle band (SMA or EMA)
+    if (oscMAType == filter::MAType::EMA) {
+        middle = calculateEMA(*src, period);
+    } else {
+        // Simple moving average (SMA)
+        double sum = 0.0;
+        for (int i = 0; i < period; ++i) sum += (*src)[i];
+        middle[period - 1] = sum / period;
+        for (size_t i = period; i < n; ++i) {
+            sum += (*src)[i];
+            sum -= (*src)[i - period];
+            middle[i] = sum / period;
+        }
+        // lower indices remain 0.0
+    }
+
+    // Compute rolling standard deviation (population stddev over window)
+    for (size_t i = static_cast<size_t>(period - 1); i < n; ++i) {
+        // compute mean over the window for stddev calculation
+        double mean = 0.0;
+        for (size_t j = i - period + 1; j <= i; ++j) mean += (*src)[j];
+        mean /= period;
+
+        double sumsq = 0.0;
+        for (size_t j = i - period + 1; j <= i; ++j) {
+            double d = (*src)[j] - mean;
+            sumsq += d * d;
+        }
+        double sd = std::sqrt(sumsq / period);
+
+        upper[i] = middle[i] + stdDevMultiplier * sd;
+        lower[i] = middle[i] - stdDevMultiplier * sd;
+    }
+
+    return {middle, upper, lower};
 }
 
 std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::calculatePivotPoints(

@@ -61,6 +61,7 @@ private:
     QWidget* m_leftSuperTrendWidget;
     QWidget* m_leftCCIWidget;
     QWidget* m_leftMACDWidget;
+    QWidget* m_leftBBWidget;
     QDoubleSpinBox* m_leftCCIOverboughtSpin;
     QDoubleSpinBox* m_leftCCIOversoldSpin;
     QSpinBox* m_leftEMAPeriodSpin;
@@ -80,7 +81,10 @@ private:
     QComboBox* m_leftMACDOscMATypeCombo;        // "EMA"/"SMA" for oscillator MA type
     QComboBox* m_leftMACDSignalMATypeCombo;     // "EMA"/"SMA" for signal MA type
     QSpinBox* m_leftMACDSignalSmoothingSpin;    // optional signal smoothing period (0 = use signal_period)
-
+    QSpinBox* m_leftBBPeriodSpin;
+    QDoubleSpinBox* m_leftBBStdDevMultiplierSpin;
+    QComboBox* m_leftBBSourceCombo;              // "open"/"high"/"low"/"close"
+    QComboBox* m_leftBBMATypeCombo;              // "EMA"/"SMA" for MA type
 
     // Widgets pour le côté droit
     QGroupBox* m_rightGroup;
@@ -104,6 +108,7 @@ private:
     QWidget* m_rightSuperTrendWidget;
     QWidget* m_rightCCIWidget;
     QWidget* m_rightMACDWidget;
+    QWidget* m_rightBBWidget;
     QDoubleSpinBox* m_rightCCIOverboughtSpin;
     QDoubleSpinBox* m_rightCCIOversoldSpin;
     QSpinBox* m_rightEMAPeriodSpin;
@@ -123,7 +128,11 @@ private:
     QComboBox* m_rightMACDOscMATypeCombo;        // "EMA"/"SMA" for oscillator MA type
     QComboBox* m_rightMACDSignalMATypeCombo;     // "EMA"/"SMA" for signal MA type
     QSpinBox* m_rightMACDSignalSmoothingSpin;    // optional signal smoothing period (0 = use signal_period)
-    
+    QSpinBox* m_rightBBPeriodSpin;
+    QDoubleSpinBox* m_rightBBStdDevMultiplierSpin;
+    QComboBox* m_rightBBSourceCombo;              // "open"/"high"/"low"/"close"
+    QComboBox* m_rightBBMATypeCombo;              // "EMA"/"SMA" for MA type
+
     // Widgets pour l'opérateur
     QComboBox* m_operatorCombo;
     

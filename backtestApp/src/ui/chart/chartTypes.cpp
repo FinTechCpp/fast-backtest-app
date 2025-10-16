@@ -14,6 +14,7 @@ CEREAL_REGISTER_TYPE(indicators::ATRInstance)
 CEREAL_REGISTER_TYPE(indicators::SuperTrendInstance)
 CEREAL_REGISTER_TYPE(indicators::CCIInstance)
 CEREAL_REGISTER_TYPE(indicators::MACDInstance)
+CEREAL_REGISTER_TYPE(indicators::BBInstance)
 CEREAL_REGISTER_TYPE(indicators::PivotPointsInstance)
 
 // Déclarer les relations hiérarchiques
@@ -23,7 +24,9 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::Stoc
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::ATRInstance)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::SuperTrendInstance)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::CCIInstance)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::BBInstance)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::MACDInstance)
+
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::PivotPointsInstance)
 
 namespace chart {

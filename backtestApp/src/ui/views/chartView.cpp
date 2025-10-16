@@ -298,6 +298,18 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
                 addIfNotPresent(std::move(macd));
                 break;
             }
+            case filter::IndicatorType::BB_UPPER:
+            case filter::IndicatorType::BB_LOWER:
+            case filter::IndicatorType::BB_PERCENT_B: {
+                auto bb = std::make_unique<indicators::BBInstance>();
+                bb->period = source.bbParams.period;
+                // bbParams stores ma_type and source as ints; cast to the enum types expected by BBInstance
+                bb->ma_type = static_cast<filter::MAType>(source.bbParams.ma_type);
+                bb->source = static_cast<filter::PriceType>(source.bbParams.source);
+                bb->stddev_multiplier = source.bbParams.stddev_multiplier;
+                addIfNotPresent(std::move(bb));
+                break;
+            }
             default:
                 break;
         }

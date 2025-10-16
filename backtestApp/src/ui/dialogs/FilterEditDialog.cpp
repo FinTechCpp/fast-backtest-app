@@ -134,6 +134,14 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_leftMACDSignalPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
             this, &FilterEditDialog::updatePreview);
+    connect(m_leftBBPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftBBMATypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftBBSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
     
     connect(m_rightPriceTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
@@ -173,7 +181,15 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_rightMACDSignalPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
             this, &FilterEditDialog::updatePreview); 
-    
+    connect(m_rightBBPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightBBMATypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightBBSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+
     connect(m_operatorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
     connect(m_temporalLogicCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
@@ -237,6 +253,9 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftIndicatorTypeCombo->addItem("MACD Histogramme", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
     m_leftIndicatorTypeCombo->addItem("MACD Ligne MACD", static_cast<int>(filter::IndicatorType::MACD_LINE));
     m_leftIndicatorTypeCombo->addItem("MACD Ligne Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
+    m_leftIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Supérieure", static_cast<int>(filter::IndicatorType::BB_UPPER));
+    m_leftIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Inférieure", static_cast<int>(filter::IndicatorType::BB_LOWER));
+    m_leftIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Médiane", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_leftIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
     
@@ -349,7 +368,34 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     macdLayout->addRow("Période Signal:", m_leftMACDSignalPeriodSpin);
     m_leftMACDWidget->setVisible(false);
     indicatorLayout->addWidget(m_leftMACDWidget);
-    
+
+    // Bandes de Bollinger
+    m_leftBBWidget = new QWidget(m_leftIndicatorWidget);
+    QFormLayout* bbLayout = new QFormLayout(m_leftBBWidget);
+    m_leftBBPeriodSpin = new QSpinBox(m_leftBBWidget);
+    m_leftBBPeriodSpin->setRange(1, 1000);
+    m_leftBBPeriodSpin->setValue(20);
+    m_leftBBMATypeCombo = new QComboBox(m_leftBBWidget);
+    m_leftBBMATypeCombo->addItem("SMA", static_cast<int>(filter::MAType::SMA));
+    m_leftBBMATypeCombo->addItem("EMA", static_cast<int>(filter::MAType::EMA));
+    m_leftBBSourceCombo = new QComboBox(m_leftBBWidget);
+    m_leftBBSourceCombo->addItem("Clôture", static_cast<int>(filter::PriceType::CLOSE));
+    m_leftBBSourceCombo->addItem("Ouverture", static_cast<int>(filter::PriceType::OPEN));
+    m_leftBBSourceCombo->addItem("Plus haut", static_cast<int>(filter::PriceType::HIGH));
+    m_leftBBSourceCombo->addItem("Plus bas", static_cast<int>(filter::PriceType::LOW));
+    m_leftBBSourceCombo->addItem("Typique", static_cast<int>(filter::PriceType::TYPICAL));
+    m_leftBBSourceCombo->addItem("Médian", static_cast<int>(filter::PriceType::MEDIAN));
+    m_leftBBStdDevMultiplierSpin = new QDoubleSpinBox(m_leftBBWidget);
+    m_leftBBStdDevMultiplierSpin->setRange(0.1, 10.0);
+    m_leftBBStdDevMultiplierSpin->setSingleStep(0.1);
+    m_leftBBStdDevMultiplierSpin->setValue(2.0);
+    bbLayout->addRow("Période:", m_leftBBPeriodSpin);
+    bbLayout->addRow("Type de MA:", m_leftBBMATypeCombo);
+    bbLayout->addRow("Source:", m_leftBBSourceCombo);
+    bbLayout->addRow("Multiplicateur écart-type:", m_leftBBStdDevMultiplierSpin);
+    m_leftBBWidget->setVisible(false);
+    indicatorLayout->addWidget(m_leftBBWidget); 
+
     // 3. Propriété bougie
     m_leftCandlePropertyWidget = new QWidget(parent);
     QFormLayout* candleLayout = new QFormLayout(m_leftCandlePropertyWidget);
@@ -422,6 +468,9 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightIndicatorTypeCombo->addItem("MACD Histogramme", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
     m_rightIndicatorTypeCombo->addItem("MACD Ligne MACD", static_cast<int>(filter::IndicatorType::MACD_LINE));
     m_rightIndicatorTypeCombo->addItem("MACD Ligne Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
+    m_rightIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Supérieure", static_cast<int>(filter::IndicatorType::BB_UPPER));
+    m_rightIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Inférieure", static_cast<int>(filter::IndicatorType::BB_LOWER));
+    m_rightIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Médiane", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_rightIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
     
@@ -532,6 +581,32 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     macdLayout->addRow("Période Signal:", m_rightMACDSignalPeriodSpin);
     m_rightMACDWidget->setVisible(false);
     indicatorLayout->addWidget(m_rightMACDWidget);
+    // Bandes de Bollinger
+    m_rightBBWidget = new QWidget(m_rightIndicatorWidget);
+    QFormLayout* bbLayout = new QFormLayout(m_rightBBWidget);
+    m_rightBBPeriodSpin = new QSpinBox(m_rightBBWidget);
+    m_rightBBPeriodSpin->setRange(1, 1000);
+    m_rightBBPeriodSpin->setValue(20);
+    m_rightBBMATypeCombo = new QComboBox(m_rightBBWidget);  
+    m_rightBBMATypeCombo->addItem("SMA", static_cast<int>(filter::MAType::SMA));
+    m_rightBBMATypeCombo->addItem("EMA", static_cast<int>(filter::MAType::EMA));
+    m_rightBBSourceCombo = new QComboBox(m_rightBBWidget);
+    m_rightBBSourceCombo->addItem("Clôture", static_cast<int>(filter::PriceType::CLOSE));
+    m_rightBBSourceCombo->addItem("Ouverture", static_cast<int>(filter::PriceType::OPEN));
+    m_rightBBSourceCombo->addItem("Plus haut", static_cast<int>(filter::PriceType::HIGH));
+    m_rightBBSourceCombo->addItem("Plus bas", static_cast<int>(filter::PriceType::LOW));
+    m_rightBBSourceCombo->addItem("Typique", static_cast<int>(filter::PriceType::TYPICAL));
+    m_rightBBSourceCombo->addItem("Médian", static_cast<int>(filter::PriceType::MEDIAN));
+    m_rightBBStdDevMultiplierSpin   = new QDoubleSpinBox(m_rightBBWidget);
+    m_rightBBStdDevMultiplierSpin->setRange(0.1, 10.0);
+    m_rightBBStdDevMultiplierSpin->setSingleStep(0.1);
+    m_rightBBStdDevMultiplierSpin->setValue(2.0);
+    bbLayout->addRow("Période:", m_rightBBPeriodSpin);
+    bbLayout->addRow("Type de MA:", m_rightBBMATypeCombo);
+    bbLayout->addRow("Source:", m_rightBBSourceCombo);
+    bbLayout->addRow("Multiplicateur écart-type:", m_rightBBStdDevMultiplierSpin);
+    m_rightBBWidget->setVisible(false);
+    indicatorLayout->addWidget(m_rightBBWidget);    
 
     // 3. Constante
     m_rightConstantWidget = new QWidget(parent);
@@ -610,6 +685,7 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_leftSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
         m_leftCCIWidget->setVisible(type == filter::IndicatorType::CCI);
         m_leftMACDWidget->setVisible(type == filter::IndicatorType::MACD_HISTOGRAM || type == filter::IndicatorType::MACD_LINE || type == filter::IndicatorType::MACD_SIGNAL);
+        m_leftBBWidget->setVisible(type == filter::IndicatorType::BB_UPPER || type == filter::IndicatorType::BB_LOWER || type == filter::IndicatorType::BB_PERCENT_B);
     } else if (container == m_rightIndicatorWidget) {
         m_rightEMAWidget->setVisible(type == filter::IndicatorType::EMA);
         m_rightRSIWidget->setVisible(type == filter::IndicatorType::RSI);
@@ -618,6 +694,7 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_rightSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
         m_rightCCIWidget->setVisible(type == filter::IndicatorType::CCI);
         m_rightMACDWidget->setVisible(type == filter::IndicatorType::MACD_HISTOGRAM || type == filter::IndicatorType::MACD_LINE || type == filter::IndicatorType::MACD_SIGNAL);
+        m_rightBBWidget->setVisible(type == filter::IndicatorType::BB_UPPER || type == filter::IndicatorType::BB_LOWER || type == filter::IndicatorType::BB_PERCENT_B);
     }
 }
 
@@ -674,6 +751,18 @@ filter::ValueSource FilterEditDialog::getLeftValueSource() const
                         m_leftMACDSignalPeriodSpin->value()
                     );
                     break;
+                case filter::IndicatorType::BB_UPPER:
+                case filter::IndicatorType::BB_LOWER:
+                case filter::IndicatorType::BB_PERCENT_B:
+                    // BBParams constructor is (int period, double stddev_multiplier, int offset)
+                    source.bbParams = filter::BBParams(
+                        m_leftBBPeriodSpin->value(),
+                        m_leftBBStdDevMultiplierSpin->value(),
+                        0
+                    );
+                    // Set optional fields (source and ma_type) which are integers in the struct
+                    source.bbParams.ma_type = static_cast<int>(m_leftBBMATypeCombo->currentData().toInt());
+                    source.bbParams.source = static_cast<int>(m_leftBBSourceCombo->currentData().toInt());
                 default:
                     break;
             }
@@ -740,6 +829,19 @@ filter::ValueSource FilterEditDialog::getRightValueSource() const
                         m_rightMACDSlowPeriodSpin->value(),
                         m_rightMACDSignalPeriodSpin->value()
                     );
+                    break;
+                case filter::IndicatorType::BB_UPPER:
+                case filter::IndicatorType::BB_LOWER:
+                case filter::IndicatorType::BB_PERCENT_B:
+                    // BBParams constructor is (int period, double stddev_multiplier, int offset)
+                    source.bbParams = filter::BBParams(
+                        m_rightBBPeriodSpin->value(),
+                        m_rightBBStdDevMultiplierSpin->value(),
+                        0
+                    );
+                    // Set optional fields (source and ma_type)
+                    source.bbParams.ma_type = static_cast<int>(m_rightBBMATypeCombo->currentData().toInt());
+                    source.bbParams.source = static_cast<int>(m_rightBBSourceCombo->currentData().toInt());
                     break;
                 default:
                     break;
@@ -888,6 +990,14 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                     m_leftMACDSlowPeriodSpin->setValue(filter.leftValue.macdParams.slow);
                     m_leftMACDSignalPeriodSpin->setValue(filter.leftValue.macdParams.signal);
                     break;
+                case filter::IndicatorType::BB_UPPER:
+                case filter::IndicatorType::BB_LOWER:
+                case filter::IndicatorType::BB_PERCENT_B:
+                    m_leftBBPeriodSpin->setValue(filter.leftValue.bbParams.period);
+                    m_leftBBMATypeCombo->setCurrentIndex(m_leftBBMATypeCombo->findData(static_cast<int>(filter.leftValue.bbParams.ma_type)));
+                    m_leftBBSourceCombo->setCurrentIndex(m_leftBBSourceCombo->findData(static_cast<int>(filter.leftValue.bbParams.source)));
+                    m_leftBBStdDevMultiplierSpin->setValue(filter.leftValue.bbParams.stddev_multiplier);
+                    break;
                 default:
                     break;
             }
@@ -948,6 +1058,14 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                     m_rightMACDFastPeriodSpin->setValue(filter.rightValue.macdParams.fast);
                     m_rightMACDSlowPeriodSpin->setValue(filter.rightValue.macdParams.slow);
                     m_rightMACDSignalPeriodSpin->setValue(filter.rightValue.macdParams.signal);
+                    break;
+                case filter::IndicatorType::BB_UPPER:
+                case filter::IndicatorType::BB_LOWER:
+                case filter::IndicatorType::BB_PERCENT_B:
+                    m_rightBBPeriodSpin->setValue(filter.rightValue.bbParams.period);
+                    m_rightBBMATypeCombo->setCurrentIndex(m_rightBBMATypeCombo->findData(static_cast<int>(filter.rightValue.bbParams.ma_type)));
+                    m_rightBBSourceCombo->setCurrentIndex(m_rightBBSourceCombo->findData(static_cast<int>(filter.rightValue.bbParams.source)));
+                    m_rightBBStdDevMultiplierSpin->setValue(filter.rightValue.bbParams.stddev_multiplier);
                     break;
                 default:
                     break;

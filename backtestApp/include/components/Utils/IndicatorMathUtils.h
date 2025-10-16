@@ -10,6 +10,15 @@
 #include "beTypes.h"
 #include "ui/chart/chartTypes.h"
 
+// Forward declarations for filter namespace types used in method signatures.
+// These are declared with a fixed underlying type to allow forward declaration
+// without requiring the full definition in this header; include the real
+// definition in translation units that need the enum values.
+namespace filter {
+    enum class PriceType : int;
+    enum class MAType : int;
+}
+
 
 /**
  * @brief Utility class for calculating technical indicators
@@ -153,10 +162,30 @@ public:
         int fastPeriod,
         int slowPeriod,
         int signalPeriod,
-        const std::string& source = "close",
-        const std::string& oscMAType = "EMA",
-        const std::string& signalMAType = "EMA",
-        int signalSmoothing = 0
+        filter::PriceType source,
+        filter::MAType oscMAType,
+        filter::MAType signalMAType,
+        int signalSmoothing
+    );
+
+    /**
+     * @brief Calculates Bollinger Bands (BB) indicator
+     * Returns a tuple of three vectors: (middle_band, upper_band, lower_band)
+     * Parameters:
+     *  - period: period for the moving average 
+     *  - stdDevMultiplier: standard deviation multiplier for the bands 
+     *  - source: "open"/"high"/"low"/"close" 
+     *  - oscMAType: "EMA" or "SMA" for the middle band moving average 
+     */
+    static std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> calculateBollingerBands(
+        const std::vector<double>& open,
+        const std::vector<double>& high,
+        const std::vector<double>& low,
+        const std::vector<double>& close,
+        int period,
+        double stdDevMultiplier,
+        filter::PriceType source,
+        filter::MAType oscMAType
     );
 
     /**

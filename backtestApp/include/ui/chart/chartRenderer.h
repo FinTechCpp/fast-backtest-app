@@ -134,6 +134,11 @@ private:
         const indicators::MACDInstance& macd, 
         const ChartDataManager& dataManager, 
         const chart::AggregationInfo& aggregationInfo);
+    
+    void addBBToChart(FinanceChart* chart, 
+        const indicators::BBInstance& bb, 
+        const ChartDataManager& dataManager, 
+        const chart::AggregationInfo& aggregationInfo);
 
     void addPivotPointsToChart(XYChart* mainChart,
         const indicators::PivotPointsInstance& pivotPoints,

@@ -80,18 +80,16 @@ void MACDDialog::updateUIFromInstance()
     m_signalPeriodSpinBox->setValue(m_currentIndicator.signalPeriod);
     m_signalSmoothingSpinBox->setValue(m_currentIndicator.signal_smoothing);
 
-    // Map QString to combo box index
-    QString sourceLower = m_currentIndicator.source.toLower();
-    if (sourceLower == "open") m_sourceComboBox->setCurrentIndex(0);
-    else if (sourceLower == "high") m_sourceComboBox->setCurrentIndex(1);
-    else if (sourceLower == "low") m_sourceComboBox->setCurrentIndex(2);
-    else m_sourceComboBox->setCurrentIndex(3); // close
-    
-    QString oscLower = m_currentIndicator.osc_ma_type.toUpper();
-    m_oscMATypeComboBox->setCurrentIndex(oscLower == "SMA" ? 1 : 0); // EMA=0, SMA=1
-    
-    QString signalLower = m_currentIndicator.signal_ma_type.toUpper();
-    m_signalMATypeComboBox->setCurrentIndex(signalLower == "SMA" ? 1 : 0); // EMA=0, SMA=1
+    switch (m_currentIndicator.source) {
+        case filter::PriceType::OPEN: m_sourceComboBox->setCurrentIndex(0); break;
+        case filter::PriceType::HIGH: m_sourceComboBox->setCurrentIndex(1); break;
+        case filter::PriceType::LOW: m_sourceComboBox->setCurrentIndex(2); break;
+        case filter::PriceType::CLOSE: m_sourceComboBox->setCurrentIndex(3); break;
+        default: m_sourceComboBox->setCurrentIndex(3); break; // Default to Close
+    }
+
+    m_oscMATypeComboBox->setCurrentIndex(m_currentIndicator.osc_ma_type == filter::MAType::SMA ? 1 : 0); // EMA=0, SMA=1
+    m_signalMATypeComboBox->setCurrentIndex(m_currentIndicator.signal_ma_type == filter::MAType::SMA ? 1 : 0); // EMA=0, SMA=1
 
     updateColorButtonStyle(m_macdColorButton, m_currentIndicator.macdColor);
     updateColorButtonStyle(m_signalColorButton, m_currentIndicator.signalColor);
@@ -124,25 +122,25 @@ void MACDDialog::onSignalSmoothingChanged(int period)
 
 void MACDDialog::onSourceChanged(int index)
 {
-    // Map combo box index to QString source
-    static const QStringList sources = {"Open", "High", "Low", "Close"};
-    if (index >= 0 && index < sources.size()) {
-        m_currentIndicator.source = sources[index];
+    switch (index) {
+        case 0: m_currentIndicator.source = filter::PriceType::OPEN; break;
+        case 1: m_currentIndicator.source = filter::PriceType::HIGH; break;
+        case 2: m_currentIndicator.source = filter::PriceType::LOW; break;
+        case 3: m_currentIndicator.source = filter::PriceType::CLOSE; break;
+        default: m_currentIndicator.source = filter::PriceType::CLOSE; break;
     }
     applyChanges();
 }
 
 void MACDDialog::onOscMATypeChanged(int index)
 {
-    // Map combo box index to QString MA type
-    m_currentIndicator.osc_ma_type = (index == 0) ? "EMA" : "SMA";
+    m_currentIndicator.osc_ma_type = (index == 0) ? filter::MAType::EMA : filter::MAType::SMA;
     applyChanges();
 }
 
 void MACDDialog::onSignalMATypeChanged(int index)
 {
-    // Map combo box index to QString MA type
-    m_currentIndicator.signal_ma_type = (index == 0) ? "EMA" : "SMA";
+    m_currentIndicator.signal_ma_type = (index == 0) ? filter::MAType::EMA : filter::MAType::SMA;
     applyChanges();
 }
 

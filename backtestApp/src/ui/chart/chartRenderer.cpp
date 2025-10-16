@@ -200,6 +200,13 @@ void ChartRenderer::createOrUpdateChart(
         }
     }
 
+    // BB
+    for (const indicators::BBInstance* bb : dataManager.getIndicatorsOfType<indicators::BBInstance>()) {
+        if (bb->visible) {
+            addBBToChart(m_financeChart.get(), *bb, dataManager, aggregationInfo);
+        }
+    }
+
     // super important va me permettre de faire le zoome vertical
     // mainChart->yAxis()->setLinearScale(200, 20000);
 
@@ -1217,6 +1224,53 @@ void ChartRenderer::addMACDToChart(FinanceChart* finance, const indicators::MACD
 
     // Laisser ChartDir gérer l'échelle Y (optionnel : petite marge)
     // Ajuster si nécessaire : c->yAxis()->setMargin(...);
+}
+
+void ChartRenderer::addBBToChart(FinanceChart *chart, const indicators::BBInstance &bb, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo){
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
+
+    // Utiliser les données agrégées
+    const auto& bbMap = dataManager.getAggregatedIndicators(aggregationInfo.level).bbValues;
+    auto it = bbMap.find(bb.id);
+    
+    // Vérifier si les données agrégées sont disponibles et valides
+    if (it == bbMap.end()) return;
+
+    const std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>& bbData = it->second;
+
+    const std::vector<double>& middleBand = std::get<0>(bbData);
+    const std::vector<double>& upperBand = std::get<1>(bbData);
+    const std::vector<double>& lowerBand = std::get<2>(bbData);
+
+    if (middleBand.empty() || upperBand.empty() || lowerBand.empty() || startIndex >= middleBand.size()) return;
+
+    // Limiter le nombre de points à afficher
+    size_t endIndex = std::min(startIndex + pointsToShow, middleBand.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
+
+    // Extraire les données BB visibles du cache
+    DoubleArray middleArray(&middleBand[startIndex], actualPoints);
+    DoubleArray upperArray(&upperBand[startIndex], actualPoints);
+    DoubleArray lowerArray(&lowerBand[startIndex], actualPoints);
+
+    // Ajouter les bandes de Bollinger directement sur le graphique principal
+    XYChart* mainChart = (XYChart*)chart->getChart(1);
+    
+    char buffer[1024];
+    
+    snprintf(buffer, sizeof(buffer), "BB Middle (%d)", bb.period);
+    LineLayer* middleLayer = chart->addLineIndicator2(mainChart, middleArray, bb.middleBandColor, buffer);
+    if (middleLayer) middleLayer->setFastLineMode(true);
+    
+    snprintf(buffer, sizeof(buffer), "BB Upper (%d)", bb.period);
+    LineLayer* upperLayer = chart->addLineIndicator2(mainChart, upperArray, bb.upperBandColor, buffer);
+    if (upperLayer) upperLayer->setFastLineMode(true);
+    
+    snprintf(buffer, sizeof(buffer), "BB Lower (%d)", bb.period);
+    LineLayer* lowerLayer = chart->addLineIndicator2(mainChart, lowerArray, bb.lowerBandColor, buffer);
+    if (lowerLayer) lowerLayer->setFastLineMode(true);
 }
 
 void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::PivotPointsInstance &pivotPoints, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)

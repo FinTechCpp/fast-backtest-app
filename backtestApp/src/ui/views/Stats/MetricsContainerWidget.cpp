@@ -186,60 +186,60 @@ void MetricsContainerWidget::initializeMetrics() {
         // },
         
         // Section performance
-        {"equity_final", "Capital final:", "Montant final du capital", Section::Performance,
-            [](const be::Stats& s) { 
-                return s.equityFinal > s.equityInitial ? MetricStatus::Good : 
-                      (s.equityFinal < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityFinal, 'f', 2)); }
-        },
-        {"equity_peak", "Capital maximal:", "Montant maximal atteint par le capital", Section::Performance,
-            [](const be::Stats& s) { 
-                return s.equityPeak > s.equityInitial ? MetricStatus::Good : 
-                (s.equityPeak < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
-            },
-            [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityPeak, 'f', 2)); }
-        },
-        {"total_return", "Rendement total:", "Pourcentage de gain/perte sur l'ensemble du backtest", Section::Performance,
-            [](const be::Stats& s) { 
-                return s.returnPct > 0 ? MetricStatus::Good : 
-                      (s.returnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.returnPct, 'f', 2)); }
-        },
-        {"buy_hold_return", "Buy & Hold:", "Rendement d'une stratégie passive d'achat et maintien", Section::Performance,
-            [](const be::Stats& s) { 
-                return MetricStatus::Neutral; 
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.buyHoldReturnPct, 'f', 2)); }
-        },
-        {"buy_hold_cagr", "Buy & Hold CAGR:", "CAGR d'une stratégie passive d'achat et maintien", Section::Performance,
-            [](const be::Stats& s) {
-                return MetricStatus::Neutral;
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.buyHoldCagrPct, 'f', 2)); }
-        },
-        {"return_ann", "Rendement annualisé:", "Rendement annuel équivalent", Section::Performance,
-            [](const be::Stats& s) { 
-                return s.returnAnnPct > 0 ? MetricStatus::Good : 
-                      (s.returnAnnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.returnAnnPct, 'f', 2)); }
-        },
-        {"cagr", "CAGR:", "Taux de croissance annuel composé", Section::Performance,
-            [](const be::Stats& s) { 
-                return s.cagrPct > 0 ? MetricStatus::Good : 
-                      (s.cagrPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.cagrPct, 'f', 2)); }
-        },
-        {"alpha", "Alpha:", "Surperformance par rapport au marché (ajustée au risque)", Section::Performance,
-            [](const be::Stats& s) { 
-                return s.alphaPct > 0 ? MetricStatus::Good : 
-                      (s.alphaPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
-            },
-            [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.alphaPct, 'f', 2)); }
-        },
+        // {"equity_final", "Capital final:", "Montant final du capital", Section::Performance,
+        //     [](const be::Stats& s) { 
+        //         return s.equityFinal > s.equityInitial ? MetricStatus::Good : 
+        //               (s.equityFinal < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityFinal, 'f', 2)); }
+        // },
+        // {"equity_peak", "Capital maximal:", "Montant maximal atteint par le capital", Section::Performance,
+        //     [](const be::Stats& s) { 
+        //         return s.equityPeak > s.equityInitial ? MetricStatus::Good : 
+        //         (s.equityPeak < s.equityInitial ? MetricStatus::Bad : MetricStatus::Neutral);
+        //     },
+        //     [](const be::Stats& s) { return QString("$%1").arg(QString::number(s.equityPeak, 'f', 2)); }
+        // },
+        // {"total_return", "Rendement total:", "Pourcentage de gain/perte sur l'ensemble du backtest", Section::Performance,
+        //     [](const be::Stats& s) { 
+        //         return s.returnPct > 0 ? MetricStatus::Good : 
+        //               (s.returnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.returnPct, 'f', 2)); }
+        // },
+        // {"buy_hold_return", "Buy & Hold:", "Rendement d'une stratégie passive d'achat et maintien", Section::Performance,
+        //     [](const be::Stats& s) { 
+        //         return MetricStatus::Neutral; 
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.buyHoldReturnPct, 'f', 2)); }
+        // },
+        // {"buy_hold_cagr", "Buy & Hold CAGR:", "CAGR d'une stratégie passive d'achat et maintien", Section::Performance,
+        //     [](const be::Stats& s) {
+        //         return MetricStatus::Neutral;
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.buyHoldCagrPct, 'f', 2)); }
+        // },
+        // {"return_ann", "Rendement annualisé:", "Rendement annuel équivalent", Section::Performance,
+        //     [](const be::Stats& s) { 
+        //         return s.returnAnnPct > 0 ? MetricStatus::Good : 
+        //               (s.returnAnnPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.returnAnnPct, 'f', 2)); }
+        // },
+        // {"cagr", "CAGR:", "Taux de croissance annuel composé", Section::Performance,
+        //     [](const be::Stats& s) { 
+        //         return s.cagrPct > 0 ? MetricStatus::Good : 
+        //               (s.cagrPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.cagrPct, 'f', 2)); }
+        // },
+        // {"alpha", "Alpha:", "Surperformance par rapport au marché (ajustée au risque)", Section::Performance,
+        //     [](const be::Stats& s) { 
+        //         return s.alphaPct > 0 ? MetricStatus::Good : 
+        //               (s.alphaPct < 0 ? MetricStatus::Bad : MetricStatus::Neutral); 
+        //     },
+        //     [](const be::Stats& s) { return QString("%1%").arg(QString::number(s.alphaPct, 'f', 2)); }
+        // },
         {"beta", "Beta:", "Corrélation avec les mouvements du marché", Section::Performance,
             [](const be::Stats& s) {
                 if (std::isnan(s.beta)) return MetricStatus::NA;

@@ -110,6 +110,9 @@ private:
     
     KeyValueListWidget* m_keyValueListWidget = nullptr;
     KeyValueListWidget* m_timeInfoWidget = nullptr;
+    KeyValueListWidget* m_returnsWidget = nullptr;
+    KeyValueListWidget* m_equityDetailsWidget = nullptr;
+    KeyValueListWidget* m_buyHoldWidget = nullptr;
 
     VerticalGaugeRenderWidget* m_pnlGaugeWidget = nullptr;
 

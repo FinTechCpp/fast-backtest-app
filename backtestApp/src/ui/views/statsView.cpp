@@ -93,6 +93,33 @@ void StatsView::setupUI() {
     gridLayout->addWidget(m_equityWidget, 0, 4, 3, 3);
 
     // --------------------------------------
+    // Colonne de droite - Statistiques détaillées
+    // --------------------------------------
+    
+    // Widget des rendements
+    m_returnsWidget = new KeyValueListWidget("Rendements");
+    m_returnsWidget->addItem("Annualisé ", "--", Qt::black);
+    m_returnsWidget->addItem("CAGR ", "--", Qt::black);
+    m_returnsWidget->addItem("Alpha ", "--", Qt::black);
+    m_returnsWidget->setMinimumHeight(m_returnsWidget->sizeHint().height());
+    gridLayout->addWidget(m_returnsWidget, 3, 5);
+    
+    // Widget des détails d'equity
+    m_equityDetailsWidget = new KeyValueListWidget("Equity Details");
+    m_equityDetailsWidget->addItem("Initial ", "--", Qt::black);
+    m_equityDetailsWidget->addItem("Final ", "--", QColor(0, 150, 0));
+    m_equityDetailsWidget->addItem("Peak ", "--", Qt::black);
+    m_equityDetailsWidget->setMinimumHeight(m_equityDetailsWidget->sizeHint().height());
+    gridLayout->addWidget(m_equityDetailsWidget, 3, 6);
+    
+    // Widget Buy & Hold
+    m_buyHoldWidget = new KeyValueListWidget("Buy & Hold");
+    m_buyHoldWidget->addItem("Return ", "--", Qt::black);
+    m_buyHoldWidget->addItem("CAGR ", "--", Qt::black);
+    m_buyHoldWidget->setMinimumHeight(m_buyHoldWidget->sizeHint().height());
+    gridLayout->addWidget(m_buyHoldWidget, 4, 5, 1, 2); // S'étend sur 2 colonnes
+
+    // --------------------------------------
     // Ligne 1
     // --------------------------------------
     m_netProfitWidget = new SimpleTextWidget("Net Profit");
@@ -369,6 +396,21 @@ void StatsView::updateData(BacktestResults* results)
     m_equityWidget->setPoints(dates, m_currentResults->stats.equityCurve);
 
     m_tradingHeatmapWidget->updateContent(m_currentResults->stats.trades);
+
+
+
+    m_returnsWidget->updateValue("Annualisé ", QString::number(m_currentResults->stats.returnAnnPct, 'f', 1) + " %");
+    m_returnsWidget->updateValue("CAGR ", QString::number(m_currentResults->stats.cagrPct, 'f', 1) + " %");
+    m_returnsWidget->updateValue("Alpha ", QString::number(m_currentResults->stats.alphaPct, 'f', 1) + " %");
+
+
+    m_equityDetailsWidget->updateValue("Initial ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityInitial, 0) + " €");
+    m_equityDetailsWidget->updateValue("Final ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityFinal, 0) + " €");
+    m_equityDetailsWidget->updateValue("Peak ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityPeak, 0) + " €");
+
+
+    m_buyHoldWidget->updateValue("Return ", QString::number(m_currentResults->stats.buyHoldReturnPct, 'f', 1) + " %");
+    m_buyHoldWidget->updateValue("CAGR ", QString::number(m_currentResults->stats.buyHoldCagrPct, 'f', 1) + " %");
 }
 
 void StatsView::clear() {

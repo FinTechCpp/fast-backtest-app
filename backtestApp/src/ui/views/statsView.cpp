@@ -92,32 +92,9 @@ void StatsView::setupUI() {
     m_equityWidget = new EquityWidget("Equity Curve");
     gridLayout->addWidget(m_equityWidget, 0, 4, 3, 3);
 
-    // --------------------------------------
-    // Colonne de droite - Statistiques détaillées
-    // --------------------------------------
+
     
-    // Widget des rendements
-    m_returnsWidget = new KeyValueListWidget("Rendements");
-    m_returnsWidget->addItem("Annualisé ", "--", Qt::black);
-    m_returnsWidget->addItem("CAGR ", "--", Qt::black);
-    m_returnsWidget->addItem("Alpha ", "--", Qt::black);
-    m_returnsWidget->setMinimumHeight(m_returnsWidget->sizeHint().height());
-    gridLayout->addWidget(m_returnsWidget, 3, 5);
     
-    // Widget des détails d'equity
-    m_equityDetailsWidget = new KeyValueListWidget("Equity Details");
-    m_equityDetailsWidget->addItem("Initial ", "--", Qt::black);
-    m_equityDetailsWidget->addItem("Final ", "--", QColor(0, 150, 0));
-    m_equityDetailsWidget->addItem("Peak ", "--", Qt::black);
-    m_equityDetailsWidget->setMinimumHeight(m_equityDetailsWidget->sizeHint().height());
-    gridLayout->addWidget(m_equityDetailsWidget, 3, 6);
-    
-    // Widget Buy & Hold
-    m_buyHoldWidget = new KeyValueListWidget("Buy & Hold");
-    m_buyHoldWidget->addItem("Return ", "--", Qt::black);
-    m_buyHoldWidget->addItem("CAGR ", "--", Qt::black);
-    m_buyHoldWidget->setMinimumHeight(m_buyHoldWidget->sizeHint().height());
-    gridLayout->addWidget(m_buyHoldWidget, 4, 5, 1, 2); // S'étend sur 2 colonnes
 
     // --------------------------------------
     // Ligne 1
@@ -170,6 +147,20 @@ void StatsView::setupUI() {
     gridLayout->addWidget(m_tradingHeatmapWidget, 3, 4, 5, 1);
 
 
+    m_returnsWidget = new KeyValueListWidget("Rendements");
+    m_returnsWidget->addItem("Annualisé ", "--", Qt::black);
+    m_returnsWidget->addItem("CAGR ", "--", Qt::black);
+    m_returnsWidget->addItem("Alpha ", "--", Qt::black);
+    m_returnsWidget->setMinimumHeight(m_returnsWidget->sizeHint().height());
+    gridLayout->addWidget(m_returnsWidget, 3, 5);
+
+
+    m_equityDetailsWidget = new KeyValueListWidget("Equity Details");
+    m_equityDetailsWidget->addItem("Initial ", "--", Qt::black);
+    m_equityDetailsWidget->addItem("Final ", "--", QColor(0, 150, 0));
+    m_equityDetailsWidget->addItem("Peak ", "--", Qt::black);
+    m_equityDetailsWidget->setMinimumHeight(m_equityDetailsWidget->sizeHint().height());
+    gridLayout->addWidget(m_equityDetailsWidget, 3, 6);
 
 
     // --------------------------------------
@@ -180,6 +171,13 @@ void StatsView::setupUI() {
     m_grossLossWidget->setBackgroundColor(QColor(150, 0, 0).lighter(300));
     m_grossLossWidget->setSuffix(" €");
     gridLayout->addWidget(m_grossLossWidget, 4, 1);
+
+
+    m_buyHoldWidget = new KeyValueListWidget("Buy & Hold");
+    m_buyHoldWidget->addItem("Return ", "--", Qt::black);
+    m_buyHoldWidget->addItem("CAGR ", "--", Qt::black);
+    m_buyHoldWidget->setMinimumHeight(m_buyHoldWidget->sizeHint().height());
+    gridLayout->addWidget(m_buyHoldWidget, 4, 5, 1, 2); // S'étend sur 2 colonnes
 
     // --------------------------------------
     // Ligne 5

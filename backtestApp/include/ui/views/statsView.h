@@ -18,7 +18,6 @@
 #include <memory>
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
-#include "ui/views/Stats/MetricsContainerWidget.h"
 #include "ui/views/Stats/TradingHeatmapWidget.h"
 #include "ui/views/Stats/RiskReturnMapWidget.h"
 #include "ui/views/Stats/TradesTableWidget.h"
@@ -81,7 +80,6 @@ protected:
 
 private:
     // ==================== Membres privés ====================
-    MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
     PLDistributionWidget* m_plDistributionWidget = nullptr;
     RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
@@ -113,6 +111,11 @@ private:
     KeyValueListWidget* m_returnsWidget = nullptr;
     KeyValueListWidget* m_equityDetailsWidget = nullptr;
     KeyValueListWidget* m_buyHoldWidget = nullptr;
+    KeyValueListWidget* m_performanceRatiosWidget = nullptr;
+    KeyValueListWidget* m_marketExposureWidget = nullptr;
+    KeyValueListWidget* m_MAEWidget = nullptr;
+    KeyValueListWidget* m_systemQualityWidget = nullptr;
+    KeyValueListWidget* m_skewnessKurtosisWidget = nullptr;
 
     VerticalGaugeRenderWidget* m_pnlGaugeWidget = nullptr;
 

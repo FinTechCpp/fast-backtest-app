@@ -282,20 +282,9 @@ void StatsView::setupUI() {
 
     m_statsLayout->addLayout(gridLayout);
 
-    
-    // QHBoxLayout* tradesClosureLayout = new QHBoxLayout();
-    // tradesClosureLayout->setContentsMargins(0, 0, 0, 0);
-    // tradesClosureLayout->setSpacing(10);
-        
-    // m_tradingHeatmapWidget = new TradingHeatmapWidget();
-    
-    // tradesClosureLayout->addWidget(m_tradingHeatmapWidget, /*stretch=*/2);
 
-    // m_statsLayout->addLayout(tradesClosureLayout);
-
-
-    m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
-    m_statsLayout->addWidget(m_monthlyPerformanceWidget);
+    // m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
+    // m_statsLayout->addWidget(m_monthlyPerformanceWidget);
 
     m_tradesTableWidget = new TradesTableWidget();
     m_statsLayout->addWidget(m_tradesTableWidget);
@@ -312,7 +301,6 @@ void StatsView::setupUI() {
 
     // 4. STOCKAGE DES WIDGETS POUR MISES À JOUR/RESET
     m_statsWidgets.push_back(m_tradesTableWidget);
-    m_statsWidgets.push_back(m_monthlyPerformanceWidget);
 }
 
 void StatsView::updateData(BacktestResults* results)

@@ -19,11 +19,7 @@
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
 #include "ui/views/Stats/TradingHeatmapWidget.h"
-#include "ui/views/Stats/RiskReturnMapWidget.h"
 #include "ui/views/Stats/TradesTableWidget.h"
-#include "ui/views/Stats/RatioGaugesContainerWidget.h"
-#include "ui/views/Stats/PLDistributionWidget.h"
-#include "ui/views/Stats/MonthlyPerformanceWidget.h"
 
 #include "ui/views/Stats/FlexiblePieWidget.h"
 #include "ui/views/Stats/SimpleTextWidget.h"
@@ -81,10 +77,7 @@ protected:
 private:
     // ==================== Membres privés ====================
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
-    PLDistributionWidget* m_plDistributionWidget = nullptr;
-    RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
     TradesTableWidget* m_tradesTableWidget = nullptr;
-    MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
 
 
     EquityWidget* m_equityWidget = nullptr;
@@ -109,7 +102,6 @@ private:
     KeyValueListWidget* m_keyValueListWidget = nullptr;
     KeyValueListWidget* m_timeInfoWidget = nullptr;
     KeyValueListWidget* m_returnsWidget = nullptr;
-    // KeyValueListWidget* m_equityDetailsWidget = nullptr;
     KeyValueListWidget* m_buyHoldWidget = nullptr;
     KeyValueListWidget* m_performanceRatiosWidget = nullptr;
     KeyValueListWidget* m_marketExposureWidget = nullptr;

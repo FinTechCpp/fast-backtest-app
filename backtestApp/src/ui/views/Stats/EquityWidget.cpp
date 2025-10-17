@@ -23,8 +23,9 @@ EquityWidget::EquityWidget(const QString& title, QWidget *parent)
 
     // Connecter le signal toggled de la QCheckBox à un slot lambda
     connect(m_checkBox, &QCheckBox::toggled, this, [this](bool checked) {
-        updateBounds(); // Recalculer les limites avec le bon ensemble de points
-        update();       // Redessiner le widget
+        invalidateCache();  // Invalider tout le cache (équités + points widget + labels)
+        updateBounds();     // Recalculer les limites avec le bon ensemble de points
+        update();           // Redessiner le widget
     });
 
     // Ajouter la QCheckBox comme widget compagnon dans le titre
@@ -36,6 +37,7 @@ void EquityWidget::setPoints(const QVector<QPointF>& pts)
     if (pts.isEmpty()) {
         m_points.clear();
         m_pointsPercent.clear(); // Vider aussi les points en pourcentage
+        invalidateCache();
         updateBounds();
         update();
         return;
@@ -56,6 +58,7 @@ void EquityWidget::setPoints(const QVector<QPointF>& pts)
     // Calculer les points en pourcentage
     calculatePercentPoints();
     
+    invalidateCache();
     updateBounds();
     update();
 }
@@ -88,35 +91,65 @@ void EquityWidget::setPoints(const std::vector<be::Date>& dates, const std::vect
     setPoints(newPoints);
 }
 
+void EquityWidget::invalidateCache()
+{
+    m_cacheValid = false;
+    m_widgetPointsValid = false;
+    m_cachedDateLabels.clear();
+}
+
 double EquityWidget::getInitialEquity() const
 {
-    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
-    if (activePoints.isEmpty()) return 0.0;
-    return activePoints.first().y();
+    if (!m_cacheValid) {
+        // Calculer et mettre en cache toutes les valeurs d'un coup
+        const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
+        
+        if (!activePoints.isEmpty()) {
+            m_cachedInitialEquity = activePoints.first().y();
+            m_cachedFinalEquity = activePoints.last().y();
+            
+            // Calculer le peak en même temps
+            double peak = activePoints.first().y();
+            for (const auto& pt : activePoints) {
+                if (pt.y() > peak) {
+                    peak = pt.y();
+                }
+            }
+            m_cachedPeakEquity = peak;
+        } else {
+            m_cachedInitialEquity = 0.0;
+            m_cachedPeakEquity = 0.0;
+            m_cachedFinalEquity = 0.0;
+        }
+        
+        m_cacheValid = true;
+    }
+    
+    return m_cachedInitialEquity;
 }
 
 double EquityWidget::getPeakEquity() const
 {
-    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
-    if (activePoints.isEmpty()) return 0.0;
-    
-    double peak = activePoints.first().y();
-    for (const auto& pt : activePoints) {
-        if (pt.y() > peak) {
-            peak = pt.y();
-        }
+    if (!m_cacheValid) {
+        getInitialEquity();  // Va calculer et mettre en cache toutes les valeurs
     }
-    return peak;
+    return m_cachedPeakEquity;
 }
 
 double EquityWidget::getFinalEquity() const
 {
-    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
-    if (activePoints.isEmpty()) return 0.0;
-    return activePoints.last().y();
+    if (!m_cacheValid) {
+        getInitialEquity();  // Va calculer et mettre en cache toutes les valeurs
+    }
+    return m_cachedFinalEquity;
 }
 
 std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
+    // Utiliser le cache si valide
+    if (!m_cachedDateLabels.empty()) {
+        return m_cachedDateLabels;
+    }
+
     std::vector<DateLabel> labels;
     
     if (m_dates.empty()) {
@@ -243,6 +276,9 @@ std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
         }
     }
     
+    // Mettre en cache le résultat
+    m_cachedDateLabels = labels;
+    
     return labels;
 }
 
@@ -301,6 +337,12 @@ void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
         m_contentRect.height() - m_topMargin - m_bottomMargin
     );
     
+    // 2b. Invalider le cache des points widget si la taille du plotRect a changé
+    if (m_plotRect.size() != m_cachedPlotSize) {
+        m_widgetPointsValid = false;
+        m_cachedPlotSize = m_plotRect.size();
+    }
+    
     // 3. Recalculer les limites selon le mode actuel
     updateBounds();
     
@@ -330,12 +372,8 @@ void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
     if (!activePoints.isEmpty()) {
         painter.setClipRect(m_plotRect);
         
-        // Convertir les points monde en points widget
-        QVector<QPointF> widgetPoints;
-        widgetPoints.reserve(activePoints.size());
-        for (const auto& pt : activePoints) {
-            widgetPoints.append(mapToWidget(pt));
-        }
+        // Utiliser les points widget en cache (conversion une seule fois)
+        const QVector<QPointF>& widgetPoints = getCachedWidgetPoints();
         
         // Dessiner la polyligne (sans fermer le chemin)
         QPen linePen(Qt::blue);
@@ -380,13 +418,13 @@ void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
         
         // Formater différemment selon le mode
         if (m_checkBox->isChecked()) {
-            info = QString("(%1, %2%)").arg(world.x(), 0, 'f', 0).arg(world.y(), 0, 'f', 2);
+            info = formatValue(world.y(), true, true, false);
         } else {
-            info = QString("(%1, %2)").arg(world.x(), 0, 'f', 0).arg(world.y(), 0, 'f', 2);
+            info = formatValue(world.y(), true, false, false);
         }
         
         // Positionner l'info box intelligemment
-        QRect infoRect(clampedPos.x() + 10, clampedPos.y() - 25, 150, 20);
+        QRect infoRect(clampedPos.x() + 10, clampedPos.y() - 25, 70, 20);
         
         // Ajuster si ça sort du plotRect
         if (infoRect.right() > m_plotRect.right()) {
@@ -397,8 +435,10 @@ void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
         }
         
         painter.fillRect(infoRect, QColor(255, 255, 224, 240));
-        painter.setPen(Qt::black);
+        painter.setPen(Qt::transparent);
+        painter.setBrush(Qt::NoBrush);
         painter.drawRect(infoRect);
+        painter.setPen(Qt::black);
         painter.drawText(infoRect.adjusted(4, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, info);
     }
 }
@@ -433,6 +473,25 @@ QPointF EquityWidget::mapToWorld(const QPointF &pixel) const
     double wy = m_ymin + ny * (m_ymax - m_ymin);
     
     return QPointF(wx, wy);
+}
+
+const QVector<QPointF>& EquityWidget::getCachedWidgetPoints() const
+{
+    // Si le cache est invalide, recalculer les points widget
+    if (!m_widgetPointsValid) {
+        const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
+        
+        m_cachedWidgetPoints.clear();
+        m_cachedWidgetPoints.reserve(activePoints.size());
+        
+        for (const auto& pt : activePoints) {
+            m_cachedWidgetPoints.append(mapToWidget(pt));
+        }
+        
+        m_widgetPointsValid = true;
+    }
+    
+    return m_cachedWidgetPoints;
 }
 
 void EquityWidget::drawGrid(QPainter &painter)
@@ -491,7 +550,7 @@ void EquityWidget::drawGrid(QPainter &painter)
     }
 }
 
-QString formatValue(double value, bool useThousandsSeparator = true, bool isPercent = false, bool roundValue = true) {
+QString EquityWidget::formatValue(double value, bool useThousandsSeparator, bool isPercent, bool roundValue) const {
     // Gérer les valeurs proches de zéro
     if (std::abs(value) < 0.01) {
         return isPercent ? "0%" : "0";

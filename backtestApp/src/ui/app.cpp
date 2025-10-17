@@ -16,7 +16,6 @@
 #include "ui/menu/BacktestResultMenuManager.h"
 #include "ui/views/statsView.h"
 #include "ui/views/chartView.h"
-#include "ui/views/histogramView.h"
 #include "components/Managers/resultManager.h"
 #include "components/backtestRunner.h"
 #include "components/Utils/SerializationUtils.hpp"

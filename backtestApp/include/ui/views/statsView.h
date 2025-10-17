@@ -6,7 +6,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QTableView>
-#include <QScrollArea>
 #include <QGroupBox>
 #include <QPushButton>
 #include <QComboBox>
@@ -19,7 +18,6 @@
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
 #include "ui/views/Stats/TradingHeatmapWidget.h"
-#include "ui/views/Stats/TradesTableWidget.h"
 
 #include "ui/views/Stats/FlexiblePieWidget.h"
 #include "ui/views/Stats/SimpleTextWidget.h"
@@ -36,14 +34,11 @@ class App;
 
 
 /**
- * @brief Vue pour afficher les statistiques de backtest et les trades.
- * Organise les métriques en catégories et permet de visualiser les transactions.
+ * @brief Vue pour afficher les statistiques de backtest.
+ * Organise les métriques en catégories.
  */
 class StatsView : public BaseView {
     Q_OBJECT
-
-signals:
-    void tradeClicked(const be::TradeData& trade);
 
 public:
     /**
@@ -77,8 +72,6 @@ protected:
 private:
     // ==================== Membres privés ====================
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
-    TradesTableWidget* m_tradesTableWidget = nullptr;
-
 
     EquityWidget* m_equityWidget = nullptr;
     
@@ -112,14 +105,6 @@ private:
     VerticalGaugeRenderWidget* m_pnlGaugeWidget = nullptr;
 
     HistogramWidget* m_histogramWidget = nullptr;
-
-    std::vector<StatsBaseWidget*> m_statsWidgets;
-
-    
-    // --- UI: Conteneurs principaux ---
-    QScrollArea* m_scrollStats;
-    QWidget* m_statsContent;
-    QVBoxLayout* m_statsLayout;
 
     // --- État ---
     App* m_app;  // Référence à l'application principale

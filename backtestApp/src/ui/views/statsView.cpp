@@ -51,28 +51,11 @@ StatsView::~StatsView()
 
 void StatsView::setupUI() {
 
-    // 1. CRÉATION DE LA STRUCTURE DE BASE
+    // CRÉATION DES WIDGETS
     // --------------------------------------
-    // Scroll area principal
-    m_scrollStats = new QScrollArea();
-    m_scrollStats->setWidgetResizable(true);
-    
-    // Widget de contenu principal
-    m_statsContent = new QWidget();
-    
-    // Layout principal
-    m_statsLayout = new QVBoxLayout(m_statsContent);
-    m_statsLayout->setSpacing(10);
-
-    // 2. CRÉATION DES WIDGETS
-    // --------------------------------------
-    // m_equityCurveWidget = new EquityCurveWidget();
-    // m_statsLayout->addWidget(m_equityCurveWidget);
-
     QGridLayout* gridLayout = new QGridLayout();
     gridLayout->setContentsMargins(0, 0, 0, 0);
     gridLayout->setSpacing(0);
-    // m_statsContent->setStyleSheet("background-color: lightgray;");
 
     // --------------------------------------
     // Ligne 0
@@ -275,32 +258,10 @@ void StatsView::setupUI() {
     m_skewnessKurtosisWidget->setMinimumHeight(m_skewnessKurtosisWidget->sizeHint().height());
     gridLayout->addWidget(m_skewnessKurtosisWidget, 8, 6, 1, 1);
 
-
-
-
-
-
-    m_statsLayout->addLayout(gridLayout);
-
-
-    // m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
-    // m_statsLayout->addWidget(m_monthlyPerformanceWidget);
-
-    m_tradesTableWidget = new TradesTableWidget();
-    m_statsLayout->addWidget(m_tradesTableWidget);
-    
-    // Connecter le signal du clic sur trade
-    connect(m_tradesTableWidget, &TradesTableWidget::tradeClicked,
-            this, &StatsView::tradeClicked);
-
-    // 3. FINALISATION
+    // FINALISATION
     // --------------------------------------
-    // Configurer le scroll area et l'ajouter au layout principal
-    m_scrollStats->setWidget(m_statsContent);
-    m_mainLayout->addWidget(m_scrollStats);
-
-    // 4. STOCKAGE DES WIDGETS POUR MISES À JOUR/RESET
-    m_statsWidgets.push_back(m_tradesTableWidget);
+    // Ajouter le gridLayout directement au layout principal (pas de scroll area)
+    m_mainLayout->addLayout(gridLayout);
 }
 
 void StatsView::updateData(BacktestResults* results)
@@ -312,10 +273,6 @@ void StatsView::updateData(BacktestResults* results)
         qWarning() << "Résultats nuls reçus";
         clear();
         return;
-    }
-
-    for (auto widget : m_statsWidgets) {
-        widget->updateContent(m_currentResults->stats);
     }
 
     m_timeInfoWidget->updateValue("Début ", "  " + QString::fromStdString(m_currentResults->stats.start.toString()));
@@ -457,10 +414,6 @@ void StatsView::updateData(BacktestResults* results)
 
 void StatsView::clear() {
     qDebug() << "StatsView::clear() appelé";
-
-    for (auto widget : m_statsWidgets) {
-        widget->clear();
-    }
     
     m_currentResults = nullptr;
 

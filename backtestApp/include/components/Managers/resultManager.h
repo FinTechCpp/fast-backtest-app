@@ -10,8 +10,8 @@
 
 // Forward declarations
 class StatsView;
+class TradesView;
 class ChartView;
-class HistogramView;
 class QTimer;
 struct BacktestResults;  
 
@@ -50,8 +50,8 @@ private:
     
     // Views (which are widgets)
     StatsView* m_statsView;
+    TradesView* m_tradesView;
     ChartView* m_chartView;
-    HistogramView* m_histogramView;
     
     // Map for easy access to views
     QMap<QString, BaseView*> m_views;

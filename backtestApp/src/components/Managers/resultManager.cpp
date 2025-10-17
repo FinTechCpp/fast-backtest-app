@@ -126,6 +126,11 @@ void ResultManager::setupUI()
     // Créer le TabWidget
     m_tabWidget = new QTabWidget(this);
     
+    // Définir la couleur de fond du TabWidget pour qu'elle corresponde à la palette Window
+    QPalette tabPalette = m_tabWidget->palette();
+    QColor windowColor = tabPalette.color(QPalette::Window);
+    m_tabWidget->setStyleSheet(QString("QTabWidget::pane { background-color: %1; border: none; }").arg(windowColor.name()));
+    
     // Ajouter le TabWidget au layout
     m_mainLayout->addWidget(m_tabWidget);
     
@@ -150,7 +155,7 @@ void ResultManager::setupViews()
     
     // Ajouter les vues comme onglets (les vues SONT des widgets)
     m_tabWidget->addTab(m_statsView, "📊 Statistiques");
-    m_tabWidget->addTab(m_tradesView, "� Trades");
+    m_tabWidget->addTab(m_tradesView, "📋 Trades");
     m_tabWidget->addTab(m_chartView, "📈 Graphiques");
     
     // Ajouter au map pour faciliter l'accès

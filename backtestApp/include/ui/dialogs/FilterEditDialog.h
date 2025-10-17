@@ -31,6 +31,7 @@ private slots:
     void onOkButtonClicked();
     void onCancelButtonClicked();
     void updatePreview();
+    void updateDistanceVisibility();
 
 private:
     void setupUI();
@@ -135,6 +136,9 @@ private:
 
     // Widgets pour l'opérateur
     QComboBox* m_operatorCombo;
+    // Widget pour la distance seuil entre les deux valeurs
+    QDoubleSpinBox* m_distanceSpin;
+    QLabel* m_distanceLabel;
     
     // Widgets pour la logique temporelle
     QComboBox* m_temporalLogicCombo;

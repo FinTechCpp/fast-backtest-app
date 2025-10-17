@@ -89,7 +89,9 @@ QWidget* FiltersWidget::createFilterWidget(size_t index, const filter::GenericFi
     filterLayout->addWidget(enableCheckbox);
     
     // Bouton de modification avec la description du filtre
-    QPushButton* editButton = new QPushButton(QString::fromStdString(filter.description), filterWidget);
+    std::string buttonText = filter.description;
+    if (filter.distance > 0.0) buttonText += " | dist=" + std::to_string(filter.distance);
+    QPushButton* editButton = new QPushButton(QString::fromStdString(buttonText), filterWidget);
     editButton->setStyleSheet(
         "QPushButton {"
         "  text-align: left;"
@@ -167,7 +169,9 @@ void FiltersWidget::updateFilterWidget(size_t index)
     widgetGroup.enableCheckbox->setChecked(filter.enabled);
     
     // Mettre à jour le texte et le style du bouton d'édition
-    widgetGroup.editButton->setText(QString::fromStdString(filter.description));
+    std::string buttonText = filter.description;
+    if (filter.distance > 0.0) buttonText += " | dist=" + std::to_string(filter.distance);
+    widgetGroup.editButton->setText(QString::fromStdString(buttonText));
     
     QString baseStyle = 
         "QPushButton {"

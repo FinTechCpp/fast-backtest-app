@@ -22,7 +22,6 @@ public:
     void setPoints(const std::vector<be::Date>& dates, const std::vector<be::EquityPoint>& equityCurve);
     QVector<QPointF> points() const { return m_points; }
 
-
 protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
     void mouseMoveEvent(QMouseEvent *event) override;
@@ -53,15 +52,22 @@ private:
     bool m_showCrosshair;
     QPoint m_mousePos; // in widget pixel coordinates
 
-
     // drawing helpers
     void drawGrid(QPainter &painter);
     void drawAxes(QPainter &painter);
+    void drawFilledAreas(QPainter &painter);    // Dessine les zones colorées sous la courbe
+    void drawEquityMarkers(QPainter &painter);  // Dessine les lignes initial/peak et highlight final
     QPointF mapToWidget(const QPointF &pt) const;
     QPointF mapToWorld(const QPointF &pixel) const;
+    
+    // Méthodes helper pour les markers
+    double getInitialEquity() const;
+    double getPeakEquity() const;
+    double getFinalEquity() const;
 
     double m_xmin, m_xmax, m_ymin, m_ymax;
-    QRect m_contentRect;
+    QRect m_contentRect;      // Zone totale du contenu (titre exclu)
+    QRect m_plotRect;         // Zone du graphique uniquement (sans les marges pour axes)
 
     // layout margins to leave space for axis labels
     const int m_leftMargin = 10;      // Réduit car plus de labels à gauche

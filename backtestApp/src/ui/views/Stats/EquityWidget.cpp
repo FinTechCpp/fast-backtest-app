@@ -88,6 +88,34 @@ void EquityWidget::setPoints(const std::vector<be::Date>& dates, const std::vect
     setPoints(newPoints);
 }
 
+double EquityWidget::getInitialEquity() const
+{
+    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
+    if (activePoints.isEmpty()) return 0.0;
+    return activePoints.first().y();
+}
+
+double EquityWidget::getPeakEquity() const
+{
+    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
+    if (activePoints.isEmpty()) return 0.0;
+    
+    double peak = activePoints.first().y();
+    for (const auto& pt : activePoints) {
+        if (pt.y() > peak) {
+            peak = pt.y();
+        }
+    }
+    return peak;
+}
+
+double EquityWidget::getFinalEquity() const
+{
+    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
+    if (activePoints.isEmpty()) return 0.0;
+    return activePoints.last().y();
+}
+
 std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
     std::vector<DateLabel> labels;
     
@@ -262,105 +290,164 @@ void EquityWidget::updateBounds()
 
 void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
 {
+    // 1. Définir la zone de contenu (avec marges extérieures)
     m_contentRect = contentRect.adjusted(m_margin, m_margin, -m_margin, -m_margin);
     
-    // Recalculer les limites selon le mode actuel
+    // 2. Définir la zone du graphique (sans les marges pour axes/labels)
+    m_plotRect = QRect(
+        m_contentRect.left() + m_leftMargin,
+        m_contentRect.top() + m_topMargin,
+        m_contentRect.width() - m_leftMargin - m_rightMargin,
+        m_contentRect.height() - m_topMargin - m_bottomMargin
+    );
+    
+    // 3. Recalculer les limites selon le mode actuel
     updateBounds();
     
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // background
+    // 4. Background du contenu
     painter.fillRect(m_contentRect, Qt::white);
 
-    // draw grid
+    // 5. Background de la zone de tracé (légèrement différent pour bien voir les limites)
+    painter.fillRect(m_plotRect, QColor(250, 250, 250));
+
+    // 6. Dessiner la grille (dans m_plotRect uniquement)
     drawGrid(painter);
 
-    // draw axes (ticks + labels)
+    // 7. Dessiner les axes (autour de m_plotRect)
     drawAxes(painter);
 
-    // Sélectionner le bon ensemble de points selon le mode
+    // 8. Sélectionner le bon ensemble de points selon le mode
     const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
 
-    // draw polyline connecting points (no squares on points)
+    // 8b. Dessiner les zones colorées sous la courbe (AVANT la courbe elle-même)
     if (!activePoints.isEmpty()) {
-        QPainterPath path;
-        QPointF p0 = mapToWidget(activePoints.front());
-        path.moveTo(p0);
-        for (int i = 1; i < activePoints.size(); ++i) {
-            QPointF w = mapToWidget(activePoints[i]);
-            path.lineTo(w);
-        }
-
-        QPen linePen(Qt::blue);
-        linePen.setWidth(2);
-        painter.setPen(linePen);
-        painter.drawPath(path);
+        drawFilledAreas(painter);
     }
 
-    // Code existant pour le crosshair...
+    // 9. Dessiner la courbe (clippée dans m_plotRect)
+    if (!activePoints.isEmpty()) {
+        painter.setClipRect(m_plotRect);
+        
+        // Convertir les points monde en points widget
+        QVector<QPointF> widgetPoints;
+        widgetPoints.reserve(activePoints.size());
+        for (const auto& pt : activePoints) {
+            widgetPoints.append(mapToWidget(pt));
+        }
+        
+        // Dessiner la polyligne (sans fermer le chemin)
+        QPen linePen(Qt::blue);
+        linePen.setWidth(2);
+        linePen.setCapStyle(Qt::RoundCap);
+        linePen.setJoinStyle(Qt::RoundJoin);
+        painter.setPen(linePen);
+        painter.setBrush(Qt::NoBrush);  // Important: pas de remplissage
+        painter.drawPolyline(widgetPoints.data(), widgetPoints.size());
+        
+        painter.setClipping(false);
+    }
+
+    // 10. Dessiner les markers d'equity (lignes initial/peak + highlight final)
+    if (!activePoints.isEmpty()) {
+        drawEquityMarkers(painter);
+    }
+
+    // 11. Dessiner le crosshair
     if (m_showCrosshair) {
         QPen crossPen(Qt::black);
         crossPen.setStyle(Qt::DashLine);
         crossPen.setWidth(1);
         painter.setPen(crossPen);
 
-        QPoint relativeMousePos = m_mousePos - contentRect.topLeft() - QPoint(m_margin, m_margin);
+        // La position de la souris est déjà en coordonnées widget
+        QPoint clampedPos = m_mousePos;
+        
+        // Clamper dans m_plotRect
+        clampedPos.setX(qBound(m_plotRect.left(), clampedPos.x(), m_plotRect.right()));
+        clampedPos.setY(qBound(m_plotRect.top(), clampedPos.y(), m_plotRect.bottom()));
 
-        painter.drawLine(relativeMousePos.x(), m_contentRect.top(),
-                         relativeMousePos.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
-        painter.drawLine(m_leftMargin, relativeMousePos.y(),
-                         m_contentRect.width() - m_rightMargin, relativeMousePos.y());
+        // Dessiner les lignes du crosshair
+        painter.drawLine(clampedPos.x(), m_plotRect.top(),
+                         clampedPos.x(), m_plotRect.bottom());
+        painter.drawLine(m_plotRect.left(), clampedPos.y(),
+                         m_plotRect.right(), clampedPos.y());
 
-        QPointF world = mapToWorld(relativeMousePos);
+        // Calculer les coordonnées monde
+        QPointF world = mapToWorld(clampedPos);
         QString info;
         
         // Formater différemment selon le mode
         if (m_checkBox->isChecked()) {
-            info = QString("(%1, %2%)").arg(world.x(), 0, 'g', 6).arg(world.y(), 0, 'f', 2);
+            info = QString("(%1, %2%)").arg(world.x(), 0, 'f', 0).arg(world.y(), 0, 'f', 2);
         } else {
-            info = QString("(%1, %2)").arg(world.x(), 0, 'g', 6).arg(world.y(), 0, 'g', 6);
+            info = QString("(%1, %2)").arg(world.x(), 0, 'f', 0).arg(world.y(), 0, 'f', 2);
         }
         
-        QRect infoRect(relativeMousePos.x() + 10, relativeMousePos.y() - 20, 120, 18);
-        painter.fillRect(infoRect, QColor(255,255,224,230));
+        // Positionner l'info box intelligemment
+        QRect infoRect(clampedPos.x() + 10, clampedPos.y() - 25, 150, 20);
+        
+        // Ajuster si ça sort du plotRect
+        if (infoRect.right() > m_plotRect.right()) {
+            infoRect.moveLeft(clampedPos.x() - infoRect.width() - 10);
+        }
+        if (infoRect.top() < m_plotRect.top()) {
+            infoRect.moveTop(clampedPos.y() + 10);
+        }
+        
+        painter.fillRect(infoRect, QColor(255, 255, 224, 240));
         painter.setPen(Qt::black);
         painter.drawRect(infoRect);
-        painter.drawText(infoRect.adjusted(4,0,-4,0), Qt::AlignVCenter | Qt::AlignLeft, info);
+        painter.drawText(infoRect.adjusted(4, 0, -4, 0), Qt::AlignVCenter | Qt::AlignLeft, info);
     }
 }
 
 QPointF EquityWidget::mapToWidget(const QPointF &pt) const
 {
-    double w = m_contentRect.width() - m_leftMargin - m_rightMargin;
-    double h = m_contentRect.height() - m_topMargin - m_bottomMargin;
-    double x = m_contentRect.left() + m_leftMargin + (pt.x() - m_xmin) / (m_xmax - m_xmin) * w;
-    double y = m_contentRect.top() + m_topMargin + (1.0 - (pt.y() - m_ymin) / (m_ymax - m_ymin)) * h;
+    // Mapper un point monde vers la zone de tracé (m_plotRect)
+    if (m_xmax - m_xmin < EPSILON_D || m_ymax - m_ymin < EPSILON_D) {
+        return QPointF(m_plotRect.center());
+    }
+    
+    double nx = (pt.x() - m_xmin) / (m_xmax - m_xmin);
+    double ny = (pt.y() - m_ymin) / (m_ymax - m_ymin);
+    
+    double x = m_plotRect.left() + nx * m_plotRect.width();
+    double y = m_plotRect.bottom() - ny * m_plotRect.height();
+    
     return QPointF(x, y);
 }
 
 QPointF EquityWidget::mapToWorld(const QPointF &pixel) const
 {
-    double w = m_contentRect.width() - m_leftMargin - m_rightMargin;
-    double h = m_contentRect.height() - m_topMargin - m_bottomMargin;
-    double nx = (pixel.x() - m_contentRect.left() - m_leftMargin) / w;
-    double ny = 1.0 - (pixel.y() - m_contentRect.top() - m_topMargin) / h;
+    // Mapper un pixel widget vers les coordonnées monde
+    if (m_plotRect.width() <= 0 || m_plotRect.height() <= 0) {
+        return QPointF(m_xmin, m_ymin);
+    }
+    
+    double nx = (pixel.x() - m_plotRect.left()) / m_plotRect.width();
+    double ny = (m_plotRect.bottom() - pixel.y()) / m_plotRect.height();
+    
     double wx = m_xmin + nx * (m_xmax - m_xmin);
     double wy = m_ymin + ny * (m_ymax - m_ymin);
+    
     return QPointF(wx, wy);
 }
 
 void EquityWidget::drawGrid(QPainter &painter)
 {
-    // We draw grid lines aligned to "nice" world ticks so labels match the grid
+    // Dessiner la grille uniquement dans m_plotRect
     const int desiredLines = 8;
     double xrange = m_xmax - m_xmin;
     double yrange = m_ymax - m_ymin;
-    if (xrange <= 0 || yrange <= 0) return;
+    if (xrange <= EPSILON_D || yrange <= EPSILON_D) return;
 
-    // compute a nice step
+    // Calculer un pas "joli" pour les lignes de grille
     auto niceStep = [](double range, int target){
+        if (range <= 0) return 1.0;
         double raw = range / target;
-        double expv = qPow(10.0, qFloor(qLn(raw)/qLn(10.0)));
+        double expv = qPow(10.0, qFloor(qLn(raw) / qLn(10.0)));
         double f = raw / expv;
         double nicef;
         if (f < 1.5) nicef = 1.0;
@@ -373,28 +460,38 @@ void EquityWidget::drawGrid(QPainter &painter)
     double xstep = niceStep(xrange, desiredLines);
     double ystep = niceStep(yrange, desiredLines);
 
-    QPen gridPen(QColor(220,220,220));
+    QPen gridPen(QColor(220, 220, 220));
     gridPen.setWidth(1);
     painter.setPen(gridPen);
 
-    // vertical lines
-    double xstart = std::floor(m_xmin / xstep) * xstep;
+    // Lignes verticales (parallèles à Y)
+    double xstart = std::ceil(m_xmin / xstep) * xstep;
     for (double x = xstart; x <= m_xmax; x += xstep) {
-        QPointF p1 = mapToWidget(QPointF(x, m_ymin));
-        painter.drawLine(QPointF(p1.x(), m_contentRect.top() + m_topMargin), 
-                         QPointF(p1.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin));
+        QPointF top = mapToWidget(QPointF(x, m_ymax));
+        QPointF bottom = mapToWidget(QPointF(x, m_ymin));
+        
+        // S'assurer que les lignes restent dans m_plotRect
+        top.setX(qBound((double)m_plotRect.left(), top.x(), (double)m_plotRect.right()));
+        bottom.setX(qBound((double)m_plotRect.left(), bottom.x(), (double)m_plotRect.right()));
+        
+        painter.drawLine(top, bottom);
     }
 
-    // horizontal lines - inchangé, toujours de gauche à droite
-    double ystart = std::floor(m_ymin / ystep) * ystep;
+    // Lignes horizontales (parallèles à X)
+    double ystart = std::ceil(m_ymin / ystep) * ystep;
     for (double y = ystart; y <= m_ymax; y += ystep) {
-        QPointF p1 = mapToWidget(QPointF(m_xmin, y));
-        painter.drawLine(QPointF(m_contentRect.left() + m_leftMargin, p1.y()), 
-                         QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin, p1.y()));
+        QPointF left = mapToWidget(QPointF(m_xmin, y));
+        QPointF right = mapToWidget(QPointF(m_xmax, y));
+        
+        // S'assurer que les lignes restent dans m_plotRect
+        left.setY(qBound((double)m_plotRect.top(), left.y(), (double)m_plotRect.bottom()));
+        right.setY(qBound((double)m_plotRect.top(), right.y(), (double)m_plotRect.bottom()));
+        
+        painter.drawLine(left, right);
     }
 }
 
-QString formatValue(double value, bool useThousandsSeparator = true, bool isPercent = false) {
+QString formatValue(double value, bool useThousandsSeparator = true, bool isPercent = false, bool roundValue = true) {
     // Gérer les valeurs proches de zéro
     if (std::abs(value) < 0.01) {
         return isPercent ? "0%" : "0";
@@ -403,7 +500,17 @@ QString formatValue(double value, bool useThousandsSeparator = true, bool isPerc
     // Si on est en mode pourcentage
     if (isPercent) {
         // Formater avec 2 décimales pour les pourcentages
-        return QString::number(value, 'f', 2) + "%";
+        return QString::number(value, 'f', 1) + "%";
+    }
+
+    if (!roundValue) {
+        // Ne pas arrondir, juste formater directement
+        if (useThousandsSeparator) {
+            QLocale locale;
+            return locale.toString(value, 'f', 1);
+        } else {
+            return QString::number(value, 'f', 1);
+        }
     }
 
     // Trouver l'ordre de grandeur pour l'arrondi (reste du code inchangé)
@@ -442,77 +549,128 @@ void EquityWidget::drawAxes(QPainter &painter)
     axisPen.setWidth(1);
     painter.setPen(axisPen);
 
-    // draw X axis at bottom (leave margin for labels)
-    painter.drawLine(m_contentRect.left() + m_leftMargin, 
-                     m_contentRect.top() + m_contentRect.height() - m_bottomMargin, 
-                     m_contentRect.left() + m_contentRect.width() - m_rightMargin, 
-                     m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
+    // Dessiner l'axe X en bas de m_plotRect
+    painter.drawLine(m_plotRect.bottomLeft(), m_plotRect.bottomRight());
     
-    // draw Y axis at RIGHT (instead of left)
-    painter.drawLine(m_contentRect.left() + m_contentRect.width() - m_rightMargin, 
-                     m_contentRect.top() + m_topMargin, 
-                     m_contentRect.left() + m_contentRect.width() - m_rightMargin, 
-                     m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
-
+    // Dessiner l'axe Y à droite de m_plotRect
+    painter.drawLine(m_plotRect.topRight(), m_plotRect.bottomRight());
 
     QFontMetrics fm(font());
 
-    // Axe Y - Labels de valeurs
+    // Axe Y - Labels de valeurs (à droite)
     const int yTicks = 5;
     double yrange = m_ymax - m_ymin;
-    if (yrange <= 0) return;
+    if (yrange <= EPSILON_D) return;
     
     double ystep = yrange / yTicks;
+    
+    // Récupérer la valeur finale pour le highlight
+    double finalEquity = getFinalEquity();
+    QPointF finalWidgetPos = mapToWidget(QPointF(m_xmax, finalEquity));
     
     for (int i = 0; i <= yTicks; ++i) {
         double yv = m_ymin + i * ystep;
         QPointF wp = mapToWidget(QPointF(m_xmax, yv));
         
-        // tick - à droite
-        painter.drawLine(QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin, wp.y()), 
-                         QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin + 4, wp.y()));
+        // Tick à droite de l'axe Y
+        painter.drawLine(QPointF(m_plotRect.right(), wp.y()), 
+                         QPointF(m_plotRect.right() + 4, wp.y()));
         
-        // label - aligné à gauche après le tick, formater selon le mode
+        // Label aligné à gauche après le tick
         QString txt = formatValue(yv, true, m_checkBox->isChecked());
-        painter.drawText(QPointF(m_contentRect.left() + m_contentRect.width() - m_rightMargin + 8, 
-                               wp.y() + fm.ascent()/2 - 2), txt);
+        painter.drawText(QPointF(m_plotRect.right() + 8, wp.y() + fm.ascent() / 2 - 2), txt);
     }
+    
+    // ==================== Highlight de la valeur INITIAL ====================
+    // Dessiner un label spécial pour la valeur initiale (comme le final)
+    double initialEquity = getInitialEquity();
+    QPointF initialWidgetPos = mapToWidget(QPointF(m_xmax, initialEquity));
+    
+    QString initialText = formatValue(initialEquity, true, m_checkBox->isChecked(), false);
+    
+    QFont boldFont = painter.font();
+    boldFont.setWeight(QFont::DemiBold);
+    painter.setFont(boldFont);
+    QFontMetrics fmBold(boldFont);
+    
+    int textWidth = fmBold.horizontalAdvance(initialText);
+    int textHeight = fmBold.height();
+    
+    // Rectangle pour le highlight (aligné avec les labels Y)
+    QRect initialHighlightRect(m_plotRect.right() + 6, initialWidgetPos.y() - textHeight / 2 - 3,
+                              textWidth + 10, textHeight + 6);
+    
+    // Fond gris clair pour le highlight
+    painter.setPen(QPen(Qt::transparent));
+    painter.setBrush(QColor(230, 230, 230));
+    painter.drawRoundedRect(initialHighlightRect, 1, 1);
+    
+    painter.setPen(Qt::black);
+    painter.drawText(initialHighlightRect, Qt::AlignCenter, initialText);
+    
+    // Restaurer la police normale
+    painter.setFont(font());
+    painter.setPen(Qt::black);
+    
+    // ==================== Highlight de la valeur FINAL ====================
+    // Dessiner un label spécial pour la valeur finale
+    QString finalText = formatValue(finalEquity, true, m_checkBox->isChecked(), false); // "Final: " + 
+    
+    boldFont = painter.font();
+    boldFont.setWeight(QFont::DemiBold);
+    painter.setFont(boldFont);
+    fmBold = QFontMetrics(boldFont);
+    
+    textWidth = fmBold.horizontalAdvance(finalText);
+    textHeight = fmBold.height();
+    
+    // Rectangle pour le highlight (aligné avec les labels Y)
+    QRect highlightRect(m_plotRect.right() + 6, finalWidgetPos.y() - textHeight / 2 - 3,
+                       textWidth + 10, textHeight + 6);
+    
+    // Fond rouge/orange pour le highlight
+    painter.setPen(QPen(Qt::transparent));
+    painter.setBrush(QColor(255, 220, 200));
+    painter.drawRoundedRect(highlightRect, 1, 1);
+    
+    painter.setPen(Qt::black);
+    painter.drawText(highlightRect, Qt::AlignCenter, finalText);
+    
+    // Restaurer la police normale
+    painter.setFont(font());
+    painter.setPen(Qt::black);
 
-    // Axe X - Utiliser les labels de date intelligents
+    // Axe X - Labels de dates intelligents
     if (!m_dates.empty()) {
-        // Générer les labels de date intelligents
         auto dateLabels = generateDateLabels();
         
         for (const auto& label : dateLabels) {
-            // Mapper l'indice à la position dans le widget
             double xPos = label.position;
             if (xPos >= 0 && xPos < m_dates.size()) {
                 QPointF wp = mapToWidget(QPointF(xPos, m_ymin));
                 
-                // Dessiner le trait vertical
-                painter.drawLine(QPointF(wp.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin), 
-                                QPointF(wp.x(), m_contentRect.top() + m_contentRect.height() - m_bottomMargin + 4));
+                // Tick en bas de l'axe X
+                painter.drawLine(QPointF(wp.x(), m_plotRect.bottom()), 
+                                QPointF(wp.x(), m_plotRect.bottom() + 4));
                 
                 // Adapter le style selon l'importance
                 QFont labelFont = painter.font();
                 if (label.importance == 3) {
                     // Année: gras
                     labelFont.setBold(true);
-                    painter.setFont(labelFont);
                 } else if (label.importance == 2) {
                     // Mois: normal
                     labelFont.setBold(false);
-                    painter.setFont(labelFont);
                 } else {
                     // Jour: plus petit
                     labelFont.setBold(false);
-                    labelFont.setPointSize(labelFont.pointSize() - 1);
-                    painter.setFont(labelFont);
+                    labelFont.setPointSize(qMax(6, labelFont.pointSize() - 1));
                 }
+                painter.setFont(labelFont);
 
-                // Dessiner le texte
+                // Dessiner le texte centré sous le tick
                 int tw = fm.horizontalAdvance(label.text);
-                painter.drawText(QPointF(wp.x() - tw/2, m_contentRect.top() + m_contentRect.height() - 6), label.text);
+                painter.drawText(QPointF(wp.x() - tw / 2, m_plotRect.bottom() + 18), label.text);
                 
                 // Restaurer la police
                 painter.setFont(font());
@@ -521,37 +679,208 @@ void EquityWidget::drawAxes(QPainter &painter)
     }
 }
 
-void EquityWidget::mouseMoveEvent(QMouseEvent *event)
-{    
-    // Enregistrer la position globale de la souris
-    m_mousePos = event->pos();
+void EquityWidget::drawFilledAreas(QPainter &painter)
+{
+    const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
+    if (activePoints.isEmpty()) return;
     
-    // Vérifier que la position est dans contentRect
-    if (!m_contentRect.contains(m_mousePos)) {
-        m_showCrosshair = false;
-        update();
-        return;
+    double initialEquity = getInitialEquity();
+    
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setClipRect(m_plotRect);
+    painter.setPen(Qt::NoPen);
+    
+    // On va créer des segments séparés pour chaque zone continue
+    // Cela évite les artefacts visuels entre segments discontinus
+    
+    QVector<QPointF> currentSegment;
+    bool isGainSegment = false;
+    
+    auto finishSegment = [&]() {
+        if (currentSegment.size() < 2) return;
+        
+        QPainterPath path;
+        
+        // Commencer à la baseline du premier point
+        QPointF firstBaseline = mapToWidget(QPointF(currentSegment.first().x(), initialEquity));
+        path.moveTo(firstBaseline);
+        
+        // Suivre la courbe
+        for (const auto& pt : currentSegment) {
+            QPointF widgetPt = mapToWidget(pt);
+            path.lineTo(widgetPt);
+        }
+        
+        // Revenir à la baseline du dernier point
+        QPointF lastBaseline = mapToWidget(QPointF(currentSegment.last().x(), initialEquity));
+        path.lineTo(lastBaseline);
+        
+        // Fermer le chemin (retour au point de départ)
+        path.closeSubpath();
+        
+        // Dessiner avec la couleur appropriée
+        if (isGainSegment) {
+            painter.setBrush(QColor(16, 124, 16, 40));  // Vert léger
+        } else {
+            painter.setBrush(QColor(196, 43, 28, 40));  // Rouge léger
+        }
+        painter.drawPath(path);
+        
+        currentSegment.clear();
+    };
+    
+    for (int i = 0; i < activePoints.size(); ++i) {
+        const QPointF& pt = activePoints[i];
+        bool isGain = (pt.y() >= initialEquity);
+        
+        if (i == 0) {
+            // Premier point
+            currentSegment.append(pt);
+            isGainSegment = isGain;
+        } else {
+            const QPointF& prevPt = activePoints[i - 1];
+            bool prevIsGain = (prevPt.y() >= initialEquity);
+            
+            if (isGain == prevIsGain) {
+                // On reste du même côté, continuer le segment
+                currentSegment.append(pt);
+            } else {
+                // On change de côté (crossing)
+                // Calculer le point d'intersection
+                double t = (initialEquity - prevPt.y()) / (pt.y() - prevPt.y());
+                double intersectX = prevPt.x() + t * (pt.x() - prevPt.x());
+                QPointF intersectPt(intersectX, initialEquity);
+                
+                // Finir le segment précédent avec le point d'intersection
+                currentSegment.append(intersectPt);
+                finishSegment();
+                
+                // Commencer un nouveau segment avec le point d'intersection
+                currentSegment.append(intersectPt);
+                currentSegment.append(pt);
+                isGainSegment = isGain;
+            }
+        }
     }
     
-    // Clamp dans la zone de tracé
-    QPoint relativePos = m_mousePos;
-    // Ajuster pour la marge
-    // relativePos.rx() -= m_margin;
-    // relativePos.ry() -= m_margin;
+    // Finir le dernier segment
+    finishSegment();
+    
+    painter.setClipping(false);
+}
 
-    if (relativePos.x() < m_contentRect.left() + m_leftMargin) 
-        relativePos.setX(m_contentRect.left() + m_leftMargin);
-    if (relativePos.x() > m_contentRect.top() + m_contentRect.width() - m_rightMargin)
-        relativePos.setX(m_contentRect.top() + m_contentRect.width() - m_rightMargin);
-    if (relativePos.y() < m_contentRect.top() + m_topMargin)
-        relativePos.setY(m_contentRect.top() + m_topMargin);
-    if (relativePos.y() > m_contentRect.top() + m_contentRect.height() - m_bottomMargin)
-        relativePos.setY(m_contentRect.top() + m_contentRect.height() - m_bottomMargin);
-
-    // Réajuster en tenant compte de la marge
-    m_mousePos = m_contentRect.topLeft() + QPoint(relativePos.x() + m_margin, relativePos.y() + m_margin);
-    m_showCrosshair = true;
+void EquityWidget::mouseMoveEvent(QMouseEvent *event)
+{    
+    // Position de la souris dans les coordonnées du widget
+    m_mousePos = event->pos();
+    
+    // Vérifier si la souris est dans la zone de tracé
+    if (m_plotRect.contains(m_mousePos)) {
+        m_showCrosshair = true;
+    } else {
+        m_showCrosshair = false;
+    }
+    
     update();
+}
+
+void EquityWidget::drawEquityMarkers(QPainter &painter)
+{
+    // Récupérer les valeurs automatiquement
+    double initialEquity = getInitialEquity();
+    double peakEquity = getPeakEquity();
+    double finalEquity = getFinalEquity();
+    
+    bool isPercentMode = m_checkBox->isChecked();
+    
+    // Helper pour formater les valeurs
+    auto formatValue = [isPercentMode](double value) -> QString {
+        if (isPercentMode) {
+            return QString("%1%").arg(value, 0, 'f', 2);
+        } else {
+            return QLocale().toString(value, 'f', 0);
+        }
+    };
+    
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    QFont labelFont = painter.font();
+    labelFont.setPointSize(qMax(8, labelFont.pointSize() - 1));
+    labelFont.setWeight(QFont::DemiBold);
+    QFontMetrics fm(labelFont);
+    
+    // ==================== 1. Ligne horizontale INITIAL (sans label) ====================
+    {
+        QPointF leftPt = mapToWidget(QPointF(m_xmin, initialEquity));
+        QPointF rightPt = mapToWidget(QPointF(m_xmax, initialEquity));
+        
+        // Ligne en pointillés
+        QPen initialPen(QColor(100, 100, 100), 1, Qt::DashLine);
+        painter.setPen(initialPen);
+        painter.drawLine(leftPt, rightPt);
+        
+        // Note: Le label "Initial" sera affiché sur l'axe Y (voir drawAxes)
+    }
+    
+    // ==================== 2. Ligne horizontale PEAK ====================
+    {
+        QPointF leftPt = mapToWidget(QPointF(m_xmin, peakEquity));
+        QPointF rightPt = mapToWidget(QPointF(m_xmax, peakEquity));
+        
+        // Ligne en pointillés (verte)
+        QPen peakPen(QColor(16, 124, 16), 1, Qt::DashLine);
+        painter.setPen(peakPen);
+        painter.drawLine(leftPt, rightPt);
+        
+        // Label sur la ligne (au milieu)
+        QString labelText = "Peak: " + formatValue(peakEquity);
+        painter.setFont(labelFont);
+        
+        int textWidth = fm.horizontalAdvance(labelText);
+        int textHeight = fm.height();
+        
+        QRect textRect(m_plotRect.center().x() - textWidth / 2 - 4, 
+                      leftPt.y() - textHeight / 2 - 2, 
+                      textWidth + 8, textHeight + 4);
+        
+        // Fond semi-transparent
+        painter.setPen(Qt::NoPen);
+        painter.setBrush(QColor(255, 255, 255));
+        painter.drawRoundedRect(textRect, 3, 3);
+        
+        // Texte en vert
+        painter.setPen(QColor(16, 124, 16));
+        painter.drawText(textRect, Qt::AlignCenter, labelText);
+    }
+    
+    // ==================== 3. Highlight FINAL sur la légende ====================
+    // Note: Le highlight sera dessiné dans drawAxes() directement sur le dernier label Y
+    // On va juste stocker la valeur finale pour que drawAxes() puisse la highlighter
+    // Pour l'instant, on dessine un petit indicateur visuel sur le graphique
+    {
+        // QPointF finalPt = mapToWidget(QPointF(m_xmax, finalEquity));
+        
+        // Petit cercle sur le point final
+        // QPen finalPen(QColor(196, 43, 28), 2);
+        // // painter.setPen(finalPen);
+        // painter.setBrush(QColor(196, 43, 28, 100));
+        // painter.drawEllipse(finalPt, 3, 3);
+        
+        // Flèche vers la légende à droite
+        // QPen arrowPen(QColor(196, 43, 28), 2);
+        // arrowPen.setStyle(Qt::DotLine);
+        // painter.setPen(arrowPen);
+        
+        // QPointF arrowEnd(m_plotRect.right() + 3, finalPt.y());
+        // painter.drawLine(finalPt, arrowEnd);
+        
+        // // Petite tête de flèche
+        // painter.setPen(QPen(QColor(196, 43, 28), 2));
+        // painter.drawLine(arrowEnd, arrowEnd + QPointF(-4, -3));
+        // painter.drawLine(arrowEnd, arrowEnd + QPointF(-4, 3));
+    }
+    
+    // Restaurer la police
+    painter.setFont(font());
 }
 
 void EquityWidget::leaveEvent(QEvent * /*event*/)

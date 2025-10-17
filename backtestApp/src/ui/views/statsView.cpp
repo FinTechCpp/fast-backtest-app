@@ -152,15 +152,21 @@ void StatsView::setupUI() {
     m_returnsWidget->addItem("CAGR ", "--", Qt::black);
     m_returnsWidget->addItem("Alpha ", "--", Qt::black);
     m_returnsWidget->setMinimumHeight(m_returnsWidget->sizeHint().height());
-    gridLayout->addWidget(m_returnsWidget, 3, 5);
+    gridLayout->addWidget(m_returnsWidget, 3, 5, 2, 1);
 
 
-    m_equityDetailsWidget = new KeyValueListWidget("Equity Details");
-    m_equityDetailsWidget->addItem("Initial ", "--", Qt::black);
-    m_equityDetailsWidget->addItem("Final ", "--", QColor(0, 150, 0));
-    m_equityDetailsWidget->addItem("Peak ", "--", Qt::black);
-    m_equityDetailsWidget->setMinimumHeight(m_equityDetailsWidget->sizeHint().height());
-    gridLayout->addWidget(m_equityDetailsWidget, 3, 6);
+    // m_equityDetailsWidget = new KeyValueListWidget("Equity Details");
+    // m_equityDetailsWidget->addItem("Initial ", "--", Qt::black);
+    // m_equityDetailsWidget->addItem("Final ", "--", QColor(0, 150, 0));
+    // m_equityDetailsWidget->addItem("Peak ", "--", Qt::black);
+    // m_equityDetailsWidget->setMinimumHeight(m_equityDetailsWidget->sizeHint().height());
+    // gridLayout->addWidget(m_equityDetailsWidget, 3, 6);
+
+    m_buyHoldWidget = new KeyValueListWidget("Buy & Hold");
+    m_buyHoldWidget->addItem("Return ", "--", Qt::black);
+    m_buyHoldWidget->addItem("CAGR ", "--", Qt::black);
+    m_buyHoldWidget->setMinimumHeight(m_buyHoldWidget->sizeHint().height());
+    gridLayout->addWidget(m_buyHoldWidget, 3, 6, 2, 1);
 
 
     // --------------------------------------
@@ -172,12 +178,6 @@ void StatsView::setupUI() {
     m_grossLossWidget->setSuffix(" €");
     gridLayout->addWidget(m_grossLossWidget, 4, 1);
 
-
-    m_buyHoldWidget = new KeyValueListWidget("Buy & Hold");
-    m_buyHoldWidget->addItem("Return ", "--", Qt::black);
-    m_buyHoldWidget->addItem("CAGR ", "--", Qt::black);
-    m_buyHoldWidget->setMinimumHeight(m_buyHoldWidget->sizeHint().height());
-    gridLayout->addWidget(m_buyHoldWidget, 4, 5, 1, 2); // S'étend sur 2 colonnes
 
     // --------------------------------------
     // Ligne 5
@@ -436,9 +436,9 @@ void StatsView::updateData(BacktestResults* results)
     m_returnsWidget->updateValue("Alpha ", QString::number(m_currentResults->stats.alphaPct, 'f', 1) + " %");
 
 
-    m_equityDetailsWidget->updateValue("Initial ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityInitial, 0) + " €");
-    m_equityDetailsWidget->updateValue("Final ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityFinal, 0) + " €");
-    m_equityDetailsWidget->updateValue("Peak ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityPeak, 0) + " €");
+    // m_equityDetailsWidget->updateValue("Initial ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityInitial, 0) + " €");
+    // m_equityDetailsWidget->updateValue("Final ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityFinal, 0) + " €");
+    // m_equityDetailsWidget->updateValue("Peak ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityPeak, 0) + " €");
 
 
     m_buyHoldWidget->updateValue("Return ", QString::number(m_currentResults->stats.buyHoldReturnPct, 'f', 1) + " %");

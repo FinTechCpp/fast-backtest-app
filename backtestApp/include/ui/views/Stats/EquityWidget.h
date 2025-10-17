@@ -64,7 +64,7 @@ private:
     
     // Méthodes helper pour les markers
     double getInitialEquity() const;
-    double getPeakEquity() const;
+    QPointF getPeakPoint() const;  // Retourne le point (x, y) du peak
     double getFinalEquity() const;
 
     QString formatValue(double value, bool useThousandsSeparator = true, bool isPercent = false, bool roundValue = true) const;
@@ -77,7 +77,7 @@ private:
     // Cache pour optimisation
     mutable bool m_cacheValid = false;
     mutable double m_cachedInitialEquity = 0.0;
-    mutable double m_cachedPeakEquity = 0.0;
+    mutable QPointF m_cachedPeakEquity = QPointF(0.0, 0.0);
     mutable double m_cachedFinalEquity = 0.0;
     mutable std::vector<DateLabel> m_cachedDateLabels;
     mutable QVector<QPointF> m_cachedWidgetPoints;  // Points déjà convertis en coordonnées widget

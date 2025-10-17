@@ -109,16 +109,16 @@ double EquityWidget::getInitialEquity() const
             m_cachedFinalEquity = activePoints.last().y();
             
             // Calculer le peak en même temps
-            double peak = activePoints.first().y();
+            QPointF peak = activePoints.first();
             for (const auto& pt : activePoints) {
-                if (pt.y() > peak) {
-                    peak = pt.y();
+                if (pt.y() > peak.y()) {
+                    peak = pt;
                 }
             }
             m_cachedPeakEquity = peak;
         } else {
             m_cachedInitialEquity = 0.0;
-            m_cachedPeakEquity = 0.0;
+            m_cachedPeakEquity = QPointF(0.0, 0.0);
             m_cachedFinalEquity = 0.0;
         }
         
@@ -128,7 +128,7 @@ double EquityWidget::getInitialEquity() const
     return m_cachedInitialEquity;
 }
 
-double EquityWidget::getPeakEquity() const
+QPointF EquityWidget::getPeakPoint() const
 {
     if (!m_cacheValid) {
         getInitialEquity();  // Va calculer et mettre en cache toutes les valeurs
@@ -847,7 +847,7 @@ void EquityWidget::drawEquityMarkers(QPainter &painter)
 {
     // Récupérer les valeurs automatiquement
     double initialEquity = getInitialEquity();
-    double peakEquity = getPeakEquity();
+    double peakEquity = getPeakPoint().y();
     double finalEquity = getFinalEquity();
     
     bool isPercentMode = m_checkBox->isChecked();
@@ -889,6 +889,15 @@ void EquityWidget::drawEquityMarkers(QPainter &painter)
         QPen peakPen(QColor(16, 124, 16), 1, Qt::DashLine);
         painter.setPen(peakPen);
         painter.drawLine(leftPt, rightPt);
+        
+        // Ligne verticale au niveau du peak (légère, sans légende)
+        QPointF peakPoint = getPeakPoint();
+        QPointF peakTopPt = mapToWidget(QPointF(peakPoint.x(), m_ymax));
+        QPointF peakBottomPt = mapToWidget(QPointF(peakPoint.x(), m_ymin));
+
+        QPen verticalPeakPen(QColor(16, 124, 16), 1, Qt::DotLine);  // Plus léger et en pointillés
+        painter.setPen(verticalPeakPen);
+        painter.drawLine(peakTopPt, peakBottomPt);
         
         // Label sur la ligne (au milieu)
         QString labelText = "Peak: " + formatValue(peakEquity);

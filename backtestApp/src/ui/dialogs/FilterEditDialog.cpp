@@ -143,6 +143,9 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_leftBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
             this, &FilterEditDialog::updatePreview);
+    // Left transform widgets
+    if (m_leftTransformCombo)
+        connect(m_leftTransformCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &FilterEditDialog::updatePreview);
     
     connect(m_rightPriceTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
@@ -196,6 +199,9 @@ void FilterEditDialog::setupUI()
 
     connect(m_operatorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
+    // Right transform widgets
+    if (m_rightTransformCombo)
+        connect(m_rightTransformCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &FilterEditDialog::updatePreview);
     connect(m_temporalLogicCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
     connect(m_lookbackPeriodsSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
@@ -262,6 +268,16 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Médiane", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_leftIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
+
+    // Transform selection for left indicator
+    QFormLayout* transformLayout = new QFormLayout();
+    m_leftTransformCombo = new QComboBox(m_leftIndicatorWidget);
+    m_leftTransformCombo->addItem("Aucune", static_cast<int>(filter::TransformType::NONE));
+    m_leftTransformCombo->addItem("Logarithme", static_cast<int>(filter::TransformType::LOG));
+    m_leftTransformCombo->addItem("Exponentielle", static_cast<int>(filter::TransformType::EXP));
+    m_leftTransformCombo->addItem("Dérivée (diff)", static_cast<int>(filter::TransformType::DERIVATIVE));
+    transformLayout->addRow("Transformation:", m_leftTransformCombo);
+    indicatorLayout->addLayout(transformLayout);
     
     // Paramètres spécifiques à chaque type d'indicateur
     
@@ -477,6 +493,16 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Médiane", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_rightIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
+
+    // Transform selection for right indicator
+    QFormLayout* transformLayoutR = new QFormLayout();
+    m_rightTransformCombo = new QComboBox(m_rightIndicatorWidget);
+    m_rightTransformCombo->addItem("Aucune", static_cast<int>(filter::TransformType::NONE));
+    m_rightTransformCombo->addItem("Logarithme", static_cast<int>(filter::TransformType::LOG));
+    m_rightTransformCombo->addItem("Exponentielle", static_cast<int>(filter::TransformType::EXP));
+    m_rightTransformCombo->addItem("Dérivée (diff)", static_cast<int>(filter::TransformType::DERIVATIVE));
+    transformLayoutR->addRow("Transformation:", m_rightTransformCombo);
+    indicatorLayout->addLayout(transformLayoutR);
     
     // Paramètres spécifiques à chaque indicateur (similaires à la partie gauche)
     // EMA
@@ -790,9 +816,13 @@ filter::ValueSource FilterEditDialog::getLeftValueSource() const
                     // Set optional fields (source and ma_type) which are integers in the struct
                     source.bbParams.ma_type = static_cast<int>(m_leftBBMATypeCombo->currentData().toInt());
                     source.bbParams.source = static_cast<int>(m_leftBBSourceCombo->currentData().toInt());
+                    break;
                 default:
                     break;
             }
+
+            // Transform settings (appliquées côté gauche)
+            source.transform = static_cast<filter::TransformType>(m_leftTransformCombo->currentData().toInt());
             break;
         case filter::ValueCategory::CANDLE_PROPERTY:
             source.candlePropertyType = static_cast<filter::CandlePropertyType>(m_leftCandlePropertyCombo->currentData().toInt());
@@ -1050,6 +1080,9 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
             
             // Mettre à jour la visibilité des paramètres d'indicateurs
             updateIndicatorParamsVisibility(m_leftIndicatorWidget, filter.leftValue.indicatorType);
+            // Restaurer les paramètres de transformation
+            m_leftTransformCombo->setCurrentIndex(m_leftTransformCombo->findData(static_cast<int>(filter.leftValue.transform)));
+            m_rightTransformCombo->setCurrentIndex(m_rightTransformCombo->findData(static_cast<int>(filter.rightValue.transform)));
             break;
         case filter::ValueCategory::CANDLE_PROPERTY:
             m_leftCandlePropertyCombo->setCurrentIndex(m_leftCandlePropertyCombo->findData(static_cast<int>(filter.leftValue.candlePropertyType)));

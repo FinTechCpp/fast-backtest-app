@@ -86,6 +86,10 @@ private:
     QDoubleSpinBox* m_leftBBStdDevMultiplierSpin;
     QComboBox* m_leftBBSourceCombo;              // "open"/"high"/"low"/"close"
     QComboBox* m_leftBBMATypeCombo;              // "EMA"/"SMA" for MA type
+    // Transform widgets for left indicator
+    QComboBox* m_leftTransformCombo;
+    // Transform widgets for right indicator
+    QComboBox* m_rightTransformCombo;
 
     // Widgets pour le côté droit
     QGroupBox* m_rightGroup;

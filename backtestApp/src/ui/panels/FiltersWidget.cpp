@@ -90,7 +90,7 @@ QWidget* FiltersWidget::createFilterWidget(size_t index, const filter::GenericFi
     
     // Bouton de modification avec la description du filtre
     std::string buttonText = filter.description;
-    if (filter.distance > 0.0) buttonText += " | dist=" + std::to_string(filter.distance);
+    if (filter.offset > 0.0) buttonText += " | offset=" + std::to_string(filter.offset);
     QPushButton* editButton = new QPushButton(QString::fromStdString(buttonText), filterWidget);
     editButton->setStyleSheet(
         "QPushButton {"
@@ -170,7 +170,7 @@ void FiltersWidget::updateFilterWidget(size_t index)
     
     // Mettre à jour le texte et le style du bouton d'édition
     std::string buttonText = filter.description;
-    if (filter.distance > 0.0) buttonText += " | dist=" + std::to_string(filter.distance);
+    if (filter.offset > 0.0) buttonText += " | offset=" + std::to_string(filter.offset);
     widgetGroup.editButton->setText(QString::fromStdString(buttonText));
     
     QString baseStyle = 

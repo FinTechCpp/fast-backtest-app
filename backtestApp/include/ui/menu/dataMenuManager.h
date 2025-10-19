@@ -33,6 +33,8 @@ public:
     
     void createDataMenu(QMenuBar* menuBar);
 
+    static const QString SERVER_URL;
+    
 private slots:
     void onImportCSV();
     void onImportFromAPI();
@@ -44,9 +46,6 @@ private slots:
     // Slots pour les requêtes HTTP
     void onMarketDataListReceived();
     void onFileDownloadFinished();
-
-    // Vérifier la connectivité VPN (basique)
-    bool isVpnConnected();
 
 private:
     // Menu principal

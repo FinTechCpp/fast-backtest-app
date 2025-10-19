@@ -114,8 +114,8 @@ void StrategyConfigDialog::setupFiltersSection(QGridLayout* gridLayout) {
     m_rebuyFiltersWidget = new FiltersWidget(this, "Filtres de rachat");
     
     gridLayout->addWidget(m_buyFiltersWidget, 0, 0);
-    gridLayout->addWidget(m_sellFiltersWidget, 0, 1);
-    gridLayout->addWidget(m_resaleFiltersWidget, 1, 0);
+    gridLayout->addWidget(m_resaleFiltersWidget, 0, 1);
+    gridLayout->addWidget(m_sellFiltersWidget, 1, 0);
     gridLayout->addWidget(m_rebuyFiltersWidget, 1, 1);
     
     // Make columns equal width

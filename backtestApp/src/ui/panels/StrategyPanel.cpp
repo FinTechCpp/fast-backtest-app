@@ -1,6 +1,5 @@
 #include "ui/panels/StrategyPanel.h"
-
-#include "ui/panels/FiltersWidget.h"
+#include "ui/dialogs/StrategyConfigDialog.h"
 #include <QDebug>
 
 StrategyPanel::StrategyPanel(QWidget* parent)
@@ -15,7 +14,6 @@ StrategyPanel::StrategyPanel(QWidget* parent)
 }
 
 void StrategyPanel::setupUI() {    
-    // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
     QVBoxLayout* baseLayout = new QVBoxLayout(this);
 
     // Section Paramètres avancés
@@ -282,7 +280,9 @@ void StrategyPanel::setupUI() {
         bool isFixed = (index == 0);
         bool isAtr = (index == 1);
         bool isRatio = (index == 2);
+       // bool isSupertrend = (index == 3);
         bool isRL = (index == 4);
+        //bool isNthHeikinAshi = (index == 5);
         // Fixed distance
         tpDistanceLabel->setVisible(isFixed);
         takeProfitDistanceSpin->setVisible(isFixed);
@@ -519,70 +519,6 @@ void StrategyPanel::setupUI() {
     riskGroup->setLayout(riskLayout);
     baseLayout->addWidget(riskGroup);
 
-    // ========== Section Machine Learning pour les entrées ==========
-    QGroupBox* mlGroup = new QGroupBox("Machine Learning - Signaux d'entrée", this);
-    QVBoxLayout* mlLayout = new QVBoxLayout();
-    
-    // Checkbox pour activer le ML
-    QCheckBox* useMlEntryCheck = new QCheckBox("Utiliser un modèle ML pour les entrées (remplace les filtres)", this);
-    useMlEntryCheck->setChecked(false);
-    mlLayout->addWidget(useMlEntryCheck);
-    
-    addBinding(PropertyBinderFactory::createBoolBinding(
-        useMlEntryCheck,
-        &m_config.use_ml_entry
-    ));
-    
-    // Widget conteneur pour les paramètres ML (visible seulement si activé)
-    QWidget* mlParamsWidget = new QWidget(this);
-    QFormLayout* mlParamsLayout = new QFormLayout();
-    
-    // Chemin du modèle ONNX
-    QLineEdit* mlModelPathEdit = new QLineEdit(this);
-    mlModelPathEdit->setText("./ThirdParty/Strategies/models/rf_model.onnx");
-    mlModelPathEdit->setPlaceholderText("Chemin vers le fichier .onnx");
-    mlParamsLayout->addRow(new QLabel("Modèle ONNX:", this), mlModelPathEdit);
-    
-    addBinding(PropertyBinderFactory::createStringBinding(
-        mlModelPathEdit,
-        &m_config.ml_entry_model_path
-    ));
-    
-    // Nombre de périodes lookback
-    QSpinBox* mlLookbackSpin = new QSpinBox(this);
-    mlLookbackSpin->setRange(1, 500);
-    mlLookbackSpin->setValue(3);  
-    mlLookbackSpin->setToolTip("Nombre de bougies historiques utilisées par le modèle (doit correspondre à l'entraînement)");
-    mlParamsLayout->addRow(new QLabel("Lookback (bougies):", this), mlLookbackSpin);
-    
-    addBinding(PropertyBinderFactory::createIntBinding(
-        mlLookbackSpin,
-        &m_config.ml_entry_lookback_periods
-    ));
-    
-    // Seuil de probabilité
-    QDoubleSpinBox* mlThresholdSpin = new QDoubleSpinBox(this);
-    mlThresholdSpin->setDecimals(3);
-    mlThresholdSpin->setRange(0.0, 1.0);
-    mlThresholdSpin->setSingleStep(0.05);
-    mlThresholdSpin->setValue(0.5);
-    mlThresholdSpin->setToolTip("Seuil de probabilité pour générer un signal");
-    mlParamsLayout->addRow(new QLabel("Seuil:", this), mlThresholdSpin);
-    
-    addBinding(PropertyBinderFactory::createFloatBinding(
-        mlThresholdSpin,
-        &m_config.ml_entry_threshold
-    ));
-    
-    mlParamsWidget->setLayout(mlParamsLayout);
-    mlParamsWidget->setVisible(false); // Caché par défaut
-    mlLayout->addWidget(mlParamsWidget);
-    
-    // Connecter la checkbox pour afficher/masquer les paramètres
-    connect(useMlEntryCheck, &QCheckBox::toggled, mlParamsWidget, &QWidget::setVisible);
-    
-    mlGroup->setLayout(mlLayout);
-    baseLayout->addWidget(mlGroup);
 
     // Section de configuration des filtres d'entrée
     FiltersWidget* filtersWidget = new FiltersWidget(this); // defaults to "Filtres de stratégie"
@@ -608,3 +544,11 @@ void StrategyPanel::setupUI() {
     setLayout(baseLayout);
 }
 
+void StrategyPanel::openStrategyConfigDialog() {
+    StrategyConfigDialog dialog(this);
+    dialog.setConfig(m_config);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        m_config = dialog.getConfig();
+    }
+}

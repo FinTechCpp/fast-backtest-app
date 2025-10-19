@@ -157,6 +157,8 @@ private:
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void calculateATR(int id, int period, bool useLogScale = false);
     void calculateCCI(int id, int period);
+    void calculateMACD(int id,int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType osc_ma_type, filter::MAType signal_ma_type, int signal_smoothing);
+    void calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType osc_ma_type);
     // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
     void calculatePivotPoints(const indicators::PivotPointsInstance& config);
 

@@ -2,13 +2,15 @@
 #include <QFrame>
 #include <QDebug>
 
-#include "ui/dialogs/rsiDialog.h"
-#include "ui/dialogs/emaDialog.h"
-#include "ui/dialogs/supertrendDialog.h"
-#include "ui/dialogs/stochasticDialog.h"
-#include "ui/dialogs/atrDialog.h"
-#include "ui/dialogs/pivotPointsDialog.h"
-#include "ui/dialogs/cciDialog.h"
+#include "ui/dialogs/indicators/rsiDialog.h"
+#include "ui/dialogs/indicators/emaDialog.h"
+#include "ui/dialogs/indicators/supertrendDialog.h"
+#include "ui/dialogs/indicators/stochasticDialog.h"
+#include "ui/dialogs/indicators/atrDialog.h"
+#include "ui/dialogs/indicators/pivotPointsDialog.h"
+#include "ui/dialogs/indicators/cciDialog.h"
+#include "ui/dialogs/indicators/macdDialog.h"
+#include "ui/dialogs/indicators/bbDialog.h"
 
 ChartControlPanel::ChartControlPanel(QWidget* parent)
     : QWidget(parent)
@@ -381,6 +383,10 @@ void ChartControlPanel::onAddSuggestedIndicator(int index) {
         m_chartWidget->addIndicator(*pivotPoints);
     } else if (const indicators::CCIInstance* cci = dynamic_cast<const indicators::CCIInstance*>(indicator)) {
         m_chartWidget->addIndicator(*cci);
+    } else if (const indicators::MACDInstance* macd = dynamic_cast<const indicators::MACDInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*macd);
+    } else if (const indicators::BBInstance* bb = dynamic_cast<const indicators::BBInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*bb);
     }
     
     // Rejeter la suggestion après l'avoir ajoutée
@@ -491,6 +497,8 @@ void ChartControlPanel::setupIndicatorControls() {
     m_indicatorTypeCombo->addItem("ATR", static_cast<int>(indicators::Type::ATR));
     m_indicatorTypeCombo->addItem("Points Pivots", static_cast<int>(indicators::Type::PIVOTPOINTS));
     m_indicatorTypeCombo->addItem("CCI", static_cast<int>(indicators::Type::CCI));
+    m_indicatorTypeCombo->addItem("MACD", static_cast<int>(indicators::Type::MACD));
+    m_indicatorTypeCombo->addItem("Bollinger Bands", static_cast<int>(indicators::Type::BB));
 
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
     addIndicatorLayout->addWidget(m_addIndicatorButton);
@@ -537,6 +545,12 @@ void ChartControlPanel::onAddIndicatorClicked() {
     } else if (indicatorType == static_cast<int>(indicators::Type::CCI)) {
         indicators::CCIInstance cci;
         m_chartWidget->addIndicator(std::move(cci));
+    } else if (indicatorType == static_cast<int>(indicators::Type::MACD)) {
+        indicators::MACDInstance macd;
+        m_chartWidget->addIndicator(std::move(macd));
+    } else if (indicatorType == static_cast<int>(indicators::Type::BB)) {
+        indicators::BBInstance bb;
+        m_chartWidget->addIndicator(std::move(bb));
     }
 }
 
@@ -581,6 +595,8 @@ void ChartControlPanel::onEditIndicator(int id) {
     if (tryOpenDialog<indicators::ATRInstance, ATRDialog>(id)) return;
     if (tryOpenDialog<indicators::PivotPointsInstance, PivotPointsDialog>(id)) return;
     if (tryOpenDialog<indicators::CCIInstance, CCIDialog>(id)) return;
+    if (tryOpenDialog<indicators::MACDInstance, MACDDialog>(id)) return;
+    if (tryOpenDialog<indicators::BBInstance, bbDialog>(id)) return;
 }
 
 void ChartControlPanel::onRemoveIndicator(int id) {
@@ -677,6 +693,10 @@ void ChartControlPanel::configureIndicatorInstances(const std::vector<std::uniqu
             m_chartWidget->addIndicator(*pivotPoints);
         } else if (const indicators::CCIInstance* cci = dynamic_cast<const indicators::CCIInstance*>(indicator.get())) {
             m_chartWidget->addIndicator(*cci);
+        } else if (const indicators::MACDInstance* macd = dynamic_cast<const indicators::MACDInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*macd);
+        } else if (const indicators::BBInstance* bb = dynamic_cast<const indicators::BBInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*bb);
         }
     }
 }

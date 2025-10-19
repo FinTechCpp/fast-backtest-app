@@ -1,4 +1,4 @@
-#include "ui/dialogs/atrDialog.h"
+#include "ui/dialogs/indicators/atrDialog.h"
 
 ATRDialog::ATRDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::ATRInstance& atr)
     : IndicatorDialog<indicators::ATRInstance>(parent, "ATR", chartWidget, atr)

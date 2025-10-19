@@ -288,13 +288,50 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
                 addIfNotPresent(std::move(cci));
                 break;
             }
+            case filter::IndicatorType::MACD_HISTOGRAM:
+            case filter::IndicatorType::MACD_LINE:
+            case filter::IndicatorType::MACD_SIGNAL: {
+                auto macd = std::make_unique<indicators::MACDInstance>();
+                macd->fastPeriod = source.macdParams.fast;
+                macd->slowPeriod = source.macdParams.slow;
+                macd->signalPeriod = source.macdParams.signal;
+                addIfNotPresent(std::move(macd));
+                break;
+            }
+            case filter::IndicatorType::BB_UPPER:
+            case filter::IndicatorType::BB_LOWER:
+            case filter::IndicatorType::BB_PERCENT_B: {
+                auto bb = std::make_unique<indicators::BBInstance>();
+                bb->period = source.bbParams.period;
+                // bbParams stores ma_type and source as ints; cast to the enum types expected by BBInstance
+                bb->ma_type = static_cast<filter::MAType>(source.bbParams.ma_type);
+                bb->source = static_cast<filter::PriceType>(source.bbParams.source);
+                bb->stddev_multiplier = source.bbParams.stddev_multiplier;
+                addIfNotPresent(std::move(bb));
+                break;
+            }
             default:
                 break;
         }
     };
     
     // Parcourir tous les filtres et extraire les indicateurs
-    for (const auto& filter : strategyConfig.filters) {
+    for (const auto& filter : strategyConfig.buyFilters) {
+        extractIndicator(filter.leftValue);
+        extractIndicator(filter.rightValue);
+    }
+
+    for (const auto& filter : strategyConfig.sellFilters) {
+        extractIndicator(filter.leftValue);
+        extractIndicator(filter.rightValue);
+    }
+
+    for (const auto& filter : strategyConfig.rebuyFilters) {
+        extractIndicator(filter.leftValue);
+        extractIndicator(filter.rightValue);
+    }
+
+    for (const auto& filter : strategyConfig.resaleFilters) {
         extractIndicator(filter.leftValue);
         extractIndicator(filter.rightValue);
     }

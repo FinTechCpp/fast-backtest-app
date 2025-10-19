@@ -91,15 +91,15 @@ public:
 
         // Fill the position information
         const std::vector<std::shared_ptr<be::Trade>>& trades = _broker->trades();
-        std::shared_ptr<be::Trade> current_trade = trades.empty() ? nullptr : trades.back();
+        // std::shared_ptr<be::Trade> current_trade = trades.empty() ? nullptr : trades.back();
         
         // Populate position info for break-even functionality
-        if (current_trade) {
-            candle.position.entry_price = current_trade->entryPrice();
+        if (!trades.empty()) {
+            candle.position.entry_price = trades.back()->entryPrice();
             // Calculate take profit price from the trade's TP order
             // if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
-            if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limitPrice();
-
+            if (trades.back()->tpOrder())
+                candle.position.take_profit_price = trades.back()->tpOrder()->limitPrice();
         }
 
         // Get a reference to closedTrades instead of a copy
@@ -113,8 +113,7 @@ public:
         }
 
         // Update the strategy signal with the new latest candle by executing strategy logic
-        Signal* signal = strategy->update_candle(candle);
-
+        Signal signal = strategy->update_candle(candle);
 
         // DateTime dtBreakPoint{2022, 8, 8, Time{21, 59, 0}};
 
@@ -122,41 +121,41 @@ public:
         //     int a = 0;
         // }
 
-        if (!signal)
+        if (signal.type == SignalType::NONE)
             return; // No signal to process
 
         // Process the signal if there is one
-        if (signal->type == SignalType::LIQUIDATE) {
+        if (signal.type == SignalType::LIQUIDATE) {
             _broker->closeAllTrades();
         }
-        else if (signal->type == SignalType::MOVE_SL) {
+        else if (signal.type == SignalType::MOVE_SL && !trades.empty()) {
             // Récupérer le prix de trigger depuis le signal
-            double triggerPrice = signal->price > 0 ? signal->price : 0.0;
-            bool success = current_trade->setBreakEven(signal->new_sl, triggerPrice);
+            double triggerPrice = signal.price > 0 ? signal.price : 0.0;
+            bool success = trades.back()->setBreakEven(signal.new_sl, triggerPrice);
 
-            // _broker->setBreakEven(current_trade, signal->new_sl, triggerPrice);
+            // _broker->setBreakEven(current_trade, signal.new_sl, triggerPrice);
         }
-        else if (trades.empty() && signal->type == SignalType::BUY && signal->quantity > 0) {
+        else if (trades.empty() && signal.type == SignalType::BUY && signal.quantity > 0) {
             _broker->submitOrder(
-                signal->quantity, 
+                signal.quantity, 
                 be::OrderSide::BUY, 
                 be::OrderType::MARKET, 
                 std::nullopt, 
                 std::nullopt, 
-                be::SLValue::points(signal->stop_loss), 
-                be::TPValue::points(signal->take_profit), 
+                be::SLValue::points(signal.stop_loss), 
+                be::TPValue::points(signal.take_profit), 
                 nullptr
             );
         }
-        else if (trades.empty() && signal->type == SignalType::SELL && signal->quantity > 0) {
+        else if (trades.empty() && signal.type == SignalType::SELL && signal.quantity > 0) {
             _broker->submitOrder(
-                signal->quantity, 
+                signal.quantity, 
                 be::OrderSide::SELL, 
                 be::OrderType::MARKET, 
                 std::nullopt, 
                 std::nullopt, 
-                be::SLValue::points(signal->stop_loss), 
-                be::TPValue::points(signal->take_profit), 
+                be::SLValue::points(signal.stop_loss), 
+                be::TPValue::points(signal.take_profit), 
                 nullptr
             );
         }

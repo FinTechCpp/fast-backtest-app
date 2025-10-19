@@ -22,6 +22,7 @@ FilterEditDialog::FilterEditDialog(QWidget* parent)
     onLeftIndicatorTypeChanged(m_leftIndicatorTypeCombo->currentIndex());
     onRightValueCategoryChanged(m_rightCategoryCombo->currentIndex());
     onRightIndicatorTypeChanged(m_rightIndicatorTypeCombo->currentIndex());
+    updateDistanceVisibility();
     
     updatePreview();
 }
@@ -122,6 +123,29 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_leftSuperTrendMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
             this, &FilterEditDialog::updatePreview);
+    connect(m_leftCCIPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftCCIOverboughtSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftCCIOversoldSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftMACDFastPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftMACDSlowPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftMACDSignalPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftBBPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftBBMATypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftBBSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    // Left transform widgets
+    if (m_leftTransformCombo)
+        connect(m_leftTransformCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &FilterEditDialog::updatePreview);
     
     connect(m_rightPriceTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
@@ -149,9 +173,35 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_rightSuperTrendMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
             this, &FilterEditDialog::updatePreview);
-    
+    connect(m_rightCCIPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightCCIOverboughtSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightCCIOversoldSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightMACDFastPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightMACDSlowPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightMACDSignalPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview); 
+    connect(m_rightBBPeriodSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightBBMATypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightBBSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+            this, &FilterEditDialog::updatePreview);
+
+    // Distance spin connection
+    connect(m_distanceSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &FilterEditDialog::updatePreview);
+
     connect(m_operatorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
+    // Right transform widgets
+    if (m_rightTransformCombo)
+        connect(m_rightTransformCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &FilterEditDialog::updatePreview);
     connect(m_temporalLogicCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
     connect(m_lookbackPeriodsSpin, QOverload<int>::of(&QSpinBox::valueChanged), 
@@ -210,8 +260,24 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
     m_leftIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
     m_leftIndicatorTypeCombo->addItem("CCI", static_cast<int>(filter::IndicatorType::CCI));
+    m_leftIndicatorTypeCombo->addItem("MACD Histogramme", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
+    m_leftIndicatorTypeCombo->addItem("MACD Ligne MACD", static_cast<int>(filter::IndicatorType::MACD_LINE));
+    m_leftIndicatorTypeCombo->addItem("MACD Ligne Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
+    m_leftIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Supérieure", static_cast<int>(filter::IndicatorType::BB_UPPER));
+    m_leftIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Inférieure", static_cast<int>(filter::IndicatorType::BB_LOWER));
+    m_leftIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Médiane", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_leftIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
+
+    // Transform selection for left indicator
+    QFormLayout* transformLayout = new QFormLayout();
+    m_leftTransformCombo = new QComboBox(m_leftIndicatorWidget);
+    m_leftTransformCombo->addItem("Aucune", static_cast<int>(filter::TransformType::NONE));
+    m_leftTransformCombo->addItem("Logarithme", static_cast<int>(filter::TransformType::LOG));
+    m_leftTransformCombo->addItem("Exponentielle", static_cast<int>(filter::TransformType::EXP));
+    m_leftTransformCombo->addItem("Dérivée (diff)", static_cast<int>(filter::TransformType::DERIVATIVE));
+    transformLayout->addRow("Transformation:", m_leftTransformCombo);
+    indicatorLayout->addLayout(transformLayout);
     
     // Paramètres spécifiques à chaque type d'indicateur
     
@@ -287,12 +353,69 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftCCIPeriodSpin->setRange(1, 1000);
     m_leftCCIPeriodSpin->setValue(20);
     cciLeftLayout->addRow("Période:", m_leftCCIPeriodSpin);
+    // Valeurs de surachat / survente pour CCI (utilisées dans l'aperçu et la configuration)
+    m_leftCCIOverboughtSpin = new QDoubleSpinBox(m_leftCCIWidget);
+    m_leftCCIOverboughtSpin->setRange(-10000.0, 10000.0);
+    m_leftCCIOverboughtSpin->setDecimals(2);
+    m_leftCCIOverboughtSpin->setValue(100.0);
+    m_leftCCIOversoldSpin = new QDoubleSpinBox(m_leftCCIWidget);
+    m_leftCCIOversoldSpin->setRange(-10000.0, 10000.0);
+    m_leftCCIOversoldSpin->setDecimals(2);
+    m_leftCCIOversoldSpin->setValue(-100.0);
+    cciLeftLayout->addRow("Surachat (overbought):", m_leftCCIOverboughtSpin);
+    cciLeftLayout->addRow("Survente (oversold):", m_leftCCIOversoldSpin);
     m_leftCCIWidget->setVisible(false);
     indicatorLayout->addWidget(m_leftCCIWidget);
     
     m_leftIndicatorWidget->setVisible(false);
     leftLayout->addWidget(m_leftIndicatorWidget);
-    
+
+    // MACD
+    m_leftMACDWidget = new QWidget(m_leftIndicatorWidget);
+    QFormLayout* macdLayout = new QFormLayout(m_leftMACDWidget);
+    m_leftMACDFastPeriodSpin = new QSpinBox(m_leftMACDWidget);
+    m_leftMACDFastPeriodSpin->setRange(1, 1000);
+    m_leftMACDFastPeriodSpin->setValue(12);
+    m_leftMACDSlowPeriodSpin = new QSpinBox(m_leftMACDWidget);
+    m_leftMACDSlowPeriodSpin->setRange(1, 1000);
+    m_leftMACDSlowPeriodSpin->setValue(26);
+    m_leftMACDSignalPeriodSpin = new QSpinBox(m_leftMACDWidget);
+    m_leftMACDSignalPeriodSpin->setRange(1, 1000);
+    m_leftMACDSignalPeriodSpin->setRange(1, 1000);
+    m_leftMACDSignalPeriodSpin->setValue(9);
+    macdLayout->addRow("Période Fast:", m_leftMACDFastPeriodSpin);
+    macdLayout->addRow("Période Slow:", m_leftMACDSlowPeriodSpin);
+    macdLayout->addRow("Période Signal:", m_leftMACDSignalPeriodSpin);
+    m_leftMACDWidget->setVisible(false);
+    indicatorLayout->addWidget(m_leftMACDWidget);
+
+    // Bandes de Bollinger
+    m_leftBBWidget = new QWidget(m_leftIndicatorWidget);
+    QFormLayout* bbLayout = new QFormLayout(m_leftBBWidget);
+    m_leftBBPeriodSpin = new QSpinBox(m_leftBBWidget);
+    m_leftBBPeriodSpin->setRange(1, 1000);
+    m_leftBBPeriodSpin->setValue(20);
+    m_leftBBMATypeCombo = new QComboBox(m_leftBBWidget);
+    m_leftBBMATypeCombo->addItem("SMA", static_cast<int>(filter::MAType::SMA));
+    m_leftBBMATypeCombo->addItem("EMA", static_cast<int>(filter::MAType::EMA));
+    m_leftBBSourceCombo = new QComboBox(m_leftBBWidget);
+    m_leftBBSourceCombo->addItem("Clôture", static_cast<int>(filter::PriceType::CLOSE));
+    m_leftBBSourceCombo->addItem("Ouverture", static_cast<int>(filter::PriceType::OPEN));
+    m_leftBBSourceCombo->addItem("Plus haut", static_cast<int>(filter::PriceType::HIGH));
+    m_leftBBSourceCombo->addItem("Plus bas", static_cast<int>(filter::PriceType::LOW));
+    m_leftBBSourceCombo->addItem("Typique", static_cast<int>(filter::PriceType::TYPICAL));
+    m_leftBBSourceCombo->addItem("Médian", static_cast<int>(filter::PriceType::MEDIAN));
+    m_leftBBStdDevMultiplierSpin = new QDoubleSpinBox(m_leftBBWidget);
+    m_leftBBStdDevMultiplierSpin->setRange(0.1, 10.0);
+    m_leftBBStdDevMultiplierSpin->setSingleStep(0.1);
+    m_leftBBStdDevMultiplierSpin->setValue(2.0);
+    bbLayout->addRow("Période:", m_leftBBPeriodSpin);
+    bbLayout->addRow("Type de MA:", m_leftBBMATypeCombo);
+    bbLayout->addRow("Source:", m_leftBBSourceCombo);
+    bbLayout->addRow("Multiplicateur écart-type:", m_leftBBStdDevMultiplierSpin);
+    m_leftBBWidget->setVisible(false);
+    indicatorLayout->addWidget(m_leftBBWidget); 
+
     // 3. Propriété bougie
     m_leftCandlePropertyWidget = new QWidget(parent);
     QFormLayout* candleLayout = new QFormLayout(m_leftCandlePropertyWidget);
@@ -362,8 +485,24 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightIndicatorTypeCombo->addItem("SuperTrend Valeur", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
     m_rightIndicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
     m_rightIndicatorTypeCombo->addItem("CCI", static_cast<int>(filter::IndicatorType::CCI));
+    m_rightIndicatorTypeCombo->addItem("MACD Histogramme", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
+    m_rightIndicatorTypeCombo->addItem("MACD Ligne MACD", static_cast<int>(filter::IndicatorType::MACD_LINE));
+    m_rightIndicatorTypeCombo->addItem("MACD Ligne Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
+    m_rightIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Supérieure", static_cast<int>(filter::IndicatorType::BB_UPPER));
+    m_rightIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Inférieure", static_cast<int>(filter::IndicatorType::BB_LOWER));
+    m_rightIndicatorTypeCombo->addItem("Bandes de Bollinger - Bande Médiane", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
     indicatorTypeLayout->addRow("Type d'indicateur:", m_rightIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
+
+    // Transform selection for right indicator
+    QFormLayout* transformLayoutR = new QFormLayout();
+    m_rightTransformCombo = new QComboBox(m_rightIndicatorWidget);
+    m_rightTransformCombo->addItem("Aucune", static_cast<int>(filter::TransformType::NONE));
+    m_rightTransformCombo->addItem("Logarithme", static_cast<int>(filter::TransformType::LOG));
+    m_rightTransformCombo->addItem("Exponentielle", static_cast<int>(filter::TransformType::EXP));
+    m_rightTransformCombo->addItem("Dérivée (diff)", static_cast<int>(filter::TransformType::DERIVATIVE));
+    transformLayoutR->addRow("Transformation:", m_rightTransformCombo);
+    indicatorLayout->addLayout(transformLayoutR);
     
     // Paramètres spécifiques à chaque indicateur (similaires à la partie gauche)
     // EMA
@@ -438,12 +577,67 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightCCIPeriodSpin->setRange(1, 1000);
     m_rightCCIPeriodSpin->setValue(20);
     cciRightLayout->addRow("Période:", m_rightCCIPeriodSpin);
+    // Valeurs de surachat / survente pour CCI côté droit
+    m_rightCCIOverboughtSpin = new QDoubleSpinBox(m_rightCCIWidget);
+    m_rightCCIOverboughtSpin->setRange(-10000.0, 10000.0);
+    m_rightCCIOverboughtSpin->setDecimals(2);
+    m_rightCCIOverboughtSpin->setValue(100.0);
+    m_rightCCIOversoldSpin = new QDoubleSpinBox(m_rightCCIWidget);
+    m_rightCCIOversoldSpin->setRange(-10000.0, 10000.0);
+    m_rightCCIOversoldSpin->setDecimals(2);
+    m_rightCCIOversoldSpin->setValue(-100.0);
+    cciRightLayout->addRow("Surachat (overbought):", m_rightCCIOverboughtSpin);
+    cciRightLayout->addRow("Survente (oversold):", m_rightCCIOversoldSpin);
     m_rightCCIWidget->setVisible(false);
     indicatorLayout->addWidget(m_rightCCIWidget);
     
     m_rightIndicatorWidget->setVisible(false);
     rightLayout->addWidget(m_rightIndicatorWidget);
-    
+
+    // MACD
+    m_rightMACDWidget = new QWidget(m_rightIndicatorWidget);
+    QFormLayout* macdLayout = new QFormLayout(m_rightMACDWidget);
+    m_rightMACDFastPeriodSpin = new QSpinBox(m_rightMACDWidget);
+    m_rightMACDFastPeriodSpin->setRange(1, 1000);   
+    m_rightMACDFastPeriodSpin->setValue(12);
+    m_rightMACDSlowPeriodSpin = new QSpinBox(m_rightMACDWidget);
+    m_rightMACDSlowPeriodSpin->setRange(1, 1000);
+    m_rightMACDSlowPeriodSpin->setValue(26);
+    m_rightMACDSignalPeriodSpin = new QSpinBox(m_rightMACDWidget);
+    m_rightMACDSignalPeriodSpin->setRange(1, 1000);
+    m_rightMACDSignalPeriodSpin->setValue(9);
+    macdLayout->addRow("Période Fast:", m_rightMACDFastPeriodSpin);
+    macdLayout->addRow("Période Slow:", m_rightMACDSlowPeriodSpin);
+    macdLayout->addRow("Période Signal:", m_rightMACDSignalPeriodSpin);
+    m_rightMACDWidget->setVisible(false);
+    indicatorLayout->addWidget(m_rightMACDWidget);
+    // Bandes de Bollinger
+    m_rightBBWidget = new QWidget(m_rightIndicatorWidget);
+    QFormLayout* bbLayout = new QFormLayout(m_rightBBWidget);
+    m_rightBBPeriodSpin = new QSpinBox(m_rightBBWidget);
+    m_rightBBPeriodSpin->setRange(1, 1000);
+    m_rightBBPeriodSpin->setValue(20);
+    m_rightBBMATypeCombo = new QComboBox(m_rightBBWidget);  
+    m_rightBBMATypeCombo->addItem("SMA", static_cast<int>(filter::MAType::SMA));
+    m_rightBBMATypeCombo->addItem("EMA", static_cast<int>(filter::MAType::EMA));
+    m_rightBBSourceCombo = new QComboBox(m_rightBBWidget);
+    m_rightBBSourceCombo->addItem("Clôture", static_cast<int>(filter::PriceType::CLOSE));
+    m_rightBBSourceCombo->addItem("Ouverture", static_cast<int>(filter::PriceType::OPEN));
+    m_rightBBSourceCombo->addItem("Plus haut", static_cast<int>(filter::PriceType::HIGH));
+    m_rightBBSourceCombo->addItem("Plus bas", static_cast<int>(filter::PriceType::LOW));
+    m_rightBBSourceCombo->addItem("Typique", static_cast<int>(filter::PriceType::TYPICAL));
+    m_rightBBSourceCombo->addItem("Médian", static_cast<int>(filter::PriceType::MEDIAN));
+    m_rightBBStdDevMultiplierSpin   = new QDoubleSpinBox(m_rightBBWidget);
+    m_rightBBStdDevMultiplierSpin->setRange(0.1, 10.0);
+    m_rightBBStdDevMultiplierSpin->setSingleStep(0.1);
+    m_rightBBStdDevMultiplierSpin->setValue(2.0);
+    bbLayout->addRow("Période:", m_rightBBPeriodSpin);
+    bbLayout->addRow("Type de MA:", m_rightBBMATypeCombo);
+    bbLayout->addRow("Source:", m_rightBBSourceCombo);
+    bbLayout->addRow("Multiplicateur écart-type:", m_rightBBStdDevMultiplierSpin);
+    m_rightBBWidget->setVisible(false);
+    indicatorLayout->addWidget(m_rightBBWidget);    
+
     // 3. Constante
     m_rightConstantWidget = new QWidget(parent);
     QFormLayout* constantLayout = new QFormLayout(m_rightConstantWidget);
@@ -485,10 +679,33 @@ void FilterEditDialog::setupOperatorUI(QWidget* parent)
     m_operatorCombo->addItem("!=", static_cast<int>(filter::ComparisonOperator::NOT_EQUAL));
     m_operatorCombo->addItem("Croise au-dessus", static_cast<int>(filter::ComparisonOperator::CROSSES_ABOVE));
     m_operatorCombo->addItem("Croise en-dessous", static_cast<int>(filter::ComparisonOperator::CROSSES_BELOW));
+    m_operatorCombo->addItem("Distance < seuil", static_cast<int>(filter::ComparisonOperator::DISTANCE_LESS));
+    m_operatorCombo->addItem("Distance > seuil", static_cast<int>(filter::ComparisonOperator::DISTANCE_GREATER));
     m_operatorCombo->addItem("Est Vrai", static_cast<int>(filter::ComparisonOperator::TRUE));
     m_operatorCombo->addItem("Est Faux", static_cast<int>(filter::ComparisonOperator::FALSE));
 
     operatorLayout->addRow("Opérateur:", m_operatorCombo);
+
+    // Offset (threshold) between left and right values
+    m_distanceSpin = new QDoubleSpinBox(parent);
+    m_distanceSpin->setRange(0.0, 1e12);
+    m_distanceSpin->setDecimals(5);
+    m_distanceSpin->setSingleStep(0.1);
+    m_distanceSpin->setValue(0.0);
+    m_distanceSpin->setToolTip("Offset minimal entre les deux valeurs pour que la condition soit vraie (0 = pas de contrainte)");
+
+    // Créer un label pour l'offset
+    m_distanceLabel = new QLabel("Offset:", parent);
+    
+    operatorLayout->addRow(m_distanceLabel, m_distanceSpin);
+    
+    // Connecter le changement d'opérateur pour gérer la visibilité
+    connect(m_operatorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &FilterEditDialog::updateDistanceVisibility);
+    
+    // Connecter le changement de distance pour mettre à jour l'aperçu
+    connect(m_distanceSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
 }
 
 void FilterEditDialog::setupTemporalLogicUI(QWidget* parent)
@@ -520,6 +737,8 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_leftATRWidget->setVisible(type == filter::IndicatorType::ATR);
         m_leftSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
         m_leftCCIWidget->setVisible(type == filter::IndicatorType::CCI);
+        m_leftMACDWidget->setVisible(type == filter::IndicatorType::MACD_HISTOGRAM || type == filter::IndicatorType::MACD_LINE || type == filter::IndicatorType::MACD_SIGNAL);
+        m_leftBBWidget->setVisible(type == filter::IndicatorType::BB_UPPER || type == filter::IndicatorType::BB_LOWER || type == filter::IndicatorType::BB_PERCENT_B);
     } else if (container == m_rightIndicatorWidget) {
         m_rightEMAWidget->setVisible(type == filter::IndicatorType::EMA);
         m_rightRSIWidget->setVisible(type == filter::IndicatorType::RSI);
@@ -527,6 +746,8 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_rightATRWidget->setVisible(type == filter::IndicatorType::ATR);
         m_rightSuperTrendWidget->setVisible(type == filter::IndicatorType::SUPERTREND_VALUE || type == filter::IndicatorType::SUPERTREND_DIRECTION);
         m_rightCCIWidget->setVisible(type == filter::IndicatorType::CCI);
+        m_rightMACDWidget->setVisible(type == filter::IndicatorType::MACD_HISTOGRAM || type == filter::IndicatorType::MACD_LINE || type == filter::IndicatorType::MACD_SIGNAL);
+        m_rightBBWidget->setVisible(type == filter::IndicatorType::BB_UPPER || type == filter::IndicatorType::BB_LOWER || type == filter::IndicatorType::BB_PERCENT_B);
     }
 }
 
@@ -574,9 +795,34 @@ filter::ValueSource FilterEditDialog::getLeftValueSource() const
                 case filter::IndicatorType::CCI:
                     source.cciParams = filter::CCIParams(m_leftCCIPeriodSpin->value());
                     break;
+                case filter::IndicatorType::MACD_HISTOGRAM:
+                case filter::IndicatorType::MACD_LINE:
+                case filter::IndicatorType::MACD_SIGNAL:
+                    source.macdParams = filter::MACDParams(
+                        m_leftMACDFastPeriodSpin->value(),
+                        m_leftMACDSlowPeriodSpin->value(),
+                        m_leftMACDSignalPeriodSpin->value()
+                    );
+                    break;
+                case filter::IndicatorType::BB_UPPER:
+                case filter::IndicatorType::BB_LOWER:
+                case filter::IndicatorType::BB_PERCENT_B:
+                    // BBParams constructor is (int period, double stddev_multiplier, int offset)
+                    source.bbParams = filter::BBParams(
+                        m_leftBBPeriodSpin->value(),
+                        m_leftBBStdDevMultiplierSpin->value(),
+                        0
+                    );
+                    // Set optional fields (source and ma_type) which are integers in the struct
+                    source.bbParams.ma_type = static_cast<int>(m_leftBBMATypeCombo->currentData().toInt());
+                    source.bbParams.source = static_cast<int>(m_leftBBSourceCombo->currentData().toInt());
+                    break;
                 default:
                     break;
             }
+
+            // Transform settings (appliquées côté gauche)
+            source.transform = static_cast<filter::TransformType>(m_leftTransformCombo->currentData().toInt());
             break;
         case filter::ValueCategory::CANDLE_PROPERTY:
             source.candlePropertyType = static_cast<filter::CandlePropertyType>(m_leftCandlePropertyCombo->currentData().toInt());
@@ -631,6 +877,28 @@ filter::ValueSource FilterEditDialog::getRightValueSource() const
                     break;
                 case filter::IndicatorType::CCI:
                     source.cciParams = filter::CCIParams(m_rightCCIPeriodSpin->value());
+                    break;
+                case filter::IndicatorType::MACD_HISTOGRAM:
+                case filter::IndicatorType::MACD_LINE:
+                case filter::IndicatorType::MACD_SIGNAL:
+                    source.macdParams = filter::MACDParams(
+                        m_rightMACDFastPeriodSpin->value(),
+                        m_rightMACDSlowPeriodSpin->value(),
+                        m_rightMACDSignalPeriodSpin->value()
+                    );
+                    break;
+                case filter::IndicatorType::BB_UPPER:
+                case filter::IndicatorType::BB_LOWER:
+                case filter::IndicatorType::BB_PERCENT_B:
+                    // BBParams constructor is (int period, double stddev_multiplier, int offset)
+                    source.bbParams = filter::BBParams(
+                        m_rightBBPeriodSpin->value(),
+                        m_rightBBStdDevMultiplierSpin->value(),
+                        0
+                    );
+                    // Set optional fields (source and ma_type)
+                    source.bbParams.ma_type = static_cast<int>(m_rightBBMATypeCombo->currentData().toInt());
+                    source.bbParams.source = static_cast<int>(m_rightBBSourceCombo->currentData().toInt());
                     break;
                 default:
                     break;
@@ -709,8 +977,27 @@ void FilterEditDialog::onComparisonOpChanged(int index) {
     // Affiche ou masque le groupe de droite et le placeholder
     m_rightGroup->setVisible(!isBoolOp);
     m_rightPlaceholder->setVisible(isBoolOp);
+    
+    // Mettre à jour la visibilité de la distance
+    updateDistanceVisibility();
 
     updatePreview();
+}
+
+void FilterEditDialog::updateDistanceVisibility()
+{
+    filter::ComparisonOperator op = static_cast<filter::ComparisonOperator>(m_operatorCombo->currentData().toInt());
+    
+    // Afficher la distance seulement pour les opérateurs de comparaison numérique
+    bool showDistance = (op == filter::ComparisonOperator::GREATER_THAN ||
+                        op == filter::ComparisonOperator::LESS_THAN ||
+                        op == filter::ComparisonOperator::GREATER_OR_EQUAL ||
+                        op == filter::ComparisonOperator::LESS_OR_EQUAL ||
+                        op == filter::ComparisonOperator::DISTANCE_LESS ||
+                        op == filter::ComparisonOperator::DISTANCE_GREATER);
+    
+    m_distanceSpin->setVisible(showDistance);
+    m_distanceLabel->setVisible(showDistance);
 }
 
 
@@ -772,12 +1059,30 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                 case filter::IndicatorType::CCI:
                     m_leftCCIPeriodSpin->setValue(filter.leftValue.cciParams.period);
                     break;
+                case filter::IndicatorType::MACD_HISTOGRAM:
+                case filter::IndicatorType::MACD_LINE:
+                case filter::IndicatorType::MACD_SIGNAL:
+                    m_leftMACDFastPeriodSpin->setValue(filter.leftValue.macdParams.fast);
+                    m_leftMACDSlowPeriodSpin->setValue(filter.leftValue.macdParams.slow);
+                    m_leftMACDSignalPeriodSpin->setValue(filter.leftValue.macdParams.signal);
+                    break;
+                case filter::IndicatorType::BB_UPPER:
+                case filter::IndicatorType::BB_LOWER:
+                case filter::IndicatorType::BB_PERCENT_B:
+                    m_leftBBPeriodSpin->setValue(filter.leftValue.bbParams.period);
+                    m_leftBBMATypeCombo->setCurrentIndex(m_leftBBMATypeCombo->findData(static_cast<int>(filter.leftValue.bbParams.ma_type)));
+                    m_leftBBSourceCombo->setCurrentIndex(m_leftBBSourceCombo->findData(static_cast<int>(filter.leftValue.bbParams.source)));
+                    m_leftBBStdDevMultiplierSpin->setValue(filter.leftValue.bbParams.stddev_multiplier);
+                    break;
                 default:
                     break;
             }
             
             // Mettre à jour la visibilité des paramètres d'indicateurs
             updateIndicatorParamsVisibility(m_leftIndicatorWidget, filter.leftValue.indicatorType);
+            // Restaurer les paramètres de transformation
+            m_leftTransformCombo->setCurrentIndex(m_leftTransformCombo->findData(static_cast<int>(filter.leftValue.transform)));
+            m_rightTransformCombo->setCurrentIndex(m_rightTransformCombo->findData(static_cast<int>(filter.rightValue.transform)));
             break;
         case filter::ValueCategory::CANDLE_PROPERTY:
             m_leftCandlePropertyCombo->setCurrentIndex(m_leftCandlePropertyCombo->findData(static_cast<int>(filter.leftValue.candlePropertyType)));
@@ -823,6 +1128,24 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                     m_rightSuperTrendPeriodSpin->setValue(filter.rightValue.supertrendParams.atrPeriod);
                     m_rightSuperTrendMultiplierSpin->setValue(filter.rightValue.supertrendParams.multiplier);
                     break;
+                case filter::IndicatorType::CCI:
+                    m_rightCCIPeriodSpin->setValue(filter.rightValue.cciParams.period);
+                    break;
+                case filter::IndicatorType::MACD_HISTOGRAM:
+                case filter::IndicatorType::MACD_LINE:
+                case filter::IndicatorType::MACD_SIGNAL:
+                    m_rightMACDFastPeriodSpin->setValue(filter.rightValue.macdParams.fast);
+                    m_rightMACDSlowPeriodSpin->setValue(filter.rightValue.macdParams.slow);
+                    m_rightMACDSignalPeriodSpin->setValue(filter.rightValue.macdParams.signal);
+                    break;
+                case filter::IndicatorType::BB_UPPER:
+                case filter::IndicatorType::BB_LOWER:
+                case filter::IndicatorType::BB_PERCENT_B:
+                    m_rightBBPeriodSpin->setValue(filter.rightValue.bbParams.period);
+                    m_rightBBMATypeCombo->setCurrentIndex(m_rightBBMATypeCombo->findData(static_cast<int>(filter.rightValue.bbParams.ma_type)));
+                    m_rightBBSourceCombo->setCurrentIndex(m_rightBBSourceCombo->findData(static_cast<int>(filter.rightValue.bbParams.source)));
+                    m_rightBBStdDevMultiplierSpin->setValue(filter.rightValue.bbParams.stddev_multiplier);
+                    break;
                 default:
                     break;
             }
@@ -843,11 +1166,15 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
     // Configurer la logique temporelle
     m_temporalLogicCombo->setCurrentIndex(m_temporalLogicCombo->findData(static_cast<int>(filter.temporalLogic)));
     m_lookbackPeriodsSpin->setValue(filter.lookbackPeriods);
+
+    // Charger l'offset
+    m_distanceSpin->setValue(filter.offset);
     
     // Mettre à jour la visibilité
     onLeftValueCategoryChanged(leftCategoryIndex);
     onRightValueCategoryChanged(rightCategoryIndex);
     onLookbackPeriodsChanged(filter.lookbackPeriods);
+    updateDistanceVisibility();
     
     updatePreview();
 }
@@ -860,9 +1187,11 @@ void FilterEditDialog::updatePreview()
     filter::ValueSource rightSource = getRightValueSource();
     filter::TemporalLogic tempLogic = static_cast<filter::TemporalLogic>(m_temporalLogicCombo->currentData().toInt());
     int lookbackPeriods = m_lookbackPeriodsSpin->value();
+    double offset = m_distanceSpin->value();
 
     filter::GenericFilter tempFilter(leftSource, op, rightSource, tempLogic, lookbackPeriods);
-    
+    tempFilter.offset = offset;
+
     m_previewLabel->setText(tempFilter.description.c_str());
 }
 
@@ -874,6 +1203,7 @@ void FilterEditDialog::onOkButtonClicked()
     m_filter.op = static_cast<filter::ComparisonOperator>(m_operatorCombo->currentData().toInt());
     m_filter.temporalLogic = static_cast<filter::TemporalLogic>(m_temporalLogicCombo->currentData().toInt());
     m_filter.lookbackPeriods = m_lookbackPeriodsSpin->value();
+    m_filter.offset = m_distanceSpin->value();
     m_filter.enabled = true;
     m_filter.description = m_filter.autoGenerateDescription();
     

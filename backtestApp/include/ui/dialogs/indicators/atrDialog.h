@@ -3,7 +3,7 @@
 #include <QSpinBox>
 #include <QCheckBox>
 
-#include "ui/dialogs/baseDialog.h"
+#include "ui/dialogs/indicators/baseDialog.h"
 
 /**
  * @brief Modal dialog to modify the parameters of an ATR (Average True Range) indicator

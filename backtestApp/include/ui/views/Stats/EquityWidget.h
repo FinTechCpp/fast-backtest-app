@@ -22,7 +22,6 @@ public:
     void setPoints(const std::vector<be::Date>& dates, const std::vector<be::EquityPoint>& equityCurve);
     QVector<QPointF> points() const { return m_points; }
 
-
 protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
     void mouseMoveEvent(QMouseEvent *event) override;
@@ -44,6 +43,7 @@ private:
     
     std::vector<DateLabel> generateDateLabels() const;
     void calculatePercentPoints(); // Calcule les points en pourcentage
+    void invalidateCache();         // Invalide le cache quand les données changent
 
 
     void updateBounds();
@@ -53,15 +53,36 @@ private:
     bool m_showCrosshair;
     QPoint m_mousePos; // in widget pixel coordinates
 
-
     // drawing helpers
     void drawGrid(QPainter &painter);
     void drawAxes(QPainter &painter);
+    void drawFilledAreas(QPainter &painter);    // Dessine les zones colorées sous la courbe
+    void drawEquityMarkers(QPainter &painter);  // Dessine les lignes initial/peak et highlight final
     QPointF mapToWidget(const QPointF &pt) const;
     QPointF mapToWorld(const QPointF &pixel) const;
+    const QVector<QPointF>& getCachedWidgetPoints() const;  // Retourne les points en coordonnées widget (avec cache)
+    
+    // Méthodes helper pour les markers
+    double getInitialEquity() const;
+    QPointF getPeakPoint() const;  // Retourne le point (x, y) du peak
+    double getFinalEquity() const;
+
+    QString formatValue(double value, bool useThousandsSeparator = true, bool isPercent = false, bool roundValue = true) const;
+
 
     double m_xmin, m_xmax, m_ymin, m_ymax;
-    QRect m_contentRect;
+    QRect m_contentRect;      // Zone totale du contenu (titre exclu)
+    QRect m_plotRect;         // Zone du graphique uniquement (sans les marges pour axes)
+
+    // Cache pour optimisation
+    mutable bool m_cacheValid = false;
+    mutable double m_cachedInitialEquity = 0.0;
+    mutable QPointF m_cachedPeakEquity = QPointF(0.0, 0.0);
+    mutable double m_cachedFinalEquity = 0.0;
+    mutable std::vector<DateLabel> m_cachedDateLabels;
+    mutable QVector<QPointF> m_cachedWidgetPoints;  // Points déjà convertis en coordonnées widget
+    mutable bool m_widgetPointsValid = false;
+    mutable QSize m_cachedPlotSize;  // Taille du plotRect pour détecter les changements
 
     // layout margins to leave space for axis labels
     const int m_leftMargin = 10;      // Réduit car plus de labels à gauche

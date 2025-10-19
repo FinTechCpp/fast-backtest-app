@@ -31,6 +31,7 @@ private slots:
     void onOkButtonClicked();
     void onCancelButtonClicked();
     void updatePreview();
+    void updateDistanceVisibility();
 
 private:
     void setupUI();
@@ -60,6 +61,10 @@ private:
     QWidget* m_leftATRWidget;
     QWidget* m_leftSuperTrendWidget;
     QWidget* m_leftCCIWidget;
+    QWidget* m_leftMACDWidget;
+    QWidget* m_leftBBWidget;
+    QDoubleSpinBox* m_leftCCIOverboughtSpin;
+    QDoubleSpinBox* m_leftCCIOversoldSpin;
     QSpinBox* m_leftEMAPeriodSpin;
     QSpinBox* m_leftRSIPeriodSpin;
     QSpinBox* m_leftStochFastKSpin;
@@ -70,7 +75,22 @@ private:
     QSpinBox* m_leftSuperTrendPeriodSpin;
     QDoubleSpinBox* m_leftSuperTrendMultiplierSpin;
     QSpinBox* m_leftCCIPeriodSpin;
-    
+    QSpinBox* m_leftMACDFastPeriodSpin;
+    QSpinBox* m_leftMACDSlowPeriodSpin;
+    QSpinBox* m_leftMACDSignalPeriodSpin;
+    QComboBox* m_leftMACDSourceCombo;            // "open"/"high"/"low"/"close"
+    QComboBox* m_leftMACDOscMATypeCombo;        // "EMA"/"SMA" for oscillator MA type
+    QComboBox* m_leftMACDSignalMATypeCombo;     // "EMA"/"SMA" for signal MA type
+    QSpinBox* m_leftMACDSignalSmoothingSpin;    // optional signal smoothing period (0 = use signal_period)
+    QSpinBox* m_leftBBPeriodSpin;
+    QDoubleSpinBox* m_leftBBStdDevMultiplierSpin;
+    QComboBox* m_leftBBSourceCombo;              // "open"/"high"/"low"/"close"
+    QComboBox* m_leftBBMATypeCombo;              // "EMA"/"SMA" for MA type
+    // Transform widgets for left indicator
+    QComboBox* m_leftTransformCombo;
+    // Transform widgets for right indicator
+    QComboBox* m_rightTransformCombo;
+
     // Widgets pour le côté droit
     QGroupBox* m_rightGroup;
     QWidget* m_rightPlaceholder;
@@ -92,6 +112,10 @@ private:
     QWidget* m_rightATRWidget;
     QWidget* m_rightSuperTrendWidget;
     QWidget* m_rightCCIWidget;
+    QWidget* m_rightMACDWidget;
+    QWidget* m_rightBBWidget;
+    QDoubleSpinBox* m_rightCCIOverboughtSpin;
+    QDoubleSpinBox* m_rightCCIOversoldSpin;
     QSpinBox* m_rightEMAPeriodSpin;
     QSpinBox* m_rightRSIPeriodSpin;
     QSpinBox* m_rightStochFastKSpin;
@@ -102,9 +126,23 @@ private:
     QSpinBox* m_rightSuperTrendPeriodSpin;
     QDoubleSpinBox* m_rightSuperTrendMultiplierSpin;
     QSpinBox* m_rightCCIPeriodSpin;
-    
+    QSpinBox* m_rightMACDFastPeriodSpin;
+    QSpinBox* m_rightMACDSlowPeriodSpin;
+    QSpinBox* m_rightMACDSignalPeriodSpin;
+    QComboBox* m_rightMACDSourceCombo;            // "open"/"high"/"low"/"close"
+    QComboBox* m_rightMACDOscMATypeCombo;        // "EMA"/"SMA" for oscillator MA type
+    QComboBox* m_rightMACDSignalMATypeCombo;     // "EMA"/"SMA" for signal MA type
+    QSpinBox* m_rightMACDSignalSmoothingSpin;    // optional signal smoothing period (0 = use signal_period)
+    QSpinBox* m_rightBBPeriodSpin;
+    QDoubleSpinBox* m_rightBBStdDevMultiplierSpin;
+    QComboBox* m_rightBBSourceCombo;              // "open"/"high"/"low"/"close"
+    QComboBox* m_rightBBMATypeCombo;              // "EMA"/"SMA" for MA type
+
     // Widgets pour l'opérateur
     QComboBox* m_operatorCombo;
+    // Widget pour la distance seuil entre les deux valeurs
+    QDoubleSpinBox* m_distanceSpin;
+    QLabel* m_distanceLabel;
     
     // Widgets pour la logique temporelle
     QComboBox* m_temporalLogicCombo;

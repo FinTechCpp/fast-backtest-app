@@ -6,7 +6,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QTableView>
-#include <QScrollArea>
 #include <QGroupBox>
 #include <QPushButton>
 #include <QComboBox>
@@ -18,13 +17,7 @@
 #include <memory>
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
-#include "ui/views/Stats/MetricsContainerWidget.h"
 #include "ui/views/Stats/TradingHeatmapWidget.h"
-#include "ui/views/Stats/RiskReturnMapWidget.h"
-#include "ui/views/Stats/TradesTableWidget.h"
-#include "ui/views/Stats/RatioGaugesContainerWidget.h"
-#include "ui/views/Stats/PLDistributionWidget.h"
-#include "ui/views/Stats/MonthlyPerformanceWidget.h"
 
 #include "ui/views/Stats/FlexiblePieWidget.h"
 #include "ui/views/Stats/SimpleTextWidget.h"
@@ -41,14 +34,11 @@ class App;
 
 
 /**
- * @brief Vue pour afficher les statistiques de backtest et les trades.
- * Organise les métriques en catégories et permet de visualiser les transactions.
+ * @brief Vue pour afficher les statistiques de backtest.
+ * Organise les métriques en catégories.
  */
 class StatsView : public BaseView {
     Q_OBJECT
-
-signals:
-    void tradeClicked(const be::TradeData& trade);
 
 public:
     /**
@@ -81,13 +71,7 @@ protected:
 
 private:
     // ==================== Membres privés ====================
-    MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
-    PLDistributionWidget* m_plDistributionWidget = nullptr;
-    RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
-    TradesTableWidget* m_tradesTableWidget = nullptr;
-    MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
-
 
     EquityWidget* m_equityWidget = nullptr;
     
@@ -111,20 +95,16 @@ private:
     KeyValueListWidget* m_keyValueListWidget = nullptr;
     KeyValueListWidget* m_timeInfoWidget = nullptr;
     KeyValueListWidget* m_returnsWidget = nullptr;
-    KeyValueListWidget* m_equityDetailsWidget = nullptr;
     KeyValueListWidget* m_buyHoldWidget = nullptr;
+    KeyValueListWidget* m_performanceRatiosWidget = nullptr;
+    KeyValueListWidget* m_marketExposureWidget = nullptr;
+    KeyValueListWidget* m_MAEWidget = nullptr;
+    KeyValueListWidget* m_systemQualityWidget = nullptr;
+    KeyValueListWidget* m_skewnessKurtosisWidget = nullptr;
 
     VerticalGaugeRenderWidget* m_pnlGaugeWidget = nullptr;
 
     HistogramWidget* m_histogramWidget = nullptr;
-
-    std::vector<StatsBaseWidget*> m_statsWidgets;
-
-    
-    // --- UI: Conteneurs principaux ---
-    QScrollArea* m_scrollStats;
-    QWidget* m_statsContent;
-    QVBoxLayout* m_statsLayout;
 
     // --- État ---
     App* m_app;  // Référence à l'application principale

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/dialogs/baseDialog.h"
+#include "ui/dialogs/indicators/baseDialog.h"
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 

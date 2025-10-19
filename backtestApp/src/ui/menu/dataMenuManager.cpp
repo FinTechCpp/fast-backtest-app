@@ -272,16 +272,6 @@ bool DataMenuManager::isVpnConnected()
                     qDebug() << "Interface VPN détectée (adresse IPv4 privée 10.x):" << iface.name() << addr.toString();
                     return true;
                 }
-                // 172.16.0.0/12 -> 172.16.0.0 - 172.31.255.255
-                if (a == 172 && b >= 16 && b <= 31) {
-                    qDebug() << "Interface VPN détectée (adresse IPv4 privée 172.16-31):" << iface.name() << addr.toString();
-                    return true;
-                }
-                // 192.168.0.0/16
-                if (a == 192 && b == 168) {
-                    qDebug() << "Interface VPN détectée (adresse IPv4 privée 192.168.x):" << iface.name() << addr.toString();
-                    return true;
-                }
             }
         }
     }

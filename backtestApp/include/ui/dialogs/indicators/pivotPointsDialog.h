@@ -8,7 +8,7 @@
 #include <QPushButton>
 #include <QLabel>
 
-#include "ui/dialogs/baseDialog.h"
+#include "ui/dialogs/indicators/baseDialog.h"
 #include "ui/chart/chartTypes.h"
 
 

@@ -1,4 +1,4 @@
-#include "ui/dialogs/supertrendDialog.h"
+#include "ui/dialogs/indicators/supertrendDialog.h"
 
 SupertrendDialog::SupertrendDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::SuperTrendInstance& supertrend)
     : IndicatorDialog<indicators::SuperTrendInstance>(parent, "Supertrend", chartWidget, supertrend)

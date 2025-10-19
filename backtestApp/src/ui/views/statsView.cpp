@@ -51,28 +51,11 @@ StatsView::~StatsView()
 
 void StatsView::setupUI() {
 
-    // 1. CRÉATION DE LA STRUCTURE DE BASE
+    // CRÉATION DES WIDGETS
     // --------------------------------------
-    // Scroll area principal
-    m_scrollStats = new QScrollArea();
-    m_scrollStats->setWidgetResizable(true);
-    
-    // Widget de contenu principal
-    m_statsContent = new QWidget();
-    
-    // Layout principal
-    m_statsLayout = new QVBoxLayout(m_statsContent);
-    m_statsLayout->setSpacing(10);
-
-    // 2. CRÉATION DES WIDGETS
-    // --------------------------------------
-    // m_equityCurveWidget = new EquityCurveWidget();
-    // m_statsLayout->addWidget(m_equityCurveWidget);
-
     QGridLayout* gridLayout = new QGridLayout();
     gridLayout->setContentsMargins(0, 0, 0, 0);
     gridLayout->setSpacing(0);
-    // m_statsContent->setStyleSheet("background-color: lightgray;");
 
     // --------------------------------------
     // Ligne 0
@@ -152,15 +135,21 @@ void StatsView::setupUI() {
     m_returnsWidget->addItem("CAGR ", "--", Qt::black);
     m_returnsWidget->addItem("Alpha ", "--", Qt::black);
     m_returnsWidget->setMinimumHeight(m_returnsWidget->sizeHint().height());
-    gridLayout->addWidget(m_returnsWidget, 3, 5);
+    gridLayout->addWidget(m_returnsWidget, 3, 5, 2, 1);
 
 
-    m_equityDetailsWidget = new KeyValueListWidget("Equity Details");
-    m_equityDetailsWidget->addItem("Initial ", "--", Qt::black);
-    m_equityDetailsWidget->addItem("Final ", "--", QColor(0, 150, 0));
-    m_equityDetailsWidget->addItem("Peak ", "--", Qt::black);
-    m_equityDetailsWidget->setMinimumHeight(m_equityDetailsWidget->sizeHint().height());
-    gridLayout->addWidget(m_equityDetailsWidget, 3, 6);
+    // m_equityDetailsWidget = new KeyValueListWidget("Equity Details");
+    // m_equityDetailsWidget->addItem("Initial ", "--", Qt::black);
+    // m_equityDetailsWidget->addItem("Final ", "--", QColor(0, 150, 0));
+    // m_equityDetailsWidget->addItem("Peak ", "--", Qt::black);
+    // m_equityDetailsWidget->setMinimumHeight(m_equityDetailsWidget->sizeHint().height());
+    // gridLayout->addWidget(m_equityDetailsWidget, 3, 6);
+
+    m_buyHoldWidget = new KeyValueListWidget("Buy & Hold");
+    m_buyHoldWidget->addItem("Return ", "--", Qt::black);
+    m_buyHoldWidget->addItem("CAGR ", "--", Qt::black);
+    m_buyHoldWidget->setMinimumHeight(m_buyHoldWidget->sizeHint().height());
+    gridLayout->addWidget(m_buyHoldWidget, 3, 6, 2, 1);
 
 
     // --------------------------------------
@@ -172,12 +161,6 @@ void StatsView::setupUI() {
     m_grossLossWidget->setSuffix(" €");
     gridLayout->addWidget(m_grossLossWidget, 4, 1);
 
-
-    m_buyHoldWidget = new KeyValueListWidget("Buy & Hold");
-    m_buyHoldWidget->addItem("Return ", "--", Qt::black);
-    m_buyHoldWidget->addItem("CAGR ", "--", Qt::black);
-    m_buyHoldWidget->setMinimumHeight(m_buyHoldWidget->sizeHint().height());
-    gridLayout->addWidget(m_buyHoldWidget, 4, 5, 1, 2); // S'étend sur 2 colonnes
 
     // --------------------------------------
     // Ligne 5
@@ -194,6 +177,14 @@ void StatsView::setupUI() {
     m_maxTradeDurationWidget = new SimpleTextWidget("Max Trade Duration");
     m_maxTradeDurationWidget->setStatColors(Qt::black);
     gridLayout->addWidget(m_maxTradeDurationWidget, 5, 2);
+
+    m_performanceRatiosWidget = new KeyValueListWidget("Performance Ratios");
+    m_performanceRatiosWidget->addItem("Sharpe ", "--", Qt::black);
+    m_performanceRatiosWidget->addItem("Sortino ", "--", Qt::black);
+    m_performanceRatiosWidget->addItem("Calmar ", "--", Qt::black);
+    m_performanceRatiosWidget->addItem("Omega ", "--", Qt::black);
+    m_performanceRatiosWidget->setMinimumHeight(m_performanceRatiosWidget->sizeHint().height());
+    gridLayout->addWidget(m_performanceRatiosWidget, 5, 5, 2, 2); // S'étend sur 2 colonnes
 
 
     // --------------------------------------
@@ -227,6 +218,12 @@ void StatsView::setupUI() {
     m_histogramWidget = new HistogramWidget("Returns Distribution");
     gridLayout->addWidget(m_histogramWidget, 7, 1, 2, 2);
 
+    m_marketExposureWidget = new KeyValueListWidget("Market Exposure");
+    m_marketExposureWidget->addItem("Beta ", "--", Qt::black);
+    m_marketExposureWidget->addItem("Annual Volatility ", "-- %", Qt::black);
+    m_marketExposureWidget->setMinimumHeight(m_marketExposureWidget->sizeHint().height());
+    gridLayout->addWidget(m_marketExposureWidget, 7, 5, 1, 2); // S'étend sur 2 colonnes
+
     // --------------------------------------
     // Ligne 8
     // --------------------------------------
@@ -241,44 +238,30 @@ void StatsView::setupUI() {
     gridLayout->addWidget(m_averageTradePerDayWidget, 8, 0);
 
 
-
-    m_statsLayout->addLayout(gridLayout);
-
-    m_metricsWidget = new MetricsContainerWidget();
-    m_statsLayout->addWidget(m_metricsWidget);
-
-    
-    // QHBoxLayout* tradesClosureLayout = new QHBoxLayout();
-    // tradesClosureLayout->setContentsMargins(0, 0, 0, 0);
-    // tradesClosureLayout->setSpacing(10);
-        
-    // m_tradingHeatmapWidget = new TradingHeatmapWidget();
-    
-    // tradesClosureLayout->addWidget(m_tradingHeatmapWidget, /*stretch=*/2);
-
-    // m_statsLayout->addLayout(tradesClosureLayout);
+    m_MAEWidget = new KeyValueListWidget("Maximum Adverse Excursion (MAE)");
+    m_MAEWidget->addItem("MAE Average ", "--", Qt::black);
+    m_MAEWidget->addItem("MAE Max ", "--", Qt::black);
+    m_MAEWidget->setMinimumHeight(m_MAEWidget->sizeHint().height());
+    gridLayout->addWidget(m_MAEWidget, 8, 4, 1, 1);
 
 
-    m_monthlyPerformanceWidget = new MonthlyPerformanceWidget();
-    m_statsLayout->addWidget(m_monthlyPerformanceWidget);
+    m_systemQualityWidget = new KeyValueListWidget("System Quality Metrics");
+    m_systemQualityWidget->addItem("SQN ", "--", Qt::black);
+    m_systemQualityWidget->addItem("Kelly Criterion ", "--", Qt::black);
+    m_systemQualityWidget->setMinimumHeight(m_systemQualityWidget->sizeHint().height());
+    gridLayout->addWidget(m_systemQualityWidget, 8, 5, 1, 1);
 
-    m_tradesTableWidget = new TradesTableWidget();
-    m_statsLayout->addWidget(m_tradesTableWidget);
-    
-    // Connecter le signal du clic sur trade
-    connect(m_tradesTableWidget, &TradesTableWidget::tradeClicked,
-            this, &StatsView::tradeClicked);
 
-    // 3. FINALISATION
+    m_skewnessKurtosisWidget = new KeyValueListWidget("Skewness & Kurtosis");
+    m_skewnessKurtosisWidget->addItem("Skewness ", "--", Qt::black);
+    m_skewnessKurtosisWidget->addItem("Kurtosis ", "--", Qt::black);
+    m_skewnessKurtosisWidget->setMinimumHeight(m_skewnessKurtosisWidget->sizeHint().height());
+    gridLayout->addWidget(m_skewnessKurtosisWidget, 8, 6, 1, 1);
+
+    // FINALISATION
     // --------------------------------------
-    // Configurer le scroll area et l'ajouter au layout principal
-    m_scrollStats->setWidget(m_statsContent);
-    m_mainLayout->addWidget(m_scrollStats);
-
-    // 4. STOCKAGE DES WIDGETS POUR MISES À JOUR/RESET
-    m_statsWidgets.push_back(m_metricsWidget);
-    m_statsWidgets.push_back(m_tradesTableWidget);
-    m_statsWidgets.push_back(m_monthlyPerformanceWidget);
+    // Ajouter le gridLayout directement au layout principal (pas de scroll area)
+    m_mainLayout->addLayout(gridLayout);
 }
 
 void StatsView::updateData(BacktestResults* results)
@@ -290,10 +273,6 @@ void StatsView::updateData(BacktestResults* results)
         qWarning() << "Résultats nuls reçus";
         clear();
         return;
-    }
-
-    for (auto widget : m_statsWidgets) {
-        widget->updateContent(m_currentResults->stats);
     }
 
     m_timeInfoWidget->updateValue("Début ", "  " + QString::fromStdString(m_currentResults->stats.start.toString()));
@@ -402,21 +381,39 @@ void StatsView::updateData(BacktestResults* results)
     m_returnsWidget->updateValue("Alpha ", QString::number(m_currentResults->stats.alphaPct, 'f', 1) + " %");
 
 
-    m_equityDetailsWidget->updateValue("Initial ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityInitial, 0) + " €");
-    m_equityDetailsWidget->updateValue("Final ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityFinal, 0) + " €");
-    m_equityDetailsWidget->updateValue("Peak ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityPeak, 0) + " €");
+    // m_equityDetailsWidget->updateValue("Initial ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityInitial, 0) + " €");
+    // m_equityDetailsWidget->updateValue("Final ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityFinal, 0) + " €");
+    // m_equityDetailsWidget->updateValue("Peak ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.equityPeak, 0) + " €");
 
 
     m_buyHoldWidget->updateValue("Return ", QString::number(m_currentResults->stats.buyHoldReturnPct, 'f', 1) + " %");
     m_buyHoldWidget->updateValue("CAGR ", QString::number(m_currentResults->stats.buyHoldCagrPct, 'f', 1) + " %");
+
+
+    m_performanceRatiosWidget->updateValue("Sharpe ", QString::number(m_currentResults->stats.sharpeRatio, 'f', 1));
+    m_performanceRatiosWidget->updateValue("Sortino ", QString::number(m_currentResults->stats.sortinoRatio, 'f', 1));
+    m_performanceRatiosWidget->updateValue("Calmar ", QString::number(m_currentResults->stats.calmarRatio, 'f', 1));
+    m_performanceRatiosWidget->updateValue("Omega ", QString::number(m_currentResults->stats.omegaRatio, 'f', 1));
+
+
+    m_marketExposureWidget->updateValue("Beta ", QString::number(m_currentResults->stats.beta, 'f', 1));
+    m_marketExposureWidget->updateValue("Annual Volatility ", QString::number(m_currentResults->stats.volatilityAnnPct, 'f', 1) + " %");
+
+
+    m_MAEWidget->updateValue("MAE Average ", QString::number(m_currentResults->stats.avgMAE, 'f', 2));
+    m_MAEWidget->updateValue("MAE Max ", QString::number(m_currentResults->stats.maxMAE, 'f', 2));
+
+
+    m_systemQualityWidget->updateValue("SQN ", QString::number(m_currentResults->stats.sqn, 'f', 2));
+    m_systemQualityWidget->updateValue("Kelly Criterion ", QString::number(m_currentResults->stats.kellyCriterion, 'f', 2));
+
+
+    m_skewnessKurtosisWidget->updateValue("Skewness ", QString::number(m_currentResults->stats.skewness, 'f', 2));
+    m_skewnessKurtosisWidget->updateValue("Kurtosis ", QString::number(m_currentResults->stats.kurtosis, 'f', 2));
 }
 
 void StatsView::clear() {
     qDebug() << "StatsView::clear() appelé";
-
-    for (auto widget : m_statsWidgets) {
-        widget->clear();
-    }
     
     m_currentResults = nullptr;
 

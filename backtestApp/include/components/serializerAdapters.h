@@ -226,10 +226,12 @@ namespace cereal {
     template<class Archive>
     void serialize(Archive & ar, StrategyConfig & config) {
         ar(cereal::make_nvp("name", config.name),
-           cereal::make_nvp("tradeDirection", config.tradeDirection),
            cereal::make_nvp("enable_logging", config.enable_logging),
            cereal::make_nvp("logLevel", config.logLevel),
-           cereal::make_nvp("filters", config.filters),
+           cereal::make_nvp("buyFilters", config.buyFilters),
+           cereal::make_nvp("sellFilters", config.sellFilters),
+           cereal::make_nvp("resaleFilters", config.resaleFilters),
+           cereal::make_nvp("rebuyFilters", config.rebuyFilters),
            cereal::make_nvp("sl_method", config.sl_method),
            cereal::make_nvp("tp_method", config.tp_method),
            cereal::make_nvp("trading_from", config.trading_from),
@@ -336,6 +338,24 @@ namespace cereal {
                     case filter::IndicatorType::CCI:
                         ar(cereal::make_nvp("cciParams", valueSource.cciParams));
                         break;
+                    case filter::IndicatorType::MACD_HISTOGRAM:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
+                    case filter::IndicatorType::MACD_SIGNAL:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
+                    case filter::IndicatorType::MACD_LINE:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
+                    case filter::IndicatorType::BB_LOWER:
+                        ar(cereal::make_nvp("bbParams", valueSource.bbParams));
+                        break;
+                    case filter::IndicatorType::BB_UPPER:
+                        ar(cereal::make_nvp("bbParams", valueSource.bbParams));
+                        break;
+                    case filter::IndicatorType::BB_PERCENT_B:
+                        ar(cereal::make_nvp("bbParams", valueSource.bbParams));
+                        break;
                     case filter::IndicatorType::PIVOT_POINT:
                         // Pas de paramètre spécifique pour ce type
                         break;
@@ -395,4 +415,23 @@ namespace cereal {
     void serialize(Archive & ar, filter::CCIParams & params) {
         ar(cereal::make_nvp("period", params.period));
     }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::MACDParams & params) {
+        ar(cereal::make_nvp("fast", params.fast),
+           cereal::make_nvp("slow", params.slow),
+           cereal::make_nvp("signal", params.signal),
+           cereal::make_nvp("source", params.source),
+           cereal::make_nvp("osc_ma_type", params.osc_ma_type),
+           cereal::make_nvp("signal_ma_type", params.signal_ma_type),
+           cereal::make_nvp("signal_smoothing", params.signal_smoothing));
+    }
+    
+    template<class Archive>
+    void serialize(Archive & ar, filter::BBParams & params) {
+        ar(cereal::make_nvp("period", params.period),
+           cereal::make_nvp("stdDevMultiplier", params.stddev_multiplier),
+           cereal::make_nvp("source", params.source),
+           cereal::make_nvp("osc_ma_type", params.ma_type));
+   }
 }

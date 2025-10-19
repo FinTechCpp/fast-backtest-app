@@ -1,7 +1,7 @@
 #include "components/Managers/resultManager.h"
 #include "ui/views/statsView.h"
+#include "ui/views/tradesView.h"
 #include "ui/views/chartView.h"
-#include "ui/views/histogramView.h"
 #include <QDebug>
 #include <QTime>
 #include <QResizeEvent>
@@ -15,8 +15,8 @@ ResultManager::ResultManager(QWidget* parent) : QWidget(parent)
     
     // Initialiser tous les attributs à nullptr d'abord
     m_statsView = nullptr;
+    m_tradesView = nullptr;
     m_chartView = nullptr;
-    m_histogramView = nullptr;
     
     // Construire l'interface dans le constructeur
     setupUI();
@@ -126,6 +126,11 @@ void ResultManager::setupUI()
     // Créer le TabWidget
     m_tabWidget = new QTabWidget(this);
     
+    // Définir la couleur de fond du TabWidget pour qu'elle corresponde à la palette Window
+    QPalette tabPalette = m_tabWidget->palette();
+    QColor windowColor = tabPalette.color(QPalette::Window);
+    m_tabWidget->setStyleSheet(QString("QTabWidget::pane { background-color: %1; border: none; }").arg(windowColor.name()));
+    
     // Ajouter le TabWidget au layout
     m_mainLayout->addWidget(m_tabWidget);
     
@@ -139,23 +144,23 @@ void ResultManager::setupViews()
 {
     // Créer les vues (elles sont des widgets, donc directement utilisables)
     m_statsView = new StatsView(this);
-    // m_histogramView = new HistogramView(this);
+    m_tradesView = new TradesView(this);
     m_chartView = new ChartView(this);
     
     // Vérifier que les vues ont été créées
-    if (!m_statsView || !m_chartView) {
+    if (!m_statsView || !m_tradesView || !m_chartView) {
         qCritical() << "Erreur lors de la création des vues";
         return;
     }
     
     // Ajouter les vues comme onglets (les vues SONT des widgets)
     m_tabWidget->addTab(m_statsView, "📊 Statistiques");
-    // m_tabWidget->addTab(m_histogramView, "📊 Histogramme PnL");
+    m_tabWidget->addTab(m_tradesView, "📋 Trades");
     m_tabWidget->addTab(m_chartView, "📈 Graphiques");
     
     // Ajouter au map pour faciliter l'accès
     m_views["stats"] = m_statsView;
-    // m_views["histogram"] = m_histogramView;
+    m_views["trades"] = m_tradesView;
     m_views["chart"] = m_chartView;
 }
 
@@ -165,9 +170,9 @@ void ResultManager::setupConnections()
     connect(m_tabWidget, &QTabWidget::currentChanged,
             this, &ResultManager::onTabChanged);
     
-    // Connecter le signal de clic sur trade
-    if (m_statsView) {
-        connect(m_statsView, &StatsView::tradeClicked,
+    // Connecter le signal de clic sur trade depuis TradesView
+    if (m_tradesView) {
+        connect(m_tradesView, &TradesView::tradeClicked,
                 this, &ResultManager::onTradeClicked);
     }
     
@@ -187,7 +192,7 @@ void ResultManager::onTradeClicked(const be::TradeData& trade)
     qDebug() << "Trade cliqué dans ResultManager - Entrée:" << trade.entryDate.toString().c_str() 
              << "Sortie:" << trade.exitDate.toString().c_str();
     
-    // Changer vers l'onglet Chart (index 1, car Stats est à l'index 0)
+    // Changer vers l'onglet Chart (index 2: Stats=0, Trades=1, Chart=2)
     int chartTabIndex = -1;
     for (int i = 0; i < m_tabWidget->count(); ++i) {
         if (m_tabWidget->widget(i) == m_chartView) {

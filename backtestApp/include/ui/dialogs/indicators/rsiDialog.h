@@ -7,7 +7,7 @@
 #include <QHBoxLayout>
 #include <QFrame>
 
-#include "ui/dialogs/baseDialog.h"
+#include "ui/dialogs/indicators/baseDialog.h"
 
 /**
  * @brief Modal dialog to modify the parameters of a technical indicator

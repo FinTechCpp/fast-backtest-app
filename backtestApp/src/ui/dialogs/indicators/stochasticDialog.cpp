@@ -1,4 +1,4 @@
-#include "ui/dialogs/stochasticDialog.h"
+#include "ui/dialogs/indicators/stochasticDialog.h"
 
 StochasticDialog::StochasticDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::StochasticInstance& stochastic)
     : IndicatorDialog<indicators::StochasticInstance>(parent, "Stochastic", chartWidget, stochastic)

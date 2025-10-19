@@ -1,4 +1,4 @@
-#include "ui/dialogs/baseDialog.h"
+#include "ui/dialogs/indicators/baseDialog.h"
 
 BaseDialog::BaseDialog(QWidget* parent, const QString& title)
     : QDialog(parent)

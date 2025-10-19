@@ -1,4 +1,4 @@
-#include "ui/dialogs/macdDialog.h"
+#include "ui/dialogs/indicators/macdDialog.h"
 
 MACDDialog::MACDDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::MACDInstance& macd)
     : IndicatorDialog<indicators::MACDInstance>(parent, "MACD", chartWidget, macd)

@@ -1,4 +1,4 @@
-#include "ui/dialogs/pivotPointsDialog.h"
+#include "ui/dialogs/indicators/pivotPointsDialog.h"
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QLabel>

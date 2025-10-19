@@ -1,4 +1,4 @@
-#include "ui/dialogs/bbDialog.h"
+#include "ui/dialogs/indicators/bbDialog.h"
 #include <QColorDialog>
 
 bbDialog::bbDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::BBInstance& bollingerBands)

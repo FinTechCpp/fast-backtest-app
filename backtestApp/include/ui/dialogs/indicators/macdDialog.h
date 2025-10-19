@@ -1,7 +1,7 @@
 // filepath: /home/maxime/repos/fast-backtest-app/backtestApp/include/ui/dialogs/macdDialog.h
 #pragma once
 
-#include "ui/dialogs/baseDialog.h"
+#include "ui/dialogs/indicators/baseDialog.h"
 #include <QSpinBox>
 #include <QComboBox>
 #include <QPushButton>

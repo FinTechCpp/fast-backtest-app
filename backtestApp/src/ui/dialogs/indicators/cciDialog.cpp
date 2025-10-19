@@ -1,4 +1,4 @@
-#include "ui/dialogs/cciDialog.h"
+#include "ui/dialogs/indicators/cciDialog.h"
 
 CCIDialog::CCIDialog(QWidget* parent, ChartWidget* chartWidget, const indicators::CCIInstance& cci)
     : IndicatorDialog<indicators::CCIInstance>(parent, "CCI", chartWidget, cci)

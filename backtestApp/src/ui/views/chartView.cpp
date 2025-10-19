@@ -316,7 +316,22 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
     };
     
     // Parcourir tous les filtres et extraire les indicateurs
-    for (const auto& filter : strategyConfig.filters) {
+    for (const auto& filter : strategyConfig.buyFilters) {
+        extractIndicator(filter.leftValue);
+        extractIndicator(filter.rightValue);
+    }
+
+    for (const auto& filter : strategyConfig.sellFilters) {
+        extractIndicator(filter.leftValue);
+        extractIndicator(filter.rightValue);
+    }
+
+    for (const auto& filter : strategyConfig.rebuyFilters) {
+        extractIndicator(filter.leftValue);
+        extractIndicator(filter.rightValue);
+    }
+
+    for (const auto& filter : strategyConfig.resaleFilters) {
         extractIndicator(filter.leftValue);
         extractIndicator(filter.rightValue);
     }

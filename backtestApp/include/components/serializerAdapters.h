@@ -226,10 +226,12 @@ namespace cereal {
     template<class Archive>
     void serialize(Archive & ar, StrategyConfig & config) {
         ar(cereal::make_nvp("name", config.name),
-           cereal::make_nvp("tradeDirection", config.tradeDirection),
            cereal::make_nvp("enable_logging", config.enable_logging),
            cereal::make_nvp("logLevel", config.logLevel),
-           cereal::make_nvp("filters", config.filters),
+           cereal::make_nvp("buyFilters", config.buyFilters),
+           cereal::make_nvp("sellFilters", config.sellFilters),
+           cereal::make_nvp("resaleFilters", config.resaleFilters),
+           cereal::make_nvp("rebuyFilters", config.rebuyFilters),
            cereal::make_nvp("sl_method", config.sl_method),
            cereal::make_nvp("tp_method", config.tp_method),
            cereal::make_nvp("trading_from", config.trading_from),

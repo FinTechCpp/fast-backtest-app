@@ -29,21 +29,6 @@ void StrategyPanel::setupUI() {
         &m_config.enable_logging
     ));
 
-    // Section Direction de trading
-    QHBoxLayout* directionLayout = new QHBoxLayout();
-    directionLayout->addWidget(new QLabel("Direction de trading:", this));
-    QComboBox* strategyDirectionCombo = new QComboBox(this);
-    strategyDirectionCombo->addItems({"", "Long", "Short"});
-    strategyDirectionCombo->setCurrentIndex(1); // Long par défaut
-    directionLayout->addWidget(strategyDirectionCombo);
-
-    baseLayout->addLayout(directionLayout);
-
-    addBinding(PropertyBinderFactory::createEnumComboBinding(
-        strategyDirectionCombo,
-        &m_config.tradeDirection
-    ));
-
     // Section SL/TP
     QGroupBox* slTpGroup = new QGroupBox("Stop Loss et Take Profit", this);
     QVBoxLayout* slTpLayout = new QVBoxLayout();
@@ -522,27 +507,46 @@ void StrategyPanel::setupUI() {
     baseLayout->addWidget(riskGroup);
 
 
-    // Section de configuration des filtres d'entrée
-    FiltersWidget* filtersWidget = new FiltersWidget(this); // defaults to "Filtres de stratégie"
-    filtersWidget->setFilters(m_config.filters);
-    baseLayout->addWidget(filtersWidget);
+    // Section de configuration des filtres d'achat (ouverture de position)
+    FiltersWidget* buyFiltersWidget = new FiltersWidget(this, QStringLiteral("Filtres d'achat"));
+    buyFiltersWidget->setFilters(m_config.buyFilters);
+    baseLayout->addWidget(buyFiltersWidget);
 
     addBinding(PropertyBinderFactory::createFiltersBinding(
-        filtersWidget,
-        &m_config.filters
+        buyFiltersWidget,
+        &m_config.buyFilters
     ));
 
-    // Section de configuration des filtres de revente (liquidation)
-    // Use a FiltersWidget with its own group title so it's a sibling in the layout
-    FiltersWidget* resaleFiltersWidget = new FiltersWidget(this, QStringLiteral("Filtres de liquidation"));
-    resaleFiltersWidget->setFilters(m_config.resale_filters);
+    // Section de configuration des filtres de vente (ouverture de position)
+    FiltersWidget* sellFiltersWidget = new FiltersWidget(this, QStringLiteral("Filtres de vente"));
+    sellFiltersWidget->setFilters(m_config.sellFilters);
+    baseLayout->addWidget(sellFiltersWidget);
+
+    addBinding(PropertyBinderFactory::createFiltersBinding(
+        sellFiltersWidget,
+        &m_config.sellFilters
+    ));
+
+    // Section de configuration des filtres de revente (fermeture de position)
+    FiltersWidget* resaleFiltersWidget = new FiltersWidget(this, QStringLiteral("Filtres de revente"));
+    resaleFiltersWidget->setFilters(m_config.resaleFilters);
     baseLayout->addWidget(resaleFiltersWidget);
 
     addBinding(PropertyBinderFactory::createFiltersBinding(
         resaleFiltersWidget,
-        &m_config.resale_filters
+        &m_config.resaleFilters
     ));
-    
+
+    // Section de configuration des filtres de rachat (fermeture de position)
+    FiltersWidget* rebuyFiltersWidget = new FiltersWidget(this, QStringLiteral("Filtres de rachat"));
+    rebuyFiltersWidget->setFilters(m_config.rebuyFilters);
+    baseLayout->addWidget(rebuyFiltersWidget);
+
+    addBinding(PropertyBinderFactory::createFiltersBinding(
+        rebuyFiltersWidget,
+        &m_config.rebuyFilters
+    ));
+
     setLayout(baseLayout);
 }
 

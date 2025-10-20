@@ -24,6 +24,7 @@ void StrategyConfigDialog::setConfig(const StrategyConfig& config) {
     m_config = config;
     
     // Update widgets with the new config
+    m_nameEdit->setText(QString::fromStdString(m_config.name));
     m_buyFiltersWidget->setFilters(m_config.buyFilters);
     m_sellFiltersWidget->setFilters(m_config.sellFilters);
     m_resaleFiltersWidget->setFilters(m_config.resaleFilters);
@@ -33,6 +34,18 @@ void StrategyConfigDialog::setConfig(const StrategyConfig& config) {
 
 void StrategyConfigDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
+    
+    // Strategy name section at the top
+    QGroupBox* nameGroup = new QGroupBox("Nom de la stratégie", this);
+    QVBoxLayout* nameLayout = new QVBoxLayout();
+    
+    m_nameEdit = new QLineEdit(this);
+    m_nameEdit->setPlaceholderText("Ex: MA Cross, RSI Strategy, etc.");
+    m_nameEdit->setText(QString::fromStdString(m_config.name));
+    nameLayout->addWidget(m_nameEdit);
+    
+    nameGroup->setLayout(nameLayout);
+    mainLayout->addWidget(nameGroup);
     
     // Create scroll area for the content
     QScrollArea* scrollArea = new QScrollArea(this);
@@ -194,6 +207,7 @@ void StrategyConfigDialog::setupButtons(QVBoxLayout* mainLayout) {
     
     connect(buttonBox, &QDialogButtonBox::accepted, this, [this]() {
         // Save config values from widgets
+        m_config.name = m_nameEdit->text().toStdString();
         m_config.buyFilters = m_buyFiltersWidget->getFilters();
         m_config.sellFilters = m_sellFiltersWidget->getFilters();
         m_config.resaleFilters = m_resaleFiltersWidget->getFilters();

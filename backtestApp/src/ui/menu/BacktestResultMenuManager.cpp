@@ -210,7 +210,7 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         BacktestResults currentResults = m_mainWindow->getBacktestResults();
 
         config.generalParams = currentResults.generalConfig;
-        config.strategyConfig = currentResults.strategyConfig;
+        config.strategyConfigs = currentResults.strategyConfigs;
         config.candles = currentResults.candles;
         config.stats = currentResults.stats;
 
@@ -266,12 +266,12 @@ void BacktestResultMenuManager::onLoadResult()
                 std::unique_ptr<BacktestResults> results = std::make_unique<BacktestResults>();
 
                 results->generalConfig = config.generalParams;
-                results->strategyConfig = config.strategyConfig;
+                results->strategyConfigs = config.strategyConfigs;
                 results->candles = config.candles;
                 results->stats = config.stats;
 
                 m_mainWindow->setGeneralParamsConfig(config.generalParams);
-                m_mainWindow->setStrategyConfig(config.strategyConfig);
+                m_mainWindow->setStrategyConfigs(config.strategyConfigs);
                 m_mainWindow->setBacktestResults(std::move(results));
 
                 // Mettre à jour l'état du menu

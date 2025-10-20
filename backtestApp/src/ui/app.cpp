@@ -228,10 +228,14 @@ GeneralParamsConfig App::getGeneralParamsConfig() const {
     return GeneralParamsConfig();
 }
 
-StrategyConfig App::getStrategyConfig() const {
+std::vector<StrategyConfig> App::getStrategyConfigs() const {
     if (m_strategyPanel)
-        return m_strategyPanel->getConfig();
-    return StrategyConfig();
+        return m_strategyPanel->getConfigs();
+    
+    // Retourner un vecteur avec une config par défaut
+    std::vector<StrategyConfig> defaultConfigs;
+    defaultConfigs.push_back(StrategyConfig());
+    return defaultConfigs;
 }
 
 
@@ -241,9 +245,9 @@ void App::setGeneralParamsConfig(const GeneralParamsConfig& config) {
     }
 }
 
-void App::setStrategyConfig(const StrategyConfig& config) {
+void App::setStrategyConfigs(const std::vector<StrategyConfig>& configs) {
     if (m_strategyPanel) {
-        m_strategyPanel->setConfig(config);
+        m_strategyPanel->setConfigs(configs);
     }
 }
 

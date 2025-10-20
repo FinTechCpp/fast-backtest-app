@@ -18,7 +18,7 @@ struct ProfileConfig {
     std::string version;
     std::string createdAt;
     GeneralParamsConfig generalParams;
-    StrategyConfig strategyConfig;
+    std::vector<StrategyConfig> strategyConfigs;
 
     template<class Archive>
     void serialize(Archive & ar) {
@@ -26,7 +26,7 @@ struct ProfileConfig {
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
-           CEREAL_NVP(strategyConfig));
+           CEREAL_NVP(strategyConfigs));
     }
 };
 
@@ -38,7 +38,7 @@ struct BacktestResultConfig {
 
     // Backtest Results : a remplacer par la structure BacktestResults directement ?
     GeneralParamsConfig generalParams;
-    StrategyConfig strategyConfig;
+    std::vector<StrategyConfig> strategyConfigs;
     be::Stats stats;
     // c'est vraiment lourd, il faudrait plutot une reference vers des données, ensuite en verifie que les données chargées étaient bien celles de l'enregistrement
     std::vector<be::Candle> candles;
@@ -50,7 +50,7 @@ struct BacktestResultConfig {
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
-           CEREAL_NVP(strategyConfig),
+           CEREAL_NVP(strategyConfigs),
            CEREAL_NVP(stats),
            CEREAL_NVP(candles));
     }
@@ -62,8 +62,8 @@ struct ExternalResultConfig {
     std::string version;
     std::string createdAt;
 
-    GeneralParamsConfig generalParams;
-    StrategyConfig strategyConfig;
+    // GeneralParamsConfig generalParams;
+    // std::vector<StrategyConfig> strategyConfigs;
     std::vector<be::TradeData> trades;  // Trades directement au lieu de stats
     std::vector<be::Candle> candles; 
 
@@ -72,8 +72,8 @@ struct ExternalResultConfig {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
-           CEREAL_NVP(generalParams),
-           CEREAL_NVP(strategyConfig),
+        //    CEREAL_NVP(generalParams),
+        //    CEREAL_NVP(strategyConfigs),
            CEREAL_NVP(trades),
            CEREAL_NVP(candles));
     }

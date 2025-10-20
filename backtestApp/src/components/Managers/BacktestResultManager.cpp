@@ -499,8 +499,8 @@ bool BacktestResultManager::loadExternalResult(const QString& filePath, Backtest
     config.name = externalConfig.name;
     config.version = externalConfig.version;
     config.createdAt = externalConfig.createdAt;
-    config.generalParams = externalConfig.generalParams;
-    config.strategyConfig = externalConfig.strategyConfig;
+    // config.generalParams = externalConfig.generalParams;
+    // config.strategyConfigs = externalConfig.strategyConfigs;
     config.candles = externalConfig.candles;
     
     // Validation

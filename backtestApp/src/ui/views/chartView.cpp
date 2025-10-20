@@ -193,8 +193,10 @@ void ChartView::updateData(BacktestResults* results) {
     // Afficher le widget de graphique
     showChartWidget();
 
+
+
     m_leftPanel->suggestIndicatorsFromStrategy(
-        extractIndicatorsFromFilters(results->strategyConfig)
+        extractIndicatorsFromFilters(results->strategyConfigs)
     );
     
     // Actualiser la liste des indicateurs
@@ -225,7 +227,7 @@ void ChartView::zoomToTrade(const be::TradeData& trade) {
     m_chartWidget->zoomToTrade(trade);
 }
 
-std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndicatorsFromFilters(const StrategyConfig& strategyConfig) {
+std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndicatorsFromFilters(const std::vector<StrategyConfig>& strategyConfigs) {
     std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances;
         
 
@@ -315,42 +317,36 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
         }
     };
     
-    // Parcourir tous les filtres et extraire les indicateurs
-    for (const auto& filter : strategyConfig.buyFilters) {
-        extractIndicator(filter.leftValue);
-        extractIndicator(filter.rightValue);
-    }
+    for (const auto& strategyConfig : strategyConfigs) {
+        // Parcourir tous les filtres et extraire les indicateurs
+        for (const auto& filter : strategyConfig.buyFilters) {
+            extractIndicator(filter.leftValue);
+            extractIndicator(filter.rightValue);
+        }
 
-    for (const auto& filter : strategyConfig.sellFilters) {
-        extractIndicator(filter.leftValue);
-        extractIndicator(filter.rightValue);
-    }
+        for (const auto& filter : strategyConfig.sellFilters) {
+            extractIndicator(filter.leftValue);
+            extractIndicator(filter.rightValue);
+        }
 
-    for (const auto& filter : strategyConfig.rebuyFilters) {
-        extractIndicator(filter.leftValue);
-        extractIndicator(filter.rightValue);
-    }
+        for (const auto& filter : strategyConfig.rebuyFilters) {
+            extractIndicator(filter.leftValue);
+            extractIndicator(filter.rightValue);
+        }
 
-    for (const auto& filter : strategyConfig.resaleFilters) {
-        extractIndicator(filter.leftValue);
-        extractIndicator(filter.rightValue);
+        for (const auto& filter : strategyConfig.resaleFilters) {
+            extractIndicator(filter.leftValue);
+            extractIndicator(filter.rightValue);
+        }
+        // Ajouter aussi les indicateurs utilisés pour le SL/TP
+        if (strategyConfig.sl_method == StopLossMethod::ATR || 
+            strategyConfig.tp_method == TakeProfitMethod::ATR) {
+            auto atr = std::make_unique<indicators::ATRInstance>();
+            atr->period = strategyConfig.atr_period;
+            atr->useLogScale = true;
+            addIfNotPresent(std::move(atr));
+        }
     }
-    
-    // Ajouter aussi les indicateurs utilisés pour le SL/TP
-    if (strategyConfig.sl_method == StopLossMethod::ATR || 
-        strategyConfig.tp_method == TakeProfitMethod::ATR) {
-        auto atr = std::make_unique<indicators::ATRInstance>();
-        atr->period = strategyConfig.atr_period;
-        atr->useLogScale = true;
-        addIfNotPresent(std::move(atr));
-    }
-
-/*     if (strategyConfig.tp_method == TakeProfitMethod::SuperTrend) {
-        auto supertrend = std::make_unique<indicators::SuperTrendInstance>();
-        supertrend->period = strategyConfig.tp_supertrend_atr_period;
-        supertrend->multiplier = strategyConfig.tp_supertrend_multiplier;
-        addIfNotPresent(std::move(supertrend));
-    } */
     
     return indicatorInstances;
 }

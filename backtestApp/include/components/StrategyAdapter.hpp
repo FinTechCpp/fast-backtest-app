@@ -26,18 +26,10 @@ private:
     // Instance of the Generic strategy
     std::unique_ptr<::Strategy> strategy;
 
-    // Cache for trading signals
-    bool should_enter_long = false;
-    bool should_enter_short = false;
-
     // To track closed trades
     size_t last_closed_trade_count = 0;
-    bool last_trade_closed = false;
-    double last_trade_pnl = 0.0;
     
-    // // Logger
-    // std::shared_ptr<spdlog::logger> async_file;
-    
+    std::string name;
 public:
     /**
      * @brief Constructor for the adapter
@@ -48,11 +40,10 @@ public:
      * @param generic_config Configuration specific to the Generic strategy
      */
     StrategyAdapter(std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, const StrategyConfig& strategyConfig, std::function<void(const std::string&)> logCallback = nullptr)
-    : be::Strategy(broker, data) {
-        strategy = std::make_unique<::Strategy>(strategyConfig);
-        strategy->set_log_callback(logCallback);
-        // Log de la configuration après avoir configuré le callback
-        strategy->log_configuration();
+    : be::Strategy(broker, data), 
+      name(strategyConfig.name),
+      strategy(std::make_unique<::Strategy>(strategyConfig, logCallback))
+    {
     }
     
     /**
@@ -144,7 +135,8 @@ public:
                 std::nullopt, 
                 be::SLValue::points(signal.stop_loss), 
                 be::TPValue::points(signal.take_profit), 
-                nullptr
+                nullptr,
+                strategy->getName()
             );
         }
         else if (trades.empty() && signal.type == SignalType::SELL && signal.quantity > 0) {
@@ -156,7 +148,8 @@ public:
                 std::nullopt, 
                 be::SLValue::points(signal.stop_loss), 
                 be::TPValue::points(signal.take_profit), 
-                nullptr
+                nullptr,
+                strategy->getName()
             );
         }
     }

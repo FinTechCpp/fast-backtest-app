@@ -39,6 +39,9 @@ jobs:
     - name: Calculate version
       id: version
       run: |
+        # Fetch all tags from remote to ensure we have the latest
+        git fetch --tags --force
+        
         # Determine if this is a beta build (releases branch)
         IS_BETA="false"
         if [[ "${{ github.ref }}" == "refs/heads/releases" ]]; then

@@ -14,7 +14,7 @@ env:
 
 jobs:
   cleanup-artifacts:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, X64]
     permissions:
       actions: write
     steps:
@@ -25,7 +25,7 @@ jobs:
         skip-recent: 3
 
   calculate-version:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, X64]
     needs: cleanup-artifacts
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -73,7 +73,7 @@ jobs:
         echo "Is beta: $IS_BETA"
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: [self-hosted, Windows, X64]
     needs: calculate-version
     permissions:
       contents: write
@@ -212,6 +212,7 @@ jobs:
       shell: pwsh
 
   build-macos:
+    if: false  # Temporarily disabled
     runs-on: macos-latest
     needs: calculate-version
     permissions:
@@ -348,7 +349,7 @@ jobs:
         git push
 
   build-linux:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Linux, X64]
     needs: calculate-version
     permissions:
       contents: write
@@ -588,8 +589,8 @@ jobs:
         git push
 
   create-release:
-    runs-on: self-hosted
-    needs: [calculate-version, build-windows, build-macos, build-linux]
+    runs-on: [self-hosted, Linux, X64]
+    needs: [calculate-version, build-windows, build-linux]  # Removed build-macos
     permissions:
       contents: write
       packages: write

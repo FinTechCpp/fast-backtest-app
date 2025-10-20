@@ -209,7 +209,6 @@ jobs:
         git add "downloads\$env:ARCHIVE_NAME"
         git commit -m "Upload Windows build v${{ env.VERSION }}"
         git push
-      shell: pwsh
 
   build-macos:
     if: false  # Temporarily disabled

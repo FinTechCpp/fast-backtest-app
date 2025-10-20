@@ -9,7 +9,7 @@ on:
 
 jobs:
   notify-discord-commit:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     if: github.event_name == 'push'
     steps:
       - name: Send Discord commit notification
@@ -27,7 +27,7 @@ jobs:
                "$DISCORD_WEBHOOK_URL"
 
   notify-discord-release:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     if: github.event_name == 'release'
     steps:
       - name: Send Discord release notification

@@ -154,12 +154,6 @@ jobs:
         # Copy the executable and all DLLs
         Copy-Item "$sourceDir/*" $distDir -Recurse -Force
 
-        # Copy the default configuration file if it exists
-        if (Test-Path "backtestApp/backtest_config.ini") {
-          Copy-Item "backtestApp/backtest_config.ini" "$distDir/backtest_config.ini" -Force
-          echo "✅ Default configuration file copied"
-        }
-
         # Copy the data folders if they exist
         if (Test-Path "data") {
           Copy-Item "data" "$distDir/data" -Recurse -Force
@@ -292,12 +286,6 @@ jobs:
         
         # Deploy Qt dependencies
         macdeployqt "$DIST_DIR/$APP_NAME" -always-overwrite
-        
-        # Copy additional resources
-        if [ -f "backtestApp/backtest_config.ini" ]; then
-          cp backtestApp/backtest_config.ini "$DIST_DIR/$APP_NAME/Contents/Resources/"
-          echo "✅ Default configuration file copied"
-        fi
         
         # Copy data folder if exists
         if [ -d "data" ]; then
@@ -536,12 +524,6 @@ jobs:
         EOF
         chmod +x "$DIST_DIR/backtestapp.sh"
         
-        # Copy configuration file
-        if [ -f "backtestApp/backtest_config.ini" ]; then
-          cp backtestApp/backtest_config.ini "$DIST_DIR/"
-          echo "✅ Default configuration file copied"
-        fi
-        
         # Copy data folder if exists
         if [ -d "data" ]; then
           cp -r data "$DIST_DIR/"
@@ -592,7 +574,7 @@ jobs:
 
   create-release:
     runs-on: [self-hosted, Linux, X64]
-    needs: [calculate-version, build-windows, build-linux]  # Removed build-macos
+    needs: [calculate-version, build-windows, build-linux]  # Removed build-macos TODO : Implement macOS build
     permissions:
       contents: write
       packages: write

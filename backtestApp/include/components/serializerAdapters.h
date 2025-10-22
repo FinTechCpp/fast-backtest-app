@@ -62,8 +62,6 @@ struct ExternalResultConfig {
     std::string version;
     std::string createdAt;
 
-    // GeneralParamsConfig generalParams;
-    // std::vector<StrategyConfig> strategyConfigs;
     std::vector<be::TradeData> trades;  // Trades directement au lieu de stats
     std::vector<be::Candle> candles; 
 
@@ -72,8 +70,6 @@ struct ExternalResultConfig {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
-        //    CEREAL_NVP(generalParams),
-        //    CEREAL_NVP(strategyConfigs),
            CEREAL_NVP(trades),
            CEREAL_NVP(candles));
     }
@@ -254,6 +250,7 @@ namespace cereal {
            cereal::make_nvp("use_risk_based_sizing", config.use_risk_based_sizing),
            cereal::make_nvp("risk_percentage", config.risk_percentage),
            cereal::make_nvp("leverage_limit", config.leverage_limit),
+           cereal::make_nvp("cash_allocation_percentage", config.cash_allocation_percentage),
            cereal::make_nvp("use_break_even", config.use_break_even),
            cereal::make_nvp("break_even_threshold", config.break_even_threshold),
            cereal::make_nvp("break_even_offset_per_mille", config.break_even_offset_per_mille),

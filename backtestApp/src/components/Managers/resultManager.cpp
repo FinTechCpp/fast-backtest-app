@@ -2,6 +2,7 @@
 #include "ui/views/statsView.h"
 #include "ui/views/tradesView.h"
 #include "ui/views/chartView.h"
+#include "ui/views/reportView.h"
 #include <QDebug>
 #include <QTime>
 #include <QResizeEvent>
@@ -17,6 +18,7 @@ ResultManager::ResultManager(QWidget* parent) : QWidget(parent)
     m_statsView = nullptr;
     m_tradesView = nullptr;
     m_chartView = nullptr;
+    m_reportView = nullptr;
     
     // Construire l'interface dans le constructeur
     setupUI();
@@ -146,9 +148,10 @@ void ResultManager::setupViews()
     m_statsView = new StatsView(this);
     m_tradesView = new TradesView(this);
     m_chartView = new ChartView(this);
+    m_reportView = new ReportView(this);
     
     // Vérifier que les vues ont été créées
-    if (!m_statsView || !m_tradesView || !m_chartView) {
+    if (!m_statsView || !m_tradesView || !m_chartView || !m_reportView) {
         qCritical() << "Erreur lors de la création des vues";
         return;
     }
@@ -157,11 +160,13 @@ void ResultManager::setupViews()
     m_tabWidget->addTab(m_statsView, "📊 Statistiques");
     m_tabWidget->addTab(m_tradesView, "📋 Trades");
     m_tabWidget->addTab(m_chartView, "📈 Graphiques");
+    m_tabWidget->addTab(m_reportView, " AI Report");
     
     // Ajouter au map pour faciliter l'accès
     m_views["stats"] = m_statsView;
     m_views["trades"] = m_tradesView;
     m_views["chart"] = m_chartView;
+    m_views["report"] = m_reportView;
 }
 
 void ResultManager::setupConnections()

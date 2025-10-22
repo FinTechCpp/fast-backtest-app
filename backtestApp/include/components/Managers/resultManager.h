@@ -12,6 +12,7 @@
 class StatsView;
 class TradesView;
 class ChartView;
+class ReportView;
 class QTimer;
 struct BacktestResults;  
 
@@ -52,6 +53,7 @@ private:
     StatsView* m_statsView;
     TradesView* m_tradesView;
     ChartView* m_chartView;
+    ReportView* m_reportView;
     
     // Map for easy access to views
     QMap<QString, BaseView*> m_views;

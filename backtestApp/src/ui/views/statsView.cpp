@@ -415,11 +415,6 @@ void StatsView::updateData(BacktestResults* results)
 void StatsView::clear() {
     qDebug() << "StatsView::clear() appelé";
     
-    // Clear ReportWidget
-    if (m_reportWidget) {
-        m_reportWidget->clear();
-    }
-    
     m_currentResults = nullptr;
 
     m_profitFactorWidget->setCenterText("--");

@@ -12,6 +12,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QInputDialog>
+#include <QSettings>
 #include <cmath>
 #include <iostream>
 #include <fstream>

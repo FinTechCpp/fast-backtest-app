@@ -6,14 +6,16 @@
 
 // Structure pour stocker les informations de chaque ligne
 struct KeyValueItem {
-    QString key;      // Le texte de gauche (clé)
-    QString value;    // La valeur de droite
-    QColor textColor; // Couleur du texte
+    QString key;        // Le texte de gauche (clé)
+    QString value;      // La valeur primaire de droite
+    QString valueBis;   // La valeur alternative (optionnelle)
+    QColor textColor;   // Couleur du texte
     
     KeyValueItem(const QString& k = QString(), 
                 const QString& v = QString(), 
-                const QColor& c = Qt::black)
-        : key(k), value(v), textColor(c) {}
+                const QColor& c = Qt::black,
+                const QString& vBis = QString())
+        : key(k), value(v), valueBis(vBis), textColor(c) {}
 };
 
 class KeyValueListWidget : public TitledWidget
@@ -24,7 +26,7 @@ public:
     explicit KeyValueListWidget(const QString& title = QString(), QWidget* parent = nullptr);
     
     // Ajouter une entrée à la liste
-    void addItem(const QString& key, const QString& value, const QColor& color = Qt::black);
+    void addItem(const QString& key, const QString& value, const QColor& color = Qt::black, const QString& valueBis = QString());
     
     // Ajouter plusieurs entrées d'un coup
     void addItems(const QList<KeyValueItem>& items);
@@ -32,8 +34,14 @@ public:
     // Supprimer toutes les entrées
     void clear();
     
-    // Mettre à jour une entrée existante
+    // Mettre à jour une entrée existante (valeur primaire)
     bool updateValue(const QString& key, const QString& newValue);
+    
+    // Mettre à jour la valeur alternative
+    bool updateValueBis(const QString& key, const QString& newValueBis);
+    
+    // Mettre à jour les deux valeurs en même temps
+    bool updateValues(const QString& key, const QString& newValue, const QString& newValueBis);
     
     // Mettre à jour la couleur d'une entrée
     bool updateColor(const QString& key, const QColor& newColor);
@@ -43,6 +51,7 @@ public:
     int count() const { return m_items.count(); }
     
     // Configuration visuelle
+    void setCheckBoxBisString(const QString &text);
     void setKeyAlignment(Qt::Alignment alignment);
     void setValueAlignment(Qt::Alignment alignment);
     void setSpacing(int spacing);
@@ -57,6 +66,7 @@ protected:
 private:
     QString m_checkBoxString;
     QCheckBox* m_checkbox;
+    bool m_showBis;
 
     QList<KeyValueItem> m_items;
     Qt::Alignment m_keyAlignment;

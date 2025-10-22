@@ -18,6 +18,9 @@ if(BUILD_WITH_DEBUG)
     else()
         add_compile_options(-g -O0)
     endif()
+    
+    # En mode Debug, les logs sont activés (pas de définition de DISABLE_LOGGING)
+    message(STATUS "Debug mode: Logging ENABLED")
 else()
     set(CMAKE_BUILD_TYPE Release)
     
@@ -28,6 +31,10 @@ else()
         add_compile_options(-O3)
         # add_compile_options(-march=native)
     endif()
+    
+    # En mode Release, désactiver les logs pour optimiser les performances
+    add_compile_definitions(DISABLE_LOGGING)
+    message(STATUS "Release mode: Logging DISABLED")
 endif()
 
 # Cross-compilation detection for MXE

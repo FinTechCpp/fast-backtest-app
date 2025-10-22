@@ -92,7 +92,7 @@ private:
 
     SimpleTextWidget* m_averageTradePerDayWidget = nullptr;
     
-    KeyValueListWidget* m_keyValueListWidget = nullptr;
+    KeyValueListWidget* m_tradeDetailsWidget = nullptr;
     KeyValueListWidget* m_timeInfoWidget = nullptr;
     KeyValueListWidget* m_returnsWidget = nullptr;
     KeyValueListWidget* m_buyHoldWidget = nullptr;

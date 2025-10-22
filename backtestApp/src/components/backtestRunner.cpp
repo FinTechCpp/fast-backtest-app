@@ -1,6 +1,7 @@
 #include <QDebug>
 #include <QApplication>
 #include <sstream>
+#include <filesystem>
 
 #include "components/backtestRunner.h"
 #include "ui/app.h"
@@ -241,11 +242,28 @@ void BacktestWorker::run()
     qDebug() << "Nombre de stratégies à exécuter:" << strategyConfigs.size();
     qDebug() << "Démarrage du backtest C++...";
 
+    std::cout << generalConfig << std::endl;
+    for (const auto& config : strategyConfigs) {
+        std::cout << config << std::endl;
+    }
+
+    // Supprimer le dossier de logs existant pour partir avec un dossier vierge
+    std::string logDirPath = "logs/backtestEngine";
+    if (std::filesystem::exists(logDirPath)) {
+        std::filesystem::remove_all(logDirPath);
+        qDebug() << "Ancien dossier de logs supprimé";
+    }
+    
+    // Recréer le dossier
+    std::filesystem::create_directories(logDirPath);
+    qDebug() << "Nouveau dossier de logs créé";
+
     // Créer le logger
+    std::string logFilePath = logDirPath + "/backtestExecution.log";
     spdlog::drop("BE"); // S'assurer qu'il n'existe pas déjà
     std::shared_ptr<spdlog::logger> async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
         "BE",       // Logger name
-        "logs/backtestEngine/backtestExecution.log",      // Log file path
+        logFilePath.c_str(),      // Log file path
         30 * 1024 * 1024,          // Max file size (30 MB)
         1
     );

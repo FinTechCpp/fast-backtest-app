@@ -265,8 +265,7 @@ namespace cereal {
     // Sérialisation pour GeneralParamsConfig
     template<class Archive>
     void serialize(Archive & ar, GeneralParamsConfig & config) {
-        ar(cereal::make_nvp("strategyName", config.strategyName),
-           cereal::make_nvp("symbol", config.symbol),
+        ar(cereal::make_nvp("symbol", config.symbol),
            cereal::make_nvp("interval", config.interval),
            cereal::make_nvp("period", config.period),
            cereal::make_nvp("endDate", config.endDate),

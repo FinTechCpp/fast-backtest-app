@@ -270,11 +270,19 @@ void BacktestWorker::run()
             
             GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
             
-            // Mettre à jour les paramètres globaux dans la config de stratégie
-            config.cash = generalParams.cash;
-            config.leverage_limit = generalParams.leverage_limit;
+            // Calculer le cash alloué à cette stratégie en fonction du pourcentage d'allocation
+            double allocatedCash = generalParams.cash * (config.cash_allocation_percentage / 100.0);
+            config.cash = allocatedCash;
+            
+            // Si le leverage n'est pas défini, utiliser celui de la configuration générale
+            if (config.leverage_limit <= 0) {
+                config.leverage_limit = generalParams.leverage_limit;
+            }
 
-            qDebug() << "Création de la stratégie" << (i + 1);
+            qDebug() << "Création de la stratégie" << (i + 1) 
+                     << "- Cash alloué:" << allocatedCash 
+                     << "(" << config.cash_allocation_percentage << "% de" << generalParams.cash << ")"
+                     << "- Leverage:" << config.leverage_limit;
             
             // Création de la stratégie avec sa configuration spécifique
             return std::make_shared<StrategyAdapter>(broker, data, config, logCallback);

@@ -12,6 +12,9 @@ KeyValueListWidget::KeyValueListWidget(const QString& title, QWidget* parent)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     m_fontSize = 12;
+
+
+    // m_checkbox = new QCheckBox("
 }
 
 void KeyValueListWidget::addItem(const QString& key, const QString& value, const QColor& color)

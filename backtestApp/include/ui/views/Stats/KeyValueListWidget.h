@@ -2,6 +2,7 @@
 
 #include "ui/views/Stats/TitledWidget.h"
 #include <QList>
+#include <QCheckBox>
 
 // Structure pour stocker les informations de chaque ligne
 struct KeyValueItem {
@@ -54,6 +55,9 @@ protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
 
 private:
+    QString m_checkBoxString;
+    QCheckBox* m_checkbox;
+
     QList<KeyValueItem> m_items;
     Qt::Alignment m_keyAlignment;
     Qt::Alignment m_valueAlignment;

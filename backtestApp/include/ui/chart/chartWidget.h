@@ -46,6 +46,12 @@ public:
     void setRulerToolEnabled(bool enabled); // remplacer par un slot
     void setMaxDisplayPoints(int value);
     
+    // Méthodes pour l'outil de dessin de markers
+    void setMarkerDrawingEnabled(bool enabled, chart::MarkerType type = chart::MarkerType::Check);
+    void clearAllMarkers();
+    const std::vector<chart::ChartMarker>& getMarkers() const { return m_dataManager.getMarkers(); }
+    void setMarkers(const std::vector<chart::ChartMarker>& markers) { m_dataManager.setMarkers(markers); }
+    
     // Méthode pour zoomer sur un trade spécifique
     void zoomToTrade(const be::TradeData& trade);
 
@@ -144,6 +150,10 @@ private:
     bool m_rulerFirstPointSelected;    // Si le premier point a été sélectionné
     double m_rulerStartX;              // Coordonnée X du point de départ
     double m_rulerStartY;              // Coordonnée Y du point de départ
+
+    // Variables pour l'outil de dessin de markers
+    bool m_markerDrawingEnabled = false;
+    chart::MarkerType m_currentMarkerType = chart::MarkerType::Check;
 
     bool m_yAxisZoomMode = false;
     int m_yAxisZoomStartY = 0;

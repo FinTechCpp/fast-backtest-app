@@ -4,6 +4,8 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QPushButton>
+#include <QWidgetAction>
 #include <QTimer>
 
 ProfileMenuManager::ProfileMenuManager(App* parent)
@@ -153,17 +155,54 @@ void ProfileMenuManager::updateProfileList()
     qDebug() << "Profil actuel:" << currentProfile;
     
     for (const QString& profile : profiles) {
-        QAction* action = new QAction(profile, this);
-        action->setCheckable(true);
-        action->setChecked(profile == currentProfile);
-        action->setData(profile);
-        
-        connect(action, &QAction::triggered, this, &ProfileMenuManager::onLoadProfile);
-        
-        m_loadProfileSubmenu->addAction(action);
-        m_profileActions[profile] = action;
-        
-        qDebug() << "Action créée pour le profil:" << profile;
+        // Create a widget-based action so we can style the background for the active profile
+        QWidgetAction* waction = new QWidgetAction(this);
+
+        // Button acts as the clickable item inside the menu
+        QString text = (profile == currentProfile) ? profile : profile;
+        QPushButton* btn = new QPushButton(text);
+        btn->setFlat(true);
+        btn->setCursor(Qt::PointingHandCursor);
+        btn->setStyleSheet(
+            "QPushButton { text-align: left; padding: 6px 12px; border: none; background: transparent; }"
+        );
+
+        if (profile == currentProfile) {
+            // green background for active profile
+            btn->setStyleSheet(
+                "QPushButton { text-align: left; padding: 6px 12px; border: none; background-color: #c8facc; }"
+            );
+        }
+
+        // When clicked, update UI and delegate to ProfileManager
+        connect(btn, &QPushButton::clicked, this, [this, profile, btn]() {
+            // update visuals immediately
+            for (auto it = m_profileActions.begin(); it != m_profileActions.end(); ++it) {
+                QWidgetAction* a = qobject_cast<QWidgetAction*>(it.value());
+                if (!a) continue;
+                QWidget* w = a->defaultWidget();
+                if (!w) continue;
+                QPushButton* b = qobject_cast<QPushButton*>(w);
+                if (!b) continue;
+                if (it.key() == profile) {
+                    b->setText(it.key());
+                    b->setStyleSheet("QPushButton { text-align: left; padding: 6px 12px; border: none; background-color: #c8facc; }");
+                } else {
+                    b->setText(it.key());
+                    b->setStyleSheet("QPushButton { text-align: left; padding: 6px 12px; border: none; background: transparent; }");
+                }
+            }
+
+            if (m_configManager) m_configManager->onProfileChanged(profile);
+        });
+
+        waction->setDefaultWidget(btn);
+        waction->setData(profile);
+
+        m_loadProfileSubmenu->addAction(waction);
+        m_profileActions[profile] = waction;
+
+        qDebug() << "Widget action créée pour le profil:" << profile << " active=" << (profile == currentProfile);
     }
     
     qDebug() << "Liste des profils mise à jour avec" << profiles.size() << "profils";
@@ -171,9 +210,32 @@ void ProfileMenuManager::updateProfileList()
 
 void ProfileMenuManager::onProfileChanged(const QString& profileName)
 {
-    // Mettre à jour les coches dans le menu
+    // Mettre à jour l'affichage des actions : mettre à jour le texte pour indiquer le profil actif
     for (auto it = m_profileActions.begin(); it != m_profileActions.end(); ++it) {
-        it.value()->setChecked(it.key() == profileName);
+        const QString& name = it.key();
+        QAction* action = it.value();
+        if (!action) continue;
+
+        // If this action is a QWidgetAction with a QPushButton, update the button text/style
+        if (QWidgetAction* wa = qobject_cast<QWidgetAction*>(action)) {
+            QWidget* w = wa->defaultWidget();
+            if (QPushButton* b = qobject_cast<QPushButton*>(w)) {
+                if (name == profileName) {
+                    b->setText(name);
+                    b->setStyleSheet("QPushButton { text-align: left; padding: 6px 12px; border: none; background-color: #c8facc; }");
+                } else {
+                    b->setText(name);
+                    b->setStyleSheet("QPushButton { text-align: left; padding: 6px 12px; border: none; background: transparent; }");
+                }
+            } else {
+                // Fallback: update action text
+                action->setText(name);
+            }
+        } else {
+            action->setText(name);
+        }
+        // Keep all actions enabled so user can reload any profile at any time
+        action->setEnabled(true);
     }
     
     // Désactiver la suppression pour le profil DEFAULT
@@ -230,8 +292,7 @@ void ProfileMenuManager::onLoadProfile()
     QAction* action = qobject_cast<QAction*>(sender());
     if (action && m_configManager) {
         QString profileName = action->data().toString();
-        if (!profileName.isEmpty()) {
+        if (!profileName.isEmpty()) 
             m_configManager->onProfileChanged(profileName);
-        }
     }
 }

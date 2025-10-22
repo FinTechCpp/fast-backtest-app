@@ -32,7 +32,11 @@ public:
     bool loadBacktestResult(const QString& resultName, BacktestResultConfig& config, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
     bool deleteBacktestResult(const QString& resultName, QWidget* parentWidget = nullptr);
     bool importBacktestResult(QWidget* parentWidget = nullptr);
+    bool importExternalResult(QWidget* parentWidget = nullptr);  // Import de résultats externes
     bool exportBacktestResult(const QString& resultName, QWidget* parentWidget = nullptr, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
+    
+    // Méthode pour charger un résultat externe et calculer les stats
+    bool loadExternalResult(const QString& filePath, BacktestResultConfig& config);
 
     // Méthode pour définir le format par défaut
     void setDefaultFormat(SerializationUtils::FileFormat format) { m_defaultFormat = format; }

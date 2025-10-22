@@ -50,10 +50,10 @@ public:
     ~App();
     
     GeneralParamsConfig getGeneralParamsConfig() const;
-    StrategyConfig getStrategyConfig() const;
+    std::vector<StrategyConfig> getStrategyConfigs() const;
 
     void setGeneralParamsConfig(const GeneralParamsConfig& config);
-    void setStrategyConfig(const StrategyConfig& config);
+    void setStrategyConfigs(const std::vector<StrategyConfig>& configs);
 
     // Ajout d'accesseurs pour les résultats de backtest
     const BacktestResults& getBacktestResults() const { return *m_backtestResults.get(); }
@@ -123,6 +123,10 @@ private:
     QPushButton* m_runButton;
     QProgressBar* m_progressBar;
     QLabel* m_statusLabel;
+    // Profile indicator shown in the control panel
+    QLabel* m_profileIndicator = nullptr;
+    // Small button to reset/reload the current profile
+    QPushButton* m_profileResetButton = nullptr;
     
     // Private methods
     void createControlPanel();

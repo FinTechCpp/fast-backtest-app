@@ -2,29 +2,19 @@
 
 #include <QGroupBox>
 #include <QVBoxLayout>
-#include <QFormLayout>
-#include <QGridLayout>
-#include <QLabel>
-#include <QTimeEdit>
-#include <QDoubleSpinBox>
-#include <QCheckBox>
-#include <QSpinBox>
-#include <QComboBox>
-#include <QLineEdit>
-#include <QFrame>
-#include <QMap>
-#include <QString>
-#include <QVariant>
-#include "ui/panels/ConfigPanel.h"
+#include <QPushButton>
+#include <QListWidget>
+#include <QHBoxLayout>
+#include <vector>
 #include "common.h"
 
 /**
- * @brief Panel pour les paramètres communs à toutes les stratégies
+ * @brief Panel pour la gestion de plusieurs stratégies de trading
  * 
- * Ce panel contient les paramètres communs comme le stop loss, le take profit,
- * les heures de trading, la gestion du risque, etc.
+ * Ce panel permet d'ajouter, supprimer, dupliquer et configurer plusieurs stratégies.
+ * Chaque stratégie possède sa propre configuration indépendante.
  */
-class StrategyPanel : public ConfigPanel<StrategyConfig>
+class StrategyPanel : public QGroupBox
 {
     Q_OBJECT
 
@@ -35,6 +25,35 @@ public:
      */
     StrategyPanel(QWidget* parent = nullptr);
 
+    /**
+     * @brief Récupère toutes les configurations de stratégies
+     * @return Vecteur contenant toutes les configurations
+     */
+    std::vector<StrategyConfig> getConfigs() const;
+
+    /**
+     * @brief Définit toutes les configurations de stratégies
+     * @param configs Vecteur de configurations à charger
+     */
+    void setConfigs(const std::vector<StrategyConfig>& configs);
+
+private slots:
+    void onAddStrategy();
+    void onRemoveStrategy();
+    void onDuplicateStrategy();
+    void onEditStrategy(QListWidgetItem* item);
+    void updateButtonStates();
+
 private:
     void setupUI();
+    void refreshStrategyList();
+
+    // UI Components
+    QListWidget* m_strategyList;
+    QPushButton* m_addButton;
+    QPushButton* m_removeButton;
+    QPushButton* m_duplicateButton;
+
+    // Data
+    std::vector<StrategyConfig> m_configs;
 };

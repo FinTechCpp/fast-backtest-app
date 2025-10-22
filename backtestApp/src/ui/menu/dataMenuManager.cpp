@@ -16,6 +16,9 @@
 #include <QNetworkRequest>
 #include <QDateTime>
 #include "components/Utils/dataLoader.h"
+#include <QNetworkInterface>
+
+const QString DataMenuManager::SERVER_URL = "http://marketdata-fintech.duckdns.org/";
 
 DataMenuManager::DataMenuManager(QObject* parent)
     : QObject(parent)
@@ -64,14 +67,14 @@ void DataMenuManager::createDataMenu(QMenuBar* menuBar)
 void DataMenuManager::createActions()
 {
     // Action Importer CSV
-    m_importCSVAction = new QAction(tr("&Importer CSV..."), this);
+    m_importCSVAction = new QAction(tr("&Importer fichier local..."), this);
     m_importCSVAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
-    m_importCSVAction->setStatusTip(tr("Importer des données OHLC depuis un fichier CSV"));
+   m_importCSVAction->setStatusTip(tr("Importer des données OHLC depuis un fichier CSV")); 
     connect(m_importCSVAction, &QAction::triggered, this, &DataMenuManager::onImportCSV);
     
-    // Action Importer depuis API
-    m_importAPIAction = new QAction(tr("Importer depuis &API..."), this);
-    m_importAPIAction->setStatusTip(tr("Télécharger des données depuis une API"));
+    // Action Importer depuis serveur Fintech
+    m_importAPIAction = new QAction(tr("Télécharger depuis serveur..."), this);
+    m_importAPIAction->setStatusTip(tr("Télécharger des données depuis le serveur Fintech"));
     connect(m_importAPIAction, &QAction::triggered, this, &DataMenuManager::onImportFromAPI);
     
     // Action Valider les données
@@ -194,10 +197,11 @@ void DataMenuManager::onImportCSV()
 void DataMenuManager::onImportFromAPI()
 {
     qDebug() << "Import depuis API demandé";
-    
+
     // URL de l'API pour récupérer la liste des fichiers de données de marché
-    QUrl apiUrl("http://10.8.0.1:9004/market-data");
-    
+    QString market_files_endpoint = "/market-data";
+    QUrl apiUrl(DataMenuManager::SERVER_URL + market_files_endpoint);
+
     QNetworkRequest request(apiUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Accept", "application/json");
@@ -210,7 +214,6 @@ void DataMenuManager::onImportFromAPI()
     
     qDebug() << "Requête envoyée vers:" << apiUrl.toString();
 }
-
 
 void DataMenuManager::onValidateData()
 {
@@ -633,8 +636,9 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         progress->setLabelText(tr("Téléchargement de %1...").arg(filename));
         
         // Construire l'URL de téléchargement
-        QUrl downloadUrl(QString("http://10.8.0.1:9004/download-market-data/%1").arg(filename));
-        
+        QString download_endpoint = "/download-market-data/" + filename;
+        QUrl downloadUrl(DataMenuManager::SERVER_URL + download_endpoint);
+
         QNetworkRequest request(downloadUrl);
         QNetworkReply* downloadReply = m_networkManager->get(request);
         

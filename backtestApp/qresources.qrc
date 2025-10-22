@@ -3,5 +3,8 @@
     <qresource prefix="/">
         <file>icons/ruler_checked.png</file>
         <file>icons/ruler_unchecked.png</file>
+        <file>icons/24hClock7.png</file>
+        <file>icons/check.png</file>
+        <file>icons/error.png</file>
     </qresource>
 </RCC>

@@ -10,7 +10,7 @@ on:
 
 jobs:
   check-changes:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     outputs:
       cpp-changed: ${{ steps.changes.outputs.cpp }}
       cmake-changed: ${{ steps.changes.outputs.cmake }}

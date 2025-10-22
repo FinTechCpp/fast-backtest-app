@@ -62,9 +62,14 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
         return;
     }
 
-    m_dataManager.setData(results->data, results->stats.trades, results->stats.equityCurve);
+    m_dataManager.setData(results->candles, results->stats.trades, results->stats.equityCurve);
+    
+    // Restaurer les markers si présents
+    if (!results->userMarkers.empty()) {
+        m_dataManager.setMarkers(results->userMarkers);
+    }
 
-    updateChartDisplay(ViewPortMode::FULL_CHART);
+    updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
 void ChartWidget::setChartType(chart::ChartType chartType)
@@ -183,6 +188,52 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
 void ChartWidget::onMousePressed(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
+        // Si l'outil de dessin de markers est activé
+        if (m_markerDrawingEnabled && m_chartViewer && m_chartViewer->getChart()) {
+            int mouseX = m_chartViewer->getChartMouseX();
+            int mouseY = m_chartViewer->getChartMouseY();
+            
+            // Obtenir le graphique principal
+            MultiChart* m = (MultiChart*)m_chartViewer->getChart();
+            if (m && m->getChartCount() > 1) {
+                XYChart* mainChart = (XYChart*)m->getChart(1);
+                PlotArea* plotArea = mainChart->getPlotArea();
+                
+                // Vérifier si le clic est dans la zone de tracé
+                if (mouseX >= plotArea->getLeftX() && mouseX <= plotArea->getRightX() &&
+                    mouseY >= plotArea->getTopY() && mouseY <= plotArea->getBottomY()) {
+                    
+                    // Convertir les coordonnées pixel en valeurs du graphique
+                    // mainChart utilise des indices relatifs (0, 1, 2...) sur l'axe X
+                    double relativeIndex = mainChart->getXValue(mouseX);
+                    double price = mainChart->getYValue(mouseY);
+                    
+                    // Convertir l'indice relatif en indice absolu (comme pour les trades)
+                    int index = static_cast<int>(std::round(relativeIndex));
+                    size_t absoluteBarIndex = m_currentAggregation.startIndex + index;
+                    
+                    // Vérifier que l'indice est valide
+                    const auto& data = m_dataManager.getAggregatedData(m_currentAggregation.level);
+                    if (absoluteBarIndex < data.timestamps.size()) {
+                        // Ajouter le marker avec l'indice absolu
+                        chart::ChartMarker marker;
+                        marker.barIndex = absoluteBarIndex;
+                        marker.price = price;
+                        marker.type = m_currentMarkerType;
+                        
+                        m_dataManager.addMarker(marker);
+                        
+                        qDebug() << "Marker placed: barIndex=" << absoluteBarIndex 
+                                << "price=" << price;
+                        
+                        // Mettre à jour l'affichage
+                        updateChartDisplay(ViewPortMode::USE_CURRENT);
+                    }
+                }
+            }
+            return;
+        }
+        
         m_lastMousePos = event->pos();
 
         // Au lieu de réinitialiser l'offset, mettre à jour les valeurs de référence
@@ -333,7 +384,32 @@ void ChartWidget::setRulerToolEnabled(bool enabled)
     
     // Mettre à jour le graphique pour supprimer la règle
     if (m_chartViewer && m_chartViewer->getChart())
-        m_chartViewer->updateDisplay();
+        updateChartDisplay(ViewPortMode::USE_CURRENT);
+}
+
+void ChartWidget::setMarkerDrawingEnabled(bool enabled, chart::MarkerType type) {
+    m_markerDrawingEnabled = enabled;
+    m_currentMarkerType = type;
+    
+    // Désactiver la règle si l'outil de dessin est activé
+    if (enabled) {
+        m_rulerToolEnabled = false;
+        m_rulerFirstPointSelected = false;
+    }
+    
+    // Changer le curseur si nécessaire
+    if (m_chartViewer) {
+        if (enabled) 
+            m_chartViewer->setCursor(Qt::CrossCursor);
+        else 
+            m_chartViewer->setCursor(Qt::ArrowCursor);
+    }
+}
+
+void ChartWidget::clearAllMarkers() {
+    m_dataManager.clearAllMarkers();
+    if (m_dataManager.hasRawData()) 
+        updateChartDisplay(ViewPortMode::USE_CURRENT); 
 }
 
 bool ChartWidget::removeIndicator(int id) {

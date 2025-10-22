@@ -26,18 +26,10 @@ private:
     // Instance of the Generic strategy
     std::unique_ptr<::Strategy> strategy;
 
-    // Cache for trading signals
-    bool should_enter_long = false;
-    bool should_enter_short = false;
-
     // To track closed trades
     size_t last_closed_trade_count = 0;
-    bool last_trade_closed = false;
-    double last_trade_pnl = 0.0;
     
-    // Logger
-    std::shared_ptr<spdlog::logger> async_file;
-    
+    std::string name;
 public:
     /**
      * @brief Constructor for the adapter
@@ -47,32 +39,11 @@ public:
      * @param strategyConfig Configuration of the strategy
      * @param generic_config Configuration specific to the Generic strategy
      */
-    StrategyAdapter(std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, const StrategyConfig& strategyConfig) 
-    : be::Strategy(broker, data) {
-        strategy = std::make_unique<::Strategy>(strategyConfig);
-
-        spdlog::drop("async_file_logger"); // Drop the previous logger if it exists
-        async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
-            "async_file_logger",       // Logger name
-            "logs/Strategies/GenericStrategy_async.log",      // Log file path
-            100 * 1024 * 1024,          // Max file size (100 MB)
-            1
-        );
-        async_file->set_level(spdlog::level::debug);
-
-        auto log_callback = [this](const std::string& message, int level) {
-            spdlog::level::level_enum spdlog_level = spdlog::level::info;
-            switch (level) {
-                case static_cast<int>(LogLevel::DEBUG):   spdlog_level = spdlog::level::debug; break;
-                case static_cast<int>(LogLevel::INFO):    spdlog_level = spdlog::level::info; break;
-                case static_cast<int>(LogLevel::WARNING): spdlog_level = spdlog::level::warn; break;
-                case static_cast<int>(LogLevel::FATAL):   spdlog_level = spdlog::level::err; break;
-            }
-            
-            this->async_file->log(spdlog_level, "{}", message);
-        };
-
-        strategy->set_log_callback(log_callback);
+    StrategyAdapter(std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, const StrategyConfig& strategyConfig, std::function<void(const std::string&)> logCallback = nullptr)
+    : be::Strategy(broker, data), 
+      name(strategyConfig.name),
+      strategy(std::make_unique<::Strategy>(strategyConfig, logCallback))
+    {
     }
     
     /**
@@ -82,8 +53,6 @@ public:
      * the strategy to initialize itself with historical data.
      */
     void init() override {
-        async_file->debug("GenericStrategyAdapter init() called");
-        // Initialize the strategy
     }
     
     /**
@@ -113,13 +82,15 @@ public:
 
         // Fill the position information
         const std::vector<std::shared_ptr<be::Trade>>& trades = _broker->trades();
-        std::shared_ptr<be::Trade> current_trade = trades.empty() ? nullptr : trades.back();
+        // std::shared_ptr<be::Trade> current_trade = trades.empty() ? nullptr : trades.back();
         
         // Populate position info for break-even functionality
-        if (current_trade) {
-            candle.position.entry_price = current_trade->entryPrice();
+        if (!trades.empty()) {
+            candle.position.entry_price = trades.back()->entryPrice();
             // Calculate take profit price from the trade's TP order
-            if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
+            // if (current_trade->tpOrder()) candle.position.take_profit_price = current_trade->tpOrder()->limit();
+            if (trades.back()->tpOrder())
+                candle.position.take_profit_price = trades.back()->tpOrder()->limitPrice();
         }
 
         // Get a reference to closedTrades instead of a copy
@@ -129,53 +100,57 @@ public:
         // Only if new trades have been closed
         if (currentTradeCount > last_closed_trade_count) {
             last_closed_trade_count = currentTradeCount;
-            candle.position.closed_trade_pnl = closedTrades.back()->pl();
+            candle.position.closed_trade_pnl = closedTrades.back().pl;
         }
 
         // Update the strategy signal with the new latest candle by executing strategy logic
-        Signal* signal = strategy->update_candle(candle);
+        Signal signal = strategy->update_candle(candle);
 
-        if (!signal)
+        // DateTime dtBreakPoint{2022, 8, 8, Time{21, 59, 0}};
+
+        // if (candle.ohlc.date >= dtBreakPoint) {
+        //     int a = 0;
+        // }
+
+        if (signal.type == SignalType::NONE)
             return; // No signal to process
 
         // Process the signal if there is one
-        if (signal->type == SignalType::LIQUIDATE) {
-            for (const auto& trade : trades) {
-                trade->close();
-            }
+        if (signal.type == SignalType::LIQUIDATE) {
+            _broker->closeAllTrades();
         }
-        else if (signal->type == SignalType::MOVE_SL) {
+        else if (signal.type == SignalType::MOVE_SL && !trades.empty()) {
             // Récupérer le prix de trigger depuis le signal
-            double triggerPrice = signal->price > 0 ? signal->price : 0.0;
-            bool success = current_trade->setBreakEven(signal->new_sl, triggerPrice);
+            double triggerPrice = signal.price > 0 ? signal.price : 0.0;
+            bool success = trades.back()->setBreakEven(signal.new_sl, triggerPrice);
+
+            // _broker->setBreakEven(current_trade, signal.new_sl, triggerPrice);
         }
-        else if (trades.empty() && signal->type == SignalType::BUY && signal->quantity > 0) {
-            // Process a buy signal
-            buy(
-                signal->quantity,
-                0,
-                0,
-                0,
-                0,
-                signal->stop_loss, 
-                signal->take_profit
+        else if (trades.empty() && signal.type == SignalType::BUY && signal.quantity > 0) {
+            _broker->submitOrder(
+                signal.quantity, 
+                be::OrderSide::BUY, 
+                be::OrderType::MARKET, 
+                std::nullopt, 
+                std::nullopt, 
+                be::SLValue::points(signal.stop_loss), 
+                be::TPValue::points(signal.take_profit), 
+                nullptr,
+                strategy->getName()
             );
-            async_file->info("BUY signal executed: qty={}, SL={}, TP={}", 
-                           signal->quantity, signal->stop_loss, signal->take_profit);
         }
-        else if (trades.empty() && signal->type == SignalType::SELL && signal->quantity > 0) {
-            // Process a sell signal
-            sell(
-                signal->quantity,
-                0,
-                0,
-                0,
-                0,
-                signal->stop_loss, 
-                signal->take_profit
+        else if (trades.empty() && signal.type == SignalType::SELL && signal.quantity > 0) {
+            _broker->submitOrder(
+                signal.quantity, 
+                be::OrderSide::SELL, 
+                be::OrderType::MARKET, 
+                std::nullopt, 
+                std::nullopt, 
+                be::SLValue::points(signal.stop_loss), 
+                be::TPValue::points(signal.take_profit), 
+                nullptr,
+                strategy->getName()
             );
-            async_file->info("SELL signal executed: qty={}, SL={}, TP={}", 
-                           signal->quantity, signal->stop_loss, signal->take_profit);
         }
     }
 };

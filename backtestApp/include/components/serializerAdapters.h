@@ -18,7 +18,7 @@ struct ProfileConfig {
     std::string version;
     std::string createdAt;
     GeneralParamsConfig generalParams;
-    StrategyConfig strategyConfig;
+    std::vector<StrategyConfig> strategyConfigs;
 
     template<class Archive>
     void serialize(Archive & ar) {
@@ -26,7 +26,7 @@ struct ProfileConfig {
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
-           CEREAL_NVP(strategyConfig));
+           CEREAL_NVP(strategyConfigs));
     }
 };
 
@@ -35,13 +35,14 @@ struct BacktestResultConfig {
     std::string name;
     std::string version;
     std::string createdAt;
+
+    // Backtest Results : a remplacer par la structure BacktestResults directement ?
     GeneralParamsConfig generalParams;
-    StrategyConfig strategyConfig;
+    std::vector<StrategyConfig> strategyConfigs;
     be::Stats stats;
     // c'est vraiment lourd, il faudrait plutot une reference vers des données, ensuite en verifie que les données chargées étaient bien celles de l'enregistrement
     std::vector<be::Candle> candles;
 
-    // peut etre ajouter la configuration du profile utiliser pour le backtest en question ?
 
     template<class Archive>
     void serialize(Archive & ar) {
@@ -49,8 +50,27 @@ struct BacktestResultConfig {
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
-           CEREAL_NVP(strategyConfig),
+           CEREAL_NVP(strategyConfigs),
            CEREAL_NVP(stats),
+           CEREAL_NVP(candles));
+    }
+};
+
+// Structure pour importer des résultats externes (sans stats pré-calculés)
+struct ExternalResultConfig {
+    std::string name;
+    std::string version;
+    std::string createdAt;
+
+    std::vector<be::TradeData> trades;  // Trades directement au lieu de stats
+    std::vector<be::Candle> candles; 
+
+    template<class Archive>
+    void serialize(Archive & ar) {
+        ar(CEREAL_NVP(name),
+           CEREAL_NVP(version),
+           CEREAL_NVP(createdAt),
+           CEREAL_NVP(trades),
            CEREAL_NVP(candles));
     }
 };
@@ -77,8 +97,8 @@ namespace cereal {
            cereal::make_nvp("open", candle.open),
            cereal::make_nvp("high", candle.high),
            cereal::make_nvp("low", candle.low),
-           cereal::make_nvp("close", candle.close),
-           cereal::make_nvp("volume", candle.volume));
+           cereal::make_nvp("close", candle.close));
+        //    cereal::make_nvp("volume", candle.volume));
     }
 
     template<class Archive>
@@ -161,6 +181,7 @@ namespace cereal {
            cereal::make_nvp("maxDrawdownDuration", stats.maxDrawdownDuration),
            cereal::make_nvp("avgDrawdownDuration", stats.avgDrawdownDuration),
            cereal::make_nvp("numTrades", stats.numTrades),
+           cereal::make_nvp("tradesPerDay", stats.tradesPerDay),
            cereal::make_nvp("numTPTrades", stats.numTPTrades),
            cereal::make_nvp("pctTPTrades", stats.pctTPTrades),
            cereal::make_nvp("numSLTrades", stats.numSLTrades),
@@ -177,20 +198,36 @@ namespace cereal {
            cereal::make_nvp("maxTradeDuration", stats.maxTradeDuration),
            cereal::make_nvp("avgTradeDuration", stats.avgTradeDuration),
            cereal::make_nvp("profitFactor", stats.profitFactor),
+           cereal::make_nvp("grossProfit", stats.grossProfit),
+           cereal::make_nvp("grossLoss", stats.grossLoss),
            cereal::make_nvp("expectancyPct", stats.expectancyPct),
            cereal::make_nvp("sqn", stats.sqn),
-           cereal::make_nvp("kellyCriterion", stats.kellyCriterion));
+           cereal::make_nvp("kellyCriterion", stats.kellyCriterion),
+           cereal::make_nvp("avgMAE", stats.avgMAE),
+           cereal::make_nvp("maxMAE", stats.maxMAE),
+           cereal::make_nvp("ulcerIndex", stats.ulcerIndex),
+           cereal::make_nvp("ulcerPerformanceIndex", stats.ulcerPerformanceIndex),
+           cereal::make_nvp("skewness", stats.skewness),
+           cereal::make_nvp("kurtosis", stats.kurtosis),
+           cereal::make_nvp("omegaRatio", stats.omegaRatio));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, be::EquityPoint & point) {
+        ar(cereal::make_nvp("index", point.index),
+           cereal::make_nvp("value", point.value));
     }
     
     // Sérialisation pour StrategyConfig
-    // TODO il faudra ajouter les filtres et la direction
     template<class Archive>
     void serialize(Archive & ar, StrategyConfig & config) {
         ar(cereal::make_nvp("name", config.name),
-           cereal::make_nvp("tradeDirection", config.tradeDirection),
            cereal::make_nvp("enable_logging", config.enable_logging),
            cereal::make_nvp("logLevel", config.logLevel),
-           cereal::make_nvp("filters", config.filters),
+           cereal::make_nvp("buyFilters", config.buyFilters),
+           cereal::make_nvp("sellFilters", config.sellFilters),
+           cereal::make_nvp("resaleFilters", config.resaleFilters),
+           cereal::make_nvp("rebuyFilters", config.rebuyFilters),
            cereal::make_nvp("sl_method", config.sl_method),
            cereal::make_nvp("tp_method", config.tp_method),
            cereal::make_nvp("trading_from", config.trading_from),
@@ -206,16 +243,14 @@ namespace cereal {
            cereal::make_nvp("sl_minmax_periods", config.sl_minmax_periods),
            cereal::make_nvp("sl_minmax_delta_coef_atr", config.sl_minmax_delta_coef_atr),
            cereal::make_nvp("tp_sl_ratio", config.tp_sl_ratio),
-           cereal::make_nvp("tp_supertrend_atr_period", config.tp_supertrend_atr_period),
-           cereal::make_nvp("tp_supertrend_multiplier", config.tp_supertrend_multiplier),
            cereal::make_nvp("rl_model_path", config.rl_model_path),
            cereal::make_nvp("rl_lookback_periods", config.rl_lookback_periods),
            cereal::make_nvp("rl_tp_max_multiplier", config.rl_tp_max_multiplier),
            cereal::make_nvp("rl_tp_min_multiplier", config.rl_tp_min_multiplier),
-           cereal::make_nvp("nth_heikin_ashi_count", config.nth_heikin_ashi_count),
            cereal::make_nvp("use_risk_based_sizing", config.use_risk_based_sizing),
            cereal::make_nvp("risk_percentage", config.risk_percentage),
            cereal::make_nvp("leverage_limit", config.leverage_limit),
+           cereal::make_nvp("cash_allocation_percentage", config.cash_allocation_percentage),
            cereal::make_nvp("use_break_even", config.use_break_even),
            cereal::make_nvp("break_even_threshold", config.break_even_threshold),
            cereal::make_nvp("break_even_offset_per_mille", config.break_even_offset_per_mille),
@@ -240,8 +275,11 @@ namespace cereal {
            cereal::make_nvp("commission", config.commission),
            cereal::make_nvp("leverage_limit", config.leverage_limit),
            cereal::make_nvp("tradeOnClose", config.tradeOnClose),
-           cereal::make_nvp("hedging", config.hedging),
-           cereal::make_nvp("exclusiveOrders", config.exclusiveOrders),
+           cereal::make_nvp("positionMode", config.positionMode),
+           cereal::make_nvp("executeLimitOnLimitPrice", config.executeLimitOnLimitPrice),
+           cereal::make_nvp("executeStopOnOpen", config.executeStopOnOpen),
+           cereal::make_nvp("spreadEntryRatio", config.spreadEntryRatio),
+           cereal::make_nvp("minPositionStep", config.minPositionStep),
            cereal::make_nvp("finalizeTrades", config.finalizeTrades));
     }
 
@@ -294,7 +332,27 @@ namespace cereal {
                     case filter::IndicatorType::SUPERTREND_DIRECTION:
                         ar(cereal::make_nvp("supertrendParams", valueSource.supertrendParams));
                         break;
-                        
+                    case filter::IndicatorType::CCI:
+                        ar(cereal::make_nvp("cciParams", valueSource.cciParams));
+                        break;
+                    case filter::IndicatorType::MACD_HISTOGRAM:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
+                    case filter::IndicatorType::MACD_SIGNAL:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
+                    case filter::IndicatorType::MACD_LINE:
+                        ar(cereal::make_nvp("macdParams", valueSource.macdParams));
+                        break;
+                    case filter::IndicatorType::BB_LOWER:
+                        ar(cereal::make_nvp("bbParams", valueSource.bbParams));
+                        break;
+                    case filter::IndicatorType::BB_UPPER:
+                        ar(cereal::make_nvp("bbParams", valueSource.bbParams));
+                        break;
+                    case filter::IndicatorType::BB_PERCENT_B:
+                        ar(cereal::make_nvp("bbParams", valueSource.bbParams));
+                        break;
                     case filter::IndicatorType::PIVOT_POINT:
                         // Pas de paramètre spécifique pour ce type
                         break;
@@ -317,6 +375,7 @@ namespace cereal {
         
         // Le décalage historique s'applique à toutes les catégories
         ar(cereal::make_nvp("historicalOffset", valueSource.historicalOffset));
+        // ar(cereal::make_nvp("description", valueSource.description));
     }
 
     // Parameter structures
@@ -348,4 +407,28 @@ namespace cereal {
         ar(cereal::make_nvp("atrPeriod", params.atrPeriod),
            cereal::make_nvp("multiplier", params.multiplier));
     }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::CCIParams & params) {
+        ar(cereal::make_nvp("period", params.period));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, filter::MACDParams & params) {
+        ar(cereal::make_nvp("fast", params.fast),
+           cereal::make_nvp("slow", params.slow),
+           cereal::make_nvp("signal", params.signal),
+           cereal::make_nvp("source", params.source),
+           cereal::make_nvp("osc_ma_type", params.osc_ma_type),
+           cereal::make_nvp("signal_ma_type", params.signal_ma_type),
+           cereal::make_nvp("signal_smoothing", params.signal_smoothing));
+    }
+    
+    template<class Archive>
+    void serialize(Archive & ar, filter::BBParams & params) {
+        ar(cereal::make_nvp("period", params.period),
+           cereal::make_nvp("stdDevMultiplier", params.stddev_multiplier),
+           cereal::make_nvp("source", params.source),
+           cereal::make_nvp("osc_ma_type", params.ma_type));
+   }
 }

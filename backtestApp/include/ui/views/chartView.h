@@ -30,12 +30,15 @@
 #include "ui/views/baseView.h"
 #include "ui/chart/chartControlPanel.h"
 
-#include "ui/dialogs/rsiDialog.h"
-#include "ui/dialogs/emaDialog.h"
-#include "ui/dialogs/supertrendDialog.h"
-#include "ui/dialogs/stochasticDialog.h"
-#include "ui/dialogs/atrDialog.h"
-#include "ui/dialogs/pivotPointsDialog.h"
+#include "ui/dialogs/indicators/rsiDialog.h"
+#include "ui/dialogs/indicators/emaDialog.h"
+#include "ui/dialogs/indicators/supertrendDialog.h"
+#include "ui/dialogs/indicators/stochasticDialog.h"
+#include "ui/dialogs/indicators/atrDialog.h"
+#include "ui/dialogs/indicators/cciDialog.h"
+#include "ui/dialogs/indicators/macdDialog.h"
+#include "ui/dialogs/indicators/pivotPointsDialog.h"
+#include "ui/dialogs/indicators/bbDialog.h"
 
 class App;
 class RSIDialog;
@@ -77,5 +80,5 @@ private:
     
     void showPlaceholder(const QString& message);
     void showChartWidget();
-    std::vector<std::unique_ptr<indicators::IndicatorBase>> extractIndicatorsFromFilters(const StrategyConfig& strategyConfig);
+    std::vector<std::unique_ptr<indicators::IndicatorBase>> extractIndicatorsFromFilters(const std::vector<StrategyConfig>& strategyConfigs);
 };

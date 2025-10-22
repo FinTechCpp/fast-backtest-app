@@ -16,6 +16,7 @@ BacktestResultMenuManager::BacktestResultMenuManager(App* parent)
     , m_saveResultAction(nullptr)
     , m_deleteResultAction(nullptr)
     , m_importAction(nullptr)
+    , m_importExternalAction(nullptr)
     , m_exportAction(nullptr)
     , m_openDirectoryAction(nullptr)
     , m_viewDetailsAction(nullptr)
@@ -46,6 +47,7 @@ void BacktestResultMenuManager::createResultMenu(QMenuBar* menuBar)
     
     m_resultMenu->addSeparator();
     m_resultMenu->addAction(m_importAction);
+    m_resultMenu->addAction(m_importExternalAction);  
     m_resultMenu->addAction(m_exportAction);
 
     // Ajouter un séparateur puis l'action pour ouvrir le dossier
@@ -73,9 +75,14 @@ void BacktestResultMenuManager::createActions()
     connect(m_deleteResultAction, &QAction::triggered, this, &BacktestResultMenuManager::onDeleteResult);
     
     // Action Importer
-    m_importAction = new QAction(tr("&Importer..."), this);
-    m_importAction->setStatusTip(tr("Importer un résultat de backtest"));
+    m_importAction = new QAction(tr("&Importer un résultat de backtest..."), this);
+    m_importAction->setStatusTip(tr("Importer un résultat de backtest complet (avec stats)"));
     connect(m_importAction, &QAction::triggered, this, &BacktestResultMenuManager::onImportResult);
+    
+    // Action Importer résultat externe
+    m_importExternalAction = new QAction(tr("Importer un résultat e&xterne..."), this);
+    m_importExternalAction->setStatusTip(tr("Importer un résultat externe (sans stats - seront calculées automatiquement)"));
+    connect(m_importExternalAction, &QAction::triggered, this, &BacktestResultMenuManager::onImportExternalResult);
     
     // Action Exporter
     m_exportAction = new QAction(tr("&Exporter..."), this);
@@ -145,15 +152,15 @@ void BacktestResultMenuManager::updateResultList()
     } else {
         for (const QString& result : results) {
             QAction* action = new QAction(result, this);
-            action->setCheckable(true);
-            action->setChecked(result == m_currentResult);
+            // Use non-checkable actions so clicking immediately applies the result
+            action->setCheckable(false);
             action->setData(result);
-            
+
             connect(action, &QAction::triggered, this, &BacktestResultMenuManager::onLoadResult);
-            
+
             m_loadResultSubmenu->addAction(action);
             m_resultActions[result] = action;
-            
+
             qDebug() << "Action créée pour le résultat:" << result;
         }
     }
@@ -163,12 +170,7 @@ void BacktestResultMenuManager::updateResultList()
 
 void BacktestResultMenuManager::onResultLoaded(const QString& resultName)
 {
-    // Mettre à jour les coches dans le menu
-    for (auto it = m_resultActions.begin(); it != m_resultActions.end(); ++it) {
-        it.value()->setChecked(it.key() == resultName);
-    }
-    
-    // Mettre à jour le nom du résultat courant
+    // Mettre à jour le nom du résultat courant (actions non-checkables maintenant)
     m_currentResult = resultName;
     
     // Activer les actions qui nécessitent un résultat chargé
@@ -205,15 +207,16 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         config.version = QCoreApplication::applicationVersion().toStdString();
         config.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate).toStdString();
 
-        const BacktestResults& currentResults = m_mainWindow->getBacktestResults();
+        BacktestResults currentResults = m_mainWindow->getBacktestResults();
 
         config.generalParams = currentResults.generalConfig;
-        config.strategyConfig = currentResults.strategyConfig;
-        config.candles = currentResults.data->getCandles();
+        config.strategyConfigs = currentResults.strategyConfigs;
+        config.candles = currentResults.candles;
         config.stats = currentResults.stats;
 
         // Sauvegarder le résultat
-        m_resultManager->saveBacktestResult(config, m_mainWindow);
+        // m_resultManager->saveBacktestResult(config, m_mainWindow);
+        m_resultManager->saveBacktestResult(config, m_mainWindow, SerializationUtils::FileFormat::JSON);
     }
 }
 
@@ -230,18 +233,22 @@ void BacktestResultMenuManager::onDeleteResult()
 
 void BacktestResultMenuManager::onImportResult()
 {
-    if (m_resultManager) {
-        if (m_resultManager->importBacktestResult(m_mainWindow)) {
+    if (m_resultManager) 
+        if (m_resultManager->importBacktestResult(m_mainWindow)) 
             updateResultList();
-        }
-    }
+}
+
+void BacktestResultMenuManager::onImportExternalResult()
+{
+    if (m_resultManager) 
+        if (m_resultManager->importExternalResult(m_mainWindow)) 
+            updateResultList();
 }
 
 void BacktestResultMenuManager::onExportResult()
 {
-    if (m_resultManager && !m_currentResult.isEmpty()) {
+    if (m_resultManager && !m_currentResult.isEmpty()) 
         m_resultManager->exportBacktestResult(m_currentResult, m_mainWindow);
-    }
 }
 
 void BacktestResultMenuManager::onLoadResult()
@@ -259,12 +266,12 @@ void BacktestResultMenuManager::onLoadResult()
                 std::unique_ptr<BacktestResults> results = std::make_unique<BacktestResults>();
 
                 results->generalConfig = config.generalParams;
-                results->strategyConfig = config.strategyConfig;
-                results->data = std::make_shared<be::Data>(config.candles);
+                results->strategyConfigs = config.strategyConfigs;
+                results->candles = config.candles;
                 results->stats = config.stats;
 
                 m_mainWindow->setGeneralParamsConfig(config.generalParams);
-                m_mainWindow->setStrategyConfig(config.strategyConfig);
+                m_mainWindow->setStrategyConfigs(config.strategyConfigs);
                 m_mainWindow->setBacktestResults(std::move(results));
 
                 // Mettre à jour l'état du menu

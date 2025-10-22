@@ -1,0 +1,1040 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/github-workflow.json
+
+name: Multi-Platform Release Build
+
+on:
+  push:
+    branches: [ main, releases ]
+  pull_request:
+    branches: [ main, releases ]
+
+env:
+  BUILD_TYPE: Release
+  QT_VERSION: 6.8.3
+
+jobs:
+  cleanup-artifacts:
+    runs-on: [self-hosted, Linux, X64]
+    permissions:
+      actions: write
+    steps:
+    - name: Delete old artifacts
+      uses: c-hive/gha-remove-artifacts@v1
+      with:
+        age: '1 day'
+        skip-recent: 3
+
+  calculate-version:
+    runs-on: [self-hosted, Linux, X64]
+    needs: cleanup-artifacts
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_beta: ${{ steps.version.outputs.is_beta }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Calculate version
+      id: version
+      run: |
+        # Fetch all tags to ensure we have the latest
+        git fetch --tags --force
+        
+        # Determine if this is a beta build (releases branch)
+        IS_BETA="false"
+        if [[ "${{ github.ref }}" == "refs/heads/releases" ]]; then
+          IS_BETA="true"
+        fi
+        
+        # Get the latest tag by sorting all tags (not just reachable from HEAD)
+        lastTag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$' | head -1 || echo "")
+        
+        if [ -z "$lastTag" ]; then
+          # If no tag exists, use the base version from the VERSION file
+          baseVersion=$(cat VERSION | tr -d '[:space:]')
+          version="${baseVersion}.1"
+        else
+          # Extract the version from the last tag (without the 'v' prefix)
+          lastVersion=${lastTag#v}
+          
+          # Increment the last number
+          version=$(echo $lastVersion | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+        fi
+        
+        # Add beta suffix for releases branch
+        if [ "$IS_BETA" == "true" ]; then
+          version="${version}-beta"
+        fi
+        
+        echo "VERSION=$version" >> $GITHUB_ENV
+        echo "version=$version" >> $GITHUB_OUTPUT
+        echo "is_beta=$IS_BETA" >> $GITHUB_OUTPUT
+        echo "Last tag: $lastTag"
+        echo "New version: $version"
+        echo "Is beta: $IS_BETA"
+
+  build-windows:
+    runs-on: [self-hosted, Windows, X64]
+    needs: calculate-version
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+      actions: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        token: ${{ secrets.SUBMODULE_PAT }}
+
+    - name: Set version
+      run: |
+        echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $env:GITHUB_ENV
+
+    - name: Set up MSVC
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: windows
+        target: desktop
+        arch: win64_msvc2022_64
+        modules: qtcharts 
+        cache: true
+
+    - name: Verify Qt installation
+      run: |
+        echo "Qt version: ${{ env.QT_VERSION }}"
+        echo "Qt6_DIR: $env:Qt6_DIR"
+        echo "QT_ROOT_DIR: $env:QT_ROOT_DIR"
+        qmake --version
+        where qmake
+
+    - name: Create build directory
+      run: mkdir build
+
+    - name: Configure CMake
+      working-directory: build
+      run: |
+        $qtPath = if ($env:Qt6_DIR) { $env:Qt6_DIR } else { $env:QT_ROOT_DIR }
+        echo "Using Qt path: $qtPath"
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_PREFIX_PATH="$qtPath"
+
+    - name: Build project
+      working-directory: build
+      run: |
+        cmake --build . --config ${{ env.BUILD_TYPE }} --parallel 4
+
+    - name: Verify executable exists
+      run: |
+        if (Test-Path "build/backtestApp/${{ env.BUILD_TYPE }}/backtestapp.exe") {
+          echo "✅ Executable found"
+          Get-ChildItem "build/backtestApp/${{ env.BUILD_TYPE }}/"
+        } else {
+          echo "❌ Executable not found"
+          Get-ChildItem "build/backtestApp/" -Recurse
+          exit 1
+        }
+
+    - name: Create distribution folder
+      run: |
+        $distDir = "fast-backtest-app-windows"
+        $sourceDir = "build/backtestApp/${{ env.BUILD_TYPE }}"
+        
+        # Create the distribution directory if it doesn't exist
+        New-Item -ItemType Directory -Path $distDir -Force
+        
+        # Copy the executable and all DLLs
+        Copy-Item "$sourceDir/*" $distDir -Recurse -Force
+
+        # Copy the data folders if they exist
+        if (Test-Path "data") {
+          Copy-Item "data" "$distDir/data" -Recurse -Force
+        }
+
+        # Copy the README/LICENSE files if they exist
+        @("README.md", "LICENSE", "CHANGELOG.md") | ForEach-Object {
+          if (Test-Path $_) {
+            Copy-Item $_ $distDir -Force
+          }
+        }
+        
+        # Display the contents of the distribution folder
+        echo "Distribution folder contents:"
+        Get-ChildItem $distDir -Recurse
+
+    - name: Create ZIP archive
+      run: |
+        $archiveName = "fast-backtest-app-windows-v${{ env.VERSION }}.zip"
+        Compress-Archive -Path "fast-backtest-app-windows/*" -DestinationPath $archiveName
+        echo "ARCHIVE_NAME=$archiveName" >> $env:GITHUB_ENV
+
+    - name: Calculate checksum and size
+      run: |
+        # Calculate the checksum of the ZIP file
+        $checksum = Get-FileHash $env:ARCHIVE_NAME -Algorithm SHA256
+        echo "CHECKSUM=$($checksum.Hash)" >> $env:GITHUB_ENV
+        echo "checksum=$($checksum.Hash)" >> $env:GITHUB_OUTPUT
+
+        # Calculate the size of the file
+        $size = (Get-Item $env:ARCHIVE_NAME).Length
+        echo "DOWNLOAD_SIZE=$size" >> $env:GITHUB_ENV
+        echo "download_size=$size" >> $env:GITHUB_OUTPUT
+
+    - name: Upload to releases repository
+      run: |
+        # Clone releases repository
+        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
+        
+        # Create downloads directory
+        New-Item -Path "releases-repo\downloads" -ItemType Directory -Force
+        
+        # Copy archive
+        Copy-Item $env:ARCHIVE_NAME "releases-repo\downloads\"
+        
+        # Commit and push
+        cd releases-repo
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add "downloads\$env:ARCHIVE_NAME"
+        git commit -m "Upload Windows build v${{ env.VERSION }}"
+        git push
+
+  build-macos:
+    if: false  # Temporarily disabled
+    runs-on: macos-latest
+    needs: calculate-version
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+      actions: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        token: ${{ secrets.SUBMODULE_PAT }}
+
+    - name: Set version
+      run: |
+        echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v4
+      with:
+        version: ${{ env.QT_VERSION }}
+        host: mac
+        target: desktop
+        arch: clang_64
+        modules: qtcharts
+        cache: true
+
+    - name: Verify Qt installation
+      run: |
+        echo "Qt version: ${{ env.QT_VERSION }}"
+        echo "Qt6_DIR: $Qt6_DIR"
+        qmake --version
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Configure CMake
+      working-directory: build
+      run: |
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DCMAKE_PREFIX_PATH="$Qt6_DIR" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=13.3
+
+    - name: Build project
+      working-directory: build
+      run: |
+        cmake --build . --config ${{ env.BUILD_TYPE }} --parallel 4
+
+    - name: Verify executable exists
+      run: |
+        if [ -f "build/backtestApp/backtestapp" ]; then
+          echo "✅ Executable found"
+          ls -lh build/backtestApp/
+        else
+          echo "❌ Executable not found"
+          find build/backtestApp/ -type f
+          exit 1
+        fi
+
+    - name: Create app bundle
+      run: |
+        APP_NAME="FastBacktestApp.app"
+        DIST_DIR="fast-backtest-app-macos"
+        
+        mkdir -p "$DIST_DIR"
+        mkdir -p "$DIST_DIR/$APP_NAME/Contents/MacOS"
+        mkdir -p "$DIST_DIR/$APP_NAME/Contents/Resources"
+        
+        # Copy executable
+        cp build/backtestApp/backtestapp "$DIST_DIR/$APP_NAME/Contents/MacOS/"
+        
+        # Deploy Qt dependencies
+        macdeployqt "$DIST_DIR/$APP_NAME" -always-overwrite
+        
+        # Copy data folder if exists
+        if [ -d "data" ]; then
+          cp -r data "$DIST_DIR/$APP_NAME/Contents/Resources/"
+        fi
+        
+        # Copy documentation
+        for file in README.md LICENSE CHANGELOG.md; do
+          if [ -f "$file" ]; then
+            cp "$file" "$DIST_DIR/"
+          fi
+        done
+        
+        echo "App bundle contents:"
+        ls -la "$DIST_DIR"
+
+    - name: Create DMG archive
+      run: |
+        ARCHIVE_NAME="fast-backtest-app-macos-v${{ env.VERSION }}.dmg"
+        
+        # Create temporary directory for DMG
+        hdiutil create -volname "FastBacktestApp" -srcfolder fast-backtest-app-macos -ov -format UDZO "$ARCHIVE_NAME"
+        
+        echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
+
+    - name: Calculate checksum and size
+      run: |
+        CHECKSUM=$(shasum -a 256 $ARCHIVE_NAME | cut -d ' ' -f 1)
+        echo "CHECKSUM=$CHECKSUM" >> $GITHUB_ENV
+        
+        SIZE=$(stat -f%z "$ARCHIVE_NAME")
+        echo "DOWNLOAD_SIZE=$SIZE" >> $GITHUB_ENV
+
+    - name: Upload to releases repository
+      run: |
+        # Clone releases repository
+        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
+        
+        # Create downloads directory
+        mkdir -p releases-repo/downloads
+        
+        # Copy archive
+        cp "$ARCHIVE_NAME" releases-repo/downloads/
+        
+        # Commit and push
+        cd releases-repo
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add downloads/"$ARCHIVE_NAME"
+        git commit -m "Upload macOS build v${{ env.VERSION }}"
+        git push
+
+  build-linux:
+    runs-on: [self-hosted, Linux, X64]
+    needs: calculate-version
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: write
+      actions: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+        token: ${{ secrets.SUBMODULE_PAT }}
+
+    - name: Set version
+      run: |
+        echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
+        echo "QT_VERSION=${{ env.QT_VERSION }}" >> $GITHUB_ENV
+
+    - name: Install system dependencies
+      run: |
+        apt-get update
+        apt-get install -y \
+          build-essential \
+          cmake \
+          ninja-build \
+          libgl1-mesa-dev \
+          libxkbcommon-x11-0 \
+          libxcb-icccm4 \
+          libxcb-image0 \
+          libxcb-keysyms1 \
+          libxcb-render-util0 \
+          libxcb-xinerama0 \
+          libxcb-cursor0 \
+          libfontconfig1-dev \
+          libfreetype6-dev \
+          libx11-dev \
+          libx11-xcb-dev \
+          libxext-dev \
+          libxfixes-dev \
+          libxi-dev \
+          libxrender-dev \
+          libxcb1-dev \
+          libxcb-glx0-dev \
+          libxcb-util0-dev \
+          libxkbcommon-dev \
+          libxkbcommon-x11-dev \
+          libatspi2.0-dev
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install aqtinstall
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install aqtinstall==3.3.*
+
+    - name: Install Qt 6.8.3 with aqtinstall
+      run: |
+        python3 -m aqt install-qt linux desktop 6.8.3 linux_gcc_64 -m qtcharts --outputdir ${{ github.workspace }}/Qt
+        
+        # Set environment variables for subsequent steps
+        echo "Qt6_DIR=${{ github.workspace }}/Qt/6.8.3/gcc_64/lib/cmake/Qt6" >> $GITHUB_ENV
+        echo "${{ github.workspace }}/Qt/6.8.3/gcc_64/bin" >> $GITHUB_PATH
+
+    - name: Verify Qt installation
+      run: |
+        echo "Qt version: ${{ env.QT_VERSION }}"
+        echo "Qt6_DIR: $Qt6_DIR"
+        echo "PATH: $PATH"
+        ls -la ${{ github.workspace }}/Qt/6.8.3/gcc_64/
+        qmake --version
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Configure CMake
+      working-directory: build
+      run: |
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+          -DCMAKE_PREFIX_PATH="$Qt6_DIR"
+
+    - name: Build project
+      working-directory: build
+      run: |
+        cmake --build . --config ${{ env.BUILD_TYPE }} --parallel 4
+
+    - name: Verify executable exists
+      run: |
+        if [ -f "build/backtestApp/backtestapp" ]; then
+          echo "✅ Executable found"
+          ls -lh build/backtestApp/
+        else
+          echo "❌ Executable not found"
+          find build/backtestApp/ -type f
+          exit 1
+        fi
+
+    - name: Create distribution folder
+      run: |
+        DIST_DIR="fast-backtest-app-linux"
+        # Qt6_DIR points to .../Qt/6.8.3/gcc_64/lib/cmake/Qt6
+        # We need to go up to .../Qt/6.8.3/gcc_64
+        QT_ROOT=$(dirname $(dirname $(dirname "$Qt6_DIR")))
+        QT_LIB_PATH="$QT_ROOT/lib"
+        QT_PLUGINS_PATH="$QT_ROOT/plugins"
+        
+        echo "Qt6_DIR: $Qt6_DIR"
+        echo "QT_ROOT: $QT_ROOT"
+        echo "QT_LIB_PATH: $QT_LIB_PATH"
+        echo "QT_PLUGINS_PATH: $QT_PLUGINS_PATH"
+        
+        mkdir -p "$DIST_DIR/bin"
+        mkdir -p "$DIST_DIR/lib"
+        
+        # Copy executable
+        cp build/backtestApp/backtestapp "$DIST_DIR/bin/"
+        
+        # Copy Qt libraries (main)
+        cp -v "$QT_LIB_PATH/libQt6Core.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6Gui.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6Widgets.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6Charts.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6Network.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6DBus.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6OpenGL.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6OpenGLWidgets.so.6" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libQt6XcbQpa.so.6" "$DIST_DIR/lib/" || echo "Warning: libQt6XcbQpa.so.6 not found"
+        
+        # Copy ICU libraries (Qt dependencies)
+        cp -v "$QT_LIB_PATH/libicui18n.so.73" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libicuuc.so.73" "$DIST_DIR/lib/"
+        cp -v "$QT_LIB_PATH/libicudata.so.73" "$DIST_DIR/lib/"
+        
+        # Copy ChartDirector libraries
+        cp -v build/ThirdParty/ChartDirector/libchartdirector.so "$DIST_DIR/lib/"
+        cp -v ThirdParty/ChartDirector/lib/libchartdir.so.7.0 "$DIST_DIR/lib/"
+        
+        # Copy ONNX Runtime library
+        cp -v ThirdParty/Strategies/ThirdParty/ONNXRuntime/lib/linux/libonnxruntime.so.1 "$DIST_DIR/lib/"
+        
+        # Copy additional Qt dependencies (optional)
+        cp -P "$QT_LIB_PATH/libdouble-conversion.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        cp -P "$QT_LIB_PATH/libpcre2-16.so"* "$DIST_DIR/lib/" 2>/dev/null || true
+        
+        # Copy Qt plugins
+        mkdir -p "$DIST_DIR/plugins"
+        if [ -d "$QT_PLUGINS_PATH/platforms" ]; then
+          cp -r "$QT_PLUGINS_PATH/platforms" "$DIST_DIR/plugins/"
+        fi
+        if [ -d "$QT_PLUGINS_PATH/platformthemes" ]; then
+          cp -r "$QT_PLUGINS_PATH/platformthemes" "$DIST_DIR/plugins/"
+        fi
+        if [ -d "$QT_PLUGINS_PATH/xcbglintegrations" ]; then
+          cp -r "$QT_PLUGINS_PATH/xcbglintegrations" "$DIST_DIR/plugins/"
+        fi
+        
+        # Verify libraries were copied
+        echo "Checking copied Qt libraries:"
+        ls -lh "$DIST_DIR/lib/" | head -20
+        LIBCOUNT=$(ls -1 "$DIST_DIR/lib/" | wc -l)
+        echo "Total libraries copied: $LIBCOUNT"
+        if [ $LIBCOUNT -lt 14 ]; then
+          echo "❌ ERROR: Too few libraries copied ($LIBCOUNT). Expected at least 14."
+          echo "QT_LIB_PATH was: $QT_LIB_PATH"
+          ls -la "$QT_LIB_PATH" || echo "QT_LIB_PATH does not exist"
+          exit 1
+        fi
+        echo "✅ Libraries successfully copied ($LIBCOUNT files)"
+        
+        # Create launch script
+        cat > "$DIST_DIR/backtestapp.sh" << 'EOF'
+        #!/bin/bash
+        SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+        export LD_LIBRARY_PATH="$SCRIPT_DIR/lib:$LD_LIBRARY_PATH"
+        export QT_PLUGIN_PATH="$SCRIPT_DIR/plugins"
+        "$SCRIPT_DIR/bin/backtestapp" "$@"
+        EOF
+        chmod +x "$DIST_DIR/backtestapp.sh"
+        
+        # Copy data folder if exists
+        if [ -d "data" ]; then
+          cp -r data "$DIST_DIR/"
+        fi
+        
+        # Copy documentation
+        for file in README.md LICENSE CHANGELOG.md; do
+          if [ -f "$file" ]; then
+            cp "$file" "$DIST_DIR/"
+          fi
+        done
+        
+        echo "Distribution folder contents:"
+        ls -la "$DIST_DIR"
+
+    - name: Create tar.gz archive
+      run: |
+        ARCHIVE_NAME="fast-backtest-app-linux-v${{ env.VERSION }}.tar.gz"
+        tar -czf "$ARCHIVE_NAME" fast-backtest-app-linux/
+        echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> $GITHUB_ENV
+
+    - name: Calculate checksum and size
+      run: |
+        CHECKSUM=$(sha256sum $ARCHIVE_NAME | cut -d ' ' -f 1)
+        echo "CHECKSUM=$CHECKSUM" >> $GITHUB_ENV
+        
+        SIZE=$(stat -c%s "$ARCHIVE_NAME")
+        echo "DOWNLOAD_SIZE=$SIZE" >> $GITHUB_ENV
+
+    - name: Upload to releases repository
+      run: |
+        # Clone releases repository
+        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
+        
+        # Create downloads directory
+        mkdir -p releases-repo/downloads
+        
+        # Copy archive
+        cp "$ARCHIVE_NAME" releases-repo/downloads/
+        
+        # Commit and push
+        cd releases-repo
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add downloads/"$ARCHIVE_NAME"
+        git commit -m "Upload Linux build v${{ env.VERSION }}"
+        git push
+
+  create-release:
+    runs-on: [self-hosted, Linux, X64]
+    needs: [calculate-version, build-windows, build-linux]  # Removed build-macos TODO : Implement macOS build
+    permissions:
+      contents: write
+      packages: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set version
+      run: |
+        echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
+        echo "IS_BETA=${{ needs.calculate-version.outputs.is_beta }}" >> $GITHUB_ENV
+
+    - name: Checkout releases repository
+      uses: actions/checkout@v4
+      with:
+        repository: FinTechCpp/fast-backtest-app-releases
+        path: releases-repo
+        token: ${{ secrets.RELEASE_REPO_PAT }}
+
+    - name: Pull latest changes from releases repository
+      run: |
+        cd releases-repo
+        git pull origin main
+
+    - name: Display downloaded files
+      run: |
+        echo "Files in releases repository:"
+        ls -lh releases-repo/downloads/
+
+    - name: Get commit info
+      id: commit
+      run: |
+        SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+        COMMIT_MSG=$(git log -1 --pretty=format:"%s")
+        echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+        echo "COMMIT_MSG=$COMMIT_MSG" >> $GITHUB_ENV
+
+    - name: Create GitHub Release (Stable only)
+      if: github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ env.VERSION }}
+        name: fast-backtest-app v${{ env.VERSION }}
+        body: |
+          **New release v${{ env.VERSION }}**
+
+          **Build Information:**
+          - Version: ${{ env.VERSION }}
+          - Checksum SHA256: `${{ env.CHECKSUM }}`
+          - Size: ${{ env.DOWNLOAD_SIZE }} bytes
+          - Commit: ${{ env.SHORT_SHA }}
+          - Qt Version: ${{ env.QT_VERSION }}
+          - Build Type: ${{ env.BUILD_TYPE }}
+          - Date: ${{ github.event.head_commit.timestamp }}
+
+          **Available Downloads:**
+          
+          🪟 **Windows** (64-bit)
+          - Executable: `backtestapp.exe`
+          - Qt Version: 6.8.3
+          - Includes all Qt DLLs and dependencies
+          - Installation: Extract ZIP and run `backtestapp.exe`
+          
+          🍎 **macOS** (13.3+ Ventura and later)
+          - App Bundle: `FastBacktestApp.app`
+          - Qt Version: 6.8.3
+          - Compatible with Intel and Apple Silicon
+          - Installation: Mount DMG and drag app to Applications
+          
+          🐧 **Linux** (Ubuntu/Debian)
+          - Executable: `backtestapp`
+          - Qt Version: 6.8.3
+          - Includes Qt libraries
+          - Installation: Extract tar.gz and run `./backtestapp.sh`
+
+          **Contents:**
+          - Application executable
+          - All necessary Qt libraries
+          - ChartDirector library
+          - Default configuration file
+          - Data files (if present)
+
+        draft: false
+        prerelease: false
+        files: releases-repo/downloads/*
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Create latest versions on GitHub Pages
+      env:
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+        IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
+      run: |
+        # Create "latest" or "beta-latest" versions depending on branch
+        cd releases-repo/downloads
+        
+        if [ "$IS_BETA" == "true" ]; then
+          # Beta builds - create beta-latest versions
+          for file in fast-backtest-app-windows-v*-beta.zip; do
+            [ -f "$file" ] && cp "$file" fast-backtest-app-windows-beta-latest.zip
+          done
+          for file in fast-backtest-app-macos-v*-beta.dmg; do
+            [ -f "$file" ] && cp "$file" fast-backtest-app-macos-beta-latest.dmg
+          done
+          for file in fast-backtest-app-linux-v*-beta.tar.gz; do
+            [ -f "$file" ] && cp "$file" fast-backtest-app-linux-beta-latest.tar.gz
+          done
+        else
+          # Stable builds - create latest versions
+          for file in fast-backtest-app-windows-v*.zip; do
+            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-windows-latest.zip
+          done
+          for file in fast-backtest-app-macos-v*.dmg; do
+            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-macos-latest.dmg
+          done
+          for file in fast-backtest-app-linux-v*.tar.gz; do
+            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-linux-latest.tar.gz
+          done
+        fi
+        
+        echo "Uploaded all platform executables to GitHub Pages"
+        ls -lh
+
+    - name: Update download URLs in website
+      env:
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+        IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
+      run: |
+        HTML_FILE="releases-repo/index.html"
+        BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
+        
+        if [ "$IS_BETA" == "true" ]; then
+          # Update beta version tag
+          sed -i "s|<span class=\"version-tag beta\">beta-latest</span>|<span class=\"version-tag beta\">$VERSION</span>|g" "$HTML_FILE"
+          
+          # Find beta archive names
+          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
+          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
+          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
+          
+          # Update beta download links
+          if [ -n "$WIN_ARCHIVE" ]; then
+            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta Windows</a>|<a href=\"${BASE_URL}/${WIN_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta Windows</a>|g" "$HTML_FILE"
+          fi
+          if [ -n "$MAC_ARCHIVE" ]; then
+            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta macOS</a>|<a href=\"${BASE_URL}/${MAC_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta macOS</a>|g" "$HTML_FILE"
+          fi
+          if [ -n "$LINUX_ARCHIVE" ]; then
+            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta Linux</a>|<a href=\"${BASE_URL}/${LINUX_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta Linux</a>|g" "$HTML_FILE"
+          fi
+        else
+          # Update stable version tag
+          sed -i "s|<span class=\"version-tag\">v[0-9.]*</span>|<span class=\"version-tag\">v${VERSION}</span>|g" "$HTML_FILE"
+          
+          # Find stable archive names
+          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          
+          # Update stable download links
+          if [ -n "$WIN_ARCHIVE" ]; then
+            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour Windows<\/a>/s||<a href=\"${BASE_URL}/${WIN_ARCHIVE}\" class=\"button\">Télécharger pour Windows</a>|" "$HTML_FILE"
+          fi
+          if [ -n "$MAC_ARCHIVE" ]; then
+            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour macOS<\/a>/s||<a href=\"${BASE_URL}/${MAC_ARCHIVE}\" class=\"button\">Télécharger pour macOS</a>|" "$HTML_FILE"
+          fi
+          if [ -n "$LINUX_ARCHIVE" ]; then
+            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour Linux<\/a>/s||<a href=\"${BASE_URL}/${LINUX_ARCHIVE}\" class=\"button\">Télécharger pour Linux</a>|" "$HTML_FILE"
+          fi
+        fi
+        
+        echo "Updated download URLs for $([ \"$IS_BETA\" == \"true\" ] && echo \"beta\" || echo \"stable\") version"
+
+    - name: Commit and push changes to releases repository
+      env:
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+        IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
+      run: |
+        cd releases-repo
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add .
+        
+        if [ "$IS_BETA" == "true" ]; then
+          git commit -m "Update beta download URLs and upload executables for version $VERSION"
+        else
+          git commit -m "Update download URLs and upload executables for version v$VERSION"
+        fi
+        git push
+
+    - name: Send Discord Release Notification
+      if: github.ref == 'refs/heads/main'
+      env:
+        DISCORD_WEBHOOK_RELEASES_URL: ${{ secrets.DISCORD_WEBHOOK_RELEASES_URL }}
+      run: |
+        RELEASE_URL="https://github.com/${{ github.repository }}/releases/tag/v${{ env.VERSION }}"
+        COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+        SHORT_SHA="${{ env.SHORT_SHA }}"
+        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
+        
+        # Find archive names and sizes from releases repository
+        WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
+        MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
+        LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
+        
+        WIN_SIZE=$([ -f "releases-repo/downloads/$WIN_ARCHIVE" ] && du -h "releases-repo/downloads/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
+        MAC_SIZE=$([ -f "releases-repo/downloads/$MAC_ARCHIVE" ] && du -h "releases-repo/downloads/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
+        LINUX_SIZE=$([ -f "releases-repo/downloads/$LINUX_ARCHIVE" ] && du -h "releases-repo/downloads/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
+        
+        # Create Discord embed message for release
+        cat <<EOF > discord_payload.json
+        {
+          "embeds": [
+            {
+              "title": "🚀 Nouvelle Release - fast-backtest-app v${{ env.VERSION }}",
+              "description": "Une nouvelle version de l'application est disponible pour toutes les plateformes !",
+              "color": 65280,
+              "fields": [
+                {
+                  "name": "📦 Version",
+                  "value": "v${{ env.VERSION }}",
+                  "inline": true
+                },
+                {
+                  "name": "�️ Qt Version",
+                  "value": "${{ env.QT_VERSION }}",
+                  "inline": true
+                },
+                {
+                  "name": "� Build Type",
+                  "value": "${{ env.BUILD_TYPE }}",
+                  "inline": true
+                },
+                {
+                  "name": "📅 Date",
+                  "value": "$TIMESTAMP",
+                  "inline": true
+                },
+                {
+                  "name": "� Commit",
+                  "value": "[$SHORT_SHA]($COMMIT_URL)",
+                  "inline": true
+                },
+                {
+                  "name": "\u200B",
+                  "value": "\u200B",
+                  "inline": false
+                },
+                {
+                  "name": "🪟 Windows (64-bit)",
+                  "value": "**Taille:** $WIN_SIZE\n[Télécharger]($BASE_URL/$WIN_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "🍎 macOS (Intel & Apple Silicon)",
+                  "value": "**Taille:** $MAC_SIZE\n[Télécharger]($BASE_URL/$MAC_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "🐧 Linux (Ubuntu/Debian)",
+                  "value": "**Taille:** $LINUX_SIZE\n[Télécharger]($BASE_URL/$LINUX_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "� Page de Release",
+                  "value": "[Voir sur GitHub]($RELEASE_URL)",
+                  "inline": false
+                }
+              ],
+              "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")",
+              "footer": {
+                "text": "fast-backtest-app • GitHub Actions"
+              }
+            }
+          ]
+        }
+        EOF
+        
+        # Send notification to Discord
+        if [ -n "$DISCORD_WEBHOOK_RELEASES_URL" ]; then
+          curl -H "Content-Type: application/json" \
+               -d @discord_payload.json \
+               "$DISCORD_WEBHOOK_RELEASES_URL"
+          echo "✅ Discord notification sent successfully"
+        else
+          echo "⚠️ Discord webhook URL not configured"
+        fi
+
+    - name: Send Discord Beta Notification
+      if: github.ref == 'refs/heads/releases'
+      env:
+        DISCORD_WEBHOOK_RELEASES_URL: ${{ secrets.DISCORD_WEBHOOK_RELEASES_URL }}
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+      run: |
+        COMMIT_URL="https://github.com/${{ github.repository }}/commit/${{ github.sha }}"
+        SHORT_SHA="${{ env.SHORT_SHA }}"
+        TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        
+        BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
+        
+        # Find archive names and sizes from releases repository
+        WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
+        MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
+        LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
+        
+        WIN_SIZE=$([ -f "releases-repo/downloads/$WIN_ARCHIVE" ] && du -h "releases-repo/downloads/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
+        MAC_SIZE=$([ -f "releases-repo/downloads/$MAC_ARCHIVE" ] && du -h "releases-repo/downloads/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
+        LINUX_SIZE=$([ -f "releases-repo/downloads/$LINUX_ARCHIVE" ] && du -h "releases-repo/downloads/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
+        
+        # Create Discord embed message for beta release
+        cat <<EOF > discord_payload.json
+        {
+          "embeds": [
+            {
+              "title": "🧪 Nouvelle Build Beta - fast-backtest-app $VERSION",
+              "description": "Une nouvelle version beta est disponible pour test !",
+              "color": 16753920,
+              "fields": [
+                {
+                  "name": "📦 Version",
+                  "value": "$VERSION",
+                  "inline": true
+                },
+                {
+                  "name": "⚙️ Qt Version",
+                  "value": "${{ env.QT_VERSION }}",
+                  "inline": true
+                },
+                {
+                  "name": "🔨 Build Type",
+                  "value": "${{ env.BUILD_TYPE }}",
+                  "inline": true
+                },
+                {
+                  "name": "📅 Date",
+                  "value": "$TIMESTAMP",
+                  "inline": true
+                },
+                {
+                  "name": "🔗 Commit",
+                  "value": "[$SHORT_SHA]($COMMIT_URL)",
+                  "inline": true
+                },
+                {
+                  "name": "\u200B",
+                  "value": "\u200B",
+                  "inline": false
+                },
+                {
+                  "name": "🪟 Windows (64-bit)",
+                  "value": "**Taille:** $WIN_SIZE\n[Télécharger]($BASE_URL/$WIN_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "🍎 macOS (Intel & Apple Silicon)",
+                  "value": "**Taille:** $MAC_SIZE\n[Télécharger]($BASE_URL/$MAC_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "🐧 Linux (Ubuntu/Debian)",
+                  "value": "**Taille:** $LINUX_SIZE\n[Télécharger]($BASE_URL/$LINUX_ARCHIVE)",
+                  "inline": false
+                },
+                {
+                  "name": "⚠️ Attention",
+                  "value": "Version de développement - peut contenir des bugs",
+                  "inline": false
+                }
+              ],
+              "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")",
+              "footer": {
+                "text": "fast-backtest-app • GitHub Actions • Beta"
+              }
+            }
+          ]
+        }
+        EOF
+        
+        # Send notification to Discord
+        if [ -n "$DISCORD_WEBHOOK_RELEASES_URL" ]; then
+          curl -H "Content-Type: application/json" \
+               -d @discord_payload.json \
+               "$DISCORD_WEBHOOK_RELEASES_URL"
+          echo "✅ Discord beta notification sent successfully"
+        else
+          echo "⚠️ Discord webhook URL not configured"
+        fi
+
+    - name: Build Summary
+      env:
+        VERSION: ${{ needs.calculate-version.outputs.version }}
+        IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
+      run: |
+        # Determine archive names based on beta status
+        if [ "$IS_BETA" == "true" ]; then
+          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
+          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
+          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
+        else
+          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
+        fi
+        
+        BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
+        
+        if [ "$IS_BETA" == "true" ]; then
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+        ## ✅ Multi-Platform Beta Build Successful
+        
+        **Version:** $VERSION (Beta)
+        
+        ### 📥 Downloads
+        
+        | Platform | Archive | Download |
+        |----------|---------|----------|
+        | 🪟 Windows | $WIN_ARCHIVE | [Download]($BASE_URL/$WIN_ARCHIVE) |
+        | 🍎 macOS | $MAC_ARCHIVE | [Download]($BASE_URL/$MAC_ARCHIVE) |
+        | 🐧 Linux | $LINUX_ARCHIVE | [Download]($BASE_URL/$LINUX_ARCHIVE) |
+        
+        ### 🔗 Links
+        
+        - **Public Downloads:** [GitHub Pages](https://fintechcpp.github.io/fast-backtest-app-releases/#download)
+        
+        ### 📋 Build Details
+        
+        - **Branch:** ${{ github.ref_name }}
+        - **Commit:** ${{ env.SHORT_SHA }}
+        - **Qt Version:** ${{ env.QT_VERSION }}
+        - **Build Type:** ${{ env.BUILD_TYPE }}
+        - **Type:** Beta (Development Build)
+        
+        ⚠️ **Note:** This is a beta build and may contain bugs. Use with caution.
+        EOF
+        else
+          cat >> $GITHUB_STEP_SUMMARY <<EOF
+        ## ✅ Multi-Platform Build Successful
+        
+        **Version:** v$VERSION
+        
+        ### 📥 Downloads
+        
+        | Platform | Archive | Download |
+        |----------|---------|----------|
+        | 🪟 Windows | $WIN_ARCHIVE | [Download]($BASE_URL/$WIN_ARCHIVE) |
+        | 🍎 macOS | $MAC_ARCHIVE | [Download]($BASE_URL/$MAC_ARCHIVE) |
+        | 🐧 Linux | $LINUX_ARCHIVE | [Download]($BASE_URL/$LINUX_ARCHIVE) |
+        
+        ### 🔗 Links
+        
+        - **Official Release:** [GitHub Release v$VERSION](https://github.com/${{ github.repository }}/releases/tag/v$VERSION)
+        - **Public Downloads:** [GitHub Pages](https://fintechcpp.github.io/fast-backtest-app-releases/#download)
+        
+        ### 📋 Build Details
+        
+        - **Branch:** ${{ github.ref_name }}
+        - **Commit:** ${{ env.SHORT_SHA }}
+        - **Qt Version:** ${{ env.QT_VERSION }}
+        - **Build Type:** ${{ env.BUILD_TYPE }}
+        EOF
+        fi

@@ -53,13 +53,13 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
         setItem(row, 0, new PctItem(QString::number(trade.id), trade.id));
         
         // Type (LONG/SHORT basé sur la taille)
-        QString tradeType = trade.size > 0 ? "LONG" : "SHORT";
+        QString tradeType = trade.side == be::OrderSide::BUY ? "LONG" : "SHORT";
         QStandardItem* typeItem = new QStandardItem(tradeType);
-        typeItem->setForeground(trade.size > 0 ? Qt::darkGreen : Qt::darkRed);
+        typeItem->setForeground(trade.side == be::OrderSide::BUY ? Qt::darkGreen : Qt::darkRed);
         setItem(row, 1, typeItem);
         
         // Taille (valeur absolue)
-        setItem(row, 2, new PctItem(formatNumber(std::abs(trade.size), 1), trade.size));
+        setItem(row, 2, new PctItem(formatNumber(trade.size, 1), trade.size));
 
         // Prix d'entrée
         setItem(row, 3, new PctItem(formatNumber(trade.entryPrice, 2), trade.entryPrice));

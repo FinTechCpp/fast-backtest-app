@@ -6,7 +6,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QTableView>
-#include <QScrollArea>
 #include <QGroupBox>
 #include <QPushButton>
 #include <QComboBox>
@@ -18,19 +17,14 @@
 #include <memory>
 #include "ui/views/baseView.h"
 #include "ui/metricWidget.h"
-#include "ui/views/Stats/EquityCurveWidget.h"
-#include "ui/views/Stats/TimeLineWidget.h"
-#include "ui/views/Stats/MetricsContainerWidget.h"
-#include "ui/views/Stats/TradeClosureWidget.h"
 #include "ui/views/Stats/TradingHeatmapWidget.h"
-#include "ui/views/Stats/RiskReturnMapWidget.h"
-#include "ui/views/Stats/TradesTableWidget.h"
-#include "ui/views/Stats/RatioGaugesContainerWidget.h"
-#include "ui/views/Stats/PLDistributionWidget.h"
-#include "ui/views/Stats/PnLGaugeWidget.h"
-#include "ui/views/Stats/MonthlyPerformanceWidget.h"
-#include "ui/views/Stats/DrawdownComparisonWidget.h"
-#include "ui/views/Stats/ReportWidget.h"
+
+#include "ui/views/Stats/FlexiblePieWidget.h"
+#include "ui/views/Stats/SimpleTextWidget.h"
+#include "ui/views/Stats/KeyValueListWidget.h"
+#include "ui/views/Stats/VerticalGaugeRenderWidget.h"
+#include "ui/views/Stats/HistogramWidget.h"
+#include "ui/views/Stats/EquityWidget.h"
 
 
 
@@ -40,14 +34,11 @@ class App;
 
 
 /**
- * @brief Vue pour afficher les statistiques de backtest et les trades.
- * Organise les métriques en catégories et permet de visualiser les transactions.
+ * @brief Vue pour afficher les statistiques de backtest.
+ * Organise les métriques en catégories.
  */
 class StatsView : public BaseView {
     Q_OBJECT
-
-signals:
-    void tradeClicked(const be::TradeData& trade);
 
 public:
     /**
@@ -80,27 +71,40 @@ protected:
 
 private:
     // ==================== Membres privés ====================
-    DrawdownComparisonWidget* m_drawdownComparisonWidget = nullptr;
-    EquityCurveWidget* m_equityCurveWidget = nullptr;
-    TimelineWidget* m_timelineWidget = nullptr;
-    MetricsContainerWidget* m_metricsWidget = nullptr;
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
-    TradeClosureWidget* m_tradeClosureWidget = nullptr;
-    PnLGaugeWidget* m_pnlGaugeWidget = nullptr;
-    PLDistributionWidget* m_plDistributionWidget = nullptr;
-    RiskReturnMapWidget* m_riskReturnMapWidget = nullptr;
-    RatioGaugesContainerWidget* m_ratioGaugesWidget = nullptr;
-    TradesTableWidget* m_tradesTableWidget = nullptr;
-    MonthlyPerformanceWidget* m_monthlyPerformanceWidget = nullptr;
-    ReportWidget* m_reportWidget = nullptr;
 
-    std::vector<StatsBaseWidget*> m_statsWidgets;
-
+    EquityWidget* m_equityWidget = nullptr;
     
-    // --- UI: Conteneurs principaux ---
-    QScrollArea* m_scrollStats;
-    QWidget* m_statsContent;
-    QVBoxLayout* m_statsLayout;
+    FlexiblePieWidget* m_profitFactorWidget = nullptr;
+    FlexiblePieWidget* m_exposureWidget = nullptr;
+    FlexiblePieWidget* m_tradeDistributionWidget = nullptr;
+    
+    SimpleTextWidget* m_netProfitWidget = nullptr;
+    SimpleTextWidget* m_grossProfitWidget = nullptr;
+    SimpleTextWidget* m_grossLossWidget = nullptr;
+
+    SimpleTextWidget* m_maxDDWidget = nullptr;
+    SimpleTextWidget* m_averageDDWidget = nullptr;
+    SimpleTextWidget* m_maxDDDurationWidget = nullptr;
+    SimpleTextWidget* m_averageDDDurationWidget = nullptr;
+    SimpleTextWidget* m_maxTradeDurationWidget = nullptr;
+    SimpleTextWidget* m_averageTradeDurationWidget = nullptr;
+
+    SimpleTextWidget* m_averageTradePerDayWidget = nullptr;
+    
+    KeyValueListWidget* m_keyValueListWidget = nullptr;
+    KeyValueListWidget* m_timeInfoWidget = nullptr;
+    KeyValueListWidget* m_returnsWidget = nullptr;
+    KeyValueListWidget* m_buyHoldWidget = nullptr;
+    KeyValueListWidget* m_performanceRatiosWidget = nullptr;
+    KeyValueListWidget* m_marketExposureWidget = nullptr;
+    KeyValueListWidget* m_MAEWidget = nullptr;
+    KeyValueListWidget* m_systemQualityWidget = nullptr;
+    KeyValueListWidget* m_skewnessKurtosisWidget = nullptr;
+
+    VerticalGaugeRenderWidget* m_pnlGaugeWidget = nullptr;
+
+    HistogramWidget* m_histogramWidget = nullptr;
 
     // --- État ---
     App* m_app;  // Référence à l'application principale

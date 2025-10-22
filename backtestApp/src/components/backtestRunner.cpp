@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QApplication>
+#include <sstream>
 
 #include "components/backtestRunner.h"
 #include "ui/app.h"
@@ -8,6 +9,7 @@
 
 #include "backtest.hpp"
 #include "broker.hpp"
+#include "components/SyntheticStrategy.hpp"
 
 BacktestRunner::BacktestRunner(QObject* parent)
     : QObject(parent)
@@ -138,15 +140,15 @@ void BacktestRunner::onBacktestFinished(BacktestResults* results) {
     m_isRunning = false;
     resetUI();
     
-    if (!results || !results->data) {
+    if (!results || results->candles.empty()) {
         qCritical() << "Pas de résultats de backtest reçus";
         showError("Aucun résultat de backtest reçu");
         return;
     }
     
     qInfo() << "Backtest terminé avec succès, transmission des résultats";
-    qDebug() << "Taille des données reçues:" << results->data->size() << "barres";
-    
+    qDebug() << "Taille des données reçues:" << results->candles.size() << "barres";
+
     // Afficher les statistiques d'exécution
     if (!m_lastChrono.isEmpty() && m_lastTotalCandles > 0) {
         qint64 elapsedMs = QTime::fromString(m_lastChrono, "mm:ss.zz").msecsTo(QTime(0, 0, 0)) * -1;
@@ -226,45 +228,85 @@ void BacktestWorker::run()
     // Convertir en format be::Data
     std::shared_ptr<be::Data> data = convertToBeData(rawData);
         
+    // Récupérer toutes les configurations de stratégies
+    std::vector<StrategyConfig> strategyConfigs = m_mainWindow->getStrategyConfigs();
+    
     // Créer un objet BacktestResults pour stocker les résultats
     m_results = std::make_unique<BacktestResults>();
-    m_results->data = data;
+    m_results->candles = data->getCandles(); // Stocker les chandeliers
     m_results->generalConfig = generalConfig; // Stocker la configuration générale du backtest
-    m_results->strategyConfig = m_mainWindow->getStrategyConfig(); // Stocker la configuration de base de la stratégie
+    m_results->strategyConfigs = strategyConfigs; // Stocker toutes les configurations de stratégies
     
     qDebug() << "Données disponibles:" << data->size() << "barres";
+    qDebug() << "Nombre de stratégies à exécuter:" << strategyConfigs.size();
     qDebug() << "Démarrage du backtest C++...";
-    
-    
-    // Créer la factory pour le backtest (une closure qui capture le créateur et l'app)
-    auto strategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data) {
-        GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
-        StrategyConfig strategyConfig = m_mainWindow->getStrategyConfig();
-        strategyConfig.cash = generalParams.cash;
-        strategyConfig.leverage_limit = generalParams.leverage_limit;
 
-        std::cout << generalParams << std::endl;
-        std::cout << strategyConfig << std::endl;
+    // Créer le logger
+    spdlog::drop("BE"); // S'assurer qu'il n'existe pas déjà
+    std::shared_ptr<spdlog::logger> async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
+        "BE",       // Logger name
+        "logs/backtestEngine/backtestExecution.log",      // Log file path
+        30 * 1024 * 1024,          // Max file size (30 MB)
+        1
+    );
+    async_file->set_level(spdlog::level::debug);
 
-        // Création directe de la stratégie
-        return std::make_shared<StrategyAdapter>(broker, data, strategyConfig);
+    auto logCallback = [async_file](const std::string& msg) {
+        async_file->log(spdlog::level::debug, msg);
     };
 
+    // Créer un vecteur de strategy factories - une factory par configuration
+    std::vector<be::StrategyFactory> strategyFactories;
+    strategyFactories.reserve(strategyConfigs.size());
+    
+    for (size_t i = 0; i < strategyConfigs.size(); ++i) {
+        // Capturer la config par valeur pour chaque factory
+        StrategyConfig config = strategyConfigs[i];
+        
+        auto strategyFactory = [this, config, async_file, i](
+            std::shared_ptr<be::Broker> broker, 
+            std::shared_ptr<be::Data> data, 
+            std::function<void(const std::string&)> logCallback) mutable {
+            
+            GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
+            
+            // Calculer le cash alloué à cette stratégie en fonction du pourcentage d'allocation
+            double allocatedCash = generalParams.cash * (config.cash_allocation_percentage / 100.0);
+            config.cash = allocatedCash;
+            
+            // Si le leverage n'est pas défini, utiliser celui de la configuration générale
+            if (config.leverage_limit <= 0) {
+                config.leverage_limit = generalParams.leverage_limit;
+            }
 
-    double margin = 1 / generalConfig.leverage_limit; // Calculer la marge à partir du levier
+            qDebug() << "Création de la stratégie" << (i + 1) 
+                     << "- Cash alloué:" << allocatedCash 
+                     << "(" << config.cash_allocation_percentage << "% de" << generalParams.cash << ")"
+                     << "- Leverage:" << config.leverage_limit;
+            
+            // Création de la stratégie avec sa configuration spécifique
+            return std::make_shared<StrategyAdapter>(broker, data, config, logCallback);
+        };
+        
+        strategyFactories.push_back(strategyFactory);
+    }
     
     // Créer et exécuter le backtest
     be::Backtest backtest(
-        data,               // Données historiques
-        strategyFactory,    // Factory de stratégie
+        data,                             // Données historiques
+        strategyFactories,                // Vecteur de factories de stratégies
         generalConfig.cash,               // Capital initial
         generalConfig.spread,             // Spread
         generalConfig.commission,         // Commission
-        margin,                // Marge (défaut: 1.0)
+        generalConfig.leverage_limit,     // Levier
         generalConfig.tradeOnClose,       // Trade à la clôture
-        generalConfig.hedging,            // Hedging
-        generalConfig.exclusiveOrders,    // Ordres exclusifs
-        generalConfig.finalizeTrades      // Finalisation des trades
+        generalConfig.positionMode,       // Mode de position (Hedging ou Netting)
+        generalConfig.executeLimitOnLimitPrice, // Exécuter les ordres limit au prix limite dans un gap
+        generalConfig.executeStopOnOpen,      // Exécuter les ordres stop à l'ouverture dans un gap
+        generalConfig.finalizeTrades,     // Finalisation des trades
+        generalConfig.spreadEntryRatio,   // Ratio du spread pour le prix d'entrée
+        generalConfig.minPositionStep,    // Taille minimale de position (quantification)
+        logCallback                       // Fonction de logging
     );
     
     backtest.setProgressCallback([this, &timer](size_t current, size_t total) {

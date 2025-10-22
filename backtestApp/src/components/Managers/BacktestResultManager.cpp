@@ -1,8 +1,14 @@
 #include "components/Managers/BacktestResultManager.h"
+#include "components/serializerAdapters.h"
+#include "stats.hpp"
+#include "data.hpp"
+#include "trade.hpp"
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QFile>
 #include <QInputDialog>
+#include <memory>
+#include <algorithm>
 
 BacktestResultManager::BacktestResultManager(QObject *parent, SerializationUtils::FileFormat defaultFormat)
     : QObject(parent), m_defaultFormat(defaultFormat)
@@ -311,6 +317,97 @@ bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
     return success;
 }
 
+bool BacktestResultManager::importExternalResult(QWidget* parentWidget)
+{
+    // Construire le filtre pour tous les formats supportés
+    QString filterString = "Tous les formats supportés (*.json *.bin);;";
+    filterString += "Fichiers JSON (*.json);;";
+    filterString += "Fichiers binaires (*.bin)";
+    
+    QString fileName = QFileDialog::getOpenFileName(parentWidget,
+        "Importer un résultat externe (sans stats pré-calculées)",
+        QDir::homePath(),
+        filterString);
+    
+    if (fileName.isEmpty()) 
+        return false; // Utilisateur a annulé
+    
+    if (!QFile::exists(fileName)) {
+        if (parentWidget) 
+            QMessageBox::warning(parentWidget, "Erreur", "Le fichier sélectionné n'existe pas.");
+        return false;
+    }
+    
+    // Charger le résultat externe et calculer les stats
+    BacktestResultConfig importedConfig;
+    bool loadSuccess = loadExternalResult(fileName, importedConfig);
+    
+    if (!loadSuccess) {
+        if (parentWidget) {
+            QMessageBox::warning(parentWidget, "Erreur d'importation", 
+                "Le fichier n'est pas un résultat externe valide (format ExternalResultConfig attendu).");
+        }
+        return false;
+    }
+    
+    // Demander le nom du résultat
+    bool ok;
+    QString resultName = QString::fromStdString(importedConfig.name);
+    
+    if (parentWidget) {
+        resultName = QInputDialog::getText(parentWidget, 
+            "Nom du résultat", 
+            "Entrez un nom pour ce résultat externe importé:",
+            QLineEdit::Normal,
+            resultName, &ok);
+        
+        if (!ok || resultName.isEmpty()) 
+            return false;
+    }
+    
+    // Mettre à jour le nom dans la configuration
+    importedConfig.name = resultName.toStdString();
+    
+    // Vérifier si ce nom existe déjà
+    if (resultExists(resultName, m_defaultFormat)) {
+        QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
+            "Résultat existant", 
+            QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        if (choice != QMessageBox::Yes) {
+            return false;
+        }
+    }
+    
+    // Sauvegarder le résultat importé dans le format par défaut
+    bool success = saveResult(resultName, importedConfig, m_defaultFormat);
+    
+    if (success) {
+        emit resultListUpdated();
+        if (parentWidget) {
+            QString statsInfo = QString(
+                "Résultat externe importé avec succès sous le nom '%1'.\n\n"
+                "Statistiques calculées:\n"
+                "- Nombre de trades: %2\n"
+                "- Net Profit: %3 (%4%)\n"
+                "- Profit Factor: %5")
+                .arg(resultName)
+                .arg(importedConfig.stats.numTrades)
+                .arg(importedConfig.stats.equityFinal - importedConfig.stats.equityInitial, 0, 'f', 2)
+                .arg(importedConfig.stats.returnPct, 0, 'f', 2)
+                .arg(importedConfig.stats.profitFactor, 0, 'f', 2);
+            
+            QMessageBox::information(parentWidget, "Import réussi", statsInfo);
+        }
+    } else if (parentWidget) {
+        QMessageBox::warning(parentWidget, "Erreur d'importation", 
+            "Échec de l'importation du résultat externe.");
+    }
+    
+    return success;
+}
+
 bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWidget* parentWidget, SerializationUtils::FileFormat format)
 {
     SerializationUtils::FileFormat actualFormat = (format == SerializationUtils::FileFormat::Auto) ? m_defaultFormat : format;
@@ -341,28 +438,25 @@ bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWid
     
     // Construire le filtre pour le format spécifié
     QString filterString;
-    if (actualFormat == SerializationUtils::FileFormat::JSON) {
+    if (actualFormat == SerializationUtils::FileFormat::JSON) 
         filterString = "Fichiers JSON (*.json)";
-    } else if (actualFormat == SerializationUtils::FileFormat::Binary) {
+    else if (actualFormat == SerializationUtils::FileFormat::Binary) 
         filterString = "Fichiers binaires (*.bin)";
-    } else {
+    else 
         filterString = "Tous les formats supportés (*.json *.bin);;Fichiers JSON (*.json);;Fichiers binaires (*.bin)";
-    }
     
     QString fileName = QFileDialog::getSaveFileName(parentWidget,
         QString("Exporter le résultat - %1").arg(resultName),
         QDir::homePath() + "/" + defaultFileName,
         filterString);
     
-    if (fileName.isEmpty()) {
+    if (fileName.isEmpty()) 
         return false; // Utilisateur a annulé
-    }
     
     // Si l'utilisateur a changé l'extension, détecter le nouveau format
     SerializationUtils::FileFormat selectedFormat = actualFormat;
-    if (format == SerializationUtils::FileFormat::Auto) {
+    if (format == SerializationUtils::FileFormat::Auto) 
         selectedFormat = SerializationUtils::detectFormatFromExtension(fileName);
-    }
     
     // Sauvegarde du résultat vers le fichier sélectionné
     bool success = SerializationUtils::saveToFile(fileName, config, selectedFormat);
@@ -380,4 +474,81 @@ bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWid
     }
     
     return success;
+}
+
+bool BacktestResultManager::loadExternalResult(const QString& filePath, BacktestResultConfig& config)
+{
+    qDebug() << "Tentative de chargement d'un résultat externe depuis:" << filePath;
+    
+    ExternalResultConfig externalConfig;
+    
+    // Détecter le format du fichier
+    SerializationUtils::FileFormat format = SerializationUtils::FileFormat::JSON;
+    if (filePath.endsWith(".bin")) 
+        format = SerializationUtils::FileFormat::Binary;
+    
+    // Charger le fichier externe
+    if (!SerializationUtils::loadFromFile(filePath, externalConfig, format)) {
+        qCritical() << "Erreur lors du chargement du résultat externe";
+        return false;
+    }
+    
+    qInfo() << "Résultat externe chargé avec succès. Calcul des stats...";
+    
+    // Convertir ExternalResultConfig vers BacktestResultConfig
+    config.name = externalConfig.name;
+    config.version = externalConfig.version;
+    config.createdAt = externalConfig.createdAt;
+    // config.generalParams = externalConfig.generalParams;
+    // config.strategyConfigs = externalConfig.strategyConfigs;
+    config.candles = externalConfig.candles;
+    
+    // Validation
+    if (externalConfig.candles.empty()) {
+        qCritical() << "Aucune donnée de bougie trouvée dans le résultat externe";
+        return false;
+    }
+    
+    // Créer une structure Data à partir des candles
+    be::Data data(externalConfig.candles);
+    
+    // Construire la courbe d'équité à partir des trades
+    std::vector<be::EquityPoint> equityCurve;
+    double initialEquity = config.generalParams.cash;
+    double currentEquity = initialEquity;
+    
+    // Point initial
+    equityCurve.push_back({0, currentEquity});
+    
+    // Trier les trades par ordre de sortie (exitBar)
+    std::vector<be::TradeData> sortedTrades = externalConfig.trades;
+    std::sort(sortedTrades.begin(), sortedTrades.end(),
+              [](const be::TradeData& a, const be::TradeData& b) {
+                  return a.exitBar < b.exitBar;
+              });
+    
+    // Construire la courbe d'équité en ajoutant le P&L de chaque trade
+    for (const auto& trade : sortedTrades) {
+        currentEquity += trade.pl;
+        
+        // Ajouter un point d'équité à la sortie du trade
+        if (trade.exitBar < data.size()) 
+            equityCurve.push_back({trade.exitBar, currentEquity});
+    }
+    
+    // Ajouter un point final si nécessaire
+    if (equityCurve.back().index < data.size() - 1) 
+        equityCurve.push_back({data.size() - 1, currentEquity});
+    
+    qInfo() << "Courbe d'équité construite avec" << equityCurve.size() << "points";
+    qInfo() << "Calcul des statistiques pour" << sortedTrades.size() << "trades...";
+    
+    // Calculer les statistiques complètes
+    config.stats = be::computeStats(sortedTrades, equityCurve, data);
+    
+    qInfo() << "Statistiques calculées avec succès";
+    qInfo() << "- Nombre de trades:" << config.stats.numTrades;
+    qInfo() << "- Équité finale:" << config.stats.equityFinal;
+    
+    return true;
 }

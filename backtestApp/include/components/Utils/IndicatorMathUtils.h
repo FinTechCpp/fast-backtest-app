@@ -10,6 +10,15 @@
 #include "beTypes.h"
 #include "ui/chart/chartTypes.h"
 
+// Forward declarations for filter namespace types used in method signatures.
+// These are declared with a fixed underlying type to allow forward declaration
+// without requiring the full definition in this header; include the real
+// definition in translation units that need the enum values.
+namespace filter {
+    enum class PriceType : int;
+    enum class MAType : int;
+}
+
 
 /**
  * @brief Utility class for calculating technical indicators
@@ -115,6 +124,73 @@ public:
         bool useLogScale = false
     );
 
+    /**
+     * @brief Calculates the CCI (Commodity Channel Index) indicator
+     *
+     * @param highData The high prices
+     * @param lowData The low prices
+     * @param closeData The closing prices
+     * @param period The period for CCI calculation
+     * @return std::vector<double> The calculated CCI values
+     */
+    static std::vector<double> calculateCCI(
+        const std::vector<double>& highData,
+        const std::vector<double>& lowData,
+        const std::vector<double>& closeData,
+        int period
+    );
+
+    /**
+     * @brief Calculates MACD (Moving Average Convergence Divergence) indicator
+     *
+     * Returns a tuple of three vectors: (macd_line, signal_line, histogram)
+     *
+     * Parameters mirror the MACD implementation in ThirdParty/Strategies/include/Indicators/macd.hpp:
+     *  - fastPeriod: fast EMA/SMA length
+     *  - slowPeriod: slow EMA/SMA length
+     *  - signalPeriod: signal line period
+     *  - source: "open"/"high"/"low"/"close" (default "close")
+     *  - oscMAType: "EMA" or "SMA" for oscillator moving averages (default "EMA")
+     *  - signalMAType: "EMA" or "SMA" for signal line moving average (default "EMA")
+     *  - signalSmoothing: optional smoothing length for signal (if 0 -> use signalPeriod)
+     */
+    static std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> calculateMACD(
+        const std::vector<double>& open,
+        const std::vector<double>& high,
+        const std::vector<double>& low,
+        const std::vector<double>& close,
+        int fastPeriod,
+        int slowPeriod,
+        int signalPeriod,
+        filter::PriceType source,
+        filter::MAType oscMAType,
+        filter::MAType signalMAType,
+        int signalSmoothing
+    );
+
+    /**
+     * @brief Calculates Bollinger Bands (BB) indicator
+     * Returns a tuple of three vectors: (middle_band, upper_band, lower_band)
+     * Parameters:
+     *  - period: period for the moving average 
+     *  - stdDevMultiplier: standard deviation multiplier for the bands 
+     *  - source: "open"/"high"/"low"/"close" 
+     *  - oscMAType: "EMA" or "SMA" for the middle band moving average 
+     */
+    static std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> calculateBollingerBands(
+        const std::vector<double>& open,
+        const std::vector<double>& high,
+        const std::vector<double>& low,
+        const std::vector<double>& close,
+        int period,
+        double stdDevMultiplier,
+        filter::PriceType source,
+        filter::MAType oscMAType
+    );
+
+    /**
+     * @brief Calculates Pivot Points
+     */
     static std::vector<indicators::PivotPointsInstance::PivotPeriod> calculatePivotPoints(
         const std::vector<double>& openData,
         const std::vector<double>& highData,

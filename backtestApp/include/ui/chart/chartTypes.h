@@ -7,6 +7,7 @@
 #include <array>
 #include <string>
 #include <QString>
+#include "common.h"
 #include <utility>  // pour std::pair
 
 namespace chart {
@@ -96,6 +97,9 @@ namespace chart {
         std::set<int> validStochasticIds;
         std::set<int> validAtrIds;
         std::set<int> validPivotPointsIds;
+        std::set<int> validCciIds;
+        std::set<int> validMacdIds;
+        std::set<int> validBbIds;
 
         // Données des indicateurs
         std::map<int, std::vector<double>> rsiValues;
@@ -103,7 +107,9 @@ namespace chart {
         std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
-
+        std::map<int, std::vector<double>> cciValues;
+        std::map<int, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>> macdValues; // macd_line, signal_line, histogram
+        std::map<int, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>> bbValues; // middle_band, upper_band, lower_band
         AggregationLevel level;
         
         // Méthodes utilitaires pour vérifier si un indicateur spécifique est valide
@@ -113,11 +119,33 @@ namespace chart {
         bool isStochasticValid(int id) const { return validStochasticIds.find(id) != validStochasticIds.end(); }
         bool isAtrValid(int id) const { return validAtrIds.find(id) != validAtrIds.end(); }
         bool isPivotPointsValid(int id) const { return validPivotPointsIds.find(id) != validPivotPointsIds.end(); }
+        bool isCciValid(int id) const { return validCciIds.find(id) != validCciIds.end(); }
+        bool isMacdValid(int id) const { return validMacdIds.find(id) != validMacdIds.end(); }
+        bool isBbValid(int id) const { return validBbIds.find(id) != validBbIds.end(); }
     };
 
     struct EquityData {
         std::vector<double> timestamps;
         std::vector<double> equity_values;
+    };
+
+    // Marker types for drawing tools
+    enum class MarkerType {
+        Check,   // Green check mark
+        Error    // Red error mark
+    };
+
+    // Structure to store a marker placed on the chart
+    struct ChartMarker {
+        size_t barIndex;   // Absolute bar index in raw data
+        double price;      // Y coordinate (price)
+        MarkerType type;   // Type of marker
+        
+        bool operator==(const ChartMarker& other) const {
+            return barIndex == other.barIndex && 
+                   price == other.price && 
+                   type == other.type;
+        }
     };
 }
 
@@ -130,25 +158,11 @@ namespace indicators {
         STOCHASTIC,
         ATR, 
         SUPERTREND,
-        PIVOTPOINTS
+        PIVOTPOINTS,
+        CCI,
+        MACD,
+        BB
     };
-
-    // Il faudrait faire des structure pour contenir uniquement les info techenique qui vont servir a CALCULER l'indicateur
-    // comme ca scela allege les methodes de calcule ET on utilise cela pour communiquer entre la strategy et le front plutot que :
-    /*
-    struct StrategyIndicator {
-        enum Type {
-            RSI,
-            EMA,
-            STOCHASTIC,
-            ATR,
-            SUPERTREND
-        };
-        
-        Type type;
-        std::map<std::string, double> params;  // Indicator parameters
-    };
-    */
 
     enum class PivotPeriodType {
         FourHour,   // Points pivots toutes les 4 heures
@@ -210,6 +224,35 @@ namespace indicators {
             bool operator==(const PivotPoints& other) const = default;
             bool operator!=(const PivotPoints& other) const = default;
         };
+        
+        struct CCI {
+            int period = 20;
+
+            bool operator==(const CCI& other) const = default;
+            bool operator!=(const CCI& other) const = default;
+        };
+
+        struct MACD {
+            int fastPeriod = 12;
+            int slowPeriod = 26;
+            int signalPeriod = 9;
+            filter::PriceType source = filter::PriceType::CLOSE; // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
+            filter::MAType osc_ma_type = filter::MAType::EMA; // Type de moyenne mobile pour l'oscillateur (SMA, EMA, WMA)
+            filter::MAType signal_ma_type = filter::MAType::EMA; // Type de moyenne mobile pour la ligne de signal (SMA, EMA, WMA)
+            int signal_smoothing = 1; // Lissage supplémentaire pour la ligne de signal
+
+            bool operator==(const MACD& other) const = default;
+            bool operator!=(const MACD& other) const = default;
+        };
+        struct BB {
+            int period = 20;
+            double stddev_multiplier = 2.0;
+            filter::PriceType source = filter::PriceType::CLOSE; // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
+            filter::MAType ma_type = filter::MAType::SMA; // Type de moyenne mobile (SMA, EMA)
+
+            bool operator==(const BB& other) const = default;
+            bool operator!=(const BB& other) const = default;
+        };
     }
 
     struct IndicatorSignal {        
@@ -223,6 +266,9 @@ namespace indicators {
             params::ATR atr;
             params::SuperTrend supertrend;
             params::PivotPoints pivotpoints;
+            params::CCI cci;
+            params::MACD macd;
+            params::BB bb;
             
             ParamsUnion() {} // Union nécessite un constructeur par défaut
             ~ParamsUnion() {} // Et un destructeur
@@ -236,10 +282,11 @@ namespace indicators {
         // Type type_; // Type d'indicateur
         bool visible = true; // Si l'indicateur est visible
 
-        virtual bool needsRecalculation(const IndicatorBase& other) const = 0;
+        virtual bool isCalculationParamsEqual(const IndicatorBase& other) const = 0;
         
         // Nouvelle méthode pour obtenir le nom d'affichage de l'indicateur
         virtual QString getDisplayName() const = 0;
+        virtual std::unique_ptr<IndicatorBase> clone() const = 0;
 
         virtual void setDefaults() = 0;
 
@@ -274,10 +321,14 @@ namespace indicators {
         int upperColor;         // Couleur pour la zone de surachat
         int lowerColor;         // Couleur pour la zone de survente
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const RSIInstance* otherRSI = dynamic_cast<const RSIInstance*>(&other);
-            if (!otherRSI) return true;
-            return period != otherRSI->period;
+            if (!otherRSI) return false;
+            return period == otherRSI->period;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<RSIInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -302,10 +353,14 @@ namespace indicators {
         int period;            // Période de l'EMA
         int color;             // Couleur de la ligne (bleu par défaut)
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const EMAInstance* otherEMA = dynamic_cast<const EMAInstance*>(&other);
-            if (!otherEMA) return true;
-            return period != otherEMA->period;
+            if (!otherEMA) return false;
+            return period == otherEMA->period;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<EMAInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -327,10 +382,14 @@ namespace indicators {
         int upColor;           // Couleur de la ligne (vert par défaut)
         int downColor;         // Couleur de la ligne (rouge par défaut)
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const SuperTrendInstance* otherST = dynamic_cast<const SuperTrendInstance*>(&other);
-            if (!otherST) return true;
-            return period != otherST->period || multiplier != otherST->multiplier;
+            if (!otherST) return false;
+            return period == otherST->period && multiplier == otherST->multiplier;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<SuperTrendInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -358,12 +417,16 @@ namespace indicators {
         int overboughtLevel;    // Niveau de surachat
         int oversoldLevel;      // Niveau de survente
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const StochasticInstance* otherStochastic = dynamic_cast<const StochasticInstance*>(&other);
-            if (!otherStochastic) return true;
-            return fastKPeriod != otherStochastic->fastKPeriod ||
-                slowKPeriod != otherStochastic->slowKPeriod ||
-                slowDPeriod != otherStochastic->slowDPeriod;
+            if (!otherStochastic) return false;
+            return fastKPeriod == otherStochastic->fastKPeriod &&
+                slowKPeriod == otherStochastic->slowKPeriod &&
+                slowDPeriod == otherStochastic->slowDPeriod;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<StochasticInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -391,10 +454,14 @@ namespace indicators {
         int color;             // Couleur de la ligne (vert foncé par défaut)
         bool useLogScale;      // Indique si l'échelle logarithmique est utilisée
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const ATRInstance* otherATR = dynamic_cast<const ATRInstance*>(&other);
-            if (!otherATR) return true;
-            return period != otherATR->period || useLogScale != otherATR->useLogScale;
+            if (!otherATR) return false;
+            return period == otherATR->period && useLogScale == otherATR->useLogScale;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<ATRInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -463,10 +530,14 @@ namespace indicators {
         bool showLabels = true;                         // Afficher les étiquettes des niveaux
 
 
-        bool needsRecalculation(const IndicatorBase& other) const override {
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const PivotPointsInstance* otherPP = dynamic_cast<const PivotPointsInstance*>(&other);
             if (!otherPP) return true;
-            return periodType != otherPP->periodType || calculationMethod != otherPP->calculationMethod;
+            return periodType == otherPP->periodType && calculationMethod == otherPP->calculationMethod;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<PivotPointsInstance>(*this);
         }
         
         QString getDisplayName() const override {
@@ -565,6 +636,160 @@ namespace indicators {
             periodType = PivotPeriodType::Daily;
 
             calculationMethod = PivotCalculationMethod::HLC;
+        }
+    };
+
+    struct CCIInstance : public IndicatorBase {
+        CCIInstance() : IndicatorBase() {
+            setDefaults();
+        }
+
+        CCIInstance(params::CCI p) : IndicatorBase() {
+            setDefaults();
+            period = p.period;
+        }
+
+        int period;            // Période du CCI
+        int height;            // Hauteur du panneau
+        int color;             // Couleur de la ligne principale
+        int upperLevel;        // Niveau supérieur (typiquement +100)
+        int lowerLevel;        // Niveau inférieur (typiquement -100)
+        int upperColor;        // Couleur pour la zone supérieure
+        int lowerColor;        // Couleur pour la zone inférieure
+
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
+            const CCIInstance* otherCCI = dynamic_cast<const CCIInstance*>(&other);
+            if (!otherCCI) return false;
+            return period == otherCCI->period;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<CCIInstance>(*this);
+        }
+        
+        QString getDisplayName() const override {
+            return QString("CCI (%1)").arg(period);
+        }
+
+        void setDefaults() override {
+            period = 20;
+            height = 120;
+            color = 0xFFA500;      // Orange
+            upperLevel = 100;
+            lowerLevel = -100;
+            upperColor = 0xff6666; // Rouge clair
+            lowerColor = 0x6666ff; // Bleu clair
+        }
+    };
+    struct MACDInstance : public IndicatorBase {
+        MACDInstance() : IndicatorBase() {
+            setDefaults();
+        }
+
+        MACDInstance(params::MACD p) : IndicatorBase() {
+            setDefaults();
+            fastPeriod = p.fastPeriod;
+            slowPeriod = p.slowPeriod;
+            signalPeriod = p.signalPeriod;
+
+        }
+
+        int fastPeriod;        // Période rapide
+        int slowPeriod;        // Période lente
+        int signalPeriod;      // Période de la ligne de signal
+        filter::PriceType source;        // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
+        filter::MAType osc_ma_type;   // Type de moyenne mobile pour l'oscillateur (SMA, EMA, WMA)
+        filter::MAType signal_ma_type;// Type de moyenne mobile pour la ligne de signal (SMA, EMA, WMA)
+        int signal_smoothing;  // Lissage supplémentaire pour la ligne de signal
+        int height;            // Hauteur du panneau
+        int macdColor;         // Couleur de la ligne MACD
+        int signalColor;       // Couleur de la ligne de signal
+        int histogramColor;    // Couleur de l'histogramme
+
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
+            const MACDInstance* otherMACD = dynamic_cast<const MACDInstance*>(&other);
+            if (!otherMACD) return false;
+            return fastPeriod == otherMACD->fastPeriod &&
+                   slowPeriod == otherMACD->slowPeriod &&
+                   signalPeriod == otherMACD->signalPeriod &&
+                   source == otherMACD->source &&
+                   osc_ma_type == otherMACD->osc_ma_type &&
+                   signal_ma_type == otherMACD->signal_ma_type &&
+                   signal_smoothing == otherMACD->signal_smoothing;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<MACDInstance>(*this);
+        }
+        
+        QString getDisplayName() const override {
+            return QString("MACD (%1,%2,%3)").arg(fastPeriod).arg(slowPeriod).arg(signalPeriod);
+        }
+
+        void setDefaults() override {
+            fastPeriod = 12;
+            slowPeriod = 26;
+            signalPeriod = 9;
+            source = filter::PriceType::CLOSE;
+            osc_ma_type = filter::MAType::EMA;
+            signal_ma_type = filter::MAType::EMA;
+            signal_smoothing = 0;
+            height = 200;
+            macdColor = 0x0000ff;      // Bleu
+            signalColor = 0xff0000;    // Rouge
+            histogramColor = 0x808080; // Gris
+        }
+    };
+    struct BBInstance : public IndicatorBase {
+        BBInstance() : IndicatorBase() {
+            setDefaults();
+        }
+
+        BBInstance(params::BB p) : IndicatorBase() {
+            setDefaults();
+            period = p.period;
+            stddev_multiplier = p.stddev_multiplier;
+            source = p.source;
+            ma_type = p.ma_type;
+        }
+
+        int period;                // Période de la bande
+        double stddev_multiplier;  // Multiplicateur d'écart-type
+        filter::PriceType source;      // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
+        filter::MAType ma_type;       // Type de moyenne mobile (SMA, EMA)
+        int height;                // Hauteur du panneau
+        int middleBandColor;       // Couleur de la bande médiane
+        int upperBandColor;        // Couleur de la bande supérieure
+        int lowerBandColor;        // Couleur de la bande inférieure
+        int fillColor;             // Couleur de remplissage entre les bandes
+
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
+            const BBInstance* otherBB = dynamic_cast<const BBInstance*>(&other);
+            if (!otherBB) return false;
+            return period == otherBB->period &&
+                   stddev_multiplier == otherBB->stddev_multiplier &&
+                   source == otherBB->source &&
+                   ma_type == otherBB->ma_type;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<BBInstance>(*this);
+        }
+        
+        QString getDisplayName() const override {
+            return QString("Bollinger Bands (%1,%2)").arg(period).arg(stddev_multiplier, 0, 'f', 1);
+        }
+
+        void setDefaults() override {
+            period = 20;
+            stddev_multiplier = 2.0;
+            source = filter::PriceType::CLOSE;
+            ma_type = filter::MAType::SMA;
+            height = 200;
+            middleBandColor = 0x0000FF; // Bleu
+            upperBandColor = 0xFF0000;  // Rouge
+            lowerBandColor = 0x00FF00;  // Vert
+            fillColor = 0xADD8E6;       // Bleu clair
         }
     };
 }

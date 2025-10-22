@@ -100,7 +100,17 @@ void ChartRenderer::createOrUpdateChart(
     for (const indicators::ATRInstance* atr : dataManager.getIndicatorsOfType<indicators::ATRInstance>())
         if (atr->visible)
             subChartsTotalHeight += atr->height;
-    
+
+    // 5. Espace pour CCI
+    for (const indicators::CCIInstance* cci : dataManager.getIndicatorsOfType<indicators::CCIInstance>())
+        if (cci->visible)
+            subChartsTotalHeight += cci->height;
+
+    // 6. Espace pour MACD
+    for (const indicators::MACDInstance* macd : dataManager.getIndicatorsOfType<indicators::MACDInstance>())
+        if (macd->visible)
+            subChartsTotalHeight += macd->height;
+
     // 2. Ajouter le graphique principal
     int mainChartHeight = std::max(300, config.chartHeight - subChartsTotalHeight);
     XYChart* mainChart = m_financeChart->addMainChart(mainChartHeight);
@@ -171,11 +181,29 @@ void ChartRenderer::createOrUpdateChart(
             addATRToChart(m_financeChart.get(), *atr, dataManager, aggregationInfo);
         }
     }
+    // CCI
+    for (const indicators::CCIInstance* cci : dataManager.getIndicatorsOfType<indicators::CCIInstance>()) {
+        if (cci->visible) {
+            addCCIToChart(m_financeChart.get(), *cci, dataManager, aggregationInfo);
+        }
+    }
+
+    // MACD
+    for (const indicators::MACDInstance* macd : dataManager.getIndicatorsOfType<indicators::MACDInstance>()) 
+        if (macd->visible) 
+            addMACDToChart(m_financeChart.get(), *macd, dataManager, aggregationInfo);
 
     // Points pivots
     for (const indicators::PivotPointsInstance* pivotPoints : dataManager.getIndicatorsOfType<indicators::PivotPointsInstance>()) {
         if (pivotPoints->visible) {
             addPivotPointsToChart(mainChart, *pivotPoints, dataManager, aggregationInfo);
+        }
+    }
+
+    // BB
+    for (const indicators::BBInstance* bb : dataManager.getIndicatorsOfType<indicators::BBInstance>()) {
+        if (bb->visible) {
+            addBBToChart(m_financeChart.get(), *bb, dataManager, aggregationInfo);
         }
     }
 
@@ -193,6 +221,9 @@ void ChartRenderer::createOrUpdateChart(
         addTradeMarkers(mainChart, timestamps, dataManager, aggregationInfo);
         // 0 ms
     }
+
+    // 6. Ajouter les markers dessinés par l'utilisateur
+    addUserMarkers(mainChart, dataManager.getMarkers(), aggregationInfo);
 
     // std::cout << "Avant " << mainChart->getYCoor(20000) << std::endl;
 
@@ -499,7 +530,7 @@ void ChartRenderer::addRawTradeMarkers(XYChart *mainChart,
     tpslbeSegments.reserve(estimatedMarkers * 3);
 
     for (const auto& trade : trades) {
-        bool isLong = trade.wasLong();
+        bool isLong = trade.side == be::OrderSide::BUY;
         
         // Déterminer le résultat du trade
         be::CloseReason closeReason = trade.closeReason;
@@ -686,7 +717,7 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
     // Compter les trades par fenêtre fixe
     for (size_t i = 0; i < trades.size(); ++i) {
         const auto& trade = trades[i];
-        bool isLong = trade.wasLong();
+        bool isLong = trade.side == be::OrderSide::BUY;
         
         // Récupérer l'indice agrégé pour ce trade
         std::optional<std::pair<size_t, size_t>> aggregatedIndices = dataManager.getTradeAggregatedIndices(i, level);
@@ -1065,6 +1096,183 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     c->yAxis()->setLinearScale(0, maxATR * 1.1); // 10% de marge supérieure
 }
 
+void ChartRenderer::addCCIToChart(FinanceChart* chart, 
+                                const indicators::CCIInstance& cci, 
+                                const ChartDataManager& dataManager, 
+                                const chart::AggregationInfo& aggregationInfo)
+{
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
+
+    // Utiliser les données agrégées
+    const auto& cciMap = dataManager.getAggregatedIndicators(aggregationInfo.level).cciValues;
+    auto it = cciMap.find(cci.id);
+    
+    // Vérifier si les données agrégées sont disponibles
+    if (it == cciMap.end()) return;
+
+    const std::vector<double>& cciData = it->second;
+
+    if (cciData.empty() || startIndex >= cciData.size()) return;
+
+    // Limiter le nombre de points à afficher
+    size_t endIndex = std::min(startIndex + pointsToShow, cciData.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
+
+    // Extraire les données CCI visibles du cache
+    DoubleArray cciArray(&cciData[startIndex], actualPoints);
+
+    // Ajouter le graphique d'indicateur
+    XYChart* c = chart->addIndicator(cci.height);
+    
+    // Configurer et ajouter le CCI
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "CCI (%d)", cci.period);
+    LineLayer* layer = chart->addLineIndicator2(c, cciArray, cci.color, buffer);
+    layer->setFastLineMode(true);
+
+    // Ajouter les seuils (lignes horizontales pour +100 et -100)
+    chart->addThreshold(c, layer, cci.upperLevel, cci.upperColor, cci.lowerLevel, cci.lowerColor);
+
+    // Configurer l'échelle de l'axe Y avec des marges
+    double minCCI = *std::min_element(cciData.begin() + startIndex, cciData.begin() + endIndex);
+    double maxCCI = *std::max_element(cciData.begin() + startIndex, cciData.begin() + endIndex);
+    
+    // Étendre les limites pour inclure les niveaux standard (-200 à +200 avec marge)
+    double yMin = std::min(minCCI, static_cast<double>(cci.lowerLevel)) * 1.2;
+    double yMax = std::max(maxCCI, static_cast<double>(cci.upperLevel)) * 1.2;
+    c->yAxis()->setLinearScale(yMin, yMax);
+}
+
+void ChartRenderer::addMACDToChart(FinanceChart* finance, const indicators::MACDInstance &macd, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo){
+    if (!finance) return;
+
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
+
+    // Récupérer les données MACD agrégées
+    const auto& macdMap = dataManager.getAggregatedIndicators(aggregationInfo.level).macdValues;
+    auto it = macdMap.find(macd.id);
+    if (it == macdMap.end()) return;
+
+    // Format attendu : tuple<macdLine, signalLine, histogram>
+    const auto& macdTuple = it->second;
+    const std::vector<double>& macdLine = std::get<0>(macdTuple);
+    const std::vector<double>& signalLine = std::get<1>(macdTuple);
+    const std::vector<double>& histLine   = std::get<2>(macdTuple);
+
+    if (macdLine.empty() || signalLine.empty() || histLine.empty()) return;
+    size_t available = std::min({ macdLine.size(), signalLine.size(), histLine.size() });
+    if (startIndex >= available) return;
+
+    size_t endIndex = std::min(startIndex + pointsToShow, available);
+    if (endIndex <= startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
+
+    // Extraire les portions visibles
+    DoubleArray macdArr(&macdLine[startIndex], actualPoints);
+    DoubleArray signalArr(&signalLine[startIndex], actualPoints);
+
+    // Construire histogrammes séparés pour positif/négatif
+    std::vector<double> posHist(actualPoints, Chart::NoValue);
+    std::vector<double> negHist(actualPoints, Chart::NoValue);
+    for (size_t i = 0; i < actualPoints; ++i) {
+        double v = histLine[startIndex + i];
+        if (v > 0) posHist[i] = v;
+        else if (v < 0) negHist[i] = v;
+        // zero will be left as NoValue (or could be shown on either)
+    }
+
+    DoubleArray posHistArr = ChartDataManager::vectorToDoubleArray(posHist);
+    DoubleArray negHistArr = ChartDataManager::vectorToDoubleArray(negHist);
+
+    // Ajouter la zone d'indicateur MACD
+    XYChart* c = finance->addIndicator(macd.height);
+    if (!c) return;
+
+    // Histogramme : positif en vert, négatif en rouge (ou utiliser histogramColor pour les deux)
+    int positiveColor = 0x00aa00; // Vert
+    int negativeColor = 0xaa0000; // Rouge
+    
+    BarLayer* posLayer = c->addBarLayer(posHistArr, positiveColor);
+    posLayer->setBarGap(Chart::TouchBar);
+    posLayer->setBorderColor(Chart::Transparent);
+    posLayer->set3D(0);
+
+    BarLayer* negLayer = c->addBarLayer(negHistArr, negativeColor);
+    negLayer->setBarGap(Chart::TouchBar);
+    negLayer->setBorderColor(Chart::Transparent);
+    negLayer->set3D(0);
+
+    // Lignes MACD et Signal
+    char labelBuf[128];
+    snprintf(labelBuf, sizeof(labelBuf), "MACD (%d,%d,%d)", macd.fastPeriod, macd.slowPeriod, macd.signalPeriod);
+    LineLayer* macdLineLayer = finance->addLineIndicator2(c, macdArr, macd.macdColor, labelBuf);
+    if (macdLineLayer) macdLineLayer->setFastLineMode(true);
+
+    snprintf(labelBuf, sizeof(labelBuf), "Signal (%d)", macd.signalPeriod);
+    LineLayer* signalLineLayer = finance->addLineIndicator2(c, signalArr, macd.signalColor, labelBuf);
+    if (signalLineLayer) signalLineLayer->setFastLineMode(true);
+
+    // Ajouter une marque/ligne à 0 pour repère
+    Mark* zeroMark = c->yAxis()->addMark(0.0, 0x000000, "");
+    if (zeroMark) {
+        zeroMark->setLineWidth(1);
+        zeroMark->setMarkColor(c->dashLineColor(0x000000, Chart::DashLine), 0xffffff);
+    }
+
+    // Laisser ChartDir gérer l'échelle Y (optionnel : petite marge)
+    // Ajuster si nécessaire : c->yAxis()->setMargin(...);
+}
+
+void ChartRenderer::addBBToChart(FinanceChart *chart, const indicators::BBInstance &bb, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo){
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
+
+    // Utiliser les données agrégées
+    const auto& bbMap = dataManager.getAggregatedIndicators(aggregationInfo.level).bbValues;
+    auto it = bbMap.find(bb.id);
+    
+    // Vérifier si les données agrégées sont disponibles et valides
+    if (it == bbMap.end()) return;
+
+    const std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>& bbData = it->second;
+
+    const std::vector<double>& middleBand = std::get<0>(bbData);
+    const std::vector<double>& upperBand = std::get<1>(bbData);
+    const std::vector<double>& lowerBand = std::get<2>(bbData);
+
+    if (middleBand.empty() || upperBand.empty() || lowerBand.empty() || startIndex >= middleBand.size()) return;
+
+    // Limiter le nombre de points à afficher
+    size_t endIndex = std::min(startIndex + pointsToShow, middleBand.size());
+    if (endIndex < startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
+
+    // Extraire les données BB visibles du cache
+    DoubleArray middleArray(&middleBand[startIndex], actualPoints);
+    DoubleArray upperArray(&upperBand[startIndex], actualPoints);
+    DoubleArray lowerArray(&lowerBand[startIndex], actualPoints);
+
+    // Ajouter les bandes de Bollinger directement sur le graphique principal
+    XYChart* mainChart = (XYChart*)chart->getChart(1);
+    
+    char buffer[1024];
+    
+    snprintf(buffer, sizeof(buffer), "BB Middle (%d)", bb.period);
+    LineLayer* middleLayer = chart->addLineIndicator2(mainChart, middleArray, bb.middleBandColor, buffer);
+    if (middleLayer) middleLayer->setFastLineMode(true);
+    
+    snprintf(buffer, sizeof(buffer), "BB Upper (%d)", bb.period);
+    LineLayer* upperLayer = chart->addLineIndicator2(mainChart, upperArray, bb.upperBandColor, buffer);
+    if (upperLayer) upperLayer->setFastLineMode(true);
+    
+    snprintf(buffer, sizeof(buffer), "BB Lower (%d)", bb.period);
+    LineLayer* lowerLayer = chart->addLineIndicator2(mainChart, lowerArray, bb.lowerBandColor, buffer);
+    if (lowerLayer) lowerLayer->setFastLineMode(true);
+}
+
 void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::PivotPointsInstance &pivotPoints, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)
 {
     // Récupérer les données des points pivots depuis le cache
@@ -1174,6 +1382,52 @@ void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::
             }
         }
     }
+}
+
+void ChartRenderer::addUserMarkers(XYChart* mainChart, 
+                                 const std::vector<chart::ChartMarker>& markers,
+                                 const chart::AggregationInfo& aggregationInfo) {
+    if (markers.empty() || !mainChart) {
+        return;
+    }
+
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t length = aggregationInfo.pointCount;
+    
+    // Séparer les markers par type, en convertissant indices absolus -> relatifs
+    std::vector<std::pair<double, double>> checkMarkers;
+    std::vector<std::pair<double, double>> errorMarkers;
+    
+    // Pour chaque marker, vérifier s'il est visible et convertir en indice relatif
+    for (const auto& marker : markers) {
+        // Vérifier si le marker est dans la fenêtre visible
+        bool isVisible = (marker.barIndex >= startIndex && 
+                         marker.barIndex < startIndex + length);
+        
+        if (!isVisible) continue;
+        
+        // Convertir l'indice absolu en indice relatif (exactement comme les trades)
+        double relativeIndex = static_cast<double>(marker.barIndex - startIndex);
+        
+        if (marker.type == chart::MarkerType::Check) {
+            checkMarkers.push_back({relativeIndex, marker.price});
+        } else if (marker.type == chart::MarkerType::Error) {
+            errorMarkers.push_back({relativeIndex, marker.price});
+        }
+    }
+    
+    // Ajouter les markers de type Check (vert)
+    if (!checkMarkers.empty()) {
+        addMarkers(mainChart, checkMarkers, "Check Markers", 
+                  Chart::CircleShape, 16, 0x00BB00);
+    }
+    
+    // Ajouter les markers de type Error (rouge)
+    if (!errorMarkers.empty()) {
+        addMarkers(mainChart, errorMarkers, "Error Markers", 
+                  Chart::Cross2Shape(), 16, 0xBB0000);
+    }
+
 }
 
 ScatterLayer* ChartRenderer::addMarkers(XYChart *chart, const std::vector<std::pair<double, double>> &markers,

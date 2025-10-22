@@ -172,9 +172,13 @@ void ChartView::setupUI()
 }
 
 void ChartView::updateData(BacktestResults* results) {
+    // Sauvegarder les markers du backtest actuel avant de changer
+    if (m_currentResults) 
+        m_currentResults->userMarkers = m_chartWidget->getMarkers();
+    
     m_currentResults = results;
 
-    if (!results || !results->data) {
+    if (!results || results->candles.empty()) {
         clear();
         showPlaceholder("Aucune donnée disponible");
         return;
@@ -182,12 +186,17 @@ void ChartView::updateData(BacktestResults* results) {
 
     m_chartWidget->setBacktestResults(results);
     
+    // Restaurer les markers sauvegardés pour ce backtest
+    if (!results->userMarkers.empty()) 
+        m_chartWidget->setMarkers(results->userMarkers);
+    
     // Afficher le widget de graphique
     showChartWidget();
 
-    // Configurer les indicateurs de stratégie
-    m_leftPanel->configureIndicatorInstances(
-        extractIndicatorsFromFilters(results->strategyConfig)
+
+
+    m_leftPanel->suggestIndicatorsFromStrategy(
+        extractIndicatorsFromFilters(results->strategyConfigs)
     );
     
     // Actualiser la liste des indicateurs
@@ -218,12 +227,22 @@ void ChartView::zoomToTrade(const be::TradeData& trade) {
     m_chartWidget->zoomToTrade(trade);
 }
 
-// Dans ChartView.cpp, ajoutez cette méthode
-std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndicatorsFromFilters(const StrategyConfig& strategyConfig) {
+std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndicatorsFromFilters(const std::vector<StrategyConfig>& strategyConfigs) {
     std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances;
         
+
+    // Fonction utilitaire pour ajouter si pas déjà présent
+    auto addIfNotPresent = [&](std::unique_ptr<indicators::IndicatorBase> candidate) {
+        for (const auto& existing : indicatorInstances) {
+            if (candidate && existing && candidate->isCalculationParamsEqual(*existing)) {
+                return; // déjà présent, on n'ajoute pas
+            }
+        }
+        indicatorInstances.push_back(std::move(candidate));
+    };
+
     // Fonction helper pour extraire les indicateurs des ValueSource
-    auto extractIndicator = [&indicatorInstances](const filter::ValueSource& source) {
+    auto extractIndicator = [&](const filter::ValueSource& source) {
         if (source.category != filter::ValueCategory::INDICATOR) {
             return;
         }
@@ -232,20 +251,20 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
             case filter::IndicatorType::EMA: {
                 auto ema = std::make_unique<indicators::EMAInstance>();
                 ema->period = source.emaParams.period;
-                indicatorInstances.push_back(std::move(ema));
+                addIfNotPresent(std::move(ema));
                 break;
             }
             case filter::IndicatorType::RSI: {
                 auto rsi = std::make_unique<indicators::RSIInstance>();
                 rsi->period = source.rsiParams.period;
-                indicatorInstances.push_back(std::move(rsi));
+                addIfNotPresent(std::move(rsi));
                 break;
             }
             case filter::IndicatorType::ATR: {
                 auto atr = std::make_unique<indicators::ATRInstance>();
                 atr->period = source.atrParams.period;
                 atr->useLogScale = source.atrParams.useLog;
-                indicatorInstances.push_back(std::move(atr));
+                addIfNotPresent(std::move(atr));
                 break;
             }
             case filter::IndicatorType::STOCHASTIC_K:
@@ -254,7 +273,7 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
                 stoch->fastKPeriod = source.stochParams.fastK;
                 stoch->slowKPeriod = source.stochParams.slowK;
                 stoch->slowDPeriod = source.stochParams.slowD;
-                indicatorInstances.push_back(std::move(stoch));
+                addIfNotPresent(std::move(stoch));
                 break;
             }
             case filter::IndicatorType::SUPERTREND_VALUE:
@@ -262,7 +281,35 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
                 auto supertrend = std::make_unique<indicators::SuperTrendInstance>();
                 supertrend->period = source.supertrendParams.atrPeriod;
                 supertrend->multiplier = source.supertrendParams.multiplier;
-                indicatorInstances.push_back(std::move(supertrend));
+                addIfNotPresent(std::move(supertrend));
+                break;
+            }
+            case filter::IndicatorType::CCI: {
+                auto cci = std::make_unique<indicators::CCIInstance>();
+                cci->period = source.cciParams.period;
+                addIfNotPresent(std::move(cci));
+                break;
+            }
+            case filter::IndicatorType::MACD_HISTOGRAM:
+            case filter::IndicatorType::MACD_LINE:
+            case filter::IndicatorType::MACD_SIGNAL: {
+                auto macd = std::make_unique<indicators::MACDInstance>();
+                macd->fastPeriod = source.macdParams.fast;
+                macd->slowPeriod = source.macdParams.slow;
+                macd->signalPeriod = source.macdParams.signal;
+                addIfNotPresent(std::move(macd));
+                break;
+            }
+            case filter::IndicatorType::BB_UPPER:
+            case filter::IndicatorType::BB_LOWER:
+            case filter::IndicatorType::BB_PERCENT_B: {
+                auto bb = std::make_unique<indicators::BBInstance>();
+                bb->period = source.bbParams.period;
+                // bbParams stores ma_type and source as ints; cast to the enum types expected by BBInstance
+                bb->ma_type = static_cast<filter::MAType>(source.bbParams.ma_type);
+                bb->source = static_cast<filter::PriceType>(source.bbParams.source);
+                bb->stddev_multiplier = source.bbParams.stddev_multiplier;
+                addIfNotPresent(std::move(bb));
                 break;
             }
             default:
@@ -270,26 +317,35 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
         }
     };
     
-    // Parcourir tous les filtres et extraire les indicateurs
-    for (const auto& filter : strategyConfig.filters) {
-        extractIndicator(filter.leftValue);
-        extractIndicator(filter.rightValue);
-    }
-    
-    // Ajouter aussi les indicateurs utilisés pour le SL/TP
-    if (strategyConfig.sl_method == StopLossMethod::ATR || 
-        strategyConfig.tp_method == TakeProfitMethod::ATR) {
-        auto atr = std::make_unique<indicators::ATRInstance>();
-        atr->period = strategyConfig.atr_period;
-        atr->useLogScale = true;
-        indicatorInstances.push_back(std::move(atr));
-    }
+    for (const auto& strategyConfig : strategyConfigs) {
+        // Parcourir tous les filtres et extraire les indicateurs
+        for (const auto& filter : strategyConfig.buyFilters) {
+            extractIndicator(filter.leftValue);
+            extractIndicator(filter.rightValue);
+        }
 
-    if (strategyConfig.tp_method == TakeProfitMethod::SuperTrend) {
-        auto supertrend = std::make_unique<indicators::SuperTrendInstance>();
-        supertrend->period = strategyConfig.tp_supertrend_atr_period;
-        supertrend->multiplier = strategyConfig.tp_supertrend_multiplier;
-        indicatorInstances.push_back(std::move(supertrend));
+        for (const auto& filter : strategyConfig.sellFilters) {
+            extractIndicator(filter.leftValue);
+            extractIndicator(filter.rightValue);
+        }
+
+        for (const auto& filter : strategyConfig.rebuyFilters) {
+            extractIndicator(filter.leftValue);
+            extractIndicator(filter.rightValue);
+        }
+
+        for (const auto& filter : strategyConfig.resaleFilters) {
+            extractIndicator(filter.leftValue);
+            extractIndicator(filter.rightValue);
+        }
+        // Ajouter aussi les indicateurs utilisés pour le SL/TP
+        if (strategyConfig.sl_method == StopLossMethod::ATR || 
+            strategyConfig.tp_method == TakeProfitMethod::ATR) {
+            auto atr = std::make_unique<indicators::ATRInstance>();
+            atr->period = strategyConfig.atr_period;
+            atr->useLogScale = true;
+            addIfNotPresent(std::move(atr));
+        }
     }
     
     return indicatorInstances;

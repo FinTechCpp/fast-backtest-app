@@ -2,12 +2,15 @@
 #include <QFrame>
 #include <QDebug>
 
-#include "ui/dialogs/rsiDialog.h"
-#include "ui/dialogs/emaDialog.h"
-#include "ui/dialogs/supertrendDialog.h"
-#include "ui/dialogs/stochasticDialog.h"
-#include "ui/dialogs/atrDialog.h"
-#include "ui/dialogs/pivotPointsDialog.h"
+#include "ui/dialogs/indicators/rsiDialog.h"
+#include "ui/dialogs/indicators/emaDialog.h"
+#include "ui/dialogs/indicators/supertrendDialog.h"
+#include "ui/dialogs/indicators/stochasticDialog.h"
+#include "ui/dialogs/indicators/atrDialog.h"
+#include "ui/dialogs/indicators/pivotPointsDialog.h"
+#include "ui/dialogs/indicators/cciDialog.h"
+#include "ui/dialogs/indicators/macdDialog.h"
+#include "ui/dialogs/indicators/bbDialog.h"
 
 ChartControlPanel::ChartControlPanel(QWidget* parent)
     : QWidget(parent)
@@ -137,6 +140,74 @@ void ChartControlPanel::setupUI()
     
     leftPanelLayout->addWidget(m_rulerToolButton);
 
+    // Boutons pour les outils de dessin de markers
+    QLabel* drawToolsLabel = new QLabel("Outils de Dessin");
+    drawToolsLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
+    leftPanelLayout->addWidget(drawToolsLabel);
+
+    QHBoxLayout* drawToolsLayout = new QHBoxLayout();
+    drawToolsLayout->setSpacing(5);
+    
+    // Bouton pour le marker Check
+    m_checkMarkerButton = new QToolButton();
+    m_checkMarkerButton->setIcon(QIcon(":/icons/check.png"));
+    m_checkMarkerButton->setIconSize(QSize(32, 32));
+    m_checkMarkerButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    m_checkMarkerButton->setCheckable(true);
+    m_checkMarkerButton->setToolTip("Placer des marqueurs de validation");
+    m_checkMarkerButton->setStyleSheet(
+        "QToolButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+        "QToolButton:checked {"
+        "    background-color:rgb(0, 141, 0);"
+        "}"
+    );
+    
+    // Bouton pour le marker Error
+    m_errorMarkerButton = new QToolButton();
+    m_errorMarkerButton->setIcon(QIcon(":/icons/error.png"));
+    m_errorMarkerButton->setIconSize(QSize(32, 32));
+    m_errorMarkerButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
+    m_errorMarkerButton->setCheckable(true);
+    m_errorMarkerButton->setToolTip("Placer des marqueurs d'erreur");
+    m_errorMarkerButton->setStyleSheet(
+        "QToolButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+        "QToolButton:checked {"
+        "    background-color:rgb(200, 0, 0);"
+        "}"
+    );
+    
+    // Bouton pour effacer tous les markers
+    m_clearMarkersButton = new QPushButton("Effacer");
+    m_clearMarkersButton->setIcon(QIcon::fromTheme("edit-clear"));
+    m_clearMarkersButton->setToolTip("Effacer tous les marqueurs");
+    m_clearMarkersButton->setStyleSheet(
+        "QPushButton {"
+        "    padding: 4px;"
+        "    border: 1px solid #999;"
+        "    border-radius: 4px;"
+        "    background-color: white;"
+        "}"
+    );
+    
+    drawToolsLayout->addWidget(m_checkMarkerButton);
+    drawToolsLayout->addWidget(m_errorMarkerButton);
+    drawToolsLayout->addWidget(m_clearMarkersButton);
+    leftPanelLayout->addLayout(drawToolsLayout);
+    
+    connect(m_checkMarkerButton, &QToolButton::toggled, this, &ChartControlPanel::onCheckMarkerToggled);
+    connect(m_errorMarkerButton, &QToolButton::toggled, this, &ChartControlPanel::onErrorMarkerToggled);
+    connect(m_clearMarkersButton, &QPushButton::clicked, this, &ChartControlPanel::onClearMarkersClicked);
+
     // Layout horizontal pour les boutons de comparaison
     m_comparisonButtonsLayout = new QHBoxLayout();
     m_comparisonButtonsLayout->setSpacing(5);
@@ -183,9 +254,228 @@ void ChartControlPanel::setupUI()
 
     setupIndicatorControls();
     leftPanelLayout->addWidget(m_indicatorsGroup);
+    
+    // Ajouter la section des suggestions
+    QLabel* suggestionsLabel = new QLabel("Suggestions (Stratégie)");
+    suggestionsLabel->setStyleSheet("font-weight: bold; margin-top: 10px;");
+    leftPanelLayout->addWidget(suggestionsLabel);
+    
+    // Créer le groupe de suggestions
+    m_suggestionsGroup = new QGroupBox("Indicateurs suggérés");
+    QVBoxLayout* suggestionsGroupLayout = new QVBoxLayout(m_suggestionsGroup);
+    
+    // Layout pour les suggestions
+    m_suggestionsLayout = new QVBoxLayout();
+    suggestionsGroupLayout->addLayout(m_suggestionsLayout);
+    
+    // Bouton pour effacer toutes les suggestions
+    m_clearSuggestionsButton = new QPushButton("Clear");
+    // m_clearSuggestionsButton->setStyleSheet("font-size: 10px;");
+    connect(m_clearSuggestionsButton, &QPushButton::clicked, this, &ChartControlPanel::onClearAllSuggestions);
+    suggestionsGroupLayout->addWidget(m_clearSuggestionsButton);
+    
+    leftPanelLayout->addWidget(m_suggestionsGroup);
+    m_suggestionsGroup->setVisible(false); // Initialement caché
 
     leftPanelLayout->addStretch();
 }
+
+void ChartControlPanel::suggestIndicatorsFromStrategy(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators) {
+    // Effacer proprement les anciennes suggestions
+    onClearAllSuggestions();
+    
+    // Si aucune suggestion, masquer la section et sortir
+    if (indicators.empty()) {
+        m_suggestionsGroup->setVisible(false);
+        return;
+    }
+    
+    // Pour chaque indicateur suggéré
+    for (const auto& indicator : indicators) {
+        // Vérifier si un indicateur similaire existe déjà
+        if (!hasSimilarIndicator(indicator.get())) {
+            // Créer une copie de l'indicateur
+            std::unique_ptr<indicators::IndicatorBase> clonedIndicator = indicator->clone();
+            
+            // Créer un widget de suggestion et l'ajouter à la liste
+            createSuggestionWidget(std::move(clonedIndicator));
+        }
+    }
+    
+    // Afficher la section des suggestions s'il y en a
+    m_suggestionsGroup->setVisible(!m_suggestions.empty());
+}
+
+void ChartControlPanel::createSuggestionWidget(std::unique_ptr<indicators::IndicatorBase> indicator) {
+    // Créer le widget et son layout
+    QWidget* suggestionWidget = new QWidget();
+    QHBoxLayout* layout = new QHBoxLayout(suggestionWidget);
+    layout->setContentsMargins(0, 2, 0, 2);
+    
+    // Label avec nom de l'indicateur
+    QLabel* nameLabel = new QLabel(indicator->getDisplayName());
+    nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    nameLabel->setStyleSheet("color: #0066cc;");
+    
+    // Créer l'élément de suggestion et stocker l'index
+    SuggestionItem item;
+    item.widget = suggestionWidget;
+    item.label = nameLabel;
+    item.indicator = std::move(indicator);
+    int newIndex = static_cast<int>(m_suggestions.size());
+    
+    // Bouton pour ajouter l'indicateur
+    QPushButton* addButton = new QPushButton("→");
+    addButton->setFixedSize(QSize(25, 25));
+    addButton->setToolTip("Ajouter au graphique");
+    connect(addButton, &QPushButton::clicked, [this, newIndex]() {
+        if (newIndex < static_cast<int>(m_suggestions.size())) {
+            this->onAddSuggestedIndicator(newIndex);
+        }
+    });
+    item.addButton = addButton;
+    
+    // Bouton pour rejeter la suggestion
+    QPushButton* rejectButton = new QPushButton("×");
+    rejectButton->setFixedSize(QSize(25, 25));
+    rejectButton->setToolTip("Ignorer cette suggestion");
+    connect(rejectButton, &QPushButton::clicked, [this, newIndex]() {
+        if (newIndex < static_cast<int>(m_suggestions.size())) {
+            this->onRejectSuggestion(newIndex);
+        }
+    });
+    item.rejectButton = rejectButton;
+    
+    // Assembler le widget
+    layout->addWidget(nameLabel);
+    layout->addWidget(addButton);
+    layout->addWidget(rejectButton);
+    
+    // Ajouter le widget au layout
+    m_suggestionsLayout->addWidget(suggestionWidget);
+    
+    // Ajouter l'élément à notre liste
+    m_suggestions.push_back(std::move(item));
+}
+
+
+void ChartControlPanel::onAddSuggestedIndicator(int index) {
+    // Vérification de sécurité
+    if (index < 0 || index >= static_cast<int>(m_suggestions.size()) || !m_chartWidget)
+        return;
+    
+    const indicators::IndicatorBase* indicator = m_suggestions[index].indicator.get();
+    if (!indicator)
+        return;
+    
+    // Ajouter l'indicateur au graphique selon son type
+    if (const indicators::RSIInstance* rsi = dynamic_cast<const indicators::RSIInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*rsi);
+    } else if (const indicators::EMAInstance* ema = dynamic_cast<const indicators::EMAInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*ema);
+    } else if (const indicators::StochasticInstance* stoch = dynamic_cast<const indicators::StochasticInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*stoch);
+    } else if (const indicators::ATRInstance* atr = dynamic_cast<const indicators::ATRInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*atr);
+    } else if (const indicators::SuperTrendInstance* supertrend = dynamic_cast<const indicators::SuperTrendInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*supertrend);
+    } else if (const indicators::PivotPointsInstance* pivotPoints = dynamic_cast<const indicators::PivotPointsInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*pivotPoints);
+    } else if (const indicators::CCIInstance* cci = dynamic_cast<const indicators::CCIInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*cci);
+    } else if (const indicators::MACDInstance* macd = dynamic_cast<const indicators::MACDInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*macd);
+    } else if (const indicators::BBInstance* bb = dynamic_cast<const indicators::BBInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*bb);
+    }
+    
+    // Rejeter la suggestion après l'avoir ajoutée
+    onRejectSuggestion(index);
+}
+
+void ChartControlPanel::onRejectSuggestion(int index) {
+    // Vérification de sécurité
+    if (index < 0 || index >= static_cast<int>(m_suggestions.size()))
+        return;
+    
+    // Récupérer l'élément à supprimer
+    QWidget* widgetToRemove = m_suggestions[index].widget;
+    
+    // Supprimer du layout
+    if (widgetToRemove) {
+        m_suggestionsLayout->removeWidget(widgetToRemove);
+        widgetToRemove->disconnect(); // Déconnecter tous les signaux
+        widgetToRemove->deleteLater(); // Utiliser deleteLater au lieu de delete direct
+    }
+    
+    // Supprimer l'élément de la liste
+    m_suggestions.erase(m_suggestions.begin() + index);
+    
+    // Mettre à jour les indices dans les lambdas pour les éléments restants
+    for (int i = index; i < static_cast<int>(m_suggestions.size()); ++i) {
+        // Déconnecter les anciennes connexions
+        if (m_suggestions[static_cast<size_t>(i)].addButton) {
+            m_suggestions[static_cast<size_t>(i)].addButton->disconnect();
+            int captureIndex = i;
+            connect(m_suggestions[static_cast<size_t>(i)].addButton, &QPushButton::clicked, [this, captureIndex]() {
+                this->onAddSuggestedIndicator(captureIndex);
+            });
+        }
+
+        if (m_suggestions[static_cast<size_t>(i)].rejectButton) {
+            m_suggestions[static_cast<size_t>(i)].rejectButton->disconnect();
+            int captureIndex = i;
+            connect(m_suggestions[static_cast<size_t>(i)].rejectButton, &QPushButton::clicked, [this, captureIndex]() {
+                this->onRejectSuggestion(captureIndex);
+            });
+        }
+    }
+    
+    // Cacher le groupe s'il n'y a plus de suggestions
+    if (m_suggestions.empty()) {
+        m_suggestionsGroup->setVisible(false);
+    }
+}
+
+void ChartControlPanel::onClearAllSuggestions() {
+    // Utiliser la méthode sécurisée pour supprimer tous les widgets
+    while (!m_suggestions.empty()) {
+        // Toujours supprimer le premier élément jusqu'à ce que la liste soit vide
+        onRejectSuggestion(0);
+    }
+    
+    // Double vérification pour assurer que tout est nettoyé
+    QLayoutItem* child;
+    while ((child = m_suggestionsLayout->takeAt(0)) != nullptr) {
+        if (child->widget()) {
+            child->widget()->disconnect();
+            child->widget()->deleteLater();
+        }
+        delete child;
+    }
+    
+    // S'assurer que la liste est bien vide
+    m_suggestions.clear();
+    
+    // Cacher le groupe
+    m_suggestionsGroup->setVisible(false);
+}
+
+bool ChartControlPanel::hasSimilarIndicator(const indicators::IndicatorBase* indicator) const {
+    if (!m_chartWidget) return false;
+    
+    const std::vector<std::unique_ptr<indicators::IndicatorBase>>& existingIndicators = m_chartWidget->getIndicators();
+    
+    // Vérifier chaque indicateur existant
+    for (const auto& existingIndicator : existingIndicators) {
+        if (existingIndicator->isCalculationParamsEqual(*indicator)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 
 void ChartControlPanel::setupIndicatorControls() {
     m_indicatorsGroup = new QGroupBox("Active Indicators");
@@ -206,6 +496,9 @@ void ChartControlPanel::setupIndicatorControls() {
     m_indicatorTypeCombo->addItem("Stochastic", static_cast<int>(indicators::Type::STOCHASTIC));
     m_indicatorTypeCombo->addItem("ATR", static_cast<int>(indicators::Type::ATR));
     m_indicatorTypeCombo->addItem("Points Pivots", static_cast<int>(indicators::Type::PIVOTPOINTS));
+    m_indicatorTypeCombo->addItem("CCI", static_cast<int>(indicators::Type::CCI));
+    m_indicatorTypeCombo->addItem("MACD", static_cast<int>(indicators::Type::MACD));
+    m_indicatorTypeCombo->addItem("Bollinger Bands", static_cast<int>(indicators::Type::BB));
 
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
     addIndicatorLayout->addWidget(m_addIndicatorButton);
@@ -249,6 +542,15 @@ void ChartControlPanel::onAddIndicatorClicked() {
     else if (indicatorType == static_cast<int>(indicators::Type::PIVOTPOINTS)) {
         indicators::PivotPointsInstance pivotPoints;
         m_chartWidget->addIndicator(std::move(pivotPoints));
+    } else if (indicatorType == static_cast<int>(indicators::Type::CCI)) {
+        indicators::CCIInstance cci;
+        m_chartWidget->addIndicator(std::move(cci));
+    } else if (indicatorType == static_cast<int>(indicators::Type::MACD)) {
+        indicators::MACDInstance macd;
+        m_chartWidget->addIndicator(std::move(macd));
+    } else if (indicatorType == static_cast<int>(indicators::Type::BB)) {
+        indicators::BBInstance bb;
+        m_chartWidget->addIndicator(std::move(bb));
     }
 }
 
@@ -292,6 +594,9 @@ void ChartControlPanel::onEditIndicator(int id) {
     if (tryOpenDialog<indicators::StochasticInstance, StochasticDialog>(id)) return;
     if (tryOpenDialog<indicators::ATRInstance, ATRDialog>(id)) return;
     if (tryOpenDialog<indicators::PivotPointsInstance, PivotPointsDialog>(id)) return;
+    if (tryOpenDialog<indicators::CCIInstance, CCIDialog>(id)) return;
+    if (tryOpenDialog<indicators::MACDInstance, MACDDialog>(id)) return;
+    if (tryOpenDialog<indicators::BBInstance, bbDialog>(id)) return;
 }
 
 void ChartControlPanel::onRemoveIndicator(int id) {
@@ -333,6 +638,11 @@ void ChartControlPanel::onChartTypeChanged(int index) {
 }
 
 void ChartControlPanel::onRulerToolToggled(bool checked) {
+    if (checked) {
+        // Désactiver les outils de dessin de markers
+        m_checkMarkerButton->setChecked(false);
+        m_errorMarkerButton->setChecked(false);
+    }
     emit rulerToolToggled(checked);
 }
 
@@ -381,6 +691,12 @@ void ChartControlPanel::configureIndicatorInstances(const std::vector<std::uniqu
             m_chartWidget->addIndicator(*supertrend);
         } else if (const indicators::PivotPointsInstance* pivotPoints = dynamic_cast<const indicators::PivotPointsInstance*>(indicator.get())) {
             m_chartWidget->addIndicator(*pivotPoints);
+        } else if (const indicators::CCIInstance* cci = dynamic_cast<const indicators::CCIInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*cci);
+        } else if (const indicators::MACDInstance* macd = dynamic_cast<const indicators::MACDInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*macd);
+        } else if (const indicators::BBInstance* bb = dynamic_cast<const indicators::BBInstance*>(indicator.get())) {
+            m_chartWidget->addIndicator(*bb);
         }
     }
 }
@@ -393,5 +709,43 @@ void ChartControlPanel::setComparisonMode(bool enabled) {
         m_transferDataButton->setText("Actualiser");
     } else {
         m_transferDataButton->setText("Copier");
+    }
+}
+
+void ChartControlPanel::onCheckMarkerToggled(bool checked) {
+    if (checked) {
+        // Désactiver l'autre bouton de marker et la règle
+        m_errorMarkerButton->setChecked(false);
+        m_rulerToolButton->setChecked(false);
+        
+        if (m_chartWidget) {
+            m_chartWidget->setMarkerDrawingEnabled(true, chart::MarkerType::Check);
+        }
+    } else {
+        if (m_chartWidget) {
+            m_chartWidget->setMarkerDrawingEnabled(false);
+        }
+    }
+}
+
+void ChartControlPanel::onErrorMarkerToggled(bool checked) {
+    if (checked) {
+        // Désactiver l'autre bouton de marker et la règle
+        m_checkMarkerButton->setChecked(false);
+        m_rulerToolButton->setChecked(false);
+        
+        if (m_chartWidget) {
+            m_chartWidget->setMarkerDrawingEnabled(true, chart::MarkerType::Error);
+        }
+    } else {
+        if (m_chartWidget) {
+            m_chartWidget->setMarkerDrawingEnabled(false);
+        }
+    }
+}
+
+void ChartControlPanel::onClearMarkersClicked() {
+    if (m_chartWidget) {
+        m_chartWidget->clearAllMarkers();
     }
 }

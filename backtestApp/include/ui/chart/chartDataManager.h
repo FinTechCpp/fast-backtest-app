@@ -21,7 +21,7 @@ public:
     ~ChartDataManager();
 
     // Méthodes pour la gestion des données
-    void setData(const std::shared_ptr<const be::Data>& data, const std::vector<be::TradeData>& trades, const std::vector<double>& equityCurve);
+    void setData(const std::vector<be::Candle>& data, const std::vector<be::TradeData>& trades, const std::vector<be::EquityPoint>& equityCurve);
     chart::AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
     
     // Accesseurs
@@ -68,6 +68,13 @@ public:
     
     void removeAllIndicators();
 
+    // Marker management
+    void addMarker(const chart::ChartMarker& marker);
+    void removeMarker(size_t index);
+    void clearAllMarkers();
+    const std::vector<chart::ChartMarker>& getMarkers() const { return m_markers; }
+    void setMarkers(const std::vector<chart::ChartMarker>& markers) { m_markers = markers; }
+
 
     // Ici il faut implementer le vole de données avec move
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<indicators::IndicatorBase, T>>>
@@ -99,11 +106,11 @@ public:
 
         if (!indicator) return false;
 
-        bool needsRecalculation = indicator->needsRecalculation(config);
+        bool isCalculationParamsEqual = indicator->isCalculationParamsEqual(config);
 
         *indicator = config; // Met à jour la configuration de l'indicateur
 
-        if (needsRecalculation)
+        if (!isCalculationParamsEqual)
             calculateIndicator(config);
 
         return true;
@@ -149,6 +156,9 @@ private:
     void calculateSupertrend(int id, int period, double multiplier);
     void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
     void calculateATR(int id, int period, bool useLogScale = false);
+    void calculateCCI(int id, int period);
+    void calculateMACD(int id,int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType osc_ma_type, filter::MAType signal_ma_type, int signal_smoothing);
+    void calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType osc_ma_type);
     // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
     void calculatePivotPoints(const indicators::PivotPointsInstance& config);
 
@@ -172,6 +182,7 @@ private:
     std::vector<be::TradeData> m_trades;
     std::vector<std::array<std::pair<size_t, size_t>, static_cast<size_t>(chart::AggregationLevel::Count)>> m_tradeIndices; // Indices pour chaque trade
     chart::EquityData m_equityData;
+    std::vector<chart::ChartMarker> m_markers; // User-placed markers on the chart
 
     // ID unique global pour tous les types d'indicateurs
     int m_nextIndicatorId = 1;

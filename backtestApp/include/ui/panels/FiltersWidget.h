@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QGroupBox>
+#include <QString>
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QCheckBox>
@@ -22,7 +23,9 @@ class FiltersWidget : public QWidget
     Q_OBJECT
 
 public:
-    FiltersWidget(QWidget* parent = nullptr);
+    // Optional groupTitle lets the widget display a custom QGroupBox title
+    // (default: "Filtres de stratégie").
+    FiltersWidget(QWidget* parent = nullptr, const QString& groupTitle = QStringLiteral("Filtres de stratégie"));
     
     // Méthodes pour accéder aux filtres
     void setFilters(const std::vector<filter::GenericFilter>& filters);
@@ -39,10 +42,11 @@ private slots:
 
 private:
     void setupUI();
-    void addFilterWidget(size_t index, const filter::GenericFilter& filter);
+    void addFilterWidget(size_t index, filter::GenericFilter& filter);
     void updateFilterWidget(size_t index);
     QWidget* createFilterWidget(size_t index, const filter::GenericFilter& filter);
     void removeGaps();
+    void setGroupTitle(const QString& title) { m_groupTitle = title; }
     
     QGroupBox* m_groupBox;
     QVBoxLayout* m_mainLayout;
@@ -51,4 +55,5 @@ private:
     
     std::vector<filter::GenericFilter> m_filters;
     std::vector<FilterWidgetGroup> m_filterWidgets;
+    QString m_groupTitle;
 };

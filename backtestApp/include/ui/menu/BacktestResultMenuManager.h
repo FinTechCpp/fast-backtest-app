@@ -58,6 +58,7 @@ private slots:
     void onSaveCurrentResult();
     void onDeleteResult();
     void onImportResult();
+    void onImportExternalResult();  // Nouveau slot pour importer des résultats externes
     void onExportResult();
     void onLoadResult();
     void onOpenResultsDirectory();
@@ -75,6 +76,7 @@ private:
     QAction* m_saveResultAction;
     QAction* m_deleteResultAction;
     QAction* m_importAction;
+    QAction* m_importExternalAction;  // Nouvelle action pour importer résultats externes
     QAction* m_exportAction;
     QAction* m_openDirectoryAction;
     QAction* m_viewDetailsAction;

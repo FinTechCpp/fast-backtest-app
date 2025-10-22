@@ -159,10 +159,8 @@ bool ProfileManager::applyProfileToUI(const QString& profileName)
     if (success) {
         // Apply configurations to UI
         m_mainWindow->setGeneralParamsConfig(profileConfig.generalParams);
-        m_mainWindow->setStrategyConfig(profileConfig.strategyConfig);
-        // m_mainWindow->setBuyHeikinGreenConfig(profileConfig.buyConfig);
-        // m_mainWindow->setSellHeikinRedConfig(profileConfig.sellConfig);
-        // m_mainWindow->setGenericStrategyConfig(profileConfig.genericConfig);
+        m_mainWindow->setStrategyConfigs(profileConfig.strategyConfigs);
+
         
         m_currentProfile = profileName;
         emit profileChanged(profileName);
@@ -189,11 +187,8 @@ bool ProfileManager::saveCurrentProfile(QWidget* parentWidget)
     
     // Get configurations from UI
     profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-    profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
-    // profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
-    // profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
-    // profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
-    
+    profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
+
     bool success = saveProfile(m_currentProfile, profileConfig);
     
     if (success && parentWidget) {
@@ -231,10 +226,7 @@ bool ProfileManager::promptCreateNewProfile(QWidget* parentWidget)
         
         // Get configurations from UI
         profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-        profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
-        // profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
-        // profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
-        // profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
+        profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
         
         bool success = saveProfile(profileName, profileConfig);
         
@@ -406,10 +398,8 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
         profileConfig.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate).toStdString();
         
         profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-        profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
-        // profileConfig.buyConfig = m_mainWindow->getBuyHeikinGreenConfig();
-        // profileConfig.sellConfig = m_mainWindow->getSellHeikinRedConfig();
-        // profileConfig.genericConfig = m_mainWindow->getGenericStrategyConfig();
+        profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
+
     } else {
         // Otherwise, load from saved profile
         if (!loadProfileFromJson(targetProfile, profileConfig)) {
@@ -423,7 +413,7 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
 
     // Default file name with profile name and timestamp
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
-    QString defaultFileName = QString("backtest_config_%1_%2.json").arg(targetProfile).arg(timestamp);
+    QString defaultFileName = QString("config_%1_%2.json").arg(targetProfile).arg(timestamp);
     
     QString fileName = QFileDialog::getSaveFileName(parentWidget,
                                                    QString("Exporter la configuration - Profil: %1").arg(targetProfile),
@@ -454,7 +444,6 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
 
 void ProfileManager::onProfileChanged(const QString& profileName)
 {
-    if (profileName != m_currentProfile) {
-        applyProfileToUI(profileName);
-    }
+    // Always apply the profile to allow re-loading the same profile multiple times
+    applyProfileToUI(profileName);
 }

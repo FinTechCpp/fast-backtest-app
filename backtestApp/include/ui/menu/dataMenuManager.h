@@ -15,6 +15,8 @@
 class DataLoader;
 class App;
 
+#include <QNetworkInterface>
+
 /**
  * @brief Gestionnaire de menu des données dans la barre de menu
  * 
@@ -31,6 +33,8 @@ public:
     
     void createDataMenu(QMenuBar* menuBar);
 
+    static const QString SERVER_URL;
+    
 private slots:
     void onImportCSV();
     void onImportFromAPI();

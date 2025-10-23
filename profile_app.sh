@@ -5,7 +5,7 @@ OS=$(uname)
 
 if [ "$OS" = "Linux" ]; then
     echo "Running profiler on Linux..."
-    sudo perf record -g --call-graph=dwarf -F 1999 ./build/backtestApp/backtestapp
+    sudo perf record -g --call-graph=dwarf -F 1999 ./build-debug/backtestApp/backtestapp
     sudo hotspot perf.data
 elif [ "$OS" = "Darwin" ]; then
     echo "Running profiler on macOS..."

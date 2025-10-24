@@ -62,6 +62,7 @@ private slots:
     void onExportResult();
     void onLoadResult();
     void onOpenResultsDirectory();
+    void onOpenResultFile();
     void onViewResultDetails();
 
 private:
@@ -70,7 +71,7 @@ private:
     
     // Menu et actions
     QMenu* m_resultMenu;
-    QMenu* m_loadResultSubmenu;
+    QAction* m_loadResultAction; // Remplace le sous-menu par une action qui ouvre un dialog
     
     // Actions principales
     QAction* m_saveResultAction;

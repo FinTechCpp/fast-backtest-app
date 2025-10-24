@@ -249,11 +249,12 @@ void BacktestWorker::run()
 
     // Supprimer le dossier de logs existant pour partir avec un dossier vierge
     std::string logDirPath = "logs/backtestEngine";
+#ifdef DISABLE_LOGGING
     if (std::filesystem::exists(logDirPath)) {
         std::filesystem::remove_all(logDirPath);
         qDebug() << "Ancien dossier de logs supprimé";
     }
-    
+#endif
     // Recréer le dossier
     std::filesystem::create_directories(logDirPath);
     qDebug() << "Nouveau dossier de logs créé";

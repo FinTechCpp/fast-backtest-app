@@ -375,9 +375,8 @@ bool BacktestResultManager::importExternalResult(QWidget* parentWidget)
             QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
-        if (choice != QMessageBox::Yes) {
+        if (choice != QMessageBox::Yes) 
             return false;
-        }
     }
     
     // Sauvegarder le résultat importé dans le format par défaut
@@ -499,8 +498,11 @@ bool BacktestResultManager::loadExternalResult(const QString& filePath, Backtest
     config.name = externalConfig.name;
     config.version = externalConfig.version;
     config.createdAt = externalConfig.createdAt;
-    // config.generalParams = externalConfig.generalParams;
-    // config.strategyConfigs = externalConfig.strategyConfigs;
+    
+    // Les résultats externes n'ont pas de generalParams ni strategyConfigs
+    // On initialise avec des valeurs par défaut
+    config.generalParams = GeneralParamsConfig(); // Valeurs par défaut
+    config.strategyConfigs.clear(); // Pas de stratégies
     config.candles = externalConfig.candles;
     
     // Validation
@@ -514,6 +516,7 @@ bool BacktestResultManager::loadExternalResult(const QString& filePath, Backtest
     
     // Construire la courbe d'équité à partir des trades
     std::vector<be::EquityPoint> equityCurve;
+    // Pour un résultat externe, utiliser la valeur par défaut de cash (10000.0)
     double initialEquity = config.generalParams.cash;
     double currentEquity = initialEquity;
     

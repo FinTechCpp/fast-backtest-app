@@ -208,7 +208,7 @@ BacktestEngineDialog::BacktestEngineDialog(QWidget* parent)
     // Cash initial
     m_cashSpin = new QDoubleSpinBox(this);
     m_cashSpin->setDecimals(2);
-    m_cashSpin->setRange(1000, 10000000);
+    m_cashSpin->setRange(10, 10000000);
     m_cashSpin->setSingleStep(1000);
     m_cashSpin->setValue(10000);
     additionalParamsLayout->addRow(new QLabel("Cash initial:", this), m_cashSpin);

@@ -14,7 +14,7 @@ env:
 
 jobs:
   cleanup-artifacts:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     permissions:
       actions: write
     steps:
@@ -25,7 +25,7 @@ jobs:
         skip-recent: 3
 
   calculate-version:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     needs: cleanup-artifacts
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -39,14 +39,17 @@ jobs:
     - name: Calculate version
       id: version
       run: |
+        # Fetch all tags to ensure we have the latest
+        git fetch --tags --force
+        
         # Determine if this is a beta build (releases branch)
         IS_BETA="false"
         if [[ "${{ github.ref }}" == "refs/heads/releases" ]]; then
           IS_BETA="true"
         fi
         
-        # Get the latest existing tag
-        lastTag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        # Get the latest tag by sorting all tags (not just reachable from HEAD)
+        lastTag=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$' | head -1 || echo "")
         
         if [ -z "$lastTag" ]; then
           # If no tag exists, use the base version from the VERSION file
@@ -73,7 +76,7 @@ jobs:
         echo "Is beta: $IS_BETA"
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: [self-hosted, Windows, X64]
     needs: calculate-version
     permissions:
       contents: write
@@ -151,12 +154,6 @@ jobs:
         # Copy the executable and all DLLs
         Copy-Item "$sourceDir/*" $distDir -Recurse -Force
 
-        # Copy the default configuration file if it exists
-        if (Test-Path "backtestApp/backtest_config.ini") {
-          Copy-Item "backtestApp/backtest_config.ini" "$distDir/backtest_config.ini" -Force
-          echo "✅ Default configuration file copied"
-        }
-
         # Copy the data folders if they exist
         if (Test-Path "data") {
           Copy-Item "data" "$distDir/data" -Recurse -Force
@@ -191,14 +188,27 @@ jobs:
         echo "DOWNLOAD_SIZE=$size" >> $env:GITHUB_ENV
         echo "download_size=$size" >> $env:GITHUB_OUTPUT
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: fast-backtest-app-windows
-        path: ${{ env.ARCHIVE_NAME }}
-        retention-days: 5
+    - name: Upload to releases repository
+      run: |
+        # Clone releases repository
+        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
+        
+        # Create downloads directory
+        New-Item -Path "releases-repo\downloads" -ItemType Directory -Force
+        
+        # Copy archive
+        Copy-Item $env:ARCHIVE_NAME "releases-repo\downloads\"
+        
+        # Commit and push
+        cd releases-repo
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add "downloads\$env:ARCHIVE_NAME"
+        git commit -m "Upload Windows build v${{ env.VERSION }}"
+        git push
 
   build-macos:
+    if: false  # Temporarily disabled
     runs-on: macos-latest
     needs: calculate-version
     permissions:
@@ -277,12 +287,6 @@ jobs:
         # Deploy Qt dependencies
         macdeployqt "$DIST_DIR/$APP_NAME" -always-overwrite
         
-        # Copy additional resources
-        if [ -f "backtestApp/backtest_config.ini" ]; then
-          cp backtestApp/backtest_config.ini "$DIST_DIR/$APP_NAME/Contents/Resources/"
-          echo "✅ Default configuration file copied"
-        fi
-        
         # Copy data folder if exists
         if [ -d "data" ]; then
           cp -r data "$DIST_DIR/$APP_NAME/Contents/Resources/"
@@ -315,15 +319,27 @@ jobs:
         SIZE=$(stat -f%z "$ARCHIVE_NAME")
         echo "DOWNLOAD_SIZE=$SIZE" >> $GITHUB_ENV
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: fast-backtest-app-macos
-        path: ${{ env.ARCHIVE_NAME }}
-        retention-days: 5
+    - name: Upload to releases repository
+      run: |
+        # Clone releases repository
+        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
+        
+        # Create downloads directory
+        mkdir -p releases-repo/downloads
+        
+        # Copy archive
+        cp "$ARCHIVE_NAME" releases-repo/downloads/
+        
+        # Commit and push
+        cd releases-repo
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add downloads/"$ARCHIVE_NAME"
+        git commit -m "Upload macOS build v${{ env.VERSION }}"
+        git push
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     needs: calculate-version
     permissions:
       contents: write
@@ -346,8 +362,8 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
+        apt-get update
+        apt-get install -y \
           build-essential \
           cmake \
           ninja-build \
@@ -508,12 +524,6 @@ jobs:
         EOF
         chmod +x "$DIST_DIR/backtestapp.sh"
         
-        # Copy configuration file
-        if [ -f "backtestApp/backtest_config.ini" ]; then
-          cp backtestApp/backtest_config.ini "$DIST_DIR/"
-          echo "✅ Default configuration file copied"
-        fi
-        
         # Copy data folder if exists
         if [ -d "data" ]; then
           cp -r data "$DIST_DIR/"
@@ -543,16 +553,28 @@ jobs:
         SIZE=$(stat -c%s "$ARCHIVE_NAME")
         echo "DOWNLOAD_SIZE=$SIZE" >> $GITHUB_ENV
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: fast-backtest-app-linux
-        path: ${{ env.ARCHIVE_NAME }}
-        retention-days: 5
+    - name: Upload to releases repository
+      run: |
+        # Clone releases repository
+        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
+        
+        # Create downloads directory
+        mkdir -p releases-repo/downloads
+        
+        # Copy archive
+        cp "$ARCHIVE_NAME" releases-repo/downloads/
+        
+        # Commit and push
+        cd releases-repo
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add downloads/"$ARCHIVE_NAME"
+        git commit -m "Upload Linux build v${{ env.VERSION }}"
+        git push
 
   create-release:
-    runs-on: ubuntu-latest
-    needs: [calculate-version, build-windows, build-macos, build-linux]
+    runs-on: [self-hosted, Linux, X64]
+    needs: [calculate-version, build-windows, build-linux]  # Removed build-macos TODO : Implement macOS build
     permissions:
       contents: write
       packages: write
@@ -566,15 +588,22 @@ jobs:
         echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
         echo "IS_BETA=${{ needs.calculate-version.outputs.is_beta }}" >> $GITHUB_ENV
 
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
+    - name: Checkout releases repository
+      uses: actions/checkout@v4
       with:
-        path: artifacts
+        repository: FinTechCpp/fast-backtest-app-releases
+        path: releases-repo
+        token: ${{ secrets.RELEASE_REPO_PAT }}
 
-    - name: Display artifacts
+    - name: Pull latest changes from releases repository
       run: |
-        echo "Downloaded artifacts:"
-        ls -R artifacts/
+        cd releases-repo
+        git pull origin main
+
+    - name: Display downloaded files
+      run: |
+        echo "Files in releases repository:"
+        ls -lh releases-repo/downloads/
 
     - name: Get commit info
       id: commit
@@ -631,32 +660,14 @@ jobs:
 
         draft: false
         prerelease: false
-        files: |
-          artifacts/fast-backtest-app-windows/*
-          artifacts/fast-backtest-app-macos/*
-          artifacts/fast-backtest-app-linux/*
+        files: releases-repo/downloads/*
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Checkout releases repository
-      uses: actions/checkout@v4
-      with:
-        repository: FinTechCpp/fast-backtest-app-releases
-        path: releases-repo
-        token: ${{ secrets.RELEASE_REPO_PAT }}
-
-    - name: Upload executable to GitHub Pages
+    - name: Create latest versions on GitHub Pages
       env:
         VERSION: ${{ needs.calculate-version.outputs.version }}
         IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
       run: |
-        # Create downloads directory if it doesn't exist
-        mkdir -p releases-repo/downloads
-        
-        # Copy all platform archives
-        cp artifacts/fast-backtest-app-windows/* releases-repo/downloads/ || true
-        cp artifacts/fast-backtest-app-macos/* releases-repo/downloads/ || true
-        cp artifacts/fast-backtest-app-linux/* releases-repo/downloads/ || true
-        
         # Create "latest" or "beta-latest" versions depending on branch
         cd releases-repo/downloads
         
@@ -766,14 +777,14 @@ jobs:
         
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
         
-        # Find archive names and sizes
-        WIN_ARCHIVE=$(ls artifacts/fast-backtest-app-windows/*.zip 2>/dev/null | head -1 | xargs basename)
-        MAC_ARCHIVE=$(ls artifacts/fast-backtest-app-macos/*.dmg 2>/dev/null | head -1 | xargs basename)
-        LINUX_ARCHIVE=$(ls artifacts/fast-backtest-app-linux/*.tar.gz 2>/dev/null | head -1 | xargs basename)
+        # Find archive names and sizes from releases repository
+        WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
+        MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
+        LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
         
-        WIN_SIZE=$([ -f "artifacts/fast-backtest-app-windows/$WIN_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-windows/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
-        MAC_SIZE=$([ -f "artifacts/fast-backtest-app-macos/$MAC_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-macos/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
-        LINUX_SIZE=$([ -f "artifacts/fast-backtest-app-linux/$LINUX_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-linux/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
+        WIN_SIZE=$([ -f "releases-repo/downloads/$WIN_ARCHIVE" ] && du -h "releases-repo/downloads/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
+        MAC_SIZE=$([ -f "releases-repo/downloads/$MAC_ARCHIVE" ] && du -h "releases-repo/downloads/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
+        LINUX_SIZE=$([ -f "releases-repo/downloads/$LINUX_ARCHIVE" ] && du -h "releases-repo/downloads/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
         
         # Create Discord embed message for release
         cat <<EOF > discord_payload.json
@@ -866,14 +877,14 @@ jobs:
         
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
         
-        # Find archive names and sizes
-        WIN_ARCHIVE=$(ls artifacts/fast-backtest-app-windows/*.zip 2>/dev/null | head -1 | xargs basename)
-        MAC_ARCHIVE=$(ls artifacts/fast-backtest-app-macos/*.dmg 2>/dev/null | head -1 | xargs basename)
-        LINUX_ARCHIVE=$(ls artifacts/fast-backtest-app-linux/*.tar.gz 2>/dev/null | head -1 | xargs basename)
+        # Find archive names and sizes from releases repository
+        WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
+        MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
+        LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
         
-        WIN_SIZE=$([ -f "artifacts/fast-backtest-app-windows/$WIN_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-windows/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
-        MAC_SIZE=$([ -f "artifacts/fast-backtest-app-macos/$MAC_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-macos/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
-        LINUX_SIZE=$([ -f "artifacts/fast-backtest-app-linux/$LINUX_ARCHIVE" ] && du -h "artifacts/fast-backtest-app-linux/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
+        WIN_SIZE=$([ -f "releases-repo/downloads/$WIN_ARCHIVE" ] && du -h "releases-repo/downloads/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
+        MAC_SIZE=$([ -f "releases-repo/downloads/$MAC_ARCHIVE" ] && du -h "releases-repo/downloads/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
+        LINUX_SIZE=$([ -f "releases-repo/downloads/$LINUX_ARCHIVE" ] && du -h "releases-repo/downloads/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
         
         # Create Discord embed message for beta release
         cat <<EOF > discord_payload.json
@@ -959,9 +970,16 @@ jobs:
         VERSION: ${{ needs.calculate-version.outputs.version }}
         IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
       run: |
-        WIN_ARCHIVE=$(ls artifacts/fast-backtest-app-windows/*.zip 2>/dev/null | head -1 | xargs basename)
-        MAC_ARCHIVE=$(ls artifacts/fast-backtest-app-macos/*.dmg 2>/dev/null | head -1 | xargs basename)
-        LINUX_ARCHIVE=$(ls artifacts/fast-backtest-app-linux/*.tar.gz 2>/dev/null | head -1 | xargs basename)
+        # Determine archive names based on beta status
+        if [ "$IS_BETA" == "true" ]; then
+          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
+          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
+          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
+        else
+          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
+        fi
         
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
         

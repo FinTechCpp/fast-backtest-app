@@ -6,13 +6,22 @@
 #include <QCoreApplication>
 #include <QInputDialog>
 #include <QTimer>
+#include <QFileDialog>
+#include <QDir>
+#include <QFileInfo>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QListWidget>
+#include <QDialogButtonBox>
+#include <QListWidgetItem>
+#include <QAbstractItemView>
 
 BacktestResultMenuManager::BacktestResultMenuManager(App* parent)
     : QObject(parent)
     , m_mainWindow(parent)
     , m_resultManager(nullptr)
     , m_resultMenu(nullptr)
-    , m_loadResultSubmenu(nullptr)
     , m_saveResultAction(nullptr)
     , m_deleteResultAction(nullptr)
     , m_importAction(nullptr)
@@ -42,8 +51,11 @@ void BacktestResultMenuManager::createResultMenu(QMenuBar* menuBar)
     m_resultMenu->addAction(m_deleteResultAction);
     m_resultMenu->addSeparator();
     
-    // Créer le sous-menu pour charger les résultats
-    m_loadResultSubmenu = m_resultMenu->addMenu(tr("&Charger un résultat"));
+    // Créer une action pour charger un résultat (ouvre un file dialog)
+    m_loadResultAction = new QAction(tr("&Charger un résultat..."), this);
+    m_loadResultAction->setStatusTip(tr("Charger un fichier de résultat (JSON ou binaire)"));
+    connect(m_loadResultAction, &QAction::triggered, this, &BacktestResultMenuManager::onOpenResultFile);
+    m_resultMenu->addAction(m_loadResultAction);
     
     m_resultMenu->addSeparator();
     m_resultMenu->addAction(m_importAction);
@@ -128,27 +140,25 @@ void BacktestResultMenuManager::updateResultList()
 {
     qDebug() << "updateResultList() appelé";
     
-    if (!m_resultManager || !m_loadResultSubmenu) {
-        qWarning() << "BacktestResultManager ou LoadResultSubmenu manquant";
+    if (!m_resultManager) {
+        qWarning() << "BacktestResultManager manquant";
         return;
     }
-    
-    // Nettoyer les actions existantes
+
+    // Nettoyer les actions internes si besoin
     for (auto action : m_resultActions.values()) {
-        m_loadResultSubmenu->removeAction(action);
         delete action;
     }
     m_resultActions.clear();
     
-    // Ajouter les résultats disponibles
+    // On ne peuple plus un sous-menu : le chargement s'effectue via un file dialog
+    // On conserve la liste interne pour d'autres usages (vide ici)
     QStringList results = m_resultManager->listBacktestResults();
-    
     qDebug() << "Résultats récupérés:" << results;
     
     if (results.isEmpty()) {
         QAction* noResultsAction = new QAction(tr("(Aucun résultat)"), this);
         noResultsAction->setEnabled(false);
-        m_loadResultSubmenu->addAction(noResultsAction);
     } else {
         for (const QString& result : results) {
             QAction* action = new QAction(result, this);
@@ -158,7 +168,6 @@ void BacktestResultMenuManager::updateResultList()
 
             connect(action, &QAction::triggered, this, &BacktestResultMenuManager::onLoadResult);
 
-            m_loadResultSubmenu->addAction(action);
             m_resultActions[result] = action;
 
             qDebug() << "Action créée pour le résultat:" << result;
@@ -210,7 +219,7 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         BacktestResults currentResults = m_mainWindow->getBacktestResults();
 
         config.generalParams = currentResults.generalConfig;
-        config.strategyConfig = currentResults.strategyConfig;
+        config.strategyConfigs = currentResults.strategyConfigs;
         config.candles = currentResults.candles;
         config.stats = currentResults.stats;
 
@@ -266,12 +275,12 @@ void BacktestResultMenuManager::onLoadResult()
                 std::unique_ptr<BacktestResults> results = std::make_unique<BacktestResults>();
 
                 results->generalConfig = config.generalParams;
-                results->strategyConfig = config.strategyConfig;
+                results->strategyConfigs = config.strategyConfigs;
                 results->candles = config.candles;
                 results->stats = config.stats;
 
                 m_mainWindow->setGeneralParamsConfig(config.generalParams);
-                m_mainWindow->setStrategyConfig(config.strategyConfig);
+                m_mainWindow->setStrategyConfigs(config.strategyConfigs);
                 m_mainWindow->setBacktestResults(std::move(results));
 
                 // Mettre à jour l'état du menu
@@ -324,4 +333,59 @@ void BacktestResultMenuManager::onViewResultDetails()
                          
         QMessageBox::information(m_mainWindow, tr("Détails du résultat"), details);
     }
+}
+
+void BacktestResultMenuManager::onOpenResultFile()
+{
+    if (!m_resultManager || !m_mainWindow) {
+        return;
+    }
+
+    // Afficher une boîte de dialogue Qt listant les résultats disponibles
+    QStringList results = m_resultManager->listBacktestResults();
+
+    if (results.isEmpty()) {
+        QMessageBox::information(m_mainWindow, tr("Aucun résultat"), tr("Aucun fichier de résultat n'a été trouvé."));
+        return;
+    }
+
+    QDialog dlg(m_mainWindow);
+    dlg.setWindowTitle(tr("Charger un résultat"));
+    QVBoxLayout* layout = new QVBoxLayout(&dlg);
+
+    QLabel* label = new QLabel(tr("Sélectionnez un résultat à charger:"), &dlg);
+    layout->addWidget(label);
+
+    QListWidget* list = new QListWidget(&dlg);
+    for (const QString& r : results) {
+        list->addItem(r);
+    }
+    list->setSelectionMode(QAbstractItemView::SingleSelection);
+    layout->addWidget(list);
+
+    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+    layout->addWidget(buttons);
+
+    connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+    connect(list, &QListWidget::itemDoubleClicked, &dlg, [&dlg]() { dlg.accept(); });
+
+    if (dlg.exec() != QDialog::Accepted) {
+        return; // utilisateur a annulé
+    }
+
+    QListWidgetItem* selected = list->currentItem();
+    if (!selected) {
+        QMessageBox::warning(m_mainWindow, tr("Erreur"), tr("Aucun résultat sélectionné."));
+        return;
+    }
+
+    QString baseName = selected->text();
+
+    // Réutiliser la logique existante onLoadResult() via une action temporaire
+    QAction* temp = new QAction(baseName, this);
+    temp->setData(baseName);
+    connect(temp, &QAction::triggered, this, &BacktestResultMenuManager::onLoadResult);
+    temp->trigger();
+    temp->deleteLater();
 }

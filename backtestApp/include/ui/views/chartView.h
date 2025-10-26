@@ -80,5 +80,5 @@ private:
     
     void showPlaceholder(const QString& message);
     void showChartWidget();
-    std::vector<std::unique_ptr<indicators::IndicatorBase>> extractIndicatorsFromFilters(const StrategyConfig& strategyConfig);
+    std::vector<std::unique_ptr<indicators::IndicatorBase>> extractIndicatorsFromFilters(const std::vector<StrategyConfig>& strategyConfigs);
 };

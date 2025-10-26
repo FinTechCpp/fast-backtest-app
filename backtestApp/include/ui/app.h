@@ -50,10 +50,10 @@ public:
     ~App();
     
     GeneralParamsConfig getGeneralParamsConfig() const;
-    StrategyConfig getStrategyConfig() const;
+    std::vector<StrategyConfig> getStrategyConfigs() const;
 
     void setGeneralParamsConfig(const GeneralParamsConfig& config);
-    void setStrategyConfig(const StrategyConfig& config);
+    void setStrategyConfigs(const std::vector<StrategyConfig>& configs);
 
     // Ajout d'accesseurs pour les résultats de backtest
     const BacktestResults& getBacktestResults() const { return *m_backtestResults.get(); }

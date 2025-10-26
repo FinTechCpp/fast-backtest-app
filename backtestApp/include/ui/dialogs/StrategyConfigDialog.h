@@ -7,6 +7,8 @@
 #include <QPushButton>
 #include <QDialogButtonBox>
 #include <QCheckBox>
+#include <QLineEdit>
+#include <QLabel>
 #include "common.h"
 
 class FiltersWidget;
@@ -37,6 +39,9 @@ private:
 
 private:
     StrategyConfig m_config;
+    
+    // Strategy name
+    QLineEdit* m_nameEdit;
     
     // Filters widgets
     FiltersWidget* m_buyFiltersWidget;

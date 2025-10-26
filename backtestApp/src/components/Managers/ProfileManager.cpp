@@ -159,7 +159,7 @@ bool ProfileManager::applyProfileToUI(const QString& profileName)
     if (success) {
         // Apply configurations to UI
         m_mainWindow->setGeneralParamsConfig(profileConfig.generalParams);
-        m_mainWindow->setStrategyConfig(profileConfig.strategyConfig);
+        m_mainWindow->setStrategyConfigs(profileConfig.strategyConfigs);
 
         
         m_currentProfile = profileName;
@@ -187,7 +187,7 @@ bool ProfileManager::saveCurrentProfile(QWidget* parentWidget)
     
     // Get configurations from UI
     profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-    profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
+    profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
 
     bool success = saveProfile(m_currentProfile, profileConfig);
     
@@ -226,7 +226,7 @@ bool ProfileManager::promptCreateNewProfile(QWidget* parentWidget)
         
         // Get configurations from UI
         profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-        profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
+        profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
         
         bool success = saveProfile(profileName, profileConfig);
         
@@ -398,7 +398,7 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
         profileConfig.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate).toStdString();
         
         profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
-        profileConfig.strategyConfig = m_mainWindow->getStrategyConfig();
+        profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
 
     } else {
         // Otherwise, load from saved profile

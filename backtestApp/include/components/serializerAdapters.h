@@ -18,7 +18,7 @@ struct ProfileConfig {
     std::string version;
     std::string createdAt;
     GeneralParamsConfig generalParams;
-    StrategyConfig strategyConfig;
+    std::vector<StrategyConfig> strategyConfigs;
 
     template<class Archive>
     void serialize(Archive & ar) {
@@ -26,7 +26,7 @@ struct ProfileConfig {
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
-           CEREAL_NVP(strategyConfig));
+           CEREAL_NVP(strategyConfigs));
     }
 };
 
@@ -38,7 +38,7 @@ struct BacktestResultConfig {
 
     // Backtest Results : a remplacer par la structure BacktestResults directement ?
     GeneralParamsConfig generalParams;
-    StrategyConfig strategyConfig;
+    std::vector<StrategyConfig> strategyConfigs;
     be::Stats stats;
     // c'est vraiment lourd, il faudrait plutot une reference vers des données, ensuite en verifie que les données chargées étaient bien celles de l'enregistrement
     std::vector<be::Candle> candles;
@@ -50,7 +50,7 @@ struct BacktestResultConfig {
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
-           CEREAL_NVP(strategyConfig),
+           CEREAL_NVP(strategyConfigs),
            CEREAL_NVP(stats),
            CEREAL_NVP(candles));
     }
@@ -62,8 +62,6 @@ struct ExternalResultConfig {
     std::string version;
     std::string createdAt;
 
-    GeneralParamsConfig generalParams;
-    StrategyConfig strategyConfig;
     std::vector<be::TradeData> trades;  // Trades directement au lieu de stats
     std::vector<be::Candle> candles; 
 
@@ -72,8 +70,6 @@ struct ExternalResultConfig {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
-           CEREAL_NVP(generalParams),
-           CEREAL_NVP(strategyConfig),
            CEREAL_NVP(trades),
            CEREAL_NVP(candles));
     }
@@ -254,6 +250,7 @@ namespace cereal {
            cereal::make_nvp("use_risk_based_sizing", config.use_risk_based_sizing),
            cereal::make_nvp("risk_percentage", config.risk_percentage),
            cereal::make_nvp("leverage_limit", config.leverage_limit),
+           cereal::make_nvp("cash_allocation_percentage", config.cash_allocation_percentage),
            cereal::make_nvp("use_break_even", config.use_break_even),
            cereal::make_nvp("break_even_threshold", config.break_even_threshold),
            cereal::make_nvp("break_even_offset_per_mille", config.break_even_offset_per_mille),
@@ -268,8 +265,7 @@ namespace cereal {
     // Sérialisation pour GeneralParamsConfig
     template<class Archive>
     void serialize(Archive & ar, GeneralParamsConfig & config) {
-        ar(cereal::make_nvp("strategyName", config.strategyName),
-           cereal::make_nvp("symbol", config.symbol),
+        ar(cereal::make_nvp("symbol", config.symbol),
            cereal::make_nvp("interval", config.interval),
            cereal::make_nvp("period", config.period),
            cereal::make_nvp("endDate", config.endDate),

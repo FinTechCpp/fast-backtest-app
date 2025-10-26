@@ -1,6 +1,7 @@
 #include <QDebug>
 #include <QApplication>
 #include <sstream>
+#include <filesystem>
 
 #include "components/backtestRunner.h"
 #include "ui/app.h"
@@ -228,49 +229,91 @@ void BacktestWorker::run()
     // Convertir en format be::Data
     std::shared_ptr<be::Data> data = convertToBeData(rawData);
         
+    // Récupérer toutes les configurations de stratégies
+    std::vector<StrategyConfig> strategyConfigs = m_mainWindow->getStrategyConfigs();
+    
     // Créer un objet BacktestResults pour stocker les résultats
     m_results = std::make_unique<BacktestResults>();
     m_results->candles = data->getCandles(); // Stocker les chandeliers
     m_results->generalConfig = generalConfig; // Stocker la configuration générale du backtest
-    m_results->strategyConfig = m_mainWindow->getStrategyConfig(); // Stocker la configuration de base de la stratégie
+    m_results->strategyConfigs = strategyConfigs; // Stocker toutes les configurations de stratégies
     
     qDebug() << "Données disponibles:" << data->size() << "barres";
+    qDebug() << "Nombre de stratégies à exécuter:" << strategyConfigs.size();
     qDebug() << "Démarrage du backtest C++...";
 
-    auto syntheticStrategyFactory = [this](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, std::function<void(const std::string&)> logCallback) {
-        // Création directe de la stratégie
-        return std::make_shared<SyntheticStrategy>(broker, data);
-    };
+    std::cout << generalConfig << std::endl;
+    for (const auto& config : strategyConfigs) {
+        std::cout << config << std::endl;
+    }
 
+    // Supprimer le dossier de logs existant pour partir avec un dossier vierge
+    std::string logDirPath = "logs/backtestEngine";
+#ifdef DISABLE_LOGGING
+    if (std::filesystem::exists(logDirPath)) {
+        std::filesystem::remove_all(logDirPath);
+        qDebug() << "Ancien dossier de logs supprimé";
+    }
+#endif
+    // Recréer le dossier
+    std::filesystem::create_directories(logDirPath);
+    qDebug() << "Nouveau dossier de logs créé";
+
+    // Créer le logger
+    std::string logFilePath = logDirPath + "/backtestExecution.log";
     spdlog::drop("BE"); // S'assurer qu'il n'existe pas déjà
     std::shared_ptr<spdlog::logger> async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
         "BE",       // Logger name
-        "logs/backtestEngine/backtestExecution.log",      // Log file path
+        logFilePath.c_str(),      // Log file path
         30 * 1024 * 1024,          // Max file size (30 MB)
         1
     );
     async_file->set_level(spdlog::level::debug);
 
-    // Créer la factory pour le backtest (une closure qui capture le créateur, l'app et le logger)
-    auto strategyFactory = [this, async_file](std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, std::function<void(const std::string&)> logCallback) {
-        GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
-        StrategyConfig strategyConfig = m_mainWindow->getStrategyConfig();
-        strategyConfig.cash = generalParams.cash;
-        strategyConfig.leverage_limit = generalParams.leverage_limit;
-
-        // Création directe de la stratégie
-        return std::make_shared<StrategyAdapter>(broker, data, strategyConfig, logCallback);
-    };
-
     auto logCallback = [async_file](const std::string& msg) {
         async_file->log(spdlog::level::debug, msg);
     };
 
+    // Créer un vecteur de strategy factories - une factory par configuration
+    std::vector<be::StrategyFactory> strategyFactories;
+    strategyFactories.reserve(strategyConfigs.size());
+    
+    for (size_t i = 0; i < strategyConfigs.size(); ++i) {
+        // Capturer la config par valeur pour chaque factory
+        StrategyConfig config = strategyConfigs[i];
+        
+        auto strategyFactory = [this, config, async_file, i](
+            std::shared_ptr<be::Broker> broker, 
+            std::shared_ptr<be::Data> data, 
+            std::function<void(const std::string&)> logCallback) mutable {
+            
+            GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
+            
+            // Calculer le cash alloué à cette stratégie en fonction du pourcentage d'allocation
+            double allocatedCash = generalParams.cash * (config.cash_allocation_percentage / 100.0);
+            config.cash = allocatedCash;
+            
+            // Si le leverage n'est pas défini, utiliser celui de la configuration générale
+            if (config.leverage_limit <= 0) {
+                config.leverage_limit = generalParams.leverage_limit;
+            }
+
+            qDebug() << "Création de la stratégie" << (i + 1) 
+                     << "- Cash alloué:" << allocatedCash 
+                     << "(" << config.cash_allocation_percentage << "% de" << generalParams.cash << ")"
+                     << "- Leverage:" << config.leverage_limit;
+            
+            // Création de la stratégie avec sa configuration spécifique
+            return std::make_shared<StrategyAdapter>(broker, data, config, logCallback);
+        };
+        
+        strategyFactories.push_back(strategyFactory);
+    }
     
     // Créer et exécuter le backtest
     be::Backtest backtest(
         data,                             // Données historiques
-        strategyFactory,                  // Factory de stratégie
+        strategyFactories,                // Vecteur de factories de stratégies
         generalConfig.cash,               // Capital initial
         generalConfig.spread,             // Spread
         generalConfig.commission,         // Commission

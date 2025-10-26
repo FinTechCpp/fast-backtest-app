@@ -22,7 +22,6 @@
 
 
 struct GeneralParamsConfig {
-    std::string strategyName;
     // data
     std::string symbol;
     std::string interval;
@@ -45,7 +44,6 @@ struct GeneralParamsConfig {
 // surcharge de l'operateur << pour GeneralParamsConfig
 inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& config) {
     os << "GeneralParamsConfig {\n"
-       << "  strategyName: " << config.strategyName << ", \n"
        << "  symbol: " << config.symbol << ", \n"
        << "  interval: " << config.interval << ", \n"
        << "  period: " << config.period << ", \n"
@@ -60,6 +58,7 @@ inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& con
        << "  executeLimitOnLimitPrice: " << config.executeLimitOnLimitPrice << ", \n"
        << "  executeStopOnOpen: " << config.executeStopOnOpen << "\n"
        << "  spreadEntryRatio: " << config.spreadEntryRatio << "\n"
+       << "  minPositionStep: " << config.minPositionStep << "\n"
        << "}\n";
     return os;
 }

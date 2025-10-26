@@ -25,6 +25,11 @@ private:
     void setupUI();
     void createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& widgets);
     
+    // Capital allocation
+    QDoubleSpinBox* m_cashAllocationPercentageSpin;
+    QCheckBox* m_useCustomLeverageCheck;
+    QDoubleSpinBox* m_customLeverageSpin;
+    
     // Risk-based sizing
     QCheckBox* m_useRiskBasedSizingCheck;
     QDoubleSpinBox* m_riskPercentageSpin;

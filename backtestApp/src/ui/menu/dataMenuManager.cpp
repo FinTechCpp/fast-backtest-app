@@ -18,6 +18,8 @@
 #include "components/Utils/dataLoader.h"
 #include <QNetworkInterface>
 
+const QString DataMenuManager::SERVER_URL = "http://marketdata-fintech.duckdns.org/";
+
 DataMenuManager::DataMenuManager(QObject* parent)
     : QObject(parent)
     , m_dataMenu(nullptr)
@@ -70,9 +72,9 @@ void DataMenuManager::createActions()
    m_importCSVAction->setStatusTip(tr("Importer des données OHLC depuis un fichier CSV")); 
     connect(m_importCSVAction, &QAction::triggered, this, &DataMenuManager::onImportCSV);
     
-    // Action Importer depuis API
-    m_importAPIAction = new QAction(tr("Télécharger depuis &API (Connexion VPN requise)..."), this);
-    m_importAPIAction->setStatusTip(tr("Télécharger des données depuis une API"));
+    // Action Importer depuis serveur Fintech
+    m_importAPIAction = new QAction(tr("Télécharger depuis serveur..."), this);
+    m_importAPIAction->setStatusTip(tr("Télécharger des données depuis le serveur Fintech"));
     connect(m_importAPIAction, &QAction::triggered, this, &DataMenuManager::onImportFromAPI);
     
     // Action Valider les données
@@ -195,35 +197,11 @@ void DataMenuManager::onImportCSV()
 void DataMenuManager::onImportFromAPI()
 {
     qDebug() << "Import depuis API demandé";
-    
-    // Avant d'essayer de contacter l'API, vérifier si une interface VPN active est présente
-    while (true) {
-        if (isVpnConnected()) 
-            break; // tout va bien     
-
-        // Demander à l'utilisateur ce qu'il souhaite faire
-        QMessageBox msgBox(qobject_cast<QWidget*>(parent()));
-        msgBox.setWindowTitle(tr("Connexion VPN requise"));
-        msgBox.setText(tr("Aucune interface VPN détectée. Une connexion VPN est généralement requise pour accéder à l'API de données."));
-        QPushButton* retryButton = msgBox.addButton(tr("Réessayer"), QMessageBox::AcceptRole);
-        QPushButton* cancelButton = msgBox.addButton(QMessageBox::Cancel);
-        msgBox.setDefaultButton(retryButton);
-        msgBox.exec();
-
-        if (msgBox.clickedButton() == retryButton) {
-            // Boucle et re-vérifie
-            QApplication::processEvents();
-            continue;
-        } else {
-            // Annuler l'opération
-            qDebug() << "Import depuis API annulé par l'utilisateur";
-            return;
-        }
-    }
 
     // URL de l'API pour récupérer la liste des fichiers de données de marché
-    QUrl apiUrl("http://10.25.0.1:9004/market-data");
-    
+    QString market_files_endpoint = "/market-data";
+    QUrl apiUrl(DataMenuManager::SERVER_URL + market_files_endpoint);
+
     QNetworkRequest request(apiUrl);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Accept", "application/json");
@@ -236,50 +214,6 @@ void DataMenuManager::onImportFromAPI()
     
     qDebug() << "Requête envoyée vers:" << apiUrl.toString();
 }
-
-bool DataMenuManager::isVpnConnected()
-{
-    // Méthode simple: vérifier si une interface réseau contient "tun" ou "tap" ou "ppp" ou "wg" indiquant une interface VPN
-    const QList<QNetworkInterface>& ifaces = QNetworkInterface::allInterfaces();
-    for (const QNetworkInterface& iface : ifaces) {
-        // Skip interfaces that aren't up or have no address
-        if (!(iface.flags() & QNetworkInterface::IsUp))
-            continue;
-
-        QString name = iface.humanReadableName().toLower();
-        QString ifaceName = iface.name().toLower();
-        QString descr = iface.humanReadableName().toLower();
-
-        // Common indicators in interface names/descriptions
-        if (name.contains("tun") || name.contains("tap") || name.contains("ppp") || name.contains("wg") ||
-            ifaceName.contains("tun") || ifaceName.contains("tap") || ifaceName.contains("ppp") || ifaceName.contains("wg") ||
-            descr.contains("openvpn") || descr.contains("vpn") || descr.contains("tap-windows") || descr.contains("tunnel")) {
-            qDebug() << "Interface VPN détectée (nom/description):" << iface.name() << "(" << iface.humanReadableName() << ")";
-            return true;
-        }
-
-        // Check addresses assigned to the interface for private ranges commonly used by VPNs (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
-        const QList<QNetworkAddressEntry>& addrs = iface.addressEntries();
-        for (const QNetworkAddressEntry& entry : addrs) {
-            QHostAddress addr = entry.ip();
-            if (addr.protocol() == QAbstractSocket::IPv4Protocol) {
-                quint32 ip = addr.toIPv4Address();
-                quint8 a = (ip >> 24) & 0xFF;
-                quint8 b = (ip >> 16) & 0xFF;
-
-                // 10.0.0.0/8
-                if (a == 10) {
-                    qDebug() << "Interface VPN détectée (adresse IPv4 privée 10.x):" << iface.name() << addr.toString();
-                    return true;
-                }
-            }
-        }
-    }
-
-    qDebug() << "Aucune interface VPN détectée";
-    return false;
-}
-
 
 void DataMenuManager::onValidateData()
 {
@@ -702,8 +636,9 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         progress->setLabelText(tr("Téléchargement de %1...").arg(filename));
         
         // Construire l'URL de téléchargement
-        QUrl downloadUrl(QString("http://10.25.0.1:9004/download-market-data/%1").arg(filename));
-        
+        QString download_endpoint = "/download-market-data/" + filename;
+        QUrl downloadUrl(DataMenuManager::SERVER_URL + download_endpoint);
+
         QNetworkRequest request(downloadUrl);
         QNetworkReply* downloadReply = m_networkManager->get(request);
         

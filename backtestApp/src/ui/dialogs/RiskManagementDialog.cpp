@@ -11,6 +11,35 @@ RiskManagementDialog::RiskManagementDialog(QWidget* parent)
 void RiskManagementDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
+    // ===== Groupe Allocation de Capital =====
+    QGroupBox* capitalGroup = new QGroupBox("Allocation de capital", this);
+    QFormLayout* capitalLayout = new QFormLayout();
+    
+    // Allocation de cash en pourcentage
+    m_cashAllocationPercentageSpin = new QDoubleSpinBox(this);
+    m_cashAllocationPercentageSpin->setDecimals(1);
+    m_cashAllocationPercentageSpin->setRange(0.1, 100.0);
+    m_cashAllocationPercentageSpin->setValue(100.0);
+    m_cashAllocationPercentageSpin->setSuffix("%");
+    capitalLayout->addRow(new QLabel("Allocation du cash:", this), m_cashAllocationPercentageSpin);
+    
+    // Leverage personnalisé
+    m_useCustomLeverageCheck = new QCheckBox("Leverage personnalisé", this);
+    capitalLayout->addRow(m_useCustomLeverageCheck);
+    
+    m_customLeverageSpin = new QDoubleSpinBox(this);
+    m_customLeverageSpin->setDecimals(1);
+    m_customLeverageSpin->setRange(1.0, 500.0);
+    m_customLeverageSpin->setValue(1.0);
+    m_customLeverageSpin->setEnabled(false);
+    capitalLayout->addRow(new QLabel("Leverage limite:", this), m_customLeverageSpin);
+    
+    createDependencyGroup(m_useCustomLeverageCheck, {m_customLeverageSpin});
+    
+    capitalGroup->setLayout(capitalLayout);
+    mainLayout->addWidget(capitalGroup);
+    
+    // ===== Groupe Gestion du Risque =====
     QGroupBox* riskGroup = new QGroupBox("Gestion du risque", this);
     QFormLayout* riskLayout = new QFormLayout();
     
@@ -124,6 +153,13 @@ void RiskManagementDialog::createDependencyGroup(QCheckBox* checkbox, const std:
 }
 
 void RiskManagementDialog::setConfig(const StrategyConfig& config) {
+    m_cashAllocationPercentageSpin->setValue(config.cash_allocation_percentage);
+    m_customLeverageSpin->setValue(config.leverage_limit);
+    if (config.leverage_limit > 0) {
+        m_useCustomLeverageCheck->setChecked(true);
+    } else {
+        m_useCustomLeverageCheck->setChecked(false);
+    }
     m_useRiskBasedSizingCheck->setChecked(config.use_risk_based_sizing);
     m_riskPercentageSpin->setValue(config.risk_percentage);
     m_useDailyMaxLossCheck->setChecked(config.use_daily_max_loss);
@@ -138,6 +174,12 @@ void RiskManagementDialog::setConfig(const StrategyConfig& config) {
 }
 
 void RiskManagementDialog::updateConfig(StrategyConfig& config) const {
+    config.cash_allocation_percentage = m_cashAllocationPercentageSpin->value();
+    if (m_useCustomLeverageCheck->isChecked()) {
+        config.leverage_limit = m_customLeverageSpin->value();
+    } else {
+        config.leverage_limit = 0; // Indiquer que le leverage n'est pas défini
+    }
     config.use_risk_based_sizing = m_useRiskBasedSizingCheck->isChecked();
     config.risk_percentage = m_riskPercentageSpin->value();
     config.use_daily_max_loss = m_useDailyMaxLossCheck->isChecked();

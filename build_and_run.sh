@@ -48,6 +48,13 @@ do
     esac
 done
 
+# Select build directory based on mode
+if [ $DEBUG -eq 1 ]; then
+    BUILD_DIR="build-debug"
+else
+    BUILD_DIR="build-release"
+fi
+
 # Function to display step messages
 show_step() {
     echo -e "${BLUE}${BOLD}[STEP]${NC} $1"
@@ -64,16 +71,16 @@ show_error() {
 }
 
 # Clean the build directory if requested
-if [ $CLEAN -eq 1 ] && [ -d "build" ]; then
-    show_step "Cleaning build directory..."
-    rm -rf build
-    show_success "Build directory cleaned."
+if [ $CLEAN -eq 1 ] && [ -d "$BUILD_DIR" ]; then
+    show_step "Cleaning $BUILD_DIR directory..."
+    rm -rf "$BUILD_DIR"
+    show_success "$BUILD_DIR directory cleaned."
 fi
 
 # Create the build directory
-show_step "Creating build directory..."
-mkdir -p build
-cd build
+show_step "Creating $BUILD_DIR directory..."
+mkdir -p "$BUILD_DIR"
+cd "$BUILD_DIR"
 
 # Configure the project with CMake
 show_step "Configuring project with CMake..."
@@ -103,7 +110,7 @@ APP_PATH="./backtestApp/backtestapp"
 APP_DISPLAY_NAME="Backtest App"
 
 # Display a message on how to launch the application
-echo -e "${YELLOW}${BOLD}[INFO]${NC} Application path: ${BOLD}./build${APP_PATH:1}${NC}"
+echo -e "${YELLOW}${BOLD}[INFO]${NC} Application path: ${BOLD}${BUILD_DIR}${APP_PATH:1}${NC}"
 
 # Launch the application if requested
 if [ $RUN_APP -eq 1 ]; then

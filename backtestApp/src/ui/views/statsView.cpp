@@ -110,14 +110,15 @@ void StatsView::setupUI() {
     // --------------------------------------
     // Ligne 3
     // --------------------------------------
-    m_keyValueListWidget = new KeyValueListWidget("Trade details");
-    m_keyValueListWidget->addItem("Total ", "--", QColor(0, 0, 0));
-    m_keyValueListWidget->addItem("Take Profit ", "-- %", QColor(0, 150, 0));
-    m_keyValueListWidget->addItem("Break Even ", "-- %", QColor(0, 0, 150));
-    m_keyValueListWidget->addItem("Stop Loss ", "-- %", QColor(150, 0, 0));
-    m_keyValueListWidget->addItem("Manual ", "-- %", Qt::black);
-    m_keyValueListWidget->setMinimumSize(m_keyValueListWidget->sizeHint());
-    gridLayout->addWidget(m_keyValueListWidget, 3, 0, 2, 1); // S'étend sur 2 lignes
+    m_tradeDetailsWidget = new KeyValueListWidget("Trade details");
+    m_tradeDetailsWidget->addItem("Total ", "--", QColor(0, 0, 0), "--");
+    m_tradeDetailsWidget->addItem("Take Profit ", "-- %", QColor(0, 150, 0), "--");
+    m_tradeDetailsWidget->addItem("Break Even ", "-- %", QColor(0, 0, 150), "--");
+    m_tradeDetailsWidget->addItem("Stop Loss ", "-- %", QColor(150, 0, 0), "--");
+    m_tradeDetailsWidget->addItem("Manual ", "-- %", Qt::black, "--");
+    m_tradeDetailsWidget->setMinimumSize(m_tradeDetailsWidget->sizeHint());
+    m_tradeDetailsWidget->setCheckBoxBisString("Count");
+    gridLayout->addWidget(m_tradeDetailsWidget, 3, 0, 2, 1); // S'étend sur 2 lignes
 
     m_grossProfitWidget = new SimpleTextWidget("Gross Profit");
     m_grossProfitWidget->setStatColors(QColor(0, 150, 0));
@@ -344,11 +345,26 @@ void StatsView::updateData(BacktestResults* results)
     m_grossProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.grossProfit));
     m_grossLossWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(-m_currentResults->stats.grossLoss));
 
-    m_keyValueListWidget->updateValue("Total ", SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.numTrades, 0));
-    m_keyValueListWidget->updateValue("Take Profit ", QString::number(m_currentResults->stats.pctTPTrades, 'f', 2) + " %");
-    m_keyValueListWidget->updateValue("Break Even ", QString::number(m_currentResults->stats.pctBETrades, 'f', 2) + " %");
-    m_keyValueListWidget->updateValue("Stop Loss ", QString::number(m_currentResults->stats.pctSLTrades, 'f', 2) + " %");
-    m_keyValueListWidget->updateValue("Manual ", QString::number(m_currentResults->stats.pctManualTrades, 'f', 2) + " %");
+    // Mettre à jour les détails des trades : pourcentage (valeur primaire) et nombre absolu (valueBis)
+    m_tradeDetailsWidget->updateValues("Total ", 
+        QString::number(m_currentResults->stats.numTrades),
+        QString::number(m_currentResults->stats.numTrades));
+    
+    m_tradeDetailsWidget->updateValues("Take Profit ", 
+        QString::number(m_currentResults->stats.pctTPTrades, 'f', 2) + " %",
+        QString::number(m_currentResults->stats.numTPTrades));
+    
+    m_tradeDetailsWidget->updateValues("Break Even ", 
+        QString::number(m_currentResults->stats.pctBETrades, 'f', 2) + " %",
+        QString::number(m_currentResults->stats.numBETrades));
+    
+    m_tradeDetailsWidget->updateValues("Stop Loss ", 
+        QString::number(m_currentResults->stats.pctSLTrades, 'f', 2) + " %",
+        QString::number(m_currentResults->stats.numSLTrades));
+    
+    m_tradeDetailsWidget->updateValues("Manual ", 
+        QString::number(m_currentResults->stats.pctManualTrades, 'f', 2) + " %",
+        QString::number(m_currentResults->stats.numManualTrades));
 
 
     m_pnlGaugeWidget->updateContent(m_currentResults->stats);

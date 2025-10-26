@@ -50,9 +50,6 @@ public:
     StrategyAdapter(std::shared_ptr<be::Broker> broker, std::shared_ptr<be::Data> data, const StrategyConfig& strategyConfig, std::function<void(const std::string&)> logCallback = nullptr)
     : be::Strategy(broker, data) {
         strategy = std::make_unique<::Strategy>(strategyConfig);
-        strategy->set_log_callback(logCallback);
-        // Log de la configuration après avoir configuré le callback
-        strategy->log_configuration();
     }
     
     /**

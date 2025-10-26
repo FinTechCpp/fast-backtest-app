@@ -2,6 +2,7 @@
 #include "ui/dialogs/StopLossTakeProfitDialog.h"
 #include "ui/dialogs/TradingHoursDialog.h"
 #include "ui/dialogs/RiskManagementDialog.h"
+#include "ui/dialogs/MLConfigDialog.h"
 #include "ui/panels/FiltersWidget.h"
 #include <QScrollArea>
 #include <QDebug>
@@ -156,6 +157,25 @@ void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
     connect(m_riskManagementButton, &QPushButton::clicked, this, &StrategyConfigDialog::openRiskManagementDialog);
     configLayout->addWidget(m_riskManagementButton);
     
+    // Bouton Configuration ML
+    m_mlConfigButton = new QPushButton("🤖 Intelligence Artificielle (ML)", this);
+    m_mlConfigButton->setMinimumHeight(50);
+    m_mlConfigButton->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #9C27B0;"
+        "   color: white;"
+        "   font-size: 14px;"
+        "   font-weight: bold;"
+        "   border-radius: 5px;"
+        "   padding: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #7B1FA2;"
+        "}"
+    );
+    connect(m_mlConfigButton, &QPushButton::clicked, this, &StrategyConfigDialog::openMLConfigDialog);
+    configLayout->addWidget(m_mlConfigButton);
+    
     configGroup->setLayout(configLayout);
     mainLayout->addWidget(configGroup);
 }
@@ -180,6 +200,15 @@ void StrategyConfigDialog::openTradingHoursDialog() {
 
 void StrategyConfigDialog::openRiskManagementDialog() {
     RiskManagementDialog dialog(this);
+    dialog.setConfig(m_config);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        dialog.updateConfig(m_config);
+    }
+}
+
+void StrategyConfigDialog::openMLConfigDialog() {
+    MLConfigDialog dialog(this);
     dialog.setConfig(m_config);
     
     if (dialog.exec() == QDialog::Accepted) {

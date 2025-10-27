@@ -710,10 +710,29 @@ jobs:
           # Update beta version tag
           sed -i "s|<span class=\"version-tag beta\">beta-latest</span>|<span class=\"version-tag beta\">$VERSION</span>|g" "$HTML_FILE"
           
-          # Find beta archive names
-          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
-          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
-          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
+          # Find beta archive names (robust: avoid xargs/basename failing when no files match)
+          shopt -s nullglob
+          files=(releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip)
+          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+            WIN_ARCHIVE=$(basename "${files[0]}")
+          else
+            WIN_ARCHIVE=""
+          fi
+
+          files=(releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg)
+          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+            MAC_ARCHIVE=$(basename "${files[0]}")
+          else
+            MAC_ARCHIVE=""
+          fi
+
+          files=(releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz)
+          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+            LINUX_ARCHIVE=$(basename "${files[0]}")
+          else
+            LINUX_ARCHIVE=""
+          fi
+          shopt -u nullglob
           
           # Update beta download links
           if [ -n "$WIN_ARCHIVE" ]; then
@@ -729,10 +748,41 @@ jobs:
           # Update stable version tag
           sed -i "s|<span class=\"version-tag\">v[0-9.]*</span>|<span class=\"version-tag\">v${VERSION}</span>|g" "$HTML_FILE"
           
-          # Find stable archive names
-          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
-          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
-          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          # Find stable archive names (robust globbing, exclude beta)
+          shopt -s nullglob
+          WIN_ARCHIVE=""
+          files=(releases-repo/downloads/fast-backtest-app-windows-v*.zip)
+          if [ ${#files[@]} -gt 0 ]; then
+            for f in "${files[@]}"; do
+              case "$f" in
+                *-beta.zip) continue ;;
+                *) WIN_ARCHIVE=$(basename "$f"); break ;;
+              esac
+            done
+          fi
+
+          MAC_ARCHIVE=""
+          files=(releases-repo/downloads/fast-backtest-app-macos-v*.dmg)
+          if [ ${#files[@]} -gt 0 ]; then
+            for f in "${files[@]}"; do
+              case "$f" in
+                *-beta.dmg) continue ;;
+                *) MAC_ARCHIVE=$(basename "$f"); break ;;
+              esac
+            done
+          fi
+
+          LINUX_ARCHIVE=""
+          files=(releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz)
+          if [ ${#files[@]} -gt 0 ]; then
+            for f in "${files[@]}"; do
+              case "$f" in
+                *-beta.tar.gz) continue ;;
+                *) LINUX_ARCHIVE=$(basename "$f"); break ;;
+              esac
+            done
+          fi
+          shopt -u nullglob
           
           # Update stable download links
           if [ -n "$WIN_ARCHIVE" ]; then
@@ -778,9 +828,41 @@ jobs:
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
         
         # Find archive names and sizes from releases repository
-        WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
-        MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
-        LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
+        # Robust stable archive lookup
+        shopt -s nullglob
+        WIN_ARCHIVE=""
+        files=(releases-repo/downloads/fast-backtest-app-windows-v*.zip)
+        if [ ${#files[@]} -gt 0 ]; then
+          for f in "${files[@]}"; do
+            case "$f" in
+              *-beta.zip) continue ;;
+              *) WIN_ARCHIVE=$(basename "$f"); break ;;
+            esac
+          done
+        fi
+
+        MAC_ARCHIVE=""
+        files=(releases-repo/downloads/fast-backtest-app-macos-v*.dmg)
+        if [ ${#files[@]} -gt 0 ]; then
+          for f in "${files[@]}"; do
+            case "$f" in
+              *-beta.dmg) continue ;;
+              *) MAC_ARCHIVE=$(basename "$f"); break ;;
+            esac
+          done
+        fi
+
+        LINUX_ARCHIVE=""
+        files=(releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz)
+        if [ ${#files[@]} -gt 0 ]; then
+          for f in "${files[@]}"; do
+            case "$f" in
+              *-beta.tar.gz) continue ;;
+              *) LINUX_ARCHIVE=$(basename "$f"); break ;;
+            esac
+          done
+        fi
+        shopt -u nullglob
         
         WIN_SIZE=$([ -f "releases-repo/downloads/$WIN_ARCHIVE" ] && du -h "releases-repo/downloads/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
         MAC_SIZE=$([ -f "releases-repo/downloads/$MAC_ARCHIVE" ] && du -h "releases-repo/downloads/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
@@ -878,9 +960,29 @@ jobs:
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
         
         # Find archive names and sizes from releases repository
-        WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
-        MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
-        LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
+        # Robust beta archive lookup
+        shopt -s nullglob
+        files=(releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip)
+        if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+          WIN_ARCHIVE=$(basename "${files[0]}")
+        else
+          WIN_ARCHIVE=""
+        fi
+
+        files=(releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg)
+        if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+          MAC_ARCHIVE=$(basename "${files[0]}")
+        else
+          MAC_ARCHIVE=""
+        fi
+
+        files=(releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz)
+        if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+          LINUX_ARCHIVE=$(basename "${files[0]}")
+        else
+          LINUX_ARCHIVE=""
+        fi
+        shopt -u nullglob
         
         WIN_SIZE=$([ -f "releases-repo/downloads/$WIN_ARCHIVE" ] && du -h "releases-repo/downloads/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
         MAC_SIZE=$([ -f "releases-repo/downloads/$MAC_ARCHIVE" ] && du -h "releases-repo/downloads/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
@@ -972,13 +1074,65 @@ jobs:
       run: |
         # Determine archive names based on beta status
         if [ "$IS_BETA" == "true" ]; then
-          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip 2>/dev/null | head -1 | xargs basename)
-          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg 2>/dev/null | head -1 | xargs basename)
-          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz 2>/dev/null | head -1 | xargs basename)
+          # Robust beta archive lookup
+          shopt -s nullglob
+          files=(releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip)
+          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+            WIN_ARCHIVE=$(basename "${files[0]}")
+          else
+            WIN_ARCHIVE=""
+          fi
+
+          files=(releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg)
+          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+            MAC_ARCHIVE=$(basename "${files[0]}")
+          else
+            MAC_ARCHIVE=""
+          fi
+
+          files=(releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz)
+          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
+            LINUX_ARCHIVE=$(basename "${files[0]}")
+          else
+            LINUX_ARCHIVE=""
+          fi
+          shopt -u nullglob
         else
-          WIN_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-windows-v*.zip 2>/dev/null | grep -v beta | head -1 | xargs basename)
-          MAC_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-macos-v*.dmg 2>/dev/null | grep -v beta | head -1 | xargs basename)
-          LINUX_ARCHIVE=$(ls releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz 2>/dev/null | grep -v beta | head -1 | xargs basename)
+          # Robust stable archive lookup
+          shopt -s nullglob
+          WIN_ARCHIVE=""
+          files=(releases-repo/downloads/fast-backtest-app-windows-v*.zip)
+          if [ ${#files[@]} -gt 0 ]; then
+            for f in "${files[@]}"; do
+              case "$f" in
+                *-beta.zip) continue ;;
+                *) WIN_ARCHIVE=$(basename "$f"); break ;;
+              esac
+            done
+          fi
+
+          MAC_ARCHIVE=""
+          files=(releases-repo/downloads/fast-backtest-app-macos-v*.dmg)
+          if [ ${#files[@]} -gt 0 ]; then
+            for f in "${files[@]}"; do
+              case "$f" in
+                *-beta.dmg) continue ;;
+                *) MAC_ARCHIVE=$(basename "$f"); break ;;
+              esac
+            done
+          fi
+
+          LINUX_ARCHIVE=""
+          files=(releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz)
+          if [ ${#files[@]} -gt 0 ]; then
+            for f in "${files[@]}"; do
+              case "$f" in
+                *-beta.tar.gz) continue ;;
+                *) LINUX_ARCHIVE=$(basename "$f"); break ;;
+              esac
+            done
+          fi
+          shopt -u nullglob
         fi
         
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"

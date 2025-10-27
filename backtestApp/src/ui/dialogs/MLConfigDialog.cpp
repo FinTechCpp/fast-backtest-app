@@ -1,4 +1,5 @@
 #include "ui/dialogs/MLConfigDialog.h"
+#include "ui/dialogs/MLFeatureEditDialog.h"
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QScrollArea>
@@ -31,6 +32,9 @@ void MLConfigDialog::setConfig(const StrategyConfig& config) {
     m_thresholdSpinBox->setValue(m_threshold);
     m_normalizeCheck->setChecked(m_normalize);
     
+    // Explicitly enable/disable the config group based on checkbox state
+    onUseMlEntryChanged(m_useMlEntry ? Qt::Checked : Qt::Unchecked);
+    
     refreshFeatureList();
 }
 
@@ -55,7 +59,7 @@ void MLConfigDialog::setupUI() {
         "   padding: 10px;"
         "}"
     );
-    connect(m_useMlEntryCheck, &QCheckBox::stateChanged, this, &MLConfigDialog::onUseMlEntryChanged);
+    connect(m_useMlEntryCheck, &QCheckBox::checkStateChanged, this, &MLConfigDialog::onUseMlEntryChanged);
     mainLayout->addWidget(m_useMlEntryCheck);
     
     // Groupe de configuration ML
@@ -159,6 +163,7 @@ void MLConfigDialog::setupUI() {
         "}"
     );
     connect(m_featureList, &QListWidget::itemSelectionChanged, this, &MLConfigDialog::updateButtonStates);
+    connect(m_featureList, &QListWidget::itemDoubleClicked, this, &MLConfigDialog::onEditFeature);
     featureControlLayout->addWidget(m_featureList, 1);
     
     // Boutons de contrôle
@@ -178,6 +183,27 @@ void MLConfigDialog::setupUI() {
     );
     connect(m_addFeatureButton, &QPushButton::clicked, this, &MLConfigDialog::onAddFeature);
     buttonLayout->addWidget(m_addFeatureButton);
+    
+    m_editFeatureButton = new QPushButton("✏️ Éditer", this);
+    m_editFeatureButton->setToolTip("Éditer la feature sélectionnée");
+    m_editFeatureButton->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #FF9800;"
+        "   color: white;"
+        "   font-weight: bold;"
+        "   padding: 8px;"
+        "   border-radius: 3px;"
+        "}"
+        "QPushButton:hover { background-color: #F57C00; }"
+        "QPushButton:disabled { background-color: #cccccc; color: #888888; }"
+    );
+    connect(m_editFeatureButton, &QPushButton::clicked, this, [this]() {
+        QListWidgetItem* currentItem = m_featureList->currentItem();
+        if (currentItem) {
+            onEditFeature(currentItem);
+        }
+    });
+    buttonLayout->addWidget(m_editFeatureButton);
     
     m_removeFeatureButton = new QPushButton("🗑️ Supprimer", this);
     m_removeFeatureButton->setToolTip("Supprimer la feature sélectionnée");
@@ -234,34 +260,21 @@ void MLConfigDialog::setupUI() {
     featureControlLayout->addLayout(buttonLayout);
     featuresLayout->addLayout(featureControlLayout);
     
-    // Sélecteur d'indicateur pour ajouter des features
-    QGroupBox* addFeatureGroup = new QGroupBox("Ajouter un indicateur comme feature", this);
-    QVBoxLayout* addFeatureLayout = new QVBoxLayout();
-    
-    m_indicatorTypeCombo = new QComboBox(this);
-    m_indicatorTypeCombo->addItem("📉 EMA - Moyenne Mobile Exponentielle", static_cast<int>(filter::IndicatorType::EMA));
-    m_indicatorTypeCombo->addItem("📊 RSI - Relative Strength Index", static_cast<int>(filter::IndicatorType::RSI));
-    m_indicatorTypeCombo->addItem("📈 ATR - Average True Range", static_cast<int>(filter::IndicatorType::ATR));
-    m_indicatorTypeCombo->addItem("🎯 Stochastic K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
-    m_indicatorTypeCombo->addItem("🎯 Stochastic D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
-    m_indicatorTypeCombo->addItem("🔄 SuperTrend Value", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
-    m_indicatorTypeCombo->addItem("➡️ SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
-    m_indicatorTypeCombo->addItem("📐 CCI - Commodity Channel Index", static_cast<int>(filter::IndicatorType::CCI));
-    m_indicatorTypeCombo->addItem("📊 MACD Histogram", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
-    m_indicatorTypeCombo->addItem("📈 MACD Line", static_cast<int>(filter::IndicatorType::MACD_LINE));
-    m_indicatorTypeCombo->addItem("📉 MACD Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
-    m_indicatorTypeCombo->addItem("🔴 Bollinger Bands Upper", static_cast<int>(filter::IndicatorType::BB_UPPER));
-    m_indicatorTypeCombo->addItem("🔵 Bollinger Bands Lower", static_cast<int>(filter::IndicatorType::BB_LOWER));
-    m_indicatorTypeCombo->addItem("📊 Bollinger %B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
-    addFeatureLayout->addWidget(m_indicatorTypeCombo);
-    
-    // Widget pour les paramètres (sera ajouté dynamiquement selon l'indicateur)
-    m_parameterWidget = new QWidget(this);
-    m_parameterLayout = new QVBoxLayout(m_parameterWidget);
-    addFeatureLayout->addWidget(m_parameterWidget);
-    
-    addFeatureGroup->setLayout(addFeatureLayout);
-    featuresLayout->addWidget(addFeatureGroup);
+    // Label informatif
+    QLabel* featureInfoLabel = new QLabel("💡 <b>Astuce :</b> Double-cliquez sur une feature pour l'éditer", this);
+    featureInfoLabel->setWordWrap(true);
+    featureInfoLabel->setStyleSheet(
+        "QLabel {"
+        "   color: #555555;"
+        "   font-size: 11px;"
+        "   font-style: italic;"
+        "   padding: 6px;"
+        "   background-color: #f0f8ff;"
+        "   border-left: 3px solid #0078d4;"
+        "   border-radius: 3px;"
+        "}"
+    );
+    featuresLayout->addWidget(featureInfoLabel);
     
     featuresGroup->setLayout(featuresLayout);
     configLayout->addWidget(featuresGroup);
@@ -314,25 +327,54 @@ void MLConfigDialog::onBrowseModelPath() {
 }
 
 void MLConfigDialog::onAddFeature() {
-    int indicatorIndex = m_indicatorTypeCombo->currentData().toInt();
-    filter::IndicatorType type = static_cast<filter::IndicatorType>(indicatorIndex);
+    // Open dialog to configure a new feature
+    MLFeatureEditDialog dialog(this);
     
-    // Pour l'instant, on utilise des paramètres par défaut
-    // TODO: Créer un dialog pour configurer les paramètres de chaque indicateur
-    std::string params = "default";
+    if (dialog.exec() == QDialog::Accepted) {
+        StrategyConfig::MLFeatureConfig newFeature = dialog.getFeature();
+        
+        // Check if feature already exists using proper C++ struct comparison
+        auto it = std::find(m_features.begin(), m_features.end(), newFeature);
+        
+        if (it != m_features.end()) {
+            QMessageBox::warning(this, "Feature existante", 
+                               "Cette feature avec ces paramètres est déjà dans la liste.");
+            return;
+        }
+        
+        m_features.push_back(newFeature);
+        refreshFeatureList();
+    }
+}
+
+void MLConfigDialog::onEditFeature(QListWidgetItem* item) {
+    if (!item) return;
     
-    StrategyConfig::MLFeatureConfig feature{type, params};
-    
-    // Vérifier si la feature existe déjà
-    auto it = std::find(m_features.begin(), m_features.end(), feature);
-    if (it != m_features.end()) {
-        QMessageBox::warning(this, "Feature existante", 
-                           "Cette feature est déjà dans la liste.");
+    int row = m_featureList->row(item);
+    if (row < 0 || row >= static_cast<int>(m_features.size())) {
         return;
     }
     
-    m_features.push_back(feature);
-    refreshFeatureList();
+    // Open dialog with the existing feature
+    MLFeatureEditDialog dialog(this);
+    dialog.setFeature(m_features[row]);
+    
+    if (dialog.exec() == QDialog::Accepted) {
+        StrategyConfig::MLFeatureConfig updatedFeature = dialog.getFeature();
+        
+        // Check if this configuration already exists (excluding current item) using proper C++ struct comparison
+        for (size_t i = 0; i < m_features.size(); ++i) {
+            if (i != static_cast<size_t>(row) && m_features[i] == updatedFeature) {
+                QMessageBox::warning(this, "Feature existante", 
+                                   "Cette feature avec ces paramètres est déjà dans la liste.");
+                return;
+            }
+        }
+        
+        m_features[row] = updatedFeature;
+        refreshFeatureList();
+        m_featureList->setCurrentRow(row);
+    }
 }
 
 void MLConfigDialog::onRemoveFeature() {
@@ -371,6 +413,7 @@ void MLConfigDialog::updateButtonStates() {
     bool hasSelection = m_featureList->currentRow() >= 0;
     int currentRow = m_featureList->currentRow();
     
+    m_editFeatureButton->setEnabled(hasSelection);
     m_removeFeatureButton->setEnabled(hasSelection);
     m_moveUpButton->setEnabled(hasSelection && currentRow > 0);
     m_moveDownButton->setEnabled(hasSelection && currentRow < static_cast<int>(m_features.size()) - 1);
@@ -381,65 +424,144 @@ void MLConfigDialog::refreshFeatureList() {
     
     for (size_t i = 0; i < m_features.size(); ++i) {
         QString displayName = QString("%1. %2").arg(i + 1)
-                                               .arg(getFeatureDisplayName(m_features[i].type, m_features[i].parameters));
+                                               .arg(getFeatureDisplayName(m_features[i]));
         m_featureList->addItem(displayName);
     }
     
     updateButtonStates();
 }
 
-QString MLConfigDialog::getFeatureDisplayName(const filter::IndicatorType& type, const std::string& params) const {
-    QString name;
-    
-    switch (type) {
-        case filter::IndicatorType::EMA:
-            name = "📉 EMA";
-            break;
-        case filter::IndicatorType::RSI:
-            name = "📊 RSI";
-            break;
-        case filter::IndicatorType::ATR:
-            name = "📈 ATR";
-            break;
-        case filter::IndicatorType::STOCHASTIC_K:
-            name = "🎯 Stochastic K";
-            break;
-        case filter::IndicatorType::STOCHASTIC_D:
-            name = "🎯 Stochastic D";
-            break;
-        case filter::IndicatorType::SUPERTREND_VALUE:
-            name = "🔄 SuperTrend Value";
-            break;
-        case filter::IndicatorType::SUPERTREND_DIRECTION:
-            name = "➡️ SuperTrend Direction";
-            break;
-        case filter::IndicatorType::CCI:
-            name = "📐 CCI";
-            break;
-        case filter::IndicatorType::MACD_HISTOGRAM:
-            name = "📊 MACD Histogram";
-            break;
-        case filter::IndicatorType::MACD_LINE:
-            name = "📈 MACD Line";
-            break;
-        case filter::IndicatorType::MACD_SIGNAL:
-            name = "📉 MACD Signal";
-            break;
-        case filter::IndicatorType::BB_UPPER:
-            name = "🔴 BB Upper";
-            break;
-        case filter::IndicatorType::BB_LOWER:
-            name = "🔵 BB Lower";
-            break;
-        case filter::IndicatorType::BB_PERCENT_B:
-            name = "📊 BB %B";
-            break;
-        default:
-            name = "❓ Inconnu";
+// (Removed obsolete overload getFeatureDisplayName(IndicatorType))
+// The class header only declares getFeatureDisplayName(const StrategyConfig::MLFeatureConfig&),
+// so we keep implementations matching the header.
+
+QString MLConfigDialog::getFeatureDisplayName(const StrategyConfig::MLFeatureConfig& feature) const {
+    // Use custom name if provided
+    if (!feature.custom_name.empty()) {
+        return QString::fromStdString(feature.custom_name);
     }
     
-    if (params != "default" && !params.empty()) {
-        name += QString(" (%1)").arg(QString::fromStdString(params));
+    QString name;
+    
+    // Map indicator type to display name
+    switch (feature.type) {
+        case filter::IndicatorType::EMA:
+            name = "EMA";
+            break;
+        case filter::IndicatorType::RSI:
+            name = "RSI";
+            break;
+        case filter::IndicatorType::ATR:
+            name = "ATR";
+            break;
+        case filter::IndicatorType::STOCHASTIC_K:
+            name = "Stochastic K";
+            break;
+        case filter::IndicatorType::STOCHASTIC_D:
+            name = "Stochastic D";
+            break;
+        case filter::IndicatorType::SUPERTREND_VALUE:
+            name = "SuperTrend Value";
+            break;
+        case filter::IndicatorType::SUPERTREND_DIRECTION:
+            name = "SuperTrend Direction";
+            break;
+        case filter::IndicatorType::CCI:
+            name = "CCI";
+            break;
+        case filter::IndicatorType::MACD_HISTOGRAM:
+            name = "MACD Histogram";
+            break;
+        case filter::IndicatorType::MACD_LINE:
+            name = "MACD Line";
+            break;
+        case filter::IndicatorType::MACD_SIGNAL:
+            name = "MACD Signal";
+            break;
+        case filter::IndicatorType::BB_UPPER:
+            name = "BB Upper";
+            break;
+        case filter::IndicatorType::BB_LOWER:
+            name = "BB Lower";
+            break;
+        case filter::IndicatorType::BB_PERCENT_B:
+            name = "BB %B";
+            break;
+        default:
+            name = "Inconnu";
+    }
+    
+    // Add parameter details using proper C++ struct fields
+    QString paramsStr;
+    
+    switch (feature.type) {
+        case filter::IndicatorType::EMA:
+        case filter::IndicatorType::RSI:
+        case filter::IndicatorType::ATR:
+        case filter::IndicatorType::CCI:
+            paramsStr = QString("period=%1").arg(feature.params.period);
+            break;
+            
+        case filter::IndicatorType::STOCHASTIC_K:
+        case filter::IndicatorType::STOCHASTIC_D:
+            paramsStr = QString("k=%1,d=%2,s=%3")
+                .arg(feature.params.k_period)
+                .arg(feature.params.d_period)
+                .arg(feature.params.smooth);
+            break;
+            
+        case filter::IndicatorType::SUPERTREND_VALUE:
+        case filter::IndicatorType::SUPERTREND_DIRECTION:
+            paramsStr = QString("period=%1,mult=%2")
+                .arg(feature.params.period)
+                .arg(feature.params.multiplier);
+            break;
+            
+        case filter::IndicatorType::MACD_HISTOGRAM:
+        case filter::IndicatorType::MACD_LINE:
+        case filter::IndicatorType::MACD_SIGNAL:
+            paramsStr = QString("fast=%1,slow=%2,sig=%3")
+                .arg(feature.params.fast_period)
+                .arg(feature.params.slow_period)
+                .arg(feature.params.signal_period);
+            break;
+            
+        case filter::IndicatorType::BB_UPPER:
+        case filter::IndicatorType::BB_LOWER:
+        case filter::IndicatorType::BB_PERCENT_B:
+            paramsStr = QString("period=%1,σ=%2")
+                .arg(feature.params.period)
+                .arg(feature.params.multiplier);
+            break;
+            
+        default:
+            break;
+    }
+    
+    // Add transform if not NONE
+    if (feature.transform != filter::TransformType::NONE) {
+        QString transformStr;
+        switch (feature.transform) {
+            case filter::TransformType::DERIVATIVE:
+                transformStr = "DERIVATIVE";
+                break;
+            case filter::TransformType::LOG:
+                transformStr = "LOG";
+                break;
+            case filter::TransformType::EXP:
+                transformStr = "EXP";
+                break;
+            default:
+                break;
+        }
+        if (!transformStr.isEmpty()) {
+            if (!paramsStr.isEmpty()) paramsStr += ",";
+            paramsStr += transformStr;
+        }
+    }
+    
+    if (!paramsStr.isEmpty()) {
+        name += QString(" [%1]").arg(paramsStr);
     }
     
     return name;

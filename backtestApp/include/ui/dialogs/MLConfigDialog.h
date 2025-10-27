@@ -31,6 +31,7 @@ public:
 
 private slots:
     void onAddFeature();
+    void onEditFeature(QListWidgetItem* item);
     void onRemoveFeature();
     void onMoveFeatureUp();
     void onMoveFeatureDown();
@@ -41,7 +42,7 @@ private slots:
 private:
     void setupUI();
     void refreshFeatureList();
-    QString getFeatureDisplayName(const filter::IndicatorType& type, const std::string& params) const;
+    QString getFeatureDisplayName(const StrategyConfig::MLFeatureConfig& feature) const;
     
     // Configuration temporaire
     bool m_useMlEntry;
@@ -64,11 +65,8 @@ private:
     
     QListWidget* m_featureList;
     QPushButton* m_addFeatureButton;
+    QPushButton* m_editFeatureButton;
     QPushButton* m_removeFeatureButton;
     QPushButton* m_moveUpButton;
     QPushButton* m_moveDownButton;
-    
-    QComboBox* m_indicatorTypeCombo;
-    QWidget* m_parameterWidget;
-    QVBoxLayout* m_parameterLayout;
 };

@@ -158,7 +158,7 @@ void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
     configLayout->addWidget(m_riskManagementButton);
     
     // Bouton Configuration ML
-    m_mlConfigButton = new QPushButton("🤖 Intelligence Artificielle (ML)", this);
+    m_mlConfigButton = new QPushButton("Intelligence Artificielle (ML)", this);
     m_mlConfigButton->setMinimumHeight(50);
     m_mlConfigButton->setStyleSheet(
         "QPushButton {"

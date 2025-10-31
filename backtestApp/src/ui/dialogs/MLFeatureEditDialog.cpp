@@ -99,6 +99,8 @@ void MLFeatureEditDialog::setupUI() {
     m_indicatorTypeCombo->addItem(" Bollinger Bands Upper", static_cast<int>(filter::IndicatorType::BB_UPPER));
     m_indicatorTypeCombo->addItem(" Bollinger Bands Lower", static_cast<int>(filter::IndicatorType::BB_LOWER));
     m_indicatorTypeCombo->addItem(" Bollinger %B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
+    m_indicatorTypeCombo->addItem(" Time Cyclic (Sine)", static_cast<int>(filter::IndicatorType::TIME_SIN));
+    m_indicatorTypeCombo->addItem(" Time Cyclic (Cosine)", static_cast<int>(filter::IndicatorType::TIME_COS));
     
     connect(m_indicatorTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MLFeatureEditDialog::onIndicatorTypeChanged);
@@ -403,6 +405,11 @@ void MLFeatureEditDialog::populateParametersFromFeature(const StrategyConfig::ML
             if (m_multiplierSpinBox) m_multiplierSpinBox->setValue(feature.params.multiplier);
             break;
             
+        case filter::IndicatorType::TIME_SIN:
+        case filter::IndicatorType::TIME_COS:
+            // Pas de paramètres à populer
+            break;
+            
         default:
             break;
     }
@@ -566,6 +573,16 @@ void MLFeatureEditDialog::setupParameterWidgets() {
                     this, &MLFeatureEditDialog::updatePreview);
             m_parametersLayout->addWidget(multLabel, row, 0);
             m_parametersLayout->addWidget(m_multiplierSpinBox, row, 1);
+            row++;
+            break;
+        }
+        
+        case filter::IndicatorType::TIME_SIN:
+        case filter::IndicatorType::TIME_COS: {
+            // Pas de paramètres nécessaires - encodage cyclique basé sur le timestamp
+            QLabel* infoLabel = new QLabel("Calculé automatiquement à partir du timestamp", this);
+            infoLabel->setStyleSheet("color: #666; font-style: italic;");
+            m_parametersLayout->addWidget(infoLabel, row, 0, 1, 2);
             row++;
             break;
         }
@@ -767,6 +784,11 @@ filter::ValueSource MLFeatureEditDialog::getConfiguredValueSource() const {
                     m_multiplierSpinBox->value()
                 );
             }
+            break;
+        case filter::IndicatorType::TIME_SIN:
+        case filter::IndicatorType::TIME_COS:
+            // Pas besoin de paramètres - utilise les valeurs par défaut
+            source.timeCyclicParams = filter::TimeCyclicParams();
             break;
         default:
             break;

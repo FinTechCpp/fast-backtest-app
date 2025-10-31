@@ -51,7 +51,7 @@ void MLConfigDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
     // Checkbox pour activer/désactiver ML
-    m_useMlEntryCheck = new QCheckBox("🤖 Utiliser un modèle d'Intelligence Artificielle pour les signaux d'entrée", this);
+    m_useMlEntryCheck = new QCheckBox("Utiliser un modèle d'Intelligence Artificielle pour les signaux d'entrée", this);
     m_useMlEntryCheck->setStyleSheet(
         "QCheckBox {"
         "   font-size: 14px;"
@@ -74,7 +74,7 @@ void MLConfigDialog::setupUI() {
     m_modelPathEdit = new QLineEdit(this);
     m_modelPathEdit->setPlaceholderText("./models/entry_signals.onnx");
     
-    m_browseButton = new QPushButton("📁 Parcourir...", this);
+    m_browseButton = new QPushButton("Parcourir...", this);
     m_browseButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #2196F3;"
@@ -129,11 +129,11 @@ void MLConfigDialog::setupUI() {
     configLayout->addWidget(paramsGroup);
     
     // Section: Configuration des features (indicateurs)
-    QGroupBox* featuresGroup = new QGroupBox("📊 Features (Indicateurs) utilisées par le modèle", this);
+    QGroupBox* featuresGroup = new QGroupBox("Features (Indicateurs) utilisées par le modèle", this);
     QVBoxLayout* featuresLayout = new QVBoxLayout();
     
     QLabel* infoLabel = new QLabel(
-        "💡 <b>Important :</b> L'ordre et le type des features doivent correspondre exactement "
+        "<b>Important :</b> L'ordre et le type des features doivent correspondre exactement "
         "à celles utilisées lors de l'entraînement du modèle ONNX.<br>"
         "Par défaut, les données OHLC des N dernières bougies sont utilisées.",
         this
@@ -261,7 +261,7 @@ void MLConfigDialog::setupUI() {
     featuresLayout->addLayout(featureControlLayout);
     
     // Label informatif
-    QLabel* featureInfoLabel = new QLabel("💡 <b>Astuce :</b> Double-cliquez sur une feature pour l'éditer", this);
+    QLabel* featureInfoLabel = new QLabel("<b>Astuce :</b> Double-cliquez sur une feature pour l'éditer", this);
     featureInfoLabel->setWordWrap(true);
     featureInfoLabel->setStyleSheet(
         "QLabel {"
@@ -487,6 +487,12 @@ QString MLConfigDialog::getFeatureDisplayName(const StrategyConfig::MLFeatureCon
         case filter::IndicatorType::BB_PERCENT_B:
             name = "BB %B";
             break;
+        case filter::IndicatorType::TIME_SIN:
+            name = "Time Cyclic (Sin)";
+            break;
+        case filter::IndicatorType::TIME_COS:
+            name = "Time Cyclic (Cos)";
+            break;
         default:
             name = "Inconnu";
     }
@@ -532,6 +538,11 @@ QString MLConfigDialog::getFeatureDisplayName(const StrategyConfig::MLFeatureCon
             paramsStr = QString("period=%1,σ=%2")
                 .arg(feature.params.period)
                 .arg(feature.params.multiplier);
+            break;
+            
+        case filter::IndicatorType::TIME_SIN:
+        case filter::IndicatorType::TIME_COS:
+            // Pas de paramètres pour TimeCyclic
             break;
             
         default:

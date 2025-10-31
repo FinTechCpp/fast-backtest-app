@@ -14,10 +14,10 @@ class App;
 struct BacktestResultConfig;
 
 /**
- * @brief Gestionnaire de menu des résultats de backtest dans la barre de menu
- * 
- * Cette classe gère le menu "Résultats" dans la barre de menu principale
- * avec les actions pour gérer les résultats de backtest.
+ * @brief Results menu handler 
+ *
+ * This class manages the "Results" menu in the main menu bar
+ * with actions to manage backtest results.
  */
 class BacktestResultMenuManager : public QObject
 {
@@ -25,64 +25,57 @@ class BacktestResultMenuManager : public QObject
 
 public:
     /**
-     * @brief Constructeur
-     * @param parent Pointeur vers l'application principale
+     * @brief Constructor
+     * @param parent Pointer to the main application
      */
     BacktestResultMenuManager(App* parent = nullptr);
     
     /**
-     * @brief Crée et ajoute le menu des résultats à la barre de menu
-     * @param menuBar Barre de menu où ajouter le menu des résultats
+     * @brief Creates and adds the results menu to the menu bar
+     * @param menuBar Menu bar to which the results menu will be added
      */
     void createResultMenu(QMenuBar* menuBar);
     
     /**
-     * @brief Initialise le gestionnaire avec le BacktestResultManager
-     * @param resultManager Pointeur vers le gestionnaire de résultats
+     * @brief Initializes the manager with the BacktestResultManager
+     * @param resultManager Pointer to the result manager
      */
     void setResultManager(BacktestResultManager* resultManager);
     
     /**
-     * @brief Met à jour la liste des résultats dans le menu
+     * @brief Updates the result list in the menu
      */
     void updateResultList();
 
 public slots:
     /**
-     * @brief Déclenché quand un résultat est sélectionné ou chargé
-     * @param resultName Nom du résultat chargé
+     * @brief Triggered when a result is selected or loaded
+     * @param resultName Name of the loaded result
      */
     void onResultLoaded(const QString& resultName);
 
 private slots:
     void onSaveCurrentResult();
-    void onDeleteResult();
     void onImportResult();
-    void onImportExternalResult();  // Nouveau slot pour importer des résultats externes
-    void onExportResult();
-    void onLoadResult();
+    void onImportExternalResult();  // Slot for importing external results
     void onOpenResultsDirectory();
-    void onOpenResultFile();
-    void onViewResultDetails();
+    void onManageResults();  // Slot for opening the result management dialog
 
 private:
     App* m_mainWindow;
     BacktestResultManager* m_resultManager;
     
-    // Menu et actions
+    // Menu and actions
     QMenu* m_resultMenu;
-    QAction* m_loadResultAction; // Remplace le sous-menu par une action qui ouvre un dialog
-    
-    // Actions principales
+
+    // Main actions
     QAction* m_saveResultAction;
-    QAction* m_deleteResultAction;
+    QAction* m_manageResultsAction;  //  action for managing results
     QAction* m_importAction;
-    QAction* m_importExternalAction;  // Nouvelle action pour importer résultats externes
-    QAction* m_exportAction;
+    QAction* m_importExternalAction;  //  action for importing external results
     QAction* m_openDirectoryAction;
-    QAction* m_viewDetailsAction;
-    
-    // Actions dynamiques pour les résultats
+
+    // Dynamic actions for results (kept for internal use)
     QMap<QString, QAction*> m_resultActions;
     QString m_currentResult;
     

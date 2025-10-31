@@ -11,11 +11,13 @@
 #include <QFileInfo>
 #include <QDialog>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
 #include <QDialogButtonBox>
 #include <QListWidgetItem>
 #include <QAbstractItemView>
+#include <QPushButton>
 
 BacktestResultMenuManager::BacktestResultMenuManager(App* parent)
     : QObject(parent)
@@ -23,172 +25,122 @@ BacktestResultMenuManager::BacktestResultMenuManager(App* parent)
     , m_resultManager(nullptr)
     , m_resultMenu(nullptr)
     , m_saveResultAction(nullptr)
-    , m_deleteResultAction(nullptr)
+    , m_manageResultsAction(nullptr)
     , m_importAction(nullptr)
     , m_importExternalAction(nullptr)
-    , m_exportAction(nullptr)
     , m_openDirectoryAction(nullptr)
-    , m_viewDetailsAction(nullptr)
 {
-    qDebug() << "BacktestResultMenuManager créé";
+    qDebug() << "BacktestResultMenuManager created";
 }
 
 void BacktestResultMenuManager::createResultMenu(QMenuBar* menuBar)
 {
     if (!menuBar) {
-        qWarning() << "MenuBar null passé à createResultMenu";
+        qWarning() << "MenuBar null passed to createResultMenu";
         return;
     }
-    
-    // Créer le menu Résultats (avant le menu Aide)
-    m_resultMenu = menuBar->addMenu(tr("&Résultats"));
+
+    // Create the Results menu (before the Help menu)
+    m_resultMenu = menuBar->addMenu(tr("&Results"));
     
     createActions();
-    
-    // Ajouter les actions au menu
+
+    // Add actions to the menu
     m_resultMenu->addAction(m_saveResultAction);
-    m_resultMenu->addAction(m_viewDetailsAction);
-    m_resultMenu->addAction(m_deleteResultAction);
     m_resultMenu->addSeparator();
-    
-    // Créer une action pour charger un résultat (ouvre un file dialog)
-    m_loadResultAction = new QAction(tr("&Charger un résultat..."), this);
-    m_loadResultAction->setStatusTip(tr("Charger un fichier de résultat (JSON ou binaire)"));
-    connect(m_loadResultAction, &QAction::triggered, this, &BacktestResultMenuManager::onOpenResultFile);
-    m_resultMenu->addAction(m_loadResultAction);
+
+    // Main action to manage results (load, view details, export, delete)
+    m_resultMenu->addAction(m_manageResultsAction);
     
     m_resultMenu->addSeparator();
     m_resultMenu->addAction(m_importAction);
-    m_resultMenu->addAction(m_importExternalAction);  
-    m_resultMenu->addAction(m_exportAction);
+    m_resultMenu->addAction(m_importExternalAction);
 
-    // Ajouter un séparateur puis l'action pour ouvrir le dossier
+    // Add a separator then the action to open the directory
     m_resultMenu->addSeparator();
     m_resultMenu->addAction(m_openDirectoryAction);
-    
-    qDebug() << "Menu Résultats créé";
+
+    qDebug() << "Results menu created in menu bar";
 }
 
 void BacktestResultMenuManager::createActions()
 {
-    // Action Sauvegarder
-    m_saveResultAction = new QAction(tr("&Sauvegarder le résultat actuel"), this);
-    m_saveResultAction->setStatusTip(tr("Sauvegarder le résultat de backtest actuel"));
+    // Action Save
+    m_saveResultAction = new QAction(tr("&Save Current Result"), this);
+    m_saveResultAction->setStatusTip(tr("Save the current backtest result"));
     connect(m_saveResultAction, &QAction::triggered, this, &BacktestResultMenuManager::onSaveCurrentResult);
-    
-    // Action Voir détails
-    m_viewDetailsAction = new QAction(tr("&Voir les détails..."), this);
-    m_viewDetailsAction->setStatusTip(tr("Afficher les détails du résultat"));
-    connect(m_viewDetailsAction, &QAction::triggered, this, &BacktestResultMenuManager::onViewResultDetails);
-    
-    // Action Supprimer résultat
-    m_deleteResultAction = new QAction(tr("&Supprimer le résultat"), this);
-    m_deleteResultAction->setStatusTip(tr("Supprimer le résultat sélectionné"));
-    connect(m_deleteResultAction, &QAction::triggered, this, &BacktestResultMenuManager::onDeleteResult);
-    
-    // Action Importer
-    m_importAction = new QAction(tr("&Importer un résultat de backtest..."), this);
-    m_importAction->setStatusTip(tr("Importer un résultat de backtest complet (avec stats)"));
+
+    // Action Manage Results
+    m_manageResultsAction = new QAction(tr("&Manage Results..."), this);
+    m_manageResultsAction->setStatusTip(tr("Load, view details, export or delete a result"));
+    connect(m_manageResultsAction, &QAction::triggered, this, &BacktestResultMenuManager::onManageResults);
+
+    // Action Import
+    m_importAction = new QAction(tr("&Import Backtest Result..."), this);
+    m_importAction->setStatusTip(tr("Import a complete backtest result (with stats)"));
     connect(m_importAction, &QAction::triggered, this, &BacktestResultMenuManager::onImportResult);
-    
-    // Action Importer résultat externe
-    m_importExternalAction = new QAction(tr("Importer un résultat e&xterne..."), this);
-    m_importExternalAction->setStatusTip(tr("Importer un résultat externe (sans stats - seront calculées automatiquement)"));
+
+    // Action Import External Result
+    m_importExternalAction = new QAction(tr("&Import External Result..."), this);
+    m_importExternalAction->setStatusTip(tr("Import an external result (without stats - will be calculated automatically)"));
     connect(m_importExternalAction, &QAction::triggered, this, &BacktestResultMenuManager::onImportExternalResult);
-    
-    // Action Exporter
-    m_exportAction = new QAction(tr("&Exporter..."), this);
-    m_exportAction->setStatusTip(tr("Exporter le résultat actuel"));
-    connect(m_exportAction, &QAction::triggered, this, &BacktestResultMenuManager::onExportResult);
-    
-    // Action - Ouvrir le dossier des résultats
-    m_openDirectoryAction = new QAction(tr("&Ouvrir le dossier des résultats"), this);
-    m_openDirectoryAction->setStatusTip(tr("Ouvrir le dossier contenant les fichiers de résultats"));
+
+    // Action - Open Results Directory
+    m_openDirectoryAction = new QAction(tr("&Open Results Directory"), this);
+    m_openDirectoryAction->setStatusTip(tr("Open the directory containing result files"));
     connect(m_openDirectoryAction, &QAction::triggered, this, &BacktestResultMenuManager::onOpenResultsDirectory);
-    
-    // Désactiver les actions qui nécessitent un résultat chargé
-    m_viewDetailsAction->setEnabled(false);
-    m_deleteResultAction->setEnabled(false);
-    m_exportAction->setEnabled(false);
 }
 
 void BacktestResultMenuManager::setResultManager(BacktestResultManager* resultManager)
 {
     m_resultManager = resultManager;
     if (m_resultManager) {
-        qDebug() << "Connexion du BacktestResultManager au BacktestResultMenuManager";
-        
-        // Connecter les signaux
+        qDebug() << "Connecting BacktestResultManager to BacktestResultMenuManager";
+
+        // Connect signals
         connect(m_resultManager, &BacktestResultManager::resultListUpdated,
                 this, &BacktestResultMenuManager::updateResultList);
-        
-        qDebug() << "Signaux connectés, mise à jour initiale de la liste des résultats";
-        
-        // Utiliser un timer pour s'assurer que tout est initialisé
+
+        qDebug() << "Signals connected, initial result list update";
+        // Use a timer to ensure everything is initialized
         QTimer::singleShot(100, this, [this]() {
-            qDebug() << "Mise à jour différée de la liste des résultats";
+            qDebug() << "Delayed update of result list";
             updateResultList();
         });
-        
-        qDebug() << "BacktestResultManager connecté au BacktestResultMenuManager";
+
+        qDebug() << "BacktestResultManager connected to BacktestResultMenuManager";
     } else {
-        qWarning() << "BacktestResultManager null passé à setResultManager";
+        qWarning() << "BacktestResultManager null passed to setResultManager";
     }
 }
 
 void BacktestResultMenuManager::updateResultList()
 {
-    qDebug() << "updateResultList() appelé";
-    
+    qDebug() << "updateResultList() called";
+
     if (!m_resultManager) {
-        qWarning() << "BacktestResultManager manquant";
+        qWarning() << "BacktestResultManager missing";
         return;
     }
 
-    // Nettoyer les actions internes si besoin
+    // Clean up internal actions if needed
     for (auto action : m_resultActions.values()) {
         delete action;
     }
     m_resultActions.clear();
-    
-    // On ne peuple plus un sous-menu : le chargement s'effectue via un file dialog
-    // On conserve la liste interne pour d'autres usages (vide ici)
+
+    // Note: We no longer use dynamic sub-menus
+    // Result management is now done via the onManageResults() dialog
     QStringList results = m_resultManager->listBacktestResults();
-    qDebug() << "Résultats récupérés:" << results;
-    
-    if (results.isEmpty()) {
-        QAction* noResultsAction = new QAction(tr("(Aucun résultat)"), this);
-        noResultsAction->setEnabled(false);
-    } else {
-        for (const QString& result : results) {
-            QAction* action = new QAction(result, this);
-            // Use non-checkable actions so clicking immediately applies the result
-            action->setCheckable(false);
-            action->setData(result);
-
-            connect(action, &QAction::triggered, this, &BacktestResultMenuManager::onLoadResult);
-
-            m_resultActions[result] = action;
-
-            qDebug() << "Action créée pour le résultat:" << result;
-        }
-    }
-    
-    qDebug() << "Liste des résultats mise à jour avec" << results.size() << "résultats";
+    qDebug() << "Result list updated with" << results.size() << "results";
 }
 
 void BacktestResultMenuManager::onResultLoaded(const QString& resultName)
 {
-    // Mettre à jour le nom du résultat courant (actions non-checkables maintenant)
+    // Update the current result name
     m_currentResult = resultName;
-    
-    // Activer les actions qui nécessitent un résultat chargé
-    bool hasResult = !resultName.isEmpty();
-    m_viewDetailsAction->setEnabled(hasResult);
-    m_deleteResultAction->setEnabled(hasResult);
-    m_exportAction->setEnabled(hasResult);
-    
-    qDebug() << "Résultat actuel mis à jour vers:" << resultName;
+
+    qDebug() << "Current result updated to:" << resultName;
 }
 
 void BacktestResultMenuManager::onSaveCurrentResult()
@@ -196,21 +148,21 @@ void BacktestResultMenuManager::onSaveCurrentResult()
     if (!m_resultManager || !m_mainWindow) {
         return;
     }
-    
-    // Créer un nouveau résultat à partir des statistiques actuelles
-    // Cela suppose que l'App a une méthode pour récupérer les statistiques actuelles
-    // Exemple : be::Stats currentStats = m_mainWindow->getCurrentStats();
 
-    // Pour cet exemple, nous allons supposer que tu as une méthode dans App pour créer une config
+    // Create a new result from the current stats
+    // This assumes that the App has a method to retrieve the current stats
+    // Example: be::Stats currentStats = m_mainWindow->getCurrentStats();
+
+    // For this example, we will assume you have a method in App to create a config
     // BacktestResultConfig config = m_mainWindow->createBacktestResultConfig();
     
     bool ok;
-    QString name = QInputDialog::getText(m_mainWindow, tr("Nom du résultat"),
-                                        tr("Entrez un nom pour ce résultat:"),
+    QString name = QInputDialog::getText(m_mainWindow, tr("Result Name"),
+                                        tr("Enter a name for this result:"),
                                         QLineEdit::Normal, "", &ok);
     
     if (ok && !name.isEmpty()) {
-        // Créer une configuration de résultat
+        // Create a result config
         BacktestResultConfig config;
         config.name = name.toStdString();
         config.version = QCoreApplication::applicationVersion().toStdString();
@@ -223,21 +175,183 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         config.candles = currentResults.candles;
         config.stats = currentResults.stats;
 
-        // Sauvegarder le résultat
+        // Save the result
         // m_resultManager->saveBacktestResult(config, m_mainWindow);
         m_resultManager->saveBacktestResult(config, m_mainWindow, SerializationUtils::FileFormat::JSON);
     }
 }
 
-void BacktestResultMenuManager::onDeleteResult()
+void BacktestResultMenuManager::onManageResults()
 {
-    if (m_resultManager && !m_currentResult.isEmpty()) {
-        m_resultManager->deleteBacktestResult(m_currentResult, m_mainWindow);
-        m_currentResult.clear();
-        
-        // Mettre à jour l'interface
-        onResultLoaded(QString());
+    if (!m_resultManager || !m_mainWindow) {
+        return;
     }
+
+    // Retrieve the list of available results
+    QStringList results = m_resultManager->listBacktestResults();
+
+    if (results.isEmpty()) {
+        QMessageBox::information(m_mainWindow, tr("No Results"),
+                                tr("No result files found."));
+        return;
+    }
+
+    // Create a custom dialog
+    QDialog dlg(m_mainWindow);
+    dlg.setWindowTitle(tr("Gérer les résultats"));
+    dlg.resize(600, 400);
+    
+    QVBoxLayout* layout = new QVBoxLayout(&dlg);
+
+    QLabel* label = new QLabel(tr("Sélectionnez un résultat:"), &dlg);
+    layout->addWidget(label);
+
+    QListWidget* list = new QListWidget(&dlg);
+    for (const QString& r : results) {
+        list->addItem(r);
+    }
+    list->setSelectionMode(QAbstractItemView::SingleSelection);
+    layout->addWidget(list);
+
+    // Create action buttons
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    
+    QPushButton* loadBtn = new QPushButton(tr("Charger"), &dlg);
+    QPushButton* detailsBtn = new QPushButton(tr("Voir détails"), &dlg);
+    QPushButton* exportBtn = new QPushButton(tr("Exporter"), &dlg);
+    QPushButton* deleteBtn = new QPushButton(tr("Supprimer"), &dlg);
+    QPushButton* cancelBtn = new QPushButton(tr("Annuler"), &dlg);
+    
+    buttonLayout->addWidget(loadBtn);
+    buttonLayout->addWidget(detailsBtn);
+    buttonLayout->addWidget(exportBtn);
+    buttonLayout->addWidget(deleteBtn);
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(cancelBtn);
+    
+    layout->addLayout(buttonLayout);
+
+    // Deactivate buttons if no result is selected
+    auto updateButtonStates = [&]() {
+        bool hasSelection = list->currentItem() != nullptr;
+        loadBtn->setEnabled(hasSelection);
+        detailsBtn->setEnabled(hasSelection);
+        exportBtn->setEnabled(hasSelection);
+        deleteBtn->setEnabled(hasSelection);
+    };
+    
+    updateButtonStates();
+    connect(list, &QListWidget::itemSelectionChanged, updateButtonStates);
+
+    // Button connections
+
+    // Load button
+    connect(loadBtn, &QPushButton::clicked, [&]() {
+        QListWidgetItem* selected = list->currentItem();
+        if (!selected) return;
+        
+        QString resultName = selected->text();
+        BacktestResultConfig config;
+        
+        if (m_resultManager->loadBacktestResult(resultName, config)) {
+            std::unique_ptr<BacktestResults> backtestResults = std::make_unique<BacktestResults>();
+            backtestResults->generalConfig = config.generalParams;
+            backtestResults->strategyConfigs = config.strategyConfigs;
+            backtestResults->candles = config.candles;
+            backtestResults->stats = config.stats;
+
+            m_mainWindow->setGeneralParamsConfig(config.generalParams);
+            m_mainWindow->setStrategyConfigs(config.strategyConfigs);
+            m_mainWindow->setBacktestResults(std::move(backtestResults));
+
+            onResultLoaded(resultName);
+            
+            QMessageBox::information(&dlg, tr("Résultat chargé"),
+                                    tr("Le résultat '%1' a été chargé avec succès.").arg(resultName));
+            dlg.accept();
+        } else {
+            QMessageBox::warning(&dlg, tr("Erreur"),
+                                tr("Impossible de charger le résultat '%1'.").arg(resultName));
+        }
+    });
+    
+    // Button see details
+    connect(detailsBtn, &QPushButton::clicked, [&]() {
+        QListWidgetItem* selected = list->currentItem();
+        if (!selected) return;
+        
+        QString resultName = selected->text();
+        BacktestResultConfig config;
+        
+        if (m_resultManager->loadBacktestResult(resultName, config)) {
+            QString details = tr("Nom: %1\n"
+                               "Version: %2\n"
+                               "Date de création: %3\n\n"
+                               "Statistiques:\n"
+                               "- Rendement: %4%\n"
+                               "- Transactions: %5\n"
+                               "- Sharpe: %6\n"
+                               "- Drawdown max: %7%")
+                             .arg(QString::fromStdString(config.name))
+                             .arg(QString::fromStdString(config.version))
+                             .arg(QString::fromStdString(config.createdAt))
+                             .arg(config.stats.returnPct, 0, 'f', 2)
+                             .arg(config.stats.numTrades)
+                             .arg(config.stats.sharpeRatio, 0, 'f', 2)
+                             .arg(config.stats.maxDrawdownPct, 0, 'f', 2);
+                             
+            QMessageBox::information(&dlg, tr("Détails du résultat"), details);
+        } else {
+            QMessageBox::warning(&dlg, tr("Erreur"),
+                                tr("Impossible de charger les détails du résultat '%1'.").arg(resultName));
+        }
+    });
+
+    // Button Export
+    connect(exportBtn, &QPushButton::clicked, [&]() {
+        QListWidgetItem* selected = list->currentItem();
+        if (!selected) return;
+        
+        QString resultName = selected->text();
+        m_resultManager->exportBacktestResult(resultName, m_mainWindow);
+    });
+
+    // Button Delete
+    connect(deleteBtn, &QPushButton::clicked, [&]() {
+        QListWidgetItem* selected = list->currentItem();
+        if (!selected) return;
+        
+        QString resultName = selected->text();
+
+        // Confirmation is handled by deleteBacktestResult
+        if (m_resultManager->deleteBacktestResult(resultName, m_mainWindow)) {
+            // Remove the item from the list
+            delete selected;
+
+            // If it was the current result, reset it
+            if (m_currentResult == resultName) {
+                m_currentResult.clear();
+                onResultLoaded(QString());
+            }
+
+            // If no more results, close the dialog
+            if (list->count() == 0) {
+                QMessageBox::information(&dlg, tr("Aucun résultat"),
+                                        tr("Il n'y a plus de résultats disponibles."));
+                dlg.reject();
+            }
+        }
+    });
+    
+    // Button Cancel
+    connect(cancelBtn, &QPushButton::clicked, &dlg, &QDialog::reject);
+
+    // Double-click to load directly
+    connect(list, &QListWidget::itemDoubleClicked, [&]() {
+        loadBtn->click();
+    });
+
+    dlg.exec();
 }
 
 void BacktestResultMenuManager::onImportResult()
@@ -254,138 +368,14 @@ void BacktestResultMenuManager::onImportExternalResult()
             updateResultList();
 }
 
-void BacktestResultMenuManager::onExportResult()
-{
-    if (m_resultManager && !m_currentResult.isEmpty()) 
-        m_resultManager->exportBacktestResult(m_currentResult, m_mainWindow);
-}
-
-void BacktestResultMenuManager::onLoadResult()
-{
-    QAction* action = qobject_cast<QAction*>(sender());
-    if (action && m_resultManager) {
-        QString resultName = action->data().toString();
-        if (!resultName.isEmpty()) {
-            // Charger le résultat
-            BacktestResultConfig config;
-            if (m_resultManager->loadBacktestResult(resultName, config)) {
-                // Mettre à jour l'interface avec les statistiques chargées
-                // m_mainWindow->setCurrentStats(config.stats);
-
-                std::unique_ptr<BacktestResults> results = std::make_unique<BacktestResults>();
-
-                results->generalConfig = config.generalParams;
-                results->strategyConfigs = config.strategyConfigs;
-                results->candles = config.candles;
-                results->stats = config.stats;
-
-                m_mainWindow->setGeneralParamsConfig(config.generalParams);
-                m_mainWindow->setStrategyConfigs(config.strategyConfigs);
-                m_mainWindow->setBacktestResults(std::move(results));
-
-                // Mettre à jour l'état du menu
-                onResultLoaded(resultName);
-                
-                QMessageBox::information(m_mainWindow, tr("Résultat chargé"),
-                                        tr("Le résultat '%1' a été chargé.").arg(resultName));
-            }
-        }
-    }
-}
-
 void BacktestResultMenuManager::onOpenResultsDirectory()
 {
     if (m_resultManager) {
         if (!m_resultManager->openBacktestResultsDirectory()) {
-            // Afficher un message d'erreur en cas d'échec
-            QMessageBox::warning(m_mainWindow, tr("Erreur"),
-                                tr("Impossible d'ouvrir le dossier des résultats.\n"
-                                   "Chemin: %1").arg(m_resultManager->getBacktestResultsDirectory()));
+            // Show an error message if failed
+            QMessageBox::warning(m_mainWindow, tr("Error"),
+                                 tr("Unable to open the results folder.\n"
+                                    "Path: %1").arg(m_resultManager->getBacktestResultsDirectory()));
         }
     }
-}
-
-void BacktestResultMenuManager::onViewResultDetails()
-{
-    if (!m_resultManager || m_currentResult.isEmpty()) {
-        return;
-    }
-    
-    // Charger les détails du résultat
-    BacktestResultConfig config;
-    if (m_resultManager->loadBacktestResult(m_currentResult, config)) {
-        // Afficher les détails du résultat dans une boîte de dialogue
-        QString details = tr("Nom: %1\n"
-                           "Version: %2\n"
-                           "Date de création: %3\n\n"
-                           "Statistiques:\n"
-                           "- Rendement: %4%\n"
-                           "- Transactions: %5\n"
-                           "- Sharpe: %6\n"
-                           "- Drawdown max: %7%")
-                         .arg(QString::fromStdString(config.name))
-                         .arg(QString::fromStdString(config.version))
-                         .arg(QString::fromStdString(config.createdAt))
-                         .arg(config.stats.returnPct, 0, 'f', 2)
-                         .arg(config.stats.numTrades)
-                         .arg(config.stats.sharpeRatio, 0, 'f', 2)
-                         .arg(config.stats.maxDrawdownPct, 0, 'f', 2);
-                         
-        QMessageBox::information(m_mainWindow, tr("Détails du résultat"), details);
-    }
-}
-
-void BacktestResultMenuManager::onOpenResultFile()
-{
-    if (!m_resultManager || !m_mainWindow) {
-        return;
-    }
-
-    // Afficher une boîte de dialogue Qt listant les résultats disponibles
-    QStringList results = m_resultManager->listBacktestResults();
-
-    if (results.isEmpty()) {
-        QMessageBox::information(m_mainWindow, tr("Aucun résultat"), tr("Aucun fichier de résultat n'a été trouvé."));
-        return;
-    }
-
-    QDialog dlg(m_mainWindow);
-    dlg.setWindowTitle(tr("Charger un résultat"));
-    QVBoxLayout* layout = new QVBoxLayout(&dlg);
-
-    QLabel* label = new QLabel(tr("Sélectionnez un résultat à charger:"), &dlg);
-    layout->addWidget(label);
-
-    QListWidget* list = new QListWidget(&dlg);
-    for (const QString& r : results) {
-        list->addItem(r);
-    }
-    list->setSelectionMode(QAbstractItemView::SingleSelection);
-    layout->addWidget(list);
-
-    QDialogButtonBox* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
-    layout->addWidget(buttons);
-
-    connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
-    connect(list, &QListWidget::itemDoubleClicked, &dlg, [&dlg]() { dlg.accept(); });
-
-    if (dlg.exec() != QDialog::Accepted) {
-        return; // utilisateur a annulé
-    }
-
-    QListWidgetItem* selected = list->currentItem();
-    if (!selected) {
-        QMessageBox::warning(m_mainWindow, tr("Erreur"), tr("Aucun résultat sélectionné."));
-        return;
-    }
-
-    QString baseName = selected->text();
-
-    // Réutiliser la logique existante onLoadResult() via une action temporaire
-    QAction* temp = new QAction(baseName, this);
-    temp->setData(baseName);
-    connect(temp, &QAction::triggered, this, &BacktestResultMenuManager::onLoadResult);
-    temp->trigger();
-    temp->deleteLater();
 }

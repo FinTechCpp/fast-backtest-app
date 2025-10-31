@@ -33,8 +33,12 @@ public:
     void setTooltipData(const QStringList& categories, const QList<double>& values, 
                        const QMap<QString, QDateTime>& fullDates);
 
+signals:
+    void barClicked(int barIndex);
+
 protected:
     void mouseMoveEvent(QMouseEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
     void leaveEvent(QEvent* event) override;
 
 private:
@@ -72,6 +76,9 @@ public:
     void updateData(BacktestResults* results);
     void clear();
 
+signals:
+    void periodClicked(const QDateTime& startDate, const QDateTime& endDate);
+
 protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
     
@@ -101,7 +108,10 @@ private:
         QStringList categories;
         QList<double> values;
         QMap<QString, QDateTime> fullDates;
+        QMap<QString, QPair<QDateTime, QDateTime>> periodRanges; // Début et fin de chaque période
     };
+    
+    GroupedData m_currentGroupedData; // Stocker les données groupées actuelles
     
     // Méthodes utilitaires
     std::vector<TradeInfo> extractTradesFromResults(BacktestResults* results);
@@ -109,4 +119,6 @@ private:
     void createChart(const GroupedData& data);
     QDateTime getRepresentativeDate(const QDateTime& dateTime, const QString& timeUnit);
     QString generatePeriodKey(const QDateTime& dateTime, const QString& timeUnit);
+    QPair<QDateTime, QDateTime> getPeriodRange(const QDateTime& representativeDate, const QString& timeUnit);
+    void onBarClicked(int barIndex);
 };

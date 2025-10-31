@@ -86,6 +86,22 @@ void InteractiveChartView::mouseMoveEvent(QMouseEvent* event)
     }
 }
 
+void InteractiveChartView::mousePressEvent(QMouseEvent* event)
+{
+    QChartView::mousePressEvent(event);
+    
+    if (event->button() == Qt::LeftButton && chart() && !m_categories.isEmpty()) {
+        QPointF chartPos = chart()->mapToValue(event->pos());
+        
+        // Discrétiser la position X pour obtenir l'index de la barre
+        int barIndex = qRound(chartPos.x());
+        barIndex = qMax(0, qMin(barIndex, m_categories.size() - 1));
+        
+        // Émettre le signal avec l'index de la barre cliquée
+        emit barClicked(barIndex);
+    }
+}
+
 void InteractiveChartView::leaveEvent(QEvent* event)
 {
     QChartView::leaveEvent(event);
@@ -255,6 +271,10 @@ HistogramWidget::HistogramWidget(const QString& title, QWidget* parent)
     layout->setSpacing(0);
     layout->addWidget(m_stackWidget);
     setLayout(layout);
+    
+    // Connecter le signal de clic de barre
+    connect(m_chartView, &InteractiveChartView::barClicked, 
+            this, &HistogramWidget::onBarClicked);
 }
 
 HistogramWidget::~HistogramWidget()
@@ -328,6 +348,9 @@ void HistogramWidget::updateHistogram()
         return;
     }
     
+    // Stocker les données groupées pour pouvoir les utiliser lors des clics
+    m_currentGroupedData = groupedData;
+    
     // Créer le graphique
     m_stackWidget->setCurrentWidget(m_chartView);
     createChart(groupedData);
@@ -388,6 +411,10 @@ HistogramWidget::GroupedData HistogramWidget::groupDataByTimeUnit(
         if (!periodDates.contains(periodKey)) {
             QDateTime representativeDate = getRepresentativeDate(exitTime, timeUnit);
             periodDates[periodKey] = representativeDate;
+            
+            // Calculer la plage de dates pour cette période
+            QPair<QDateTime, QDateTime> range = getPeriodRange(representativeDate, timeUnit);
+            result.periodRanges[periodKey] = range;
         }
     }
     
@@ -589,4 +616,63 @@ QString HistogramWidget::generatePeriodKey(const QDateTime& dateTime, const QStr
     }
     
     return QString();
+}
+
+QPair<QDateTime, QDateTime> HistogramWidget::getPeriodRange(const QDateTime& representativeDate, const QString& timeUnit)
+{
+    QDateTime startDate, endDate;
+    QDate date = representativeDate.date();
+    
+    if (timeUnit == "Jour") {
+        startDate = QDateTime(date, QTime(0, 0, 0));
+        endDate = QDateTime(date, QTime(23, 59, 59));
+    }
+    else if (timeUnit == "Semaine") {
+        QDate weekStart = date.addDays(-(date.dayOfWeek() - 1));
+        QDate weekEnd = weekStart.addDays(6);
+        startDate = QDateTime(weekStart, QTime(0, 0, 0));
+        endDate = QDateTime(weekEnd, QTime(23, 59, 59));
+    }
+    else if (timeUnit == "Mois") {
+        QDate monthStart(date.year(), date.month(), 1);
+        QDate monthEnd(date.year(), date.month(), date.daysInMonth());
+        startDate = QDateTime(monthStart, QTime(0, 0, 0));
+        endDate = QDateTime(monthEnd, QTime(23, 59, 59));
+    }
+    else if (timeUnit == "Trimestre") {
+        int quarter = (date.month() - 1) / 3;
+        int firstMonth = quarter * 3 + 1;
+        QDate quarterStart(date.year(), firstMonth, 1);
+        QDate quarterEnd(date.year(), firstMonth + 2, QDate(date.year(), firstMonth + 2, 1).daysInMonth());
+        startDate = QDateTime(quarterStart, QTime(0, 0, 0));
+        endDate = QDateTime(quarterEnd, QTime(23, 59, 59));
+    }
+    else if (timeUnit == "Année") {
+        QDate yearStart(date.year(), 1, 1);
+        QDate yearEnd(date.year(), 12, 31);
+        startDate = QDateTime(yearStart, QTime(0, 0, 0));
+        endDate = QDateTime(yearEnd, QTime(23, 59, 59));
+    }
+    
+    return qMakePair(startDate, endDate);
+}
+
+void HistogramWidget::onBarClicked(int barIndex)
+{
+    if (barIndex < 0 || barIndex >= m_currentGroupedData.categories.size()) {
+        return;
+    }
+    
+    QString categoryKey = m_currentGroupedData.categories[barIndex];
+    
+    if (m_currentGroupedData.periodRanges.contains(categoryKey)) {
+        QPair<QDateTime, QDateTime> range = m_currentGroupedData.periodRanges[categoryKey];
+        
+        qDebug() << "Période cliquée:" << categoryKey 
+                 << "Du:" << range.first.toString("dd/MM/yyyy hh:mm:ss")
+                 << "Au:" << range.second.toString("dd/MM/yyyy hh:mm:ss");
+        
+        // Émettre le signal avec la période
+        emit periodClicked(range.first, range.second);
+    }
 }

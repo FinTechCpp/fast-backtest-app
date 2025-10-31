@@ -227,6 +227,18 @@ void ChartView::zoomToTrade(const be::TradeData& trade) {
     m_chartWidget->zoomToTrade(trade);
 }
 
+void ChartView::zoomToPeriod(const QDateTime& startDate, const QDateTime& endDate) {
+    qDebug() << "ChartView::zoomToPeriod appelé pour période du" 
+             << startDate.toString("dd/MM/yyyy hh:mm:ss")
+             << "au" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+    
+    // S'assurer que le widget de graphique est visible
+    showChartWidget();
+    
+    // Déléguer le zoom au ChartWidget
+    m_chartWidget->zoomToPeriod(startDate, endDate);
+}
+
 std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndicatorsFromFilters(const std::vector<StrategyConfig>& strategyConfigs) {
     std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances;
         

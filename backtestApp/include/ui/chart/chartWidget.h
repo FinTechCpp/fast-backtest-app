@@ -54,6 +54,9 @@ public:
     
     // Méthode pour zoomer sur un trade spécifique
     void zoomToTrade(const be::TradeData& trade);
+    
+    // Méthode pour zoomer sur une période spécifique
+    void zoomToPeriod(const QDateTime& startDate, const QDateTime& endDate);
 
     // Méthodes pour la synchronisation
     const chart::AggregationInfo& getCurrentAggregation() const { return m_currentAggregation; }

@@ -2,6 +2,7 @@
 #include "ui/views/statsView.h"
 #include "ui/views/tradesView.h"
 #include "ui/views/chartView.h"
+#include "ui/views/Stats/HistogramWidget.h"
 #include <QDebug>
 #include <QTime>
 #include <QResizeEvent>
@@ -176,6 +177,17 @@ void ResultManager::setupConnections()
                 this, &ResultManager::onTradeClicked);
     }
     
+    // Connecter le signal de clic sur période depuis StatsView (HistogramWidget)
+    if (m_statsView) {
+        // Il faut trouver l'histogramWidget dans statsView et connecter son signal
+        HistogramWidget* histogramWidget = m_statsView->findChild<HistogramWidget*>();
+        if (histogramWidget) {
+            connect(histogramWidget, &HistogramWidget::periodClicked,
+                    this, &ResultManager::onPeriodClicked);
+            qDebug() << "Signal periodClicked connecté depuis HistogramWidget";
+        }
+    }
+    
     // Créer un timer pour surveiller les redimensionnements
     QTimer* resizeTimer = new QTimer(this);
     resizeTimer->setSingleShot(true);
@@ -207,6 +219,30 @@ void ResultManager::onTradeClicked(const be::TradeData& trade)
         // Demander à ChartView de zoomer sur ce trade
         if (m_chartView) {
             m_chartView->zoomToTrade(trade);
+        }
+    }
+}
+
+void ResultManager::onPeriodClicked(const QDateTime& startDate, const QDateTime& endDate)
+{
+    qDebug() << "Periode cliquee dans ResultManager - Du:" << startDate.toString("dd/MM/yyyy hh:mm:ss")
+             << "Au:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+    
+    // Changer vers l'onglet Chart
+    int chartTabIndex = -1;
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        if (m_tabWidget->widget(i) == m_chartView) {
+            chartTabIndex = i;
+            break;
+        }
+    }
+    
+    if (chartTabIndex >= 0) {
+        m_tabWidget->setCurrentIndex(chartTabIndex);
+        
+        // Demander a ChartView de zoomer sur cette periode
+        if (m_chartView) {
+            m_chartView->zoomToPeriod(startDate, endDate);
         }
     }
 }

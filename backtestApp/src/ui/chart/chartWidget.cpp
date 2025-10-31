@@ -495,6 +495,84 @@ void ChartWidget::zoomToTrade(const be::TradeData& trade)
     updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
+void ChartWidget::zoomToPeriod(const QDateTime& startDate, const QDateTime& endDate)
+{
+    if (!m_dataManager.hasRawData() || !m_chartViewer) {
+        qWarning() << "Impossible de zoomer : pas de données ou pas de viewer";
+        return;
+    }
+    
+    // Convertir les QDateTime en timestamps ChartDirector
+    double startTimestamp = Chart::chartTime(
+        startDate.date().year(), startDate.date().month(), startDate.date().day(),
+        startDate.time().hour(), startDate.time().minute(), startDate.time().second()
+    );
+    
+    double endTimestamp = Chart::chartTime(
+        endDate.date().year(), endDate.date().month(), endDate.date().day(),
+        endDate.time().hour(), endDate.time().minute(), endDate.time().second()
+    );
+    
+    qDebug() << "Zoom sur période - Début timestamp:" << startTimestamp 
+             << "Fin timestamp:" << endTimestamp;
+    
+    // Obtenir tous les timestamps pour calculer les indices
+    const std::vector<double>& timestamps = m_dataManager.getTimestamps();
+    
+    if (timestamps.empty()) {
+        qWarning() << "Pas de timestamps disponibles";
+        return;
+    }
+    
+    // Trouver les indices correspondant aux timestamps de début et de fin
+    int startIndex = -1;
+    int endIndex = -1;
+    
+    for (int i = 0; i < static_cast<int>(timestamps.size()); ++i) {
+        if (startIndex == -1 && timestamps[i] >= startTimestamp) {
+            startIndex = i;
+        }
+        if (timestamps[i] <= endTimestamp) {
+            endIndex = i;
+        }
+    }
+    
+    // Si nous n'avons pas trouvé l'index de début, prendre le premier
+    if (startIndex == -1) startIndex = 0;
+    
+    // Si nous n'avons pas trouvé l'index de fin, prendre le dernier
+    if (endIndex == -1) endIndex = static_cast<int>(timestamps.size()) - 1;
+    
+    // Ajouter une petite marge autour de la période (5% de chaque côté)
+    int periodDuration = endIndex - startIndex;
+    int margin = std::max(5, periodDuration / 20);
+    
+    startIndex = std::max(0, startIndex - margin);
+    endIndex = std::min(static_cast<int>(timestamps.size()) - 1, endIndex + margin);
+    
+    // Calculer les proportions du viewport
+    double totalPoints = static_cast<double>(timestamps.size());
+    double viewPortLeft = static_cast<double>(startIndex) / totalPoints;
+    double viewPortWidth = static_cast<double>(endIndex - startIndex + 1) / totalPoints;
+    
+    // S'assurer que la largeur du viewport ne dépasse pas 1.0
+    if (viewPortLeft + viewPortWidth > 1.0) {
+        viewPortWidth = 1.0 - viewPortLeft;
+    }
+    
+    qDebug() << "Zoom calculé - Index début:" << startIndex 
+             << "Index fin:" << endIndex
+             << "ViewPort left:" << viewPortLeft
+             << "ViewPort width:" << viewPortWidth;
+    
+    // Appliquer le zoom
+    m_chartViewer->setViewPortLeft(viewPortLeft);
+    m_chartViewer->setViewPortWidth(viewPortWidth);
+    
+    // Mettre à jour l'affichage
+    updateChartDisplay(ViewPortMode::USE_CURRENT);
+}
+
 void ChartWidget::setCurrentAggregation(const chart::AggregationInfo& aggregation) {
     // Seulement si l'agrégation est différente
     if (m_currentAggregation.level == aggregation.level && 

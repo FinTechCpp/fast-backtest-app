@@ -33,6 +33,7 @@ public:
 
 public slots:
     void onTradeClicked(const be::TradeData& trade);
+    void onPeriodClicked(const QDateTime& startDate, const QDateTime& endDate);
 
 protected:
     void resizeEvent(QResizeEvent* event) override;

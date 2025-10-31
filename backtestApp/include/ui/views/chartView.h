@@ -60,6 +60,9 @@ public:
     
     // Méthode pour zoomer sur un trade spécifique
     void zoomToTrade(const be::TradeData& trade);
+    
+    // Méthode pour zoomer sur une période spécifique
+    void zoomToPeriod(const QDateTime& startDate, const QDateTime& endDate);
 
 protected:
     void setupUI() override;

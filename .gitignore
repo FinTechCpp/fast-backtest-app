@@ -21,3 +21,4 @@ perf.data.old
 # macOS specific files
 *.DS_Store
 
+*.onnx

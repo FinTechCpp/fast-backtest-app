@@ -36,6 +36,7 @@ private:
     void openStopLossTakeProfitDialog();
     void openTradingHoursDialog();
     void openRiskManagementDialog();
+    void openMLConfigDialog();
 
 private:
     StrategyConfig m_config;
@@ -53,6 +54,7 @@ private:
     QPushButton* m_stopLossTakeProfitButton;
     QPushButton* m_tradingHoursButton;
     QPushButton* m_riskManagementButton;
+    QPushButton* m_mlConfigButton;
     
     // Advanced options
     QCheckBox* m_enableLoggingCheck;

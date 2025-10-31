@@ -11,22 +11,22 @@ TradesView::TradesView(QWidget* parent)
 
 TradesView::~TradesView()
 {
-    // Les widgets sont automatiquement détruits par Qt
+    // Widget cleanup is handled by Qt parent-child mechanism
 }
 
 void TradesView::setupUI()
 {
-    // Créer le tableau des trades
+    // Create the trades table widget
     m_tradesTableWidget = new TradesTableWidget(this);
-    
-    // Ajouter directement au layout principal (pas de scroll area)
+
+    // Add directly to the main layout (no scroll area)
     m_mainLayout->addWidget(m_tradesTableWidget);
-    
-    // Connecter le signal de clic sur trade
+
+    // Connect trade click signal
     connect(m_tradesTableWidget, &TradesTableWidget::tradeClicked,
             this, &TradesView::tradeClicked);
-    
-    qDebug() << "TradesView configurée";
+
+    qDebug() << "TradesView configured";
 }
 
 void TradesView::updateData(BacktestResults* results)
@@ -34,23 +34,23 @@ void TradesView::updateData(BacktestResults* results)
     m_currentResults = results;
     
     if (!m_currentResults) {
-        qWarning() << "TradesView: Résultats nuls reçus";
+        qWarning() << "TradesView: Null results received";
         clear();
         return;
     }
-    
-    // Mettre à jour le tableau avec les statistiques
+
+    // Update the table with the statistics
     if (m_tradesTableWidget) {
         m_tradesTableWidget->updateContent(m_currentResults->stats);
     }
-    
-    qDebug() << "TradesView mise à jour avec" << m_currentResults->stats.trades.size() << "trades";
+
+    qDebug() << "TradesView updated with" << m_currentResults->stats.trades.size() << "trades";
 }
 
 void TradesView::clear()
 {
-    qDebug() << "TradesView::clear() appelé";
-    
+    qDebug() << "TradesView::clear() called";
+
     if (m_tradesTableWidget) {
         m_tradesTableWidget->clear();
     }

@@ -70,10 +70,10 @@ void App::createMenus()
     if (m_configManager && m_profileIndicator) {
         connect(m_configManager, &ProfileManager::profileChanged, this, [this](const QString& profile){
             if (m_profileIndicator)
-                m_profileIndicator->setText(tr("Profil actif: %1").arg(profile));
+                m_profileIndicator->setText(tr("active profile: %1").arg(profile));
         });
         // Ensure the indicator displays the current profile at startup
-        m_profileIndicator->setText(tr("Profil actif: %1").arg(m_configManager->getCurrentProfile()));
+        m_profileIndicator->setText(tr("active profile: %1").arg(m_configManager->getCurrentProfile()));
     }
 
     // Create the data menu manager
@@ -98,10 +98,10 @@ void App::onAbout()
 {
     // Show an "About" dialog with application information
     QVersionNumber current = QVersionNumber::fromString(UpdateChecker::currentVersion());
-    QMessageBox::about(this, tr("À propos"),
-                       tr("Application de Backtest\n"
+    QMessageBox::about(this, tr("About"),
+                       tr("Backtest Application\n"
                           "Version %1\n"
-                          "Développée par Hugo Miquel et Maxime Deville\n").arg(current.toString()));
+                          "DDeveloped by Hugo Miquel and Maxime Deville\n").arg(current.toString()));
 }
 
 App::~App()
@@ -143,9 +143,9 @@ void App::createControlPanel() {
 
     // Initial text
     if (m_configManager)
-        m_profileIndicator->setText(tr("Profil actif: %1").arg(m_configManager->getCurrentProfile()));
+        m_profileIndicator->setText(tr("active profile: %1").arg(m_configManager->getCurrentProfile()));
     else
-        m_profileIndicator->setText(tr("Profil actif: -"));
+        m_profileIndicator->setText(tr("active profile: -"));
 
     // Connect reset button to reload the current profile
     connect(m_profileResetButton, &QPushButton::clicked, this, [this]() {

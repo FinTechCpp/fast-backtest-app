@@ -1,21 +1,21 @@
 #include "ui/views/Stats/TradesTableModel.h"
 
-// Utilitaire pour convertir be::Date en QDateTime
+// Utilitary for converting be::Date to QDateTime
 QDateTime TradesTableModel::dateToQDateTime(const be::Date& date) {
-    // Utiliser les getters publics au lieu d'accéder directement aux membres privés
+    // Use public getters instead of directly accessing private members
     return QDateTime(
         QDate(static_cast<int>(date.year), static_cast<int>(date.month), static_cast<int>(date.day)),
         QTime(static_cast<int>(date.hour), static_cast<int>(date.minute), static_cast<int>(date.second))
     );
 }
 
-// Implémentation de TradesTableModel
+// Implementation of TradesTableModel
 TradesTableModel::TradesTableModel(QObject* parent)
     : QStandardItemModel(parent)
 {
-    // Définir les en-têtes par défaut
+    // Set default headers
     QStringList headers;
-    headers << "Id" << "Date" << "Type" << "Entrée" << "Sortie" << "Dur." << "PnL" << "PnL%" << "SL" << "TP";
+    headers << "Id" << "Date" << "Type" << "Entry" << "Exit" << "Duration" << "PnL" << "PnL%" << "SL" << "TP";
     setHorizontalHeaderLabels(headers);
 }
 
@@ -23,48 +23,48 @@ void TradesTableModel::clear() {
     removeRows(0, rowCount());
 }
 
-// Nouvelle implémentation pour travailler avec des be::Trade
+// New implementation to work with be::Trade
 void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
 {
     beginResetModel();
-    
-    // Effacer les données existantes
+
+    // Clear existing data
     removeRows(0, rowCount());
     
     if (trades.empty()) {
         endResetModel();
         return;
     }
-    
-    // Configurer les en-têtes
+
+    // Set headers
     QStringList headers;
-    headers << "Id" << "Type" << "Taille" << "Prix d'entrée" << "Prix de sortie" 
-            << "PnL" << "PnL %" << "Durée" << "Date d'entrée" << "Date de sortie"
-            << "SL initial" << "TP" << "Clôture" << "Tag";
+    headers << "Id" << "Type" << "Size" << "Entry Price" << "Exit Price" 
+            << "PnL" << "PnL %" << "Duration" << "Entry Date" << "Exit Date"
+            << "Initial SL" << "TP" << "Close Reason" << "Tag";
     setHorizontalHeaderLabels(headers);
-    
-    // Ajouter les nouvelles données
+
+    // Add new data
     setRowCount(static_cast<int>(trades.size()));
     
     for (int row = 0; row < static_cast<int>(trades.size()); ++row) {
         const auto& trade = trades[row];
         
-        // Id (numéro de trade)
+        // Id ( trade number)
         setItem(row, 0, new PctItem(QString::number(trade.id), trade.id));
         
-        // Type (LONG/SHORT basé sur la taille)
+        // Type (LONG/SHORT based on size)
         QString tradeType = trade.side == be::OrderSide::BUY ? "LONG" : "SHORT";
         QStandardItem* typeItem = new QStandardItem(tradeType);
         typeItem->setForeground(trade.side == be::OrderSide::BUY ? Qt::darkGreen : Qt::darkRed);
         setItem(row, 1, typeItem);
-        
-        // Taille (valeur absolue)
+
+        // Size (absolute value)
         setItem(row, 2, new PctItem(formatNumber(trade.size, 1), trade.size));
 
-        // Prix d'entrée
+        // Entry Price
         setItem(row, 3, new PctItem(formatNumber(trade.entryPrice, 2), trade.entryPrice));
 
-        // Prix de sortie
+        // Exit Price
         setItem(row, 4, new PctItem(formatNumber(trade.exitPrice, 2), trade.exitPrice));
 
         // PnL
@@ -75,9 +75,9 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
             closeReason == be::CloseReason::TakeProfit ? Qt::darkGreen : (
             closeReason == be::CloseReason::StopLoss ? Qt::darkRed : (
             closeReason == be::CloseReason::BreakEven ? Qt::darkBlue : Qt::darkGray)));
-        QFont boldFont = pnlItem->font(); // Récupère la police actuelle
-        boldFont.setBold(true);           // Active le gras
-        pnlItem->setFont(boldFont);       // Applique la police modifiée
+        QFont boldFont = pnlItem->font(); // Retrieve current font
+        boldFont.setBold(true);           // Set bold
+        pnlItem->setFont(boldFont);       // Apply modified font
         setItem(row, 5, pnlItem);
         
         // PnL %
@@ -90,21 +90,21 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
         pctFont.setBold(true);
         pctItem->setFont(pctFont);
         setItem(row, 6, pctItem);
-        
-        // Durée - calculer à partir des dates
+
+        // Duration - calculate from dates
         QDateTime entryDT = dateToQDateTime(trade.entryDate);
         QDateTime exitDT = dateToQDateTime(trade.exitDate);
         be::Duration duration = trade.exitDate - trade.entryDate;
                 
         setItem(row, 7, new PctItem(QString::fromStdString(duration.toString()), duration.seconds));
 
-        // Date d'entrée
+        // Entry Date
         setItem(row, 8, new PctItem(formatDateTime(entryDT), static_cast<double>(entryDT.toSecsSinceEpoch())));
-        
-        // Date de sortie
+
+        // Exit Date
         setItem(row, 9, new PctItem(formatDateTime(exitDT), static_cast<double>(exitDT.toSecsSinceEpoch())));
 
-        // Stop Loss (si disponible)
+        // Stop Loss (if available)
         QString slText = "-";
         if (trade.initialSlPrice > 0) {
             slText = formatNumber(trade.initialSlPrice, 2);
@@ -112,19 +112,19 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
             slText = formatNumber(trade.lastSlPrice, 2);
         }
         setItem(row, 10, new QStandardItem(slText));
-        
-        // Take Profit (si disponible)
+
+        // Take Profit (if available)
         QString tpText = "-";
         if (trade.tpPrice > 0) {
             tpText = formatNumber(trade.tpPrice, 2);
         }
         setItem(row, 11, new QStandardItem(tpText));
 
-        // Close Reason (raison de clôture)
+        // Close Reason (close reason with color coding)
         QString closeReasonText = "-";
-        QColor textColor = Qt::darkGray; // Par défaut gris pour Unknown/ManualClose
+        QColor textColor = Qt::darkGray; // Default gray for Unknown/ManualClose
 
-        // Déterminer le texte et la couleur selon le type de clôture
+        // DDetermine text and color based on close reason
         switch (trade.closeReason) {
             case be::CloseReason::TakeProfit:
                 closeReasonText = "TP";
@@ -139,7 +139,7 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
                 textColor = Qt::darkBlue;
                 break;
             case be::CloseReason::ManualClose:
-                closeReasonText = "Manuel";
+                closeReasonText = "Manual";
                 textColor = Qt::darkGray;
                 break;
             default:
@@ -153,46 +153,45 @@ void TradesTableModel::updateData(const std::vector<be::TradeData>& trades)
         closeReasonFont.setBold(true);
         closeReasonItem->setFont(closeReasonFont);
         setItem(row, 12, closeReasonItem);
-        
-        // Tag (si disponible)
+
+        // Tag (if available)
         QString tag = "-";
         if (!trade.tag.empty()) {
             tag = QString::fromStdString(trade.tag);
         }
         setItem(row, 13, new QStandardItem(tag));
 
-        // Appliquer la couleur de fond selon la raison de clôture
+        // Apply background color based on close reason and PnL
         QColor rowColor;
         if (trade.closeReason == be::CloseReason::TakeProfit) {
-            rowColor = QColor(220, 255, 220); // Vert très clair
+            rowColor = QColor(220, 255, 220); // Light green
         } else if (trade.closeReason == be::CloseReason::StopLoss) {
-            rowColor = QColor(255, 220, 220); // Rouge très clair
+            rowColor = QColor(255, 220, 220); // Light red
         } else if (trade.closeReason == be::CloseReason::BreakEven) {
-            rowColor = QColor(220, 240, 255); // Bleu très clair
+            rowColor = QColor(220, 240, 255); // Light blue
         } else {
-            // ManualClose ou Unknown
+            // ManualClose or Unknown
             if (pnl > 0) {
-                rowColor = QColor(240, 255, 240); // Vert très pâle
+                rowColor = QColor(240, 255, 240); // Very light green
             } else if (pnl < 0) {
-                rowColor = QColor(255, 240, 240); // Rouge très pâle
+                rowColor = QColor(255, 240, 240); // Very light red
             } else {
-                rowColor = QColor(240, 240, 240); // Gris très clair
+                rowColor = QColor(240, 240, 240); // Very light gray
             }
         }
 
-        // Appliquer la couleur à toutes les cellules de la ligne
+        // Apply color to all cells in the row
         for (int col = 0; col < columnCount(); ++col) {
             QStandardItem* item = this->item(row, col);
-            if (item) {
+            if (item) 
                 item->setData(rowColor, Qt::BackgroundRole);
-            }
         }
     }
 
     endResetModel();
 }
 
-// Méthodes utilitaires
+// Utility methods
 QString TradesTableModel::formatNumber(double value, int precision)
 {
     return QString::number(value, 'f', precision);

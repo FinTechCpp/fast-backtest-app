@@ -27,31 +27,31 @@ void ChartView::setupUI()
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(0);
 
-    // Layout horizontal pour les panneaux gauche et droite
+    // Layout horizontal for the left and right panels
     QHBoxLayout* horizontalLayout = new QHBoxLayout();
     horizontalLayout->setContentsMargins(0, 0, 0, 0);
     horizontalLayout->setSpacing(0);
     m_mainLayout->addLayout(horizontalLayout);
-    
-    // Création du panneau de contrôle gauche
+
+    // Create the left control panel
     m_leftPanel = new ChartControlPanel(this);
 
-    // Séparateur vertical
+    // Vertical separator
     QFrame* verticalSeparator = new QFrame();
     verticalSeparator->setFrameStyle(QFrame::VLine | QFrame::Plain);
     verticalSeparator->setStyleSheet("color: #CCCCCC;");
 
-    // Panneau droit qui contiendra le graphique
+    // Right panel containing the chart
     m_rightPanel = new QWidget();
     m_rightPanel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    // Layout pour le panneau droit
+    // Layout for the right panel
     m_rightPanelLayout = new QStackedLayout(m_rightPanel);
     m_rightPanelLayout->setContentsMargins(0, 0, 0, 0);
     m_rightPanelLayout->setSpacing(0);
 
-    // Placeholder initial
-    m_chartPlaceholder = new QLabel("Exécutez le backtest pour afficher les graphiques");
+    // Initial placeholder
+    m_chartPlaceholder = new QLabel("Run the backtest to display the charts");
     m_chartPlaceholder->setAlignment(Qt::AlignCenter);
     m_chartPlaceholder->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_chartPlaceholder->setStyleSheet(
@@ -63,22 +63,22 @@ void ChartView::setupUI()
         "}"
     );
 
-    // Créer le widget de graphique
+    // Create the chart widget
     m_chartContainer = new QWidget();
     QHBoxLayout* chartLayout = new QHBoxLayout(m_chartContainer);
     chartLayout->setContentsMargins(0, 0, 0, 0);
     chartLayout->setSpacing(0);
 
-    // Widget de graphique
+    // Chart widget
     m_chartWidget = new ChartWidget();
-    m_chartWidget2 = new ChartWidget(); // Pour comparaison verticale
+    m_chartWidget2 = new ChartWidget(); // For vertical comparison
     m_chartWidget->setVisible(true);
     m_chartWidget2->setVisible(false);
 
-    // Associer le widget de graphique au panneau de contrôle
+    // Associate the chart widget with the control panel
     m_leftPanel->setChartWidget(m_chartWidget);
 
-    // Connecter les signaux du panneau de contrôle
+    // Connect control panel signals
     connect(m_leftPanel, &ChartControlPanel::chartTypeChanged, [this](const QString& chartType) {
         m_chartWidget->setChartType(chart::stringToChartType(chartType.toStdString()));
         if (m_comparisonMode && m_chartWidget2) {
@@ -96,8 +96,8 @@ void ChartView::setupUI()
     connect(m_leftPanel, &ChartControlPanel::transferDataForComparison, this, [this]() {
         if (!m_chartWidget || !m_chartWidget2 || !m_currentResults) return;
 
-        // Connecter les signaux pour la synchronisation
-        connect(m_chartWidget, &ChartWidget::aggregationChanged, 
+        // Connect signals for synchronization
+        connect(m_chartWidget, &ChartWidget::aggregationChanged,
                 m_chartWidget2, &ChartWidget::setCurrentAggregation);
         connect(m_chartWidget2, &ChartWidget::aggregationChanged, 
                 m_chartWidget, &ChartWidget::setCurrentAggregation);
@@ -125,9 +125,9 @@ void ChartView::setupUI()
         if (!m_chartWidget || !m_chartWidget2)
             return;
 
-        // Déconnecter les signaux de synchronisation
-        disconnect(m_chartWidget, &ChartWidget::aggregationChanged, 
-                    m_chartWidget2, &ChartWidget::setCurrentAggregation);
+        // DDisconnect synchronization signals
+        disconnect(m_chartWidget, &ChartWidget::aggregationChanged,
+                   m_chartWidget2, &ChartWidget::setCurrentAggregation);
         disconnect(m_chartWidget2, &ChartWidget::aggregationChanged, 
                     m_chartWidget, &ChartWidget::setCurrentAggregation);
         disconnect(m_chartWidget, &ChartWidget::viewportChanged, 
@@ -158,21 +158,21 @@ void ChartView::setupUI()
     chartLayout->addWidget(m_chartWidget, /*stretch=*/1);
     chartLayout->addWidget(m_chartWidget2, /*stretch=*/1);
 
-    // Ajouter les widgets au layout du panneau droit
+    // Add widgets to the right panel layout
     m_rightPanelLayout->addWidget(m_chartPlaceholder);  
     m_rightPanelLayout->addWidget(m_chartContainer);
 
-    // Ajouter les composants au layout horizontal
+    // Add components to the horizontal layout
     horizontalLayout->addWidget(m_leftPanel);
     horizontalLayout->addWidget(verticalSeparator);
     horizontalLayout->addWidget(m_rightPanel);
 
-    // Configurer le widget pour s'étirer
+    // Configure the widget to stretch
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 void ChartView::updateData(BacktestResults* results) {
-    // Sauvegarder les markers du backtest actuel avant de changer
+    // Save the markers from the current backtest before changing
     if (m_currentResults) 
         m_currentResults->userMarkers = m_chartWidget->getMarkers();
     
@@ -180,17 +180,17 @@ void ChartView::updateData(BacktestResults* results) {
 
     if (!results || results->candles.empty()) {
         clear();
-        showPlaceholder("Aucune donnée disponible");
+        showPlaceholder("No data available");
         return;
     }
 
     m_chartWidget->setBacktestResults(results);
-    
-    // Restaurer les markers sauvegardés pour ce backtest
+
+    // Restore the saved markers for this backtest
     if (!results->userMarkers.empty()) 
         m_chartWidget->setMarkers(results->userMarkers);
-    
-    // Afficher le widget de graphique
+
+    // Show the chart widget
     showChartWidget();
 
 
@@ -198,8 +198,8 @@ void ChartView::updateData(BacktestResults* results) {
     m_leftPanel->suggestIndicatorsFromStrategy(
         extractIndicatorsFromFilters(results->strategyConfigs)
     );
-    
-    // Actualiser la liste des indicateurs
+
+    // Update the indicators list
     m_leftPanel->refreshIndicatorsList();
 }
 
@@ -214,28 +214,28 @@ void ChartView::showPlaceholder(const QString& message) {
 
 void ChartView::clear() {
     m_leftPanel->refreshIndicatorsList();
-    showPlaceholder("Exécutez un backtest pour afficher les graphiques");
+    showPlaceholder("Run a backtest to display charts");
 }
 
 void ChartView::zoomToTrade(const be::TradeData& trade) {
-    qDebug() << "ChartView::zoomToTrade appelé pour trade avec entrée:" << trade.entryDate.toString().c_str();
-    
-    // S'assurer que le widget de graphique est visible
+    qDebug() << "ChartView::zoomToTrade called for trade with entry:" << trade.entryDate.toString().c_str();
+
+    // Ensure the chart widget is visible
     showChartWidget();
-    
-    // Déléguer le zoom au ChartWidget
+
+    // Delegate zooming to the ChartWidget
     m_chartWidget->zoomToTrade(trade);
 }
 
 void ChartView::zoomToPeriod(const QDateTime& startDate, const QDateTime& endDate) {
-    qDebug() << "ChartView::zoomToPeriod appelé pour période du" 
+    qDebug() << "ChartView::zoomToPeriod called for period from" 
              << startDate.toString("dd/MM/yyyy hh:mm:ss")
-             << "au" << endDate.toString("dd/MM/yyyy hh:mm:ss");
-    
-    // S'assurer que le widget de graphique est visible
+             << "to" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+
+    // Ensure the chart widget is visible
     showChartWidget();
-    
-    // Déléguer le zoom au ChartWidget
+
+    // Delegate zooming to the ChartWidget
     m_chartWidget->zoomToPeriod(startDate, endDate);
 }
 
@@ -243,17 +243,17 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
     std::vector<std::unique_ptr<indicators::IndicatorBase>> indicatorInstances;
         
 
-    // Fonction utilitaire pour ajouter si pas déjà présent
+    // Utility function to add if not already present
     auto addIfNotPresent = [&](std::unique_ptr<indicators::IndicatorBase> candidate) {
         for (const auto& existing : indicatorInstances) {
             if (candidate && existing && candidate->isCalculationParamsEqual(*existing)) {
-                return; // déjà présent, on n'ajoute pas
+                return; // already present, do not add
             }
         }
         indicatorInstances.push_back(std::move(candidate));
     };
 
-    // Fonction helper pour extraire les indicateurs des ValueSource
+    // Helper function to extract indicators from ValueSource
     auto extractIndicator = [&](const filter::ValueSource& source) {
         if (source.category != filter::ValueCategory::INDICATOR) {
             return;
@@ -330,7 +330,7 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
     };
     
     for (const auto& strategyConfig : strategyConfigs) {
-        // Parcourir tous les filtres et extraire les indicateurs
+        // Iterate through all filters and extract indicators
         for (const auto& filter : strategyConfig.buyFilters) {
             extractIndicator(filter.leftValue);
             extractIndicator(filter.rightValue);
@@ -350,7 +350,7 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
             extractIndicator(filter.leftValue);
             extractIndicator(filter.rightValue);
         }
-        // Ajouter aussi les indicateurs utilisés pour le SL/TP
+        // Also add indicators used for SL/TP
         if (strategyConfig.sl_method == StopLossMethod::ATR || 
             strategyConfig.tp_method == TakeProfitMethod::ATR) {
             auto atr = std::make_unique<indicators::ATRInstance>();

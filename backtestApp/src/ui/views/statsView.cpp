@@ -13,28 +13,28 @@
 
 
 /*
-gantt chart pour les trades
-5. Ajouts supplémentaires pour une visualisation complète
-Voici quelques idées supplémentaires qui pourraient être intégrées:
+gantt chart for trades
+5. Additional features for a complete visualization
+Here are some additional ideas that could be integrated:
 
-Equity curve avec bandes de drawdown: Montrer l'évolution du capital avec des zones colorées indiquant les drawdowns
+Equity curve with drawdown bands: Show the evolution of capital with colored areas indicating drawdowns
 
-Analyse des jours/heures de trading: Heatmap montrant les performances par jour de semaine/heure de la journée
+Analysis of trading days/times: Heatmap showing performance by day of the week/time of day
 
-Carte de performance vs volatilité: Positionnement de votre stratégie par rapport à d'autres dans un graphique risque/rendement
+Performance vs volatility chart: Positioning your strategy against others in a risk/return chart
 
-Indicateurs d'amélioration: Des suggestions visuelles sur les aspects à améliorer dans la stratégie
+Improvement indicators: Visual suggestions on aspects to improve in the strategy
 
-Widget d'analyse global : affiche seulement les statistiques critiques (celles qui ne sont pas bonnes) cela permet de montrer a l'utilisateur les faiblaisses de la stratégie. cela permet de ne pas passer a coté d'un red flag : par exemple si tout est vert mais par exemple un sharp ratio extremement mauvais : on le montrera a l'utilisateur comme un voyant rouge sur une voiture pour dire qu'il y a un probleme.
+Global analysis widget: displays only critical statistics (those that are not good) this allows to show the user the weaknesses of the strategy. this prevents missing a red flag: for example if everything is green but for example an extremely bad sharp ratio: we will show it to the user as a red light on a car to say that there is a problem.
 */
 
 
-// Implémentation de StatsView
+// Implementation of StatsView
 StatsView::StatsView(QWidget* parent)
     : BaseView(parent),
       m_app(nullptr)
 {
-    // Trouver l'application parente
+    // Find the parent application
     QWidget* widget = parent;
     while (widget && !m_app) {
         m_app = qobject_cast<App*>(widget);
@@ -46,41 +46,39 @@ StatsView::StatsView(QWidget* parent)
 
 StatsView::~StatsView()
 {
-    // Les modèles et widgets sont automatiquement détruits par Qt
+    // Models and widgets are automatically destroyed by Qt
 }
 
 void StatsView::setupUI() {
 
-    // CRÉATION DES WIDGETS
+    // WIDGET CREATION
     // --------------------------------------
     QGridLayout* gridLayout = new QGridLayout();
     gridLayout->setContentsMargins(0, 0, 0, 0);
     gridLayout->setSpacing(0);
 
     // --------------------------------------
-    // Ligne 0
+    // Line 0
     // --------------------------------------
-    m_timeInfoWidget = new KeyValueListWidget("Informations temporelles");
-    m_timeInfoWidget->addItem("Début ", "--", Qt::black);
-    m_timeInfoWidget->addItem("Fin   ", "--", Qt::black);
-    m_timeInfoWidget->addItem("Durée ", "--", Qt::black);
+    m_timeInfoWidget = new KeyValueListWidget("Temporal Information");
+    m_timeInfoWidget->addItem("Start ", "--", Qt::black);
+    m_timeInfoWidget->addItem("End   ", "--", Qt::black);
+    m_timeInfoWidget->addItem("Duration ", "--", Qt::black);
     m_timeInfoWidget->setMinimumHeight(m_timeInfoWidget->sizeHint().height());
-    gridLayout->addWidget(m_timeInfoWidget, 0, 0, 1, 3); // S'étend sur les trois colonnes
+    gridLayout->addWidget(m_timeInfoWidget, 0, 0, 1, 3); // Spreads over 3 columns
 
-    // Ajouter un stretch qui s'étend sur les 3 colonnes (par exemple à la ligne 9)
-    // TODO a remplacer par le reste des widgets des statistiques
+    // Add a stretch that spans the 3 columns (e.g. at line 9)
+    // TODO replace with the rest of the stats widgets
     // QSpacerItem* horizontalSpacer = new QSpacerItem(20, 20, QSizePolicy::Expanding, QSizePolicy::Minimum);
-    // gridLayout->addItem(horizontalSpacer, 0, 4, 8, 3);  // ligne 0, colonne 4, hauteur 8, largeur 3
+    // gridLayout->addItem(horizontalSpacer, 0, 4, 8, 3);  // line 0, column 4, height 8, width 3
 
     m_equityWidget = new EquityWidget("Equity Curve");
     gridLayout->addWidget(m_equityWidget, 0, 4, 3, 3);
 
 
-    
-    
 
     // --------------------------------------
-    // Ligne 1
+    // Line 1
     // --------------------------------------
     m_netProfitWidget = new SimpleTextWidget("Net Profit");
     m_netProfitWidget->setStatColors(QColor(0, 150, 0));
@@ -88,14 +86,14 @@ void StatsView::setupUI() {
     m_netProfitWidget->setSuffix(" €");
     m_netProfitWidget->setSuffixBis(" %");
     m_netProfitWidget->setCheckBoxBisString("Percentage");
-    gridLayout->addWidget(m_netProfitWidget, 1, 0, 1, 2); // S'étend sur 2 colonnes
+    gridLayout->addWidget(m_netProfitWidget, 1, 0, 1, 2); // Spreads over 2 columns
 
     m_pnlGaugeWidget = new VerticalGaugeRenderWidget("PnL Distribution");
     gridLayout->addWidget(m_pnlGaugeWidget, 1, 2, 4, 1);
 
 
     // --------------------------------------
-    // Ligne 2
+    // Line 2
     // --------------------------------------
     m_tradeDistributionWidget = new FlexiblePieWidget("Trade Distribution");
     m_tradeDistributionWidget->setCenterTextColor(QColor(0, 150, 0));
@@ -108,7 +106,7 @@ void StatsView::setupUI() {
 
 
     // --------------------------------------
-    // Ligne 3
+    // Line 3
     // --------------------------------------
     m_tradeDetailsWidget = new KeyValueListWidget("Trade details");
     m_tradeDetailsWidget->addItem("Total ", "--", QColor(0, 0, 0), "--");
@@ -118,7 +116,7 @@ void StatsView::setupUI() {
     m_tradeDetailsWidget->addItem("Manual ", "-- %", Qt::black, "--");
     m_tradeDetailsWidget->setMinimumSize(m_tradeDetailsWidget->sizeHint());
     m_tradeDetailsWidget->setCheckBoxBisString("Count");
-    gridLayout->addWidget(m_tradeDetailsWidget, 3, 0, 2, 1); // S'étend sur 2 lignes
+    gridLayout->addWidget(m_tradeDetailsWidget, 3, 0, 2, 1); // Spans 2 rows
 
     m_grossProfitWidget = new SimpleTextWidget("Gross Profit");
     m_grossProfitWidget->setStatColors(QColor(0, 150, 0));
@@ -131,8 +129,8 @@ void StatsView::setupUI() {
     gridLayout->addWidget(m_tradingHeatmapWidget, 3, 4, 5, 1);
 
 
-    m_returnsWidget = new KeyValueListWidget("Rendements");
-    m_returnsWidget->addItem("Annualisé ", "--", Qt::black);
+    m_returnsWidget = new KeyValueListWidget("Returns");
+    m_returnsWidget->addItem("Annualized ", "--", Qt::black);
     m_returnsWidget->addItem("CAGR ", "--", Qt::black);
     m_returnsWidget->addItem("Alpha ", "--", Qt::black);
     m_returnsWidget->setMinimumHeight(m_returnsWidget->sizeHint().height());
@@ -154,7 +152,7 @@ void StatsView::setupUI() {
 
 
     // --------------------------------------
-    // Ligne 4
+    // Line 4
     // --------------------------------------
     m_grossLossWidget = new SimpleTextWidget("Gross Loss");
     m_grossLossWidget->setStatColors(QColor(150, 0, 0));
@@ -164,7 +162,7 @@ void StatsView::setupUI() {
 
 
     // --------------------------------------
-    // Ligne 5
+    // Line 5
     // --------------------------------------
     m_maxDDWidget = new SimpleTextWidget("Max Drawdown");
     m_maxDDWidget->setStatColors(QColor(150, 0, 0));
@@ -185,11 +183,11 @@ void StatsView::setupUI() {
     m_performanceRatiosWidget->addItem("Calmar ", "--", Qt::black);
     m_performanceRatiosWidget->addItem("Omega ", "--", Qt::black);
     m_performanceRatiosWidget->setMinimumHeight(m_performanceRatiosWidget->sizeHint().height());
-    gridLayout->addWidget(m_performanceRatiosWidget, 5, 5, 2, 2); // S'étend sur 2 colonnes
+    gridLayout->addWidget(m_performanceRatiosWidget, 5, 5, 2, 2); // Spans 2 columns
 
 
     // --------------------------------------
-    // Ligne 6
+    // Line 6
     // --------------------------------------
     m_averageDDWidget = new SimpleTextWidget("Average Drawdown");
     m_averageDDWidget->setStatColors(QColor(150, 0, 0));
@@ -206,7 +204,7 @@ void StatsView::setupUI() {
 
 
     // --------------------------------------
-    // Ligne 7
+    // Line 7
     // --------------------------------------
     m_exposureWidget = new FlexiblePieWidget("Exposure Time");
     m_exposureWidget->setStartAngle(180);
@@ -223,10 +221,10 @@ void StatsView::setupUI() {
     m_marketExposureWidget->addItem("Beta ", "--", Qt::black);
     m_marketExposureWidget->addItem("Annual Volatility ", "-- %", Qt::black);
     m_marketExposureWidget->setMinimumHeight(m_marketExposureWidget->sizeHint().height());
-    gridLayout->addWidget(m_marketExposureWidget, 7, 5, 1, 2); // S'étend sur 2 colonnes
+    gridLayout->addWidget(m_marketExposureWidget, 7, 5, 1, 2); // Spans 2 columns
 
     // --------------------------------------
-    // Ligne 8
+    // Line 8
     // --------------------------------------
     m_averageTradePerDayWidget = new SimpleTextWidget("Average Trade Per Day");
     m_averageTradePerDayWidget->setStatColors(QColor(0, 150, 0));
@@ -261,28 +259,28 @@ void StatsView::setupUI() {
 
     // FINALISATION
     // --------------------------------------
-    // Ajouter le gridLayout directement au layout principal (pas de scroll area)
+    // Add the gridLayout directly to the main layout (no scroll area)
     m_mainLayout->addLayout(gridLayout);
 }
 
 void StatsView::updateData(BacktestResults* results)
 {    
-    // Stocker les résultats pour les mises à jour ultérieures
+    // Store the results for later updates
     m_currentResults = results;
     
     if (!m_currentResults) {
-        qWarning() << "Résultats nuls reçus";
+        qWarning() << "Null results received";
         clear();
         return;
     }
 
-    m_timeInfoWidget->updateValue("Début ", "  " + QString::fromStdString(m_currentResults->stats.start.toString()));
-    m_timeInfoWidget->updateValue("Fin   ", "  " + QString::fromStdString(m_currentResults->stats.end.toString()));
-    m_timeInfoWidget->updateValue("Durée ", "  " + QString::fromStdString(m_currentResults->stats.duration.toString()));
+    m_timeInfoWidget->updateValue("Start ", "  " + QString::fromStdString(m_currentResults->stats.start.toString()));
+    m_timeInfoWidget->updateValue("End   ", "  " + QString::fromStdString(m_currentResults->stats.end.toString()));
+    m_timeInfoWidget->updateValue("Duration ", "  " + QString::fromStdString(m_currentResults->stats.duration.toString()));
 
 
 
-    // Afficher le net profit en euros ET en pourcentage (par rapport à equityInitial)
+    // Display net profit in euros AND as a percentage (relative to equityInitial)
     double netProfit = m_currentResults->stats.equityFinal - m_currentResults->stats.equityInitial;
     QString euroText = SimpleTextWidget::formatWithThousandsSeparator(netProfit);
     QString pctText;
@@ -295,7 +293,7 @@ void StatsView::updateData(BacktestResults* results)
 
     m_netProfitWidget->setStatText(euroText);
     m_netProfitWidget->setStatTextBis(pctText);
-    // Peut etre integrer cette mécanique dans le widget directement
+    // Maybe integrate this mechanism directly into the widget
     if (m_currentResults->stats.equityFinal - m_currentResults->stats.equityInitial > 0) {
         m_netProfitWidget->setStatColors(QColor(0, 150, 0));
         m_netProfitWidget->setBackgroundColor(QColor(0, 150, 0).lighter(300));
@@ -345,7 +343,7 @@ void StatsView::updateData(BacktestResults* results)
     m_grossProfitWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(m_currentResults->stats.grossProfit));
     m_grossLossWidget->setStatText(SimpleTextWidget::formatWithThousandsSeparator(-m_currentResults->stats.grossLoss));
 
-    // Mettre à jour les détails des trades : pourcentage (valeur primaire) et nombre absolu (valueBis)
+    // Update trade details: percentage (primary value) and absolute number (valueBis)
     m_tradeDetailsWidget->updateValues("Total ", 
         QString::number(m_currentResults->stats.numTrades),
         QString::number(m_currentResults->stats.numTrades));
@@ -392,7 +390,7 @@ void StatsView::updateData(BacktestResults* results)
 
 
 
-    m_returnsWidget->updateValue("Annualisé ", QString::number(m_currentResults->stats.returnAnnPct, 'f', 1) + " %");
+    m_returnsWidget->updateValue("Annualized ", QString::number(m_currentResults->stats.returnAnnPct, 'f', 1) + " %");
     m_returnsWidget->updateValue("CAGR ", QString::number(m_currentResults->stats.cagrPct, 'f', 1) + " %");
     m_returnsWidget->updateValue("Alpha ", QString::number(m_currentResults->stats.alphaPct, 'f', 1) + " %");
 
@@ -429,7 +427,7 @@ void StatsView::updateData(BacktestResults* results)
 }
 
 void StatsView::clear() {
-    qDebug() << "StatsView::clear() appelé";
+    qDebug() << "StatsView::clear() called";
     
     m_currentResults = nullptr;
 

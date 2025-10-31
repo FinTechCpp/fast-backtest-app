@@ -7,7 +7,7 @@ BaseView::BaseView(QWidget *parent) : QWidget(parent), m_currentResults(nullptr)
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     m_mainLayout->setSpacing(0);
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    setMinimumSize(200, 200); // Taille minimale pour éviter les problèmes de rendu
+    setMinimumSize(200, 200); // Minimum size to avoid too small views
 }
 
 void BaseView::clearLayout(QLayout* layout)

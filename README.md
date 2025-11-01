@@ -58,7 +58,10 @@ git clone https://github.com/FinTechCpp/fast-backtest-app
 cd fast-backtest-app
 # initialize submodules
 git submodule update --init --recursive
+# pull LFS files for main project
 git lfs pull
+# pull LFS files for submodules
+git submodule foreach --recursive 'git lfs pull || true'
 ```
 
 ## Usage
@@ -70,7 +73,7 @@ This guide explains how to build, run, and debug the fast-backtest-app project s
 ## Prerequisites
 
 - CMake 3.14 or higher
-- GCC/G++ with C++17 support
+- GCC/G++ with C++20 support
 - Qt6.8.3 (Core, Widgets, Charts, Network)
 - VS Code (for debugging)
 - VS Code Extensions: C/C++, CMake Tools

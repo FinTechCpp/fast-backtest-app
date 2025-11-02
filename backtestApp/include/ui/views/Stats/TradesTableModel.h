@@ -4,10 +4,9 @@
 #include <QDateTime>
 #include "beTypes.h"
 
-
 /**
- * @brief Modèle de données pour la table des trades.
- * Gère l'affichage des transactions et leur formatage.
+ * @brief Data model for the trades table.
+ * Manages the display of transactions and their formatting.
  */
 class TradesTableModel : public QStandardItemModel {
     Q_OBJECT
@@ -18,7 +17,7 @@ public:
     void updateData(const std::vector<be::TradeData>& trades);
     void clear();
     
-    // Méthodes utilitaires statiques
+    // Static utility methods
     static QString formatNumber(double value, int precision = 2);
     static QDateTime dateToQDateTime(const be::Date& date);
     static QString formatDateTime(const QDateTime& dateTime);
@@ -29,7 +28,7 @@ public:
     PctItem(const QString& text, double value) : QStandardItem(text), m_value(value) {}
     
     bool operator<(const QStandardItem& other) const override {
-        // Comparer les valeurs numériques pour le tri
+        // Compare numeric values for sorting
         if (const PctItem* pctOther = dynamic_cast<const PctItem*>(&other)) {
             return m_value < pctOther->m_value;
         }

@@ -5,13 +5,13 @@
 #include <QMap>
 #include <QString>
 #include <memory>
-#include "backtest.hpp" // Inclure les définitions de be::Data et be::Stats
+#include "backtest.hpp" // Include definitions for be::Data and be::Stats
 #include "data.hpp"
 #include "stats.hpp"
 #include "components/backtestResults.h" 
 
 /**
- * @brief Classe de base abstraite pour toutes les vues de résultats du backtest
+ * @brief Abstract base class for all backtest result views
  */
 class BaseView : public QWidget
 {
@@ -19,46 +19,45 @@ class BaseView : public QWidget
 
 public:
     /**
-     * @brief Constructeur
-     * @param parent Pointeur vers l'objet parent
+     * @brief Constructor
+     * @param parent Pointer to the parent object
      */
     explicit BaseView(QWidget* parent = nullptr);
     
     /**
-     * @brief Destructeur virtuel
+     * @brief Virtual destructor
      */
     virtual ~BaseView() = default;
     
     /**
-     * @brief Met à jour la vue avec les nouvelles données du backtest
-     * @param results Pointeur vers les résultats du backtest
+     * @brief Updates the view with new backtest data
+     * @param results Pointer to the backtest results
      */
     virtual void updateData(BacktestResults* results) = 0;
     
     /**
-     * @brief Réinitialise la vue à son état initial
+     * @brief Resets the view to its initial state
      */
     virtual void clear() = 0;
 
 protected:
-    BacktestResults* m_currentResults;  ///< Pointeur vers les résultats du backtest actuel
+    BacktestResults* m_currentResults;  ///< Pointer to the current backtest results
     
-    /** Dictionnaire des widgets de la vue */
+    /** Dictionary of the view's widgets */
     QMap<QString, QWidget*> m_widgets;
     
-    /** Layout principal de la vue */
+    /** Main layout of the view */
     QVBoxLayout* m_mainLayout;
     
     /**
-     * @brief Utilitaire pour vider complètement un layout
-     * @param layout Layout à vider
+     * @brief Utility to completely clear a layout
+     * @param layout Layout to clear
      */
     void clearLayout(QLayout* layout);
     
     /**
-     * @brief Méthode virtuelle pour construire l'interface
-     * À implémenter dans les classes filles
+     * @brief Virtual method to build the interface
+     * To be implemented in derived classes
      */
     virtual void setupUI() = 0;
 };
-

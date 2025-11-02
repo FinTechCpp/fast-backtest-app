@@ -23,11 +23,11 @@ public:
     void setStatTextBis(const QString &text);
     void setStatColors(const QColor &textColor);
     
-    // Configuration supplémentaire
-    void setSuffix(const QString &suffix); // Pour ajouter un % ou autre
-    void setSuffixBis(const QString &suffix); // Pour le texte secondaire
+    // Additional configuration
+    void setSuffix(const QString &suffix); // To add a % or other suffix
+    void setSuffixBis(const QString &suffix); // For the secondary text
     
-    // Ajout des méthodes pour l'offset de texte
+    // Adding methods for text offset
     void setTextOffset(int x, int y);
     void setTextOffsetX(int x);
     void setTextOffsetY(int y);
@@ -35,7 +35,7 @@ public:
     int textOffsetY() const { return m_textOffsetY; }
     
 
-    // Taille recommandée pour le widget
+    // Recommended size for the widget
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
     static QString formatWithThousandsSeparator(double value, int precision = 2);
@@ -44,20 +44,20 @@ protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
 
 private:
-    QString m_checkBoxString;    // Texte de la checkbox pour le texte secondaire
-    QCheckBox* m_checkBox;       // Checkbox pour afficher/masquer le texte secondaire
+    QString m_checkBoxString;    // Checkbox text for the secondary text
+    QCheckBox* m_checkBox;       // Checkbox to show/hide the secondary text
 
-    QString m_statText;          // Texte affiché au centre
-    QString m_statTextBis;       // Texte secondaire (optionnel)
+    QString m_statText;          // Text displayed in the center
+    QString m_statTextBis;       // Secondary text (optional)
 
-    QColor m_textColor;          // Couleur du texte
-    QColor m_backgroundColor;    // Couleur de fond
+    QColor m_textColor;          // Text color
+    QColor m_backgroundColor;    // Background color
 
-    QString m_suffix;            // Suffixe (%, x, etc.)
-    QString m_suffixBis;         // Suffixe secondaire (optionnel)
+    QString m_suffix;            // Suffix (%, x, etc.)
+    QString m_suffixBis;         // Secondary suffix (optional)
     
-    int m_textOffsetX;           // Décalage horizontal du texte
-    int m_textOffsetY;           // Décalage vertical du texte
+    int m_textOffsetX;           // Horizontal text offset
+    int m_textOffsetY;           // Vertical text offset
 
-    bool m_showBis;          // Indique si le texte secondaire doit être affiché
+    bool m_showBis;              // Indicates if the secondary text should be displayed
 };

@@ -1,4 +1,3 @@
-// filepath: /home/maxime/repos/fast-backtest-app/backtestApp/include/ui/dialogs/macdDialog.h
 #pragma once
 
 #include "ui/dialogs/indicators/baseDialog.h"

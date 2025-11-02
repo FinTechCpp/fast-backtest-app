@@ -40,10 +40,10 @@ public:
     bool importConfigFromFile(QWidget* parentWidget = nullptr);
     bool exportConfigToFile(QWidget* parentWidget = nullptr, const QString& profileName = "");
 
-    // Nouvelle méthode pour ouvrir le dossier des profils
+    // New method to open the profiles directory
     bool openProfilesDirectory() const;
     
-    // Getter pour le chemin du dossier des profils
+    // Getter for profiles directory path
     QString getProfilesDirectory() const { return m_configDir; }
     
     // Public methods for slots

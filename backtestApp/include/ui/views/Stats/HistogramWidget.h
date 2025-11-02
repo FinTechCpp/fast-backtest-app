@@ -22,7 +22,7 @@
 #include "ui/views/Stats/TitledWidget.h"
 #include "components/backtestResults.h"
 
-// Classe personnalisée pour QChartView avec tooltip interactif
+// Custom class for QChartView with interactive tooltip
 class InteractiveChartView : public QChartView
 {
     Q_OBJECT
@@ -48,12 +48,12 @@ private:
     QString createTooltipText(const QString& category, double value);
     void setupCrosshairElements();
     
-    // Données pour le tooltip
+    // Data for the tooltip
     QStringList m_categories;
     QList<double> m_values;
     QMap<QString, QDateTime> m_fullDates;
     
-    // Éléments visuels du crosshair
+    // Visual elements of the crosshair
     QGraphicsLineItem* m_horizontalLine;
     QGraphicsLineItem* m_verticalLine;
     QGraphicsTextItem* m_tooltipItem;
@@ -62,17 +62,17 @@ private:
 };
 
 /**
- * @brief Widget pour afficher l'histogramme des profits et pertes
+ * @brief Widget to display the histogram of profits and losses
  */
 class HistogramWidget : public TitledWidget
 {
     Q_OBJECT
 
 public:
-    explicit HistogramWidget(const QString& title = "Histogramme PnL", QWidget* parent = nullptr);
+    explicit HistogramWidget(const QString& title = "PnL Histogram", QWidget* parent = nullptr);
     ~HistogramWidget();
 
-    // Mise à jour avec les résultats de backtest
+    // Update with backtest results
     void updateData(BacktestResults* results);
     void clear();
 
@@ -86,7 +86,7 @@ private slots:
     void updateHistogram();
 
 private:
-    // Widgets de l'interface
+    // Interface widgets
     QStackedWidget* m_stackWidget = nullptr;
     QWidget* m_contentWidget;
     QLabel* m_placeholderLabel = nullptr;
@@ -94,26 +94,26 @@ private:
     QComboBox* m_timeUnitCombo;
     QChart* m_chart;
     
-    // Données actuelles
+    // Current data
     BacktestResults* m_currentResults;
     
-    // Structure pour représenter un trade
+    // Structure to represent a trade
     struct TradeInfo {
         QDateTime exitTime;
         double pnl;
     };
     
-    // Structure pour stocker les données groupées
+    // Structure to store grouped data
     struct GroupedData {
         QStringList categories;
         QList<double> values;
         QMap<QString, QDateTime> fullDates;
-        QMap<QString, QPair<QDateTime, QDateTime>> periodRanges; // Début et fin de chaque période
+        QMap<QString, QPair<QDateTime, QDateTime>> periodRanges; // Start and end of each period
     };
     
-    GroupedData m_currentGroupedData; // Stocker les données groupées actuelles
+    GroupedData m_currentGroupedData; // Store the current grouped data
     
-    // Méthodes utilitaires
+    // Utility methods
     std::vector<TradeInfo> extractTradesFromResults(BacktestResults* results);
     GroupedData groupDataByTimeUnit(const std::vector<TradeInfo>& trades, const QString& timeUnit);
     void createChart(const GroupedData& data);

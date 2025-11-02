@@ -7,15 +7,13 @@
 #include "ui/views/Stats/TitledWidget.h"
 #include "stats.hpp"
 
-
-// TODO : il faut donner au widget les date relatives aux points X pour afficher les labels d'axe X correctement (dates et plus indices des points)
-// IL FAUT AJOUTER DANS LES stats le calcule de l'equity curve sous forme de pnl en POURCENT et afficher l'equity curve en pourcent
+// TODO: The widget needs to be given the dates corresponding to the X points to display the X-axis labels correctly (dates instead of point indices).
+// NEED TO ADD IN THE stats the calculation of the equity curve as PnL in PERCENT and display the equity curve in percent.
 class EquityWidget : public TitledWidget
 {
     Q_OBJECT
 public:
     explicit EquityWidget(const QString& title = QString(), QWidget *parent = nullptr);
-
 
     // Replace points (will be sorted by X and filtered for consecutive duplicates in Y)
     void setPoints(const QVector<QPointF>& pts);
@@ -27,67 +25,63 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void leaveEvent(QEvent *event) override;
 
-
 private:
     struct DateLabel {
-        double position;  // Position X sur l'axe
-        QString text;     // Texte à afficher
-        int importance;   // Niveau d'importance: 3=année, 2=mois, 1=jour
+        double position;  // X position on the axis
+        QString text;     // Text to display
+        int importance;   // Level of importance: 3=year, 2=month, 1=day
     };
 
     QCheckBox* m_checkBox;
 
     QVector<QPointF> m_points;
     QVector<QPointF> m_pointsPercent;
-    std::vector<be::Date> m_dates;  // Dates correspondant aux points
+    std::vector<be::Date> m_dates;  // Dates corresponding to the points
     
     std::vector<DateLabel> generateDateLabels() const;
-    void calculatePercentPoints(); // Calcule les points en pourcentage
-    void invalidateCache();         // Invalide le cache quand les données changent
-
+    void calculatePercentPoints(); // Calculate points in percentage
+    void invalidateCache();        // Invalidate the cache when data changes
 
     void updateBounds();
 
-
-    // mouse crosshair
+    // Mouse crosshair
     bool m_showCrosshair;
-    QPoint m_mousePos; // in widget pixel coordinates
+    QPoint m_mousePos; // In widget pixel coordinates
 
-    // drawing helpers
+    // Drawing helpers
     void drawGrid(QPainter &painter);
     void drawAxes(QPainter &painter);
-    void drawFilledAreas(QPainter &painter);    // Dessine les zones colorées sous la courbe
-    void drawEquityMarkers(QPainter &painter);  // Dessine les lignes initial/peak et highlight final
+    void drawFilledAreas(QPainter &painter);    // Draw the colored areas under the curve
+    void drawEquityMarkers(QPainter &painter);  // Draw the initial/peak lines and highlight the final
     QPointF mapToWidget(const QPointF &pt) const;
     QPointF mapToWorld(const QPointF &pixel) const;
-    const QVector<QPointF>& getCachedWidgetPoints() const;  // Retourne les points en coordonnées widget (avec cache)
+    const QVector<QPointF>& getCachedWidgetPoints() const;  // Return points in widget coordinates (with cache)
     
-    // Méthodes helper pour les markers
+    // Helper methods for markers
     double getInitialEquity() const;
-    QPointF getPeakPoint() const;  // Retourne le point (x, y) du peak
+    QPointF getPeakPoint() const;  // Return the (x, y) point of the peak
     double getFinalEquity() const;
 
     QString formatValue(double value, bool useThousandsSeparator = true, bool isPercent = false, bool roundValue = true) const;
 
-
     double m_xmin, m_xmax, m_ymin, m_ymax;
-    QRect m_contentRect;      // Zone totale du contenu (titre exclu)
-    QRect m_plotRect;         // Zone du graphique uniquement (sans les marges pour axes)
+    QRect m_contentRect;      // Total content area (excluding title)
+    QRect m_plotRect;         // Graph area only (excluding margins for axes)
 
-    // Cache pour optimisation
+    // Cache for optimization
     mutable bool m_cacheValid = false;
     mutable double m_cachedInitialEquity = 0.0;
     mutable QPointF m_cachedPeakEquity = QPointF(0.0, 0.0);
     mutable double m_cachedFinalEquity = 0.0;
     mutable std::vector<DateLabel> m_cachedDateLabels;
-    mutable QVector<QPointF> m_cachedWidgetPoints;  // Points déjà convertis en coordonnées widget
+    mutable QVector<QPointF> m_cachedWidgetPoints;  // Points already converted to widget coordinates
     mutable bool m_widgetPointsValid = false;
-    mutable QSize m_cachedPlotSize;  // Taille du plotRect pour détecter les changements
+    mutable QSize m_cachedPlotSize;  // Size of the plotRect to detect changes
 
-    // layout margins to leave space for axis labels
-    const int m_leftMargin = 10;      // Réduit car plus de labels à gauche
+    // Layout margins to leave space for axis labels
+    const int m_leftMargin = 10;      // Reduced as there are fewer labels on the left
     const int m_bottomMargin = 30;
-    const int m_rightMargin = 80;     // Augmenté pour les labels Y à droite
+    const int m_rightMargin = 80;     // Increased for Y labels on the right
     const int m_topMargin = 10;
     const int m_margin = 5;
 };

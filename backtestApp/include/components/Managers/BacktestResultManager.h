@@ -14,7 +14,7 @@
 #include "components/Utils/SerializationUtils.hpp"
 
 /**
- * @brief Gestionnaire pour sauvegarder et charger les résultats de backtest
+ * @brief Manager to save and load backtest results
  */
 class BacktestResultManager : public QObject
 {
@@ -24,43 +24,43 @@ public:
     BacktestResultManager(QObject* parent = nullptr, SerializationUtils::FileFormat defaultFormat = SerializationUtils::FileFormat::JSON);
     ~BacktestResultManager();
     
-    // Liste tous les résultats de backtest disponibles
+    // List all available backtest results
     QStringList listBacktestResults() const;
 
-    // Actions utilisateur avec format optionnel
+    // User actions with optional format
     bool saveBacktestResult(const BacktestResultConfig& config, QWidget* parentWidget = nullptr, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
     bool loadBacktestResult(const QString& resultName, BacktestResultConfig& config, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
     bool deleteBacktestResult(const QString& resultName, QWidget* parentWidget = nullptr);
     bool importBacktestResult(QWidget* parentWidget = nullptr);
-    bool importExternalResult(QWidget* parentWidget = nullptr);  // Import de résultats externes
+    bool importExternalResult(QWidget* parentWidget = nullptr);  // Import external results
     bool exportBacktestResult(const QString& resultName, QWidget* parentWidget = nullptr, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
     
-    // Méthode pour charger un résultat externe et calculer les stats
+    // Method to load an external result and compute statistics
     bool loadExternalResult(const QString& filePath, BacktestResultConfig& config);
 
-    // Méthode pour définir le format par défaut
+    // Method to set the default format
     void setDefaultFormat(SerializationUtils::FileFormat format) { m_defaultFormat = format; }
     SerializationUtils::FileFormat getDefaultFormat() const { return m_defaultFormat; }
 
-    // Méthode pour ouvrir le dossier des résultats
+    // Method to open the results directory
     bool openBacktestResultsDirectory() const;
     
-    // Getter pour le chemin du dossier des résultats
+    // Getter for the results directory path
     QString getBacktestResultsDirectory() const { return m_resultsDir; }
 
 signals:
     void resultListUpdated();
 
 private:
-    QString m_resultsDir;         // Répertoire où sont stockés les résultats
+    QString m_resultsDir;         // Directory where results are stored
     SerializationUtils::FileFormat m_defaultFormat;
 
-    // Méthodes de gestion des fichiers
+    // File management methods
     bool resultExists(const QString& resultName, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto) const;
     bool saveResult(const QString& resultName, const BacktestResultConfig& config, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
     bool loadResult(const QString& resultName, BacktestResultConfig& config, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto);
     QString getResultPath(const QString& resultName, SerializationUtils::FileFormat format = SerializationUtils::FileFormat::Auto) const;
 
-    // Initialiser les répertoires de l'application
+    // Initialize application directories
     void initializeDirectories();
 };

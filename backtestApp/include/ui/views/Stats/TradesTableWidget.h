@@ -24,8 +24,8 @@ signals:
     void tradeClicked(const be::TradeData& trade);
 
 private slots:
-    void refreshTable();  // Rafraîchit la table avec les filtres actuels
-    void showAllTrades(); // Afficher tous les trades
+    void refreshTable();  // Refresh the table with the current filters
+    void showAllTrades(); // Show all trades
     void onTradeRowClicked(const QModelIndex& index);
 
     void toggleCloseReasonFilter(bool checked);
@@ -33,26 +33,26 @@ private slots:
     void updateFilterButtonText();
 
 private:
-    // Configuration de l'interface
+    // Interface configuration
     void setupUI();
 
-    // Méthode utilitaire pour filtrer les trades
+    // Utility method to filter trades
     std::vector<be::TradeData> getFilteredTrades(const std::vector<be::TradeData>& allTrades);
 
-    // Conteneur principal
+    // Main container
     QGroupBox* m_tradesGroup;
     QVBoxLayout* m_tradesLayout;
 
-    // Contrôles pour la table
+    // Controls for the table
     QTableView* m_tradesTable;
     TradesTableModel* m_tradesModel;
     QComboBox* m_tradesLimitCombo;
     QPushButton* m_showAllTradesBtn;
 
-    // Données
+    // Data
     std::vector<be::TradeData> m_allTrades;
 
     QPushButton* m_filterBtn;
     QMenu* m_filterMenu;
-    QMap<be::CloseReason, bool> m_closeReasonFilters; // Stocke l'état des filtres
+    QMap<be::CloseReason, bool> m_closeReasonFilters; // Stores the state of the filters
 };

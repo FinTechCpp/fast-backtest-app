@@ -22,7 +22,6 @@
 #include "common.h"
 #include "components/StrategyAdapter.hpp"
 
-
 // Forward declarations
 class ProfileManager;
 class GeneralParamsPanel;
@@ -55,7 +54,7 @@ public:
     void setGeneralParamsConfig(const GeneralParamsConfig& config);
     void setStrategyConfigs(const std::vector<StrategyConfig>& configs);
 
-    // Ajout d'accesseurs pour les résultats de backtest
+    // Add accessors for backtest results
     const BacktestResults& getBacktestResults() const { return *m_backtestResults.get(); }
     void setBacktestResults(std::unique_ptr<BacktestResults> results);
 
@@ -71,16 +70,16 @@ private:
     QMenu* m_helpMenu;
     QAction* m_aboutAction;
     
-    // Gestionnaire de menu des profils
+    // Profile menu manager
     ProfileMenuManager* m_profileMenuManager; 
 
-    // Gestionnaire de menu des données
+    // Data menu manager
     DataMenuManager* m_dataMenuManager;
 
-    //Gestionnaire de menu des mises à jour
+    // Update menu manager
     UpdateMenuManager* m_updateMenuManager;
 
-    // Gestionnaire de résultats
+    // Results menu manager
     BacktestResultMenuManager* m_backtestResultMenuManager;
 
     void createMenus();
@@ -104,7 +103,7 @@ private:
     BacktestResultManager* m_backtestResultManager;
     ResultManager* m_resultManager;
     
-    // Panels - SUPPRESSION de ProfilePanel
+    // Panels - REMOVAL of ProfilePanel
     GeneralParamsPanel* m_generalParamsPanel = nullptr;
     StrategyPanel* m_strategyPanel = nullptr;
     
@@ -145,4 +144,3 @@ signals:
     void windowResizeStarted();
     void windowResizeFinished(QSize newSize);
 };
-

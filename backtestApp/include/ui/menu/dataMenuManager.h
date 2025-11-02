@@ -18,10 +18,10 @@ class App;
 #include <QNetworkInterface>
 
 /**
- * @brief Gestionnaire de menu des données dans la barre de menu
+ * @brief Data menu manager in the menu bar
  * 
- * Cette classe gère le menu "Données" dans la barre de menu principale
- * avec les actions pour importer et gérer les données OHLC.
+ * This class manages the "Data" menu in the main menu bar
+ * with actions to import and manage OHLC data.
  */
 class DataMenuManager : public QObject
 {
@@ -43,12 +43,12 @@ private slots:
     void onShowDataInfo();
     void onSetCustomDirectory();
     
-    // Slots pour les requêtes HTTP
+    // Slots for HTTP requests
     void onMarketDataListReceived();
     void onFileDownloadFinished();
 
 private:
-    // Menu principal
+    // Main menu
     QMenu* m_dataMenu;
     
     // Actions
@@ -59,7 +59,7 @@ private:
     QAction* m_dataInfoAction;
     QAction* m_setDirectoryAction;
     
-    // Réseau
+    // Network
     QNetworkAccessManager* m_networkManager;
     
     void createActions();

@@ -4,12 +4,12 @@
 #include <QList>
 #include <QCheckBox>
 
-// Structure pour stocker les informations de chaque ligne
+// Structure to store information for each row
 struct KeyValueItem {
-    QString key;        // Le texte de gauche (clé)
-    QString value;      // La valeur primaire de droite
-    QString valueBis;   // La valeur alternative (optionnelle)
-    QColor textColor;   // Couleur du texte
+    QString key;        // The left text (key)
+    QString value;      // The primary value on the right
+    QString valueBis;   // The alternative value (optional)
+    QColor textColor;   // Text color
     
     KeyValueItem(const QString& k = QString(), 
                 const QString& v = QString(), 
@@ -25,37 +25,37 @@ class KeyValueListWidget : public TitledWidget
 public:
     explicit KeyValueListWidget(const QString& title = QString(), QWidget* parent = nullptr);
     
-    // Ajouter une entrée à la liste
+    // Add an entry to the list
     void addItem(const QString& key, const QString& value, const QColor& color = Qt::black, const QString& valueBis = QString());
     
-    // Ajouter plusieurs entrées d'un coup
+    // Add multiple entries at once
     void addItems(const QList<KeyValueItem>& items);
     
-    // Supprimer toutes les entrées
+    // Remove all entries
     void clear();
     
-    // Mettre à jour une entrée existante (valeur primaire)
+    // Update an existing entry (primary value)
     bool updateValue(const QString& key, const QString& newValue);
     
-    // Mettre à jour la valeur alternative
+    // Update the alternative value
     bool updateValueBis(const QString& key, const QString& newValueBis);
     
-    // Mettre à jour les deux valeurs en même temps
+    // Update both values at the same time
     bool updateValues(const QString& key, const QString& newValue, const QString& newValueBis);
     
-    // Mettre à jour la couleur d'une entrée
+    // Update the color of an entry
     bool updateColor(const QString& key, const QColor& newColor);
     
-    // Accès aux éléments
+    // Access to elements
     QList<KeyValueItem> items() const { return m_items; }
     int count() const { return m_items.count(); }
     
-    // Configuration visuelle
+    // Visual configuration
     void setCheckBoxBisString(const QString &text);
     void setKeyAlignment(Qt::Alignment alignment);
     void setValueAlignment(Qt::Alignment alignment);
     void setSpacing(int spacing);
-    void setKeyTextWidth(int width); // Force une largeur spécifique (0 = auto)
+    void setKeyTextWidth(int width); // Force a specific width (0 = auto)
     
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
@@ -72,8 +72,8 @@ private:
     Qt::Alignment m_keyAlignment;
     Qt::Alignment m_valueAlignment;
     int m_spacing;
-    int m_keyTextWidth;  // Largeur fixe pour les clés (0 = auto)
+    int m_keyTextWidth;  // Fixed width for keys (0 = auto)
     
-    // Calcule la largeur maximale des clés pour l'alignement
+    // Calculate the maximum width of keys for alignment
     int calculateMaxKeyWidth(const QFontMetrics& fm) const;
 };

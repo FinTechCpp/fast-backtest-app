@@ -100,16 +100,16 @@ public:
      * @return Vector of filtered OHLC bars
      */
     static std::vector<OHLCBar> loadData(
-        const QString& symbol = "NDX",
-        const QString& interval = "10secs", 
-        const QString& period = "1m",
+        const QString& symbol,
+        const QString& interval, 
+        const QString& period,
         const QDateTime& endDate = QDateTime()
     );
 
     static std::vector<OHLCBar> loadData(
-        const std::string& symbol = "NDX",
-        const std::string& interval = "10secs",
-        const std::string& period = "1m",
+        const std::string& symbol,
+        const std::string& interval,
+        const std::string& period,
         const QDateTime& endDate = QDateTime()
     ) {
         return loadData(QString::fromStdString(symbol), QString::fromStdString(interval), QString::fromStdString(period), endDate);

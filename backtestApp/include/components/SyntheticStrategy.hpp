@@ -1,4 +1,4 @@
-// Future fichier de test pour le backtest engine avec des données synthétiques et une stratégie qui provoque des situations précises
+// Future tests for the backtest engine with synthetic data and a strategy that triggers specific situations
 
 #pragma once
 

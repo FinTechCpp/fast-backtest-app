@@ -28,14 +28,14 @@ public:
     void suggestIndicatorsFromStrategy(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators);
     void setChartWidget(ChartWidget* chartWidget);
     
-    // Nouvelle méthode pour mettre à jour l'état de comparaison dans l'UI
+    // New method to update the comparison state in the UI
     void setComparisonMode(bool enabled);
 
 signals:
     void chartTypeChanged(const QString& chartType);
     void rulerToolToggled(bool checked);
-    void transferDataForComparison(); // Nouveau signal pour transférer les données
-    void exitComparisonMode();        // Nouveau signal pour quitter le mode comparaison
+    void transferDataForComparison(); // New signal to transfer data
+    void exitComparisonMode();        // New signal to exit comparison mode
     void aggregationValueChanged(int value);
 
 private slots:
@@ -45,8 +45,8 @@ private slots:
     void onEditIndicator(int id);
     void onRemoveIndicator(int id);
     void onRulerToolToggled(bool checked);
-    void onTransferDataClicked();     // Nouveau slot pour le bouton de transfert
-    void onExitComparisonClicked();   // Nouveau slot pour le bouton de sortie
+    void onTransferDataClicked();     // New slot for the transfer button
+    void onExitComparisonClicked();   // New slot for the exit button
     void onAggregationSliderChanged(int value);
 
     void onCheckMarkerToggled(bool checked);
@@ -57,7 +57,7 @@ private slots:
     void onIndicatorChanged(int id, const QString& name);
     void onIndicatorRemoved(int id);
 
-    // Nouveaux slots pour les suggestions
+    // New slots for suggestions
     void onAddSuggestedIndicator(int index);
     void onRejectSuggestion(int index);
     void onClearAllSuggestions();
@@ -71,17 +71,17 @@ private:
     QComboBox* m_chartTypeCombo;
     QToolButton* m_rulerToolButton;
     
-    // Boutons pour les outils de dessin
+    // Buttons for drawing tools
     QToolButton* m_checkMarkerButton;
     QToolButton* m_errorMarkerButton;
     QPushButton* m_clearMarkersButton;
     
-    // Nouveaux boutons de comparaison
+    // New comparison buttons
     QPushButton* m_transferDataButton;
     QPushButton* m_exitComparisonButton;
     QHBoxLayout* m_comparisonButtonsLayout;
     
-    // Composants pour les indicateurs
+    // Components for indicators
     QPushButton* m_addIndicatorButton;
     QComboBox* m_indicatorTypeCombo;
     QGroupBox* m_indicatorsGroup;
@@ -108,7 +108,7 @@ private:
         return false;
     }
 
-    // Nouveaux attributs pour la section des suggestions
+    // New attributes for the suggestions section
     QGroupBox* m_suggestionsGroup;
     QVBoxLayout* m_suggestionsLayout;
     QPushButton* m_clearSuggestionsButton;
@@ -123,9 +123,9 @@ private:
     
     std::vector<SuggestionItem> m_suggestions;
     
-    // Nouvelle méthode pour créer un widget de suggestion
+    // New method to create a suggestion widget
     void createSuggestionWidget(std::unique_ptr<indicators::IndicatorBase> indicator);
     
-    // Méthode pour vérifier si un indicateur similaire existe déjà
+    // Method to check if a similar indicator already exists
     bool hasSimilarIndicator(const indicators::IndicatorBase* indicator) const;
 };

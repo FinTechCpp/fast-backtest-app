@@ -7,7 +7,7 @@
 #include "ui/views/Stats/StatsBaseWidget.h"
 
 /**
- * @brief Widget conteneur pour afficher plusieurs jauges de ratios
+ * @brief Container widget to display multiple ratio gauges
  */
 class RatioGaugesContainerWidget : public StatsBaseWidget {
     Q_OBJECT
@@ -24,7 +24,7 @@ private:
     QWidget* m_contentWidget;
     QVBoxLayout* m_gaugesLayout;
     
-    // Jauges individuelles
+    // Individual gauges
     RatioGaugeWidget* m_exposureTimeGauge;
     RatioGaugeWidget* m_sharpeGauge;
     RatioGaugeWidget* m_sortinoGauge;

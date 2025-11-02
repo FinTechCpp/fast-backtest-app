@@ -16,7 +16,7 @@ public:
         JSON,
         Binary,
         PortableBinary,
-        Auto // Pour la détection automatique basée sur l'extension
+        Auto // For automatic detection based on file extension
     };
 
     template <typename T>
@@ -68,9 +68,9 @@ public:
         } else if (filePath.endsWith(".pbin", Qt::CaseInsensitive)) {
             return FileFormat::PortableBinary;
         } else {
-            qWarning() << "Extension de fichier inconnue, utilisation du format JSON par défaut pour:" << filePath;
+            qWarning() << "Unknown file extension, using JSON format by default for:" << filePath;
         }
-        // Par défaut, utiliser JSON
+        // Default to JSON
         return FileFormat::JSON;
     }
 
@@ -79,7 +79,7 @@ public:
             case FileFormat::JSON: return ".json";
             case FileFormat::Binary: return ".bin";
             case FileFormat::PortableBinary: return ".pbin";
-            default: return ".json"; // Par défaut
+            default: return ".json"; // Default
         }
     }
 
@@ -92,7 +92,7 @@ public:
         try {
             std::ofstream os(filePath.toStdString());
             if (!os.is_open()) {
-                qWarning() << "Impossible d'ouvrir le fichier:" << filePath;
+                qWarning() << "Unable to open file:" << filePath;
                 return false;
             }
             
@@ -101,7 +101,7 @@ public:
             return true;
         }
         catch (const std::exception& e) {
-            qWarning() << "Erreur lors de la sauvegarde:" << e.what();
+            qWarning() << "Error saving file:" << e.what();
             return false;
         }
     }
@@ -111,7 +111,7 @@ public:
         try {
             std::ifstream is(filePath.toStdString());
             if (!is.is_open()) {
-                qWarning() << "Impossible d'ouvrir le fichier:" << filePath;
+                qWarning() << "Unable to open file:" << filePath;
                 return false;
             }
             
@@ -120,7 +120,7 @@ public:
             return true;
         }
         catch (const std::exception& e) {
-            qWarning() << "Erreur lors du chargement:" << e.what();
+            qWarning() << "Error loading file:" << e.what();
             return false;
         }
     }
@@ -133,7 +133,7 @@ public:
         try {
             std::ofstream os(filePath.toStdString(), std::ios::binary);
             if (!os.is_open()) {
-                qWarning() << "Impossible d'ouvrir le fichier pour écriture:" << filePath;
+                qWarning() << "Unable to open file for writing:" << filePath;
                 return false;
             }
             
@@ -142,7 +142,7 @@ public:
             return true;
         }
         catch (const std::exception& e) {
-            qWarning() << "Erreur lors de la sauvegarde binaire:" << e.what();
+            qWarning() << "Error saving binary file:" << e.what();
             return false;
         }
     }
@@ -152,7 +152,7 @@ public:
         try {
             std::ifstream is(filePath.toStdString(), std::ios::binary);
             if (!is.is_open()) {
-                qWarning() << "Impossible d'ouvrir le fichier pour lecture:" << filePath;
+                qWarning() << "Unable to open file for reading:" << filePath;
                 return false;
             }
             
@@ -161,7 +161,7 @@ public:
             return true;
         }
         catch (const std::exception& e) {
-            qWarning() << "Erreur lors du chargement binaire:" << e.what();
+            qWarning() << "Error loading binary file:" << e.what();
             return false;
         }
     }
@@ -174,7 +174,7 @@ public:
         try {
             std::ofstream os(filePath.toStdString(), std::ios::binary);
             if (!os.is_open()) {
-                qWarning() << "Impossible d'ouvrir le fichier pour écriture:" << filePath;
+                qWarning() << "Unable to open file for writing:" << filePath;
                 return false;
             }
 
@@ -183,7 +183,7 @@ public:
             return true;
         }
         catch (const std::exception& e) {
-            qWarning() << "Erreur lors de la sauvegarde binaire portable:" << e.what();
+            qWarning() << "Error saving portable binary file:" << e.what();
             return false;
         }
     };
@@ -193,7 +193,7 @@ public:
         try {
             std::ifstream is(filePath.toStdString(), std::ios::binary);
             if (!is.is_open()) {
-                qWarning() << "Impossible d'ouvrir le fichier pour lecture:" << filePath;
+                qWarning() << "Unable to open file for reading:" << filePath;
                 return false;
             }
 
@@ -202,7 +202,7 @@ public:
             return true;
         }
         catch (const std::exception& e) {
-            qWarning() << "Erreur lors du chargement binaire portable:" << e.what();
+            qWarning() << "Error loading portable binary file:" << e.what();
             return false;
         }
     }

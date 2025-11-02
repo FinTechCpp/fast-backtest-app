@@ -21,44 +21,44 @@
 #include "beTypes.h"
 
 /**
- * @brief Widget qui encapsule un graphique financier ChartDirector
+ * @brief Widget that encapsulates a ChartDirector financial chart
  */
 class ChartWidget : public QWidget
 {
     Q_OBJECT
 
 public:
-    // ======== Constructeurs et destructeur ========
+    // ======== Constructors and destructor ========
     explicit ChartWidget(QWidget* parent = nullptr);
     ~ChartWidget() override;
     
-    // ======== API Publique ========
-    // Méthodes d'initialisation des données
+    // ======== Public API ========
+    // Data initialization methods
     void setBacktestResults(const BacktestResults* results);
 
-    // Configuration et contrôle du graphique
-    void setChartType(chart::ChartType chartType); // remplacer par un slot
+    // Chart configuration and control
+    void setChartType(chart::ChartType chartType); // replace with a slot
     const std::vector<std::unique_ptr<indicators::IndicatorBase>>& getIndicators() const { return m_dataManager.getIndicators(); }
 
     void removeAllIndicators();
 
-    // Méthode pour activer/désactiver l'outil règle
-    void setRulerToolEnabled(bool enabled); // remplacer par un slot
+    // Method to enable/disable the ruler tool
+    void setRulerToolEnabled(bool enabled); // replace with a slot
     void setMaxDisplayPoints(int value);
     
-    // Méthodes pour l'outil de dessin de markers
+    // Methods for the marker drawing tool
     void setMarkerDrawingEnabled(bool enabled, chart::MarkerType type = chart::MarkerType::Check);
     void clearAllMarkers();
     const std::vector<chart::ChartMarker>& getMarkers() const { return m_dataManager.getMarkers(); }
     void setMarkers(const std::vector<chart::ChartMarker>& markers) { m_dataManager.setMarkers(markers); }
     
-    // Méthode pour zoomer sur un trade spécifique
+    // Method to zoom to a specific trade
     void zoomToTrade(const be::TradeData& trade);
     
-    // Méthode pour zoomer sur une période spécifique
+    // Method to zoom to a specific period
     void zoomToPeriod(const QDateTime& startDate, const QDateTime& endDate);
 
-    // Méthodes pour la synchronisation
+    // Methods for synchronization
     const chart::AggregationInfo& getCurrentAggregation() const { return m_currentAggregation; }
     void setCurrentAggregation(const chart::AggregationInfo& aggregation);
     void setSyncPartner(ChartWidget* partner) { m_syncPartner = partner; }
@@ -126,8 +126,8 @@ private slots:
 
 private:
     enum class ViewPortMode {
-        FULL_CHART,      // Afficher toutes les données
-        USE_CURRENT      // Utiliser le viewport actuel
+        FULL_CHART,      // Display all data
+        USE_CURRENT      // Use the current viewport
     };
 
     ChartDataManager m_dataManager;
@@ -136,25 +136,25 @@ private:
     chart::ChartConfiguration m_config;
     ChartWidget* m_syncPartner = nullptr;
 
-    // ======== Méthodes privées ========
-    // 1. Traitement et conversion des données
+    // ======== Private methods ========
+    // 1. Data processing and conversion
     double dateToChartTimestamp(const be::Date& date);
 
     bool updateChartDisplay(ViewPortMode mode = ViewPortMode::FULL_CHART);
 
-    // 3. Composants d'interface
+    // 3. UI components
     QChartViewer* m_chartViewer = nullptr;
     
 
-    QSize m_pendingResize;  ///< Taille en attente de redimensionnement
+    QSize m_pendingResize;  ///< Pending resize size
 
-    // Variables pour l'outil règle
-    bool m_rulerToolEnabled;           // Si l'outil règle est activé
-    bool m_rulerFirstPointSelected;    // Si le premier point a été sélectionné
-    double m_rulerStartX;              // Coordonnée X du point de départ
-    double m_rulerStartY;              // Coordonnée Y du point de départ
+    // Variables for the ruler tool
+    bool m_rulerToolEnabled;           // If the ruler tool is enabled
+    bool m_rulerFirstPointSelected;    // If the first point has been selected
+    double m_rulerStartX;              // X coordinate of the start point
+    double m_rulerStartY;              // Y coordinate of the start point
 
-    // Variables pour l'outil de dessin de markers
+    // Variables for the marker drawing tool
     bool m_markerDrawingEnabled = false;
     chart::MarkerType m_currentMarkerType = chart::MarkerType::Check;
 
@@ -163,15 +163,15 @@ private:
     bool m_advancedNavigationMode = false;
 
     bool m_isDraggingVertically = false;
-    int m_cumulativeVerticalDelta = 0; // Pour le suivi des déplacements cumulés
+    int m_cumulativeVerticalDelta = 0; // For tracking cumulative movement
 
-    // Propriétés pour le déplacement vertical
+    // Properties for vertical movement
     bool m_verticalMoveMode = false;
     QPoint m_lastMousePos;
     double m_pixelToValueRatio = 0.0;
 
-    // Variables pour le zoom vertical sur l'axe Y
-    bool m_isYAxisDragging = false;     // Indique si on est en train de faire glisser l'axe Y
-    double m_yAxisClickRelativePos = 0.0; // Position relative du clic sur l'axe Y (0 = bas, 1 = haut)
-    int m_yAxisMarginWidth = 50;        // Marge en pixels pour détecter les clics sur l'axe Y
+    // Variables for vertical zoom on the Y axis
+    bool m_isYAxisDragging = false;     // Indicates if the Y axis is being dragged
+    double m_yAxisClickRelativePos = 0.0; // Relative click position on the Y axis (0 = bottom, 1 = top)
+    int m_yAxisMarginWidth = 50;        // Margin in pixels to detect clicks on the Y axis
 };

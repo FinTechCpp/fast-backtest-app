@@ -14,7 +14,7 @@
             "MIMode": "gdb",
             "setupCommands": [
                 {
-                    "description": "Activer l'affichage amélioré pour gdb",
+                    "description": "Activate enhanced display for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
@@ -35,7 +35,7 @@
             "MIMode": "gdb",
             "setupCommands": [
                 {
-                    "description": "Activer l'affichage amélioré pour gdb",
+                    "description": "Activate enhanced display for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
@@ -56,7 +56,7 @@
             "MIMode": "lldb",
             "setupCommands": [
                 {
-                    "description": "Activer l'affichage amélioré pour lldb",
+                    "description": "Activate enhanced display for lldb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
@@ -76,7 +76,7 @@
             "MIMode": "lldb",
             "setupCommands": [
                 {
-                    "description": "Activer l'affichage amélioré pour lldb",
+                    "description": "Activate enhanced display for lldb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }

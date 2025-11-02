@@ -20,11 +20,11 @@ public:
     ChartDataManager();
     ~ChartDataManager();
 
-    // Méthodes pour la gestion des données
+    // Methods for data management
     void setData(const std::vector<be::Candle>& data, const std::vector<be::TradeData>& trades, const std::vector<be::EquityPoint>& equityCurve);
     chart::AggregationInfo getOptimalAggregationInfo(const DoubleArray& timestamps);
     
-    // Accesseurs
+    // Accessors
     const chart::AggregatedOHLCV& getAggregatedData(chart::AggregationLevel level) const { return m_aggregatedOHLCVCache[static_cast<size_t>(level)];}
     const std::vector<be::TradeData>& getTrades() const { return m_trades; }
     const chart::EquityData& getEquityData() const { return m_equityData; }
@@ -42,26 +42,26 @@ public:
     void setMaxDisplayPoints(int value);
 
     /**
-     * @brief Convertit un indice brut en indice agrégé
-     * @param level Niveau d'agrégation
-     * @param rawIndex Indice dans les données brutes
-     * @return Indice correspondant dans les données agrégées, ou -1 si non trouvé
+     * @brief Convert a raw index to an aggregated index
+     * @param level Aggregation level
+     * @param rawIndex Index in the raw data
+     * @return Corresponding index in the aggregated data, or nullopt if not found
      */
     std::optional<size_t> rawToAggregatedIndex(chart::AggregationLevel level, size_t rawIndex) const;
     
     /**
-     * @brief Obtient tous les indices bruts pour un indice agrégé donné
-     * @param level Niveau d'agrégation
-     * @param aggregatedIndex Indice dans les données agrégées
-     * @return Vecteur des indices bruts correspondants
+     * @brief Get all raw indices for a given aggregated index
+     * @param level Aggregation level
+     * @param aggregatedIndex Index in the aggregated data
+     * @return Vector of corresponding raw indices
      */
     const std::vector<size_t>& getAggregatedToRawIndices(chart::AggregationLevel level, size_t aggregatedIndex) const;
     
     /**
-     * @brief Obtient le premier indice brut pour un indice agrégé donné
-     * @param level Niveau d'agrégation
-     * @param aggregatedIndex Indice dans les données agrégées
-     * @return Premier indice brut correspondant, ou -1 si non trouvé
+     * @brief Get the first raw index for a given aggregated index
+     * @param level Aggregation level
+     * @param aggregatedIndex Index in the aggregated data
+     * @return First corresponding raw index, or -1 if not found
      */
     int aggregatedToFirstRawIndex(chart::AggregationLevel level, int aggregatedIndex) const;
 
@@ -76,7 +76,7 @@ public:
     void setMarkers(const std::vector<chart::ChartMarker>& markers) { m_markers = markers; }
 
 
-    // Ici il faut implementer le vole de données avec move
+    // Here data transfer with move semantics needs to be implemented
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<indicators::IndicatorBase, T>>>
     int addIndicator(const T& config) {
         T copy = config;
@@ -108,7 +108,7 @@ public:
 
         bool isCalculationParamsEqual = indicator->isCalculationParamsEqual(config);
 
-        *indicator = config; // Met à jour la configuration de l'indicateur
+        *indicator = config; // Update the indicator configuration
 
         if (!isCalculationParamsEqual)
             calculateIndicator(config);
@@ -149,8 +149,8 @@ private:
     void updateHeikinAshiCache();
 
     void calculateIndicator(const indicators::IndicatorBase& config);
-    // il faut pas donner les id mais il faut return les valeur calculer pour les mettre dans le cache ensuite, il faut pas le faire dans la fonction
-    // ducoup plus besoin de l'id
+    // We should not pass ids but return the calculated values to put them into the cache afterwards; it should not be done inside this function
+    // so there's no need for the id
     void calculateRSI(int id, int period);
     void calculateEMA(int id, int period);
     void calculateSupertrend(int id, int period, double multiplier);
@@ -159,35 +159,35 @@ private:
     void calculateCCI(int id, int period);
     void calculateMACD(int id,int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType osc_ma_type, filter::MAType signal_ma_type, int signal_smoothing);
     void calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType osc_ma_type);
-    // On a peux etre pas besoin de donner l'instance complete mais pk pas, mais si on fait ca on, le fait pour tous les indicateurs
+    // We may not need to pass the complete instance but why not; if we do that, we do it for all indicators
     void calculatePivotPoints(const indicators::PivotPointsInstance& config);
 
-    // deux methode qui utilise la meme logique c'est a factoriser
+    // two methods that use the same logic should be refactored
     void precalculatePivotIndices(std::vector<indicators::PivotPointsInstance::PivotPeriod>& periods, chart::AggregationLevel level);
     void precalculateTradeIndices(chart::AggregationLevel level);
 
 
-    // Utilitaires internes
+    // Internal utilities
     double dateToChartTimestamp(const be::Date& date) const;
     size_t findClosestIndex(const std::vector<double>& values, double target, bool searchForward = false) const;
     chart::AggregationLevel determineStartingAggregationLevel(const DoubleArray& timestamps) const;
     
-    // Données
-    std::vector<be::Date> m_datesCache; // idem a mettre dans AggregatedOHLCV Temporaire
+    // Data
+    std::vector<be::Date> m_datesCache; // same, should be moved into AggregatedOHLCV (temporary)
     std::array<chart::AggregatedOHLCV, static_cast<size_t>(chart::AggregationLevel::Count)> m_aggregatedOHLCVCache;
     std::array<chart::IndicatorData, static_cast<size_t>(chart::AggregationLevel::Count)> m_aggregatedIndicatorsCache;
-    // les points pivots ne s'aggrègent pas comme les autres indicateurs, ils supportent nativement l'aggregation
+    // pivot points do not aggregate like other indicators; they natively support aggregation
     std::map<int, std::vector<indicators::PivotPointsInstance::PivotPeriod>> m_pivotPeriods;
     chart::OHLC m_heikinAshiCache;
     std::vector<be::TradeData> m_trades;
-    std::vector<std::array<std::pair<size_t, size_t>, static_cast<size_t>(chart::AggregationLevel::Count)>> m_tradeIndices; // Indices pour chaque trade
+    std::vector<std::array<std::pair<size_t, size_t>, static_cast<size_t>(chart::AggregationLevel::Count)>> m_tradeIndices; // Indices for each trade
     chart::EquityData m_equityData;
     std::vector<chart::ChartMarker> m_markers; // User-placed markers on the chart
 
-    // ID unique global pour tous les types d'indicateurs
+    // Global unique ID for all indicator types
     int m_nextIndicatorId = 1;
-    std::vector<std::unique_ptr<indicators::IndicatorBase>> m_indicators; ///< Toutes les instances d'indicateurs actives
+    std::vector<std::unique_ptr<indicators::IndicatorBase>> m_indicators; ///< All active indicator instances
 
-    // Constantes
+    // Constants
     int m_maxDisplayPoints = 30000;
 };

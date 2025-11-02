@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstddef>   // pour size_t
+#include <cstddef>   // for size_t
 #include <vector>
 #include <set>
 #include <map>
@@ -8,52 +8,52 @@
 #include <string>
 #include <QString>
 #include "common.h"
-#include <utility>  // pour std::pair
+#include <utility>  // for std::pair
 
 namespace chart {
     enum class ChartType {
-        CandleStick,  ///< Graphique en chandeliers japonais
-        HeikinAshi,   ///< Chandeliers Heikin Ashi (moyenne)
-        OHLC,         ///< Barres OHLC (Open-High-Low-Close)
-        Close,        ///< Ligne de prix de clôture uniquement
-        Count         ///< Nombre total de types de graphiques
+        CandleStick,  ///< Japanese candlestick chart
+        HeikinAshi,   ///< Heikin Ashi candles (averaged)
+        OHLC,         ///< OHLC bars (Open-High-Low-Close)
+        Close,        ///< Close price line only
+        Count         ///< Total number of chart types
     };
     extern const std::array<std::pair<ChartType, const char*>, static_cast<size_t>(ChartType::Count)> chartTypeNames;
     std::string chartTypeToString(ChartType type);
     ChartType stringToChartType(const std::string& typeStr);
 
     enum class AggregationLevel {
-        Raw,         // Données brutes
+        Raw,         // Raw data
         OneMinute,   // 1 minute
-        OneHour,     // 1 heure
-        OneDay,      // 1 jour
-        Count        // Nombre total de niveaux d'agrégation
+        OneHour,     // 1 hour
+        OneDay,      // 1 day
+        Count        // Total number of aggregation levels
     };
     extern const std::array<const char*, static_cast<size_t>(AggregationLevel::Count)> aggregationLevelNames;
     std::string aggregationLevelToString(AggregationLevel level);
 
-    // Structure pour la configuration du graphique
+    // Structure for chart configuration
     struct ChartConfiguration {
         ChartType chartType = ChartType::CandleStick;
-        int chartWidth = 1200; // il faut que ce soit adaptatif
+        int chartWidth = 1200; // should be adaptive
         int chartHeight = 1000;
-        int equityHeight = 180; // inclue dans la taille du graphique principal
+        int equityHeight = 180; // included in the main chart height
         // int volumeHeight = 100;
         bool showTrades = true;
         bool showEquity = true;
 
-        // Propriétés pour le mode d'échelle Y fixe
-        bool fixedYScale = false;     // Indique si on utilise une échelle Y fixe
-        double yScaleMin = 0.0;       // Valeur minimale de l'échelle Y
-        double yScaleMax = 0.0;       // Valeur maximale de l'échelle Y
-        double yScaleOffset = 0.0;    // Décalage vertical en unités de l'échelle
+        // Properties for fixed Y-scale mode
+        bool fixedYScale = false;     // Indicates whether using a fixed Y-scale
+        double yScaleMin = 0.0;       // Minimum value of the Y-scale
+        double yScaleMax = 0.0;       // Maximum value of the Y-scale
+        double yScaleOffset = 0.0;    // Vertical offset in scale units
     };
 
     struct AggregationInfo {
-        AggregationLevel level;    // Le niveau d'agrégation optimal
-        size_t startIndex;         // L'indice de début dans les données mises en cache
-        size_t pointCount;         // Le nombre de points à extraire
-        bool isValid = false;      // Indicateur de validité
+        AggregationLevel level;    // The optimal aggregation level
+        size_t startIndex;         // The start index in the cached data
+        size_t pointCount;         // The number of points to extract
+        bool isValid = false;      // Validity flag
     };
     inline bool operator==(const AggregationInfo& a, const AggregationInfo& b) {
         return a.level == b.level && a.startIndex == b.startIndex && a.pointCount == b.pointCount && a.isValid == b.isValid;
@@ -62,7 +62,7 @@ namespace chart {
         return !(a == b);
     }
 
-    // faire de l'heritage pour stocker ohlcv isvalid
+    // use inheritance to store OHLCV isValid
     struct OHLC {
         std::vector<double> open;
         std::vector<double> high;
@@ -73,24 +73,24 @@ namespace chart {
 
     struct AggregatedOHLCV : OHLC {
         std::vector<double> timestamps, volume;
-        std::vector<std::vector<size_t>> rawIndicesMapping;  // Pour chaque indice agrégé, liste des indices raw correspondants
+        std::vector<std::vector<size_t>> rawIndicesMapping;  // For each aggregated index, list of corresponding raw indices
         /*
-        Exemple :
+        Example :
         Raw data indices:    0, 1, 2, 3, 4, 5, 6, 7, 8
         Aggregated (1min):    0, 1, 2
         rawIndicesMapping:  [[0,1,2],[3,4,5],[6,7,8]]
         0 -> [0,1,2]
         1 -> [3,4,5]
         2 -> [6,7,8]
-        Dans la bougie agrégée 0, on a les bougies raw 0,1,2 etc.
+        In aggregated candle 0, we have raw candles 0,1,2 etc.
         */
     };
 
-    // on pourrait imaginer de refaire cette structure pour par exemple juste prendre le type de l'indicateur
-    // par exmeple pour le rsi c'est std::vector<double> rsiValues;
-    // pour les points pivots c'est std::map<int, std::vector<double>> pivotPointsValues;
+    // one could imagine reworking this structure to for example just take the indicator type
+    // for example for RSI it's std::vector<double> rsiValues;
+    // for pivot points it's std::map<int, std::vector<double>> pivotPointsValues;
     struct IndicatorData {
-        // Pour chaque type d'indicateur, stocker les IDs qui ont été agrégés
+        // For each indicator type, store the IDs that have been aggregated
         std::set<int> validRsiIds;
         std::set<int> validEmaIds;
         std::set<int> validSupertrendIds;
@@ -101,18 +101,18 @@ namespace chart {
         std::set<int> validMacdIds;
         std::set<int> validBbIds;
 
-        // Données des indicateurs
+        // Indicator data
         std::map<int, std::vector<double>> rsiValues;
         std::map<int, std::vector<double>> emaValues;
-        std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Valeurs + directions
+        std::map<int, std::pair<std::vector<double>, std::vector<int>>> supertrendValues; // Values + directions
         std::map<int, std::pair<std::vector<double>, std::vector<double>>> stochasticValues;
         std::map<int, std::vector<double>> atrValues;
         std::map<int, std::vector<double>> cciValues;
         std::map<int, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>> macdValues; // macd_line, signal_line, histogram
         std::map<int, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>> bbValues; // middle_band, upper_band, lower_band
         AggregationLevel level;
-        
-        // Méthodes utilitaires pour vérifier si un indicateur spécifique est valide
+
+        // Utility methods to check if a specific indicator is valid
         bool isRsiValid(int id) const { return validRsiIds.find(id) != validRsiIds.end(); }
         bool isEmaValid(int id) const { return validEmaIds.find(id) != validEmaIds.end(); }
         bool isSupertrendValid(int id) const { return validSupertrendIds.find(id) != validSupertrendIds.end(); }
@@ -165,14 +165,14 @@ namespace indicators {
     };
 
     enum class PivotPeriodType {
-        FourHour,   // Points pivots toutes les 4 heures
-        Daily,      // Points pivots quotidiens
-        Weekly,     // Points pivots hebdomadaires
-        Monthly     // Points pivots mensuels
+        FourHour,   // Pivot points every 4 hours
+        Daily,      // Daily pivot points
+        Weekly,     // Weekly pivot points
+        Monthly     // Monthly pivot points
     };
 
     enum class PivotCalculationMethod {
-        HLC,     // High, Low, Close (méthode standard)
+        HLC,     // High, Low, Close (standard method)
         OHLC,    // Open, High, Low, Close
         HLO      // High, Low, Open
     };
@@ -236,10 +236,10 @@ namespace indicators {
             int fastPeriod = 12;
             int slowPeriod = 26;
             int signalPeriod = 9;
-            filter::PriceType source = filter::PriceType::CLOSE; // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
-            filter::MAType osc_ma_type = filter::MAType::EMA; // Type de moyenne mobile pour l'oscillateur (SMA, EMA, WMA)
-            filter::MAType signal_ma_type = filter::MAType::EMA; // Type de moyenne mobile pour la ligne de signal (SMA, EMA, WMA)
-            int signal_smoothing = 1; // Lissage supplémentaire pour la ligne de signal
+            filter::PriceType source = filter::PriceType::CLOSE; // Data source (open, high, low, close, hl2, hlc3, ohlc4)
+            filter::MAType osc_ma_type = filter::MAType::EMA; // Moving average type for the oscillator (SMA, EMA, WMA)
+            filter::MAType signal_ma_type = filter::MAType::EMA; // Moving average type for the signal line (SMA, EMA, WMA)
+            int signal_smoothing = 1; // Additional smoothing for the signal line
 
             bool operator==(const MACD& other) const = default;
             bool operator!=(const MACD& other) const = default;
@@ -247,8 +247,8 @@ namespace indicators {
         struct BB {
             int period = 20;
             double stddev_multiplier = 2.0;
-            filter::PriceType source = filter::PriceType::CLOSE; // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
-            filter::MAType ma_type = filter::MAType::SMA; // Type de moyenne mobile (SMA, EMA)
+            filter::PriceType source = filter::PriceType::CLOSE; // Data source (open, high, low, close, hl2, hlc3, ohlc4)
+            filter::MAType ma_type = filter::MAType::SMA; // Moving average type (SMA, EMA)
 
             bool operator==(const BB& other) const = default;
             bool operator!=(const BB& other) const = default;
@@ -258,7 +258,7 @@ namespace indicators {
     struct IndicatorSignal {        
         Type type;
         
-        // Unions de tous les types possibles de paramètres
+        // Union of all possible parameter types
         union ParamsUnion {
             params::RSI rsi;
             params::EMA ema;
@@ -270,21 +270,21 @@ namespace indicators {
             params::MACD macd;
             params::BB bb;
             
-            ParamsUnion() {} // Union nécessite un constructeur par défaut
-            ~ParamsUnion() {} // Et un destructeur
+            ParamsUnion() {} // Union requires a default constructor
+            ~ParamsUnion() {} // And a destructor
         } params;
     };
 
     struct IndicatorBase {
         // IndicatorBase(Type type) : type_(type) {}
         IndicatorBase() = default;
-        int id = -1; // Identifiant unique de l'indicateur
-        // Type type_; // Type d'indicateur
-        bool visible = true; // Si l'indicateur est visible
+        int id = -1; // Unique identifier of the indicator
+        // Type type_; // Indicator type
+        bool visible = true; // Whether the indicator is visible
 
         virtual bool isCalculationParamsEqual(const IndicatorBase& other) const = 0;
         
-        // Nouvelle méthode pour obtenir le nom d'affichage de l'indicateur
+        // New method to get the display name of the indicator
         virtual QString getDisplayName() const = 0;
         virtual std::unique_ptr<IndicatorBase> clone() const = 0;
 
@@ -313,13 +313,13 @@ namespace indicators {
 
         // static constexpr Type staticType = Type::RSI;
 
-        int period;             // Période du RSI
-        int height;             // Hauteur du panneau
-        int color;              // Couleur de la ligne principale (violet par défaut)
-        int overboughtLevel;    // Niveau de surachat
-        int oversoldLevel;      // Niveau de survente
-        int upperColor;         // Couleur pour la zone de surachat
-        int lowerColor;         // Couleur pour la zone de survente
+        int period;             // RSI period
+        int height;             // Panel height
+        int color;              // Main line color (default purple)
+        int overboughtLevel;    // Overbought level
+        int oversoldLevel;      // Oversold level
+        int upperColor;         // Color for overbought area
+        int lowerColor;         // Color for oversold area
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const RSIInstance* otherRSI = dynamic_cast<const RSIInstance*>(&other);
@@ -338,11 +338,11 @@ namespace indicators {
         void setDefaults() override {
             period = 14;
             height = 120;
-            color = 0x800080; // Violet
+            color = 0x800080; // Purple
             overboughtLevel = 80;
             oversoldLevel = 20;
-            upperColor = 0xff6666; // Rouge clair
-            lowerColor = 0x6666ff; // Bleu clair
+            upperColor = 0xff6666; // Light red
+            lowerColor = 0x6666ff; // Light blue
         }
     };
 
@@ -350,8 +350,8 @@ namespace indicators {
         EMAInstance() : IndicatorBase() {
             setDefaults();
         }
-        int period;            // Période de l'EMA
-        int color;             // Couleur de la ligne (bleu par défaut)
+        int period;            // EMA period
+        int color;             // Line color (default blue)
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const EMAInstance* otherEMA = dynamic_cast<const EMAInstance*>(&other);
@@ -369,7 +369,7 @@ namespace indicators {
 
         void setDefaults() override {
             period = 20;
-            color = 0x0000FF; // Bleu par défaut
+            color = 0x0000FF; // Default blue
         }
     };
 
@@ -377,10 +377,10 @@ namespace indicators {
         SuperTrendInstance() : IndicatorBase() {
             setDefaults();
         }
-        int period;            // Période pour le SuperTrend
-        double multiplier;     // Multiplicateur pour le SuperTrend
-        int upColor;           // Couleur de la ligne (vert par défaut)
-        int downColor;         // Couleur de la ligne (rouge par défaut)
+        int period;            // Period for SuperTrend
+        double multiplier;     // Multiplier for SuperTrend
+        int upColor;           // Line color (default green)
+        int downColor;         // Line color (default red)
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const SuperTrendInstance* otherST = dynamic_cast<const SuperTrendInstance*>(&other);
@@ -399,8 +399,8 @@ namespace indicators {
         void setDefaults() override {
             period = 10;
             multiplier = 3.0;
-            upColor = 0xFFA500; // Orange doré
-            downColor = 0x8B008B; // Rose extrêmememnt foncé
+            upColor = 0xFFA500; // Orange
+            downColor = 0x8B008B; // Very dark magenta
         }
     };
 
@@ -408,14 +408,14 @@ namespace indicators {
         StochasticInstance() : IndicatorBase() {
             setDefaults();
         }
-        int fastKPeriod;        // Période pour calculer le %K brut
-        int slowKPeriod;        // Période de lissage pour %K
-        int slowDPeriod;        // Période pour calculer %D
-        int height;             // Hauteur du panneau
-        int kColor;             // Couleur de la ligne %K (bleu par défaut)
-        int dColor;             // Couleur de la ligne %D (rouge par défaut)
-        int overboughtLevel;    // Niveau de surachat
-        int oversoldLevel;      // Niveau de survente
+        int fastKPeriod;        // Period to compute raw %K
+        int slowKPeriod;        // Smoothing period for %K
+        int slowDPeriod;        // Period to compute %D
+        int height;             // Panel height
+        int kColor;             // %K line color (default blue)
+        int dColor;             // %D line color (default red)
+        int overboughtLevel;    // Overbought level
+        int oversoldLevel;      // Oversold level
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const StochasticInstance* otherStochastic = dynamic_cast<const StochasticInstance*>(&other);
@@ -449,10 +449,10 @@ namespace indicators {
         ATRInstance() : IndicatorBase() {
             setDefaults();
         }
-        int period;            // Période de l'ATR
-        int height;            // Hauteur du panneau
-        int color;             // Couleur de la ligne (vert foncé par défaut)
-        bool useLogScale;      // Indique si l'échelle logarithmique est utilisée
+        int period;            // ATR period
+        int height;            // Panel height
+        int color;             // Line color (default dark green)
+        bool useLogScale;      // Indicates whether logarithmic scale is used
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const ATRInstance* otherATR = dynamic_cast<const ATRInstance*>(&other);
@@ -478,21 +478,21 @@ namespace indicators {
 
     struct PivotPointsInstance : public IndicatorBase {
         enum class LevelType {
-            R3,         // Résistance 3
-            R2,         // Résistance 2
-            R1,         // Résistance 1
-            Pivot,      // Point pivot principal (PP)
+            R3,         // Resistance 3
+            R2,         // Resistance 2
+            R1,         // Resistance 1
+            Pivot,      // Main pivot point (PP)
             S1,         // Support 1
             S2,         // Support 2
             S3,         // Support 3
-            M_R2R3,     // Milieu entre R2 et R3
-            M_R1R2,     // Milieu entre R1 et R2
-            M_PR1,      // Milieu entre PP et R1
-            M_PS1,      // Milieu entre PP et S1
-            M_S1S2,     // Milieu entre S1 et S2
-            M_S2S3,     // Milieu entre S2 et S3
+            M_R2R3,     // Mid between R2 and R3
+            M_R1R2,     // Mid between R1 and R2
+            M_PR1,      // Mid between PP and R1
+            M_PS1,      // Mid between PP and S1
+            M_S1S2,     // Mid between S1 and S2
+            M_S2S3,     // Mid between S2 and S3
 
-            Count   // Nombre total de niveaux
+            Count   // Total number of levels
         };
 
         enum class LineStyle {
@@ -504,19 +504,19 @@ namespace indicators {
         };
 
         struct LevelStyle {
-            int color = 0x000000;     // Couleur de la ligne
-            int thickness = 2;    // Épaisseur (1-3)
+            int color = 0x000000;     // Line color
+            int thickness = 2;    // Thickness (1-3)
             LineStyle lineStyle = LineStyle::Solid; // Style (solid, dash, dot, etc.)
-            bool visible = false;     // Visibilité du niveau
+            bool visible = false;     // Level visibility
 
-            QString labelFormat = QString(); // Format d'affichage optionnel (ex: "PP: %.2f")
+            QString labelFormat = QString(); // Optional display format (e.g., "PP: %.2f")
         };
 
         struct PivotPeriod {
-            // Mapping vers les indices agrégés pour différents niveaux d'agrégation
-            std::array<std::pair<size_t, size_t>, static_cast<size_t>(chart::AggregationLevel::Count)> indices; // Indices bruts pour chaque niveau d'agrégation
+            // Mapping to aggregated indices for different aggregation levels
+            std::array<std::pair<size_t, size_t>, static_cast<size_t>(chart::AggregationLevel::Count)> indices; // Raw indices for each aggregation level
             
-            // Valeurs de tous les niveaux de pivot pour cette période
+            // Values for all pivot levels for this period
             std::array<double, static_cast<size_t>(LevelType::Count)> levelValues;
         };
 
@@ -524,10 +524,10 @@ namespace indicators {
             setDefaults();
         }
 
-        PivotPeriodType periodType;                          // Type de période (4H, journalier, hebdomadaire, mensuel)
-        PivotCalculationMethod calculationMethod;            // Méthode de calcul des points pivots
-        std::array<LevelStyle, static_cast<size_t>(LevelType::Count)> levelStyles; // Styles par défaut pour chaque niveau
-        bool showLabels = true;                         // Afficher les étiquettes des niveaux
+        PivotPeriodType periodType;                          // Period type (4H, daily, weekly, monthly)
+        PivotCalculationMethod calculationMethod;            // Calculation method for pivot points
+        std::array<LevelStyle, static_cast<size_t>(LevelType::Count)> levelStyles; // Default styles for each level
+        bool showLabels = true;                         // Show level labels
 
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
@@ -544,9 +544,9 @@ namespace indicators {
             QString periodStr;
             switch (periodType) {
                 case PivotPeriodType::FourHour: periodStr = "4H"; break;
-                case PivotPeriodType::Daily: periodStr = "Jour"; break;
-                case PivotPeriodType::Weekly: periodStr = "Hebdomadaire"; break;
-                case PivotPeriodType::Monthly: periodStr = "Mensuel"; break;
+                case PivotPeriodType::Daily: periodStr = "Daily"; break;
+                case PivotPeriodType::Weekly: periodStr = "Weekly"; break;
+                case PivotPeriodType::Monthly: periodStr = "Monthly"; break;
             }
             return QString("Pivot Points (%1)").arg(periodStr);
         }
@@ -556,18 +556,18 @@ namespace indicators {
         }
 
         void setDefaults() override {
-            // Point pivot central (noir, trait plein, visible)
+            // Central pivot (black, solid line, visible)
             LevelStyle pivotStyle;
-            pivotStyle.color = 0x000000;  // Noir
+            pivotStyle.color = 0x000000;  // Black
             pivotStyle.thickness = 2;
             pivotStyle.lineStyle = LineStyle::Solid;
             pivotStyle.visible = true;
-            pivotStyle.labelFormat = "Piv %1";
+            pivotStyle.labelFormat = "PP %1";
             levelStyles[static_cast<size_t>(LevelType::Pivot)] = pivotStyle;
 
-            // Résistances (rouge, trait plein, visibles)
+            // Resistances (red, solid line, visible)
             LevelStyle resistanceStyle;
-            resistanceStyle.color = 0xFF0000;  // Rouge
+            resistanceStyle.color = 0xFF0000;  // Red
             resistanceStyle.thickness = 2;
             resistanceStyle.lineStyle = LineStyle::Solid;
             resistanceStyle.visible = true;
@@ -581,9 +581,9 @@ namespace indicators {
             resistanceStyle.labelFormat = "R3 %1";
             levelStyles[static_cast<size_t>(LevelType::R3)] = resistanceStyle;
 
-            // Supports (vert, trait plein, visibles)
+            // Supports (green, solid line, visible)
             LevelStyle supportStyle;
-            supportStyle.color = 0x008000;  // Vert
+            supportStyle.color = 0x008000;  // Green
             supportStyle.thickness = 2;
             supportStyle.lineStyle = LineStyle::Solid;
             supportStyle.visible = true;
@@ -597,12 +597,12 @@ namespace indicators {
             supportStyle.labelFormat = "S3 %1";
             levelStyles[static_cast<size_t>(LevelType::S3)] = supportStyle;
 
-            // Niveaux milieux résistance (rouge, trait pointillé, non visibles par défaut)
+            // Mid resistance levels (red, dashed line, not visible by default)
             LevelStyle midResistanceStyle;
-            midResistanceStyle.color = 0xFF0000;  // Rouge
+            midResistanceStyle.color = 0xFF0000;  // Red
             midResistanceStyle.thickness = 1;
             midResistanceStyle.lineStyle = LineStyle::Dash;
-            midResistanceStyle.visible = false;  // Visible si showMidLevels est true
+            midResistanceStyle.visible = false;  // Visible if showMidLevels is true
             
             midResistanceStyle.labelFormat = "mR3 %1";
             levelStyles[static_cast<size_t>(LevelType::M_R2R3)] = midResistanceStyle;
@@ -613,12 +613,12 @@ namespace indicators {
             midResistanceStyle.labelFormat = "mR1 %1";
             levelStyles[static_cast<size_t>(LevelType::M_PR1)] = midResistanceStyle;
 
-            // Niveaux milieux support (vert, trait pointillé, non visibles par défaut)
+            // Mid support levels (green, dashed line, not visible by default)
             LevelStyle midSupportStyle;
-            midSupportStyle.color = 0x008000;  // Vert
+            midSupportStyle.color = 0x008000;  // Green
             midSupportStyle.thickness = 1;
             midSupportStyle.lineStyle = LineStyle::Dash;
-            midSupportStyle.visible = false;  // Visible si showMidLevels est true
+            midSupportStyle.visible = false;  // Visible if showMidLevels is true
 
             midSupportStyle.labelFormat = "mS1 %1";
             levelStyles[static_cast<size_t>(LevelType::M_PS1)] = midSupportStyle;
@@ -629,10 +629,10 @@ namespace indicators {
             midSupportStyle.labelFormat = "mS3 %1";
             levelStyles[static_cast<size_t>(LevelType::M_S2S3)] = midSupportStyle;
 
-            // Activer les étiquettes par défaut
+            // Enable labels by default
             showLabels = true;
             
-            // Type de période par défaut
+            // Default period type
             periodType = PivotPeriodType::Daily;
 
             calculationMethod = PivotCalculationMethod::HLC;
@@ -649,13 +649,13 @@ namespace indicators {
             period = p.period;
         }
 
-        int period;            // Période du CCI
-        int height;            // Hauteur du panneau
-        int color;             // Couleur de la ligne principale
-        int upperLevel;        // Niveau supérieur (typiquement +100)
-        int lowerLevel;        // Niveau inférieur (typiquement -100)
-        int upperColor;        // Couleur pour la zone supérieure
-        int lowerColor;        // Couleur pour la zone inférieure
+        int period;            // CCI period
+        int height;            // Panel height
+        int color;             // Main line color
+        int upperLevel;        // Upper level (typically +100)
+        int lowerLevel;        // Lower level (typically -100)
+        int upperColor;        // Color for upper area
+        int lowerColor;        // Color for lower area
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const CCIInstance* otherCCI = dynamic_cast<const CCIInstance*>(&other);
@@ -677,8 +677,8 @@ namespace indicators {
             color = 0xFFA500;      // Orange
             upperLevel = 100;
             lowerLevel = -100;
-            upperColor = 0xff6666; // Rouge clair
-            lowerColor = 0x6666ff; // Bleu clair
+            upperColor = 0xff6666; // Light red
+            lowerColor = 0x6666ff; // Light blue
         }
     };
     struct MACDInstance : public IndicatorBase {
@@ -694,17 +694,17 @@ namespace indicators {
 
         }
 
-        int fastPeriod;        // Période rapide
-        int slowPeriod;        // Période lente
-        int signalPeriod;      // Période de la ligne de signal
-        filter::PriceType source;        // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
-        filter::MAType osc_ma_type;   // Type de moyenne mobile pour l'oscillateur (SMA, EMA, WMA)
-        filter::MAType signal_ma_type;// Type de moyenne mobile pour la ligne de signal (SMA, EMA, WMA)
-        int signal_smoothing;  // Lissage supplémentaire pour la ligne de signal
-        int height;            // Hauteur du panneau
-        int macdColor;         // Couleur de la ligne MACD
-        int signalColor;       // Couleur de la ligne de signal
-        int histogramColor;    // Couleur de l'histogramme
+        int fastPeriod;        // Fast period
+        int slowPeriod;        // Slow period
+        int signalPeriod;      // Signal line period
+        filter::PriceType source;        // Data source (open, high, low, close, hl2, hlc3, ohlc4)
+        filter::MAType osc_ma_type;   // Moving average type for the oscillator (SMA, EMA, WMA)
+        filter::MAType signal_ma_type;// Moving average type for the signal line (SMA, EMA, WMA)
+        int signal_smoothing;  // Additional smoothing for the signal line
+        int height;            // Panel height
+        int macdColor;         // MACD line color
+        int signalColor;       // Signal line color
+        int histogramColor;    // Histogram color
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const MACDInstance* otherMACD = dynamic_cast<const MACDInstance*>(&other);
@@ -735,9 +735,9 @@ namespace indicators {
             signal_ma_type = filter::MAType::EMA;
             signal_smoothing = 0;
             height = 200;
-            macdColor = 0x0000ff;      // Bleu
-            signalColor = 0xff0000;    // Rouge
-            histogramColor = 0x808080; // Gris
+            macdColor = 0x0000ff;      // Blue
+            signalColor = 0xff0000;    // Red
+            histogramColor = 0x808080; // Gray
         }
     };
     struct BBInstance : public IndicatorBase {
@@ -753,15 +753,15 @@ namespace indicators {
             ma_type = p.ma_type;
         }
 
-        int period;                // Période de la bande
-        double stddev_multiplier;  // Multiplicateur d'écart-type
-        filter::PriceType source;      // Source de données (open, high, low, close, hl2, hlc3, ohlc4)
-        filter::MAType ma_type;       // Type de moyenne mobile (SMA, EMA)
-        int height;                // Hauteur du panneau
-        int middleBandColor;       // Couleur de la bande médiane
-        int upperBandColor;        // Couleur de la bande supérieure
-        int lowerBandColor;        // Couleur de la bande inférieure
-        int fillColor;             // Couleur de remplissage entre les bandes
+        int period;                // Band period
+        double stddev_multiplier;  // Standard deviation multiplier
+        filter::PriceType source;      // Data source (open, high, low, close, hl2, hlc3, ohlc4)
+        filter::MAType ma_type;       // Moving average type (SMA, EMA)
+        int height;                // Panel height
+        int middleBandColor;       // Middle band color
+        int upperBandColor;        // Upper band color
+        int lowerBandColor;        // Lower band color
+        int fillColor;             // Fill color between bands
 
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const BBInstance* otherBB = dynamic_cast<const BBInstance*>(&other);
@@ -786,10 +786,10 @@ namespace indicators {
             source = filter::PriceType::CLOSE;
             ma_type = filter::MAType::SMA;
             height = 200;
-            middleBandColor = 0x0000FF; // Bleu
-            upperBandColor = 0xFF0000;  // Rouge
-            lowerBandColor = 0x00FF00;  // Vert
-            fillColor = 0xADD8E6;       // Bleu clair
+            middleBandColor = 0x0000FF; // Blue
+            upperBandColor = 0xFF0000;  // Red
+            lowerBandColor = 0x00FF00;  // Green
+            fillColor = 0xADD8E6;       // Light blue
         }
     };
 }

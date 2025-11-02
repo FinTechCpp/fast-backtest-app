@@ -9,7 +9,7 @@
 
 #include "stats.hpp"
 
-// On peut calculer le ratio gain perte et le mettre au dessus du widget pk pas
+// We can calculate the gain-loss ratio and display it above the widget, why not
 
 class VerticalGaugeRenderWidget : public TitledWidget {
     Q_OBJECT
@@ -24,33 +24,33 @@ protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
     
 private:
-    // Conversion valeur -> position Y
+    // Conversion value -> Y position
     int valueToY(double value, double minValue, double maxValue, int height);
     
-    // Valeurs à afficher
-    double m_tpAvg;     // Moyenne des trades gagnants
-    double m_tpAvgPrc;  // Moyenne des trades gagnants en %
-    double m_tpMax;     // Maximum des trades gagnants
-    double m_tpMaxPrc;  // Maximum des trades gagnants en %
-    double m_tpMedian;  // Médiane des trades gagnants
-    double m_tpMedianPrc;  // Médiane des trades gagnants en %
+    // Values to display
+    double m_tpAvg;     // Average of winning trades
+    double m_tpAvgPrc;  // Average of winning trades in %
+    double m_tpMax;     // Maximum of winning trades
+    double m_tpMaxPrc;  // Maximum of winning trades in %
+    double m_tpMedian;  // Median of winning trades
+    double m_tpMedianPrc;  // Median of winning trades in %
 
-    double m_slAvg;     // Moyenne des trades perdants
-    double m_slAvgPrc;  // Moyenne des trades perdants en %
-    double m_slMin;     // Minimum des trades perdants
-    double m_slMinPrc;  // Minimum des trades perdants en %
-    double m_slMedian;  // Médiane des trades perdants
-    double m_slMedianPrc;  // Médiane des trades perdants en %
+    double m_slAvg;     // Average of losing trades
+    double m_slAvgPrc;  // Average of losing trades in %
+    double m_slMin;     // Minimum of losing trades
+    double m_slMinPrc;  // Minimum of losing trades in %
+    double m_slMedian;  // Median of losing trades
+    double m_slMedianPrc;  // Median of losing trades in %
     
-    // Couleurs
-    QColor m_tpAvgColor;    // Vert foncé pour la moyenne des TP
-    QColor m_tpMaxColor;    // Vert clair pour le max des TP
-    QColor m_slAvgColor;    // Rouge foncé pour la moyenne des SL
-    QColor m_slMinColor;    // Rouge clair pour le min des SL
-    QColor m_medianTpColor; // Couleur de la ligne de médiane TP
-    QColor m_medianSlColor; // Couleur de la ligne de médiane SL
-    QColor m_lineColor;     // Couleur des lignes
-    QColor m_textColor;     // Couleur du texte
+    // Colors
+    QColor m_tpAvgColor;    // Dark green for the average of TP
+    QColor m_tpMaxColor;    // Light green for the max of TP
+    QColor m_slAvgColor;    // Dark red for the average of SL
+    QColor m_slMinColor;    // Light red for the min of SL
+    QColor m_medianTpColor; // Color of the TP median line
+    QColor m_medianSlColor; // Color of the SL median line
+    QColor m_lineColor;     // Color of the lines
+    QColor m_textColor;     // Color of the text
 
-    QCheckBox* m_showPercentageCheckbox; // Checkbox pour afficher en pourcentage ou en valeur absolue
+    QCheckBox* m_showPercentageCheckbox; // Checkbox to display in percentage or absolute value
 };

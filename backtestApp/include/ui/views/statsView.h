@@ -26,51 +26,48 @@
 #include "ui/views/Stats/HistogramWidget.h"
 #include "ui/views/Stats/EquityWidget.h"
 
-
-
 #include <cmath>
 
 class App;
 
-
 /**
- * @brief Vue pour afficher les statistiques de backtest.
- * Organise les métriques en catégories.
+ * @brief View to display backtest statistics.
+ * Organizes metrics into categories.
  */
 class StatsView : public BaseView {
     Q_OBJECT
 
 public:
     /**
-     * @brief Constructeur de la vue des statistiques
-     * @param parent Le parent widget
+     * @brief Constructor for the statistics view
+     * @param parent The parent widget
      */
     StatsView(QWidget* parent = nullptr);
     
     /**
-     * @brief Destructeur
+     * @brief Destructor
      */
     ~StatsView();
 
     /**
-     * @brief Met à jour l'affichage avec de nouveaux résultats de backtest
-     * @param results Les résultats à afficher
+     * @brief Updates the display with new backtest results
+     * @param results The results to display
      */
     void updateData(BacktestResults* results) override;
     
     /**
-     * @brief Efface toutes les données et réinitialise l'affichage
+     * @brief Clears all data and resets the display
      */
     void clear() override;
 
 protected:
     /**
-     * @brief Configure l'interface utilisateur
+     * @brief Configures the user interface
      */
     void setupUI() override;
 
 private:
-    // ==================== Membres privés ====================
+    // ==================== Private Members ====================
     TradingHeatmapWidget* m_tradingHeatmapWidget = nullptr;
 
     EquityWidget* m_equityWidget = nullptr;
@@ -106,6 +103,6 @@ private:
 
     HistogramWidget* m_histogramWidget = nullptr;
 
-    // --- État ---
-    App* m_app;  // Référence à l'application principale
+    // --- State ---
+    App* m_app;  // Reference to the main application
 };

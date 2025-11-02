@@ -11,58 +11,58 @@ def fetch_data_in_segments(
     ib, 
     contract, 
     end_date=None, 
-    segment_duration='6 M',  # Durée de chaque segment (6 mois)
-    max_segments=20,         # Nombre maximum de segments à télécharger
+    segment_duration='6 M', 
+    max_segments=20,         
     bar_size='10 secs', 
     price_source='TRADES', 
     use_rth=False
 ):
     """
-    Télécharge des données historiques par segments et les fusionne.
+    Download historical data in segments and merge them.
     
     Args:
-        ib: Instance IB connectée
-        contract: Contrat à interroger
-        end_date: Date de fin (None = aujourd'hui)
-        segment_duration: Durée de chaque segment
-        max_segments: Nombre maximum de segments à télécharger
-        bar_size: Taille des barres
-        price_source: Source de prix
-        use_rth: Utiliser seulement les heures régulières de trading
+        ib: Instance IB connected
+        contract: Contract to query
+        end_date: End date (None = today)
+        segment_duration: Duration of each segment
+        max_segments: Maximum number of segments to download
+        bar_size: 
+        price_source: 
+        use_rth: 
         
     Returns:
-        DataFrame pandas combiné
+        Combined pandas DataFrame
     """
     import pandas as pd
     from datetime import datetime, timedelta
     import time
     
-    # Déterminer la date de fin
+    # Determine the end date
     if end_date is None:
         end_date = pd.Timestamp.now(tz='UTC')
     elif isinstance(end_date, str):
         end_date = pd.to_datetime(end_date, utc=True)
     
-    # Initialiser la liste pour stocker les dataframes de chaque segment
+    # Initialize the list to store dataframes for each segment
     all_segments = []
     segments_downloaded = 0
     
-    # Utiliser la date de fin actuelle comme point de départ
+    # Use the current end date as the starting point
     current_end_date = end_date
     
-    # Journalisation
-    print(f"Début du téléchargement des données pour {contract.symbol} en segments de {segment_duration}")
-    print(f"Date de fin: {current_end_date.strftime('%Y-%m-%d %H:%M:%S')}")
+    # Logging
+    print(f"Starting segmented download for {contract.symbol} with segments of {segment_duration}")
+    print(f"End date: {current_end_date.strftime('%Y-%m-%d %H:%M:%S')}")
     
     while segments_downloaded < max_segments:
         try:
-            # Format de date requis par IB
+            # Date format required by IB
             end_date_str = current_end_date.strftime('%Y%m%d %H:%M:%S')
             
-            print(f"\nTéléchargement du segment {segments_downloaded+1}/{max_segments}")
-            print(f"Date de fin du segment: {end_date_str}")
+            print(f"\nDownloading segment {segments_downloaded+1}/{max_segments}")
+            print(f"Segment end date: {end_date_str}")
             
-            # Télécharger les données pour ce segment
+            # Download data for this segment
             bars = ib.reqHistoricalData(
                 contract,
                 endDateTime=end_date_str,
@@ -71,72 +71,72 @@ def fetch_data_in_segments(
                 whatToShow=price_source,
                 useRTH=use_rth,
                 formatDate=2,
-                timeout=120  # Timeout plus court pour détecter les problèmes rapidement
+                timeout=120  # Shorter timeout to detect issues quickly
             )
             
-            # Si aucune donnée n'est retournée, sortir de la boucle
+            # If no data is returned, exit the loop
             if not bars:
-                print("Aucune donnée supplémentaire disponible. Arrêt du téléchargement.")
+                print("No additional data available. Stopping download.")
                 break
             
-            # Convertir en DataFrame et nettoyer
+            # Convert to DataFrame and clean
             segment_df = util.df(bars)
             
             if len(segment_df) == 0:
-                print("Segment vide. Arrêt du téléchargement.")
+                print("Empty segment. Stopping download.")
                 break
                 
-            # Supprimer les colonnes non nécessaires
+            # Drop unnecessary columns
             segment_df = segment_df.drop(columns=['volume', 'average', 'barCount'], errors='ignore')
             
-            # Afficher un aperçu des données téléchargées
-            print(f"Données téléchargées: {len(segment_df)} barres")
-            print(f"Première date: {segment_df['date'].min()}")
-            print(f"Dernière date: {segment_df['date'].max()}")
+            # Show a preview of the downloaded data
+            print(f"Downloaded data: {len(segment_df)} bars")
+            print(f"First date: {segment_df['date'].min()}")
+            print(f"Last date: {segment_df['date'].max()}")
             
-            # Ajouter à la liste des segments
+            # Add to the list of segments
             all_segments.append(segment_df)
             segments_downloaded += 1
             
-            # Définir la nouvelle date de fin (la plus ancienne date du segment actuel - 1 seconde)
+            # Set the new end date (oldest date of current segment - 1 second)
             if len(segment_df) > 0:
                 current_end_date = segment_df['date'].min() - pd.Timedelta(seconds=1)
             else:
                 break
                 
-            # Pause pour éviter d'atteindre les limites d'API
+            # Pause to avoid hitting API limits
             time.sleep(1)
             
         except Exception as e:
-            print(f"Erreur lors du téléchargement du segment: {e}")
-            print("Attente de 5 secondes avant de réessayer...")
+            print(f"Error while downloading segment: {e}")
+            print("Waiting 5 seconds before retrying...")
             time.sleep(5)
             continue
     
-    # Si aucun segment n'a été téléchargé
+    # If no segment was downloaded
     if not all_segments:
-        print("Aucun segment n'a été téléchargé avec succès.")
+        print("No segment was downloaded successfully.")
         return None
         
-    # Fusionner tous les segments
-    print("\nFusion des segments...")
+    # Merge all segments
+    print("\nMerging segments...")
     
-    # Méthode 1: Utiliser pd.concat (plus simple)
+    # Method 1: Use pd.concat (simpler)
     combined_df = pd.concat(all_segments)
     
-    # Méthode 2: Utiliser la fonction merge_ohlc_dataframes pour une fusion plus robuste
+    # Method 2: Use the merge_ohlc_dataframes function for a more robust merge
     # final_df = all_segments[0]
     # for i in range(1, len(all_segments)):
     #     final_df = merge_ohlc_dataframes(final_df, all_segments[i], frequency=bar_size.replace(' ', ''))
     
-    # Supprimer les doublons basés sur la date
+    # Remove duplicates based on the date
     combined_df = combined_df.drop_duplicates(subset=['date'])
     
-    # Trier par date
+    # Sort by date
     combined_df = combined_df.sort_values('date').reset_index(drop=True)
     
-    print(f"Fusion terminée. Dataframe final: {len(combined_df)} barres")
-    print(f"Période couverte: {combined_df['date'].min()} à {combined_df['date'].max()}")
+    print(f"Merge complete. Final dataframe: {len(combined_df)} bars")
+    print(f"Period covered: {combined_df['date'].min()} to {combined_df['date'].max()}")
     
     return combined_df
 

@@ -3,10 +3,10 @@
 #include "ui/views/Stats/TitledWidget.h"
 #include <vector>
 
-// Structure pour définir un segment
+// Structure to define a segment
 struct PieSegment {
-    double proportion;  // Proportion relative (sera normalisée)
-    QColor color;       // Couleur du segment
+    double proportion;  // Relative proportion (will be normalized)
+    QColor color;       // Segment color
     
     PieSegment(double p, const QColor& c) : proportion(p), color(c) {}
 };
@@ -18,23 +18,23 @@ class FlexiblePieWidget : public TitledWidget
 public:
     explicit FlexiblePieWidget(const QString& title = QString(), QWidget *parent = nullptr);
     
-    // Configuration de base
-    void setStartAngle(int degrees); // 0° = est, 90° = haut, 180° = ouest
-    void setAngleSpan(int degrees);   // 180° = demi-cercle, 360° = cercle complet
+    // Basic configuration
+    void setStartAngle(int degrees); // 0° = east, 90° = top, 180° = west
+    void setAngleSpan(int degrees);   // 180° = half-circle, 360° = full circle
     void setCenterText(const QString &text);
     void setCenterTextColor(const QColor &color);
     void setCenterTextSuffix(const QString &suffix);
     
-    // Gestion des segments
+    // Segment management
     void addSegment(double proportion, const QColor &color);
     void setSegments(const std::vector<PieSegment>& segments);
     void clearSegments();
     const std::vector<PieSegment>& segments() const { return m_segments; }
     
-    // Configuration visuelle
-    void setInnerCircleRadius(double ratio); // 0.1-0.9, proportion du rayon extérieur
+    // Visual configuration
+    void setInnerCircleRadius(double ratio); // 0.1-0.9, proportion of the outer radius
     
-    // Taille recommandée
+    // Recommended size
     QSize sizeHint() const override;
     QSize minimumSizeHint() const override;
 
@@ -42,12 +42,12 @@ protected:
     void paintContent(QPainter& painter, const QRect& contentRect) override;
 
 private:
-    // Configuration géométrique
-    int m_startAngle;    // Angle de départ en degrés (x16 pour QPainter)
-    int m_angleSpan;      // Angle maximum à parcourir (x16 pour QPainter)
-    double m_innerRadiusRatio; // Ratio du rayon intérieur
+    // Geometric configuration
+    int m_startAngle;    // Starting angle in degrees (x16 for QPainter)
+    int m_angleSpan;      // Maximum angle to cover (x16 for QPainter)
+    double m_innerRadiusRatio; // Ratio of the inner radius
     
-    // Texte central
+    // Center text
     QString m_centerText;
     QString m_textSuffix;
     QColor m_textColor;

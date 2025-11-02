@@ -26,13 +26,13 @@ private:
     OrderType m_type;
     bool m_executeOnLevel = true;
     
-    // Constantes pour le dessin
+    // Constants for drawing
     const int m_candleWidth = 20;
     const int m_candleBodyWidth = 8;
     const int m_candleSpacing = 40;
     const int m_levelLineLength = 80;
-    const QColor m_bullishColor = QColor(0, 200, 0); // Vert
-    const QColor m_bearishColor = QColor(200, 0, 0); // Rouge
+    const QColor m_bullishColor = QColor(0, 200, 0); // green
+    const QColor m_bearishColor = QColor(200, 0, 0); // red
 };
 
 class BacktestEngineDialog : public QDialog {

@@ -44,7 +44,7 @@ class App;
 class RSIDialog;
 
 /**
- * @brief Vue pour afficher les graphiques de prix et d'indicateurs
+ * @brief View to display price and indicator charts
  */
 class ChartView : public BaseView
 {
@@ -54,14 +54,14 @@ public:
     explicit ChartView(QWidget* parent = nullptr);
     ~ChartView();
     
-    // Implémentation des méthodes virtuelles de BaseView
+    // Implementation of BaseView virtual methods
     void updateData(BacktestResults* results) override;
     void clear() override;
     
-    // Méthode pour zoomer sur un trade spécifique
+    // Method to zoom in on a specific trade
     void zoomToTrade(const be::TradeData& trade);
     
-    // Méthode pour zoomer sur une période spécifique
+    // Method to zoom in on a specific period
     void zoomToPeriod(const QDateTime& startDate, const QDateTime& endDate);
 
 protected:
@@ -71,14 +71,14 @@ private:
     bool m_comparisonMode = false;
 
     // UI Components 
-    ChartControlPanel* m_leftPanel;         // Panneau de gauche (settings)
-    QWidget* m_rightPanel;        // Panneau de droite (chart)
+    ChartControlPanel* m_leftPanel;         // Left panel (settings)
+    QWidget* m_rightPanel;        // Right panel (chart)
     QLabel* m_chartPlaceholder;
-    QStackedLayout* m_rightPanelLayout; // Layout pour le panneau droit
-    QWidget* m_chartContainer; // Conteneur pour les widgets de graphique
+    QStackedLayout* m_rightPanelLayout; // Layout for the right panel
+    QWidget* m_chartContainer; // Container for chart widgets
 
-    ChartWidget* m_chartWidget;   // Widget du graphique
-    ChartWidget* m_chartWidget2;   // Widget du graphique pour la comparaison verticale
+    ChartWidget* m_chartWidget;   // Chart widget
+    ChartWidget* m_chartWidget2;   // Chart widget for vertical comparison
 
     
     void showPlaceholder(const QString& message);

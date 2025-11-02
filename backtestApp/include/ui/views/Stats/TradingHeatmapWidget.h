@@ -33,48 +33,47 @@ protected:
     void mouseMoveEvent(QMouseEvent* event) override;
 
 private:
-    // Calcule le jour de la semaine à partir d'une date (0 = lundi, 6 = dimanche)
+    // Calculate the day of the week from a date (0 = Monday, 6 = Sunday)
     int getDayOfWeek(const be::Date& date);
     
-    // Analyse les trades pour extraire les performances par heure et jour
+    // Analyze trades to extract performance by hour and day
     void analyzeTradesByTimeAndDay(const std::vector<be::TradeData>& trades);
     
-    // Retourne une couleur en fonction de la valeur (gradient rouge-blanc-vert)
+    // Return a color based on the value (red-white-green gradient)
     QColor getColorForValue(double value);
 
-    // Composants d'interface
+    // UI components
     QVBoxLayout* m_mainLayout;
     QLabel* m_titleLabel;
     QGraphicsScene* m_scene;
     QGraphicsView* m_view;
     
-    // Données pour la heatmap
-    QVector<QVector<double>> m_performanceData; // [heure][jour] -> performance moyenne (%)
-    QVector<QVector<int>> m_tradeCountData;     // [heure][jour] -> nombre de trades
-    QVector<QVector<double>> m_squaredSumData;   // [heure][jour] -> somme des carrés des performances
+    // Data for the heatmap
+    QVector<QVector<double>> m_performanceData; // [hour][day] -> average performance (%)
+    QVector<QVector<int>> m_tradeCountData;     // [hour][day] -> number of trades
+    QVector<QVector<double>> m_squaredSumData;  // [hour][day] -> sum of squared performances
     
-    // Valeurs min/max pour le gradient de couleur
+    // Min/max values for the color gradient
     double m_minValue;
     double m_maxValue;
-    int m_minHour;   // Première heure avec des trades
-    int m_maxHour;   // Dernière heure avec des trades
+    int m_minHour;   // First hour with trades
+    int m_maxHour;   // Last hour with trades
 
-    // Constantes
+    // Constants
     static constexpr int HOURS_IN_DAY = 24;
     static constexpr int DAYS_IN_WEEK = 7;
     static constexpr int CELL_SIZE = 45;
     static constexpr int CELL_SPACING = 0;
     
-    // Noms des jours pour l'affichage
-    // QStringList m_dayNames{"Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"};
-    QStringList m_dayNames{"Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"};
-    QVector<bool> m_activeDays; // Indique quels jours ont des trades
-    QVector<int> m_activeDayIndices; // Indices des jours actifs pour l'affichage
+    // Day names for display
+    QStringList m_dayNames{"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    QVector<bool> m_activeDays; // Indicates which days have trades
+    QVector<int> m_activeDayIndices; // Indices of active days for display
 
-    // Variables pour le suivi de la souris
+    // Variables for mouse tracking
     QPoint m_mousePos;
     bool m_mouseOver = false;
     int m_activeCell_col = -1;
     int m_activeCell_row = -1;
-    QRect m_cellsArea; // Rectangle englobant toute la zone des cellules
+    QRect m_cellsArea; // Rectangle encompassing the entire cell area
 };

@@ -12,7 +12,7 @@
 
 #include "ui/chart/chartTypes.h"
 
-// Prédéclarations de classes
+// Forward declarations of classes
 class ChartDataManager;
 
 
@@ -21,7 +21,7 @@ public:
     ChartRenderer();
     ~ChartRenderer();
 
-    // Méthode principale pour créer ou mettre à jour le graphique
+    // Main method to create or update the chart
     void createOrUpdateChart(
         QChartViewer* viewer,
         const ChartDataManager& dataManager,
@@ -52,29 +52,29 @@ public:
     
 private:
     enum class TPSLBEType {
-        TakeProfit,  // Niveau de Take Profit
-        StopLoss,    // Niveau de Stop Loss
-        BreakEven    // Niveau de Break Even
+        TakeProfit,  // Take Profit level
+        StopLoss,    // Stop Loss level
+        BreakEven    // Break Even level
     };
 
-    // Structure pour les segments TP/SL des trades
+    // Structure for trade TP/SL segments
     struct TPSLBESegment {
-        double startX;        // Index du point d'entrée
-        double endX;          // Index du point de sortie
-        double level;         // Niveau de prix (TP ou SL)
-        TPSLBEType type;     // Type de niveau (TP, SL, BE)
-        int color;            // Couleur basée sur le résultat du trade
+        double startX;        // Entry point index
+        double endX;          // Exit point index
+        double level;         // Price level (TP or SL)
+        TPSLBEType type;      // Level type (TP, SL, BE)
+        int color;            // Color based on the trade result
     };
 
-    // Méthode pour dessiner la règle
+    // Method to draw the ruler
     void drawRuler(MultiChart* m, int startX, int startY, int endX, int endY, DrawArea* d,
                    const ChartDataManager& dataManager,
                    const chart::AggregationInfo& aggregationInfo);
     
-    // Méthode pour le tracking de la souris
+    // Method for mouse tracking
     void trackFinance(MultiChart* m, int mouseX, int mouseY, DrawArea* d);
     
-    // Méthodes de rendu des sections
+    // Rendering methods for sections
     void addEquityCurveSection(FinanceChart *chart, 
                                const ChartDataManager& dataManager, 
                                const DoubleArray &timestamps, 
@@ -98,7 +98,7 @@ private:
     // void addTriggerPriceSegments(XYChart* chart, const std::vector<TriggerPriceSegment>& segments);
 
     
-    // Méthodes pour l'ajout d'indicateurs
+    // Methods to add indicators
     void addRSIToChart(FinanceChart* chart, 
         const indicators::RSIInstance& rsi, 
         const ChartDataManager& dataManager, 
@@ -109,7 +109,7 @@ private:
         const ChartDataManager& dataManager, 
         const chart::AggregationInfo& aggregationInfo);
 
-        // Ajouter dans la classe ChartRenderer:
+        // Add to the ChartRenderer class:
     void addSupertrendToChart(FinanceChart* chart, 
         const indicators::SuperTrendInstance& supertrend, 
         const ChartDataManager& dataManager, 
@@ -145,12 +145,12 @@ private:
         const ChartDataManager& dataManager,
         const chart::AggregationInfo& aggregationInfo);
 
-    // Méthode pour ajouter les markers dessinés par l'utilisateur
+    // Method to add user-drawn markers
     void addUserMarkers(XYChart* mainChart,
                        const std::vector<chart::ChartMarker>& markers,
                        const chart::AggregationInfo& aggregationInfo);
 
-    // Utilitaires
+    // Utilities
     ScatterLayer* addMarkers(XYChart* chart, 
                    const std::vector<std::pair<double, double>>& markers, 
                    const char* name, 
@@ -163,10 +163,10 @@ private:
     void addTPSLSegments(XYChart* chart, 
                         const std::vector<TPSLBESegment>& segments);
         
-    // Données membres
+    // Member data
     std::unique_ptr<FinanceChart> m_financeChart;
 
-    double m_lastYMin = 0.0; // Dernière valeur minimale de l'échelle Y
-    double m_lastYMax = 0.0; // Dernière valeur maximale de l'échelle Y
-    double m_plotAreaHeight = 0.0; // Hauteur de la zone de tracé
+    double m_lastYMin = 0.0; // Last minimum value of the Y-axis scale
+    double m_lastYMax = 0.0; // Last maximum value of the Y-axis scale
+    double m_plotAreaHeight = 0.0; // Height of the plot area
 };

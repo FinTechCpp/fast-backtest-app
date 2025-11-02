@@ -42,7 +42,7 @@ public:
     // Utility methods
     static QString buildDownloadUrl(const QString& version);
     
-    // Constants publiques
+    // Constants public
     static const QString GITHUB_PAGES_BASE_URL;
 
 signals:

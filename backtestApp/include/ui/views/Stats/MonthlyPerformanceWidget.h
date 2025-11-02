@@ -31,31 +31,31 @@ private:
     QColor getColorForValue(double value);
     void buildHeatmap();
 
-    // Constantes pour le dessin
+    // Constants for drawing
     static constexpr int CELL_SIZE = 50;
     static constexpr int CELL_SPACING = 2;
     static constexpr int MONTHS_IN_YEAR = 12;
     
-    // Noms des mois
+    // Month names
     const QStringList m_monthNames = {
-        "Jan", "Fév", "Mar", "Avr", "Mai", "Jun", 
-        "Jui", "Aoû", "Sep", "Oct", "Nov", "Déc"
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
     };
     
-    // Structures de données pour les performances
-    QMap<int, QMap<int, double>> m_performanceData;  // [année][mois] -> performance
-    QMap<int, QMap<int, int>> m_tradeCountData;      // [année][mois] -> nombre de trades
-    QMap<int, QMap<int, double>> m_squaredSumData;   // [année][mois] -> somme des carrés des performances
+    // Data structures for performance
+    QMap<int, QMap<int, double>> m_performanceData;  // [year][month] -> performance
+    QMap<int, QMap<int, int>> m_tradeCountData;      // [year][month] -> number of trades
+    QMap<int, QMap<int, double>> m_squaredSumData;   // [year][month] -> sum of squared performances
     
-    // Années min et max pour déterminer la plage d'affichage
+    // Min and max years to determine the display range
     int m_minYear;
     int m_maxYear;
     
-    // Valeurs min et max pour l'échelle de couleur
+    // Min and max values for the color scale
     double m_minValue;
     double m_maxValue;
     
-    // Interface graphique
+    // Graphical interface
     QVBoxLayout* m_mainLayout;
     QGroupBox* m_groupBox;
     QGraphicsScene* m_scene;

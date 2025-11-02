@@ -12,10 +12,10 @@ class ProfileManager;
 class App;
 
 /**
- * @brief Gestionnaire de menu des profils dans la barre de menu
+ * @brief Profile menu manager in the main menu bar
  * 
- * Cette classe gère le menu "Profils" dans la barre de menu principale
- * avec les actions pour gérer les profils de configuration.
+ * This class manages the "Profiles" menu in the main menu bar
+ * with actions to manage configuration profiles.
  */
 class ProfileMenuManager : public QObject
 {
@@ -23,32 +23,32 @@ class ProfileMenuManager : public QObject
 
 public:
     /**
-     * @brief Constructeur
-     * @param parent Pointeur vers l'application principale
+     * @brief Constructor
+     * @param parent Pointer to the main application
      */
     ProfileMenuManager(App* parent = nullptr);
     
     /**
-     * @brief Crée et ajoute le menu des profils à la barre de menu
-     * @param menuBar Barre de menu où ajouter le menu des profils
+     * @brief Creates and adds the profiles menu to the menu bar
+     * @param menuBar Menu bar where to add the profiles menu
      */
     void createProfileMenu(QMenuBar* menuBar);
     
     /**
-     * @brief Initialise le gestionnaire avec le ProfileManager
-     * @param configManager Pointeur vers le gestionnaire de configuration
+     * @brief Initializes the manager with the ProfileManager
+     * @param configManager Pointer to the configuration manager
      */
     void setConfigManager(ProfileManager* configManager);
     
     /**
-     * @brief Met à jour la liste des profils dans le menu
+     * @brief Updates the list of profiles in the menu
      */
     void updateProfileList();
 
 public slots:
     /**
-     * @brief Met à jour l'affichage du profil actuel
-     * @param profileName Nom du profil actuel
+     * @brief Updates the display of the current profile
+     * @param profileName Name of the current profile
      */
     void onProfileChanged(const QString& profileName);
 
@@ -65,11 +65,11 @@ private:
     App* m_mainWindow;
     ProfileManager* m_configManager;
     
-    // Menu et actions
+    // Menu and actions
     QMenu* m_profileMenu;
     QMenu* m_loadProfileSubmenu;
     
-    // Actions principales
+    // Main actions
     QAction* m_saveProfileAction;
     QAction* m_newProfileAction;
     QAction* m_deleteProfileAction;
@@ -78,10 +78,9 @@ private:
     QAction* m_openDirectoryAction;
 
     
-    // Actions dynamiques pour les profils
+    // Dynamic actions for profiles
     QMap<QString, QAction*> m_profileActions;
     
     void createActions();
     void updateLoadSubmenu();
 };
-

@@ -30,17 +30,17 @@ struct ProfileConfig {
     }
 };
 
-// TODO finir l'enregistrement total des resultats de backtest
+// TODO finish full saving of backtest results
 struct BacktestResultConfig {
     std::string name;
     std::string version;
     std::string createdAt;
 
-    // Backtest Results : a remplacer par la structure BacktestResults directement ?
+    // Backtest Results: replace with BacktestResults structure directly?
     GeneralParamsConfig generalParams;
     std::vector<StrategyConfig> strategyConfigs;
     be::Stats stats;
-    // c'est vraiment lourd, il faudrait plutot une reference vers des données, ensuite en verifie que les données chargées étaient bien celles de l'enregistrement
+    // This is really heavy; it would be better to reference data instead, and then verify that the loaded data matches the saved record
     std::vector<be::Candle> candles;
 
 
@@ -56,13 +56,13 @@ struct BacktestResultConfig {
     }
 };
 
-// Structure pour importer des résultats externes (sans stats pré-calculés)
+// Structure to import external results (without precomputed stats)
 struct ExternalResultConfig {
     std::string name;
     std::string version;
     std::string createdAt;
 
-    std::vector<be::TradeData> trades;  // Trades directement au lieu de stats
+    std::vector<be::TradeData> trades;  // Trades directly instead of stats
     std::vector<be::Candle> candles; 
 
     template<class Archive>
@@ -140,7 +140,7 @@ namespace cereal {
            cereal::make_nvp("second", dt.time().second()));
     }
 
-    // Pour QString (adaptateur générique)
+    // For QString (generic adapter)
     template<class Archive>
     void save(Archive & ar, const QString & str) {
         std::string stdStr = str.toStdString();
@@ -218,7 +218,7 @@ namespace cereal {
            cereal::make_nvp("value", point.value));
     }
     
-    // Sérialisation pour StrategyConfig
+    // Serialization for StrategyConfig
     template<class Archive>
     void serialize(Archive & ar, StrategyConfig & config) {
         ar(cereal::make_nvp("name", config.name),
@@ -262,7 +262,7 @@ namespace cereal {
            cereal::make_nvp("daily_max_drawdown_percentage", config.daily_max_drawdown_percentage));
     }
     
-    // Sérialisation pour GeneralParamsConfig
+    // Serialization for GeneralParamsConfig
     template<class Archive>
     void serialize(Archive & ar, GeneralParamsConfig & config) {
         ar(cereal::make_nvp("symbol", config.symbol),
@@ -296,10 +296,10 @@ namespace cereal {
     template<class Archive>
     void serialize(Archive & ar, filter::ValueSource & valueSource)
     {
-        // Toujours sérialiser la catégorie en premier
+        // Always serialize the category first
         ar(cereal::make_nvp("category", valueSource.category));
         
-        // Sérialiser les membres de la première union selon la catégorie
+        // Serialize the members of the first union according to the category
         switch (valueSource.category) {
             case filter::ValueCategory::PRICE:
                 ar(cereal::make_nvp("priceType", valueSource.priceType));
@@ -308,7 +308,7 @@ namespace cereal {
             case filter::ValueCategory::INDICATOR:
                 ar(cereal::make_nvp("indicatorType", valueSource.indicatorType));
                 
-                // Pour les indicateurs, sérialiser la bonne structure de paramètres
+                // For indicators, serialize the correct parameter structure
                 switch (valueSource.indicatorType) {
                     case filter::IndicatorType::EMA:
                         ar(cereal::make_nvp("emaParams", valueSource.emaParams));
@@ -353,7 +353,7 @@ namespace cereal {
                         ar(cereal::make_nvp("bbParams", valueSource.bbParams));
                         break;
                     case filter::IndicatorType::PIVOT_POINT:
-                        // Pas de paramètre spécifique pour ce type
+                        // No specific parameter for this type
                         break;
                 }
                 break;
@@ -363,16 +363,16 @@ namespace cereal {
                 break;
                 
             case filter::ValueCategory::CONSTANT:
-                // Pas de membre de la première union pour les constantes
+                // No member of the first union for constants
                 break;
         }
         
-        // Sérialiser les membres hors des unions
+        // Serialize members outside of the unions
         if (valueSource.category == filter::ValueCategory::CONSTANT) {
             ar(cereal::make_nvp("constantValue", valueSource.constantValue));
         }
         
-        // Le décalage historique s'applique à toutes les catégories
+        // Historical offset applies to all categories
         ar(cereal::make_nvp("historicalOffset", valueSource.historicalOffset));
         // ar(cereal::make_nvp("description", valueSource.description));
     }

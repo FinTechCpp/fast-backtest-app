@@ -4,20 +4,20 @@
 #include <functional>
 #include <memory>
 
-// Classe abstraite qui représente un binding entre un widget et une propriété
+// Abstract class that represents a binding between a widget and a property
 class PropertyBinder {
 public:
     virtual ~PropertyBinder() = default;
     
-    // Méthodes pour synchroniser dans les deux directions
+    // Methods to synchronize in both directions
     virtual void updateWidgetFromProperty() = 0;
     virtual void updatePropertyFromWidget() = 0;
     
-    // Gestion de l'activation/désactivation
+    // Enable/disable management
     virtual void setEnabled(bool enabled) = 0;
 };
 
-// Classe template qui implémente PropertyBinder pour différents types de widgets/propriétés
+// Template class that implements PropertyBinder for different types of widgets/properties
 template<typename WidgetType, typename PropType>
 class TypedPropertyBinder : public PropertyBinder {
 public:
@@ -49,7 +49,7 @@ public:
 
         m_widget->setEnabled(enabled);
         
-        // Style pour indiquer visuellement si le widget est activé
+        // Style to visually indicate whether the widget is enabled
         if (enabled) {
             m_widget->setStyleSheet("");
         } else {

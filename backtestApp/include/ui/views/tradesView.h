@@ -24,6 +24,6 @@ private:
     // Widgets
     TradesTableWidget* m_tradesTableWidget;
     
-    // Résultats actuels
+    // Current backtest results
     BacktestResults* m_currentResults;
 };

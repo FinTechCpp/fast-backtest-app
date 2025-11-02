@@ -9,10 +9,10 @@
 #include "common.h"
 
 /**
- * @brief Panel pour la gestion de plusieurs stratégies de trading
+ * @brief Panel for managing multiple trading strategies
  * 
- * Ce panel permet d'ajouter, supprimer, dupliquer et configurer plusieurs stratégies.
- * Chaque stratégie possède sa propre configuration indépendante.
+ * This panel allows adding, removing, duplicating, and configuring multiple strategies.
+ * Each strategy has its own independent configuration.
  */
 class StrategyPanel : public QGroupBox
 {
@@ -20,20 +20,20 @@ class StrategyPanel : public QGroupBox
 
 public:
     /**
-     * @brief Constructeur
-     * @param parent Pointeur vers le widget parent
+     * @brief Constructor
+     * @param parent Pointer to the parent widget
      */
     StrategyPanel(QWidget* parent = nullptr);
 
     /**
-     * @brief Récupère toutes les configurations de stratégies
-     * @return Vecteur contenant toutes les configurations
+     * @brief Retrieves all strategy configurations
+     * @return Vector containing all configurations
      */
     std::vector<StrategyConfig> getConfigs() const;
 
     /**
-     * @brief Définit toutes les configurations de stratégies
-     * @param configs Vecteur de configurations à charger
+     * @brief Sets all strategy configurations
+     * @param configs Vector of configurations to load
      */
     void setConfigs(const std::vector<StrategyConfig>& configs);
 

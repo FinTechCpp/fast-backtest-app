@@ -17,7 +17,7 @@ class FilterEditDialog : public QDialog
 public:
     FilterEditDialog(QWidget* parent = nullptr);
     
-    // Setter/Getter pour le filtre
+    // Setter/Getter for filter
     void setFilter(const filter::GenericFilter& filter);
     filter::GenericFilter getFilter() const;
 
@@ -44,7 +44,7 @@ private:
     filter::ValueSource getLeftValueSource() const;
     filter::ValueSource getRightValueSource() const;
     
-    // Widgets pour le côté gauche
+    // Widgets for left side
     QComboBox* m_leftCategoryCombo;
     QWidget* m_leftPriceWidget;
     QWidget* m_leftIndicatorWidget;
@@ -54,7 +54,7 @@ private:
     QComboBox* m_leftCandlePropertyCombo;
     QSpinBox* m_leftHistoricalOffsetSpin;
     
-    // Widgets spécifiques aux indicateurs de gauche
+    // Specific widgets for left indicators
     QWidget* m_leftEMAWidget;
     QWidget* m_leftRSIWidget;
     QWidget* m_leftStochasticWidget;
@@ -91,7 +91,7 @@ private:
     // Transform widgets for right indicator
     QComboBox* m_rightTransformCombo;
 
-    // Widgets pour le côté droit
+    // Widgets for right side
     QGroupBox* m_rightGroup;
     QWidget* m_rightPlaceholder;
     QComboBox* m_rightCategoryCombo;
@@ -105,7 +105,7 @@ private:
     QDoubleSpinBox* m_rightConstantValueSpin;
     QSpinBox* m_rightHistoricalOffsetSpin;
     
-    // Widgets spécifiques aux indicateurs de droite (similaires à gauche)
+    // Specific widgets for right indicators (same as left)
     QWidget* m_rightEMAWidget;
     QWidget* m_rightRSIWidget;
     QWidget* m_rightStochasticWidget;
@@ -138,20 +138,20 @@ private:
     QComboBox* m_rightBBSourceCombo;              // "open"/"high"/"low"/"close"
     QComboBox* m_rightBBMATypeCombo;              // "EMA"/"SMA" for MA type
 
-    // Widgets pour l'opérateur
+    // Widgets for operator
     QComboBox* m_operatorCombo;
-    // Widget pour la distance seuil entre les deux valeurs
+    // Widget for threshold distance between the two values
     QDoubleSpinBox* m_distanceSpin;
     QLabel* m_distanceLabel;
     
-    // Widgets pour la logique temporelle
+    // Widgets for temporal logic
     QComboBox* m_temporalLogicCombo;
     QLabel* m_temporalLogicLabel;
     QSpinBox* m_lookbackPeriodsSpin;
     
-    // Widget pour l'aperçu du filtre
+    // Widget for filter preview
     QLabel* m_previewLabel;
     
-    // Le filtre en cours d'édition
+    // Filter being edited
     filter::GenericFilter m_filter;
 };

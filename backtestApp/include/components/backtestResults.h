@@ -9,15 +9,6 @@
 #include "ui/chart/chartTypes.h"
 #include "ui/panels/generalParamsPanel.h"
 
-// struct Candles {
-//     std::vector<be::Date> date;
-//     std::vector<double> open;
-//     std::vector<double> high;
-//     std::vector<double> low;
-//     std::vector<double> close;
-//     std::vector<double> volume;
-// };
-
 struct BacktestResults {
     GeneralParamsConfig generalConfig; // General configuration for the backtest
     std::vector<StrategyConfig> strategyConfigs; // Strategy configurations used in the backtest

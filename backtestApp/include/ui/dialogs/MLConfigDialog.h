@@ -44,14 +44,13 @@ private:
     void refreshFeatureList();
     QString getFeatureDisplayName(const StrategyConfig::MLFeatureConfig& feature) const;
     
-    // Configuration temporaire
     bool m_useMlEntry;
     std::string m_modelPath;
     int m_lookbackPeriods;
     float m_threshold;
     bool m_normalize;
     
-    // Liste des features (indicateurs) à utiliser pour le modèle ML
+    // feature list 
     std::vector<StrategyConfig::MLFeatureConfig> m_features;
     
     // Widgets

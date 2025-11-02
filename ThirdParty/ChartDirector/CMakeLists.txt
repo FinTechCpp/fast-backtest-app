@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(chartdirector)
 
-message(STATUS "Configuration de ChartDirector...")
+message(STATUS "ChartDirector configuration...")
 
 # On windows, we use a static library
 # On other platforms, we can use SHARED
@@ -37,9 +37,9 @@ endif()
 
 # Check if the library exists
 if(NOT EXISTS "${CHARTDIR_LIB}")
-    message(WARNING "Bibliothèque ChartDirector non trouvée à ${CHARTDIR_LIB}")
+    message(WARNING "ChartDirector library not found at ${CHARTDIR_LIB}")
 else()
-    message(STATUS "Bibliothèque ChartDirector trouvée: ${CHARTDIR_LIB}")
+    message(STATUS "ChartDirector library found: ${CHARTDIR_LIB}")
 endif()
 
 # Qt configuration

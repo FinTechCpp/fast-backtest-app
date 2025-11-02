@@ -8,9 +8,9 @@
 #include <QCheckBox>
 #include <QMap>
 #include <vector>
-#include "common.h"  // Pour accéder à GenericFilter
+#include "common.h"  // To access GenericFilter
 
-// Structure pour regrouper les widgets d'un filtre
+// Structure to group the widgets of a filter
 struct FilterWidgetGroup {
     QWidget* container;
     QCheckBox* enableCheckbox;
@@ -24,10 +24,10 @@ class FiltersWidget : public QWidget
 
 public:
     // Optional groupTitle lets the widget display a custom QGroupBox title
-    // (default: "Filtres de stratégie").
-    FiltersWidget(QWidget* parent = nullptr, const QString& groupTitle = QStringLiteral("Filtres de stratégie"));
+    // (default: "Strategy Filters").
+    FiltersWidget(QWidget* parent = nullptr, const QString& groupTitle = QStringLiteral("Strategy Filters"));
     
-    // Méthodes pour accéder aux filtres
+    // Methods to access the filters
     void setFilters(const std::vector<filter::GenericFilter>& filters);
     const std::vector<filter::GenericFilter>& getFilters() const;
     

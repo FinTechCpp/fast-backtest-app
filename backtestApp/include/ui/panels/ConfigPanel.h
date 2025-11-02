@@ -13,52 +13,52 @@ public:
     ConfigPanel(const QString& title, QWidget* parent = nullptr) : QGroupBox(title, parent) {}
     virtual ~ConfigPanel() = default;
     
-    // Retourne directement la configuration
+    // Directly returns the configuration
     ConfigType getConfig() {
         updateConfigFromWidgets();
         return m_config;
     }
     
-    // Définit la configuration et met à jour tous les widgets
+    // Sets the configuration and updates all widgets
     void setConfig(const ConfigType& config) {
         m_config = config;
         updateWidgetsFromConfig();
     }
 
 protected:
-    // La configuration actuelle
+    // The current configuration
     ConfigType m_config;
     
-    // Liste des bindings entre widgets et propriétés
+    // List of bindings between widgets and properties
     std::vector<std::unique_ptr<PropertyBinder>> m_bindings;
     
-    // Ajoute un binding à la liste
+    // Adds a binding to the list
     void addBinding(std::unique_ptr<PropertyBinder> binding) {
         m_bindings.push_back(std::move(binding));
     }
     
-    // Met à jour tous les widgets en fonction de la configuration actuelle
+    // Updates all widgets based on the current configuration
     virtual void updateWidgetsFromConfig() {
         for (auto& binding : m_bindings) {
             binding->updateWidgetFromProperty();
         }
     }
     
-    // Met à jour la configuration en fonction des widgets
+    // Updates the configuration based on the widgets
     void updateConfigFromWidgets() {
         for (auto& binding : m_bindings) {
             binding->updatePropertyFromWidget();
         }
     }
     
-    // Méthode pour créer un groupe de dépendance
-    // (widgets qui sont activés/désactivés en fonction d'une case à cocher)
+    // Method to create a dependency group
+    // (widgets that are enabled/disabled based on a checkbox)
     void createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& dependentWidgets) {
         auto updateFunc = [checkbox, dependentWidgets]() {
             bool checked = checkbox->isChecked();
             for (QWidget* widget : dependentWidgets) {
                 widget->setEnabled(checked);
-                // Mettre à jour le style
+                // Update the style
                 if (checked)
                     widget->setStyleSheet("background-color: #ffffff; color: #000000;");
                 else
@@ -66,10 +66,10 @@ protected:
             }
         };
         
-        // Connecter le signal toggled au callback
+        // Connect the toggled signal to the callback
         connect(checkbox, &QCheckBox::toggled, this, updateFunc);
         
-        // Appliquer l'état initial
+        // Apply the initial state
         updateFunc();
     }
 };

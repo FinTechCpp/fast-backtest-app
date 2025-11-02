@@ -23,7 +23,6 @@ public:
 private slots:
     void onPeriodChanged(int period);
     void onHeightChanged(int height);
-    // void onRangeChanged(double range);
     void onOverboughtLevelChanged(int level);
     void onOversoldLevelChanged(int level);
     void onColorButtonClicked();

@@ -44,6 +44,6 @@ private:
     QAction* m_checkForUpdatesAction;
     UpdateChecker* m_updateChecker;
     QString m_pendingDownloadVersion;  // Version to download if user agrees
-    QProgressDialog* m_progressDialog; // Dialogue de progression pour l'installation
+    QProgressDialog* m_progressDialog; // Progress dialog for download/install
 
 };

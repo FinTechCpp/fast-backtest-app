@@ -198,7 +198,7 @@ void UpdateChecker::onDownloadFinished()
             }
         }
     } else {
-        QString errorMsg = QString("Erreur de téléchargement (Code: %1): %2")
+        QString errorMsg = QString("Download failed (Code: %1): %2")
                           .arg(static_cast<int>(error))
                           .arg(m_currentReply->errorString());
         
@@ -213,7 +213,7 @@ void UpdateChecker::onDownloadFinished()
         emit downloadCompleted(false, "");
     
         if (m_autoInstallMode) {
-            emit installationError("Échec du téléchargement : " + errorMsg);
+            emit installationError("Download failed: " + errorMsg);
         } else {
             emit downloadError(errorMsg);
         }
@@ -447,7 +447,7 @@ bool UpdateChecker::extractZipFile(const QString& zipFilePath, const QString& ex
 void UpdateChecker::performAutoInstall(const QString& zipFilePath)
 {
     qDebug() << "Starting auto-installation process for:" << zipFilePath;
-    emit installationProgress("Début de l'installation...");
+    emit installationProgress("Starting installation...");
     
     try {
         // 1. Create temporary extraction directory
@@ -464,7 +464,7 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
         
         // 2. Extract the ZIP file
         if (!extractZipFile(zipFilePath, extractPath)) {
-            emit installationError("Échec de l'extraction du fichier ZIP");
+            emit installationError("Failed to extract ZIP file");
             return;
         }
         
@@ -483,7 +483,7 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
         }
         
         if (extractedExePath.isEmpty()) {
-            emit installationError("Impossible de trouver l'exécutable dans le fichier extrait");
+            emit installationError("Failed to find executable in extracted files");
             return;
         }
         
@@ -496,12 +496,12 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
         qDebug() << "Source files found:" << sourceFiles.size() << "items";
         
         if (sourceFiles.isEmpty()) {
-            emit installationError("Le répertoire extrait est vide");
+            emit installationError("Extracted directory is empty");
             return;
         }
-        
-        emit installationProgress("Structure vérifiée, préparation de l'installation...");
-        
+
+        emit installationProgress("Structure verified, preparing installation...");
+
         // 4. Get current application info
         QString currentAppPath = QCoreApplication::applicationFilePath();
         QString currentAppDir = QCoreApplication::applicationDirPath();
@@ -625,12 +625,12 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
 #endif
         
         if (!QFile::exists(scriptPath)) {
-            emit installationError("Impossible de créer le script d'installation");
+            emit installationError("Failed to create installation script");
             return;
         }
-        
-        emit installationProgress("Script d'installation créé, fermeture de l'application...");
-        
+
+        emit installationProgress("Installation script created, closing application...");
+
         // 6. Start the installer script
         qDebug() << "Starting installer script:" << scriptPath;
         
@@ -639,9 +639,9 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
 #else
         QProcess::startDetached("bash", QStringList() << scriptPath);
 #endif
-        
-        emit installationCompleted(true, "Installation en cours... L'application va redémarrer.");
-        
+
+        emit installationCompleted(true, "Installation in progress... Application will restart.");
+
         // 7. Close the current application after a longer delay to ensure script starts properly
         QTimer::singleShot(5000, []() {
             qDebug() << "Closing application for update installation...";
@@ -650,7 +650,7 @@ void UpdateChecker::performAutoInstall(const QString& zipFilePath)
         
     } catch (const std::exception& e) {
         qCritical() << "Exception during auto-install:" << e.what();
-        emit installationError(QString("Erreur lors de l'installation: %1").arg(e.what()));
+        emit installationError(QString("Error during installation: %1").arg(e.what()));
     }
     
     // Reset auto-install mode

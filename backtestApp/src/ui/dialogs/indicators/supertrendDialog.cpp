@@ -12,24 +12,24 @@ SupertrendDialog::~SupertrendDialog()
 
 void SupertrendDialog::setupUI()
 {
-    // Période
+    // ATR Period
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 200);
     m_periodSpinBox->setSingleStep(1);
     m_formLayout->addRow("ATR Period:", m_periodSpinBox);
     
-    // Multiplicateur
+    // Multiplier
     m_multiplierSpinBox = new QDoubleSpinBox();
     m_multiplierSpinBox->setRange(0.1, 200.0);
     m_multiplierSpinBox->setSingleStep(1);
     m_multiplierSpinBox->setDecimals(1);
     m_formLayout->addRow("Multiplier:", m_multiplierSpinBox);
     
-    // Couleur tendance haussière
+    // Up Trend Color
     m_upColorButton = new QPushButton();
     m_formLayout->addRow("Up Trend Color:", m_upColorButton);
     
-    // Couleur tendance baissière
+    // Down Trend Color
     m_downColorButton = new QPushButton();
     m_formLayout->addRow("Down Trend Color:", m_downColorButton);
 }

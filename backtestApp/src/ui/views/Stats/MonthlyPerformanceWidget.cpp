@@ -14,60 +14,60 @@ MonthlyPerformanceWidget::MonthlyPerformanceWidget(QWidget* parent)
       m_minValue(0.0),
       m_maxValue(0.0)
 {
-    // Création du layout principal
+    // Create the main layout
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    // Création du groupe box
-    m_groupBox = new QGroupBox("Performance Mensuelle par Année");
+    // Create the group box
+    m_groupBox = new QGroupBox("Monthly Performance by Year");
     m_mainLayout->addWidget(m_groupBox);
     
-    // Layout interne du groupbox
+    // Internal layout of the group box
     QVBoxLayout* groupLayout = new QVBoxLayout(m_groupBox);
     groupLayout->setContentsMargins(10, 20, 10, 10);
     
-    // Création de la scène et de la vue
+    // Create the scene and the view
     m_scene = new QGraphicsScene(this);
     m_view = new QGraphicsView(m_scene);
     m_view->setRenderHint(QPainter::Antialiasing, true);
     m_view->setMinimumHeight(250);
-    m_view->setMinimumWidth(750);  // Plus large pour accommoder la légende
+    m_view->setMinimumWidth(750);  // Wider to accommodate the legend
     m_view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_view->setAlignment(Qt::AlignCenter);
     
-    // Ajout de la vue au layout
+    // Add the view to the layout
     groupLayout->addWidget(m_view);
     
-    // Installation d'un filtre d'événements pour gérer le redimensionnement
+    // Install an event filter to handle resizing
     m_view->viewport()->installEventFilter(this);
 }
 
 MonthlyPerformanceWidget::~MonthlyPerformanceWidget()
 {
-    // Qt se charge de la destruction des objets enfants
+    // Qt handles deletion of child objects
 }
 
 void MonthlyPerformanceWidget::analyzeTradesByMonthAndYear(const std::vector<be::TradeData>& trades)
 {
-    // Réinitialiser les données
+    // Reset data
     m_performanceData.clear();
     m_tradeCountData.clear();
     m_squaredSumData.clear();
     
-    // Réinitialiser les valeurs min/max
+    // Reset min/max values
     m_minValue = 0.0;
     m_maxValue = 0.0;
     m_minYear = 0;
     m_maxYear = 0;
     bool firstTrade = true;
     
-    // Analyser chaque trade
+    // Analyze each trade
     for (const auto& trade : trades) {
         int year = trade.entryDate.year;
         int month = trade.entryDate.month;
         
-        // Mise à jour des années min et max
+        // Update min and max years
         if (firstTrade) {
             m_minYear = m_maxYear = year;
             firstTrade = false;
@@ -76,23 +76,23 @@ void MonthlyPerformanceWidget::analyzeTradesByMonthAndYear(const std::vector<be:
             m_maxYear = std::max(m_maxYear, year);
         }
         
-        // Ajouter la performance et incrémenter le compteur
+        // Add performance and increment the count
         m_performanceData[year][month] += trade.pl;
         m_tradeCountData[year][month]++;
         m_squaredSumData[year][month] += trade.pl * trade.pl;
     }
     
-    // Si aucun trade, sortir
+    // If no trades, exit
     if (firstTrade) return;
     
-    // Trouver les valeurs min et max pour l'échelle de couleur
+    // Find min and max values for the color scale
     bool firstValue = true;
     for (auto yearIt = m_performanceData.begin(); yearIt != m_performanceData.end(); ++yearIt) {
         for (auto monthIt = yearIt.value().begin(); monthIt != yearIt.value().end(); ++monthIt) {
             int year = yearIt.key();
             int month = monthIt.key();
             
-            // Utiliser le PnL total, pas l'espérance
+            // Use the total PnL, not the expectation
             double monthlyTotal = monthIt.value();
             
             if (firstValue) {
@@ -105,12 +105,12 @@ void MonthlyPerformanceWidget::analyzeTradesByMonthAndYear(const std::vector<be:
         }
     }
     
-    // Équilibrer les bornes pour que les valeurs absolues soient égales (symétrie)
+    // Balance bounds so absolute values are symmetric
     double absMax = std::max(std::fabs(m_minValue), std::fabs(m_maxValue));
     m_minValue = -absMax;
     m_maxValue = absMax;
     
-    // S'assurer que min et max ne sont pas identiques pour éviter division par zéro
+    // Ensure min and max are not identical to avoid division by zero
     if (std::abs(m_maxValue - m_minValue) < 1e-6) {
         m_minValue = -1.0;
         m_maxValue = 1.0;
@@ -119,40 +119,40 @@ void MonthlyPerformanceWidget::analyzeTradesByMonthAndYear(const std::vector<be:
 
 QColor MonthlyPerformanceWidget::getColorForValue(double value)
 {
-    // Assurer que la valeur est dans la plage [min, max]
+    // Ensure the value is within the [min, max] range
     value = std::max(m_minValue, std::min(value, m_maxValue));
     
-    // Normaliser la valeur entre -1 et 1
+    // Normalize the value between -1 and 1
     double range = m_maxValue - m_minValue;
     double normalizedValue = range != 0 ? 2.0 * (value - m_minValue) / range - 1.0 : 0.0;
     
-    // Échelle de couleur symétrique
+    // Symmetric color scale
     if (normalizedValue < 0) {
-        // De rouge à jaune pour les valeurs négatives
-        double ratio = 1.0 + normalizedValue; // 0 à 1 (de min à 0)
+        // From red to yellow for negative values
+        double ratio = 1.0 + normalizedValue; // 0 to 1 (from min to 0)
         
-        // Rouge toujours maximum pour les valeurs négatives
+        // Red always maximum for negative values
         int red = 255;
         
-        // Vert varie de 0 à 255
+        // Green varies from 0 to 255
         int green = static_cast<int>(255 * ratio);
         
-        // Bleu toujours à 0
+        // Blue always 0
         int blue = 0;
         
         return QColor(red, green, blue);
     } 
     else {
-        // De jaune à vert pour les valeurs positives
-        double ratio = normalizedValue; // 0 à 1 (de 0 à max)
+        // From yellow to green for positive values
+        double ratio = normalizedValue; // 0 to 1 (from 0 to max)
         
-        // Rouge varie de 255 à 0
+        // Red varies from 255 to 0
         int red = static_cast<int>(255 * (1.0 - ratio));
         
-        // Vert toujours à 255 pour les valeurs positives
+        // Green always 255 for positive values
         int green = 255;
         
-        // Bleu toujours à 0
+        // Blue always 0
         int blue = 0;
         
         return QColor(red, green, blue);
@@ -161,27 +161,27 @@ QColor MonthlyPerformanceWidget::getColorForValue(double value)
 
 void MonthlyPerformanceWidget::buildHeatmap()
 {
-    // Effacer la scène
+    // Clear the scene
     m_scene->clear();
     
-    // Si pas de données, sortir
+    // If no data, exit
     if (m_minYear == 0 || m_maxYear == 0) {
-        m_groupBox->setTitle("Performance Mensuelle par Année (pas de données)");
+        m_groupBox->setTitle("Monthly Performance by Year (no data)");
         return;
     }
     
-    // Nombre d'années à afficher
+    // Number of years to display
     int yearCount = m_maxYear - m_minYear + 1;
     
-    // Ajuster la taille des cellules en fonction du nombre d'années
+    // Adjust cell size based on number of years
     int adjustedCellSize = std::min(CELL_SIZE, 300 / yearCount);
     
-    // Marges pour les labels
-    int leftMargin = 60;   // Pour les labels d'années
-    int topMargin = 40;    // Pour les labels de mois
-    int rightMargin = 180; // Pour la légende
+    // Margins for labels
+    int leftMargin = 60;   // For year labels
+    int topMargin = 40;    // For month labels
+    int rightMargin = 180; // For the legend
     
-    // Calculer le nombre total de trades
+    // Calculate total number of trades
     int totalTrades = 0;
     double totalPerformance = 0.0;
     
@@ -197,9 +197,9 @@ void MonthlyPerformanceWidget::buildHeatmap()
         }
     }
     
-    // Ajouter un titre
+    // Add a title
     // QGraphicsTextItem* titleText = m_scene->addText(
-    //     QString("Distribution de %1 trades (%2 €)")
+    //     QString("Distribution of %1 trades (%2 €)")
     //         .arg(totalTrades)
     //         .arg(totalPerformance, 0, 'f', 2)
     // );
@@ -209,47 +209,47 @@ void MonthlyPerformanceWidget::buildHeatmap()
     // titleText->setFont(titleFont);
     // titleText->setPos(leftMargin + 100, 5);
     
-    // Dessiner les labels des mois (en haut)
+    // Draw month labels (top)
     for (int m = 0; m < MONTHS_IN_YEAR; m++) {
         QGraphicsTextItem* monthLabel = m_scene->addText(m_monthNames[m]);
         QFont monthFont = monthLabel->font();
         monthLabel->setFont(monthFont);
         
-        // Centrer le texte sur la colonne
+        // Center the text on the column
         QRectF textRect = monthLabel->boundingRect();
         monthLabel->setPos(leftMargin + m * (adjustedCellSize + CELL_SPACING) + 
                           (adjustedCellSize - textRect.width())/2, topMargin - 25);
     }
     
-    // Dessiner les labels des années (à gauche)
+    // Draw year labels (left)
     for (int y = 0; y <= m_maxYear - m_minYear; y++) {
         int year = m_minYear + y;
         QGraphicsTextItem* yearLabel = m_scene->addText(QString::number(year));
         QFont yearFont = yearLabel->font();
         yearLabel->setFont(yearFont);
         
-        // Aligner à droite
+        // Align to the right
         QRectF textRect = yearLabel->boundingRect();
         yearLabel->setPos(leftMargin - textRect.width() - 10, 
                          topMargin + y * (adjustedCellSize + CELL_SPACING) + 
                          (adjustedCellSize - textRect.height())/2);
     }
     
-    // Dessiner la heatmap
+    // Draw the heatmap
     for (int y = 0; y <= m_maxYear - m_minYear; y++) {
         int year = m_minYear + y;
         
         for (int m = 0; m < MONTHS_IN_YEAR; m++) {
-            int month = m + 1; // Les mois commencent à 1
+            int month = m + 1; // Months start at 1
             
-            // Position de la cellule
+            // Cell position
             int x = leftMargin + m * (adjustedCellSize + CELL_SPACING);
             int y_pos = topMargin + y * (adjustedCellSize + CELL_SPACING);
             
-            // Vérifier s'il y a des trades pour cette cellule
+            // Check if there are trades for this cell
             if (!m_tradeCountData.contains(year) || !m_tradeCountData[year].contains(month) || 
                 m_tradeCountData[year][month] <= 0) {
-                // Cellule grise pour les périodes sans trades
+                // Gray cell for periods without trades
                 m_scene->addRect(
                     x, y_pos, adjustedCellSize, adjustedCellSize,
                     QPen(Qt::black, 0.5), QBrush(QColor(240, 240, 240))
@@ -257,27 +257,27 @@ void MonthlyPerformanceWidget::buildHeatmap()
                 continue;
             }
             
-            // Calculer l'espérance et l'écart-type
+            // Compute expectation and standard deviation
             int count = m_tradeCountData[year][month];
             double totalPnL = m_performanceData[year][month];
             double squaredSum = m_squaredSumData[year][month];
             
             double monthlyTotal = totalPnL;
-            double expectation = totalPnL / count;  // Espérance (moyenne)
+            double expectation = totalPnL / count;  // Expectation (mean)
             double variance = (squaredSum / count) - (expectation * expectation);  // Variance
-            double stdDev = variance > 0 ? std::sqrt(variance) : 0;  // Écart-type
+            double stdDev = variance > 0 ? std::sqrt(variance) : 0;  // Standard deviation
             
-            // Utiliser l'espérance pour déterminer la couleur
+            // Use total PnL to determine the color
             QColor cellColor = getColorForValue(monthlyTotal);
 
-            // Ajouter un rectangle avec une bordure fine
+            // Add a rectangle with a thin border
             QGraphicsRectItem* cell = m_scene->addRect(
                 x, y_pos, adjustedCellSize, adjustedCellSize,
                 QPen(Qt::black, 0.5), QBrush(cellColor)
             );
             
-            // Ajouter un tooltip plus détaillé
-            QString tooltipText = QString("%1 %2\nTotal: %3 €\nMoyenne: %4 €\nÉcart-type: %5 €\nTrades: %6")
+            // Add a more detailed tooltip
+            QString tooltipText = QString("%1 %2\nTotal: %3 €\nMean: %4 €\nStd dev: %5 €\nTrades: %6")
                                 .arg(m_monthNames[m])
                                 .arg(year)
                                 .arg(monthlyTotal, 0, 'f', 2)
@@ -286,30 +286,30 @@ void MonthlyPerformanceWidget::buildHeatmap()
                                 .arg(count);
             cell->setToolTip(tooltipText);
             
-            // Afficher le PnL total dans la cellule
+            // Display the total PnL in the cell
             QGraphicsTextItem* totalText = m_scene->addText(QString("%1").arg(monthlyTotal, 0, 'f', 0));
             QFont totalFont = totalText->font();
             totalFont.setBold(true);
             totalFont.setPointSize(std::min(10, adjustedCellSize / 5));
             totalText->setFont(totalFont);
             
-            // Afficher l'écart-type en dessous (en plus petit)
+            // Display the std dev below (smaller)
             QGraphicsTextItem* stdText = m_scene->addText(QString("%1").arg(stdDev, 0, 'f', 0));
             QFont stdFont = stdText->font();
-            stdFont.setPointSize(std::max(6, totalFont.pointSize() - 2));  // Plus petit que l'espérance
+            stdFont.setPointSize(std::max(6, totalFont.pointSize() - 2));  // Smaller than the total
             stdText->setFont(stdFont);
             
-            // Centrer et positionner l'espérance en haut de la cellule
+            // Center and position the total at the top of the cell
             QRectF expRect = totalText->boundingRect();
             totalText->setPos(x + (adjustedCellSize - expRect.width())/2, 
                            y_pos + adjustedCellSize * 0.25 - expRect.height()/2);
             
-            // Positionner l'écart-type en bas de la cellule
+            // Position the std dev at the bottom of the cell
             QRectF stdRect = stdText->boundingRect();
             stdText->setPos(x + (adjustedCellSize - stdRect.width())/2, 
                            y_pos + adjustedCellSize * 0.75 - stdRect.height()/2);
             
-            // Ajuster la couleur du texte pour la lisibilité
+            // Adjust text color for readability
             QColor textColor = QColor::fromHsv(cellColor.hue(), 
                                               cellColor.saturation(),
                                               cellColor.value() < 128 ? 240 : 30);
@@ -318,76 +318,76 @@ void MonthlyPerformanceWidget::buildHeatmap()
         }
     }
     
-    // *** LÉGENDE VERTICALE À DROITE ***
-    // Position de départ de la légende
+    // *** VERTICAL LEGEND ON THE RIGHT ***
+    // Legend starting position
     int legendX = leftMargin + MONTHS_IN_YEAR * (adjustedCellSize + CELL_SPACING) + 30;
     int legendY = topMargin + 10;
     int legendWidth = 30;
     int legendHeight = yearCount * (adjustedCellSize + CELL_SPACING) - 20;
     
-    // Titre de la légende
-    QGraphicsTextItem* legendTitle = m_scene->addText("PnL Mensuel (€)");
+    // Legend title
+    QGraphicsTextItem* legendTitle = m_scene->addText("Monthly PnL (€)");
     QFont legendTitleFont = legendTitle->font();
     // legendTitleFont.setBold(true);
     legendTitle->setFont(legendTitleFont);
     legendTitle->setPos(legendX, 10);
     
-    // Gradient vertical pour la légende
+    // Vertical gradient for the legend
     QLinearGradient gradient(0, legendY + legendHeight, 0, legendY);
     
-    // Points d'arrêt pour le gradient (rouge-orange-jaune-vert)
-    gradient.setColorAt(0.0, getColorForValue(m_minValue));      // Rouge pour min
-    gradient.setColorAt(0.25, getColorForValue(m_minValue/2));   // Orange-rouge
-    gradient.setColorAt(0.5, getColorForValue(0.0));             // Jaune pour zéro
-    gradient.setColorAt(0.75, getColorForValue(m_maxValue/2));   // Vert-jaune
-    gradient.setColorAt(1.0, getColorForValue(m_maxValue));      // Vert pour max
+    // Gradient stop points (red-orange-yellow-green)
+    gradient.setColorAt(0.0, getColorForValue(m_minValue));      // Red for min
+    gradient.setColorAt(0.25, getColorForValue(m_minValue/2));   // Orange-red
+    gradient.setColorAt(0.5, getColorForValue(0.0));             // Yellow for zero
+    gradient.setColorAt(0.75, getColorForValue(m_maxValue/2));   // Yellow-green
+    gradient.setColorAt(1.0, getColorForValue(m_maxValue));      // Green for max
     
-    // Rectangle du gradient avec bordure
+    // Gradient rectangle with border
     m_scene->addRect(legendX, legendY, legendWidth, legendHeight, 
                     QPen(Qt::black, 1), QBrush(gradient));
     
-    // Labels des valeurs
-    // Maximum (en haut)
+    // Value labels
+    // Maximum (top)
     QGraphicsTextItem* maxText = m_scene->addText(QString("%1 €").arg(m_maxValue, 0, 'f', 2));
     QFont valueFont = maxText->font();
     valueFont.setPointSize(14);
     maxText->setFont(valueFont);
     maxText->setPos(legendX + legendWidth + 5, legendY - maxText->boundingRect().height()/2);
     
-    // Quart positif
+    // Positive quarter
     if (m_maxYear - m_minYear > 1) {
         QGraphicsTextItem* quarterPosText = m_scene->addText(QString("%1 €").arg(m_maxValue/2, 0, 'f', 2));
         quarterPosText->setFont(valueFont);
         quarterPosText->setPos(legendX + legendWidth + 5, legendY + legendHeight/4 - quarterPosText->boundingRect().height()/2);
     }
 
-    // Zéro (milieu)
+    // Zero (middle)
     QGraphicsTextItem* zeroText = m_scene->addText("0 €");
     zeroText->setFont(valueFont);
     zeroText->setPos(legendX + legendWidth + 5, legendY + legendHeight/2 - zeroText->boundingRect().height()/2);
     
-    // Quart négatif
+    // Negative quarter
     if (m_minYear - m_maxYear < -1) {
         QGraphicsTextItem* quarterNegText = m_scene->addText(QString("%1 €").arg(m_minValue/2, 0, 'f', 2));
         quarterNegText->setFont(valueFont);
         quarterNegText->setPos(legendX + legendWidth + 5, legendY + 3*legendHeight/4 - quarterNegText->boundingRect().height()/2);
     }
 
-    // Minimum (en bas)
+    // Minimum (bottom)
     QGraphicsTextItem* minText = m_scene->addText(QString("%1 €").arg(m_minValue, 0, 'f', 2));
     minText->setFont(valueFont);
     minText->setPos(legendX + legendWidth + 5, legendY + legendHeight - minText->boundingRect().height()/2);
     
-    // Ajuster la taille de la scène pour inclure tout le contenu
+    // Adjust scene size to include all content
     QRectF boundingRect = m_scene->itemsBoundingRect();
     m_scene->setSceneRect(boundingRect);
     
-    // Ajuster la vue pour afficher toute la scène
+    // Adjust view to show whole scene
     m_view->fitInView(boundingRect, Qt::KeepAspectRatio);
     m_view->centerOn(boundingRect.center());
     
-    // Mettre à jour le titre du groupbox
-    m_groupBox->setTitle(QString("Espérance de PnL Mensuelle (%1 - %2)").arg(m_minYear).arg(m_maxYear));
+    // Update the groupbox title
+    m_groupBox->setTitle(QString("Monthly PnL Expectation (%1 - %2)").arg(m_minYear).arg(m_maxYear));
 }
 
 void MonthlyPerformanceWidget::updateContent(const be::Stats& stats)
@@ -400,9 +400,9 @@ void MonthlyPerformanceWidget::updateContent(const be::Stats& stats)
     analyzeTradesByMonthAndYear(stats.trades);
     buildHeatmap();
     
-    qDebug() << "Monthly Performance Widget mis à jour avec" << stats.trades.size() << "trades"
-             << "couvrant les années" << m_minYear << "à" << m_maxYear
-             << "Échelle de PnL: [" << m_minValue << "," << m_maxValue << "]";
+    qDebug() << "Monthly Performance Widget updated with" << stats.trades.size() << "trades"
+             << "covering years" << m_minYear << "to" << m_maxYear
+             << "PnL scale: [" << m_minValue << "," << m_maxValue << "]";
 }
 
 void MonthlyPerformanceWidget::clear()
@@ -413,7 +413,7 @@ void MonthlyPerformanceWidget::clear()
     m_minValue = m_maxValue = 0.0;
     
     m_scene->clear();
-    m_groupBox->setTitle("Performance Mensuelle par Année (pas de données)");
+    m_groupBox->setTitle("Monthly Performance by Year (no data)");
 }
 
 bool MonthlyPerformanceWidget::eventFilter(QObject* watched, QEvent* event)
@@ -430,7 +430,7 @@ void MonthlyPerformanceWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     
-    // Réajuster la vue au contenu après redimensionnement
+    // Readjust the view to the content after resizing
     if (!m_scene->items().isEmpty()) {
         QRectF bounds = m_scene->itemsBoundingRect();
         if (!bounds.isEmpty()) {

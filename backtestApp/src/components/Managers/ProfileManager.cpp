@@ -192,11 +192,11 @@ bool ProfileManager::saveCurrentProfile(QWidget* parentWidget)
     bool success = saveProfile(m_currentProfile, profileConfig);
     
     if (success && parentWidget) {
-        QMessageBox::information(parentWidget, "Succès", 
-                                QString("Profil '%1' sauvegardé.").arg(m_currentProfile));
+        QMessageBox::information(parentWidget, "Success", 
+                                QString("Profile '%1' saved.").arg(m_currentProfile));
     } else if (parentWidget && !success) {
-        QMessageBox::warning(parentWidget, "Erreur", 
-                            QString("Échec de la sauvegarde du profil '%1'.").arg(m_currentProfile));
+        QMessageBox::warning(parentWidget, "Error", 
+                            QString("Failed to save profile '%1'.").arg(m_currentProfile));
     }
     
     return success;
@@ -206,15 +206,15 @@ bool ProfileManager::promptCreateNewProfile(QWidget* parentWidget)
 {
     bool ok;
     QString profileName = QInputDialog::getText(parentWidget, 
-                                               "Créer un nouveau profil", 
-                                               "Nom du profil:",
+                                               "Create New Profile", 
+                                               "Profile Name:",
                                                QLineEdit::Normal,
                                                "", &ok);
     
     if (ok && !profileName.isEmpty() && profileName != "DEFAULT") {
         if (profileExists(profileName)) {
-            QMessageBox::warning(parentWidget, "Profil existant", 
-                                QString("Un profil nommé '%1' existe déjà.").arg(profileName));
+            QMessageBox::warning(parentWidget, "Existing Profile", 
+                                QString("A profile named '%1' already exists.").arg(profileName));
             return false;
         }
         
@@ -236,12 +236,12 @@ bool ProfileManager::promptCreateNewProfile(QWidget* parentWidget)
             emit profileListUpdated();
             
             if (parentWidget) {
-                QMessageBox::information(parentWidget, "Succès", 
-                                        QString("Profil '%1' créé.").arg(profileName));
+                QMessageBox::information(parentWidget, "Success", 
+                                        QString("Profile '%1' created.").arg(profileName));
             }
         } else if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur", 
-                                QString("Échec de la création du profil '%1'.").arg(profileName));
+            QMessageBox::warning(parentWidget, "Error", 
+                                QString("Failed to create profile '%1'.").arg(profileName));
         }
         
         return success;
@@ -255,14 +255,14 @@ bool ProfileManager::deleteCurrentProfile(QWidget* parentWidget)
     if (m_currentProfile == "DEFAULT") {
         if (parentWidget) {
             QMessageBox::information(parentWidget, "Information", 
-                                    "Le profil DEFAULT ne peut pas être supprimé.");
+                                    "The DEFAULT profile cannot be deleted.");
         }
         return false;
     }
     
     QMessageBox::StandardButton confirm = QMessageBox::question(parentWidget,
                                                                "Confirmation",
-                                                               QString("Êtes-vous sûr de vouloir supprimer le profil '%1' ?").arg(m_currentProfile),
+                                                               QString("Are you sure you want to delete the profile '%1' ?").arg(m_currentProfile),
                                                                QMessageBox::Yes | QMessageBox::No,
                                                                QMessageBox::No);
     
@@ -277,12 +277,12 @@ bool ProfileManager::deleteCurrentProfile(QWidget* parentWidget)
             emit profileListUpdated();
             
             if (parentWidget) {
-                QMessageBox::information(parentWidget, "Succès", 
-                                        "Profil supprimé.");
+                QMessageBox::information(parentWidget, "Success", 
+                                        "Profile deleted.");
             }
         } else if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur", 
-                                "Échec de la suppression du profil.");
+            QMessageBox::warning(parentWidget, "Error", 
+                                "Failed to delete profile.");
         }
         
         return success;
@@ -294,9 +294,9 @@ bool ProfileManager::deleteCurrentProfile(QWidget* parentWidget)
 bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
 {
     QString fileName = QFileDialog::getOpenFileName(parentWidget,
-                                                   "Importer une configuration",
+                                                   "Import Configuration",
                                                    QDir::homePath(),
-                                                   "Fichiers JSON (*.json)");
+                                                   "JSON Files (*.json)");
     
     if (fileName.isEmpty()) {
         return false; // User canceled
@@ -304,7 +304,7 @@ bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
     
     if (!QFile::exists(fileName)) {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur", "Le fichier sélectionné n'existe pas.");
+            QMessageBox::warning(parentWidget, "Error", "The selected file does not exist.");
         }
         return false;
     }
@@ -315,18 +315,18 @@ bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
     
     if (!loadSuccess) {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur d'importation", 
-                                "Le fichier n'est pas une configuration valide.");
+            QMessageBox::warning(parentWidget, "Import Error", 
+                                "The file is not a valid configuration.");
         }
         return false;
     }
     
     // Ask the name of the new profile or if to overwrite the current profile
     QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
-                                                               "Mode d'importation",
-                                                               QString("Voulez-vous:\n\n"
-                                                                      "• Créer un nouveau profil avec ces données ?\n"
-                                                                      "• Ou remplacer la configuration actuelle du profil '%1' ?").arg(m_currentProfile),
+                                                               "Import Mode",
+                                                               QString("Do you want to:\n\n"
+                                                                      "• Create a new profile with this data?\n"
+                                                                      "• Or replace the current configuration of the profile '%1' ?").arg(m_currentProfile),
                                                                QMessageBox::Save | QMessageBox::Apply | QMessageBox::Cancel,
                                                                QMessageBox::Save);
     
@@ -341,8 +341,8 @@ bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
         // Create a new profile
         bool ok;
         QString newProfileName = QInputDialog::getText(parentWidget, 
-                                                      "Nom du nouveau profil", 
-                                                      "Nom du profil:",
+                                                      "New Profile Name", 
+                                                      "Profile Name:",
                                                       QLineEdit::Normal,
                                                       importedConfig.name.c_str(), &ok);
         
@@ -372,13 +372,13 @@ bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
     
     if (success) {
         if (parentWidget) {
-            QMessageBox::information(parentWidget, "Import réussi", 
-                                    QString("Configuration importée avec succès dans le profil '%1'.").arg(targetProfile));
+            QMessageBox::information(parentWidget, "Import Successful", 
+                                    QString("Configuration successfully imported into profile '%1'.").arg(targetProfile));
         }
     } else {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur d'importation", 
-                                "Échec de l'importation de la configuration.");
+            QMessageBox::warning(parentWidget, "Import Error", 
+                                "Failed to import the configuration.");
         }
     }
     
@@ -404,8 +404,8 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
         // Otherwise, load from saved profile
         if (!loadProfileFromJson(targetProfile, profileConfig)) {
             if (parentWidget) {
-                QMessageBox::warning(parentWidget, "Erreur", 
-                                    QString("Impossible de charger le profil '%1'.").arg(targetProfile));
+                QMessageBox::warning(parentWidget, "Error", 
+                                    QString("Failed to load profile '%1'.").arg(targetProfile));
             }
             return false;
         }
@@ -416,10 +416,10 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
     QString defaultFileName = QString("config_%1_%2.json").arg(targetProfile).arg(timestamp);
     
     QString fileName = QFileDialog::getSaveFileName(parentWidget,
-                                                   QString("Exporter la configuration - Profil: %1").arg(targetProfile),
+                                                   QString("Export Configuration - Profile: %1").arg(targetProfile),
                                                    QDir::homePath() + "/" + defaultFileName,
-                                                   "Fichiers JSON (*.json)");
-    
+                                                   "JSON Files (*.json)");
+
     if (fileName.isEmpty()) {
         return false; // User canceled
     }
@@ -429,13 +429,13 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
     
     if (success) {
         if (parentWidget) {
-            QMessageBox::information(parentWidget, "Export réussi", 
-                                    QString("Configuration du profil '%1' exportée vers:\n%2").arg(targetProfile).arg(fileName));
+            QMessageBox::information(parentWidget, "Export Successful", 
+                                    QString("Configuration of profile '%1' exported to:\n%2").arg(targetProfile).arg(fileName));
         }
     } else {
         if (parentWidget) {
-            QMessageBox::critical(parentWidget, "Erreur d'exportation", 
-                                "Erreur lors de l'écriture du fichier de configuration.");
+            QMessageBox::critical(parentWidget, "Export Error", 
+                                "Failed to write configuration file.");
         }
     }
     

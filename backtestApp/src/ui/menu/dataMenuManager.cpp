@@ -41,16 +41,16 @@ DataMenuManager::~DataMenuManager()
 void DataMenuManager::createDataMenu(QMenuBar* menuBar)
 {
     if (!menuBar) {
-        qWarning() << "MenuBar null passé à createDataMenu";
+        qWarning() << "MenuBar null passed to createDataMenu";
         return;
     }
     
-    // Créer le menu Données (après le menu Profils, avant le menu Aide)
-    m_dataMenu = menuBar->addMenu(tr("&Données"));
+    // Create the Data menu (after Profiles menu, before Help menu)
+    m_dataMenu = menuBar->addMenu(tr("&Data"));
     
     createActions();
     
-    // Ajouter les actions au menu
+    // Add actions to the menu
     m_dataMenu->addAction(m_importCSVAction);
     m_dataMenu->addAction(m_importAPIAction);
     m_dataMenu->addSeparator();
@@ -61,51 +61,51 @@ void DataMenuManager::createDataMenu(QMenuBar* menuBar)
     m_dataMenu->addSeparator();
     m_dataMenu->addAction(m_setDirectoryAction);
     
-    qDebug() << "Menu Données créé";
+    qDebug() << "Data menu created";
 }
 
 void DataMenuManager::createActions()
 {
-    // Action Importer CSV
-    m_importCSVAction = new QAction(tr("&Importer fichier local..."), this);
+    // Action Import CSV
+    m_importCSVAction = new QAction(tr("&Import local file..."), this);
     m_importCSVAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_I));
-   m_importCSVAction->setStatusTip(tr("Importer des données OHLC depuis un fichier CSV")); 
+   m_importCSVAction->setStatusTip(tr("Import OHLC data from a CSV file")); 
     connect(m_importCSVAction, &QAction::triggered, this, &DataMenuManager::onImportCSV);
     
-    // Action Importer depuis serveur Fintech
-    m_importAPIAction = new QAction(tr("Télécharger depuis serveur..."), this);
-    m_importAPIAction->setStatusTip(tr("Télécharger des données depuis le serveur Fintech"));
+    // Action Download from Fintech server
+    m_importAPIAction = new QAction(tr("Download from server..."), this);
+    m_importAPIAction->setStatusTip(tr("Download data from the Fintech server"));
     connect(m_importAPIAction, &QAction::triggered, this, &DataMenuManager::onImportFromAPI);
     
-    // Action Valider les données
-    m_validateDataAction = new QAction(tr("&Valider les données"), this);
-    m_validateDataAction->setStatusTip(tr("Vérifier l'intégrité des données importées"));
+    // Action Validate data
+    m_validateDataAction = new QAction(tr("&Validate data"), this);
+    m_validateDataAction->setStatusTip(tr("Check integrity of imported data"));
     connect(m_validateDataAction, &QAction::triggered, this, &DataMenuManager::onValidateData);
     
-    // Action Nettoyer les données
-    m_cleanDataAction = new QAction(tr("&Nettoyer les données"), this);
-    m_cleanDataAction->setStatusTip(tr("Supprimer les données obsolètes"));
+    // Action Clean data
+    m_cleanDataAction = new QAction(tr("&Clean data"), this);
+    m_cleanDataAction->setStatusTip(tr("Remove obsolete data"));
     connect(m_cleanDataAction, &QAction::triggered, this, &DataMenuManager::onCleanData);
     
-    // Action Informations sur les données
-    m_dataInfoAction = new QAction(tr("&Informations sur les données"), this);
-    m_dataInfoAction->setStatusTip(tr("Afficher les informations sur les données disponibles"));
+    // Action Data information
+    m_dataInfoAction = new QAction(tr("&Data information"), this);
+    m_dataInfoAction->setStatusTip(tr("Show information about available data"));
     connect(m_dataInfoAction, &QAction::triggered, this, &DataMenuManager::onShowDataInfo);
     
-    // Action Définir répertoire personnalisé
-    m_setDirectoryAction = new QAction(tr("&Définir répertoire de données..."), this);
-    m_setDirectoryAction->setStatusTip(tr("Choisir un emplacement personnalisé pour les données"));
+    // Action Set custom data directory
+    m_setDirectoryAction = new QAction(tr("&Set data directory..."), this);
+    m_setDirectoryAction->setStatusTip(tr("Choose a custom location for data"));
     connect(m_setDirectoryAction, &QAction::triggered, this, &DataMenuManager::onSetCustomDirectory);
 }
 
 void DataMenuManager::onImportCSV()
 {
-    qDebug() << "Import CSV demandé";
+    qDebug() << "Import CSV requested";
     
-    // Trouver le répertoire marketData
+    // Find the marketData directory
     QString marketDataDir = DataLoader::findMarketDataDirectory();
     if (marketDataDir.isEmpty()) {
-        // Créer le répertoire s'il n'existe pas
+        // Create the directory if it doesn't exist
         QString projectRoot = QCoreApplication::applicationDirPath();
         QDir currentDir(projectRoot);
         while (currentDir.cdUp() && currentDir.dirName() != "fast-backtest-app") {}
@@ -118,20 +118,20 @@ void DataMenuManager::onImportCSV()
         }
     }
     
-    // Dialogue de sélection de fichier
+    // File selection dialog
     QStringList fileNames = QFileDialog::getOpenFileNames(
         qobject_cast<QWidget*>(parent()),
-        tr("Importer des données CSV"),
+        tr("Import CSV data"),
         marketDataDir,
-        tr("Fichiers CSV (*.csv);;Tous les fichiers (*)")
+        tr("CSV Files (*.csv);;All Files (*)")
     );
     
     if (fileNames.isEmpty()) {
         return;
     }
     
-    // Créer une boîte de dialogue de progression
-    QProgressDialog progress(tr("Importation des fichiers..."), tr("Annuler"), 0, fileNames.size(), 
+    // Create a progress dialog
+    QProgressDialog progress(tr("Importing files..."), tr("Cancel"), 0, fileNames.size(), 
                            qobject_cast<QWidget*>(parent()));
     progress.setWindowModality(Qt::WindowModal);
     
@@ -145,9 +145,9 @@ void DataMenuManager::onImportCSV()
         }
         
         QString fileName = fileNames.at(i);
-        progress.setLabelText(tr("Importation de %1...").arg(QFileInfo(fileName).fileName()));
+        progress.setLabelText(tr("Importing %1...").arg(QFileInfo(fileName).fileName()));
         
-        // Copier le fichier vers le répertoire marketData s'il n'y est pas déjà
+        // Copy the file to marketData directory if not already there
         QFileInfo sourceInfo(fileName);
         QString destPath = QDir(marketDataDir).absoluteFilePath(sourceInfo.fileName());
         
@@ -155,8 +155,8 @@ void DataMenuManager::onImportCSV()
             if (QFile::exists(destPath)) {
                 int ret = QMessageBox::question(
                     qobject_cast<QWidget*>(parent()),
-                    tr("Fichier existant"),
-                    tr("Le fichier %1 existe déjà. Voulez-vous le remplacer ?")
+                    tr("Existing file"),
+                    tr("The file %1 already exists. Do you want to replace it?")
                         .arg(sourceInfo.fileName()),
                     QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel
                 );
@@ -172,13 +172,13 @@ void DataMenuManager::onImportCSV()
             
             if (QFile::copy(fileName, destPath)) {
                 importedCount++;
-                qDebug() << "Fichier copié:" << destPath;
+                qDebug() << "File copied:" << destPath;
             } else {
-                qWarning() << "Échec de la copie:" << fileName << "vers" << destPath;
+                qWarning() << "Failed to copy:" << fileName << "to" << destPath;
             }
         } else {
             importedCount++;
-            qDebug() << "Fichier déjà dans le bon répertoire:" << fileName;
+            qDebug() << "File already in target directory:" << fileName;
         }
         
         QApplication::processEvents();
@@ -188,17 +188,17 @@ void DataMenuManager::onImportCSV()
     
     QMessageBox::information(
         qobject_cast<QWidget*>(parent()),
-        tr("Importation terminée"),
-        tr("Importation terminée.\n%1 fichier(s) importé(s) avec succès.")
+        tr("Import completed"),
+        tr("Import completed.\n%1 file(s) imported successfully.")
             .arg(importedCount)
     );
 }
 
 void DataMenuManager::onImportFromAPI()
 {
-    qDebug() << "Import depuis API demandé";
+    qDebug() << "Import from API requested";
 
-    // URL de l'API pour récupérer la liste des fichiers de données de marché
+    // API URL to retrieve list of market data files
     QString market_files_endpoint = "/market-data";
     QUrl apiUrl(DataMenuManager::SERVER_URL + market_files_endpoint);
 
@@ -206,25 +206,25 @@ void DataMenuManager::onImportFromAPI()
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Accept", "application/json");
     
-    // Envoyer la requête GET pour récupérer la liste des fichiers
+    // Send GET request to retrieve the file list
     QNetworkReply* reply = m_networkManager->get(request);
     
-    // Connecter le signal finished au slot qui traite la réponse
+    // Connect finished signal to the slot that handles the response
     connect(reply, &QNetworkReply::finished, this, &DataMenuManager::onMarketDataListReceived);
     
-    qDebug() << "Requête envoyée vers:" << apiUrl.toString();
+    qDebug() << "Request sent to:" << apiUrl.toString();
 }
 
 void DataMenuManager::onValidateData()
 {
-    qDebug() << "Validation des données demandée";
+    qDebug() << "Data validation requested";
     
     QString marketDataDir = DataLoader::findMarketDataDirectory();
     if (marketDataDir.isEmpty()) {
         QMessageBox::warning(
             qobject_cast<QWidget*>(parent()),
-            tr("Aucune donnée"),
-            tr("Aucun répertoire de données trouvé.")
+            tr("No data"),
+            tr("No data directory found.")
         );
         return;
     }
@@ -235,13 +235,13 @@ void DataMenuManager::onValidateData()
     if (csvFiles.isEmpty()) {
         QMessageBox::information(
             qobject_cast<QWidget*>(parent()),
-            tr("Aucune donnée"),
-            tr("Aucun fichier CSV trouvé dans %1").arg(marketDataDir)
+            tr("No data"),
+            tr("No CSV files found in %1").arg(marketDataDir)
         );
         return;
     }
     
-    QProgressDialog progress(tr("Validation des données..."), tr("Annuler"), 0, csvFiles.size(), 
+    QProgressDialog progress(tr("Validating data..."), tr("Cancel"), 0, csvFiles.size(), 
                            qobject_cast<QWidget*>(parent()));
     progress.setWindowModality(Qt::WindowModal);
     
@@ -255,9 +255,9 @@ void DataMenuManager::onValidateData()
         }
         
         QString filePath = dir.absoluteFilePath(csvFiles.at(i));
-        progress.setLabelText(tr("Validation de %1...").arg(csvFiles.at(i)));
+        progress.setLabelText(tr("Validating %1...").arg(csvFiles.at(i)));
         
-        // Utiliser la nouvelle fonction de validation
+        // Use the new validation function
         DataFileInfo info = DataLoader::checkDataFile(filePath);
         fileInfos.append(info);
         
@@ -266,7 +266,7 @@ void DataMenuManager::onValidateData()
     
     progress.setValue(csvFiles.size());
     
-    // Préparer le rapport détaillé
+    // Prepare detailed report
     int validCount = 0;
     int invalidCount = 0;
     
@@ -278,12 +278,12 @@ void DataMenuManager::onValidateData()
         }
     }
     
-    QString summaryMessage = tr("Validation terminée:\n");
-    summaryMessage += tr("- %1 fichier(s) valide(s)\n").arg(validCount);
-    summaryMessage += tr("- %1 fichier(s) invalide(s)").arg(invalidCount);
+    QString summaryMessage = tr("Validation completed:\n");
+    summaryMessage += tr("- %1 valid file(s)\n").arg(validCount);
+    summaryMessage += tr("- %1 invalid file(s)").arg(invalidCount);
     
     if (invalidCount > 0) {
-        summaryMessage += tr("\n\nFichiers invalides:\n");
+        summaryMessage += tr("\n\nInvalid files:\n");
         for (const DataFileInfo& info : fileInfos) {
             if (!info.isValid) {
                 summaryMessage += "- " + info.fileName + "\n";
@@ -291,16 +291,16 @@ void DataMenuManager::onValidateData()
         }
     }
     
-    // Afficher le résumé dans une boîte de dialogue standard
+    // Show summary in a standard dialog
     QMessageBox::information(
         qobject_cast<QWidget*>(parent()),
-        tr("Validation des données"),
+        tr("Data validation"),
         summaryMessage
     );
     
-    // Créer une boîte de dialogue détaillée
+    // Create a detailed dialog
     QDialog* detailsDialog = new QDialog(qobject_cast<QWidget*>(parent()));
-    detailsDialog->setWindowTitle(tr("Détails de la validation"));
+    detailsDialog->setWindowTitle(tr("Validation details"));
     detailsDialog->resize(700, 500);
     
     QVBoxLayout* layout = new QVBoxLayout(detailsDialog);
@@ -308,37 +308,37 @@ void DataMenuManager::onValidateData()
     QTextEdit* textEdit = new QTextEdit(detailsDialog);
     textEdit->setReadOnly(true);
     
-    // Générer le rapport détaillé
-    QString detailedReport = tr("<h2>Rapport de validation des données</h2>");
-    detailedReport += tr("<p>Répertoire: %1</p>").arg(marketDataDir);
+    // Generate detailed report
+    QString detailedReport = tr("<h2>Data validation report</h2>");
+    detailedReport += tr("<p>Directory: %1</p>").arg(marketDataDir);
     
     for (const DataFileInfo& info : fileInfos) {
         detailedReport += tr("<hr><h3>%1</h3>").arg(info.fileName);
-        detailedReport += tr("<p><b>Statut:</b> %1</p>")
-                            .arg(info.isValid ? tr("<span style='color:green'>Valide</span>") 
-                                              : tr("<span style='color:red'>Invalide</span>"));
+        detailedReport += tr("<p><b>Status:</b> %1</p>")
+                            .arg(info.isValid ? tr("<span style='color:green'>Valid</span>") 
+                                              : tr("<span style='color:red'>Invalid</span>"));
         
-        detailedReport += tr("<p><b>Informations de base:</b><br>");
-        detailedReport += tr("Taille: %1 MB<br>")
+        detailedReport += tr("<p><b>Basic information:</b><br>");
+        detailedReport += tr("Size: %1 MB<br>")
                             .arg(info.fileSize / (1024.0 * 1024.0), 0, 'f', 2);
-        detailedReport += tr("Nombre de lignes: %1<br>").arg(info.totalRows);
-        detailedReport += tr("En-tête: %1</p>").arg(info.hasHeader ? tr("Oui") : tr("Non"));
+        detailedReport += tr("Number of rows: %1<br>").arg(info.totalRows);
+        detailedReport += tr("Header: %1</p>").arg(info.hasHeader ? tr("Yes") : tr("No"));
         
         if (info.isValid) {
-            detailedReport += tr("<p><b>Métriques:</b><br>");
-            detailedReport += tr("Intervalle détecté: %1<br>").arg(info.interval);
-            detailedReport += tr("Période: %1 à %2 (%3 jours)<br>")
+            detailedReport += tr("<p><b>Metrics:</b><br>");
+            detailedReport += tr("Detected interval: %1<br>").arg(info.interval);
+            detailedReport += tr("Period: %1 to %2 (%3 days)<br>")
                                 .arg(info.startDate.toString("yyyy-MM-dd hh:mm"))
                                 .arg(info.endDate.toString("yyyy-MM-dd hh:mm"))
                                 .arg(info.durationDays);
-            detailedReport += tr("Plage de prix: %1 à %2</p>")
+            detailedReport += tr("Price range: %1 to %2</p>")
                                 .arg(info.minPrice, 0, 'f', 2)
                                 .arg(info.maxPrice, 0, 'f', 2);
             
             if (info.gapsCount > 0) {
-                detailedReport += tr("<p><b>Trous dans les données:</b> %1<br>").arg(info.gapsCount);
+                detailedReport += tr("<p><b>Gaps in data:</b> %1<br>").arg(info.gapsCount);
                 
-                // Afficher les plus grands trous (jusqu'à 5)
+                // Show largest gaps (up to 5)
                 int showCount = qMin(5, info.largestGaps.size());
                 for (int i = 0; i < showCount; i++) {
                     QDateTime gapStart = info.largestGaps[i].first;
@@ -346,7 +346,7 @@ void DataMenuManager::onValidateData()
                     int hours = gapStart.secsTo(gapEnd) / 3600;
                     int minutes = (gapStart.secsTo(gapEnd) % 3600) / 60;
                     
-                    detailedReport += tr("• %1 à %2 (%3h %4m)<br>")
+                    detailedReport += tr("• %1 to %2 (%3h %4m)<br>")
                                       .arg(gapStart.toString("yyyy-MM-dd hh:mm"))
                                       .arg(gapEnd.toString("yyyy-MM-dd hh:mm"))
                                       .arg(hours)
@@ -354,17 +354,17 @@ void DataMenuManager::onValidateData()
                 }
                 detailedReport += tr("</p>");
             } else {
-                detailedReport += tr("<p><b>Trous dans les données:</b> Aucun</p>");
+                detailedReport += tr("<p><b>Gaps in data:</b> None</p>");
             }
         }
         
         if (info.invalidRows > 0) {
-            detailedReport += tr("<p><b>Lignes invalides:</b> %1").arg(info.invalidRows);
+            detailedReport += tr("<p><b>Invalid rows:</b> %1").arg(info.invalidRows);
             
-            // Afficher les détails des lignes invalides (limité à 10)
+            // Show details of invalid rows (limited to 10)
             int showCount = qMin(10, info.invalidRowDetails.size());
             if (showCount > 0) {
-                detailedReport += tr("<br>Détails (max 10):<br>");
+                detailedReport += tr("<br>Details (max 10):<br>");
                 for (int i = 0; i < showCount; i++) {
                     detailedReport += tr("• %1<br>").arg(info.invalidRowDetails[i]);
                 }
@@ -375,7 +375,7 @@ void DataMenuManager::onValidateData()
     
     textEdit->setHtml(detailedReport);
     
-    QPushButton* closeButton = new QPushButton(tr("Fermer"), detailsDialog);
+    QPushButton* closeButton = new QPushButton(tr("Close"), detailsDialog);
     connect(closeButton, &QPushButton::clicked, detailsDialog, &QDialog::accept);
     
     layout->addWidget(textEdit);
@@ -386,35 +386,35 @@ void DataMenuManager::onValidateData()
 
 void DataMenuManager::onCleanData()
 {
-    qDebug() << "Nettoyage des données demandé";
+    qDebug() << "Data clean requested";
     
     int ret = QMessageBox::question(
         qobject_cast<QWidget*>(parent()),
-        tr("Nettoyer les données"),
-        tr("Cette action supprimera tous les fichiers de données obsolètes.\nÊtes-vous sûr de vouloir continuer ?"),
+        tr("Clean data"),
+        tr("This will remove all obsolete data files.\nAre you sure you want to continue?"),
         QMessageBox::Yes | QMessageBox::No
     );
     
     if (ret == QMessageBox::Yes) {
-        // TODO: Implémenter la logique de nettoyage
+        // TODO: Implement cleaning logic
         QMessageBox::information(
             qobject_cast<QWidget*>(parent()),
-            tr("Nettoyage terminé"),
-            tr("Le nettoyage des données a été effectué.")
+            tr("Cleanup completed"),
+            tr("Data cleanup has been performed.")
         );
     }
 }
 
 void DataMenuManager::onShowDataInfo()
 {
-    qDebug() << "Informations sur les données demandées";
+    qDebug() << "Data info requested";
     
     QString marketDataDir = DataLoader::findMarketDataDirectory();
     if (marketDataDir.isEmpty()) {
         QMessageBox::warning(
             qobject_cast<QWidget*>(parent()),
-            tr("Aucune donnée"),
-            tr("Aucun répertoire de données trouvé.")
+            tr("No data"),
+            tr("No data directory found.")
         );
         return;
     }
@@ -422,11 +422,11 @@ void DataMenuManager::onShowDataInfo()
     QDir dir(marketDataDir);
     QStringList csvFiles = dir.entryList(QStringList() << "*.csv", QDir::Files);
     
-    QString info = tr("Répertoire des données: %1\n\n").arg(marketDataDir);
-    info += tr("Nombre de fichiers CSV: %1\n\n").arg(csvFiles.size());
+    QString info = tr("Data directory: %1\n\n").arg(marketDataDir);
+    info += tr("Number of CSV files: %1\n\n").arg(csvFiles.size());
     
     if (!csvFiles.isEmpty()) {
-        info += tr("Fichiers disponibles:\n");
+        info += tr("Available files:\n");
         for (const QString& file : csvFiles) {
             QFileInfo fileInfo(dir.absoluteFilePath(file));
             info += tr("- %1 (%2 MB)\n")
@@ -437,7 +437,7 @@ void DataMenuManager::onShowDataInfo()
     
     QMessageBox::information(
         qobject_cast<QWidget*>(parent()),
-        tr("Informations sur les données"),
+        tr("Data information"),
         info
     );
 }
@@ -448,7 +448,7 @@ void DataMenuManager::onSetCustomDirectory()
     
     QString dir = QFileDialog::getExistingDirectory(
         qobject_cast<QWidget*>(parent()),
-        tr("Choisir un répertoire pour les données de marché"),
+        tr("Choose a directory for market data"),
         currentDir,
         QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks
     );
@@ -460,20 +460,20 @@ void DataMenuManager::onSetCustomDirectory()
     if (DataLoader::setCustomMarketDataDirectory(dir)) {
         QSettings settings("fast-backtest-app", "BacktestApp");
         QString savedPath = settings.value("marketDataPath").toString();
-        qDebug() << "Chemin sauvegardé dans QSettings:" << savedPath;
+        qDebug() << "Path saved in QSettings:" << savedPath;
         QString actualPath = DataLoader::findMarketDataDirectory();
-        qDebug() << "Chemin retourné par findMarketDataDirectory:" << actualPath;
+        qDebug() << "Path returned by findMarketDataDirectory:" << actualPath;
         
         QMessageBox::information(
             qobject_cast<QWidget*>(parent()),
-            tr("Répertoire défini"),
-            tr("Le répertoire des données a été défini avec succès.\n\n%1").arg(dir)
+            tr("Directory set"),
+            tr("The data directory has been set successfully.\n\n%1").arg(dir)
         );
     } else {
         QMessageBox::warning(
             qobject_cast<QWidget*>(parent()),
-            tr("Erreur"),
-            tr("Impossible de définir ce répertoire pour les données.\nVérifiez les permissions d'accès.")
+            tr("Error"),
+            tr("Unable to set this directory for data.\nCheck access permissions.")
         );
     }
 }
@@ -487,20 +487,20 @@ void DataMenuManager::onMarketDataListReceived()
     
     if (reply->error() == QNetworkReply::NoError) {
         QByteArray responseData = reply->readAll();
-        qDebug() << "Réponse reçue, taille:" << responseData.size() << "octets";
+        qDebug() << "Response received, size:" << responseData.size() << "bytes";
         
         QJsonDocument doc = QJsonDocument::fromJson(responseData);
         if (doc.isObject()) {
             QJsonObject response = doc.object();
             QJsonArray files = response["market_data_files"].toArray();
             
-            qDebug() << "Nombre de fichiers sur le serveur:" << files.size();
+            qDebug() << "Number of files on server:" << files.size();
             
             if (files.isEmpty()) {
                 QMessageBox::information(
                     qobject_cast<QWidget*>(parent()),
-                    tr("Synchronisation"),
-                    tr("Aucun fichier disponible sur le serveur.")
+                    tr("Synchronization"),
+                    tr("No files available on the server.")
                 );
             } else {
                 compareAndDownloadFiles(files);
@@ -508,17 +508,17 @@ void DataMenuManager::onMarketDataListReceived()
         } else {
             QMessageBox::warning(
                 qobject_cast<QWidget*>(parent()),
-                tr("Erreur"),
-                tr("Format de réponse invalide du serveur.")
+                tr("Error"),
+                tr("Invalid response format from server.")
             );
         }
     } else {
-        QString errorMsg = tr("Erreur de connexion à l'API: %1").arg(reply->errorString());
+        QString errorMsg = tr("API connection error: %1").arg(reply->errorString());
         qWarning() << errorMsg;
         
         QMessageBox::warning(
             qobject_cast<QWidget*>(parent()),
-            tr("Erreur de connexion"),
+            tr("Connection error"),
             errorMsg
         );
     }
@@ -530,7 +530,7 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
 {
     QString marketDataDir = DataLoader::findMarketDataDirectory();
     if (marketDataDir.isEmpty()) {
-        // Créer le répertoire s'il n'existe pas
+        // Create the directory if it doesn't exist
         QString projectRoot = QCoreApplication::applicationDirPath();
         QDir currentDir(projectRoot);
         while (currentDir.cdUp() && currentDir.dirName() != "fast-backtest-app") {}
@@ -549,7 +549,7 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
     QStringList filesToDownload;
     QStringList updateMessages;
     
-    // Comparer chaque fichier distant avec les fichiers locaux
+    // Compare each remote file with local files
     for (const QJsonValue& fileValue : remoteFiles) {
         QJsonObject fileObj = fileValue.toObject();
         QString filename = fileObj["filename"].toString();
@@ -561,23 +561,23 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         QString reason;
         
         if (!QFile::exists(localFilePath)) {
-            // Fichier n'existe pas localement
+            // File does not exist locally
             shouldDownload = true;
-            reason = tr("nouveau fichier");
+            reason = tr("new file");
         } else {
-            // Comparer la date de modification
+            // Compare modification date
             QFileInfo localFileInfo(localFilePath);
             QDateTime localModified = localFileInfo.lastModified();
             QDateTime remoteDateTime = QDateTime::fromString(remoteModified, Qt::ISODate);
             
             if (remoteDateTime > localModified) {
                 shouldDownload = true;
-                reason = tr("fichier plus récent (%1 vs %2)")
+                reason = tr("newer file (%1 vs %2)")
                     .arg(remoteDateTime.toString("yyyy-MM-dd hh:mm"))
                     .arg(localModified.toString("yyyy-MM-dd hh:mm"));
             } else if (localFileInfo.size() != remoteSize) {
                 shouldDownload = true;
-                reason = tr("taille différente (%1 vs %2 octets)")
+                reason = tr("different size (%1 vs %2 bytes)")
                     .arg(remoteSize)
                     .arg(localFileInfo.size());
             }
@@ -592,20 +592,20 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
     if (filesToDownload.isEmpty()) {
         QMessageBox::information(
             qobject_cast<QWidget*>(parent()),
-            tr("Synchronisation"),
-            tr("Tous les fichiers locaux sont à jour.")
+            tr("Synchronization"),
+            tr("All local files are up to date.")
         );
         return;
     }
     
-    // Demander confirmation à l'utilisateur
-    QString message = tr("Les fichiers suivants seront téléchargés/mis à jour:\n\n");
+    // Ask user confirmation
+    QString message = tr("The following files will be downloaded/updated:\n\n");
     message += updateMessages.join("\n");
-    message += tr("\n\nVoulez-vous continuer ?");
+    message += tr("\n\nDo you want to continue?");
     
     int ret = QMessageBox::question(
         qobject_cast<QWidget*>(parent()),
-        tr("Synchronisation des fichiers"),
+        tr("File synchronization"),
         message,
         QMessageBox::Yes | QMessageBox::No
     );
@@ -614,10 +614,10 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         return;
     }
     
-    // Créer une boîte de dialogue de progression
+    // Create a progress dialog
     QProgressDialog* progress = new QProgressDialog(
-        tr("Téléchargement des fichiers..."), 
-        tr("Annuler"), 
+        tr("Downloading files..."), 
+        tr("Cancel"), 
         0, 
         filesToDownload.size(), 
         qobject_cast<QWidget*>(parent())
@@ -625,7 +625,7 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
     progress->setWindowModality(Qt::WindowModal);
     progress->show();
     
-    // Télécharger les fichiers un par un
+    // Download files one by one
     for (int i = 0; i < filesToDownload.size(); ++i) {
         if (progress->wasCanceled()) {
             break;
@@ -633,34 +633,34 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         
         QString filename = filesToDownload.at(i);
         progress->setValue(i);
-        progress->setLabelText(tr("Téléchargement de %1...").arg(filename));
+        progress->setLabelText(tr("Downloading %1...").arg(filename));
         
-        // Construire l'URL de téléchargement
+        // Build download URL
         QString download_endpoint = "/download-market-data/" + filename;
         QUrl downloadUrl(DataMenuManager::SERVER_URL + download_endpoint);
 
         QNetworkRequest request(downloadUrl);
         QNetworkReply* downloadReply = m_networkManager->get(request);
         
-        // Attendre la fin du téléchargement (synchrone pour simplifier)
+        // Wait for download to finish (synchronous for simplicity)
         QEventLoop loop;
         connect(downloadReply, &QNetworkReply::finished, &loop, &QEventLoop::quit);
         loop.exec();
         
         if (downloadReply->error() == QNetworkReply::NoError) {
-            // Sauvegarder le fichier
+            // Save file
             QString localFilePath = localDir.absoluteFilePath(filename);
             QFile localFile(localFilePath);
             
             if (localFile.open(QIODevice::WriteOnly)) {
                 localFile.write(downloadReply->readAll());
                 localFile.close();
-                qDebug() << "Fichier téléchargé:" << filename;
+                qDebug() << "File downloaded:" << filename;
             } else {
-                qWarning() << "Impossible d'écrire le fichier:" << filename;
+                qWarning() << "Unable to write file:" << filename;
             }
         } else {
-            qWarning() << "Erreur téléchargement" << filename << ":" << downloadReply->errorString();
+            qWarning() << "Download error" << filename << ":" << downloadReply->errorString();
         }
         
         downloadReply->deleteLater();
@@ -673,15 +673,15 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
     
     QMessageBox::information(
         qobject_cast<QWidget*>(parent()),
-        tr("Synchronisation terminée"),
-        tr("Synchronisation terminée.\n%1 fichier(s) téléchargé(s).")
+        tr("Synchronization completed"),
+        tr("Synchronization completed.\n%1 file(s) downloaded.")
             .arg(filesToDownload.size())
     );
 }
 
 void DataMenuManager::onFileDownloadFinished()
 {
-    // Cette méthode peut être utilisée pour des téléchargements asynchrones si nécessaire
+    // This method can be used for asynchronous downloads if needed
     QNetworkReply* reply = qobject_cast<QNetworkReply*>(sender());
     if (!reply) {
         return;

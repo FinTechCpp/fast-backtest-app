@@ -13,27 +13,27 @@
 BacktestResultManager::BacktestResultManager(QObject *parent, SerializationUtils::FileFormat defaultFormat)
     : QObject(parent), m_defaultFormat(defaultFormat)
 {
-    // Configuration du répertoire des résultats
+    // Configure the results directory
     initializeDirectories();
     
-    qInfo() << "BacktestResultManager initialisé avec succès. Répertoire:" << m_resultsDir;
+    qInfo() << "BacktestResultManager successfully initialized. Directory:" << m_resultsDir;
 }
 
 BacktestResultManager::~BacktestResultManager()
 {
-    // Nettoyage si nécessaire
+    // Cleanup if necessary
 }
 
 void BacktestResultManager::initializeDirectories()
 {
-    // Utilisation d'emplacements standard pour les données d'application
+    // Use standard locations for application data
     m_resultsDir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/backtest_results";
 
-    // Création du répertoire s'il n'existe pas
+    // Create the directory if it does not exist
     QDir dir;
     if (!dir.exists(m_resultsDir)) {
         dir.mkpath(m_resultsDir);
-        qInfo() << "Répertoire des résultats créé:" << m_resultsDir;
+        qInfo() << "Results directory created:" << m_resultsDir;
     }
 }
 
@@ -41,19 +41,19 @@ QStringList BacktestResultManager::listBacktestResults() const
 {
     QStringList results;
     
-    // Scan du répertoire pour les fichiers JSON
+    // Scan the directory for JSON files
     QDir dir(m_resultsDir);
     // dir.setNameFilters(QStringList() << "*.json");
     dir.setFilter(QDir::Files);
     
     foreach (QString file, dir.entryList()) {
         QFileInfo fileInfo(m_resultsDir + "/" + file);
-        QString baseName = fileInfo.completeBaseName(); // Nom sans extension
+        QString baseName = fileInfo.completeBaseName(); // Name without extension
         
         results << baseName;
     }
     
-    qDebug() << "Résultats trouvés:" << results;
+    qDebug() << "Found results:" << results;
     return results;
 }
 
@@ -68,7 +68,7 @@ bool BacktestResultManager::saveResult(const QString& resultName, const Backtest
 bool BacktestResultManager::loadResult(const QString& resultName, BacktestResultConfig& config, SerializationUtils::FileFormat format)
 {
     if (format == SerializationUtils::FileFormat::Auto) {
-        // Essayer tous les formats possibles
+        // Try all possible formats
         for (int i = 0; i < static_cast<int>(SerializationUtils::FileFormat::Auto); i++) {
             SerializationUtils::FileFormat currentFormat = static_cast<SerializationUtils::FileFormat>(i);
             QString resultPath = getResultPath(resultName, currentFormat);
@@ -100,7 +100,7 @@ QString BacktestResultManager::getResultPath(const QString& resultName, Serializ
 bool BacktestResultManager::resultExists(const QString& resultName, SerializationUtils::FileFormat format) const
 {
     if (format == SerializationUtils::FileFormat::Auto) {
-        // Vérifier tous les formats possibles
+        // Check all possible formats
         for (int i = 0; i < static_cast<int>(SerializationUtils::FileFormat::Auto); i++) {
             SerializationUtils::FileFormat currentFormat = static_cast<SerializationUtils::FileFormat>(i);
             QString resultPath = getResultPath(resultName, currentFormat);
@@ -119,15 +119,15 @@ bool BacktestResultManager::openBacktestResultsDirectory() const
 {
     QDir dir(m_resultsDir);
     if (!dir.exists()) {
-        qWarning() << "Le répertoire des résultats n'existe pas:" << m_resultsDir;
+        qWarning() << "The results directory does not exist:" << m_resultsDir;
         return false;
     }
     
     bool success = QDesktopServices::openUrl(QUrl::fromLocalFile(m_resultsDir));
     if (success) {
-        qInfo() << "Répertoire des résultats ouvert:" << m_resultsDir;
+        qInfo() << "Results directory opened:" << m_resultsDir;
     } else {
-        qWarning() << "Échec de l'ouverture du répertoire des résultats:" << m_resultsDir;
+        qWarning() << "Failed to open the results directory:" << m_resultsDir;
     }
     
     return success;
@@ -138,12 +138,12 @@ bool BacktestResultManager::saveBacktestResult(const BacktestResultConfig& confi
     QString resultName = QString::fromStdString(config.name);
     SerializationUtils::FileFormat actualFormat = (format == SerializationUtils::FileFormat::Auto) ? m_defaultFormat : format;
 
-    // Vérification si un résultat avec ce nom existe déjà
+    // Check if a result with this name already exists
     if (resultExists(resultName, actualFormat)) {
         if (parentWidget) {
             QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
-                "Résultat existant", 
-                QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
+                "Existing Result", 
+                QString("A result named '%1' already exists. Do you want to replace it?").arg(resultName),
                 QMessageBox::Yes | QMessageBox::No,
                 QMessageBox::No);
             if (choice != QMessageBox::Yes) {
@@ -157,12 +157,12 @@ bool BacktestResultManager::saveBacktestResult(const BacktestResultConfig& confi
     if (success) {
         emit resultListUpdated();
         if (parentWidget) {
-            QMessageBox::information(parentWidget, "Succès", 
-                QString("Résultat '%1' sauvegardé.").arg(resultName));
+            QMessageBox::information(parentWidget, "Success", 
+                QString("Result '%1' saved.").arg(resultName));
         }
     } else if (parentWidget) {
-        QMessageBox::warning(parentWidget, "Erreur", 
-            QString("Échec de la sauvegarde du résultat '%1'.").arg(resultName));
+        QMessageBox::warning(parentWidget, "Error", 
+            QString("Failed to save the result '%1'.").arg(resultName));
     }
     
     return success;
@@ -173,7 +173,7 @@ bool BacktestResultManager::loadBacktestResult(const QString& resultName, Backte
     bool success = loadResult(resultName, config, format);
     
     if (!success) {
-        qWarning() << "Échec du chargement du résultat:" << resultName;
+        qWarning() << "Failed to load the result:" << resultName;
     }
     
     return success;
@@ -181,11 +181,11 @@ bool BacktestResultManager::loadBacktestResult(const QString& resultName, Backte
 
 bool BacktestResultManager::deleteBacktestResult(const QString& resultName, QWidget* parentWidget)
 {
-    // Vérifier si le résultat existe dans n'importe quel format
+    // Check if the result exists in any format
     if (!resultExists(resultName, SerializationUtils::FileFormat::Auto)) {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur", 
-                QString("Le résultat '%1' n'existe pas.").arg(resultName));
+            QMessageBox::warning(parentWidget, "Error", 
+                QString("The result '%1' does not exist.").arg(resultName));
         }
         return false;
     }
@@ -195,7 +195,7 @@ bool BacktestResultManager::deleteBacktestResult(const QString& resultName, QWid
     if (parentWidget) {
         confirm = QMessageBox::question(parentWidget,
             "Confirmation",
-            QString("Êtes-vous sûr de vouloir supprimer le résultat '%1' ?").arg(resultName),
+            QString("Are you sure you want to delete the result '%1'?").arg(resultName),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
     }
@@ -203,7 +203,7 @@ bool BacktestResultManager::deleteBacktestResult(const QString& resultName, QWid
     if (confirm == QMessageBox::Yes) {
         bool success = true;
         
-        // Supprimer le résultat dans tous les formats où il existe
+        // Delete the result in all formats where it exists
         for (int i = 0; i < static_cast<int>(SerializationUtils::FileFormat::Auto); i++) {
             SerializationUtils::FileFormat currentFormat = static_cast<SerializationUtils::FileFormat>(i);
             QString resultPath = getResultPath(resultName, currentFormat);
@@ -217,12 +217,12 @@ bool BacktestResultManager::deleteBacktestResult(const QString& resultName, QWid
         if (success) {
             emit resultListUpdated();
             if (parentWidget) {
-                QMessageBox::information(parentWidget, "Succès", 
-                    "Résultat supprimé.");
+                QMessageBox::information(parentWidget, "Success", 
+                    "Result deleted.");
             }
         } else if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur", 
-                "Échec de la suppression du résultat.");
+            QMessageBox::warning(parentWidget, "Error", 
+                "Failed to delete the result.");
         }
         
         return success;
@@ -233,50 +233,50 @@ bool BacktestResultManager::deleteBacktestResult(const QString& resultName, QWid
 
 bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
 {
-    // Construire le filtre pour tous les formats supportés
-    QString filterString = "Tous les formats supportés (*.json *.bin);;";
-    filterString += "Fichiers JSON (*.json);;";
-    filterString += "Fichiers binaires (*.bin)";
+    // Build filter for all supported formats
+    QString filterString = "All supported formats (*.json *.bin);;";
+    filterString += "JSON files (*.json);;";
+    filterString += "Binary files (*.bin)";
     
     QString fileName = QFileDialog::getOpenFileName(parentWidget,
-        "Importer un résultat de backtest",
+        "Import backtest result",
         QDir::homePath(),
         filterString);
     
     if (fileName.isEmpty()) {
-        return false; // Utilisateur a annulé
+        return false; // User canceled
     }
     
     if (!QFile::exists(fileName)) {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur", "Le fichier sélectionné n'existe pas.");
+            QMessageBox::warning(parentWidget, "Error", "The selected file does not exist.");
         }
         return false;
     }
     
-    // Détecter le format du fichier à partir de son extension
+    // Detect file format from its extension
     SerializationUtils::FileFormat detectedFormat = SerializationUtils::detectFormatFromExtension(fileName);
     
-    // Essai de chargement du résultat depuis le fichier
+    // Try loading the result from the file
     BacktestResultConfig importedConfig;
     bool loadSuccess = SerializationUtils::loadFromFile(fileName, importedConfig, detectedFormat);
     
     if (!loadSuccess) {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur d'importation", 
-                "Le fichier n'est pas un résultat de backtest valide.");
+            QMessageBox::warning(parentWidget, "Import Error", 
+                "The file is not a valid backtest result.");
         }
         return false;
     }
     
-    // Demander le nom du résultat
+    // Ask for the result name
     bool ok;
     QString resultName = QString::fromStdString(importedConfig.name);
     
     if (parentWidget) {
         resultName = QInputDialog::getText(parentWidget, 
-            "Nom du résultat", 
-            "Entrez un nom pour ce résultat de backtest:",
+            "Result name", 
+            "Enter a name for this backtest result:",
             QLineEdit::Normal,
             resultName, &ok);
         
@@ -285,14 +285,14 @@ bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
         }
     }
     
-    // Mettre à jour le nom dans la configuration
+    // Update the name in the configuration
     importedConfig.name = resultName.toStdString();
     
-    // Vérifier si ce nom existe déjà
+    // Check if this name already exists
     if (resultExists(resultName, m_defaultFormat)) {
         QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
-            "Résultat existant", 
-            QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
+            "Existing Result", 
+            QString("A result named '%1' already exists. Do you want to replace it?").arg(resultName),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
         if (choice != QMessageBox::Yes) {
@@ -300,18 +300,18 @@ bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
         }
     }
     
-    // Sauvegarder le résultat importé dans le format par défaut
+    // Save the imported result in the default format
     bool success = saveResult(resultName, importedConfig, m_defaultFormat);
     
     if (success) {
         emit resultListUpdated();
         if (parentWidget) {
-            QMessageBox::information(parentWidget, "Import réussi", 
-                QString("Résultat importé avec succès sous le nom '%1'.").arg(resultName));
+            QMessageBox::information(parentWidget, "Import successful", 
+                QString("Result successfully imported as '%1'.").arg(resultName));
         }
     } else if (parentWidget) {
-        QMessageBox::warning(parentWidget, "Erreur d'importation", 
-            "Échec de l'importation du résultat.");
+        QMessageBox::warning(parentWidget, "Import Error", 
+            "Failed to import the result.");
     }
     
     return success;
@@ -319,45 +319,45 @@ bool BacktestResultManager::importBacktestResult(QWidget* parentWidget)
 
 bool BacktestResultManager::importExternalResult(QWidget* parentWidget)
 {
-    // Construire le filtre pour tous les formats supportés
-    QString filterString = "Tous les formats supportés (*.json *.bin);;";
-    filterString += "Fichiers JSON (*.json);;";
-    filterString += "Fichiers binaires (*.bin)";
+    // Build filter for all supported formats
+    QString filterString = "All supported formats (*.json *.bin);;";
+    filterString += "JSON files (*.json);;";
+    filterString += "Binary files (*.bin)";
     
     QString fileName = QFileDialog::getOpenFileName(parentWidget,
-        "Importer un résultat externe (sans stats pré-calculées)",
+        "Import external result (without precomputed stats)",
         QDir::homePath(),
         filterString);
     
     if (fileName.isEmpty()) 
-        return false; // Utilisateur a annulé
+        return false; // User canceled
     
     if (!QFile::exists(fileName)) {
         if (parentWidget) 
-            QMessageBox::warning(parentWidget, "Erreur", "Le fichier sélectionné n'existe pas.");
+            QMessageBox::warning(parentWidget, "Error", "The selected file does not exist.");
         return false;
     }
     
-    // Charger le résultat externe et calculer les stats
+    // Load the external result and compute stats
     BacktestResultConfig importedConfig;
     bool loadSuccess = loadExternalResult(fileName, importedConfig);
     
     if (!loadSuccess) {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur d'importation", 
-                "Le fichier n'est pas un résultat externe valide (format ExternalResultConfig attendu).");
+            QMessageBox::warning(parentWidget, "Import Error", 
+                "The file is not a valid external result (expected ExternalResultConfig format).");
         }
         return false;
     }
     
-    // Demander le nom du résultat
+    // Ask for the result name
     bool ok;
     QString resultName = QString::fromStdString(importedConfig.name);
     
     if (parentWidget) {
         resultName = QInputDialog::getText(parentWidget, 
-            "Nom du résultat", 
-            "Entrez un nom pour ce résultat externe importé:",
+            "Result name", 
+            "Enter a name for this imported external result:",
             QLineEdit::Normal,
             resultName, &ok);
         
@@ -365,30 +365,30 @@ bool BacktestResultManager::importExternalResult(QWidget* parentWidget)
             return false;
     }
     
-    // Mettre à jour le nom dans la configuration
+    // Update the name in the configuration
     importedConfig.name = resultName.toStdString();
     
-    // Vérifier si ce nom existe déjà
+    // Check if this name already exists
     if (resultExists(resultName, m_defaultFormat)) {
         QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
-            "Résultat existant", 
-            QString("Un résultat nommé '%1' existe déjà. Voulez-vous le remplacer?").arg(resultName),
+            "Existing Result", 
+            QString("A result named '%1' already exists. Do you want to replace it?").arg(resultName),
             QMessageBox::Yes | QMessageBox::No,
             QMessageBox::No);
         if (choice != QMessageBox::Yes) 
             return false;
     }
     
-    // Sauvegarder le résultat importé dans le format par défaut
+    // Save the imported result in the default format
     bool success = saveResult(resultName, importedConfig, m_defaultFormat);
     
     if (success) {
         emit resultListUpdated();
         if (parentWidget) {
             QString statsInfo = QString(
-                "Résultat externe importé avec succès sous le nom '%1'.\n\n"
-                "Statistiques calculées:\n"
-                "- Nombre de trades: %2\n"
+                "External result successfully imported as '%1'.\n\n"
+                "Calculated statistics:\n"
+                "- Number of trades: %2\n"
                 "- Net Profit: %3 (%4%)\n"
                 "- Profit Factor: %5")
                 .arg(resultName)
@@ -397,11 +397,11 @@ bool BacktestResultManager::importExternalResult(QWidget* parentWidget)
                 .arg(importedConfig.stats.returnPct, 0, 'f', 2)
                 .arg(importedConfig.stats.profitFactor, 0, 'f', 2);
             
-            QMessageBox::information(parentWidget, "Import réussi", statsInfo);
+            QMessageBox::information(parentWidget, "Import successful", statsInfo);
         }
     } else if (parentWidget) {
-        QMessageBox::warning(parentWidget, "Erreur d'importation", 
-            "Échec de l'importation du résultat externe.");
+        QMessageBox::warning(parentWidget, "Import Error", 
+            "Failed to import external result.");
     }
     
     return success;
@@ -411,64 +411,64 @@ bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWid
 {
     SerializationUtils::FileFormat actualFormat = (format == SerializationUtils::FileFormat::Auto) ? m_defaultFormat : format;
     
-    // Vérifier si le résultat existe dans n'importe quel format
+    // Verify that the result exists in any format
     if (!resultExists(resultName, SerializationUtils::FileFormat::Auto)) {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur", 
-                QString("Le résultat '%1' n'existe pas.").arg(resultName));
+            QMessageBox::warning(parentWidget, "Error", 
+                QString("The result '%1' does not exist.").arg(resultName));
         }
         return false;
     }
     
-    // Chargement du résultat
+    // Load the result
     BacktestResultConfig config;
     if (!loadBacktestResult(resultName, config, SerializationUtils::FileFormat::Auto)) {
         if (parentWidget) {
-            QMessageBox::warning(parentWidget, "Erreur", 
-                QString("Impossible de charger le résultat '%1'.").arg(resultName));
+            QMessageBox::warning(parentWidget, "Error", 
+                QString("Unable to load the result '%1'.").arg(resultName));
         }
         return false;
     }
     
-    // Nom de fichier par défaut avec nom du résultat et horodatage
+    // Default filename with result name and timestamp
     QString timestamp = QDateTime::currentDateTime().toString("yyyyMMdd_HHmmss");
     QString extension = SerializationUtils::getExtensionForFormat(actualFormat);
     QString defaultFileName = QString("backtest_result_%1_%2%3").arg(resultName).arg(timestamp).arg(extension);
     
-    // Construire le filtre pour le format spécifié
+    // Build the filter for the specified format
     QString filterString;
     if (actualFormat == SerializationUtils::FileFormat::JSON) 
-        filterString = "Fichiers JSON (*.json)";
+        filterString = "JSON files (*.json)";
     else if (actualFormat == SerializationUtils::FileFormat::Binary) 
-        filterString = "Fichiers binaires (*.bin)";
+        filterString = "Binary files (*.bin)";
     else 
-        filterString = "Tous les formats supportés (*.json *.bin);;Fichiers JSON (*.json);;Fichiers binaires (*.bin)";
+        filterString = "All supported formats (*.json *.bin);;JSON files (*.json);;Binary files (*.bin)";
     
     QString fileName = QFileDialog::getSaveFileName(parentWidget,
-        QString("Exporter le résultat - %1").arg(resultName),
+        QString("Export result - %1").arg(resultName),
         QDir::homePath() + "/" + defaultFileName,
         filterString);
     
     if (fileName.isEmpty()) 
-        return false; // Utilisateur a annulé
+        return false; // User canceled
     
-    // Si l'utilisateur a changé l'extension, détecter le nouveau format
+    // If the user changed the extension, detect the new format
     SerializationUtils::FileFormat selectedFormat = actualFormat;
     if (format == SerializationUtils::FileFormat::Auto) 
         selectedFormat = SerializationUtils::detectFormatFromExtension(fileName);
     
-    // Sauvegarde du résultat vers le fichier sélectionné
+    // Save the result to the selected file
     bool success = SerializationUtils::saveToFile(fileName, config, selectedFormat);
     
     if (success) {
         if (parentWidget) {
-            QMessageBox::information(parentWidget, "Export réussi", 
-                QString("Résultat '%1' exporté vers:\n%2").arg(resultName).arg(fileName));
+            QMessageBox::information(parentWidget, "Export successful", 
+                QString("Result '%1' exported to:\n%2").arg(resultName).arg(fileName));
         }
     } else {
         if (parentWidget) {
-            QMessageBox::critical(parentWidget, "Erreur d'exportation", 
-                "Erreur lors de l'écriture du fichier de résultat.");
+            QMessageBox::critical(parentWidget, "Export Error", 
+                "Error writing the result file.");
         }
     }
     
@@ -477,81 +477,81 @@ bool BacktestResultManager::exportBacktestResult(const QString& resultName, QWid
 
 bool BacktestResultManager::loadExternalResult(const QString& filePath, BacktestResultConfig& config)
 {
-    qDebug() << "Tentative de chargement d'un résultat externe depuis:" << filePath;
+    qDebug() << "Attempting to load external result from:" << filePath;
     
     ExternalResultConfig externalConfig;
     
-    // Détecter le format du fichier
+    // Detect file format
     SerializationUtils::FileFormat format = SerializationUtils::FileFormat::JSON;
     if (filePath.endsWith(".bin")) 
         format = SerializationUtils::FileFormat::Binary;
     
-    // Charger le fichier externe
+    // Load the external file
     if (!SerializationUtils::loadFromFile(filePath, externalConfig, format)) {
-        qCritical() << "Erreur lors du chargement du résultat externe";
+        qCritical() << "Error loading external result";
         return false;
     }
     
-    qInfo() << "Résultat externe chargé avec succès. Calcul des stats...";
+    qInfo() << "External result loaded successfully. Computing stats...";
     
-    // Convertir ExternalResultConfig vers BacktestResultConfig
+    // Convert ExternalResultConfig to BacktestResultConfig
     config.name = externalConfig.name;
     config.version = externalConfig.version;
     config.createdAt = externalConfig.createdAt;
     
-    // Les résultats externes n'ont pas de generalParams ni strategyConfigs
-    // On initialise avec des valeurs par défaut
-    config.generalParams = GeneralParamsConfig(); // Valeurs par défaut
-    config.strategyConfigs.clear(); // Pas de stratégies
+    // External results do not have generalParams or strategyConfigs
+    // Initialize with default values
+    config.generalParams = GeneralParamsConfig(); // default values
+    config.strategyConfigs.clear(); // no strategies
     config.candles = externalConfig.candles;
     
     // Validation
     if (externalConfig.candles.empty()) {
-        qCritical() << "Aucune donnée de bougie trouvée dans le résultat externe";
+        qCritical() << "No candle data found in the external result";
         return false;
     }
     
-    // Créer une structure Data à partir des candles
+    // Create a Data structure from the candles
     be::Data data(externalConfig.candles);
     
-    // Construire la courbe d'équité à partir des trades
+    // Build equity curve from trades
     std::vector<be::EquityPoint> equityCurve;
-    // Pour un résultat externe, utiliser la valeur par défaut de cash (10000.0)
+    // For an external result, use the default cash value (10000.0)
     double initialEquity = config.generalParams.cash;
     double currentEquity = initialEquity;
     
-    // Point initial
+    // Initial point
     equityCurve.push_back({0, currentEquity});
     
-    // Trier les trades par ordre de sortie (exitBar)
+    // Sort trades by exit order (exitBar)
     std::vector<be::TradeData> sortedTrades = externalConfig.trades;
     std::sort(sortedTrades.begin(), sortedTrades.end(),
               [](const be::TradeData& a, const be::TradeData& b) {
                   return a.exitBar < b.exitBar;
               });
     
-    // Construire la courbe d'équité en ajoutant le P&L de chaque trade
+    // Build equity curve by adding each trade's P&L
     for (const auto& trade : sortedTrades) {
         currentEquity += trade.pl;
         
-        // Ajouter un point d'équité à la sortie du trade
+        // Add an equity point at trade exit
         if (trade.exitBar < data.size()) 
             equityCurve.push_back({trade.exitBar, currentEquity});
     }
     
-    // Ajouter un point final si nécessaire
+    // Add a final point if necessary
     if (equityCurve.back().index < data.size() - 1) 
         equityCurve.push_back({data.size() - 1, currentEquity});
     
-    qInfo() << "Courbe d'équité construite avec" << equityCurve.size() << "points";
-    qInfo() << "Calcul des statistiques pour" << sortedTrades.size() << "trades...";
+    qInfo() << "Equity curve constructed with" << equityCurve.size() << "points";
+    qInfo() << "Calculating statistics for" << sortedTrades.size() << "trades...";
     
-    // Calculer les statistiques complètes
+    // Compute full statistics
     config.stats = be::computeStats(sortedTrades, equityCurve, data);
     
-    qInfo() << "Statistiques calculées avec succès";
-    qInfo() << "- Nombre de trades:" << config.stats.numTrades;
-    qInfo() << "- Équité finale:" << config.stats.equityFinal;
+    qInfo() << "Statistics computed successfully";
+    qInfo() << "- Number of trades:" << config.stats.numTrades;
+    qInfo() << "- Final equity:" << config.stats.equityFinal;
     
     return true;
 }

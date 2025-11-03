@@ -9,7 +9,7 @@ KeyValueListWidget::KeyValueListWidget(const QString& title, QWidget* parent)
     , m_valueAlignment(Qt::AlignLeft | Qt::AlignVCenter)
     , m_spacing(5)
     , m_keyTextWidth(0)
-    , m_checkBoxString("Texte secondaire")
+    , m_checkBoxString("Secondary text")
     , m_showBis(false)
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
@@ -21,7 +21,7 @@ KeyValueListWidget::KeyValueListWidget(const QString& title, QWidget* parent)
 
     connect(m_checkbox, &QCheckBox::toggled, this, [this](bool checked) {
         m_showBis = checked;
-        update();  // Redessiner le widget
+        update();  // Redraw the widget
     });
 
     setTitleCompanionWidget(m_checkbox);
@@ -32,7 +32,7 @@ void KeyValueListWidget::addItem(const QString& key, const QString& value, const
 {
     m_items.append(KeyValueItem(key, value, color, valueBis));
     
-    // Activer la checkbox si au moins un item a une valeur alternative
+    // Enable checkbox if at least one item has an alternative value
     if (!valueBis.isEmpty()) {
         setTitleCompanionWidgetVisible(true);
     }
@@ -70,7 +70,7 @@ bool KeyValueListWidget::updateValueBis(const QString& key, const QString& newVa
         if (m_items[i].key == key) {
             m_items[i].valueBis = newValueBis;
             
-            // Activer la checkbox si au moins un item a une valeur alternative
+            // Enable checkbox if at least one item has an alternative value
             if (!newValueBis.isEmpty()) {
                 setTitleCompanionWidgetVisible(true);
             }
@@ -89,7 +89,7 @@ bool KeyValueListWidget::updateValues(const QString& key, const QString& newValu
             m_items[i].value = newValue;
             m_items[i].valueBis = newValueBis;
             
-            // Activer la checkbox si au moins un item a une valeur alternative
+            // Enable checkbox if at least one item has an alternative value
             if (!newValueBis.isEmpty()) {
                 setTitleCompanionWidgetVisible(true);
             }
@@ -158,10 +158,10 @@ void KeyValueListWidget::setKeyTextWidth(int width)
 QSize KeyValueListWidget::sizeHint() const
 {
     if (m_items.isEmpty()) {
-        return QSize(250, 150); // Taille par défaut si vide
+        return QSize(250, 150); // Default size when empty
     }
     
-    // Recalculer la taille en fonction du contenu
+    // Recompute size based on content
     QFont font;
     font.setPointSize(m_fontSize);
     font.setWeight(m_fontWeight);
@@ -173,7 +173,7 @@ QSize KeyValueListWidget::sizeHint() const
     
     int maxValueWidth = 0;
     for (const auto& item : m_items) {
-        // Considérer les deux valeurs pour le calcul de la taille
+        // Consider both values for size calculation
         int valueWidth = fm.horizontalAdvance(item.value);
         if (!item.valueBis.isEmpty()) {
             valueWidth = std::max(valueWidth, fm.horizontalAdvance(item.valueBis));
@@ -184,9 +184,9 @@ QSize KeyValueListWidget::sizeHint() const
     int contentWidth = maxKeyWidth + separatorWidth + maxValueWidth;
     int contentHeight = m_items.count() * fm.height() + (m_items.count() - 1) * m_spacing;
     
-    // Ajouter des marges autour du contenu
-    contentWidth += 40;  // 20px de chaque côté
-    contentHeight += 40; // 20px en haut et en bas
+    // Add margins around the content
+    contentWidth += 40;  // 20px on each side
+    contentHeight += 40; // 20px top and bottom
     
     return QSize(contentWidth, contentHeight);
 }
@@ -199,7 +199,7 @@ QSize KeyValueListWidget::minimumSizeHint() const
 
 int KeyValueListWidget::calculateMaxKeyWidth(const QFontMetrics& fm) const
 {
-    // Si une largeur fixe est spécifiée, l'utiliser
+    // If a fixed width is specified, use it
     if (m_keyTextWidth > 0) {
         return m_keyTextWidth;
     }
@@ -214,12 +214,12 @@ int KeyValueListWidget::calculateMaxKeyWidth(const QFontMetrics& fm) const
 
 void KeyValueListWidget::paintContent(QPainter& painter, const QRect& contentRect)
 {
-    // Rien à dessiner si la liste est vide
+    // Nothing to draw if the list is empty
     if (m_items.isEmpty()) {
         return;
     }
     
-    // Configuration du texte avec la taille personnalisée
+    // Configure font with custom size
     QFont font = painter.font();
     font.setPointSize(m_fontSize);
     font.setWeight(m_fontWeight);
@@ -229,63 +229,63 @@ void KeyValueListWidget::paintContent(QPainter& painter, const QRect& contentRec
     int lineHeight = fm.height();
     int maxKeyWidth = calculateMaxKeyWidth(fm);
     
-    // Largeur du séparateur ": "
+    // Separator width ": "
     int separatorWidth = fm.horizontalAdvance(": ");
     
-    // Calculer la largeur totale du bloc de contenu
+    // Calculate total width of the content block
     int contentWidth = maxKeyWidth + separatorWidth;
     
-    // Trouver la valeur la plus large pour déterminer la largeur totale
+    // Find the widest value to determine total width
     int maxValueWidth = 0;
     for (const auto& item : m_items) {
-        // Vérifier quelle valeur afficher selon m_showBis
+        // Check which value to display according to m_showBis
         QString displayValue = (m_showBis && !item.valueBis.isEmpty()) ? item.valueBis : item.value;
         maxValueWidth = std::max(maxValueWidth, fm.horizontalAdvance(displayValue));
     }
     contentWidth += maxValueWidth;
     
-    // Calculer la hauteur totale du bloc de contenu
+    // Calculate total height of the content block
     int contentHeight = m_items.count() * lineHeight + (m_items.count() - 1) * m_spacing;
     
-    // Calculer les positions de départ pour centrage avec marges minimales de sécurité
-    int marginX = 10; // Marge minimale horizontale
-    int marginY = 10; // Marge minimale verticale
+    // Calculate starting positions for centering with minimum safe margins
+    int marginX = 10; // Minimum horizontal margin
+    int marginY = 10; // Minimum vertical margin
     
-    // Centrer le contenu, mais s'assurer qu'il ne dépasse pas les marges
+    // Center content but ensure it does not exceed margins
     int startX = qMax(marginX, (contentRect.left() + contentRect.width() - contentWidth) / 2);
     int startY = qMax(marginY, (contentRect.top() + contentRect.height() - contentHeight) / 2);
     
-    // Position y courante
-    int y = startY + lineHeight/2; // Commencer avec un espace pour la première ligne
+    // Current y position
+    int y = startY + lineHeight/2; // Start with some spacing for the first line
     
-    // Dessiner chaque ligne
+    // Draw each line
     for (const auto& item : m_items) {
-        // Couleur du texte pour cette ligne
+        // Text color for this line
         painter.setPen(item.textColor);
         
-        // Déterminer quelle valeur afficher
+        // Determine which value to display
         QString displayValue = (m_showBis && !item.valueBis.isEmpty()) ? item.valueBis : item.value;
         
-        // Rectangle pour la clé, assuré d'être dans les limites
+        // Rectangle for the key, ensured to be within bounds
         QRect keyRect(startX, y - lineHeight/2, maxKeyWidth, lineHeight);
         
-        // Rectangle pour le séparateur
+        // Rectangle for the separator
         QRect separatorRect(keyRect.right(), y - lineHeight/2, separatorWidth, lineHeight);
         
-        // Rectangle pour la valeur
+        // Rectangle for the value
         QRect valueRect(separatorRect.right(), y - lineHeight/2, 
                        maxValueWidth, lineHeight);
         
-        // Dessiner la clé alignée à droite pour meilleur alignement avec le séparateur
+        // Draw the key right-aligned for better alignment with the separator
         painter.drawText(keyRect, Qt::AlignRight | Qt::AlignVCenter, item.key);
         
-        // Dessiner le séparateur
+        // Draw the separator
         painter.drawText(separatorRect, Qt::AlignCenter, ": ");
         
-        // Dessiner la valeur (primaire ou alternative selon m_showBis)
+        // Draw the value (primary or alternative based on m_showBis)
         painter.drawText(valueRect, m_valueAlignment, displayValue);
         
-        // Passer à la ligne suivante
+        // Move to the next line
         y += lineHeight + m_spacing;
     }
 }

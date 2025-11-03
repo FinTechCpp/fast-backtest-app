@@ -3,13 +3,13 @@
 // #include <sstream>
 // #include <iomanip>
 
-// // Implémentation de la méthode de génération de hash
+// // Implementation of hash method for data integrity verification
 // std::string generateDataHash(const be::Data& data) {
 //     unsigned char hash[SHA256_DIGEST_LENGTH];
 //     SHA256_CTX sha256;
 //     SHA256_Init(&sha256);
-    
-//     // Hash des données OHLCV
+
+//     // Hash the OHLCV data
 //     for (size_t i = 0; i < data.size(); i++) {
 //         std::string candle = data.at(i).date.toString() + 
 //                            std::to_string(data.at(i).open) +
@@ -20,8 +20,8 @@
 //     }
     
 //     SHA256_Final(hash, &sha256);
-    
-//     // Convertir le hash en hexadécimal
+
+//     // Convert the hash to hexadecimal
 //     std::stringstream ss;
 //     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
 //         ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
@@ -30,8 +30,8 @@
 //     return ss.str();
 // }
 
-// // Création d'une référence à partir des données
-// DataReference DataReference::fromData(const be::Data& data, 
+// // Create a reference from the data
+// DataReference DataReference::fromData(const be::Data& data,
 //                                     const std::string& symbol,
 //                                     const std::string& timeframe, 
 //                                     const std::string& period) {
@@ -50,19 +50,19 @@
 //     return ref;
 // }
 
-// // Vérification si les données correspondent
+// // Check if the data matches
 // bool DataReference::matchesData(const be::Data& data) const {
-//     // Vérification rapide de la taille
+//     // Quick size check
 //     if (data.size() != candleCount) {
 //         return false;
 //     }
-    
-//     // Vérification des dates de début et fin
+
+//     // Check start and end dates
 //     if (!(data.at(0).date == firstDate && data.at(data.size() - 1).date == lastDate)) {
 //         return false;
 //     }
-    
-//     // Vérification complète via le hash
+
+//     // Full verification via hash
 //     std::string newHash = generateDataHash(data);
 //     return newHash == dataHash;
 // }

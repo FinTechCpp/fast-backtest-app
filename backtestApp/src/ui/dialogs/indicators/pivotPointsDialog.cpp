@@ -20,10 +20,10 @@ PivotPointsDialog::~PivotPointsDialog()
 
 void PivotPointsDialog::initSyncGroups()
 {
-    // Définir les groupes avec des couleurs à contraste élevé
+    // Define groups with high-contrast colors
     m_syncGroups["R"] = {
         false,
-        0xFF0000,  // Rouge vif pour résistances
+        0xFF0000,  // Bright red for resistances
         {
             indicators::PivotPointsInstance::LevelType::R1,
             indicators::PivotPointsInstance::LevelType::R2,
@@ -33,7 +33,7 @@ void PivotPointsDialog::initSyncGroups()
     
     m_syncGroups["S"] = {
         false,
-        0x008000,  // Vert foncé pour supports
+        0x008000,  // Dark green for supports
         {
             indicators::PivotPointsInstance::LevelType::S1,
             indicators::PivotPointsInstance::LevelType::S2,
@@ -43,7 +43,7 @@ void PivotPointsDialog::initSyncGroups()
     
     m_syncGroups["mR"] = {
         false,
-        0xFFA500,  // Orange vif pour niveaux milieux résistances
+        0xFFA500,  // Bright orange for mid resistance levels
         {
             indicators::PivotPointsInstance::LevelType::M_PR1,
             indicators::PivotPointsInstance::LevelType::M_R1R2,
@@ -53,7 +53,7 @@ void PivotPointsDialog::initSyncGroups()
     
     m_syncGroups["mS"] = {
         false,
-        0x0000FF,  // Bleu vif pour niveaux milieux supports
+        0x0000FF,  // Bright blue for mid support levels
         {
             indicators::PivotPointsInstance::LevelType::M_PS1,
             indicators::PivotPointsInstance::LevelType::M_S1S2,
@@ -69,7 +69,7 @@ std::string PivotPointsDialog::getLevelGroup(indicators::PivotPointsInstance::Le
             return groupName;
         }
     }
-    return "";  // Niveau n'appartenant à aucun groupe
+    return "";  // Level not belonging to any group
 }
 
 void PivotPointsDialog::updateSyncButtonsInGroup(const std::string& groupName)
@@ -79,25 +79,25 @@ void PivotPointsDialog::updateSyncButtonsInGroup(const std::string& groupName)
     bool synchronized = m_syncGroups[groupName].synchronized;
     int groupColor = m_syncGroups[groupName].color;
     
-    // Extraire les composantes RGB de la couleur du groupe
+    // Extract RGB components of the group color
     int r = (groupColor >> 16) & 0xFF;
     int g = (groupColor >> 8) & 0xFF;
     int b = groupColor & 0xFF;
     
-    // Style commun pour tous les boutons du groupe
-    // Toujours forme circulaire, mais opacité différente selon l'état
+    // Common style for all buttons in the group
+    // Always circular shape, but different opacity depending on state
     QString buttonStyle;
     if (synchronized) {
-        // Couleur pleine quand synchronisé (100% opacité)
+        // Full color when synchronized (100% opacity)
         buttonStyle = QString("QPushButton { background-color: rgb(%1,%2,%3); border: 1px solid darkgray; border-radius: 12px; }")
                      .arg(r).arg(g).arg(b);
     } else {
-        // Couleur avec faible opacité quand non synchronisé (20% opacité)
+        // Color with low opacity when not synchronized (20% opacity)
         buttonStyle = QString("QPushButton { background-color: rgba(%1,%2,%3,20%); border: 1px solid darkgray; border-radius: 12px; }")
                      .arg(r).arg(g).arg(b);
     }
     
-    // Mettre à jour tous les boutons du groupe
+    // Update all buttons in the group
     for (const auto& levelType : m_syncGroups[groupName].levelTypes) {
         PivotPointsDialog::LevelControls controls = m_levelControls[static_cast<size_t>(levelType)];
         controls.syncButton->blockSignals(true);
@@ -119,14 +119,14 @@ void PivotPointsDialog::syncGroupControls(const std::string& groupName, indicato
     int thickness = controls.thicknessSpinBox->value();
     int lineStyleIndex = controls.lineStyleComboBox->currentIndex();
 
-    // Appliquer à tous les niveaux du groupe sauf le niveau source
+    // Apply to all levels in the group except the source level
     for (indicators::PivotPointsInstance::LevelType levelType : m_syncGroups[groupName].levelTypes) {
         if (levelType == sourceLevelType)
             continue;
 
         PivotPointsDialog::LevelControls& controls = m_levelControls[static_cast<size_t>(levelType)];
         
-        // Mettre à jour l'UI sans déclencher de signaux
+        // Update the UI without triggering signals
         controls.visibilityCheckBox->blockSignals(true);
         controls.thicknessSpinBox->blockSignals(true);
         controls.lineStyleComboBox->blockSignals(true);
@@ -136,13 +136,13 @@ void PivotPointsDialog::syncGroupControls(const std::string& groupName, indicato
         controls.thicknessSpinBox->setValue(thickness);
         controls.lineStyleComboBox->setCurrentIndex(lineStyleIndex);
         
-        // Mettre à jour les données
+        // Update data
         m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].visible = visible;
         m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].color = color;
         m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].thickness = thickness;
         m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].lineStyle = static_cast<indicators::PivotPointsInstance::LineStyle>(lineStyleIndex);
 
-        // Réactiver les signaux
+        // Re-enable signals
         controls.visibilityCheckBox->blockSignals(false);
         controls.thicknessSpinBox->blockSignals(false);
         controls.lineStyleComboBox->blockSignals(false);
@@ -151,18 +151,18 @@ void PivotPointsDialog::syncGroupControls(const std::string& groupName, indicato
 
 void PivotPointsDialog::setupUI()
 {
-    // Configuration générale
+    // General settings
     QGroupBox* generalGroupBox = new QGroupBox("General Settings");
     QFormLayout* generalLayout = new QFormLayout(generalGroupBox);
     
-    // Combo box pour le type de période
+    // Combo box for period type
     m_periodTypeComboBox = new QComboBox();
     m_periodTypeComboBox->addItem("4H", static_cast<int>(indicators::PivotPeriodType::FourHour));
     m_periodTypeComboBox->addItem("Daily", static_cast<int>(indicators::PivotPeriodType::Daily));
     m_periodTypeComboBox->addItem("Weekly", static_cast<int>(indicators::PivotPeriodType::Weekly));
     m_periodTypeComboBox->addItem("Monthly", static_cast<int>(indicators::PivotPeriodType::Monthly));
     
-    // Sélectionner la période actuelle
+    // Select the current period
     generalLayout->addRow("Period Type:", m_periodTypeComboBox);
 
     m_calculationMethodComboBox = new QComboBox();
@@ -173,45 +173,45 @@ void PivotPointsDialog::setupUI()
     m_calculationMethodComboBox->addItem("High, Low, Open", 
                                         static_cast<int>(indicators::PivotCalculationMethod::HLO));
 
-    // Sélectionner la méthode de calcul actuelle
+    // Select the current calculation method
     generalLayout->addRow("Calculation Method:", m_calculationMethodComboBox);
     
 
-    // Checkbox pour l'affichage des niveaux milieux
+    // Checkbox for showing mid levels
     m_showMidLevelsCheckBox = new QCheckBox();
     m_showMidLevelsCheckBox->setChecked(false); 
     generalLayout->addRow("Show Mid Levels:", m_showMidLevelsCheckBox);
     
-    // Checkbox pour l'affichage des étiquettes
+    // Checkbox for showing labels
     m_showLabelsCheckBox = new QCheckBox();
     generalLayout->addRow("Show Labels:", m_showLabelsCheckBox);
     
-    // Ajouter la section générale au layout principal
+    // Add the general section to the main layout
     m_formLayout->addWidget(generalGroupBox);
     
-    // Créer un groupe pour tous les niveaux de prix
+    // Create a group for all price levels
     QGroupBox* levelsGroupBox = new QGroupBox("Price Levels");
     QGridLayout* levelsLayout = new QGridLayout(levelsGroupBox);
     
-    // En-têtes pour la grille des niveaux
+    // Headers for the levels grid
     levelsLayout->addWidget(new QLabel("Level"), 0, 0);
     levelsLayout->addWidget(new QLabel("Color"), 0, 1);
     levelsLayout->addWidget(new QLabel("Thickness"), 0, 2);
     levelsLayout->addWidget(new QLabel("Style"), 0, 3);
 
-    // Obtenir le suffixe de période actuel
+    // Get the current period suffix
     QString periodSuffix;
     switch (m_currentIndicator.periodType) {
         case indicators::PivotPeriodType::FourHour: periodSuffix = "4H"; break;
-        case indicators::PivotPeriodType::Daily: periodSuffix = "J"; break;
-        case indicators::PivotPeriodType::Weekly: periodSuffix = "S"; break;
+        case indicators::PivotPeriodType::Daily: periodSuffix = "D"; break;
+        case indicators::PivotPeriodType::Weekly: periodSuffix = "W"; break;
         case indicators::PivotPeriodType::Monthly: periodSuffix = "M"; break;
     }
     
-    // Ajouter les niveaux dans l'ordre du plus élevé au plus bas
+    // Add levels from highest to lowest
     int row = 1;
     
-    // Résistances et leurs niveaux milieux
+    // Resistances and their mid levels
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::R3, "R3:");
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_R2R3, "mR3:");
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::R2, "R2:");
@@ -219,10 +219,10 @@ void PivotPointsDialog::setupUI()
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::R1, "R1:");
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_PR1, "mR1:");
 
-    // Pivot central
+    // Central pivot
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::Pivot, "Piv:");
 
-    // Supports et leurs niveaux milieux
+    // Supports and their mid levels
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_PS1, "mS1:");
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::S1, "S1:");
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_S1S2, "mS2:");
@@ -230,11 +230,11 @@ void PivotPointsDialog::setupUI()
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::M_S2S3, "mS3:");
     setupLevelControls(levelsLayout, row++, indicators::PivotPointsInstance::LevelType::S3, "S3:");
 
-    // Rendre le groupe des niveaux déroulable
+    // Make the levels group collapsible
     levelsGroupBox->setLayout(levelsLayout);
     m_formLayout->addWidget(levelsGroupBox);
     
-    // Mise à jour des contrôles selon l'état actuel
+    // Update controls according to current state
     updateLevelControlsState();
 }
 
@@ -259,66 +259,66 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, indicat
     QComboBox* lineStyleComboBox = createLineStyleComboBox();
     layout->addWidget(lineStyleComboBox, row, 3);
     
-    // Bouton de synchronisation
+    // Synchronization button
     QPushButton* syncButton = new QPushButton();
     syncButton->setFixedSize(24, 24);
     syncButton->setCheckable(true);
     
-    // Créer une icône plus claire de synchronisation
+    // Create a lighter sync icon
     QPixmap syncPixmap(20, 20);
     syncPixmap.fill(Qt::transparent);
     QPainter painter(&syncPixmap);
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // Fond légèrement grisé pour mieux voir l'icône
+    // Slightly gray background to better see the icon
     painter.setPen(Qt::NoPen);
     painter.setBrush(QColor(240, 240, 240, 80));
     painter.drawEllipse(1, 1, 18, 18);
 
-    // Dessiner les flèches avec une meilleure séparation
+    // Draw arrows with better separation
     painter.setPen(QPen(Qt::black, 1.5));
 
-    // Première flèche circulaire (sens horaire, premier quart de cercle)
+    // First circular arrow (clockwise, first quarter)
     painter.drawArc(3, 3, 14, 14, 0, 120 * 16);
-    // Pointe de flèche pour l'arc horaire
+    // Arrow tip for the clockwise arc
     painter.setBrush(Qt::black);
     QPolygonF arrow1;
-    arrow1 << QPointF(10 + 7*cos(120*M_PI/180), 10 - 7*sin(120*M_PI/180))  // Pointe
-        << QPointF(10 + 5*cos(150*M_PI/180), 10 - 5*sin(150*M_PI/180))  // Côté gauche
-        << QPointF(10 + 5*cos(100*M_PI/180), 10 - 5*sin(100*M_PI/180)); // Côté droit
+    arrow1 << QPointF(10 + 7*cos(120*M_PI/180), 10 - 7*sin(120*M_PI/180))  // Tip
+        << QPointF(10 + 5*cos(150*M_PI/180), 10 - 5*sin(150*M_PI/180))  // Left side
+        << QPointF(10 + 5*cos(100*M_PI/180), 10 - 5*sin(100*M_PI/180)); // Right side
     painter.drawPolygon(arrow1);
 
-    // Seconde flèche circulaire (sens anti-horaire, premier quart de cercle)
+    // Second circular arrow (counter-clockwise, first quarter)
     painter.setPen(QPen(Qt::black, 1.5));
     painter.drawArc(3, 3, 14, 14, 180 * 16, 120 * 16);
-    // Pointe de flèche pour l'arc anti-horaire
+    // Arrow tip for the counter-clockwise arc
     painter.setBrush(Qt::black);
     QPolygonF arrow2;
-    arrow2 << QPointF(10 + 7*cos(300*M_PI/180), 10 - 7*sin(300*M_PI/180))  // Pointe
-        << QPointF(10 + 5*cos(330*M_PI/180), 10 - 5*sin(330*M_PI/180))  // Côté gauche
-        << QPointF(10 + 5*cos(280*M_PI/180), 10 - 5*sin(280*M_PI/180)); // Côté droit
+    arrow2 << QPointF(10 + 7*cos(300*M_PI/180), 10 - 7*sin(300*M_PI/180))  // Tip
+        << QPointF(10 + 5*cos(330*M_PI/180), 10 - 5*sin(330*M_PI/180))  // Left side
+        << QPointF(10 + 5*cos(280*M_PI/180), 10 - 5*sin(280*M_PI/180)); // Right side
     painter.drawPolygon(arrow2);
 
     syncButton->setIcon(QIcon(syncPixmap));
-    syncButton->setToolTip("Synchroniser avec les autres niveaux du groupe");
+    syncButton->setToolTip("Synchronize with other levels in the group");
     layout->addWidget(syncButton, row, 4);
 
     if (levelType == indicators::PivotPointsInstance::LevelType::Pivot) {
-        // pour le point pivot on n'affiche pas le bouton de synchronisation
-        // il faut donc le cacher
+        // For the pivot point we don't display the sync button
+        // so hide it
         syncButton->setVisible(false);
     }
     
-    // Stocker les contrôles pour les utiliser plus tard
+    // Store the controls for later use
     m_levelControls[static_cast<size_t>(levelType)] = {
         visibilityCheckBox,
         colorButton,
         thicknessSpinBox,
         lineStyleComboBox,
-        syncButton  // Ajouter le bouton sync
+        syncButton  // Add the sync button
     };
     
-    // Appliquer le style initial du bouton sync selon le groupe
+    // Apply the initial sync button style according to the group
     std::string groupName = getLevelGroup(levelType);
     if (!groupName.empty()) {
         int groupColor = m_syncGroups[groupName].color;
@@ -326,12 +326,12 @@ void PivotPointsDialog::setupLevelControls(QGridLayout* layout, int row, indicat
         int g = (groupColor >> 8) & 0xFF;
         int b = groupColor & 0xFF;
         
-        // Couleur avec faible opacité par défaut (20%)
+        // Default color with low opacity (20%)
         QString buttonStyle = QString("QPushButton { background-color: rgba(%1,%2,%3,20%); border: 1px solid darkgray; border-radius: 12px; }")
                              .arg(r).arg(g).arg(b);
         syncButton->setStyleSheet(buttonStyle);
         
-        // Tooltip avec la couleur du groupe
+        // Tooltip styled with the group's color
         QString tooltipStyle = QString("QToolTip { color: black; background-color: rgb(%1,%2,%3); border: 1px solid black; }")
                               .arg(r).arg(g).arg(b);
         syncButton->setStyleSheet(syncButton->styleSheet() + tooltipStyle);
@@ -342,11 +342,11 @@ QComboBox* PivotPointsDialog::createLineStyleComboBox()
 {
     QComboBox* comboBox = new QComboBox();
     
-    // Dimensions de l'icône
+    // Icon dimensions
     const int width = 80;
     const int height = 20;
     
-    // Créer une icône pour chaque style de ligne
+    // Create an icon for each line style
     // 1. Solid
     QPixmap solidPixmap(width, height);
     solidPixmap.fill(Qt::transparent);
@@ -387,14 +387,14 @@ QComboBox* PivotPointsDialog::createLineStyleComboBox()
     altDashPainter.setPen(altDashPen);
     altDashPainter.drawLine(5, height/2, width-5, height/2);
     
-    // Ajouter les items avec leurs icônes
+    // Add the items with their icons
     comboBox->addItem(QIcon(solidPixmap), "Solid");
     comboBox->addItem(QIcon(dashPixmap), "Dash");
     comboBox->addItem(QIcon(dotPixmap), "Dot");
     comboBox->addItem(QIcon(dotDashPixmap), "DotDash");
     comboBox->addItem(QIcon(altDashPixmap), "AltDash");
     
-    // Permettre suffisamment d'espace pour voir les icônes
+    // Allow enough space to see the icons
     comboBox->setIconSize(QSize(width, height));
     
     return comboBox;
@@ -402,7 +402,7 @@ QComboBox* PivotPointsDialog::createLineStyleComboBox()
 
 void PivotPointsDialog::updateLevelControlsState()
 {
-    // Désactiver le checkbox de visibilité pour les milieux si on utilise le raccourci
+    // Disable the visibility checkbox for mid levels when the shortcut is used
     bool shortcutActive = m_showMidLevelsCheckBox->isChecked();
     std::vector<indicators::PivotPointsInstance::LevelType> midLevels = {
         indicators::PivotPointsInstance::LevelType::M_PR1,
@@ -415,20 +415,20 @@ void PivotPointsDialog::updateLevelControlsState()
 
     for (auto levelType : midLevels) {
         auto& controls = m_levelControls[static_cast<size_t>(levelType)];
-        // Si le raccourci est actif, on désactive la modification individuelle
+        // If the shortcut is active, disable individual modification
         controls.visibilityCheckBox->setEnabled(!shortcutActive);
     }
 }
 
 void PivotPointsDialog::updateUIFromInstance()
 {
-    // Mettre à jour les contrôles généraux
+    // Update general controls
     m_periodTypeComboBox->setCurrentIndex(static_cast<int>(m_currentIndicator.periodType));
     m_calculationMethodComboBox->setCurrentIndex(static_cast<int>(m_currentIndicator.calculationMethod));
     m_showLabelsCheckBox->setChecked(m_currentIndicator.showLabels);
     m_showMidLevelsCheckBox->setChecked(false);
     
-    // Mettre à jour les contrôles pour chaque niveau
+    // Update controls for each level
     for (size_t levelType = 0; levelType < static_cast<size_t>(indicators::PivotPointsInstance::LevelType::Count); ++levelType) {
         auto& controls = m_levelControls[levelType];
         auto& style = m_currentIndicator.levelStyles[levelType];
@@ -449,48 +449,48 @@ void PivotPointsDialog::updateUIFromInstance()
         controls.lineStyleComboBox->setCurrentIndex(styleIndex);
     }
     
-    // Mettre à jour l'état des contrôles
+    // Update controls state
     updateLevelControlsState();
 }
 
 void PivotPointsDialog::connectSignals()
 {
-    // Connecter les contrôles généraux
+    // Connect general controls
     connect(m_periodTypeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PivotPointsDialog::onPeriodTypeChanged);
     connect(m_calculationMethodComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &PivotPointsDialog::onCalculationMethodChanged);
     connect(m_showMidLevelsCheckBox, &QCheckBox::checkStateChanged, this, &PivotPointsDialog::onShowMidLevelsChanged);
     connect(m_showLabelsCheckBox, &QCheckBox::checkStateChanged, this, &PivotPointsDialog::onShowLabelsChanged);
     
-    // Connecter les contrôles pour chaque niveau
+    // Connect controls for each level
     for (size_t levelType = 0; levelType < static_cast<size_t>(indicators::PivotPointsInstance::LevelType::Count); ++levelType) {
-        // Visibilité
+        // Visibility
         auto& controls = m_levelControls[levelType];
 
         connect(controls.visibilityCheckBox, &QCheckBox::toggled, [this, controls, levelType](bool checked) {
             onLevelVisibilityChanged(static_cast<indicators::PivotPointsInstance::LevelType>(levelType), checked);
 
-            // Mettre à jour l'état d'activation des autres contrôles
+            // Update enabled state of other controls
             controls.colorButton->setEnabled(checked);
             controls.thicknessSpinBox->setEnabled(checked);
             controls.lineStyleComboBox->setEnabled(checked);
         });
         
-        // Couleur
+        // Color
         connect(controls.colorButton, &QPushButton::clicked, [this, levelType]() {
             onLevelColorChanged(static_cast<indicators::PivotPointsInstance::LevelType>(levelType));
         });
         
-        // Épaisseur
+        // Thickness
         connect(controls.thicknessSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), [this, levelType](int value) {
             onLevelThicknessChanged(static_cast<indicators::PivotPointsInstance::LevelType>(levelType), value);
         });
         
-        // Style de ligne
+        // Line style
         connect(controls.lineStyleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), [this, levelType](int index) {
             onLevelLineStyleChanged(static_cast<indicators::PivotPointsInstance::LevelType>(levelType), index);
         });
 
-        // Bouton de synchronisation
+        // Sync button
         connect(controls.syncButton, &QPushButton::toggled, [this, levelType](bool checked) {
             onSyncButtonToggled(static_cast<indicators::PivotPointsInstance::LevelType>(levelType), checked);
         });
@@ -511,7 +511,7 @@ void PivotPointsDialog::onCalculationMethodChanged(size_t index)
 
 void PivotPointsDialog::onShowMidLevelsChanged(int state)
 {
-    // Liste des niveaux milieux et leurs dépendances
+    // List of mid levels and their dependencies
     struct MidLevelInfo {
         indicators::PivotPointsInstance::LevelType mid;
         indicators::PivotPointsInstance::LevelType left;
@@ -535,7 +535,7 @@ void PivotPointsDialog::onShowMidLevelsChanged(int state)
 
         m_currentIndicator.levelStyles[static_cast<size_t>(info.mid)].visible = midShouldBeVisible;
 
-        // Met à jour l'état du checkbox dans l'UI
+        // Update checkbox state in the UI
         auto& controls = m_levelControls[static_cast<int>(info.mid)];
         controls.visibilityCheckBox->setChecked(midShouldBeVisible);
     }
@@ -553,7 +553,7 @@ void PivotPointsDialog::onLevelVisibilityChanged(indicators::PivotPointsInstance
 {
     m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].visible = checked;
 
-    // Synchroniser si nécessaire
+    // Synchronize if necessary
     std::string groupName = getLevelGroup(levelType);
     if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
         syncGroupControls(groupName, levelType);
@@ -570,7 +570,7 @@ void PivotPointsDialog::onLevelColorChanged(indicators::PivotPointsInstance::Lev
         m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].color = colorValue;
         updateColorButtonStyle(m_levelControls[static_cast<size_t>(levelType)].colorButton, colorValue);
 
-        // Synchroniser si nécessaire
+        // Synchronize if necessary
         std::string groupName = getLevelGroup(levelType);
         if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
             syncGroupControls(groupName, levelType);
@@ -584,7 +584,7 @@ void PivotPointsDialog::onLevelThicknessChanged(indicators::PivotPointsInstance:
 {
     m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].thickness = value;
 
-    // Synchroniser si nécessaire
+    // Synchronize if necessary
     std::string groupName = getLevelGroup(levelType);
     if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
         syncGroupControls(groupName, levelType);
@@ -595,7 +595,7 @@ void PivotPointsDialog::onLevelThicknessChanged(indicators::PivotPointsInstance:
 
 void PivotPointsDialog::onLevelLineStyleChanged(indicators::PivotPointsInstance::LevelType levelType, int index)
 {    
-    // Convertir l'index en style de ligne Qt
+    // Convert index to line style
     indicators::PivotPointsInstance::LineStyle style = indicators::PivotPointsInstance::LineStyle::Solid;
     switch (index) {
         case 0: style = indicators::PivotPointsInstance::LineStyle::Solid; break;
@@ -608,7 +608,7 @@ void PivotPointsDialog::onLevelLineStyleChanged(indicators::PivotPointsInstance:
 
     m_currentIndicator.levelStyles[static_cast<size_t>(levelType)].lineStyle = style;
 
-    // Synchroniser si nécessaire
+    // Synchronize if necessary
     std::string groupName = getLevelGroup(levelType);
     if (!groupName.empty() && m_syncGroups[groupName].synchronized) {
         syncGroupControls(groupName, levelType);
@@ -622,16 +622,16 @@ void PivotPointsDialog::onSyncButtonToggled(indicators::PivotPointsInstance::Lev
     std::string groupName = getLevelGroup(levelType);
     if (groupName.empty()) return;
     
-    // Mettre à jour l'état du groupe
+    // Update group's state
     m_syncGroups[groupName].synchronized = checked;
     
-    // Mettre à jour l'apparence de tous les boutons du groupe
+    // Update appearance of all buttons in the group
     updateSyncButtonsInGroup(groupName);
     
-    // Si synchronisation activée, synchroniser les contrôles
+    // If synchronization enabled, synchronize controls
     if (checked) {
         syncGroupControls(groupName, levelType);
     }
 
-    applyChanges();  // Appliquer les changements immédiatement
+    applyChanges();  // Apply changes immediately
 }

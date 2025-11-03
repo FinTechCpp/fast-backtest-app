@@ -10,12 +10,11 @@
 StrategyConfigDialog::StrategyConfigDialog(QWidget* parent)
     : QDialog(parent)
 {
-    // Initialiser le tableau des jours de trading (Lun-Ven activés par défaut)
-    for (int i = 0; i < 7; ++i) {
+    // Initialize trading days array (Mon-Fri enabled by default)
+    for (int i = 0; i < 7; ++i) 
         m_config.trading_days_array[i] = (i < 5);
-    }
     
-    setWindowTitle("Configuration de la stratégie");
+    setWindowTitle("Strategy Configuration");
     setMinimumSize(1000, 700);
     
     setupUI();
@@ -37,11 +36,11 @@ void StrategyConfigDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
     // Strategy name section at the top
-    QGroupBox* nameGroup = new QGroupBox("Nom de la stratégie", this);
+    QGroupBox* nameGroup = new QGroupBox("Strategy Name", this);
     QVBoxLayout* nameLayout = new QVBoxLayout();
     
     m_nameEdit = new QLineEdit(this);
-    m_nameEdit->setPlaceholderText("Ex: MA Cross, RSI Strategy, etc.");
+    m_nameEdit->setPlaceholderText("E.g.: MA Cross, RSI Strategy, etc.");
     m_nameEdit->setText(QString::fromStdString(m_config.name));
     nameLayout->addWidget(m_nameEdit);
     
@@ -58,7 +57,7 @@ void StrategyConfigDialog::setupUI() {
     QVBoxLayout* contentLayout = new QVBoxLayout(scrollContent);
     
     // Filters section at the top (2x2 grid)
-    QGroupBox* filtersGroup = new QGroupBox("Configuration des filtres", scrollContent);
+    QGroupBox* filtersGroup = new QGroupBox("Filters Configuration", scrollContent);
     QGridLayout* filtersLayout = new QGridLayout();
     setupFiltersSection(filtersLayout);
     filtersGroup->setLayout(filtersLayout);
@@ -81,10 +80,10 @@ void StrategyConfigDialog::setupUI() {
 
 void StrategyConfigDialog::setupFiltersSection(QGridLayout* gridLayout) {
     // Create the 4 filter widgets in a 2x2 grid
-    m_buyFiltersWidget = new FiltersWidget(this, "Filtres d'achat");
-    m_sellFiltersWidget = new FiltersWidget(this, "Filtres de vente");
-    m_resaleFiltersWidget = new FiltersWidget(this, "Filtres de revente");
-    m_rebuyFiltersWidget = new FiltersWidget(this, "Filtres de rachat");
+    m_buyFiltersWidget = new FiltersWidget(this, "Buy Filters");
+    m_sellFiltersWidget = new FiltersWidget(this, "Sell Filters");
+    m_resaleFiltersWidget = new FiltersWidget(this, "Resale Filters");
+    m_rebuyFiltersWidget = new FiltersWidget(this, "Rebuy Filters");
     
     gridLayout->addWidget(m_buyFiltersWidget, 0, 0);
     gridLayout->addWidget(m_resaleFiltersWidget, 0, 1);
@@ -97,10 +96,10 @@ void StrategyConfigDialog::setupFiltersSection(QGridLayout* gridLayout) {
 }
 
 void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
-    QGroupBox* configGroup = new QGroupBox("Configuration avancée", this);
+    QGroupBox* configGroup = new QGroupBox("Advanced Configuration", this);
     QVBoxLayout* configLayout = new QVBoxLayout();
     
-    // Bouton Stop Loss / Take Profit
+    // Stop Loss / Take Profit button
     m_stopLossTakeProfitButton = new QPushButton("⚙ Stop Loss / Take Profit", this);
     m_stopLossTakeProfitButton->setMinimumHeight(50);
     m_stopLossTakeProfitButton->setStyleSheet(
@@ -119,8 +118,8 @@ void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
     connect(m_stopLossTakeProfitButton, &QPushButton::clicked, this, &StrategyConfigDialog::openStopLossTakeProfitDialog);
     configLayout->addWidget(m_stopLossTakeProfitButton);
     
-    // Bouton Heures de trading
-    m_tradingHoursButton = new QPushButton("🕒 Heures de trading", this);
+    // Trading Hours button
+    m_tradingHoursButton = new QPushButton("🕒 Trading Hours", this);
     m_tradingHoursButton->setMinimumHeight(50);
     m_tradingHoursButton->setStyleSheet(
         "QPushButton {"
@@ -138,8 +137,8 @@ void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
     connect(m_tradingHoursButton, &QPushButton::clicked, this, &StrategyConfigDialog::openTradingHoursDialog);
     configLayout->addWidget(m_tradingHoursButton);
     
-    // Bouton Gestion du risque
-    m_riskManagementButton = new QPushButton("🛡 Gestion du risque", this);
+    // Risk Management button
+    m_riskManagementButton = new QPushButton("🛡 Risk Management", this);
     m_riskManagementButton->setMinimumHeight(50);
     m_riskManagementButton->setStyleSheet(
         "QPushButton {"
@@ -157,8 +156,8 @@ void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
     connect(m_riskManagementButton, &QPushButton::clicked, this, &StrategyConfigDialog::openRiskManagementDialog);
     configLayout->addWidget(m_riskManagementButton);
     
-    // Bouton Configuration ML
-    m_mlConfigButton = new QPushButton("Intelligence Artificielle (ML)", this);
+    // ML Configuration button
+    m_mlConfigButton = new QPushButton("Machine Learning (ML)", this);
     m_mlConfigButton->setMinimumHeight(50);
     m_mlConfigButton->setStyleSheet(
         "QPushButton {"
@@ -217,10 +216,10 @@ void StrategyConfigDialog::openMLConfigDialog() {
 }
 
 void StrategyConfigDialog::setupAdvancedOptionsSection(QVBoxLayout* mainLayout) {
-    QGroupBox* advancedGroup = new QGroupBox("Options avancées", this);
+    QGroupBox* advancedGroup = new QGroupBox("Advanced Options", this);
     QVBoxLayout* advancedLayout = new QVBoxLayout();
     
-    m_enableLoggingCheck = new QCheckBox("Activer la journalisation (logs)", this);
+    m_enableLoggingCheck = new QCheckBox("Enable logging", this);
     m_enableLoggingCheck->setChecked(false);
     advancedLayout->addWidget(m_enableLoggingCheck);
     

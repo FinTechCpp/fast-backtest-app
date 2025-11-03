@@ -12,12 +12,12 @@ EMADialog::~EMADialog()
 
 void EMADialog::setupUI()
 {
-    // Période
+    // Period
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 3000);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
-    // Couleur de la ligne
+    // Line color
     m_colorButton = new QPushButton();
     m_formLayout->addRow("Line Color:", m_colorButton);
 }
@@ -37,7 +37,7 @@ void EMADialog::updateUIFromInstance()
 void EMADialog::onPeriodChanged(int period)
 {
     m_currentIndicator.period = period;
-    applyChanges(); // Appliquer immédiatement les changements
+    applyChanges(); // Apply changes immediately
 }
 
 void EMADialog::onColorButtonClicked()
@@ -47,6 +47,6 @@ void EMADialog::onColorButtonClicked()
     if (color.isValid()) {
         m_currentIndicator.color = colorFromRGB(color.red(), color.green(), color.blue());
         updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
-        applyChanges(); // Appliquer immédiatement les changements
+        applyChanges(); // Apply changes immediately
     }
 }

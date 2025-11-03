@@ -13,19 +13,19 @@ bbDialog::~bbDialog()
 
 void bbDialog::setupUI()
 {
-// Période
+// Period
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 3000);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
-    // Multiplicateur d'écart-type
+    // Standard deviation multiplier
     m_stdDevMultiplierSpinBox = new QDoubleSpinBox();
     m_stdDevMultiplierSpinBox->setRange(0.1, 10.0);
     m_stdDevMultiplierSpinBox->setSingleStep(0.1);
     m_stdDevMultiplierSpinBox->setDecimals(2);
     m_formLayout->addRow("Std Dev Multiplier:", m_stdDevMultiplierSpinBox);
     
-    // Source de données
+    // Data source
     m_sourceCombo = new QComboBox();
     m_sourceCombo->addItem("Close", static_cast<int>(filter::PriceType::CLOSE));
     m_sourceCombo->addItem("Open", static_cast<int>(filter::PriceType::OPEN));
@@ -35,21 +35,21 @@ void bbDialog::setupUI()
     m_sourceCombo->addItem("Median (H+L)/2", static_cast<int>(filter::PriceType::MEDIAN));
     m_formLayout->addRow("Source:", m_sourceCombo);
     
-    // Type de moyenne mobile
+    // Moving average type
     m_maTypeCombo = new QComboBox();
     m_maTypeCombo->addItem("SMA", static_cast<int>(filter::MAType::SMA));
     m_maTypeCombo->addItem("EMA", static_cast<int>(filter::MAType::EMA));
     m_formLayout->addRow("MA Type:", m_maTypeCombo);
     
-    // Couleur de la bande médiane
+    // Middle band color
     m_middleBandColorButton = new QPushButton();
     m_formLayout->addRow("Middle Band Color:", m_middleBandColorButton);
     
-    // Couleur de la bande supérieure
+    // Upper band color
     m_upperBandColorButton = new QPushButton();
     m_formLayout->addRow("Upper Band Color:", m_upperBandColorButton);
     
-    // Couleur de la bande inférieure
+    // Lower band color
     m_lowerBandColorButton = new QPushButton();
     m_formLayout->addRow("Lower Band Color:", m_lowerBandColorButton);
 }
@@ -79,7 +79,7 @@ void bbDialog::updateUIFromInstance()
 void bbDialog::onPeriodChanged(int period)
 {
     m_currentIndicator.period = period;
-    applyChanges(); // Appliquer immédiatement les changements
+    applyChanges(); // Apply changes immediately
 }
 
 void bbDialog::onColorButtonClicked(QPushButton* button, int& colorField)
@@ -89,7 +89,7 @@ void bbDialog::onColorButtonClicked(QPushButton* button, int& colorField)
     if (color.isValid()) {
         colorField = colorFromRGB(color.red(), color.green(), color.blue());
         updateColorButtonStyle(button, colorField);
-        applyChanges(); // Appliquer immédiatement les changements
+        applyChanges(); // Apply changes immediately
     }
 }
 

@@ -40,7 +40,7 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
     
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Impossible d'ouvrir le fichier:" << filePath;
+        qWarning() << "Impossible to open file:" << filePath;
         return info;
     }
     
@@ -68,13 +68,13 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
                 if (bar->high < bar->low || bar->high < bar->open || bar->high < bar->close ||
                     bar->low > bar->open || bar->low > bar->close) {
                     info.invalidRows++;
-                    info.invalidRowDetails.append(QString("Ligne %1: Relation OHLC invalide").arg(lineNumber));
+                    info.invalidRowDetails.append(QString("Line %1: Invalid OHLC relationship").arg(lineNumber));
                 } else {
                     info.isValid = true;
                 }
             } else {
                 info.invalidRows++;
-                info.invalidRowDetails.append(QString("Ligne %1: Format invalide").arg(lineNumber));
+                info.invalidRowDetails.append(QString("Line %1: Invalid format").arg(lineNumber));
             }
         }
     }
@@ -100,7 +100,7 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
             if (bar->high < bar->low || bar->high < bar->open || bar->high < bar->close ||
                 bar->low > bar->open || bar->low > bar->close) {
                 info.invalidRows++;
-                info.invalidRowDetails.append(QString("Ligne %1: Relation OHLC invalide").arg(lineNumber));
+                info.invalidRowDetails.append(QString("Line %1: Invalid OHLC relationship").arg(lineNumber));
                 continue;
             }
             
@@ -129,7 +129,7 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
                 if (seconds < 0) {
                     info.invalidRows++;
                     info.invalidRowDetails.append(
-                        QString("Ligne %1: Horodatage hors séquence (%2 après %3)")
+                        QString("Line %1: Timestamp out of order (%2 after %3)")
                             .arg(lineNumber)
                             .arg(bar->timestamp.toString("yyyy-MM-dd hh:mm:ss"))
                             .arg(prevTimestamp.toString("yyyy-MM-dd hh:mm:ss"))
@@ -162,7 +162,7 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
             info.isValid = true;
         } else {
             info.invalidRows++;
-            info.invalidRowDetails.append(QString("Ligne %1: Format invalide").arg(lineNumber));
+            info.invalidRowDetails.append(QString("Line %1: Invalid format").arg(lineNumber));
         }
     }
     
@@ -537,16 +537,14 @@ std::vector<OHLCBar> DataLoader::resampleData(
         const auto& bar = cleanedData[i];
         
         // Skip bars that are before our current period
-        if (bar.timestamp < currentPeriodStart) {
+        if (bar.timestamp < currentPeriodStart) 
             continue;
-        }
         
         // Check if we need to move to the next period
         while (bar.timestamp >= currentPeriodEnd) {
             // Finalize current period if we have data
-            if (hasData) {
+            if (hasData) 
                 resampled.emplace_back(currentPeriodStart, open, high, low, close, volume);
-            }
             
             // Move to next period
             currentPeriodStart = currentPeriodEnd;
@@ -685,9 +683,9 @@ std::vector<OHLCBar> DataLoader::loadData(
 QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString& period)
 {
     QDateTime startDate = endDate;
-    
-    qDebug() << "Calcul de la date de début pour la période:" << period << "depuis:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
-    
+
+    qDebug() << "Calculating start date for period:" << period << "from:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+
     if (period.endsWith("d")) {
         // Daily periods
         bool ok;

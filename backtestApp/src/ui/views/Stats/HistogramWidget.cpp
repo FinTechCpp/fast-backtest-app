@@ -10,7 +10,7 @@
 #include <numeric>
 #include <algorithm>
 
-// Implémentation de InteractiveChartView
+// Implementation of InteractiveChartView
 InteractiveChartView::InteractiveChartView(QChart* chart, QWidget* parent)
     : QChartView(chart, parent)
     , m_horizontalLine(nullptr)
@@ -28,7 +28,7 @@ void InteractiveChartView::setupCrosshairElements()
         return;
     }
     
-    // Créer les lignes de crosshair
+    // Create crosshair lines
     QPen crosshairPen(Qt::gray, 1, Qt::DashLine);
     
     if (!m_horizontalLine) {
@@ -74,11 +74,11 @@ void InteractiveChartView::mouseMoveEvent(QMouseEvent* event)
     if (chart() && !m_categories.isEmpty()) {
         QPointF chartPos = chart()->mapToValue(event->pos());
         
-        // Discrétiser la position X
+        // Discretize X position
         int barIndex = qRound(chartPos.x());
         barIndex = qMax(0, qMin(barIndex, m_categories.size() - 1));
         
-        // Pour le crosshair, utiliser la position de la souris convertie
+        // For crosshair, use mouse position converted to view coordinates
         QPointF discreteViewPos = chart()->mapToPosition(QPointF(barIndex, chartPos.y()));
         
         showCrosshair(discreteViewPos);
@@ -93,11 +93,11 @@ void InteractiveChartView::mousePressEvent(QMouseEvent* event)
     if (event->button() == Qt::LeftButton && chart() && !m_categories.isEmpty()) {
         QPointF chartPos = chart()->mapToValue(event->pos());
         
-        // Discrétiser la position X pour obtenir l'index de la barre
+        // Discretize X position to get the bar index
         int barIndex = qRound(chartPos.x());
         barIndex = qMax(0, qMin(barIndex, m_categories.size() - 1));
         
-        // Émettre le signal avec l'index de la barre cliquée
+        // Emit the signal with the clicked bar index
         emit barClicked(barIndex);
     }
 }
@@ -114,12 +114,12 @@ void InteractiveChartView::showCrosshair(const QPointF& position)
     
     QRectF plotArea = chart()->plotArea();
     
-    // Ligne horizontale
+    // Horizontal line
     m_horizontalLine->setLine(plotArea.left(), position.y(), 
                              plotArea.right(), position.y());
     m_horizontalLine->setVisible(true);
     
-    // Ligne verticale
+    // Vertical line
     m_verticalLine->setLine(position.x(), plotArea.top(), 
                            position.x(), plotArea.bottom());
     m_verticalLine->setVisible(true);
@@ -176,34 +176,34 @@ QString InteractiveChartView::createTooltipText(const QString& category, double 
         QDateTime referenceDate = m_fullDates[category];
         
         if (category.contains("/") && category.length() <= 10) {
-            periodLabel = "Jour";
+            periodLabel = "Day";
             detailedInfo = referenceDate.toString("dddd dd MMMM yyyy");
         }
         else if (category.startsWith("S") && category.contains("(")) {
-            periodLabel = "Semaine";
+            periodLabel = "Week";
             int weekNumber = referenceDate.date().weekNumber();
             int year = referenceDate.date().year();
             QDate weekStart = referenceDate.date().addDays(-(referenceDate.date().dayOfWeek() - 1));
             QDate weekEnd = weekStart.addDays(6);
-            detailedInfo = QString("S%1 de %2 (%3 au %4)")
+            detailedInfo = QString("W%1 of %2 (%3 to %4)")
                           .arg(weekNumber)
                           .arg(year)
                           .arg(weekStart.toString("dd MMMM"))
                           .arg(weekEnd.toString("dd MMMM"));
         }
         else if (category.contains("/") && category.length() == 7) {
-            periodLabel = "Mois";
+            periodLabel = "Month";
             detailedInfo = referenceDate.toString("MMMM yyyy");
         }
         else if (category.startsWith("T")) {
-            periodLabel = "Trimestre";
+            periodLabel = "Quarter";
             int quarter = (referenceDate.date().month() - 1) / 3 + 1;
-            QString quarterNames[] = {"", "1er trimestre", "2ème trimestre", "3ème trimestre", "4ème trimestre"};
+            QString quarterNames[] = {"", "Q1", "Q2", "Q3", "Q4"};
             detailedInfo = QString("%1 %2").arg(quarterNames[quarter]).arg(referenceDate.date().year());
         }
         else if (category.length() == 4) {
-            periodLabel = "Année";
-            detailedInfo = QString("Année %1").arg(category);
+            periodLabel = "Year";
+            detailedInfo = QString("Year %1").arg(category);
         }
     }
     
@@ -211,9 +211,9 @@ QString InteractiveChartView::createTooltipText(const QString& category, double 
         "<div style='background-color: rgba(255,255,224,240); "
         "border: 1px solid gray; padding: 8px; border-radius: 4px;'>"
         "<b>%1:</b> %2<br/>"
-        "<b>P&L total:</b> <span style='color: %4;'>%3€</span>"
+        "<b>Total P&L:</b> <span style='color: %4;'>%3€</span>"
         "</div>")
-        .arg(periodLabel.isEmpty() ? "Période" : periodLabel)
+        .arg(periodLabel.isEmpty() ? "Period" : periodLabel)
         .arg(detailedInfo)
         .arg(QString::number(value, 'f', 2))
         .arg(value >= 0 ? "green" : "red");
@@ -223,56 +223,56 @@ QString InteractiveChartView::createTooltipText(const QString& category, double 
 
 
 
-// Implémentation de HistogramWidget
+// Implementation of HistogramWidget
 HistogramWidget::HistogramWidget(const QString& title, QWidget* parent)
     : TitledWidget(title, parent)
     , m_stackWidget(new QStackedWidget(this))
-    , m_placeholderLabel(new QLabel("Aucun trade à afficher", this))
+    , m_placeholderLabel(new QLabel("No trades to display", this))
     , m_timeUnitCombo(nullptr)
     , m_chartView(nullptr)
     , m_chart(nullptr)
     , m_currentResults(nullptr)
 {
-    // ComboBox pour sélectionner l'unité de temps
+    // ComboBox to select time unit
     m_timeUnitCombo = new QComboBox(this);
-    m_timeUnitCombo->addItems({"Jour", "Semaine", "Mois", "Trimestre", "Année"});
+    m_timeUnitCombo->addItems({"Day", "Week", "Month", "Quarter", "Year"});
     m_timeUnitCombo->setCurrentIndex(0);
     m_timeUnitCombo->setFixedWidth(100);
     connect(m_timeUnitCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &HistogramWidget::updateHistogram);
     setTitleCompanionWidget(m_timeUnitCombo);
 
-    // Placeholder centré
+    // Centered placeholder
     m_placeholderLabel->setAlignment(Qt::AlignCenter);
     m_placeholderLabel->setStyleSheet("color: gray; font-size: 16px;");
     m_placeholderLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    // Créer le graphique
+    // Create chart
     m_chart = new QChart();
     m_chart->setAnimationOptions(QChart::SeriesAnimations);
     m_chart->legend()->setVisible(false);
     m_chart->setBackgroundVisible(true);
     m_chart->setMargins(QMargins(0, 0, 0, 0));
 
-    // Créer la vue du graphique
+    // Create chart view
     m_chartView = new InteractiveChartView(m_chart, this);
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setBackgroundBrush(Qt::transparent);
     m_chartView->setContentsMargins(0, 0, 0, 0);
 
-    // Ajoute les widgets au stack
+    // Add widgets to stack
     m_stackWidget->addWidget(m_chartView);        // index 0
     m_stackWidget->addWidget(m_placeholderLabel); // index 1
     m_stackWidget->setContentsMargins(1, 1, 1, 1);
 
-    // Utilise le stack comme layout principal
+    // Use stack as main layout
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(1, 1, 1, 1);
     layout->setSpacing(0);
     layout->addWidget(m_stackWidget);
     setLayout(layout);
     
-    // Connecter le signal de clic de barre
+    // Connect bar click signal
     connect(m_chartView, &InteractiveChartView::barClicked, 
             this, &HistogramWidget::onBarClicked);
 }
@@ -280,7 +280,7 @@ HistogramWidget::HistogramWidget(const QString& title, QWidget* parent)
 HistogramWidget::~HistogramWidget()
 {
     if (m_chart) {
-        // Supprimer toutes les séries et axes
+        // Remove all series and axes
         const auto allSeries = m_chart->series();
         for (auto series : allSeries) {
             m_chart->removeSeries(series);
@@ -322,36 +322,36 @@ void HistogramWidget::clear()
 void HistogramWidget::updateHistogram()
 {
     if (!m_currentResults || !m_timeUnitCombo) {
-        m_placeholderLabel->setText("Aucun trade à afficher");
+        m_placeholderLabel->setText("No trades to display");
         m_stackWidget->setCurrentWidget(m_placeholderLabel);
         return;
     }
     
-    // Extraire les trades des résultats
+    // Extract trades from results
     std::vector<TradeInfo> trades = extractTradesFromResults(m_currentResults);
     
     if (trades.empty()) {
-        m_placeholderLabel->setText("Aucun trade à afficher");
+        m_placeholderLabel->setText("No trades to display");
         m_stackWidget->setCurrentWidget(m_placeholderLabel);
         return;
     }
     
-    // Récupérer l'unité de temps sélectionnée
+    // Get selected time unit
     QString timeUnit = m_timeUnitCombo->currentText();
 
-    // Regrouper les données par unité de temps
+    // Group data by time unit
     GroupedData groupedData = groupDataByTimeUnit(trades, timeUnit);
     
     if (groupedData.categories.isEmpty()) {
-        m_placeholderLabel->setText("Impossible de regrouper les données");
+        m_placeholderLabel->setText("Unable to group data");
         m_stackWidget->setCurrentWidget(m_placeholderLabel);
         return;
     }
     
-    // Stocker les données groupées pour pouvoir les utiliser lors des clics
+    // Store grouped data for use on clicks
     m_currentGroupedData = groupedData;
     
-    // Créer le graphique
+    // Create the chart
     m_stackWidget->setCurrentWidget(m_chartView);
     createChart(groupedData);
 }
@@ -386,7 +386,7 @@ HistogramWidget::GroupedData HistogramWidget::groupDataByTimeUnit(
         return result;
     }
     
-    // Map pour stocker les PnL par période
+    // Map to store PnL per period
     QMap<QString, double> periodPnL;
     QMap<QString, QDateTime> periodDates;
     
@@ -397,28 +397,28 @@ HistogramWidget::GroupedData HistogramWidget::groupDataByTimeUnit(
             continue;
         }
         
-        // Générer la clé de période
+        // Generate period key
         QString periodKey = generatePeriodKey(exitTime, timeUnit);
         
         if (periodKey.isEmpty()) {
             continue;
         }
         
-        // Accumuler le PnL
+        // Accumulate PnL
         periodPnL[periodKey] += trade.pnl;
         
-        // Stocker une date représentative
+        // Store a representative date
         if (!periodDates.contains(periodKey)) {
             QDateTime representativeDate = getRepresentativeDate(exitTime, timeUnit);
             periodDates[periodKey] = representativeDate;
             
-            // Calculer la plage de dates pour cette période
+            // Compute the date range for this period
             QPair<QDateTime, QDateTime> range = getPeriodRange(representativeDate, timeUnit);
             result.periodRanges[periodKey] = range;
         }
     }
     
-    // Trier les périodes chronologiquement
+    // Sort periods chronologically
     QList<QPair<QDateTime, QString>> sortedPeriods;
     for (auto it = periodDates.begin(); it != periodDates.end(); ++it) {
         sortedPeriods.append(qMakePair(it.value(), it.key()));
@@ -426,7 +426,7 @@ HistogramWidget::GroupedData HistogramWidget::groupDataByTimeUnit(
     
     std::sort(sortedPeriods.begin(), sortedPeriods.end());
     
-    // Construire les résultats triés
+    // Build sorted results
     for (const auto& pair : sortedPeriods) {
         QString periodKey = pair.second;
         result.categories.append(periodKey);
@@ -443,14 +443,14 @@ void HistogramWidget::createChart(const GroupedData& data)
         return;
     }
 
-    // Désactiver les animations pour les grands ensembles
+    // Disable animations for large datasets
     if (data.categories.size() > 50) {
         m_chart->setAnimationOptions(QChart::NoAnimation);
     } else {
         m_chart->setAnimationOptions(QChart::SeriesAnimations);
     }
     
-    // Nettoyer le graphique
+    // Clear chart
     const auto seriesToRemove = m_chart->series();
     for (auto series : seriesToRemove) {
         m_chart->removeSeries(series);
@@ -461,21 +461,21 @@ void HistogramWidget::createChart(const GroupedData& data)
         m_chart->removeAxis(axis);
     }
     
-    // Créer la série
+    // Create series
     QStackedBarSeries* barSeries = new QStackedBarSeries();
     
-    // Créer les ensembles de barres
-    QBarSet* gainsSet = new QBarSet("Gains");
-    QBarSet* lossesSet = new QBarSet("Pertes");
+    // Create bar sets
+    QBarSet* gainsSet = new QBarSet("Profits");
+    QBarSet* lossesSet = new QBarSet("Losses");
     
-    // Configurer les couleurs
+    // Configure colors
     gainsSet->setColor(QColor(76, 175, 80));
     gainsSet->setBorderColor(QColor(56, 142, 60));
     
     lossesSet->setColor(QColor(244, 67, 54));
     lossesSet->setBorderColor(QColor(198, 40, 40));
     
-    // Séparer les données en gains et pertes
+    // Split data into gains and losses
     for (int i = 0; i < data.values.size(); ++i) {
         double value = data.values[i];
         
@@ -492,14 +492,14 @@ void HistogramWidget::createChart(const GroupedData& data)
     barSeries->append(lossesSet);
     m_chart->addSeries(barSeries);
     
-    // Créer les axes
+    // Create axes
     QBarCategoryAxis* axisX = new QBarCategoryAxis();
 
-    // Limiter le nombre de labels affichés pour garder une bonne lisibilité
-    const int maxLabels = 10;  // Nombre maximum de labels à afficher
+    // Limit number of labels for readability
+    const int maxLabels = 10;  // Maximum number of labels to show
     int categoryCount = data.categories.size();
     
-    // Afficher toutes les catégories si leur nombre est inférieur à maxLabels
+    // Show all categories if their number is less than maxLabels
     // int off = 28;
     // axisX->append(data.categories[0 + off]);
     // axisX->append(data.categories[1 + off]);
@@ -508,7 +508,7 @@ void HistogramWidget::createChart(const GroupedData& data)
 
     axisX->append(data.categories);
 
-    // Toujours garder les labels horizontaux
+    // Keep labels hidden (can be enabled if needed)
     // if (categoryCount > maxLabels) {
     //     axisX->setLabelsAngle(-45.0);
     // }
@@ -518,7 +518,7 @@ void HistogramWidget::createChart(const GroupedData& data)
     
     QValueAxis* axisY = new QValueAxis();
     
-    // Configurer l'échelle Y
+    // Configure Y scale
     if (!data.values.isEmpty()) {
         double minValue = *std::min_element(data.values.begin(), data.values.end());
         double maxValue = *std::max_element(data.values.begin(), data.values.end());
@@ -535,14 +535,14 @@ void HistogramWidget::createChart(const GroupedData& data)
     barSeries->attachAxis(axisX);
     barSeries->attachAxis(axisY);
     
-    // Configurer le titre
+    // Configure title
     QString timeUnit = m_timeUnitCombo->currentText();
     double totalPnL = std::accumulate(data.values.begin(), data.values.end(), 0.0);
     
-    // Configurer l'apparence
+    // Configure appearance
     m_chart->setBackgroundRoundness(0);
     
-    // Configurer le tooltip
+    // Configure tooltip data
     if (m_chartView) {
         m_chartView->setTooltipData(data.categories, data.values, data.fullDates);
     }
@@ -552,22 +552,22 @@ QDateTime HistogramWidget::getRepresentativeDate(const QDateTime& dateTime, cons
 {
     QDate date = dateTime.date();
     
-    if (timeUnit == "Jour") {
+    if (timeUnit == "Day") {
         return QDateTime(date, QTime(0, 0, 0));
     }
-    else if (timeUnit == "Semaine") {
+    else if (timeUnit == "Week") {
         QDate weekStart = date.addDays(-(date.dayOfWeek() - 1));
         return QDateTime(weekStart, QTime(0, 0, 0));
     }
-    else if (timeUnit == "Mois") {
+    else if (timeUnit == "Month") {
         return QDateTime(QDate(date.year(), date.month(), 1), QTime(0, 0, 0));
     }
-    else if (timeUnit == "Trimestre") {
+    else if (timeUnit == "Quarter") {
         int quarter = (date.month() - 1) / 3 + 1;
         int firstMonthOfQuarter = (quarter - 1) * 3 + 1;
         return QDateTime(QDate(date.year(), firstMonthOfQuarter, 1), QTime(0, 0, 0));
     }
-    else if (timeUnit == "Année") {
+    else if (timeUnit == "Year") {
         return QDateTime(QDate(date.year(), 1, 1), QTime(0, 0, 0));
     }
     
@@ -582,36 +582,28 @@ QString HistogramWidget::generatePeriodKey(const QDateTime& dateTime, const QStr
     
     QDate date = dateTime.date();
     
-    if (timeUnit == "Jour") {
-        // Si c'est le premier du mois on affiche le mois en toute lettre
-        // si on est le premier janvier on affiche l'année
-        // sinon on affiche juste le jour
-
-        // if (date == QDate(date.year(), 1, 1)) {
-        //     return date.toString("yyyy");
-        // }
-        // else if (date.day() == 1) {
-        //     return date.toString("MMM");
-        // }
-
+    if (timeUnit == "Day") {
+        // If it's the first of the month show the month name
+        // if it's January 1st show the year
+        // otherwise show the full day
         return date.toString("dd/MM/yyyy");
     }
-    else if (timeUnit == "Semaine") {
+    else if (timeUnit == "Week") {
         QDate weekStart = date.addDays(-(date.dayOfWeek() - 1));
         QDate weekEnd = weekStart.addDays(6);
-        return QString("S%1 (%2 - %3)")
+        return QString("W%1 (%2 - %3)")
                .arg(weekStart.weekNumber())
                .arg(weekStart.toString("dd/MM"))
                .arg(weekEnd.toString("dd/MM"));
     }
-    else if (timeUnit == "Mois") {
+    else if (timeUnit == "Month") {
         return date.toString("MM/yyyy");
     }
-    else if (timeUnit == "Trimestre") {
+    else if (timeUnit == "Quarter") {
         int quarter = (date.month() - 1) / 3 + 1;
-        return QString("T%1 %2").arg(quarter).arg(date.year());
+        return QString("Q%1 %2").arg(quarter).arg(date.year());
     }
-    else if (timeUnit == "Année") {
+    else if (timeUnit == "Year") {
         return date.toString("yyyy");
     }
     
@@ -623,23 +615,23 @@ QPair<QDateTime, QDateTime> HistogramWidget::getPeriodRange(const QDateTime& rep
     QDateTime startDate, endDate;
     QDate date = representativeDate.date();
     
-    if (timeUnit == "Jour") {
+    if (timeUnit == "Day") {
         startDate = QDateTime(date, QTime(0, 0, 0));
         endDate = QDateTime(date, QTime(23, 59, 59));
     }
-    else if (timeUnit == "Semaine") {
+    else if (timeUnit == "Week") {
         QDate weekStart = date.addDays(-(date.dayOfWeek() - 1));
         QDate weekEnd = weekStart.addDays(6);
         startDate = QDateTime(weekStart, QTime(0, 0, 0));
         endDate = QDateTime(weekEnd, QTime(23, 59, 59));
     }
-    else if (timeUnit == "Mois") {
+    else if (timeUnit == "Month") {
         QDate monthStart(date.year(), date.month(), 1);
         QDate monthEnd(date.year(), date.month(), date.daysInMonth());
         startDate = QDateTime(monthStart, QTime(0, 0, 0));
         endDate = QDateTime(monthEnd, QTime(23, 59, 59));
     }
-    else if (timeUnit == "Trimestre") {
+    else if (timeUnit == "Quarter") {
         int quarter = (date.month() - 1) / 3;
         int firstMonth = quarter * 3 + 1;
         QDate quarterStart(date.year(), firstMonth, 1);
@@ -647,7 +639,7 @@ QPair<QDateTime, QDateTime> HistogramWidget::getPeriodRange(const QDateTime& rep
         startDate = QDateTime(quarterStart, QTime(0, 0, 0));
         endDate = QDateTime(quarterEnd, QTime(23, 59, 59));
     }
-    else if (timeUnit == "Année") {
+    else if (timeUnit == "Year") {
         QDate yearStart(date.year(), 1, 1);
         QDate yearEnd(date.year(), 12, 31);
         startDate = QDateTime(yearStart, QTime(0, 0, 0));
@@ -668,11 +660,11 @@ void HistogramWidget::onBarClicked(int barIndex)
     if (m_currentGroupedData.periodRanges.contains(categoryKey)) {
         QPair<QDateTime, QDateTime> range = m_currentGroupedData.periodRanges[categoryKey];
         
-        qDebug() << "Période cliquée:" << categoryKey 
-                 << "Du:" << range.first.toString("dd/MM/yyyy hh:mm:ss")
-                 << "Au:" << range.second.toString("dd/MM/yyyy hh:mm:ss");
+        qDebug() << "Clicked period:" << categoryKey 
+                 << "From:" << range.first.toString("dd/MM/yyyy hh:mm:ss")
+                 << "To:" << range.second.toString("dd/MM/yyyy hh:mm:ss");
         
-        // Émettre le signal avec la période
+        // Emit signal with the period
         emit periodClicked(range.first, range.second);
     }
 }

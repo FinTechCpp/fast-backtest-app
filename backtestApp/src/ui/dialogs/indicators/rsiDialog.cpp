@@ -11,36 +11,36 @@ RSIDialog::~RSIDialog()
 }
 
 void RSIDialog::setupUI() {
-    // Période
+    // Period
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 1000);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
-    // Hauteur
+    // Height
     m_heightSpinBox = new QSpinBox();
     m_heightSpinBox->setRange(50, 300);
     m_heightSpinBox->setSingleStep(10);
     m_formLayout->addRow("Height:", m_heightSpinBox);
     
-    // Niveau de surachat
+    // Overbought Level
     m_overboughtLevelSpinBox = new QSpinBox();
     m_overboughtLevelSpinBox->setRange(50, 100);
     m_formLayout->addRow("Overbought Level:", m_overboughtLevelSpinBox);
     
-    // Niveau de survente
+    // Oversold Level
     m_oversoldLevelSpinBox = new QSpinBox();
     m_oversoldLevelSpinBox->setRange(0, 50);
     m_formLayout->addRow("Oversold Level:", m_oversoldLevelSpinBox);
     
-    // Couleur principale
+    // Line Color
     m_colorButton = new QPushButton();
     m_formLayout->addRow("Line Color:", m_colorButton);
     
-    // Couleur zone supérieure
+    // Upper Zone Color
     m_upperColorButton = new QPushButton();
     m_formLayout->addRow("Upper Zone Color:", m_upperColorButton);
     
-    // Couleur zone inférieure
+    // Lower Zone Color
     m_lowerColorButton = new QPushButton();
     m_formLayout->addRow("Lower Zone Color:", m_lowerColorButton);
 }

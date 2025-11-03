@@ -124,9 +124,8 @@ void BacktestResultMenuManager::updateResultList()
     }
 
     // Clean up internal actions if needed
-    for (auto action : m_resultActions.values()) {
+    for (auto action : m_resultActions.values()) 
         delete action;
-    }
     m_resultActions.clear();
 
     // Note: We no longer use dynamic sub-menus
@@ -145,10 +144,9 @@ void BacktestResultMenuManager::onResultLoaded(const QString& resultName)
 
 void BacktestResultMenuManager::onSaveCurrentResult()
 {
-    if (!m_resultManager || !m_mainWindow) {
+    if (!m_resultManager || !m_mainWindow) 
         return;
-    }
-
+    
     // Create a new result from the current stats
     // This assumes that the App has a method to retrieve the current stats
     // Example: be::Stats currentStats = m_mainWindow->getCurrentStats();
@@ -176,7 +174,6 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         config.stats = currentResults.stats;
 
         // Save the result
-        // m_resultManager->saveBacktestResult(config, m_mainWindow);
         m_resultManager->saveBacktestResult(config, m_mainWindow, SerializationUtils::FileFormat::JSON);
     }
 }
@@ -198,12 +195,12 @@ void BacktestResultMenuManager::onManageResults()
 
     // Create a custom dialog
     QDialog dlg(m_mainWindow);
-    dlg.setWindowTitle(tr("Gérer les résultats"));
+    dlg.setWindowTitle(tr("Manage Backtest Results"));
     dlg.resize(600, 400);
     
     QVBoxLayout* layout = new QVBoxLayout(&dlg);
 
-    QLabel* label = new QLabel(tr("Sélectionnez un résultat:"), &dlg);
+    QLabel* label = new QLabel(tr("Select a result:"), &dlg);
     layout->addWidget(label);
 
     QListWidget* list = new QListWidget(&dlg);
@@ -216,12 +213,12 @@ void BacktestResultMenuManager::onManageResults()
     // Create action buttons
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     
-    QPushButton* loadBtn = new QPushButton(tr("Charger"), &dlg);
-    QPushButton* detailsBtn = new QPushButton(tr("Voir détails"), &dlg);
-    QPushButton* exportBtn = new QPushButton(tr("Exporter"), &dlg);
-    QPushButton* deleteBtn = new QPushButton(tr("Supprimer"), &dlg);
-    QPushButton* cancelBtn = new QPushButton(tr("Annuler"), &dlg);
-    
+    QPushButton* loadBtn = new QPushButton(tr("Load"), &dlg);
+    QPushButton* detailsBtn = new QPushButton(tr("View Details"), &dlg);
+    QPushButton* exportBtn = new QPushButton(tr("Export"), &dlg);
+    QPushButton* deleteBtn = new QPushButton(tr("Delete"), &dlg);
+    QPushButton* cancelBtn = new QPushButton(tr("Cancel"), &dlg);
+
     buttonLayout->addWidget(loadBtn);
     buttonLayout->addWidget(detailsBtn);
     buttonLayout->addWidget(exportBtn);
@@ -266,12 +263,12 @@ void BacktestResultMenuManager::onManageResults()
 
             onResultLoaded(resultName);
             
-            QMessageBox::information(&dlg, tr("Résultat chargé"),
-                                    tr("Le résultat '%1' a été chargé avec succès.").arg(resultName));
+            QMessageBox::information(&dlg, tr("Result Loaded"),
+                                    tr("The result '%1' has been loaded successfully.").arg(resultName));
             dlg.accept();
         } else {
-            QMessageBox::warning(&dlg, tr("Erreur"),
-                                tr("Impossible de charger le résultat '%1'.").arg(resultName));
+            QMessageBox::warning(&dlg, tr("Error"),
+                                tr("Failed to load the result '%1'.").arg(resultName));
         }
     });
     
@@ -284,11 +281,11 @@ void BacktestResultMenuManager::onManageResults()
         BacktestResultConfig config;
         
         if (m_resultManager->loadBacktestResult(resultName, config)) {
-            QString details = tr("Nom: %1\n"
+            QString details = tr("Name: %1\n"
                                "Version: %2\n"
-                               "Date de création: %3\n\n"
-                               "Statistiques:\n"
-                               "- Rendement: %4%\n"
+                               "Created At: %3\n\n"
+                               "Statistics:\n"
+                               "- Return: %4%\n"
                                "- Transactions: %5\n"
                                "- Sharpe: %6\n"
                                "- Drawdown max: %7%")
@@ -300,10 +297,10 @@ void BacktestResultMenuManager::onManageResults()
                              .arg(config.stats.sharpeRatio, 0, 'f', 2)
                              .arg(config.stats.maxDrawdownPct, 0, 'f', 2);
                              
-            QMessageBox::information(&dlg, tr("Détails du résultat"), details);
+            QMessageBox::information(&dlg, tr("Result details"), details);
         } else {
-            QMessageBox::warning(&dlg, tr("Erreur"),
-                                tr("Impossible de charger les détails du résultat '%1'.").arg(resultName));
+            QMessageBox::warning(&dlg, tr("Error"),
+                                tr("Failed to load the details of the result '%1'.").arg(resultName));
         }
     });
 
@@ -336,8 +333,8 @@ void BacktestResultMenuManager::onManageResults()
 
             // If no more results, close the dialog
             if (list->count() == 0) {
-                QMessageBox::information(&dlg, tr("Aucun résultat"),
-                                        tr("Il n'y a plus de résultats disponibles."));
+                QMessageBox::information(&dlg, tr("No Result"),
+                                        tr("There are no more results available."));
                 dlg.reject();
             }
         }

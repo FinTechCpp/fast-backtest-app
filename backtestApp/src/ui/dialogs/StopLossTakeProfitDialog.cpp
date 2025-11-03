@@ -3,7 +3,7 @@
 StopLossTakeProfitDialog::StopLossTakeProfitDialog(QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle("Configuration Stop Loss / Take Profit");
+    setWindowTitle("Stop Loss / Take Profit Configuration");
     setMinimumWidth(600);
     setupUI();
 }
@@ -11,28 +11,28 @@ StopLossTakeProfitDialog::StopLossTakeProfitDialog(QWidget* parent)
 void StopLossTakeProfitDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
-    // Période ATR commune (en haut)
+    // Common ATR period (top)
     QFormLayout* atrLayout = new QFormLayout();
     m_atrPeriodSpin = new QSpinBox(this);
     m_atrPeriodSpin->setRange(1, 1000);
     m_atrPeriodSpin->setValue(14);
     m_atrPeriodSpin->setVisible(false);
-    m_atrLabel = new QLabel("Période ATR:", this);
+    m_atrLabel = new QLabel("ATR Period:", this);
     m_atrLabel->setVisible(false);
     atrLayout->addRow(m_atrLabel, m_atrPeriodSpin);
     mainLayout->addLayout(atrLayout);
     
-    // Groupe Stop Loss
+    // Stop Loss group
     QGroupBox* slGroup = new QGroupBox("Stop Loss", this);
     QFormLayout* slLayout = new QFormLayout();
     
-    // Méthode de calcul pour le Stop Loss
+    // Calculation method for Stop Loss
     m_slMethodCombo = new QComboBox(this);
-    m_slMethodCombo->addItems({"Fixe", "ATR", "Min/Max"});
+    m_slMethodCombo->addItems({"Fixed", "ATR", "Min/Max"});
     m_slMethodCombo->setCurrentIndex(0);
-    slLayout->addRow(new QLabel("Méthode:", this), m_slMethodCombo);
+    slLayout->addRow(new QLabel("Method:", this), m_slMethodCombo);
     
-    // Stop Loss Distance (fixe)
+    // Stop Loss Distance (fixed)
     m_stopLossDistanceSpin = new QDoubleSpinBox(this);
     m_stopLossDistanceSpin->setDecimals(4);
     m_stopLossDistanceSpin->setRange(0, 10000);
@@ -41,24 +41,24 @@ void StopLossTakeProfitDialog::setupUI() {
     m_slDistanceLabel = new QLabel("Distance [pts]:", this);
     slLayout->addRow(m_slDistanceLabel, m_stopLossDistanceSpin);
     
-    // Paramètres ATR - Multiplicateur SL
+    // ATR parameters - SL multiplier
     m_slAtrMultiplierSpin = new QDoubleSpinBox(this);
     m_slAtrMultiplierSpin->setDecimals(2);
     m_slAtrMultiplierSpin->setRange(0.1, 1000.0);
     m_slAtrMultiplierSpin->setSingleStep(0.1);
     m_slAtrMultiplierSpin->setValue(2.0);
     m_slAtrMultiplierSpin->setVisible(false);
-    m_slAtrMultiplierLabel = new QLabel("Multiplicateur ATR SL:", this);
+    m_slAtrMultiplierLabel = new QLabel("ATR Multiplier SL:", this);
     m_slAtrMultiplierLabel->setVisible(false);
     slLayout->addRow(m_slAtrMultiplierLabel, m_slAtrMultiplierSpin);
     
-    // Paramètres Min/Max SL
+    // Min/Max SL parameters
     m_slMinmaxCoefAtr = new QDoubleSpinBox(this);
     m_slMinmaxCoefAtr->setDecimals(2);
     m_slMinmaxCoefAtr->setRange(0, 1000.0);
     m_slMinmaxCoefAtr->setValue(5.0);
     m_slMinmaxCoefAtr->setVisible(false);
-    m_slMinmaxCoefLabel = new QLabel("Coefficient Delta Min/Max:", this);
+    m_slMinmaxCoefLabel = new QLabel("Min/Max Delta Coefficient:", this);
     m_slMinmaxCoefLabel->setVisible(false);
     slLayout->addRow(m_slMinmaxCoefLabel, m_slMinmaxCoefAtr);
     
@@ -66,31 +66,31 @@ void StopLossTakeProfitDialog::setupUI() {
     m_slMinmaxPeriodsSpin->setRange(1, 1000);
     m_slMinmaxPeriodsSpin->setValue(5);
     m_slMinmaxPeriodsSpin->setVisible(false);
-    m_slMinmaxPeriodsLabel = new QLabel("Périodes Min/Max:", this);
+    m_slMinmaxPeriodsLabel = new QLabel("Min/Max Periods:", this);
     m_slMinmaxPeriodsLabel->setVisible(false);
     slLayout->addRow(m_slMinmaxPeriodsLabel, m_slMinmaxPeriodsSpin);
     
-    // SL minimum
+    // Minimum SL
     m_minStopLossDistanceSpin = new QDoubleSpinBox(this);
     m_minStopLossDistanceSpin->setDecimals(4);
     m_minStopLossDistanceSpin->setRange(0, 1000.0);
     m_minStopLossDistanceSpin->setValue(5.0);
-    slLayout->addRow(new QLabel("SL Minimum [pts]:", this), m_minStopLossDistanceSpin);
+    slLayout->addRow(new QLabel("Minimum SL [pts]:", this), m_minStopLossDistanceSpin);
     
     slGroup->setLayout(slLayout);
     mainLayout->addWidget(slGroup);
     
-    // Groupe Take Profit
+    // Take Profit group
     QGroupBox* tpGroup = new QGroupBox("Take Profit", this);
     QFormLayout* tpLayout = new QFormLayout();
     
-    // Méthode de calcul pour le Take Profit
+    // Calculation method for Take Profit
     m_tpMethodCombo = new QComboBox(this);
-    m_tpMethodCombo->addItems({"Fixe", "ATR", "Ratio SL", "SuperTrend", "RL", "Nth Heikin-Ashi"});
+    m_tpMethodCombo->addItems({"Fixed", "ATR", "SL Ratio", "SuperTrend", "RL", "Nth Heikin-Ashi"});
     m_tpMethodCombo->setCurrentIndex(0);
-    tpLayout->addRow(new QLabel("Méthode:", this), m_tpMethodCombo);
+    tpLayout->addRow(new QLabel("Method:", this), m_tpMethodCombo);
     
-    // Take Profit Distance (fixe)
+    // Take Profit Distance (fixed)
     m_takeProfitDistanceSpin = new QDoubleSpinBox(this);
     m_takeProfitDistanceSpin->setDecimals(4);
     m_takeProfitDistanceSpin->setRange(0, 10000);
@@ -99,47 +99,47 @@ void StopLossTakeProfitDialog::setupUI() {
     m_tpDistanceLabel = new QLabel("Distance [pts]:", this);
     tpLayout->addRow(m_tpDistanceLabel, m_takeProfitDistanceSpin);
     
-    // Paramètres ATR - Multiplicateur TP
+    // ATR parameters - TP multiplier
     m_tpAtrMultiplierSpin = new QDoubleSpinBox(this);
     m_tpAtrMultiplierSpin->setDecimals(2);
     m_tpAtrMultiplierSpin->setRange(0, 1000.0);
     m_tpAtrMultiplierSpin->setSingleStep(0.1);
     m_tpAtrMultiplierSpin->setValue(3.0);
     m_tpAtrMultiplierSpin->setVisible(false);
-    m_tpAtrMultiplierLabel = new QLabel("Multiplicateur ATR TP:", this);
+    m_tpAtrMultiplierLabel = new QLabel("ATR Multiplier TP:", this);
     m_tpAtrMultiplierLabel->setVisible(false);
     tpLayout->addRow(m_tpAtrMultiplierLabel, m_tpAtrMultiplierSpin);
     
-    // Paramètres Ratio SL - Multiplicateur TP
+    // SL Ratio parameters - TP multiplier
     m_tpSlRatioSpin = new QDoubleSpinBox(this);
     m_tpSlRatioSpin->setDecimals(2);
     m_tpSlRatioSpin->setRange(0.1, 100.0);
     m_tpSlRatioSpin->setSingleStep(0.1);
     m_tpSlRatioSpin->setValue(2.0);
     m_tpSlRatioSpin->setVisible(false);
-    m_tpSlRatioLabel = new QLabel("Ratio TP/SL:", this);
+    m_tpSlRatioLabel = new QLabel("TP/SL Ratio:", this);
     m_tpSlRatioLabel->setVisible(false);
     tpLayout->addRow(m_tpSlRatioLabel, m_tpSlRatioSpin);
     
-    // Paramètres RL - Périodes de lookback
+    // RL parameters - lookback periods
     m_rlLookbackPeriodsSpin = new QSpinBox(this);
     m_rlLookbackPeriodsSpin->setRange(1, 150);
     m_rlLookbackPeriodsSpin->setVisible(false);
-    m_rlLookbackLabel = new QLabel("Périodes lookback RL:", this);
+    m_rlLookbackLabel = new QLabel("RL Lookback Periods:", this);
     m_rlLookbackLabel->setVisible(false);
     tpLayout->addRow(m_rlLookbackLabel, m_rlLookbackPeriodsSpin);
     
-    // TP minimum
+    // Minimum TP
     m_minTakeProfitDistanceSpin = new QDoubleSpinBox(this);
     m_minTakeProfitDistanceSpin->setDecimals(1);
     m_minTakeProfitDistanceSpin->setRange(0, 1000.0);
     m_minTakeProfitDistanceSpin->setValue(5.0);
-    tpLayout->addRow(new QLabel("TP Minimum [pts]:", this), m_minTakeProfitDistanceSpin);
+    tpLayout->addRow(new QLabel("Minimum TP [pts]:", this), m_minTakeProfitDistanceSpin);
     
     tpGroup->setLayout(tpLayout);
     mainLayout->addWidget(tpGroup);
     
-    // Boutons OK/Cancel
+    // OK/Cancel buttons
     QDialogButtonBox* buttonBox = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         this
@@ -148,7 +148,7 @@ void StopLossTakeProfitDialog::setupUI() {
     connect(buttonBox, &QDialogButtonBox::rejected, this, &QDialog::reject);
     mainLayout->addWidget(buttonBox);
     
-    // Connecter les signaux pour la visibilité dynamique
+    // Connect signals for dynamic visibility
     auto updateSlMethodVisibility = [this](int index) {
         bool isFixed = (index == 0);
         bool isAtr = (index == 1);

@@ -12,7 +12,7 @@
 #include <set>
 
 GeneralParamsPanel::GeneralParamsPanel(QWidget* parent)
-    : ConfigPanel<GeneralParamsConfig>("Paramètres généraux", parent)
+    : ConfigPanel<GeneralParamsConfig>("General Parameters", parent)
 {
     setupUI();
 }
@@ -55,10 +55,10 @@ void GeneralParamsPanel::refreshSymbols()
 
 void GeneralParamsPanel::setupUI()
 {
-    // Utiliser "this" comme conteneur principal au lieu de créer un nouveau QGroupBox
+    // Use "this" as main container instead of creating a new QGroupBox
     QFormLayout* paramsLayout = new QFormLayout(this);
     
-    // Symbole
+    // Symbol
     m_symbolCombo = new QComboBox(this);
     // Dynamically populate symbols from the project's marketData directory.
     // Symbol is defined as the prefix before the first underscore in the filename.
@@ -116,54 +116,54 @@ void GeneralParamsPanel::setupUI()
     }
                    
 
-    paramsLayout->addRow(new QLabel("Symbole:", this), m_symbolCombo);
+    paramsLayout->addRow(new QLabel("Symbol:", this), m_symbolCombo);
     
-    // Binding pour le symbole
+    // Binding for the symbol
     addBinding(PropertyBinderFactory::createStringComboBinding(
         m_symbolCombo,
         &m_config.symbol)
     );
     
-    // Période
+    // Data period
     QComboBox* periodCombo = new QComboBox(this);
     periodCombo->addItems({"1m", "3m", "6m", "1y", "3y", "5y", "10y", "20y"});
     periodCombo->setCurrentIndex(5);
-    paramsLayout->addRow(new QLabel("Période de données:", this), periodCombo);
+    paramsLayout->addRow(new QLabel("Data period:", this), periodCombo);
     
-    // Binding pour la période
+    // Binding for the period
     addBinding(PropertyBinderFactory::createStringComboBinding(
         periodCombo,
         &m_config.period)
     );
     
-    // Intervalle
+    // Interval
     QComboBox* intervalCombo = new QComboBox(this);
     intervalCombo->addItems({
         "10secs", "20secs", "30secs", "1min", "2min", "3min", "5min", 
         "10min", "15min", "30min", "1h", "2h", "4h", "1d"
     });
     intervalCombo->setCurrentIndex(1);
-    paramsLayout->addRow(new QLabel("Intervalle:", this), intervalCombo);
+    paramsLayout->addRow(new QLabel("Interval:", this), intervalCombo);
     
-    // Binding pour l'intervalle
+    // Binding for the interval
     addBinding(PropertyBinderFactory::createStringComboBinding(
         intervalCombo,
         &m_config.interval)
     );
     
-    // Date de fin
+    // End date
     QDateEdit* dateEdit = new QDateEdit(this);
     dateEdit->setDate(QDate(2025, 8, 30));
     dateEdit->setCalendarPopup(true);
-    paramsLayout->addRow(new QLabel("Date de fin:", this), dateEdit);
+    paramsLayout->addRow(new QLabel("End date:", this), dateEdit);
     
-    // Binding pour la date de fin
+    // Binding for the end date
     addBinding(PropertyBinderFactory::createDateTimeBinding(
         dateEdit,
         &m_config.endDate)
     );
     
-    // // Spread (en pour mille)
+    // // Spread (per mille)
     // QDoubleSpinBox* spreadSpin = new QDoubleSpinBox(this);
     // spreadSpin->setDecimals(3);
     // spreadSpin->setRange(0, 10);
@@ -171,7 +171,7 @@ void GeneralParamsPanel::setupUI()
     // spreadSpin->setValue(0.100);
     // paramsLayout->addRow(new QLabel("Spread (‰):", this), spreadSpin);
     
-    // // Binding pour le spread
+    // // Binding for spread
     // addBinding(PropertyBinderFactory::createDoubleBinding(
     //     spreadSpin,
     //     &m_config.spread)
@@ -184,35 +184,35 @@ void GeneralParamsPanel::setupUI()
     // commissionSpin->setValue(0.0);
     // paramsLayout->addRow(new QLabel("Commission (%):", this), commissionSpin);
 
-    // // Binding pour la commission
+    // // Binding for commission
     // addBinding(PropertyBinderFactory::createDoubleBinding(
     //     commissionSpin,
     //     &m_config.commission)
     // );
     
-    // // Cash initial
+    // // Initial cash
     // QDoubleSpinBox* cashSpin = new QDoubleSpinBox(this);
     // cashSpin->setDecimals(2);
     // cashSpin->setRange(1000, 10000000);
     // cashSpin->setSingleStep(1000);
     // cashSpin->setValue(10000);
-    // paramsLayout->addRow(new QLabel("Cash initial:", this), cashSpin);
+    // paramsLayout->addRow(new QLabel("Initial cash:", this), cashSpin);
     
-    // // Binding pour le cash
+    // // Binding for cash
     // addBinding(PropertyBinderFactory::createDoubleBinding(
     //     cashSpin,
     //     &m_config.cash)
     // );
 
-    // // Levier maximal autorisé
+    // // Maximum allowed leverage
     // QDoubleSpinBox* leverageSpin = new QDoubleSpinBox(this);
     // leverageSpin->setDecimals(2);
     // leverageSpin->setRange(1, 10000);
     // leverageSpin->setSingleStep(1);
     // leverageSpin->setValue(20);
-    // paramsLayout->addRow(new QLabel("Levier maximal autorisé :", this), leverageSpin);
+    // paramsLayout->addRow(new QLabel("Maximum allowed leverage:", this), leverageSpin);
     
-    // // Binding pour le levier
+    // // Binding for leverage
     // addBinding(PropertyBinderFactory::createDoubleBinding(
     //     leverageSpin,
     //     &m_config.leverage_limit)
@@ -223,7 +223,7 @@ void GeneralParamsPanel::setupUI()
     // tradeOnCloseCheck->setChecked(false);
     // paramsLayout->addRow(tradeOnCloseCheck);
 
-    // // Binding pour trade on close
+    // // Binding for trade on close
     // addBinding(PropertyBinderFactory::createBoolBinding(
     //     tradeOnCloseCheck,
     //     &m_config.tradeOnClose)
@@ -235,7 +235,7 @@ void GeneralParamsPanel::setupUI()
     // positionModeCombo->setCurrentIndex(0);
     // paramsLayout->addRow(new QLabel("Position Mode:", this), positionModeCombo);
 
-    // // Binding pour le position mode
+    // // Binding for position mode
     // addBinding(PropertyBinderFactory::createEnumComboBinding<be::PositionMode>(
     //     positionModeCombo,
     //     &m_config.positionMode)
@@ -246,22 +246,22 @@ void GeneralParamsPanel::setupUI()
     // finalizeTradesCheck->setChecked(true);
     // paramsLayout->addRow(finalizeTradesCheck);
 
-    // // Binding pour finalize trades
+    // // Binding for finalize trades
     // addBinding(PropertyBinderFactory::createBoolBinding(
     //     finalizeTradesCheck,
     //     &m_config.finalizeTrades)
     // );
 
-    // Bouton de configuration avancée
-    QPushButton* advancedConfigBtn = new QPushButton("Configuration avancée...", this);
+    // Advanced configuration button
+    QPushButton* advancedConfigBtn = new QPushButton("Advanced Configuration...", this);
     paramsLayout->addRow(advancedConfigBtn);
     
-    // Connexion du bouton
+    // Connect button
     connect(advancedConfigBtn, &QPushButton::clicked, this, &GeneralParamsPanel::openAdvancedConfigDialog);
     
-    // Par défaut, on initialise les options avancées
-    m_config.executeStopOnOpen = true; // pire cas par défaut
-    m_config.executeLimitOnLimitPrice = true; // pire cas par défaut
+    // By default, initialize advanced options
+    m_config.executeStopOnOpen = true; // default worst-case
+    m_config.executeLimitOnLimitPrice = true; // default worst-case
 }
 
 
@@ -269,7 +269,7 @@ void GeneralParamsPanel::openAdvancedConfigDialog()
 {
     BacktestEngineDialog dialog(this);
     
-    // Initialiser le dialogue avec les valeurs actuelles
+    // Initialize the dialog with current values
     dialog.setExecuteStopOnOpen(m_config.executeStopOnOpen);
     dialog.setExecuteLimitOnLimitPrice(m_config.executeLimitOnLimitPrice);
     dialog.setTradeOnClose(m_config.tradeOnClose);
@@ -282,9 +282,9 @@ void GeneralParamsPanel::openAdvancedConfigDialog()
     dialog.setSpreadEntryRatio(m_config.spreadEntryRatio);
     dialog.setMinPositionStep(m_config.minPositionStep);
     
-    // Exécuter le dialogue
+    // Execute the dialog
     if (dialog.exec() == QDialog::Accepted) {
-        // Récupérer les nouvelles valeurs
+        // Retrieve new values
         m_config.executeStopOnOpen = dialog.executeStopOnOpen();
         m_config.executeLimitOnLimitPrice = dialog.executeLimitOnLimitPrice();
         m_config.tradeOnClose = dialog.tradeOnClose();

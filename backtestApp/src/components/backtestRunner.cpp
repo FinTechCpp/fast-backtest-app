@@ -33,7 +33,7 @@ BacktestRunner::~BacktestRunner() {
             m_worker->quit();
             m_worker->wait();
         }
-        delete m_worker;  // Suppression explicite
+        delete m_worker;  // Explicit deletion
         m_worker = nullptr;
     }
 }
@@ -41,7 +41,7 @@ BacktestRunner::~BacktestRunner() {
 void BacktestRunner::createUIComponents() {
     m_buttonLayout = new QHBoxLayout();
     
-    m_runButton = new QPushButton("Lancer le backtest");
+    m_runButton = new QPushButton("Run Backtest");
     m_runButton->setMinimumHeight(40);
     m_runButton->setStyleSheet("background-color: #4CAF50;"
                                 "color: white;"
@@ -69,20 +69,20 @@ void BacktestRunner::createUIComponents() {
         "}"
     );
     
-    // Créer le label pour les statistiques d'exécution
+    // Create the label for execution statistics
     m_statsLabel = new QLabel();
     m_statsLabel->setVisible(false);
     m_statsLabel->setMinimumHeight(40);
     m_statsLabel->setStyleSheet("QLabel { background-color: #e8f4fd; color: #2c3e50; border: 1px solid #bdc3c7; border-radius: 4px; padding: 4px; margin: 2px 0px; font-size: 11px; }");
     m_statsLabel->setAlignment(Qt::AlignCenter);
 
-    // Créer un layout vertical pour le bouton et les stats
+    // Create a vertical layout for the button and stats
     QVBoxLayout* buttonStatsLayout = new QVBoxLayout();
     buttonStatsLayout->addWidget(m_runButton);
     buttonStatsLayout->addWidget(m_statsLabel);
-    buttonStatsLayout->setSpacing(4); // Espacement réduit entre le bouton et le label
+    buttonStatsLayout->setSpacing(4); // Reduced spacing between the button and the label
     
-    // Ajouter le layout vertical au layout horizontal principal
+    // Add the vertical layout to the main horizontal layout
     m_buttonLayout->addLayout(buttonStatsLayout);
     m_buttonLayout->addWidget(m_loadingIndicator);
 }
@@ -95,20 +95,20 @@ void BacktestRunner::runBacktest() {
     m_runButton->setEnabled(false);
     m_runButton->setVisible(false);
     m_loadingIndicator->setVisible(true);
-    m_statsLabel->setVisible(false); // Cacher les stats précédentes
+    m_statsLabel->setVisible(false); // Hide previous stats
     m_isRunning = true;
     
     emit backtestStarted();
     
     QApplication::processEvents();
     
-    // Récupérer la configuration depuis l'application
+    // Retrieve the configuration from the application
     if (!m_mainWindow) {
-        showError("Référence à l'application principale non trouvée");
+        showError("Reference to the main application not found");
         return;
     }
     
-    // Créer le worker et lui passer la responsabilité
+    // Create the worker and assign responsibility to it
     m_worker = new BacktestWorker(m_mainWindow, this);
     
     connect(m_worker, &BacktestWorker::finished, this, &BacktestRunner::onBacktestFinished);
@@ -122,14 +122,14 @@ void BacktestRunner::onProgressUpdated(int current, int total, const QString& ch
     int percentage = (current * 100) / total;
     m_loadingIndicator->setValue(percentage);
     
-    // Capturer les dernières statistiques
+    // Capture the latest statistics
     m_lastTotalCandles = total;
     m_lastChrono = chrono;
     
-    // Calculer la vitesse en candles/seconde
+    // Calculate the speed in candles/second
     qint64 elapsedMs = QTime::fromString(chrono, "mm:ss.zz").msecsTo(QTime(0, 0, 0)) * -1;
     double candlesPerSecond = (current * 1000.0) / elapsedMs;
-    // Utiliser des espaces pour séparer visuellement
+    // Use spaces for visual separation
     m_loadingIndicator->setFormat(QString("%1/%2 (%p%)  %3 c/s - %4")
                                 .arg(current)
                                 .arg(total)
@@ -142,15 +142,15 @@ void BacktestRunner::onBacktestFinished(BacktestResults* results) {
     resetUI();
     
     if (!results || results->candles.empty()) {
-        qCritical() << "Pas de résultats de backtest reçus";
-        showError("Aucun résultat de backtest reçu");
+        qCritical() << "No backtest results received";
+        showError("No backtest results received");
         return;
     }
     
-    qInfo() << "Backtest terminé avec succès, transmission des résultats";
-    qDebug() << "Taille des données reçues:" << results->candles.size() << "barres";
+    qInfo() << "Backtest successfully completed, transmitting results";
+    qDebug() << "Size of received data:" << results->candles.size() << "bars";
 
-    // Afficher les statistiques d'exécution
+    // Display execution statistics
     if (!m_lastChrono.isEmpty() && m_lastTotalCandles > 0) {
         qint64 elapsedMs = QTime::fromString(m_lastChrono, "mm:ss.zz").msecsTo(QTime(0, 0, 0)) * -1;
         double avgCandlesPerSecond = (m_lastTotalCandles * 1000.0) / elapsedMs;
@@ -164,13 +164,13 @@ void BacktestRunner::onBacktestFinished(BacktestResults* results) {
         m_statsLabel->setVisible(true);
     }
     
-    // Transférer la propriété des résultats à l'application
+    // Transfer ownership of the results to the application
     if (m_mainWindow) {
-        // Transférer la propriété à l'App
+        // Transfer ownership to the App
         m_mainWindow->setBacktestResults(m_worker->takeResults());
         emit backtestCompleted(m_mainWindow->getBacktestResults());
     } else {
-        qCritical() << "Impossible de transmettre les résultats : fenêtre principale non disponible";
+        qCritical() << "Unable to transmit results: main window not available";
     }
 }
 
@@ -191,7 +191,7 @@ void BacktestRunner::resetUI()
 
 void BacktestRunner::showError(const QString& error)
 {
-    qCritical() << "Erreur backtest:" << error;
+    qCritical() << "Backtest error:" << error;
 }
 
 QHBoxLayout* BacktestRunner::getLayout() const
@@ -199,7 +199,7 @@ QHBoxLayout* BacktestRunner::getLayout() const
     return m_buttonLayout;
 }
 
-// Implémentation de BacktestWorker avec le backtest C++
+// Implementation of BacktestWorker with the C++ backtest
 BacktestWorker::BacktestWorker(App* mainWindow, QObject* parent)
     : QThread(parent)
     , m_mainWindow(mainWindow)
@@ -209,7 +209,7 @@ BacktestWorker::BacktestWorker(App* mainWindow, QObject* parent)
 
 BacktestWorker::~BacktestWorker()
 {
-    // Le destructeur nettoie automatiquement m_results
+    // The destructor automatically cleans up m_results
 }
 
 void BacktestWorker::run()
@@ -219,49 +219,49 @@ void BacktestWorker::run()
 
     GeneralParamsConfig generalConfig = m_mainWindow->getGeneralParamsConfig();
 
-    // Chargement des données avec DataLoader puis conversion en be::Data
+    // Load data with DataLoader and convert to be::Data
     std::vector<OHLCBar> rawData = DataLoader::loadData(generalConfig.symbol, generalConfig.interval, generalConfig.period, generalConfig.endDate);
 
     if (rawData.empty()) {
-        emit error("Aucune donnée chargée");
+        emit error("No data loaded");
         return;
     }
-    // Convertir en format be::Data
+    // Convert to be::Data format
     std::shared_ptr<be::Data> data = convertToBeData(rawData);
         
-    // Récupérer toutes les configurations de stratégies
+    // Retrieve all strategy configurations
     std::vector<StrategyConfig> strategyConfigs = m_mainWindow->getStrategyConfigs();
     
-    // Créer un objet BacktestResults pour stocker les résultats
+    // Create a BacktestResults object to store the results
     m_results = std::make_unique<BacktestResults>();
-    m_results->candles = data->getCandles(); // Stocker les chandeliers
-    m_results->generalConfig = generalConfig; // Stocker la configuration générale du backtest
-    m_results->strategyConfigs = strategyConfigs; // Stocker toutes les configurations de stratégies
+    m_results->candles = data->getCandles(); // Store candles
+    m_results->generalConfig = generalConfig; // Store general backtest configuration
+    m_results->strategyConfigs = strategyConfigs; // Store all strategy configurations
     
-    qDebug() << "Données disponibles:" << data->size() << "barres";
-    qDebug() << "Nombre de stratégies à exécuter:" << strategyConfigs.size();
-    qDebug() << "Démarrage du backtest C++...";
+    qDebug() << "Available data:" << data->size() << "bars";
+    qDebug() << "Number of strategies to execute:" << strategyConfigs.size();
+    qDebug() << "Starting C++ backtest...";
 
     std::cout << generalConfig << std::endl;
     for (const auto& config : strategyConfigs) {
         std::cout << config << std::endl;
     }
 
-    // Supprimer le dossier de logs existant pour partir avec un dossier vierge
+    // Delete the existing log folder to start with a clean folder
     std::string logDirPath = "logs/backtestEngine";
 #ifdef DISABLE_LOGGING
     if (std::filesystem::exists(logDirPath)) {
         std::filesystem::remove_all(logDirPath);
-        qDebug() << "Ancien dossier de logs supprimé";
+        qDebug() << "Old log folder deleted";
     }
 #endif
-    // Recréer le dossier
+    // Recreate the folder
     std::filesystem::create_directories(logDirPath);
-    qDebug() << "Nouveau dossier de logs créé";
+    qDebug() << "New log folder created";
 
-    // Créer le logger
+    // Create the logger
     std::string logFilePath = logDirPath + "/backtestExecution.log";
-    spdlog::drop("BE"); // S'assurer qu'il n'existe pas déjà
+    spdlog::drop("BE"); // Ensure it doesn't already exist
     std::shared_ptr<spdlog::logger> async_file = spdlog::rotating_logger_mt<spdlog::async_factory>(
         "BE",       // Logger name
         logFilePath.c_str(),      // Log file path
@@ -274,12 +274,12 @@ void BacktestWorker::run()
         async_file->log(spdlog::level::debug, msg);
     };
 
-    // Créer un vecteur de strategy factories - une factory par configuration
+    // Create a vector of strategy factories - one factory per configuration
     std::vector<be::StrategyFactory> strategyFactories;
     strategyFactories.reserve(strategyConfigs.size());
     
     for (size_t i = 0; i < strategyConfigs.size(); ++i) {
-        // Capturer la config par valeur pour chaque factory
+        // Capture the config by value for each factory
         StrategyConfig config = strategyConfigs[i];
         
         auto strategyFactory = [this, config, async_file, i](
@@ -289,43 +289,43 @@ void BacktestWorker::run()
             
             GeneralParamsConfig generalParams = m_mainWindow->getGeneralParamsConfig();
             
-            // Calculer le cash alloué à cette stratégie en fonction du pourcentage d'allocation
+            // Calculate the cash allocated to this strategy based on the allocation percentage
             double allocatedCash = generalParams.cash * (config.cash_allocation_percentage / 100.0);
             config.cash = allocatedCash;
             
-            // Si le leverage n'est pas défini, utiliser celui de la configuration générale
+            // If leverage is not defined, use the general configuration leverage
             if (config.leverage_limit <= 0) {
                 config.leverage_limit = generalParams.leverage_limit;
             }
 
-            qDebug() << "Création de la stratégie" << (i + 1) 
-                     << "- Cash alloué:" << allocatedCash 
-                     << "(" << config.cash_allocation_percentage << "% de" << generalParams.cash << ")"
+            qDebug() << "Creating strategy" << (i + 1) 
+                     << "- Allocated cash:" << allocatedCash 
+                     << "(" << config.cash_allocation_percentage << "% of" << generalParams.cash << ")"
                      << "- Leverage:" << config.leverage_limit;
             
-            // Création de la stratégie avec sa configuration spécifique
+            // Create the strategy with its specific configuration
             return std::make_shared<StrategyAdapter>(broker, data, config, logCallback);
         };
         
         strategyFactories.push_back(strategyFactory);
     }
     
-    // Créer et exécuter le backtest
+    // Create and execute the backtest
     be::Backtest backtest(
-        data,                             // Données historiques
-        strategyFactories,                // Vecteur de factories de stratégies
-        generalConfig.cash,               // Capital initial
+        data,                             // Historical data
+        strategyFactories,                // Vector of strategy factories
+        generalConfig.cash,               // Initial capital
         generalConfig.spread,             // Spread
         generalConfig.commission,         // Commission
-        generalConfig.leverage_limit,     // Levier
-        generalConfig.tradeOnClose,       // Trade à la clôture
-        generalConfig.positionMode,       // Mode de position (Hedging ou Netting)
-        generalConfig.executeLimitOnLimitPrice, // Exécuter les ordres limit au prix limite dans un gap
-        generalConfig.executeStopOnOpen,      // Exécuter les ordres stop à l'ouverture dans un gap
-        generalConfig.finalizeTrades,     // Finalisation des trades
-        generalConfig.spreadEntryRatio,   // Ratio du spread pour le prix d'entrée
-        generalConfig.minPositionStep,    // Taille minimale de position (quantification)
-        logCallback                       // Fonction de logging
+        generalConfig.leverage_limit,     // Leverage
+        generalConfig.tradeOnClose,       // Trade on close
+        generalConfig.positionMode,       // Position mode (Hedging or Netting)
+        generalConfig.executeLimitOnLimitPrice, // Execute limit orders at limit price in a gap
+        generalConfig.executeStopOnOpen,      // Execute stop orders at open in a gap
+        generalConfig.finalizeTrades,     // Finalize trades
+        generalConfig.spreadEntryRatio,   // Spread ratio for entry price
+        generalConfig.minPositionStep,    // Minimum position size (quantization)
+        logCallback                       // Logging function
     );
     
     backtest.setProgressCallback([this, &timer](size_t current, size_t total) {
@@ -334,18 +334,18 @@ void BacktestWorker::run()
         emit progressUpdated(static_cast<int>(current), static_cast<int>(total), chrono);
     });
     
-    qDebug() << "Exécution du backtest...";
+    qDebug() << "Executing backtest...";
     m_results->stats = backtest.run();
-    qDebug() << "Backtest terminé avec succès";
+    qDebug() << "Backtest successfully completed";
     
-    // Émettre le signal avec les résultats
+    // Emit the signal with the results
     emit finished(m_results.get());
         
 }
 
 std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLCBar>& bars)
 {
-    // Pré-allouer de la mémoire pour éviter les réallocations
+    // Pre-allocate memory to avoid reallocations
     size_t size = bars.size();
     std::vector<be::Date> dates;
     std::vector<double> open, high, low, close, volume;
@@ -358,7 +358,7 @@ std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLC
     volume.reserve(size);
     
     for (const auto& bar : bars) {
-        // Convertir la date depuis la structure OHLCBar vers be::Date
+        // Convert the date from the OHLCBar structure to be::Date
         QDateTime dt = bar.timestamp;
         be::Date date(
             dt.date().year(),
@@ -401,4 +401,3 @@ std::shared_ptr<be::Data> BacktestWorker::convertToBeData(const std::vector<OHLC
     data->setGapIndices(gapIndices);    
     return data;
 }
-

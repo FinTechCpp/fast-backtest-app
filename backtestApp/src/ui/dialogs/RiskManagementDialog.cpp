@@ -3,7 +3,7 @@
 RiskManagementDialog::RiskManagementDialog(QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle("Configuration de la gestion du risque");
+    setWindowTitle("Risk Management Configuration");
     setMinimumWidth(500);
     setupUI();
 }
@@ -11,20 +11,20 @@ RiskManagementDialog::RiskManagementDialog(QWidget* parent)
 void RiskManagementDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
-    // ===== Groupe Allocation de Capital =====
-    QGroupBox* capitalGroup = new QGroupBox("Allocation de capital", this);
+    // ===== Capital Allocation Group =====
+    QGroupBox* capitalGroup = new QGroupBox("Capital Allocation", this);
     QFormLayout* capitalLayout = new QFormLayout();
     
-    // Allocation de cash en pourcentage
+    // Cash allocation in percentage
     m_cashAllocationPercentageSpin = new QDoubleSpinBox(this);
     m_cashAllocationPercentageSpin->setDecimals(1);
     m_cashAllocationPercentageSpin->setRange(0.1, 100.0);
     m_cashAllocationPercentageSpin->setValue(100.0);
     m_cashAllocationPercentageSpin->setSuffix("%");
-    capitalLayout->addRow(new QLabel("Allocation du cash:", this), m_cashAllocationPercentageSpin);
+    capitalLayout->addRow(new QLabel("Cash allocation:", this), m_cashAllocationPercentageSpin);
     
-    // Leverage personnalisé
-    m_useCustomLeverageCheck = new QCheckBox("Leverage personnalisé", this);
+    // Custom leverage
+    m_useCustomLeverageCheck = new QCheckBox("Custom leverage", this);
     capitalLayout->addRow(m_useCustomLeverageCheck);
     
     m_customLeverageSpin = new QDoubleSpinBox(this);
@@ -32,19 +32,19 @@ void RiskManagementDialog::setupUI() {
     m_customLeverageSpin->setRange(1.0, 500.0);
     m_customLeverageSpin->setValue(1.0);
     m_customLeverageSpin->setEnabled(false);
-    capitalLayout->addRow(new QLabel("Leverage limite:", this), m_customLeverageSpin);
+    capitalLayout->addRow(new QLabel("Leverage limit:", this), m_customLeverageSpin);
     
     createDependencyGroup(m_useCustomLeverageCheck, {m_customLeverageSpin});
     
     capitalGroup->setLayout(capitalLayout);
     mainLayout->addWidget(capitalGroup);
     
-    // ===== Groupe Gestion du Risque =====
-    QGroupBox* riskGroup = new QGroupBox("Gestion du risque", this);
+    // ===== Risk Management Group =====
+    QGroupBox* riskGroup = new QGroupBox("Risk Management", this);
     QFormLayout* riskLayout = new QFormLayout();
     
-    // Taille basée sur le risque
-    m_useRiskBasedSizingCheck = new QCheckBox("Taille basée sur le risque", this);
+    // Risk-based sizing
+    m_useRiskBasedSizingCheck = new QCheckBox("Risk-based sizing", this);
     riskLayout->addRow(m_useRiskBasedSizingCheck);
     
     m_riskPercentageSpin = new QDoubleSpinBox(this);
@@ -53,12 +53,12 @@ void RiskManagementDialog::setupUI() {
     m_riskPercentageSpin->setValue(1.0);
     m_riskPercentageSpin->setSuffix("%");
     m_riskPercentageSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Risque par trade:", this), m_riskPercentageSpin);
+    riskLayout->addRow(new QLabel("Risk per trade:", this), m_riskPercentageSpin);
     
     createDependencyGroup(m_useRiskBasedSizingCheck, {m_riskPercentageSpin});
     
-    // Perte max journalière
-    m_useDailyMaxLossCheck = new QCheckBox("Perte max journalière", this);
+    // Daily max loss
+    m_useDailyMaxLossCheck = new QCheckBox("Daily max loss", this);
     riskLayout->addRow(m_useDailyMaxLossCheck);
     
     m_dailyMaxLossPercentageSpin = new QDoubleSpinBox(this);
@@ -67,12 +67,12 @@ void RiskManagementDialog::setupUI() {
     m_dailyMaxLossPercentageSpin->setValue(2.0);
     m_dailyMaxLossPercentageSpin->setSuffix("%");
     m_dailyMaxLossPercentageSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Perte max journalière:", this), m_dailyMaxLossPercentageSpin);
+    riskLayout->addRow(new QLabel("Daily max loss:", this), m_dailyMaxLossPercentageSpin);
     
     createDependencyGroup(m_useDailyMaxLossCheck, {m_dailyMaxLossPercentageSpin});
     
-    // Profit max journalier
-    m_useDailyMaxProfitCheck = new QCheckBox("Profit max journalier", this);
+    // Daily max profit
+    m_useDailyMaxProfitCheck = new QCheckBox("Daily max profit", this);
     riskLayout->addRow(m_useDailyMaxProfitCheck);
     
     m_dailyMaxProfitPercentageSpin = new QDoubleSpinBox(this);
@@ -81,12 +81,12 @@ void RiskManagementDialog::setupUI() {
     m_dailyMaxProfitPercentageSpin->setValue(5.0);
     m_dailyMaxProfitPercentageSpin->setSuffix("%");
     m_dailyMaxProfitPercentageSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Profit max journalier:", this), m_dailyMaxProfitPercentageSpin);
+    riskLayout->addRow(new QLabel("Daily max profit:", this), m_dailyMaxProfitPercentageSpin);
     
     createDependencyGroup(m_useDailyMaxProfitCheck, {m_dailyMaxProfitPercentageSpin});
     
-    // Drawdown max journalier
-    m_useDailyMaxDrawdownCheck = new QCheckBox("Drawdown max journalier", this);
+    // Daily max drawdown
+    m_useDailyMaxDrawdownCheck = new QCheckBox("Daily max drawdown", this);
     riskLayout->addRow(m_useDailyMaxDrawdownCheck);
     
     m_dailyMaxDrawdownPercentageSpin = new QDoubleSpinBox(this);
@@ -95,12 +95,12 @@ void RiskManagementDialog::setupUI() {
     m_dailyMaxDrawdownPercentageSpin->setValue(3.0);
     m_dailyMaxDrawdownPercentageSpin->setSuffix("%");
     m_dailyMaxDrawdownPercentageSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Drawdown max journalier:", this), m_dailyMaxDrawdownPercentageSpin);
+    riskLayout->addRow(new QLabel("Daily max drawdown:", this), m_dailyMaxDrawdownPercentageSpin);
     
     createDependencyGroup(m_useDailyMaxDrawdownCheck, {m_dailyMaxDrawdownPercentageSpin});
     
     // Break even
-    m_useBreakEvenCheck = new QCheckBox("Activer Break Even", this);
+    m_useBreakEvenCheck = new QCheckBox("Enable Break Even", this);
     riskLayout->addRow(m_useBreakEvenCheck);
     
     m_breakEvenThresholdSpin = new QDoubleSpinBox(this);
@@ -109,7 +109,7 @@ void RiskManagementDialog::setupUI() {
     m_breakEvenThresholdSpin->setSingleStep(0.05);
     m_breakEvenThresholdSpin->setValue(0.7);
     m_breakEvenThresholdSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Seuil Break Even:", this), m_breakEvenThresholdSpin);
+    riskLayout->addRow(new QLabel("Break Even threshold:", this), m_breakEvenThresholdSpin);
     
     m_breakEvenOffsetSpin = new QDoubleSpinBox(this);
     m_breakEvenOffsetSpin->setDecimals(3);
@@ -118,14 +118,14 @@ void RiskManagementDialog::setupUI() {
     m_breakEvenOffsetSpin->setValue(0.0);
     m_breakEvenOffsetSpin->setSuffix("‰");
     m_breakEvenOffsetSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Offset Break Even (‰):", this), m_breakEvenOffsetSpin);
+    riskLayout->addRow(new QLabel("Break Even Offset (‰):", this), m_breakEvenOffsetSpin);
     
     createDependencyGroup(m_useBreakEvenCheck, {m_breakEvenThresholdSpin, m_breakEvenOffsetSpin});
     
     riskGroup->setLayout(riskLayout);
     mainLayout->addWidget(riskGroup);
     
-    // Boutons OK/Cancel
+    // OK/Cancel buttons
     QDialogButtonBox* buttonBox = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         this
@@ -178,7 +178,7 @@ void RiskManagementDialog::updateConfig(StrategyConfig& config) const {
     if (m_useCustomLeverageCheck->isChecked()) {
         config.leverage_limit = m_customLeverageSpin->value();
     } else {
-        config.leverage_limit = 0; // Indiquer que le leverage n'est pas défini
+        config.leverage_limit = 0; // Indicate that leverage is not set
     }
     config.use_risk_based_sizing = m_useRiskBasedSizingCheck->isChecked();
     config.risk_percentage = m_riskPercentageSpin->value();

@@ -4,24 +4,24 @@
 
 FlexiblePieWidget::FlexiblePieWidget(const QString& title, QWidget *parent)
     : TitledWidget(title, parent)
-    , m_startAngle(90 * 16)   // Par défaut, commence en haut (90°)
-    , m_angleSpan(360)         // Par défaut, cercle complet
-    , m_innerRadiusRatio(0.65) // Ratio du rayon intérieur
+    , m_startAngle(90 * 16)   // By default, starts at the top (90°)
+    , m_angleSpan(360)         // By default, full circle
+    , m_innerRadiusRatio(0.65) // Inner radius ratio
     , m_centerText("--")
     , m_textSuffix("")
-    , m_textColor(0, 0, 0)    // Noir par défaut
+    , m_textColor(0, 0, 0)    // Default black
 {
-    // Définir un fond transparent
+    // Set a transparent background
     setAttribute(Qt::WA_TranslucentBackground);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     setMinimumSize(140, 140);
 
-    m_fontSize = 14; // Taille de police par défaut
+    m_fontSize = 14; // Default font size
 }
 
 QSize FlexiblePieWidget::sizeHint() const
 {
-    // Pour un demi-cercle, on suggère un format plus large
+    // For a semi-circle, suggest a wider format
     return QSize(140, 140);
 }
 
@@ -32,7 +32,7 @@ QSize FlexiblePieWidget::minimumSizeHint() const
 
 void FlexiblePieWidget::setStartAngle(int degrees)
 {
-    int newAngle = (degrees % 360) * 16; // Convertir en 1/16e de degrés pour QPainter
+    int newAngle = (degrees % 360) * 16; // Convert to 1/16th of degrees for QPainter
     if (m_startAngle != newAngle) {
         m_startAngle = newAngle;
         update();
@@ -105,39 +105,39 @@ void FlexiblePieWidget::clearSegments()
 
 void FlexiblePieWidget::paintContent(QPainter& painter, const QRect& contentRect)
 {    
-    // Calculer le rayon et le centre du cercle
+    // Calculate the radius and center of the circle
     int size = qMin(contentRect.width(), contentRect.height());
-    int radius = size / 2 - 5; // Marge de 5 pixels
+    int radius = size / 2 - 5; // 5-pixel margin
     
-    // Adapter la géométrie pour les formes partielles
+    // Adjust geometry for partial shapes
     QRectF outerRect = QRectF(
         contentRect.left() + contentRect.width()/2 - radius, 
         contentRect.top() + contentRect.height()/2 - radius, 
         radius * 2, radius * 2
     );
 
-    // Dessiner les segments si disponibles
+    // Draw segments if available
     if (!m_segments.empty()) {
         int currentAngle = m_startAngle;
-        constexpr int offsetAngle = 24; // Espacement entre les segments en 1/16e de degrés
+        constexpr int offsetAngle = 24; // Spacing between segments in 1/16th of degrees
         
-        // Parcourir chaque segment
+        // Iterate through each segment
         for (const auto& segment : m_segments) {
             if (segment.proportion <= 0)
                 continue;
 
-            // Calculer l'angle pour ce segment proportionnellement à l'angle max
+            // Calculate the angle for this segment proportionally to the max angle
             int sweepAngle = -static_cast<int>(segment.proportion * m_angleSpan * 16 - offsetAngle);
             
             painter.setPen(Qt::NoPen);
             painter.setBrush(segment.color);
             painter.drawPie(outerRect, currentAngle, sweepAngle);
             
-            // Mettre à jour l'angle pour le segment suivant
+            // Update the angle for the next segment
             currentAngle += sweepAngle - offsetAngle;
         }
     } else {
-        // Aucun segment, dessiner un cercle gris
+        // No segments, draw a gray circle
         painter.setPen(Qt::NoPen);
         painter.setBrush(QColor(200, 200, 200));
         if (m_angleSpan >= 360) {
@@ -147,7 +147,7 @@ void FlexiblePieWidget::paintContent(QPainter& painter, const QRect& contentRect
         }
     }
     
-    // Dessiner le cercle intérieur
+    // Draw the inner circle
     int innerRadius = radius * m_innerRadiusRatio;
     QRectF innerRect = QRectF(
         contentRect.left() + contentRect.width()/2 - innerRadius,
@@ -158,15 +158,15 @@ void FlexiblePieWidget::paintContent(QPainter& painter, const QRect& contentRect
     painter.setBrush(palette().color(QPalette::Window));
     painter.drawEllipse(innerRect);
     
-    // Définir la police pour le texte central
+    // Set the font for the center text
     QFont font = painter.font();
     font.setWeight(m_fontWeight);
     
-    // Ajuster la taille de police
+    // Adjust the font size
     font.setPointSize(m_fontSize);
     painter.setFont(font);
     
-    // Afficher le texte au centre
+    // Display the text at the center
     painter.setPen(m_textColor);
     QString displayText = m_centerText + m_textSuffix;
     painter.drawText(innerRect, Qt::AlignCenter, displayText);

@@ -15,30 +15,30 @@ ChartWidget::ChartWidget(QWidget* parent)
     , m_rulerStartX(0)
     , m_rulerStartY(0)
 {
-    // Configurer le widget
+    // Configure the widget
     setObjectName("chartWidget");
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
-    // Créer le layout
+    // Create the layout
     QVBoxLayout* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
     
-    // Créer le QChartViewer
+    // Create the QChartViewer
     m_chartViewer = new QChartViewer(this);
     m_chartViewer->setObjectName("chartViewer");
     m_chartViewer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     // m_chartViewer->setUpdateInterval(5);
     
-    // Configurer le viewer
+    // Configure the viewer
     m_chartViewer->setMouseUsage(Chart::MouseUsageScroll);
     m_chartViewer->setMouseTracking(true);
     m_chartViewer->setMouseWheelZoomRatio(1.4);
     m_chartViewer->setScrollDirection(Chart::DirectionHorizontalVertical);
     m_chartViewer->setZoomDirection(Chart::DirectionHorizontalVertical);
-    m_chartViewer->setZoomInWidthLimit(0.00001); // Limite de zoom pour éviter les zooms trop fins
+    m_chartViewer->setZoomInWidthLimit(0.00001); // Zoom limit to avoid excessively fine zooms
     
-    // Connecter les signaux
+    // Connect signals
     connect(m_chartViewer, &QChartViewer::viewPortChanged, this, &ChartWidget::onViewPortChanged);
     connect(m_chartViewer, &QChartViewer::mousePressed, this, &ChartWidget::onMousePressed);
     connect(m_chartViewer, &QChartViewer::mouseMoveChart, this, &ChartWidget::onMouseMoveChart);
@@ -46,10 +46,10 @@ ChartWidget::ChartWidget(QWidget* parent)
     connect(m_chartViewer, &QChartViewer::mouseReleased, this, &ChartWidget::onMouseReleased);
     connect(m_chartViewer, &QChartViewer::mouseDoubleClicked, this, &ChartWidget::onMouseDoubleClicked);
 
-    // Ajouter le viewer au layout
+    // Add the viewer to the layout
     layout->addWidget(m_chartViewer);
     
-    qDebug() << "ChartWidget créé";
+    qDebug() << "ChartWidget created";
 }
 
 ChartWidget::~ChartWidget() {
@@ -58,13 +58,13 @@ ChartWidget::~ChartWidget() {
 
 void ChartWidget::setBacktestResults(const BacktestResults* results) {
     if (!results) {
-        qWarning() << "Tentative de définir des résultats de backtest nuls";
+        qWarning() << "Attempt to set null backtest results";
         return;
     }
 
     m_dataManager.setData(results->candles, results->stats.trades, results->stats.equityCurve);
     
-    // Restaurer les markers si présents
+    // Restore markers if present
     if (!results->userMarkers.empty()) {
         m_dataManager.setMarkers(results->userMarkers);
     }
@@ -75,7 +75,7 @@ void ChartWidget::setBacktestResults(const BacktestResults* results) {
 void ChartWidget::setChartType(chart::ChartType chartType)
 {
     if (m_config.chartType == chartType)
-        return; // Pas de changement, rien à faire
+        return; // No change, nothing to do
 
     m_config.chartType = chartType;
 
@@ -86,7 +86,7 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
     if (!m_dataManager.hasRawData() || !m_chartViewer)
         return false;
 
-    // Déterminer les indices de début et fin basés sur le viewport
+    // Determine start and end indices based on the viewport
     int startIndex = 0;
     int pointsToShow = static_cast<int>(m_dataManager.getTimestamps().size());
     
@@ -98,7 +98,7 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
         startIndex = (int)floor(viewPortLeft * totalPoints);
         int endIndex = (int)ceil((viewPortLeft + viewPortWidth) * totalPoints) - 1;
         
-        // S'assurer que les indices sont dans les limites
+        // Ensure indices are within bounds
         startIndex = std::max(0, std::min(startIndex, totalPoints - 1));
         endIndex = std::max(startIndex, std::min(endIndex, totalPoints - 1));
         
@@ -109,11 +109,11 @@ bool ChartWidget::updateChartDisplay(ViewPortMode mode) {
         DoubleArray(&m_dataManager.getTimestamps()[startIndex], pointsToShow)
     );
 
-    // Si l'agrégation a changé, mettre à jour et émettre le signal
+    // If aggregation changed, update and emit the signal
     if (newAggregation != m_currentAggregation) {
         m_currentAggregation = newAggregation;
         
-        // Émettre le signal pour synchroniser l'autre widget si nécessaire
+        // Emit signal to sync the other widget if needed
         emit aggregationChanged(m_currentAggregation);
     }
 
@@ -132,7 +132,7 @@ void ChartWidget::onViewPortChanged() {
         double left = m_chartViewer->getViewPortLeft();
         double width = m_chartViewer->getViewPortWidth();
         
-        // Émettre le signal de changement de viewport
+        // Emit viewport changed signal
         emit viewportChanged(left, width);
     }
 
@@ -144,29 +144,29 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     if (!m_chartViewer) return;
 
     if (m_verticalMoveMode && (event->buttons() & Qt::LeftButton)) {
-        // Calculer le delta en pixels
+        // Compute delta in pixels
         int deltaY = event->pos().y() - m_lastMousePos.y();
         
         if (deltaY != 0) {
-            // Convertir le delta en pixels en unités de l'échelle Y
+            // Convert pixel delta to Y scale units
             double valueShift = deltaY * m_pixelToValueRatio;
             
-            // Mettre à jour l'offset dans la configuration
-            m_config.yScaleOffset += valueShift; // Inverser le signe pour un déplacement naturel
+            // Update offset in configuration
+            m_config.yScaleOffset += valueShift; // Invert sign for a natural movement
             
-            // Mettre à jour la position de référence
+            // Update reference position
             m_lastMousePos = event->pos();
         }
     }
     
 
 
-    // Récupérer les informations sur le point
+    // Retrieve point information
     // if (m_financeChart->getChart()->getChartCount() > 1) {
     //     XYChart* mainChart = (XYChart*)m_financeChart->getChart(1);
     //     double xValue = mainChart->getNearestXValue(mouseX);
         
-    //     // Trouver l'indice correspondant
+    //     // Find the corresponding index
     //     int dataIndex = -1;
     //     for (int i = 0; i < (int)m_dataManager.getTimestamps().size(); ++i) {
     //         if (fabs(m_dataManager.getTimestamps()[i] - xValue) < 1e-6) {
@@ -176,46 +176,46 @@ void ChartWidget::onMouseMovePlotArea(QMouseEvent* event)
     //     }
 
     //     if (dataIndex >= 0 && dataIndex < (int)m_dataManager.getBacktestData()->getClose().size()) {
-    //         // Émettre un signal avec les informations du point
+    //         // Emit a signal with the point information
     //         emit mouseOverPoint(m_dataManager.getTimestamps()[dataIndex], m_dataManager.getBacktestData()->getClose()[dataIndex]);
     //     }
     // }
     
-    // Mettre à jour l'affichage
+    // Update display
 
 }
 
 void ChartWidget::onMousePressed(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
-        // Si l'outil de dessin de markers est activé
+        // If marker drawing tool is enabled
         if (m_markerDrawingEnabled && m_chartViewer && m_chartViewer->getChart()) {
             int mouseX = m_chartViewer->getChartMouseX();
             int mouseY = m_chartViewer->getChartMouseY();
             
-            // Obtenir le graphique principal
+            // Get the main chart
             MultiChart* m = (MultiChart*)m_chartViewer->getChart();
             if (m && m->getChartCount() > 1) {
                 XYChart* mainChart = (XYChart*)m->getChart(1);
                 PlotArea* plotArea = mainChart->getPlotArea();
                 
-                // Vérifier si le clic est dans la zone de tracé
+                // Check if the click is inside the plot area
                 if (mouseX >= plotArea->getLeftX() && mouseX <= plotArea->getRightX() &&
                     mouseY >= plotArea->getTopY() && mouseY <= plotArea->getBottomY()) {
                     
-                    // Convertir les coordonnées pixel en valeurs du graphique
-                    // mainChart utilise des indices relatifs (0, 1, 2...) sur l'axe X
+                    // Convert pixel coordinates to chart values
+                    // mainChart uses relative indices (0, 1, 2...) on the X axis
                     double relativeIndex = mainChart->getXValue(mouseX);
                     double price = mainChart->getYValue(mouseY);
                     
-                    // Convertir l'indice relatif en indice absolu (comme pour les trades)
+                    // Convert the relative index to absolute index (as for trades)
                     int index = static_cast<int>(std::round(relativeIndex));
                     size_t absoluteBarIndex = m_currentAggregation.startIndex + index;
                     
-                    // Vérifier que l'indice est valide
+                    // Check that the index is valid
                     const auto& data = m_dataManager.getAggregatedData(m_currentAggregation.level);
                     if (absoluteBarIndex < data.timestamps.size()) {
-                        // Ajouter le marker avec l'indice absolu
+                        // Add the marker with the absolute index
                         chart::ChartMarker marker;
                         marker.barIndex = absoluteBarIndex;
                         marker.price = price;
@@ -226,7 +226,7 @@ void ChartWidget::onMousePressed(QMouseEvent* event)
                         qDebug() << "Marker placed: barIndex=" << absoluteBarIndex 
                                 << "price=" << price;
                         
-                        // Mettre à jour l'affichage
+                        // Update display
                         updateChartDisplay(ViewPortMode::USE_CURRENT);
                     }
                 }
@@ -236,20 +236,20 @@ void ChartWidget::onMousePressed(QMouseEvent* event)
         
         m_lastMousePos = event->pos();
 
-        // Au lieu de réinitialiser l'offset, mettre à jour les valeurs de référence
-        // pour qu'elles reflètent l'échelle actuelle avec l'offset appliqué
+        // Instead of resetting the offset, update reference values
+        // so they reflect the current scale with the offset applied
         m_config.yScaleMin = m_renderer.getYAxisMin();
         m_config.yScaleMax = m_renderer.getYAxisMax();
-        m_config.yScaleOffset = 0.0;  // Maintenant on peut réinitialiser car les min/max sont à jour
+        m_config.yScaleOffset = 0.0;  // Now we can reset because min/max are up to date
         
-        // Recalculer le ratio pixel/valeur pour la nouvelle échelle
+        // Recompute the pixel/value ratio for the new scale
         double yRange = m_config.yScaleMax - m_config.yScaleMin;
         double plotAreaHeight = m_renderer.getPlotAreaHeight();
         m_pixelToValueRatio = yRange / plotAreaHeight;
 
         double relativeYPos = (m_lastMousePos.y() - m_config.equityHeight) / plotAreaHeight;
         if (m_lastMousePos.x() > m_config.chartWidth - m_yAxisMarginWidth && relativeYPos >= 0 && relativeYPos <= 1) {
-            m_yAxisClickRelativePos = 1.0 - relativeYPos; // Inverser pour que 0 soit en bas et 1 en haut
+            m_yAxisClickRelativePos = 1.0 - relativeYPos; // Invert so that 0 is bottom and 1 is top
             
             m_config.fixedYScale = true;
 
@@ -271,44 +271,44 @@ void ChartWidget::onMouseDoubleClicked(QMouseEvent *event)
 
 void ChartWidget::onMouseMoveChart(QMouseEvent *event)
 {
-    // Gestion du zoom vertical sur l'axe Y
+    // Manage vertical zoom on the Y axis
     if (m_isYAxisDragging && (event->buttons() & Qt::LeftButton)) {
-        // Calculer le delta en pixels
+        // Compute delta in pixels
         int deltaY = event->pos().y() - m_lastMousePos.y();
         
         if (deltaY != 0) {
-            // Facteur d'amortissement pour contrôler la vitesse du zoom
-            double zoomFactor = 1.0 - (deltaY * 0.005); // Ajuster selon la sensibilité souhaitée
+            // Damping factor to control zoom speed
+            double zoomFactor = 1.0 - (deltaY * 0.005); // Adjust according to desired sensitivity
             
-            // Récupérer l'échelle Y actuelle
+            // Get current Y scale
             double currentMin = m_config.yScaleMin;
             double currentMax = m_config.yScaleMax;
             double currentRange = currentMax - currentMin;
             
-            // Calculer le point pivot (la valeur qui reste fixe pendant le zoom)
+            // Compute pivot point (value that stays fixed during the zoom)
             double pivotValue = currentMin + m_yAxisClickRelativePos * currentRange;
             
-            // Calculer la nouvelle plage en fonction du facteur de zoom
+            // Compute the new range based on the zoom factor
             double newRange = currentRange / zoomFactor;
             
-            // Calculer les nouvelles limites en maintenant le point pivot à sa position relative
+            // Calculate new limits while keeping the pivot position relative
             double newMin = pivotValue - (m_yAxisClickRelativePos * newRange);
             double newMax = pivotValue + ((1.0 - m_yAxisClickRelativePos) * newRange);
             
-            // Mettre à jour l'échelle Y
+            // Update Y scale
             m_config.yScaleMin = newMin;
             m_config.yScaleMax = newMax;
             
-            // Mettre à jour la position de référence
+            // Update reference position
             m_lastMousePos = event->pos();
             
-            // Recalculer le ratio pour le déplacement vertical
+            // Recalculate ratio for vertical movement
             m_pixelToValueRatio = (newMax - newMin) / m_renderer.getPlotAreaHeight();
 
-            // Indiquer que nous sommes en mode déplacement vertical
+            // Indicate that we are in vertical move mode
             m_verticalMoveMode = true;
             
-            // Redessiner le graphique avec la nouvelle configuration
+            // Redraw the chart with the new configuration
             updateChartDisplay(ViewPortMode::USE_CURRENT);
         }
     }
@@ -334,7 +334,7 @@ void ChartWidget::onMouseReleased(QMouseEvent *event)
     if (!m_chartViewer || !m_chartViewer->getChart())
         return;
     
-    // Si le bouton gauche est cliqué et que l'outil règle est activé
+    // If left button clicked and ruler tool is enabled
     if (m_rulerToolEnabled) {
         if (event->button() == Qt::LeftButton) {
             if (!m_rulerFirstPointSelected) {
@@ -354,7 +354,7 @@ void ChartWidget::onMouseReleased(QMouseEvent *event)
 
     if (m_isYAxisDragging) {
         m_isYAxisDragging = false;
-        // Maintenir le curseur en mode vertical puisqu'on reste en mode vertical
+        // Keep the cursor in vertical mode since we remain in vertical mode
         setCursor(Qt::SizeVerCursor);
         event->accept();
     }
@@ -376,13 +376,13 @@ void ChartWidget::setRulerToolEnabled(bool enabled)
 {
     m_rulerToolEnabled = enabled;
     
-    // Si l'outil est désactivé, réinitialiser l'état
+    // If the tool is disabled, reset state
     if (enabled) 
         return;
 
     m_rulerFirstPointSelected = false;
     
-    // Mettre à jour le graphique pour supprimer la règle
+    // Update the chart to remove the ruler
     if (m_chartViewer && m_chartViewer->getChart())
         updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
@@ -391,13 +391,13 @@ void ChartWidget::setMarkerDrawingEnabled(bool enabled, chart::MarkerType type) 
     m_markerDrawingEnabled = enabled;
     m_currentMarkerType = type;
     
-    // Désactiver la règle si l'outil de dessin est activé
+    // Disable the ruler if the drawing tool is activated
     if (enabled) {
         m_rulerToolEnabled = false;
         m_rulerFirstPointSelected = false;
     }
     
-    // Changer le curseur si nécessaire
+    // Change cursor if necessary
     if (m_chartViewer) {
         if (enabled) 
             m_chartViewer->setCursor(Qt::CrossCursor);
@@ -426,26 +426,26 @@ bool ChartWidget::removeIndicator(int id) {
 void ChartWidget::zoomToTrade(const be::TradeData& trade)
 {
     if (!m_dataManager.hasRawData() || !m_chartViewer) {
-        qDebug() << "Impossible de zoomer: données non valides ou viewer non initialisé";
+        qDebug() << "Cannot zoom: invalid data or viewer not initialized";
         return;
     }
     
-    // Convertir les dates du trade en timestamps pour le graphique
+    // Convert trade dates to chart timestamps
     double entryTimestamp = dateToChartTimestamp(trade.entryDate);
     double exitTimestamp = dateToChartTimestamp(trade.exitDate);
     
-    qDebug() << "Zoom sur trade - Entrée timestamp:" << entryTimestamp 
-             << "Sortie timestamp:" << exitTimestamp;
+    qDebug() << "Zoom to trade - Entry timestamp:" << entryTimestamp 
+             << "Exit timestamp:" << exitTimestamp;
     
-    // Obtenir tous les timestamps pour calculer les indices
+    // Get all timestamps to compute indices
     const std::vector<double>& timestamps = m_dataManager.getTimestamps();
     
     if (timestamps.empty()) {
-        qDebug() << "Aucun timestamp disponible pour le zoom";
+        qDebug() << "No timestamps available for zoom";
         return;
     }
     
-    // Trouver les indices correspondant aux timestamps d'entrée et de sortie
+    // Find indices corresponding to entry and exit timestamps
     int entryIndex = -1;
     int exitIndex = -1;
     
@@ -459,50 +459,50 @@ void ChartWidget::zoomToTrade(const be::TradeData& trade)
         }
     }
     
-    // Si nous n'avons pas trouvé l'index d'entrée, prendre le premier
+    // If we didn't find the entry index, use the first
     if (entryIndex == -1) entryIndex = 0;
     
-    // Si nous n'avons pas trouvé l'index de sortie, prendre le dernier
+    // If we didn't find the exit index, use the last
     if (exitIndex == -1) exitIndex = static_cast<int>(timestamps.size()) - 1;
     
-    // Ajouter une marge autour du trade (20% de la durée du trade de chaque côté)
+    // Add margin around the trade (20% of trade duration on each side)
     int tradeDuration = exitIndex - entryIndex;
-    int margin = std::max(10, tradeDuration / 5); // Au minimum 10 points de marge
+    int margin = std::max(10, tradeDuration / 5); // At least 10 points margin
     
     int startIndex = std::max(0, entryIndex - margin);
     int endIndex = std::min(static_cast<int>(timestamps.size()) - 1, exitIndex + margin);
     
-    // Calculer les proportions du viewport
+    // Compute viewport proportions
     double totalPoints = static_cast<double>(timestamps.size());
     double viewPortLeft = static_cast<double>(startIndex) / totalPoints;
     double viewPortWidth = static_cast<double>(endIndex - startIndex + 1) / totalPoints;
     
-    // S'assurer que la largeur du viewport ne dépasse pas 1.0
+    // Ensure viewport width does not exceed 1.0
     if (viewPortLeft + viewPortWidth > 1.0) {
         viewPortWidth = 1.0 - viewPortLeft;
     }
     
-    qDebug() << "Zoom calculé - Index entrée:" << entryIndex 
-             << "Index sortie:" << exitIndex
+    qDebug() << "Computed zoom - Entry index:" << entryIndex 
+             << "Exit index:" << exitIndex
              << "ViewPort left:" << viewPortLeft
              << "ViewPort width:" << viewPortWidth;
     
-    // Appliquer le zoom
+    // Apply the zoom
     m_chartViewer->setViewPortLeft(viewPortLeft);
     m_chartViewer->setViewPortWidth(viewPortWidth);
     
-    // Mettre à jour l'affichage
+    // Update display
     updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
 void ChartWidget::zoomToPeriod(const QDateTime& startDate, const QDateTime& endDate)
 {
     if (!m_dataManager.hasRawData() || !m_chartViewer) {
-        qWarning() << "Impossible de zoomer : pas de données ou pas de viewer";
+        qWarning() << "Cannot zoom: no data or no viewer";
         return;
     }
     
-    // Convertir les QDateTime en timestamps ChartDirector
+    // Convert QDateTime to ChartDirector timestamps
     double startTimestamp = Chart::chartTime(
         startDate.date().year(), startDate.date().month(), startDate.date().day(),
         startDate.time().hour(), startDate.time().minute(), startDate.time().second()
@@ -513,18 +513,18 @@ void ChartWidget::zoomToPeriod(const QDateTime& startDate, const QDateTime& endD
         endDate.time().hour(), endDate.time().minute(), endDate.time().second()
     );
     
-    qDebug() << "Zoom sur période - Début timestamp:" << startTimestamp 
-             << "Fin timestamp:" << endTimestamp;
+    qDebug() << "Zoom to period - Start timestamp:" << startTimestamp 
+             << "End timestamp:" << endTimestamp;
     
-    // Obtenir tous les timestamps pour calculer les indices
+    // Get all timestamps to compute indices
     const std::vector<double>& timestamps = m_dataManager.getTimestamps();
     
     if (timestamps.empty()) {
-        qWarning() << "Pas de timestamps disponibles";
+        qWarning() << "No timestamps available";
         return;
     }
     
-    // Trouver les indices correspondant aux timestamps de début et de fin
+    // Find indices corresponding to start and end timestamps
     int startIndex = -1;
     int endIndex = -1;
     
@@ -537,44 +537,44 @@ void ChartWidget::zoomToPeriod(const QDateTime& startDate, const QDateTime& endD
         }
     }
     
-    // Si nous n'avons pas trouvé l'index de début, prendre le premier
+    // If we didn't find the start index, use the first
     if (startIndex == -1) startIndex = 0;
     
-    // Si nous n'avons pas trouvé l'index de fin, prendre le dernier
+    // If we didn't find the end index, use the last
     if (endIndex == -1) endIndex = static_cast<int>(timestamps.size()) - 1;
     
-    // Ajouter une petite marge autour de la période (5% de chaque côté)
+    // Add a small margin around the period (5% on each side)
     int periodDuration = endIndex - startIndex;
     int margin = std::max(5, periodDuration / 20);
     
     startIndex = std::max(0, startIndex - margin);
     endIndex = std::min(static_cast<int>(timestamps.size()) - 1, endIndex + margin);
     
-    // Calculer les proportions du viewport
+    // Compute viewport proportions
     double totalPoints = static_cast<double>(timestamps.size());
     double viewPortLeft = static_cast<double>(startIndex) / totalPoints;
     double viewPortWidth = static_cast<double>(endIndex - startIndex + 1) / totalPoints;
     
-    // S'assurer que la largeur du viewport ne dépasse pas 1.0
+    // Ensure viewport width does not exceed 1.0
     if (viewPortLeft + viewPortWidth > 1.0) {
         viewPortWidth = 1.0 - viewPortLeft;
     }
     
-    qDebug() << "Zoom calculé - Index début:" << startIndex 
-             << "Index fin:" << endIndex
+    qDebug() << "Computed zoom - Start index:" << startIndex 
+             << "End index:" << endIndex
              << "ViewPort left:" << viewPortLeft
              << "ViewPort width:" << viewPortWidth;
     
-    // Appliquer le zoom
+    // Apply the zoom
     m_chartViewer->setViewPortLeft(viewPortLeft);
     m_chartViewer->setViewPortWidth(viewPortWidth);
     
-    // Mettre à jour l'affichage
+    // Update display
     updateChartDisplay(ViewPortMode::USE_CURRENT);
 }
 
 void ChartWidget::setCurrentAggregation(const chart::AggregationInfo& aggregation) {
-    // Seulement si l'agrégation est différente
+    // Only if aggregation is different
     if (m_currentAggregation.level == aggregation.level && 
         m_currentAggregation.startIndex == aggregation.startIndex && 
         m_currentAggregation.pointCount == aggregation.pointCount) {
@@ -583,12 +583,12 @@ void ChartWidget::setCurrentAggregation(const chart::AggregationInfo& aggregatio
 
     m_currentAggregation = aggregation;
     
-    // Ne pas émettre le signal si on vient du partenaire pour éviter les boucles infinies
+    // Don't emit the signal if coming from the partner to avoid infinite loops
     if (sender() != m_syncPartner) {
         emit aggregationChanged(m_currentAggregation);
     }
     
-    // Mettre à jour le graphique si nécessaire
+    // Update chart if necessary
     if (m_dataManager.hasRawData() && m_chartViewer) {
         m_renderer.createOrUpdateChart(m_chartViewer, m_dataManager, m_config, m_currentAggregation);
     }
@@ -599,8 +599,8 @@ void ChartWidget::setViewport(double left, double width) {
         m_chartViewer->setViewPortLeft(left);
         m_chartViewer->setViewPortWidth(width);
     
-        // Ne pas appeler updateChartDisplay directement pour éviter la boucle
-        // Le signal viewPortChanged du QChartViewer sera émis et connecté à onViewPortChanged
+        // Don't call updateChartDisplay directly to avoid the loop
+        // The QChartViewer viewPortChanged signal will be emitted and connected to onViewPortChanged
         return;
     }
 }
@@ -624,21 +624,21 @@ void ChartWidget::resizeEvent(QResizeEvent* event)
     QWidget::resizeEvent(event);
     QSize newSize = event->size();    
     
-    // Mettre à jour la largeur du graphique en fonction de la largeur du widget
+    // Update chart width according to widget width
     if (newSize.width() > 10) {
         m_config.chartWidth = newSize.width();
         m_config.chartHeight = newSize.height() - 20;
         
-        // Mettre à jour le graphique seulement si nécessaire
+        // Update chart only if necessary
         if (m_dataManager.hasRawData() && m_chartViewer) {
-            // Sauvegarder l'état actuel du viewport
+            // Save current viewport state
             double currentLeft = m_chartViewer->getViewPortLeft();
             double currentWidth = m_chartViewer->getViewPortWidth();
             
-            // Redessiner le graphique
+            // Redraw chart
             updateChartDisplay(ViewPortMode::USE_CURRENT);
             
-            // Restaurer l'état du viewport
+            // Restore viewport state
             m_chartViewer->setViewPortLeft(currentLeft);
             m_chartViewer->setViewPortWidth(currentWidth);
         }

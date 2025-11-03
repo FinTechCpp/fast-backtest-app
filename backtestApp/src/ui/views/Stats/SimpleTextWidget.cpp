@@ -6,32 +6,32 @@
 SimpleTextWidget::SimpleTextWidget(const QString& title, QWidget *parent)
     : TitledWidget(title, parent)
     , m_statText("--")
-    , m_textColor(0, 0, 0)       // Noir par défaut
-    , m_backgroundColor(Qt::transparent)  // Transparent par défaut
+    , m_textColor(0, 0, 0)       // Black by default
+    , m_backgroundColor(Qt::transparent)  // Transparent by default
     , m_suffix("")
     , m_textOffsetX(0)
     , m_textOffsetY(0)
     , m_statTextBis("")
     , m_suffixBis("")
     , m_showBis(false)
-    , m_checkBoxString("Afficher le texte secondaire")
+    , m_checkBoxString("Show secondary text")
 {
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     setMinimumSize(100, 60);
 
     m_fontSize = 15;
 
-    // QCheckBox pour switcher entre m_statText et m_statTextBis
+    // QCheckBox to switch between m_statText and m_statTextBis
     m_checkBox = new QCheckBox(m_checkBoxString);
     m_checkBox->setChecked(m_showBis);
 
-    // Connecter le signal toggled de la QCheckBox à un slot lambda
+    // Connect the QCheckBox toggled signal to a lambda slot
     connect(m_checkBox, &QCheckBox::toggled, this, [this](bool checked) {
         m_showBis = checked;
-        update();  // Redessiner le widget
+        update();  // Redraw the widget
     });
 
-    // Ajouter la QCheckBox comme widget compagnon dans le titre
+    // Add the QCheckBox as a companion widget in the title
     setTitleCompanionWidget(m_checkBox);
     setTitleCompanionWidgetVisible(false);
 }
@@ -39,12 +39,12 @@ SimpleTextWidget::SimpleTextWidget(const QString& title, QWidget *parent)
 QString SimpleTextWidget::formatWithThousandsSeparator(double value, int precision) {
     QString numStr = QString::number(value, 'f', precision);
     
-    // Séparer la partie entière et décimale
+    // Separate integer and fractional parts
     QStringList parts = numStr.split(".");
     QString intPart = parts[0];
     QString fracPart = parts.size() > 1 ? parts[1] : "";
     
-    // Ajouter les séparateurs de milliers à la partie entière
+    // Add thousand separators to the integer part
     QString result;
     int count = 0;
     for (int i = intPart.length() - 1; i >= 0; i--) {
@@ -56,7 +56,7 @@ QString SimpleTextWidget::formatWithThousandsSeparator(double value, int precisi
         count++;
     }
     
-    // Rajouter la partie décimale si elle existe
+    // Reappend the fractional part if it exists
     if (!fracPart.isEmpty()) {
         result.append("." + fracPart);
     }
@@ -68,7 +68,7 @@ void SimpleTextWidget::setStatText(const QString &text)
 {
     if (m_statText != text) {
         m_statText = text;
-        update();  // Déclencher un repaint
+        update();  // Trigger a repaint
     }
 }
 
@@ -78,14 +78,14 @@ void SimpleTextWidget::setCheckBoxBisString(const QString &text)
         m_checkBoxString = text;
         m_checkBox->setText(text);
         setTitleCompanionWidgetVisible(true);
-        update();  // Déclencher un repaint
+        update();  // Trigger a repaint
     }
 }
 
 void SimpleTextWidget::setStatTextBis(const QString &text) {
     if (m_statTextBis != text) {
         m_statTextBis = text;
-        update();  // Déclencher un repaint
+        update();  // Trigger a repaint
     }
 }
 
@@ -93,7 +93,7 @@ void SimpleTextWidget::setStatColors(const QColor &textColor)
 {
     if (m_textColor != textColor) {
         m_textColor = textColor;
-        update();  // Déclencher un repaint
+        update();  // Trigger a repaint
     }
 }
 
@@ -118,7 +118,7 @@ void SimpleTextWidget::setTextOffset(int x, int y)
     if (m_textOffsetX != x || m_textOffsetY != y) {
         m_textOffsetX = x;
         m_textOffsetY = y;
-        update();  // Déclencher un repaint
+        update();  // Trigger a repaint
     }
 }
 
@@ -126,7 +126,7 @@ void SimpleTextWidget::setTextOffsetX(int x)
 {
     if (m_textOffsetX != x) {
         m_textOffsetX = x;
-        update();  // Déclencher un repaint
+        update();  // Trigger a repaint
     }
 }
 
@@ -134,7 +134,7 @@ void SimpleTextWidget::setTextOffsetY(int y)
 {
     if (m_textOffsetY != y) {
         m_textOffsetY = y;
-        update();  // Déclencher un repaint
+        update();  // Trigger a repaint
     }
 }
 
@@ -150,14 +150,14 @@ QSize SimpleTextWidget::minimumSizeHint() const
 
 void SimpleTextWidget::paintContent(QPainter& painter, const QRect& contentRect)
 {    
-    // Dessiner le rectangle de fond
-    QRect rect = contentRect.adjusted(2, 2, -2, -2); // Marge de 2 pixels
+    // Draw the background rectangle
+    QRect rect = contentRect.adjusted(2, 2, -2, -2); // 2-pixel margin
     
-    // Définir la police pour le texte
+    // Set font for the text
     QFont font = painter.font();
     font.setWeight(m_fontWeight);
     
-    // Ajuster la taille de police en fonction de la taille du widget
+    // Adjust font size according to widget size
     if (m_fontSize > 0) {
         font.setPointSize(m_fontSize);
     } else {
@@ -169,7 +169,7 @@ void SimpleTextWidget::paintContent(QPainter& painter, const QRect& contentRect)
     QRect textRect = rect.adjusted(m_textOffsetX, m_textOffsetY, m_textOffsetX, m_textOffsetY);
 
     
-    // Afficher le texte au centre
+    // Display the text centered
     painter.setPen(m_textColor);
     QString displayText;
 

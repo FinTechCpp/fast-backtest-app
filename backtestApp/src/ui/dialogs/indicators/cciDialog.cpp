@@ -11,36 +11,36 @@ CCIDialog::~CCIDialog()
 }
 
 void CCIDialog::setupUI() {
-    // Période
+    // Period
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 1000);
     m_formLayout->addRow("Period:", m_periodSpinBox);
     
-    // Hauteur
+    // Height
     m_heightSpinBox = new QSpinBox();
     m_heightSpinBox->setRange(50, 300);
     m_heightSpinBox->setSingleStep(10);
     m_formLayout->addRow("Height:", m_heightSpinBox);
     
-    // Niveau supérieur (typiquement +100)
+    // Upper level (typically +100)
     m_upperLevelSpinBox = new QSpinBox();
     m_upperLevelSpinBox->setRange(50, 300);
     m_formLayout->addRow("Upper Level:", m_upperLevelSpinBox);
     
-    // Niveau inférieur (typiquement -100)
+    // Lower level (typically -100)
     m_lowerLevelSpinBox = new QSpinBox();
     m_lowerLevelSpinBox->setRange(-300, -50);
     m_formLayout->addRow("Lower Level:", m_lowerLevelSpinBox);
     
-    // Couleur principale
+    // Main color
     m_colorButton = new QPushButton();
     m_formLayout->addRow("Line Color:", m_colorButton);
     
-    // Couleur zone supérieure
+    // Upper zone color
     m_upperColorButton = new QPushButton();
     m_formLayout->addRow("Upper Zone Color:", m_upperColorButton);
     
-    // Couleur zone inférieure
+    // Lower zone color
     m_lowerColorButton = new QPushButton();
     m_formLayout->addRow("Lower Zone Color:", m_lowerColorButton);
 }

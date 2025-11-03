@@ -6,7 +6,7 @@
 #include <cereal/types/polymorphic.hpp>
 #include <cereal/types/memory.hpp>
 
-// Enregistrer tous les types dérivés
+// Save all derived types
 CEREAL_REGISTER_TYPE(indicators::RSIInstance)
 CEREAL_REGISTER_TYPE(indicators::EMAInstance)
 CEREAL_REGISTER_TYPE(indicators::StochasticInstance)
@@ -17,7 +17,7 @@ CEREAL_REGISTER_TYPE(indicators::MACDInstance)
 CEREAL_REGISTER_TYPE(indicators::BBInstance)
 CEREAL_REGISTER_TYPE(indicators::PivotPointsInstance)
 
-// Déclarer les relations hiérarchiques
+// Declare hierarchical relationships
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::RSIInstance)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::EMAInstance)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::StochasticInstance)
@@ -49,7 +49,7 @@ ChartType stringToChartType(const std::string& typeStr) {
     for (const auto& info : chartTypeNames)
         if (typeStr == info.second)
             return info.first;
-    return ChartType::CandleStick; // Valeur par défaut
+    return ChartType::CandleStick; // Default value
 }
 
 const std::array<const char*, static_cast<size_t>(AggregationLevel::Count)> aggregationLevelNames = {

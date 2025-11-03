@@ -17,12 +17,12 @@ void FiltersWidget::setupUI()
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    // Création du groupe contenant les filtres
-    m_groupBox = new QGroupBox(m_groupTitle.isEmpty() ? QStringLiteral("Filtres de stratégie") : m_groupTitle, this);
+    // Create the group containing the filters
+    m_groupBox = new QGroupBox(m_groupTitle.isEmpty() ? QStringLiteral("Strategy Filters") : m_groupTitle, this);
     QVBoxLayout* groupLayout = new QVBoxLayout(m_groupBox);
     
-    // Bouton d'ajout de filtre
-    m_addFilterButton = new QPushButton("+ Ajouter un filtre", this);
+    // Add filter button
+    m_addFilterButton = new QPushButton("+ Add Filter", this);
     m_addFilterButton->setStyleSheet(
         "QPushButton {"
         "  background-color: #4CAF50;"
@@ -39,12 +39,12 @@ void FiltersWidget::setupUI()
     connect(m_addFilterButton, &QPushButton::clicked, this, &FiltersWidget::onAddFilterClicked);
     groupLayout->addWidget(m_addFilterButton);
     
-    // Layout pour contenir les widgets des filtres
+    // Layout to contain the filter widgets
     m_filtersLayout = new QVBoxLayout();
     m_filtersLayout->setSpacing(8);
     groupLayout->addLayout(m_filtersLayout);
     
-    // Ajouter un stretch pour pousser tout vers le haut
+    // Add a stretch to push everything to the top
     groupLayout->addStretch();
     
     m_mainLayout->addWidget(m_groupBox);
@@ -52,17 +52,17 @@ void FiltersWidget::setupUI()
 
 void FiltersWidget::setFilters(const std::vector<filter::GenericFilter>& filters)
 {
-    // Nettoyer les widgets existants
+    // Clear existing widgets
     for (const auto& widgetGroup : m_filterWidgets) {
         m_filtersLayout->removeWidget(widgetGroup.container);
         delete widgetGroup.container;
     }
     m_filterWidgets.clear();
     
-    // Enregistrer les nouveaux filtres
+    // Store new filters
     m_filters = filters;
     
-    // Créer les widgets pour chaque filtre
+    // Create widgets for each filter
     for (size_t i = 0; i < m_filters.size(); ++i) {
         addFilterWidget(i, m_filters[i]);
     }
@@ -75,12 +75,12 @@ const std::vector<filter::GenericFilter>& FiltersWidget::getFilters() const
 
 QWidget* FiltersWidget::createFilterWidget(size_t index, const filter::GenericFilter& filter)
 {
-    // Créer un widget conteneur pour ce filtre
+    // Create a container widget for this filter
     QWidget* filterWidget = new QWidget(this);
     QHBoxLayout* filterLayout = new QHBoxLayout(filterWidget);
     filterLayout->setContentsMargins(0, 0, 0, 0);
     
-    // Checkbox pour activer/désactiver le filtre
+    // Checkbox to enable/disable the filter
     QCheckBox* enableCheckbox = new QCheckBox(filterWidget);
     enableCheckbox->setChecked(filter.enabled);
     connect(enableCheckbox, &QCheckBox::toggled, this, [this, index](bool checked) {
@@ -88,7 +88,7 @@ QWidget* FiltersWidget::createFilterWidget(size_t index, const filter::GenericFi
     });
     filterLayout->addWidget(enableCheckbox);
     
-    // Bouton de modification avec la description du filtre
+    // Edit button with the filter description
     std::string buttonText = filter.description;
     if (filter.offset > 0.0) buttonText += " | offset=" + std::to_string(filter.offset);
     QPushButton* editButton = new QPushButton(QString::fromStdString(buttonText), filterWidget);
@@ -110,9 +110,9 @@ QWidget* FiltersWidget::createFilterWidget(size_t index, const filter::GenericFi
     connect(editButton, &QPushButton::clicked, this, [this, index]() {
         onEditFilterClicked(index);
     });
-    filterLayout->addWidget(editButton, 1); // Stretch factor 1 pour prendre l'espace disponible
+    filterLayout->addWidget(editButton, 1); // Stretch factor 1 to take available space
     
-    // Bouton de suppression
+    // Delete button
     QPushButton* deleteButton = new QPushButton("×", filterWidget);
     deleteButton->setFixedSize(24, 24);
     deleteButton->setStyleSheet(
@@ -133,14 +133,14 @@ QWidget* FiltersWidget::createFilterWidget(size_t index, const filter::GenericFi
     });
     filterLayout->addWidget(deleteButton);
     
-    // Stocker le groupe de widgets
+    // Store the widget group
     FilterWidgetGroup widgetGroup;
     widgetGroup.container = filterWidget;
     widgetGroup.enableCheckbox = enableCheckbox;
     widgetGroup.editButton = editButton;
     widgetGroup.deleteButton = deleteButton;
     
-    // Ajouter le groupe à notre collection
+    // Add the group to our collection
     if (index >= 0 && index < static_cast<int>(m_filterWidgets.size())) {
         m_filterWidgets.insert(m_filterWidgets.begin() + index, widgetGroup);
     } else {
@@ -165,10 +165,10 @@ void FiltersWidget::updateFilterWidget(size_t index)
     const filter::GenericFilter& filter = m_filters[index];
     FilterWidgetGroup& widgetGroup = m_filterWidgets[index];
     
-    // Mettre à jour l'état de la checkbox
+    // Update checkbox state
     widgetGroup.enableCheckbox->setChecked(filter.enabled);
     
-    // Mettre à jour le texte et le style du bouton d'édition
+    // Update the text and style of the edit button
     std::string buttonText = filter.description;
     if (filter.offset > 0.0) buttonText += " | offset=" + std::to_string(filter.offset);
     widgetGroup.editButton->setText(QString::fromStdString(buttonText));
@@ -191,21 +191,21 @@ void FiltersWidget::updateFilterWidget(size_t index)
         widgetGroup.editButton->setStyleSheet(baseStyle);
     }
     
-    // Pas besoin de mettre à jour le bouton de suppression
+    // No need to update the delete button
 }
 
 void FiltersWidget::removeGaps()
 {
-    // Cette fonction réajuste les indices des connexions lambda après une suppression
+    // This function readjusts the indices of lambda connections after a removal
     for (size_t i = 0; i < m_filterWidgets.size(); ++i) {
         FilterWidgetGroup& widgetGroup = m_filterWidgets[i];
         
-        // Déconnecter les anciens signaux
+        // Disconnect old signals
         disconnect(widgetGroup.enableCheckbox, nullptr, this, nullptr);
         disconnect(widgetGroup.editButton, nullptr, this, nullptr);
         disconnect(widgetGroup.deleteButton, nullptr, this, nullptr);
         
-        // Reconnecter avec les nouveaux indices
+        // Reconnect with the new indices
         size_t index = i;
         
         connect(widgetGroup.enableCheckbox, &QCheckBox::toggled, this, 
@@ -223,12 +223,12 @@ void FiltersWidget::onAddFilterClicked()
 {
     FilterEditDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
-        // Récupérer le nouveau filtre et l'ajouter
+        // Retrieve the new filter and add it
         filter::GenericFilter newFilter = dialog.getFilter();
         int newIndex = static_cast<int>(m_filters.size());
         m_filters.push_back(newFilter);
         
-        // Ajouter uniquement le nouveau widget
+        // Add only the new widget
         addFilterWidget(newIndex, newFilter);
         
         emit filtersChanged();
@@ -242,10 +242,10 @@ void FiltersWidget::onEditFilterClicked(size_t index)
     FilterEditDialog dialog(this);
     dialog.setFilter(m_filters[index]);
     if (dialog.exec() == QDialog::Accepted) {
-        // Mettre à jour le filtre
+        // Update the filter
         m_filters[index] = dialog.getFilter();
         
-        // Mettre à jour uniquement le widget concerné
+        // Update only the affected widget
         updateFilterWidget(index);
         
         emit filtersChanged();
@@ -257,16 +257,16 @@ void FiltersWidget::onDeleteFilterClicked(size_t index)
     if (index >= m_filters.size() || index >= m_filterWidgets.size())
         return;
 
-    // Supprimer le filtre des données
+    // Remove the filter from data
     m_filters.erase(m_filters.begin() + index);
     
-    // Supprimer le widget correspondant
+    // Remove the corresponding widget
     QWidget* widget = m_filterWidgets[index].container;
     m_filtersLayout->removeWidget(widget);
     delete widget;
     m_filterWidgets.erase(m_filterWidgets.begin() + index);
     
-    // Réajuster les indices des connexions
+    // Readjust connection indices
     removeGaps();
     
     emit filtersChanged();
@@ -276,11 +276,11 @@ void FiltersWidget::onFilterEnabledChanged(size_t index, bool enabled)
 {
     if (index >= m_filters.size()) return;
 
-    // Mettre à jour l'état du filtre
+    // Update the filter's enabled state
     m_filters[index].enabled = enabled;
     m_filters[index].description = m_filters[index].autoGenerateDescription();
     
-    // Mettre à jour uniquement le style du bouton d'édition
+    // Update only the edit button's style
     updateFilterWidget(index);
     
     emit filtersChanged();

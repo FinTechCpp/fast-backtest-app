@@ -6,15 +6,15 @@
 RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
     : StatsBaseWidget(parent)
 {
-    // Layout principal
+    // Main layout
     m_mainLayout = new QVBoxLayout(this);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
     
-    // Widget de contenu
+    // Content widget
     m_contentWidget = new QWidget();
     m_mainLayout->addWidget(m_contentWidget);
     
-    // Layout des jauges en grille (2 colonnes)
+    // Grid layout for gauges (2 columns)
     QGridLayout* gridLayout = new QGridLayout(m_contentWidget);
     gridLayout->setSpacing(5);
 
@@ -28,159 +28,159 @@ RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
 
     // exposureTimePct
     QVector<RatioGaugeWidget::GaugeZone> exposureTimeZones = {
-        {0.0, 100.0, LightGray, Black, "*"}         // Gris très clair
+        {0.0, 100.0, LightGray, Black, "*"}         // Very light gray
     };
     QString exposureTimeExplanation =
-        "Le <b>pourcentage de temps d'exposition</b> indique la proportion du temps pendant lequel le système de trading est actif sur le marché. "
-        "Un pourcentage plus élevé peut indiquer une meilleure utilisation du capital, mais peut aussi augmenter le risque d'exposition aux fluctuations du marché.";
-    m_exposureTimeGauge = new RatioGaugeWidget(exposureTimeZones, "Temps d'exposition (%)", exposureTimeExplanation);
-    m_exposureTimeGauge->setValueFormat(1, true); // Afficher en pourcentage avec 1 décimale
+        "The <b>exposure time percentage</b> indicates the proportion of time during which the trading system is active in the market. "
+        "A higher percentage can indicate better capital utilization, but can also increase exposure to market fluctuations.";
+    m_exposureTimeGauge = new RatioGaugeWidget(exposureTimeZones, "Exposure Time (%)", exposureTimeExplanation);
+    m_exposureTimeGauge->setValueFormat(1, true); // Display as percentage with 1 decimal
 
     // QVector<RatioGaugeWidget::GaugeZone> sharpeZones = {
-    //     {-1.0, 0.0, QColor(217, 83, 79), QColor(0, 0, 0), "Mauvais"},                          // Rouge
+    //     {-1.0, 0.0, QColor(217, 83, 79), QColor(0, 0, 0), "Mauvais"},                          // Red
     //     { 0.0, 0.5, QColor(240, 173, 78), QColor(0, 0, 0), "Faible"},                         // Orange
-    //     { 0.5, 1.0, QColor(240, 240, 80), QColor(0, 0, 0), "Moyen"},                         // Jaune
-    //     { 1.0, 1.5, QColor(150, 200, 80), QColor(0, 0, 0), "Bon"},                           // Jaune-vert
-    //     { 1.5, 2.5, QColor(92, 184, 92), QColor(0, 0, 0), "Très bon"},                       // Vert
-    //     { 2.5, 4.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                      // Vert foncé
+    //     { 0.5, 1.0, QColor(240, 240, 80), QColor(0, 0, 0), "Moyen"},                         // Yellow
+    //     { 1.0, 1.5, QColor(150, 200, 80), QColor(0, 0, 0), "Bon"},                           // Yellow-green
+    //     { 1.5, 2.5, QColor(92, 184, 92), QColor(0, 0, 0), "Très bon"},                       // Green
+    //     { 2.5, 4.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                      // Dark green
     // };
     QVector<RatioGaugeWidget::GaugeZone> sharpeZones = {
-        {-1.0, 0.0, DarkGray, Red, "Mauvais"},                     // Rouge
-        {0.0, 1.0, MediumGray, Black, "Moyen"},          // Gris clair
-        {1.0, 4.0, LightGray, Green, "Bon"}         // Gris très clair
+        {-1.0, 0.0, DarkGray, Red, "Poor"},                     // Red
+        {0.0, 1.0, MediumGray, Black, "Average"},          // Light gray
+        {1.0, 4.0, LightGray, Green, "Good"}         // Very light gray
     };
     QString sharpeExplanation =
-        "Le <b>ratio de Sharpe</b> mesure le rendement ajusté au risque. "
-        "Il indique combien d'unités de rendement excédentaire vous obtenez pour chaque unité de volatilité. "
-        "Un ratio plus élevé indique un meilleur rendement ajusté au risque.";
-    m_sharpeGauge = new RatioGaugeWidget(sharpeZones, "Ratio de Sharpe", sharpeExplanation);
+        "The <b>Sharpe ratio</b> measures risk-adjusted return. "
+        "It indicates how many units of excess return you get per unit of volatility. "
+        "A higher ratio indicates better risk-adjusted performance.";
+    m_sharpeGauge = new RatioGaugeWidget(sharpeZones, "Sharpe Ratio", sharpeExplanation);
 
 
     QVector<RatioGaugeWidget::GaugeZone> sortinoZones = {
-        {-1.0, 0.0, QColor(217, 83, 79), QColor(0, 0, 0), "Mauvais"},                          // Rouge
-        { 0.0, 0.75, QColor(240, 173, 78), QColor(0, 0, 0), "Faible"},                        // Orange
-        { 0.75, 1.5, QColor(240, 240, 80), QColor(0, 0, 0), "Moyen"},                        // Jaune
-        { 1.5, 2.5, QColor(150, 200, 80), QColor(0, 0, 0), "Bon"},                          // Jaune-vert
-        { 2.5, 3.5, QColor(92, 184, 92), QColor(0, 0, 0), "Très bon"},                      // Vert
-        { 3.5, 4.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                     // Vert foncé
+        {-1.0, 0.0, QColor(217, 83, 79), QColor(0, 0, 0), "Poor"},                          // Red
+        { 0.0, 0.75, QColor(240, 173, 78), QColor(0, 0, 0), "Low"},                        // Orange
+        { 0.75, 1.5, QColor(240, 240, 80), QColor(0, 0, 0), "Average"},                        // Yellow
+        { 1.5, 2.5, QColor(150, 200, 80), QColor(0, 0, 0), "Good"},                          // Yellow-green
+        { 2.5, 3.5, QColor(92, 184, 92), QColor(0, 0, 0), "Very good"},                      // Green
+        { 3.5, 4.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                     // Dark green
     };
     QString sortinoExplanation = 
-        "Le <b>ratio de Sortino</b> est similaire au ratio de Sharpe, mais ne pénalise que la volatilité à la baisse. "
-        "Il mesure le rendement excédentaire par unité de risque de baisse, ce qui est souvent plus pertinent pour les traders. "
-        "Un ratio plus élevé indique une meilleure gestion du risque de perte.";
-    m_sortinoGauge = new RatioGaugeWidget(sortinoZones, "Ratio de Sortino", sortinoExplanation);
+        "The <b>Sortino ratio</b> is similar to the Sharpe ratio but penalizes only downside volatility. "
+        "It measures excess return per unit of downside risk, which is often more relevant for traders. "
+        "A higher ratio indicates better downside risk management.";
+    m_sortinoGauge = new RatioGaugeWidget(sortinoZones, "Sortino Ratio", sortinoExplanation);
 
 
     QVector<RatioGaugeWidget::GaugeZone> calmarZones = {
-        {-1.0, 0.0, QColor(217, 83, 79), QColor(0, 0, 0), "Mauvais"},                          // Rouge
-        { 0.0, 0.5, QColor(240, 173, 78), QColor(0, 0, 0), "Faible"},                         // Orange
-        { 0.5, 1.0, QColor(240, 240, 80), QColor(0, 0, 0), "Moyen"},                         // Jaune
-        { 1.0, 2.0, QColor(150, 200, 80), QColor(0, 0, 0), "Bon"},                           // Jaune-vert
-        { 2.0, 3.0, QColor(92, 184, 92), QColor(0, 0, 0), "Très bon"},                       // Vert
-        { 3.0, 4.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                     // Vert foncé
+        {-1.0, 0.0, QColor(217, 83, 79), QColor(0, 0, 0), "Poor"},                          // Red
+        { 0.0, 0.5, QColor(240, 173, 78), QColor(0, 0, 0), "Low"},                         // Orange
+        { 0.5, 1.0, QColor(240, 240, 80), QColor(0, 0, 0), "Average"},                         // Yellow
+        { 1.0, 2.0, QColor(150, 200, 80), QColor(0, 0, 0), "Good"},                           // Yellow-green
+        { 2.0, 3.0, QColor(92, 184, 92), QColor(0, 0, 0), "Very good"},                       // Green
+        { 3.0, 4.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                     // Dark green
     };
     QString calmarExplanation =
-        "Le <b>ratio de Calmar</b> mesure le rendement annualisé par rapport au drawdown maximal. "
-        "Il indique le rendement obtenu par unité de risque de drawdown. "
-        "Un ratio de Calmar supérieur à 1 signifie que le rendement annualisé est supérieur au drawdown maximal.";
-    m_calmarGauge = new RatioGaugeWidget(calmarZones, "Ratio de Calmar", calmarExplanation);
+        "The <b>Calmar ratio</b> measures annualized return relative to maximum drawdown. "
+        "It indicates the return obtained per unit of drawdown risk. "
+        "A Calmar ratio above 1 means the annualized return exceeds the maximum drawdown.";
+    m_calmarGauge = new RatioGaugeWidget(calmarZones, "Calmar Ratio", calmarExplanation);
 
 
     // QVector<RatioGaugeWidget::GaugeZone> winRateZones = {
-    //     {0.0, 0.3, QColor(217, 83, 79), QColor(0, 0, 0), "Très faible"},                       // Rouge
-    //     {0.3, 0.4, QColor(240, 173, 78), QColor(0, 0, 0), "Faible"},                          // Orange
-    //     {0.4, 0.5, QColor(240, 240, 80), QColor(0, 0, 0), "Moyen"},                          // Jaune
-    //     {0.5, 0.6, QColor(150, 200, 80), QColor(0, 0, 0), "Bon"},                            // Jaune-vert
-    //     {0.6, 0.7, QColor(92, 184, 92), QColor(0, 0, 0), "Très bon"},                        // Vert
-    //     {0.7, 1.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                       // Vert foncé
+    //     {0.0, 0.3, QColor(217, 83, 79), QColor(0, 0, 0), "Very low"},                       // Red
+    //     {0.3, 0.4, QColor(240, 173, 78), QColor(0, 0, 0), "Low"},                          // Orange
+    //     {0.4, 0.5, QColor(240, 240, 80), QColor(0, 0, 0), "Average"},                          // Yellow
+    //     {0.5, 0.6, QColor(150, 200, 80), QColor(0, 0, 0), "Good"},                            // Yellow-green
+    //     {0.6, 0.7, QColor(92, 184, 92), QColor(0, 0, 0), "Very good"},                        // Green
+    //     {0.7, 1.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent"}                       // Dark green
     // };
     QVector<RatioGaugeWidget::GaugeZone> winRateZones = {
-        {0.0, 20, DarkGray, Red, "Non rentable"},                     // Rouge
-        {20, 50, MediumGray, Black, "Rentabilité moyenne"},          // Gris clair
-        {50, 100, LightGray, Green, "Bonne rentabilité"}         // Gris très clair
+        {0.0, 20, DarkGray, Red, "Not profitable"},                     // Red
+        {20, 50, MediumGray, Black, "Average profitability"},          // Light gray
+        {50, 100, LightGray, Green, "Good profitability"}         // Very light gray
     };
 
     QString winRateExplanation =
-        "Le <b>taux de réussite</b> (Win Rate) représente le pourcentage de trades gagnants. "
-        "Bien qu'important, il doit être évalué en conjonction avec le ratio de profit/perte, "
-        "car une stratégie avec un faible taux de réussite peut être profitable si les gains sont importants par rapport aux pertes.";
-    m_winRateGauge = new RatioGaugeWidget(winRateZones, "Taux de Réussite", winRateExplanation);
-    m_winRateGauge->setValueFormat(1, true); // Afficher en pourcentage avec 1 décimale
+        "The <b>win rate</b> represents the percentage of winning trades. "
+        "Although important, it should be evaluated together with the profit/loss ratio, "
+        "because a strategy with a low win rate can be profitable if gains are large compared to losses.";
+    m_winRateGauge = new RatioGaugeWidget(winRateZones, "Win Rate", winRateExplanation);
+    m_winRateGauge->setValueFormat(1, true); // Display as percentage with 1 decimal
 
 
     // QVector<RatioGaugeWidget::GaugeZone> profitFactorZones = {
-    //     {0.0, 1.0, QColor(217, 83, 79), QColor(0, 0, 0), "Non rentable"},                     // Rouge
-    //     {1.0, 1.25, QColor(240, 173, 78), QColor(0, 0, 0), "Rentabilité marginale"},          // Orange
-    //     {1.25, 1.5, QColor(240, 240, 80), QColor(0, 0, 0), "Rentabilité acceptable"},        // Jaune
-    //     {1.5, 2.0, QColor(150, 200, 80), QColor(0, 0, 0), "Bonne rentabilité"},              // Jaune-vert
-    //     {2.0, 3.0, QColor(92, 184, 92), QColor(0, 0, 0), "Très bonne rentabilité"},         // Vert
-    //     {3.0, 4.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellente rentabilité"}         // Vert foncé
+    //     {0.0, 1.0, QColor(217, 83, 79), QColor(0, 0, 0), "Not profitable"},                     // Red
+    //     {1.0, 1.25, QColor(240, 173, 78), QColor(0, 0, 0), "Marginal profitability"},          // Orange
+    //     {1.25, 1.5, QColor(240, 240, 80), QColor(0, 0, 0), "Acceptable profitability"},        // Yellow
+    //     {1.5, 2.0, QColor(150, 200, 80), QColor(0, 0, 0), "Good profitability"},              // Yellow-green
+    //     {2.0, 3.0, QColor(92, 184, 92), QColor(0, 0, 0), "Very good profitability"},         // Green
+    //     {3.0, 4.0, QColor(32, 150, 80), QColor(0, 0, 0), "Excellent profitability"}         // Dark green
     // };
     QVector<RatioGaugeWidget::GaugeZone> profitFactorZones = {
-        {0.0, 1.0, DarkGray, Red, "Non rentable"},                // Gris foncé
-        {1.0, 1.5, MediumGray, Black, "Rentabilité moyenne"},      // Gris clair
-        {1.5, 4.0, LightGray, Green, "Bonne rentabilité"}         // Gris très clair
+        {0.0, 1.0, DarkGray, Red, "Not profitable"},                // Dark gray
+        {1.0, 1.5, MediumGray, Black, "Average profitability"},      // Light gray
+        {1.5, 4.0, LightGray, Green, "Good profitability"}         // Very light gray
     };
     QString profitFactorExplanation = 
-        "Le <b>facteur de profit</b> est le ratio entre les profits bruts et les pertes brutes. "
-        "Un facteur de profit supérieur à 1 indique une stratégie rentable. "
-        "Plus ce ratio est élevé, plus la stratégie est robuste face aux fluctuations du marché.";
-    m_profitFactorGauge = new RatioGaugeWidget(profitFactorZones, "Facteur de Profit", profitFactorExplanation);
-    // m_profitFactorGauge->setReferenceValue(1.0); // Ligne de référence à 1.0
+        "The <b>profit factor</b> is the ratio between gross profits and gross losses. "
+        "A profit factor greater than 1 indicates a profitable strategy. "
+        "The higher this ratio, the more robust the strategy is to market fluctuations.";
+    m_profitFactorGauge = new RatioGaugeWidget(profitFactorZones, "Profit Factor", profitFactorExplanation);
+    // m_profitFactorGauge->setReferenceValue(1.0); // Reference line at 1.0
 
 
     QVector<RatioGaugeWidget::GaugeZone> kellyZones = {
-        {-1.0, 0.0, QColor(217, 83, 79), QColor(0, 0, 0), "Non viable"},                       // Rouge
-        { 0.0, 0.05, QColor(240, 173, 78), QColor(0, 0, 0), "Taille minimale"},                // Orange
-        { 0.05, 0.15, QColor(240, 240, 80), QColor(0, 0, 0), "Taille conservative"},            // Jaune
-        { 0.15, 0.25, QColor(150, 200, 80), QColor(0, 0, 0), "Taille optimale"},                // Jaune-vert
-        { 0.25, 0.4, QColor(92, 184, 92), QColor(0, 0, 0), "Taille agressive"},               // Vert
-        { 0.4, 1.0, QColor(32, 150, 80), QColor(0, 0, 0), "Très agressive"}                  // Vert foncé
+        {-1.0, 0.0, QColor(217, 83, 79), QColor(0, 0, 0), "Not viable"},                       // Red
+        { 0.0, 0.05, QColor(240, 173, 78), QColor(0, 0, 0), "Minimal size"},                // Orange
+        { 0.05, 0.15, QColor(240, 240, 80), QColor(0, 0, 0), "Conservative size"},            // Yellow
+        { 0.15, 0.25, QColor(150, 200, 80), QColor(0, 0, 0), "Optimal size"},                // Yellow-green
+        { 0.25, 0.4, QColor(92, 184, 92), QColor(0, 0, 0), "Aggressive size"},               // Green
+        { 0.4, 1.0, QColor(32, 150, 80), QColor(0, 0, 0), "Very aggressive"}                  // Dark green
     };
     QString kellyExplanation =
-        "Le <b>critère de Kelly</b> détermine la taille optimale des positions pour maximiser la croissance du capital à long terme. "
-        "En pratique, de nombreux traders utilisent une fraction de Kelly (25-50%) pour réduire la volatilité. "
-        "Un critère négatif indique qu'on ne devrait pas trader cette stratégie.";
-    m_kellyGauge = new RatioGaugeWidget(kellyZones, "Critère de Kelly", kellyExplanation);
+        "The <b>Kelly criterion</b> determines the optimal position size to maximize long-term capital growth. "
+        "In practice, many traders use a fraction of Kelly (25-50%) to reduce volatility. "
+        "A negative criterion indicates the strategy should not be traded.";
+    m_kellyGauge = new RatioGaugeWidget(kellyZones, "Kelly Criterion", kellyExplanation);
 
 
     // QVector<RatioGaugeWidget::GaugeZone> drawdownZones = {
-    //     {100.0, 50.0, QColor(217, 83, 79), QColor(0, 0, 0), "Critique"},                      // Rouge
-    //     {50.0, 30.0, QColor(240, 173, 78), QColor(0, 0, 0), "Sévère"},                       // Orange
-    //     {30.0, 20.0, QColor(240, 240, 80), QColor(0, 0, 0), "Important"},                    // Jaune
-    //     {20.0, 10.0, QColor(150, 200, 80), QColor(0, 0, 0), "Modéré"},                       // Jaune-vert
-    //     {10.0, 5.0, QColor(92, 184, 92), QColor(0, 0, 0), "Faible"},                        // Vert
-    //     {5.0, 0.0, QColor(32, 150, 80), QColor(0, 0, 0), "Très faible"}                   // Vert foncé
+    //     {100.0, 50.0, QColor(217, 83, 79), QColor(0, 0, 0), "Critical"},                      // Red
+    //     {50.0, 30.0, QColor(240, 173, 78), QColor(0, 0, 0), "Severe"},                       // Orange
+    //     {30.0, 20.0, QColor(240, 240, 80), QColor(0, 0, 0), "Significant"},                    // Yellow
+    //     {20.0, 10.0, QColor(150, 200, 80), QColor(0, 0, 0), "Moderate"},                       // Yellow-green
+    //     {10.0, 5.0, QColor(92, 184, 92), QColor(0, 0, 0), "Low"},                        // Green
+    //     {5.0, 0.0, QColor(32, 150, 80), QColor(0, 0, 0), "Very low"}                   // Dark green
     // };
     QVector<RatioGaugeWidget::GaugeZone> drawdownZones = {
-        {100.0, 40.0, DarkGray, Red, "Critique"},                // Gris foncé
-        {40.0, 20.0, MediumGray, Black, "Important"},      // Gris clair
-        {20.0, 0.0, LightGray, Green, "Faible"}         // Gris très clair
+        {100.0, 40.0, DarkGray, Red, "Critical"},                // Dark gray
+        {40.0, 20.0, MediumGray, Black, "Significant"},      // Light gray
+        {20.0, 0.0, LightGray, Green, "Low"}         // Very light gray
     };
     QString drawdownExplanation = 
-        "Le <b>drawdown maximal</b> mesure la perte maximale subie entre un pic et un creux de l'équité. "
-        "C'est un indicateur clé de risque qui montre la pire perte qu'un trader aurait pu subir. "
-        "Un drawdown plus faible est préférable et indique une meilleure gestion du risque.";
-    m_maxDrawdownGauge = new RatioGaugeWidget(drawdownZones, "Drawdown Max", drawdownExplanation);
-    m_maxDrawdownGauge->setValueFormat(1, true); // Afficher en pourcentage avec 1 décimale
+        "The <b>maximum drawdown</b> measures the largest loss suffered between a peak and a trough of equity. "
+        "It's a key risk indicator that shows the worst loss a trader could have experienced. "
+        "A lower drawdown is preferable and indicates better risk management.";
+    m_maxDrawdownGauge = new RatioGaugeWidget(drawdownZones, "Max Drawdown", drawdownExplanation);
+    m_maxDrawdownGauge->setValueFormat(1, true); // Display as percentage with 1 decimal
     m_maxDrawdownGauge->setFillDirection(FillDirection::RightToLeft);
 
 
     QVector<RatioGaugeWidget::GaugeZone> sqnZones = {
-        {-10.0, 1.6, QColor(217, 83, 79), QColor(0, 0, 0), "Médiocre"},                        // Rouge
-        { 1.6, 2.0, QColor(240, 173, 78), QColor(0, 0, 0), "Moyen"},                          // Orange
-        { 2.0, 2.5, QColor(240, 240, 80), QColor(0, 0, 0), "Bon"},                           // Jaune
-        { 2.5, 3.0, QColor(150, 200, 80), QColor(0, 0, 0), "Très bon"},                      // Jaune-vert
-        { 3.0, 5.0, QColor(92, 184, 92), QColor(0, 0, 0), "Excellent"},                      // Vert
-        { 5.0, 10.0, QColor(32, 150, 80), QColor(0, 0, 0), "Extraordinaire"}                 // Vert foncé
+        {-10.0, 1.6, QColor(217, 83, 79), QColor(0, 0, 0), "Poor"},                        // Red
+        { 1.6, 2.0, QColor(240, 173, 78), QColor(0, 0, 0), "Average"},                          // Orange
+        { 2.0, 2.5, QColor(240, 240, 80), QColor(0, 0, 0), "Good"},                           // Yellow
+        { 2.5, 3.0, QColor(150, 200, 80), QColor(0, 0, 0), "Very good"},                      // Yellow-green
+        { 3.0, 5.0, QColor(92, 184, 92), QColor(0, 0, 0), "Excellent"},                      // Green
+        { 5.0, 10.0, QColor(32, 150, 80), QColor(0, 0, 0), "Extraordinary"}                 // Dark green
     };
     QString sqnExplanation =
-        "Le <b>System Quality Number (SQN)</b> mesure la qualité globale d'un système de trading. "
-        "Il prend en compte le rendement moyen par trade, l'écart-type des rendements et le nombre de trades. "
-        "Un SQN plus élevé indique un système plus robuste et plus fiable.";
+        "The <b>System Quality Number (SQN)</b> measures the overall quality of a trading system. "
+        "It accounts for average return per trade, the standard deviation of returns, and the number of trades. "
+        "A higher SQN indicates a more robust and reliable system.";
     m_sqnGauge = new RatioGaugeWidget(sqnZones, "SQN", sqnExplanation);
 
-    // Ajouter les jauges au layout en grille
+    // Add the gauges to the grid layout
     gridLayout->addWidget(m_profitFactorGauge, 0, 0);
     gridLayout->addWidget(m_winRateGauge, 1, 0);
     gridLayout->addWidget(m_maxDrawdownGauge, 2, 0);
@@ -191,27 +191,27 @@ RatioGaugesContainerWidget::RatioGaugesContainerWidget(QWidget* parent)
     // gridLayout->addWidget(m_sqnGauge, 2, 1);
     // gridLayout->addWidget(m_kellyGauge, 3, 1);
 
-    // Définir les tailles
+    // Set sizes
     // setMinimumHeight(250);
 }
 
 void RatioGaugesContainerWidget::updateContent(const be::Stats& stats)
 {
-    // Mettre à jour chaque jauge avec les valeurs des statistiques
+    // Update each gauge with statistics values
     m_exposureTimeGauge->setValue(stats.exposureTimePct);
     m_sharpeGauge->setValue(stats.sharpeRatio);
     m_sortinoGauge->setValue(stats.sortinoRatio);
     m_calmarGauge->setValue(stats.calmarRatio);
-    m_winRateGauge->setValue(stats.pctTPTrades); // Convertir entre 0-1
+    m_winRateGauge->setValue(stats.pctTPTrades); // Convert between 0-1
     m_profitFactorGauge->setValue(stats.profitFactor);
     m_sqnGauge->setValue(stats.sqn);
     m_maxDrawdownGauge->setValue(std::abs(stats.maxDrawdownPct));
-    m_kellyGauge->setValue(stats.kellyCriterion * 0.01); // Convertir entre 0-1
+    m_kellyGauge->setValue(stats.kellyCriterion * 0.01); // Convert between 0-1
 }
 
 void RatioGaugesContainerWidget::clear()
 {
-    // Réinitialiser toutes les jauges à zéro
+    // Reset all gauges to zero
     m_exposureTimeGauge->clear();
     m_sharpeGauge->clear();
     m_sortinoGauge->clear();

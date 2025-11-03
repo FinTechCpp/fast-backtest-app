@@ -3,30 +3,30 @@
 BaseDialog::BaseDialog(QWidget* parent, const QString& title)
     : QDialog(parent)
 {
-    // Configuration du dialogue
+    // Dialog configuration
     setWindowTitle(title);
     setMinimumWidth(450);
     setModal(true);
     
-    // Layout principal
+    // Main layout
     m_mainLayout = new QVBoxLayout(this);
     
-    // Formulaire de paramètres
+    // Parameters form
     m_formLayout = new QFormLayout();
     m_mainLayout->addLayout(m_formLayout);
 
-    // Ajouter le lien de réinitialisation en haut
+    // Add the reset link at the top
     m_resetLink = new QLabel("<a href=\"#\">Reset to defaults</a>");
     m_resetLink->setAlignment(Qt::AlignRight);
     m_resetLink->setCursor(Qt::PointingHandCursor);
     connect(m_resetLink, &QLabel::linkActivated, this, &BaseDialog::onReset);
     m_mainLayout->addWidget(m_resetLink);
     
-    // Boutons Annuler/Appliquer
+    // Cancel/Apply buttons
     m_buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     m_mainLayout->addWidget(m_buttonBox);
     
-    // Connexion des boutons standard
+    // Connect standard buttons
     connect(m_buttonBox, &QDialogButtonBox::accepted, this, &BaseDialog::onApply);
     connect(m_buttonBox, &QDialogButtonBox::rejected, this, &BaseDialog::onCancel);
 }
@@ -43,7 +43,7 @@ void BaseDialog::updateColorButtonStyle(QPushButton* button, int color)
     QString styleSheet = QString("background-color: rgb(%1, %2, %3); ")
                           .arg(r).arg(g).arg(b);
                           
-    // Ajuster le texte pour qu'il soit lisible sur la couleur de fond
+    // Adjust text for readability on the background color
     int brightness = (r * 299 + g * 587 + b * 114) / 1000;
     if (brightness > 125) {
         styleSheet += "color: black;";

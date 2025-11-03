@@ -3,7 +3,7 @@
 TradingHoursDialog::TradingHoursDialog(QWidget* parent)
     : QDialog(parent)
 {
-    setWindowTitle("Configuration des heures de trading");
+    setWindowTitle("Trading Hours Configuration");
     setMinimumWidth(400);
     setupUI();
 }
@@ -11,24 +11,24 @@ TradingHoursDialog::TradingHoursDialog(QWidget* parent)
 void TradingHoursDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
-    QGroupBox* tradingHoursGroup = new QGroupBox("Heures de trading", this);
+    QGroupBox* tradingHoursGroup = new QGroupBox("Trading Hours", this);
     QFormLayout* tradingHoursLayout = new QFormLayout();
     
     m_tradingFromTime = new QTimeEdit(this);
     m_tradingFromTime->setTime(QTime(15, 30));
     m_tradingFromTime->setDisplayFormat("hh:mm");
-    tradingHoursLayout->addRow(new QLabel("Heure de début:", this), m_tradingFromTime);
+    tradingHoursLayout->addRow(new QLabel("Start Time:", this), m_tradingFromTime);
     
     m_tradingToTime = new QTimeEdit(this);
     m_tradingToTime->setTime(QTime(22, 0));
     m_tradingToTime->setDisplayFormat("hh:mm");
-    tradingHoursLayout->addRow(new QLabel("Heure de fin:", this), m_tradingToTime);
+    tradingHoursLayout->addRow(new QLabel("End Time:", this), m_tradingToTime);
     
-    // Jours de trading
+    // Trading days
     QWidget* tradingDaysWidget = new QWidget(this);
     QHBoxLayout* tradingDaysLayout = new QHBoxLayout(tradingDaysWidget);
     
-    QStringList dayNames = {"Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"};
+    QStringList dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
     m_tradingDayCheckboxes.clear();
     
     for (int i = 0; i < 7; ++i) {
@@ -38,12 +38,12 @@ void TradingHoursDialog::setupUI() {
         m_tradingDayCheckboxes.push_back(dayCheckbox);
     }
     
-    tradingHoursLayout->addRow(new QLabel("Jours de trading:", this), tradingDaysWidget);
+    tradingHoursLayout->addRow(new QLabel("Trading Days:", this), tradingDaysWidget);
     
     tradingHoursGroup->setLayout(tradingHoursLayout);
     mainLayout->addWidget(tradingHoursGroup);
     
-    // Boutons OK/Cancel
+    // OK/Cancel buttons
     QDialogButtonBox* buttonBox = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         this

@@ -43,7 +43,7 @@ MLFeatureEditDialog::MLFeatureEditDialog(QWidget* parent)
       m_rightSignalPeriodSpinBox(nullptr),
       m_customNameEdit(nullptr)
 {
-    setWindowTitle("Configuration de la Feature ML");
+    setWindowTitle("ML Feature Configuration");
     setMinimumSize(700, 500);
     
     // Initialize feature with default values
@@ -59,12 +59,12 @@ void MLFeatureEditDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
     // Mode selection
-    QGroupBox* modeGroup = new QGroupBox("Mode de feature", this);
+    QGroupBox* modeGroup = new QGroupBox("Feature Mode", this);
     QVBoxLayout* modeLayout = new QVBoxLayout();
     
     m_featureModeCombo = new QComboBox(this);
-    m_featureModeCombo->addItem("Indicateur simple (avec transformation optionnelle)", 0);
-    m_featureModeCombo->addItem("Opération composite (ex: distance, ratio)", 1);
+    m_featureModeCombo->addItem("Simple indicator (with optional transform)", 0);
+    m_featureModeCombo->addItem("Composite operation (e.g., distance, ratio)", 1);
 
     connect(m_featureModeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int index) {
@@ -79,40 +79,40 @@ void MLFeatureEditDialog::setupUI() {
     mainLayout->addWidget(modeGroup);
     
     // ========== SIMPLE MODE ==========
-    m_parametersGroup = new QGroupBox("Configuration indicateur simple", this);
+    m_parametersGroup = new QGroupBox("Simple indicator configuration", this);
     QVBoxLayout* simpleLayout = new QVBoxLayout();
     
     // Indicator type selection
     QFormLayout* indicatorLayout = new QFormLayout();
     m_indicatorTypeCombo = new QComboBox(this);
-    m_indicatorTypeCombo->addItem("EMA - Moyenne Mobile Exponentielle", static_cast<int>(filter::IndicatorType::EMA));
-    m_indicatorTypeCombo->addItem(" RSI - Relative Strength Index", static_cast<int>(filter::IndicatorType::RSI));
-    m_indicatorTypeCombo->addItem(" ATR - Average True Range", static_cast<int>(filter::IndicatorType::ATR));
-    m_indicatorTypeCombo->addItem(" Stochastic K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
-    m_indicatorTypeCombo->addItem(" Stochastic D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
-    m_indicatorTypeCombo->addItem(" SuperTrend Value", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
-    m_indicatorTypeCombo->addItem(" SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
-    m_indicatorTypeCombo->addItem(" CCI - Commodity Channel Index", static_cast<int>(filter::IndicatorType::CCI));
-    m_indicatorTypeCombo->addItem(" MACD Histogram", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
-    m_indicatorTypeCombo->addItem(" MACD Line", static_cast<int>(filter::IndicatorType::MACD_LINE));
-    m_indicatorTypeCombo->addItem(" MACD Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
-    m_indicatorTypeCombo->addItem(" Bollinger Bands Upper", static_cast<int>(filter::IndicatorType::BB_UPPER));
-    m_indicatorTypeCombo->addItem(" Bollinger Bands Lower", static_cast<int>(filter::IndicatorType::BB_LOWER));
-    m_indicatorTypeCombo->addItem(" Bollinger %B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
-    m_indicatorTypeCombo->addItem(" Time Cyclic (Sine)", static_cast<int>(filter::IndicatorType::TIME_SIN));
-    m_indicatorTypeCombo->addItem(" Time Cyclic (Cosine)", static_cast<int>(filter::IndicatorType::TIME_COS));
+    m_indicatorTypeCombo->addItem("EMA - Exponential Moving Average", static_cast<int>(filter::IndicatorType::EMA));
+    m_indicatorTypeCombo->addItem("RSI - Relative Strength Index", static_cast<int>(filter::IndicatorType::RSI));
+    m_indicatorTypeCombo->addItem("ATR - Average True Range", static_cast<int>(filter::IndicatorType::ATR));
+    m_indicatorTypeCombo->addItem("Stochastic K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
+    m_indicatorTypeCombo->addItem("Stochastic D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
+    m_indicatorTypeCombo->addItem("SuperTrend Value", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
+    m_indicatorTypeCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
+    m_indicatorTypeCombo->addItem("CCI - Commodity Channel Index", static_cast<int>(filter::IndicatorType::CCI));
+    m_indicatorTypeCombo->addItem("MACD Histogram", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
+    m_indicatorTypeCombo->addItem("MACD Line", static_cast<int>(filter::IndicatorType::MACD_LINE));
+    m_indicatorTypeCombo->addItem("MACD Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
+    m_indicatorTypeCombo->addItem("Bollinger Bands Upper", static_cast<int>(filter::IndicatorType::BB_UPPER));
+    m_indicatorTypeCombo->addItem("Bollinger Bands Lower", static_cast<int>(filter::IndicatorType::BB_LOWER));
+    m_indicatorTypeCombo->addItem("Bollinger %B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
+    m_indicatorTypeCombo->addItem("Time Cyclic (Sine)", static_cast<int>(filter::IndicatorType::TIME_SIN));
+    m_indicatorTypeCombo->addItem("Time Cyclic (Cosine)", static_cast<int>(filter::IndicatorType::TIME_COS));
     
     connect(m_indicatorTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MLFeatureEditDialog::onIndicatorTypeChanged);
     
-    indicatorLayout->addRow("Type d'indicateur:", m_indicatorTypeCombo);
+    indicatorLayout->addRow("Indicator type:", m_indicatorTypeCombo);
     
     // Transform selection
     m_transformCombo = new QComboBox(this);
-    m_transformCombo->addItem("Aucune", static_cast<int>(filter::TransformType::NONE));
-    m_transformCombo->addItem(" Dérivée (Pente/Slope)", static_cast<int>(filter::TransformType::DERIVATIVE));
-    m_transformCombo->addItem(" Logarithme", static_cast<int>(filter::TransformType::LOG));
-    m_transformCombo->addItem(" Exponentielle", static_cast<int>(filter::TransformType::EXP));
+    m_transformCombo->addItem("None", static_cast<int>(filter::TransformType::NONE));
+    m_transformCombo->addItem("Derivative (Slope)", static_cast<int>(filter::TransformType::DERIVATIVE));
+    m_transformCombo->addItem("Logarithm", static_cast<int>(filter::TransformType::LOG));
+    m_transformCombo->addItem("Exponential", static_cast<int>(filter::TransformType::EXP));
     
     connect(m_transformCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MLFeatureEditDialog::onTransformChanged);
@@ -128,45 +128,45 @@ void MLFeatureEditDialog::setupUI() {
     mainLayout->addWidget(m_parametersGroup);
     
     // ========== COMPOSITE MODE ==========
-    m_compositeGroup = new QGroupBox("Configuration opération composite", this);
+    m_compositeGroup = new QGroupBox("Composite operation configuration", this);
     QVBoxLayout* compositeLayout = new QVBoxLayout();
     
     // Operation type
     QFormLayout* opLayout = new QFormLayout();
     m_compositeTypeCombo = new QComboBox(this);
     m_compositeTypeCombo->addItem("Distance (|A - B|)", static_cast<int>(filter::ComparisonOperator::DISTANCE_LESS)); // We use the operator enum for storage
-    m_compositeTypeCombo->addItem(" Ratio (A / B)", 100); // Custom value
-    m_compositeTypeCombo->addItem(" Addition (A + B)", 101);
-    m_compositeTypeCombo->addItem(" Soustraction (A - B)", 102);
+    m_compositeTypeCombo->addItem("Ratio (A / B)", 100); // Custom value
+    m_compositeTypeCombo->addItem("Addition (A + B)", 101);
+    m_compositeTypeCombo->addItem("Subtraction (A - B)", 102);
     
     connect(m_compositeTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MLFeatureEditDialog::onCompositeTypeChanged);
     
-    opLayout->addRow("Type d'opération:", m_compositeTypeCombo);
+    opLayout->addRow("Operation type:", m_compositeTypeCombo);
     compositeLayout->addLayout(opLayout);
     
     // Left and Right indicator configuration in horizontal layout
     QHBoxLayout* indicatorsLayout = new QHBoxLayout();
     
     // Left side
-    QGroupBox* leftGroup = new QGroupBox("Indicateur A (gauche)", this);
+    QGroupBox* leftGroup = new QGroupBox("Indicator A (left)", this);
     QVBoxLayout* leftLayout = new QVBoxLayout();
     m_leftIndicatorCombo = new QComboBox(this);
     // Same items as m_indicatorTypeCombo
-    m_leftIndicatorCombo->addItem(" EMA", static_cast<int>(filter::IndicatorType::EMA));
-    m_leftIndicatorCombo->addItem(" RSI", static_cast<int>(filter::IndicatorType::RSI));
-    m_leftIndicatorCombo->addItem(" ATR", static_cast<int>(filter::IndicatorType::ATR));
-    m_leftIndicatorCombo->addItem(" Stochastic K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
-    m_leftIndicatorCombo->addItem(" Stochastic D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
-    m_leftIndicatorCombo->addItem(" SuperTrend Value", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
-    m_leftIndicatorCombo->addItem(" SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
-    m_leftIndicatorCombo->addItem(" CCI", static_cast<int>(filter::IndicatorType::CCI));
-    m_leftIndicatorCombo->addItem(" MACD Histogram", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
-    m_leftIndicatorCombo->addItem(" MACD Line", static_cast<int>(filter::IndicatorType::MACD_LINE));
-    m_leftIndicatorCombo->addItem(" MACD Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
-    m_leftIndicatorCombo->addItem(" BB Upper", static_cast<int>(filter::IndicatorType::BB_UPPER));
-    m_leftIndicatorCombo->addItem(" BB Lower", static_cast<int>(filter::IndicatorType::BB_LOWER));
-    m_leftIndicatorCombo->addItem(" BB %B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
+    m_leftIndicatorCombo->addItem("EMA", static_cast<int>(filter::IndicatorType::EMA));
+    m_leftIndicatorCombo->addItem("RSI", static_cast<int>(filter::IndicatorType::RSI));
+    m_leftIndicatorCombo->addItem("ATR", static_cast<int>(filter::IndicatorType::ATR));
+    m_leftIndicatorCombo->addItem("Stochastic K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
+    m_leftIndicatorCombo->addItem("Stochastic D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
+    m_leftIndicatorCombo->addItem("SuperTrend Value", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
+    m_leftIndicatorCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
+    m_leftIndicatorCombo->addItem("CCI", static_cast<int>(filter::IndicatorType::CCI));
+    m_leftIndicatorCombo->addItem("MACD Histogram", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
+    m_leftIndicatorCombo->addItem("MACD Line", static_cast<int>(filter::IndicatorType::MACD_LINE));
+    m_leftIndicatorCombo->addItem("MACD Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
+    m_leftIndicatorCombo->addItem("BB Upper", static_cast<int>(filter::IndicatorType::BB_UPPER));
+    m_leftIndicatorCombo->addItem("BB Lower", static_cast<int>(filter::IndicatorType::BB_LOWER));
+    m_leftIndicatorCombo->addItem("BB %B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
     
     connect(m_leftIndicatorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this]() {
@@ -181,24 +181,24 @@ void MLFeatureEditDialog::setupUI() {
     indicatorsLayout->addWidget(leftGroup);
     
     // Right side
-    QGroupBox* rightGroup = new QGroupBox("Indicateur B (droite)", this);
+    QGroupBox* rightGroup = new QGroupBox("Indicator B (right)", this);
     QVBoxLayout* rightLayout = new QVBoxLayout();
     m_rightIndicatorCombo = new QComboBox(this);
     // Same items
-    m_rightIndicatorCombo->addItem(" EMA", static_cast<int>(filter::IndicatorType::EMA));
-    m_rightIndicatorCombo->addItem(" RSI", static_cast<int>(filter::IndicatorType::RSI));
-    m_rightIndicatorCombo->addItem(" ATR", static_cast<int>(filter::IndicatorType::ATR));
-    m_rightIndicatorCombo->addItem(" Stochastic K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
-    m_rightIndicatorCombo->addItem(" Stochastic D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
-    m_rightIndicatorCombo->addItem(" SuperTrend Value", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
-    m_rightIndicatorCombo->addItem(" SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
-    m_rightIndicatorCombo->addItem(" CCI", static_cast<int>(filter::IndicatorType::CCI));
-    m_rightIndicatorCombo->addItem(" MACD Histogram", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
-    m_rightIndicatorCombo->addItem(" MACD Line", static_cast<int>(filter::IndicatorType::MACD_LINE));
-    m_rightIndicatorCombo->addItem(" MACD Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
-    m_rightIndicatorCombo->addItem(" BB Upper", static_cast<int>(filter::IndicatorType::BB_UPPER));
-    m_rightIndicatorCombo->addItem(" BB Lower", static_cast<int>(filter::IndicatorType::BB_LOWER));
-    m_rightIndicatorCombo->addItem(" BB %B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
+    m_rightIndicatorCombo->addItem("EMA", static_cast<int>(filter::IndicatorType::EMA));
+    m_rightIndicatorCombo->addItem("RSI", static_cast<int>(filter::IndicatorType::RSI));
+    m_rightIndicatorCombo->addItem("ATR", static_cast<int>(filter::IndicatorType::ATR));
+    m_rightIndicatorCombo->addItem("Stochastic K", static_cast<int>(filter::IndicatorType::STOCHASTIC_K));
+    m_rightIndicatorCombo->addItem("Stochastic D", static_cast<int>(filter::IndicatorType::STOCHASTIC_D));
+    m_rightIndicatorCombo->addItem("SuperTrend Value", static_cast<int>(filter::IndicatorType::SUPERTREND_VALUE));
+    m_rightIndicatorCombo->addItem("SuperTrend Direction", static_cast<int>(filter::IndicatorType::SUPERTREND_DIRECTION));
+    m_rightIndicatorCombo->addItem("CCI", static_cast<int>(filter::IndicatorType::CCI));
+    m_rightIndicatorCombo->addItem("MACD Histogram", static_cast<int>(filter::IndicatorType::MACD_HISTOGRAM));
+    m_rightIndicatorCombo->addItem("MACD Line", static_cast<int>(filter::IndicatorType::MACD_LINE));
+    m_rightIndicatorCombo->addItem("MACD Signal", static_cast<int>(filter::IndicatorType::MACD_SIGNAL));
+    m_rightIndicatorCombo->addItem("BB Upper", static_cast<int>(filter::IndicatorType::BB_UPPER));
+    m_rightIndicatorCombo->addItem("BB Lower", static_cast<int>(filter::IndicatorType::BB_LOWER));
+    m_rightIndicatorCombo->addItem("BB %B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
     
     connect(m_rightIndicatorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this]() {
@@ -220,20 +220,20 @@ void MLFeatureEditDialog::setupUI() {
     // ========== COMMON SECTIONS ==========
     
     // Custom name (common to both modes)
-    QGroupBox* nameGroup = new QGroupBox("Nom personnalisé (optionnel)", this);
+    QGroupBox* nameGroup = new QGroupBox("Custom name (optional)", this);
     QVBoxLayout* nameLayout = new QVBoxLayout();
     m_customNameEdit = new QLineEdit(this);
-    m_customNameEdit->setPlaceholderText("Ex: ema_slope_1m, bb_width_1m, rsi14, etc.");
+    m_customNameEdit->setPlaceholderText("E.g.: ema_slope_1m, bb_width_1m, rsi14, etc.");
     connect(m_customNameEdit, &QLineEdit::textChanged, this, &MLFeatureEditDialog::updatePreview);
     nameLayout->addWidget(m_customNameEdit);
     nameGroup->setLayout(nameLayout);
     mainLayout->addWidget(nameGroup);
     
     // Preview
-    QGroupBox* previewGroup = new QGroupBox("Aperçu", this);
+    QGroupBox* previewGroup = new QGroupBox("Preview", this);
     QVBoxLayout* previewLayout = new QVBoxLayout();
     
-    m_previewLabel = new QLabel("Aucune feature configurée", this);
+    m_previewLabel = new QLabel("No feature configured", this);
     m_previewLabel->setWordWrap(true);
     m_previewLabel->setStyleSheet(
         "QLabel {"
@@ -407,7 +407,7 @@ void MLFeatureEditDialog::populateParametersFromFeature(const StrategyConfig::ML
             
         case filter::IndicatorType::TIME_SIN:
         case filter::IndicatorType::TIME_COS:
-            // Pas de paramètres à populer
+            // No parameters to populate
             break;
             
         default:
@@ -443,7 +443,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
         case filter::IndicatorType::RSI:
         case filter::IndicatorType::ATR:
         case filter::IndicatorType::CCI: {
-            QLabel* periodLabel = new QLabel("Période :", this);
+            QLabel* periodLabel = new QLabel("Period:", this);
             m_periodSpinBox = new QSpinBox(this);
             m_periodSpinBox->setRange(1, 500);
             m_periodSpinBox->setValue(14);
@@ -457,7 +457,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
         
         case filter::IndicatorType::STOCHASTIC_K:
         case filter::IndicatorType::STOCHASTIC_D: {
-            QLabel* kLabel = new QLabel("%K Période :", this);
+            QLabel* kLabel = new QLabel("%K Period:", this);
             m_kPeriodSpinBox = new QSpinBox(this);
             m_kPeriodSpinBox->setRange(1, 100);
             m_kPeriodSpinBox->setValue(14);
@@ -467,7 +467,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
             m_parametersLayout->addWidget(m_kPeriodSpinBox, row, 1);
             row++;
             
-            QLabel* dLabel = new QLabel("%D Période :", this);
+            QLabel* dLabel = new QLabel("%D Period:", this);
             m_dPeriodSpinBox = new QSpinBox(this);
             m_dPeriodSpinBox->setRange(1, 100);
             m_dPeriodSpinBox->setValue(3);
@@ -477,7 +477,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
             m_parametersLayout->addWidget(m_dPeriodSpinBox, row, 1);
             row++;
             
-            QLabel* smoothLabel = new QLabel("Lissage :", this);
+            QLabel* smoothLabel = new QLabel("Smoothing:", this);
             m_smoothSpinBox = new QSpinBox(this);
             m_smoothSpinBox->setRange(1, 100);
             m_smoothSpinBox->setValue(3);
@@ -491,7 +491,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
         
         case filter::IndicatorType::SUPERTREND_VALUE:
         case filter::IndicatorType::SUPERTREND_DIRECTION: {
-            QLabel* periodLabel = new QLabel("Période ATR :", this);
+            QLabel* periodLabel = new QLabel("ATR Period:", this);
             m_periodSpinBox = new QSpinBox(this);
             m_periodSpinBox->setRange(1, 100);
             m_periodSpinBox->setValue(10);
@@ -501,7 +501,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
             m_parametersLayout->addWidget(m_periodSpinBox, row, 1);
             row++;
             
-            QLabel* multLabel = new QLabel("Multiplicateur :", this);
+            QLabel* multLabel = new QLabel("Multiplier:", this);
             m_multiplierSpinBox = new QDoubleSpinBox(this);
             m_multiplierSpinBox->setRange(0.1, 10.0);
             m_multiplierSpinBox->setSingleStep(0.1);
@@ -518,7 +518,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
         case filter::IndicatorType::MACD_HISTOGRAM:
         case filter::IndicatorType::MACD_LINE:
         case filter::IndicatorType::MACD_SIGNAL: {
-            QLabel* fastLabel = new QLabel("Période rapide :", this);
+            QLabel* fastLabel = new QLabel("Fast period:", this);
             m_fastPeriodSpinBox = new QSpinBox(this);
             m_fastPeriodSpinBox->setRange(1, 100);
             m_fastPeriodSpinBox->setValue(12);
@@ -528,7 +528,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
             m_parametersLayout->addWidget(m_fastPeriodSpinBox, row, 1);
             row++;
             
-            QLabel* slowLabel = new QLabel("Période lente :", this);
+            QLabel* slowLabel = new QLabel("Slow period:", this);
             m_slowPeriodSpinBox = new QSpinBox(this);
             m_slowPeriodSpinBox->setRange(1, 200);
             m_slowPeriodSpinBox->setValue(26);
@@ -538,7 +538,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
             m_parametersLayout->addWidget(m_slowPeriodSpinBox, row, 1);
             row++;
             
-            QLabel* signalLabel = new QLabel("Période signal :", this);
+            QLabel* signalLabel = new QLabel("Signal period:", this);
             m_signalPeriodSpinBox = new QSpinBox(this);
             m_signalPeriodSpinBox->setRange(1, 100);
             m_signalPeriodSpinBox->setValue(9);
@@ -553,7 +553,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
         case filter::IndicatorType::BB_UPPER:
         case filter::IndicatorType::BB_LOWER:
         case filter::IndicatorType::BB_PERCENT_B: {
-            QLabel* periodLabel = new QLabel("Période :", this);
+            QLabel* periodLabel = new QLabel("Period:", this);
             m_periodSpinBox = new QSpinBox(this);
             m_periodSpinBox->setRange(1, 200);
             m_periodSpinBox->setValue(20);
@@ -563,7 +563,7 @@ void MLFeatureEditDialog::setupParameterWidgets() {
             m_parametersLayout->addWidget(m_periodSpinBox, row, 1);
             row++;
             
-            QLabel* multLabel = new QLabel("Écart-type (σ) :", this);
+            QLabel* multLabel = new QLabel("Std Dev (σ):", this);
             m_multiplierSpinBox = new QDoubleSpinBox(this);
             m_multiplierSpinBox->setRange(0.1, 5.0);
             m_multiplierSpinBox->setSingleStep(0.1);
@@ -579,8 +579,8 @@ void MLFeatureEditDialog::setupParameterWidgets() {
         
         case filter::IndicatorType::TIME_SIN:
         case filter::IndicatorType::TIME_COS: {
-            // Pas de paramètres nécessaires - encodage cyclique basé sur le timestamp
-            QLabel* infoLabel = new QLabel("Calculé automatiquement à partir du timestamp", this);
+            // No parameters required - cyclic encoding based on timestamp
+            QLabel* infoLabel = new QLabel("Automatically calculated from the timestamp", this);
             infoLabel->setStyleSheet("color: #666; font-style: italic;");
             m_parametersLayout->addWidget(infoLabel, row, 0, 1, 2);
             row++;
@@ -634,7 +634,7 @@ void MLFeatureEditDialog::updatePreview() {
     
     if (isSimpleMode) {
         // Simple mode preview
-        preview = "Mode: Indicateur simple\n\n";
+        preview = "Mode: Simple indicator\n\n";
         preview += m_indicatorTypeCombo->currentText() + "\n";
         
         // Show parameters
@@ -647,13 +647,13 @@ void MLFeatureEditDialog::updatePreview() {
             case filter::IndicatorType::ATR:
             case filter::IndicatorType::CCI:
                 if (m_periodSpinBox) {
-                    preview += QString("Période: %1\n").arg(m_periodSpinBox->value());
+                    preview += QString("Period: %1\n").arg(m_periodSpinBox->value());
                 }
                 break;
             case filter::IndicatorType::STOCHASTIC_K:
             case filter::IndicatorType::STOCHASTIC_D:
                 if (m_kPeriodSpinBox && m_dPeriodSpinBox && m_smoothSpinBox) {
-                    preview += QString("K: %1, D: %2, Lissage: %3\n")
+                    preview += QString("K: %1, D: %2, Smoothing: %3\n")
                         .arg(m_kPeriodSpinBox->value())
                         .arg(m_dPeriodSpinBox->value())
                         .arg(m_smoothSpinBox->value());
@@ -662,7 +662,7 @@ void MLFeatureEditDialog::updatePreview() {
             case filter::IndicatorType::SUPERTREND_VALUE:
             case filter::IndicatorType::SUPERTREND_DIRECTION:
                 if (m_periodSpinBox && m_multiplierSpinBox) {
-                    preview += QString("Période: %1, Mult: %2\n")
+                    preview += QString("Period: %1, Mult: %2\n")
                         .arg(m_periodSpinBox->value())
                         .arg(m_multiplierSpinBox->value());
                 }
@@ -671,7 +671,7 @@ void MLFeatureEditDialog::updatePreview() {
             case filter::IndicatorType::MACD_LINE:
             case filter::IndicatorType::MACD_SIGNAL:
                 if (m_fastPeriodSpinBox && m_slowPeriodSpinBox && m_signalPeriodSpinBox) {
-                    preview += QString("Rapide: %1, Lente: %2, Signal: %3\n")
+                    preview += QString("Fast: %1, Slow: %2, Signal: %3\n")
                         .arg(m_fastPeriodSpinBox->value())
                         .arg(m_slowPeriodSpinBox->value())
                         .arg(m_signalPeriodSpinBox->value());
@@ -681,7 +681,7 @@ void MLFeatureEditDialog::updatePreview() {
             case filter::IndicatorType::BB_LOWER:
             case filter::IndicatorType::BB_PERCENT_B:
                 if (m_periodSpinBox && m_multiplierSpinBox) {
-                    preview += QString("Période: %1, σ: %2\n")
+                    preview += QString("Period: %1, σ: %2\n")
                         .arg(m_periodSpinBox->value())
                         .arg(m_multiplierSpinBox->value());
                 }
@@ -698,14 +698,14 @@ void MLFeatureEditDialog::updatePreview() {
         }
     } else {
         // Composite mode preview
-        preview = "Mode: Opération composite\n\n";
-        preview += QString("Opération: %1\n\n").arg(m_compositeTypeCombo->currentText());
+        preview = "Mode: Composite operation\n\n";
+        preview += QString("Operation: %1\n\n").arg(m_compositeTypeCombo->currentText());
         preview += QString("A = %1\n").arg(m_leftIndicatorCombo->currentText());
         preview += QString("B = %1\n").arg(m_rightIndicatorCombo->currentText());
     }
     
     if (m_customNameEdit && !m_customNameEdit->text().trimmed().isEmpty()) {
-        preview += QString("\n\n📝 Nom: %1").arg(m_customNameEdit->text().trimmed());
+        preview += QString("\n\n📝 Name: %1").arg(m_customNameEdit->text().trimmed());
     }
     
     m_previewLabel->setText(preview);
@@ -787,7 +787,7 @@ filter::ValueSource MLFeatureEditDialog::getConfiguredValueSource() const {
             break;
         case filter::IndicatorType::TIME_SIN:
         case filter::IndicatorType::TIME_COS:
-            // Pas besoin de paramètres - utilise les valeurs par défaut
+            // No parameters needed - use defaults
             source.timeCyclicParams = filter::TimeCyclicParams();
             break;
         default:

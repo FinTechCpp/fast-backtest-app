@@ -5,13 +5,13 @@
 #include <QLabel>
 
 StrategyPanel::StrategyPanel(QWidget* parent)
-    : QGroupBox("Stratégies de Trading", parent)
+    : QGroupBox("Trading Strategies", parent)
 {
-    // Ajouter une stratégie par défaut
+    // Add a default strategy
     StrategyConfig defaultConfig;
-    // Initialiser le tableau des jours de trading (Lun-Ven activés par défaut)
+    // Initialize trading days array (Mon-Fri enabled by default)
     for (int i = 0; i < 7; ++i) {
-        defaultConfig.trading_days_array[i] = (i < 5); // Jours 0-4 (Lun-Ven) activés
+        defaultConfig.trading_days_array[i] = (i < 5); // Days 0-4 (Mon-Fri) enabled
     }
     m_configs.push_back(defaultConfig);
     
@@ -22,7 +22,7 @@ StrategyPanel::StrategyPanel(QWidget* parent)
 void StrategyPanel::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
-    // Liste des stratégies avec un style amélioré
+    // Strategy list with improved styling
     m_strategyList = new QListWidget(this);
     m_strategyList->setMinimumHeight(150);
     m_strategyList->setAlternatingRowColors(true);
@@ -67,12 +67,12 @@ void StrategyPanel::setupUI() {
     
     mainLayout->addWidget(m_strategyList);
     
-    // Boutons de gestion avec style amélioré
+    // Management buttons with improved styling
     QHBoxLayout* buttonLayout = new QHBoxLayout();
     buttonLayout->setSpacing(8);
     
-    m_addButton = new QPushButton("➕ Ajouter", this);
-    m_addButton->setToolTip("Ajouter une nouvelle stratégie");
+    m_addButton = new QPushButton("➕ Add", this);
+    m_addButton->setToolTip("Add a new strategy");
     m_addButton->setMinimumHeight(36);
     m_addButton->setCursor(Qt::PointingHandCursor);
     m_addButton->setStyleSheet(
@@ -94,8 +94,8 @@ void StrategyPanel::setupUI() {
     );
     connect(m_addButton, &QPushButton::clicked, this, &StrategyPanel::onAddStrategy);
     
-    m_duplicateButton = new QPushButton("📋 Dupliquer", this);
-    m_duplicateButton->setToolTip("Dupliquer la stratégie sélectionnée");
+    m_duplicateButton = new QPushButton("📋 Duplicate", this);
+    m_duplicateButton->setToolTip("Duplicate the selected strategy");
     m_duplicateButton->setMinimumHeight(36);
     m_duplicateButton->setCursor(Qt::PointingHandCursor);
     m_duplicateButton->setStyleSheet(
@@ -121,8 +121,8 @@ void StrategyPanel::setupUI() {
     );
     connect(m_duplicateButton, &QPushButton::clicked, this, &StrategyPanel::onDuplicateStrategy);
     
-    m_removeButton = new QPushButton("🗑️ Supprimer", this);
-    m_removeButton->setToolTip("Supprimer la stratégie sélectionnée");
+    m_removeButton = new QPushButton("🗑️ Remove", this);
+    m_removeButton->setToolTip("Remove the selected strategy");
     m_removeButton->setMinimumHeight(36);
     m_removeButton->setCursor(Qt::PointingHandCursor);
     m_removeButton->setStyleSheet(
@@ -155,8 +155,8 @@ void StrategyPanel::setupUI() {
     
     mainLayout->addLayout(buttonLayout);
     
-    // Label informatif amélioré
-    QLabel* infoLabel = new QLabel("💡 Double-cliquez sur une stratégie pour la modifier", this);
+    // Informational label (improved)
+    QLabel* infoLabel = new QLabel("💡 Double-click a strategy to edit it", this);
     infoLabel->setStyleSheet(
         "QLabel {"
         "   color: #555555;"
@@ -176,13 +176,13 @@ void StrategyPanel::setupUI() {
 }
 
 void StrategyPanel::onAddStrategy() {
-    // Créer une nouvelle config par défaut
+    // Create a new default config
     StrategyConfig newConfig;
     for (int i = 0; i < 7; ++i) {
         newConfig.trading_days_array[i] = (i < 5);
     }
     
-    // Ouvrir le dialog pour configurer
+    // Open dialog to configure
     StrategyConfigDialog dialog(this);
     dialog.setConfig(newConfig);
     
@@ -190,7 +190,7 @@ void StrategyPanel::onAddStrategy() {
         m_configs.push_back(dialog.getConfig());
         refreshStrategyList();
         
-        // Sélectionner la nouvelle stratégie
+        // Select the new strategy
         m_strategyList->setCurrentRow(m_configs.size() - 1);
     }
 }
@@ -201,17 +201,17 @@ void StrategyPanel::onRemoveStrategy() {
         return;
     }
     
-    // Empêcher la suppression de la dernière stratégie
+    // Prevent deletion of the last strategy
     if (m_configs.size() == 1) {
-        QMessageBox::warning(this, "Suppression impossible",
-                           "Vous devez conserver au moins une stratégie.");
+        QMessageBox::warning(this, "Cannot remove",
+                           "You must keep at least one strategy.");
         return;
     }
     
-    // Demander confirmation
+    // Ask for confirmation
     QMessageBox::StandardButton reply = QMessageBox::question(
-        this, "Confirmer la suppression",
-        "Êtes-vous sûr de vouloir supprimer cette stratégie ?",
+        this, "Confirm deletion",
+        "Are you sure you want to delete this strategy?",
         QMessageBox::Yes | QMessageBox::No
     );
     
@@ -219,7 +219,7 @@ void StrategyPanel::onRemoveStrategy() {
         m_configs.erase(m_configs.begin() + currentRow);
         refreshStrategyList();
         
-        // Sélectionner la stratégie précédente ou suivante
+        // Select the previous or next strategy
         if (currentRow > 0) {
             m_strategyList->setCurrentRow(currentRow - 1);
         } else if (!m_configs.empty()) {
@@ -234,12 +234,12 @@ void StrategyPanel::onDuplicateStrategy() {
         return;
     }
     
-    // Dupliquer la configuration
+    // Duplicate the configuration
     StrategyConfig duplicatedConfig = m_configs[currentRow];
     m_configs.push_back(duplicatedConfig);
     refreshStrategyList();
     
-    // Sélectionner la nouvelle stratégie dupliquée
+    // Select the new duplicated strategy
     m_strategyList->setCurrentRow(m_configs.size() - 1);
 }
 
@@ -251,7 +251,7 @@ void StrategyPanel::onEditStrategy(QListWidgetItem* item) {
         return;
     }
     
-    // Ouvrir le dialog de configuration
+    // Open configuration dialog
     StrategyConfigDialog dialog(this);
     dialog.setConfig(m_configs[row]);
     
@@ -276,12 +276,12 @@ void StrategyPanel::refreshStrategyList() {
     for (size_t i = 0; i < m_configs.size(); ++i) {
         QString displayName = QString::fromStdString(m_configs[i].name);
         
-        // Si le nom est vide, afficher un nom par défaut
+        // If the name is empty, show a default name
         if (displayName.trimmed().isEmpty()) {
-            displayName = QString("Stratégie %1").arg(i + 1);
+            displayName = QString("Strategy %1").arg(i + 1);
         }
         
-        // Ajouter une icône pour rendre l'affichage plus agréable
+        // Add an icon to make the display nicer
         QString itemText = QString("📊 %1").arg(displayName);
         m_strategyList->addItem(itemText);
     }
@@ -295,7 +295,7 @@ std::vector<StrategyConfig> StrategyPanel::getConfigs() const {
 
 void StrategyPanel::setConfigs(const std::vector<StrategyConfig>& configs) {
     if (configs.empty()) {
-        qWarning() << "Tentative de définir une liste vide de stratégies - ignoré";
+        qWarning() << "Attempt to set an empty strategy list - ignored";
         return;
     }
     

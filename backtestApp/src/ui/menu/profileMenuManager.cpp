@@ -21,87 +21,87 @@ ProfileMenuManager::ProfileMenuManager(App* parent)
     , m_exportAction(nullptr)
     , m_openDirectoryAction(nullptr)
 {
-    qDebug() << "ProfileMenuManager créé";
+    qDebug() << "ProfileMenuManager created";
 }
 
 void ProfileMenuManager::createProfileMenu(QMenuBar* menuBar)
 {
     if (!menuBar) {
-        qWarning() << "MenuBar null passé à createProfileMenu";
+        qWarning() << "Null menuBar passed to createProfileMenu";
         return;
     }
     
-    // Créer le menu Profils (avant le menu Aide)
-    m_profileMenu = menuBar->addMenu(tr("&Profils"));
+    // Create the Profiles menu (before the Help menu)
+    m_profileMenu = menuBar->addMenu(tr("&Profiles"));
     
     createActions();
     
-    // Ajouter les actions au menu
+    // Add actions to the menu
     m_profileMenu->addAction(m_saveProfileAction);
     m_profileMenu->addAction(m_newProfileAction);
     m_profileMenu->addAction(m_deleteProfileAction);
     m_profileMenu->addSeparator();
     
-    // Créer le sous-menu pour charger les profils
-    m_loadProfileSubmenu = m_profileMenu->addMenu(tr("&Charger un profil"));
+    // Create the submenu for loading profiles
+    m_loadProfileSubmenu = m_profileMenu->addMenu(tr("&Load profile"));
     
     m_profileMenu->addSeparator();
     m_profileMenu->addAction(m_importAction);
     m_profileMenu->addAction(m_exportAction);
 
-    // Ajouter un séparateur puis l'action pour ouvrir le dossier
+    // Add a separator then the action to open the directory
     m_profileMenu->addSeparator();
     m_profileMenu->addAction(m_openDirectoryAction);
     
     
-    qDebug() << "Menu Profils créé";
+    qDebug() << "Profiles menu created";
 }
 
 void ProfileMenuManager::onOpenProfilesDirectory()
 {
     if (m_configManager) {
         if (!m_configManager->openProfilesDirectory()) {
-            // Afficher un message d'erreur en cas d'échec
-            QMessageBox::warning(m_mainWindow, tr("Erreur"),
-                                tr("Impossible d'ouvrir le dossier des profils.\n"
-                                   "Chemin: %1").arg(m_configManager->getProfilesDirectory()));
+            // Show an error message on failure
+            QMessageBox::warning(m_mainWindow, tr("Error"),
+                                tr("Unable to open profiles directory.\n"
+                                   "Path: %1").arg(m_configManager->getProfilesDirectory()));
         }
     }
 }
 
 void ProfileMenuManager::createActions()
 {
-    // Action Sauvegarder
-    m_saveProfileAction = new QAction(tr("&Sauvegarder le profil actuel"), this);
+    // Save action
+    m_saveProfileAction = new QAction(tr("&Save current profile"), this);
     m_saveProfileAction->setShortcut(QKeySequence::Save);
-    m_saveProfileAction->setStatusTip(tr("Sauvegarder les paramètres actuels"));
+    m_saveProfileAction->setStatusTip(tr("Save current settings"));
     connect(m_saveProfileAction, &QAction::triggered, this, &ProfileMenuManager::onSaveCurrentProfile);
     
-    // Action Nouveau profil
-    m_newProfileAction = new QAction(tr("&Nouveau profil..."), this);
+    // New profile action
+    m_newProfileAction = new QAction(tr("&New profile..."), this);
     m_newProfileAction->setShortcut(QKeySequence::New);
-    m_newProfileAction->setStatusTip(tr("Créer un nouveau profil"));
+    m_newProfileAction->setStatusTip(tr("Create a new profile"));
     connect(m_newProfileAction, &QAction::triggered, this, &ProfileMenuManager::onCreateNewProfile);
     
-    // Action Supprimer profil
-    m_deleteProfileAction = new QAction(tr("&Supprimer le profil actuel"), this);
+    // Delete profile action
+    m_deleteProfileAction = new QAction(tr("&Delete current profile"), this);
     m_deleteProfileAction->setShortcut(QKeySequence::Delete);
-    m_deleteProfileAction->setStatusTip(tr("Supprimer le profil actuel"));
+    m_deleteProfileAction->setStatusTip(tr("Delete the current profile"));
     connect(m_deleteProfileAction, &QAction::triggered, this, &ProfileMenuManager::onDeleteCurrentProfile);
     
-    // Action Importer
-    m_importAction = new QAction(tr("&Importer..."), this);
-    m_importAction->setStatusTip(tr("Importer une configuration"));
+    // Import action
+    m_importAction = new QAction(tr("&Import..."), this);
+    m_importAction->setStatusTip(tr("Import a configuration"));
     connect(m_importAction, &QAction::triggered, this, &ProfileMenuManager::onImportProfile);
     
-    // Action Exporter
-    m_exportAction = new QAction(tr("&Exporter..."), this);
-    m_exportAction->setStatusTip(tr("Exporter la configuration actuelle"));
+    // Export action
+    m_exportAction = new QAction(tr("&Export..."), this);
+    m_exportAction->setStatusTip(tr("Export the current configuration"));
     connect(m_exportAction, &QAction::triggered, this, &ProfileMenuManager::onExportProfile);
     
-    // Nouvelle action - Ouvrir le dossier des profils
-    m_openDirectoryAction = new QAction(tr("&Ouvrir le dossier des profils"), this);
-    m_openDirectoryAction->setStatusTip(tr("Ouvrir le dossier contenant les fichiers de profils"));
+    // New action - Open profiles directory
+    m_openDirectoryAction = new QAction(tr("&Open profiles directory"), this);
+    m_openDirectoryAction->setStatusTip(tr("Open the folder containing the profile files"));
     connect(m_openDirectoryAction, &QAction::triggered, this, &ProfileMenuManager::onOpenProfilesDirectory);
 }
 
@@ -109,50 +109,50 @@ void ProfileMenuManager::setConfigManager(ProfileManager* configManager)
 {
     m_configManager = configManager;
     if (m_configManager) {
-        qDebug() << "Connexion du ProfileManager au ProfileMenuManager";
+        qDebug() << "Connecting ProfileManager to ProfileMenuManager";
         
-        // Connecter le signal de changement de profil
+        // Connect the profile changed signal
         connect(m_configManager, &ProfileManager::profileChanged,
                 this, &ProfileMenuManager::onProfileChanged);
         connect(m_configManager, &ProfileManager::profileListUpdated,
                 this, &ProfileMenuManager::updateProfileList);
         
-        qDebug() << "Signaux connectés, mise à jour initiale de la liste des profils";
+        qDebug() << "Signals connected, initial update of profile list";
         
-        // Utiliser un timer pour s'assurer que la configuration est entièrement chargée
+        // Use a timer to ensure the configuration is fully loaded
         QTimer::singleShot(100, this, [this]() {
-            qDebug() << "Mise à jour différée de la liste des profils";
+            qDebug() << "Deferred update of profile list";
             updateProfileList();
         });
         
-        qDebug() << "ProfileManager connecté au ProfileMenuManager";
+        qDebug() << "ProfileManager connected to ProfileMenuManager";
     } else {
-        qWarning() << "ProfileManager null passé à setConfigManager";
+        qWarning() << "Null ProfileManager passed to setConfigManager";
     }
 }
 
 void ProfileMenuManager::updateProfileList()
 {
-    qDebug() << "updateProfileList() appelé";
+    qDebug() << "updateProfileList() called";
     
     if (!m_configManager || !m_loadProfileSubmenu) {
-        qWarning() << "ProfileManager ou LoadProfileSubmenu manquant";
+        qWarning() << "ProfileManager or LoadProfileSubmenu missing";
         return;
     }
     
-    // Nettoyer les actions existantes
+    // Clean up existing actions
     for (auto action : m_profileActions.values()) {
         m_loadProfileSubmenu->removeAction(action);
         delete action;
     }
     m_profileActions.clear();
     
-    // Ajouter les profils disponibles
+    // Add available profiles
     QStringList profiles = m_configManager->listProfiles();
     QString currentProfile = m_configManager->getCurrentProfile();
     
-    qDebug() << "Profils récupérés:" << profiles;
-    qDebug() << "Profil actuel:" << currentProfile;
+    qDebug() << "Profiles retrieved:" << profiles;
+    qDebug() << "Current profile:" << currentProfile;
     
     for (const QString& profile : profiles) {
         // Create a widget-based action so we can style the background for the active profile
@@ -202,15 +202,15 @@ void ProfileMenuManager::updateProfileList()
         m_loadProfileSubmenu->addAction(waction);
         m_profileActions[profile] = waction;
 
-        qDebug() << "Widget action créée pour le profil:" << profile << " active=" << (profile == currentProfile);
+        qDebug() << "Widget action created for profile:" << profile << " active=" << (profile == currentProfile);
     }
     
-    qDebug() << "Liste des profils mise à jour avec" << profiles.size() << "profils";
+    qDebug() << "Profile list updated with" << profiles.size() << "profiles";
 }
 
 void ProfileMenuManager::onProfileChanged(const QString& profileName)
 {
-    // Mettre à jour l'affichage des actions : mettre à jour le texte pour indiquer le profil actif
+    // Update actions display: update text to indicate active profile
     for (auto it = m_profileActions.begin(); it != m_profileActions.end(); ++it) {
         const QString& name = it.key();
         QAction* action = it.value();
@@ -238,12 +238,12 @@ void ProfileMenuManager::onProfileChanged(const QString& profileName)
         action->setEnabled(true);
     }
     
-    // Désactiver la suppression pour le profil DEFAULT
+    // Disable deletion for the DEFAULT profile
     if (m_deleteProfileAction) {
         m_deleteProfileAction->setEnabled(profileName != "DEFAULT");
     }
     
-    qDebug() << "Profil actuel mis à jour vers:" << profileName;
+    qDebug() << "Current profile updated to:" << profileName;
 }
 
 void ProfileMenuManager::onSaveCurrentProfile()

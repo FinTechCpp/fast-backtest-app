@@ -8,45 +8,43 @@
 #include <QResizeEvent>
 #include <QTimer>
 
-
-
 ResultManager::ResultManager(QWidget* parent) : QWidget(parent) 
 {
-    qDebug() << "ResultManager créé avec parent:" << parent;
+    qDebug() << "ResultManager created with parent:" << parent;
     
-    // Initialiser tous les attributs à nullptr d'abord
+    // Initialize all attributes to nullptr first
     m_statsView = nullptr;
     m_tradesView = nullptr;
     m_chartView = nullptr;
     
-    // Construire l'interface dans le constructeur
+    // Build the interface in the constructor
     setupUI();
     setupViews();
     setupConnections();
     
-    qDebug() << "ResultManager initialisé avec succès";
+    qDebug() << "ResultManager initialized successfully";
 }
 
 void ResultManager::updateAllViews(BacktestResults* results)
 {
     QTime start = QTime::currentTime();
-    qDebug() << "updateAllViews appelé avec BacktestResults:" << results;
+    qDebug() << "updateAllViews called with BacktestResults:" << results;
 
     try {
         for (auto it = m_views.begin(); it != m_views.end(); ++it) {
             BaseView* view = it.value();
             if (view) {
                 QTime viewStart = QTime::currentTime();
-                view->updateData(results);  // Mise à jour pour utiliser la nouvelle signature
+                view->updateData(results);  // Update to use the new signature
                 int viewElapsed = viewStart.msecsTo(QTime::currentTime());
-                std::cout << "Vue '" << it.key().toStdString() << "' mise à jour en " << viewElapsed << " ms" << std::endl;
+                std::cout << "View '" << it.key().toStdString() << "' updated in " << viewElapsed << " ms" << std::endl;
             }
         }
 
-        qInfo() << "Toutes les vues mises à jour avec succès";
+        qInfo() << "All views updated successfully";
     }
     catch (const std::exception& e) {
-        qCritical() << "Erreur lors de la mise à jour des vues:" << e.what();
+        qCritical() << "Error while updating views:" << e.what();
     }
 
     int elapsed = start.msecsTo(QTime::currentTime());
@@ -69,11 +67,11 @@ void ResultManager::setCurrentTab(int index)
 
 void ResultManager::resizeEvent(QResizeEvent* event)
 {
-    QWidget::resizeEvent(event);  // Appeler la méthode parent
+    QWidget::resizeEvent(event);  // Call the parent method
     
-    qDebug() << "ResultManager redimensionné:" << event->size();
+    qDebug() << "ResultManager resized:" << event->size();
     
-    // Utiliser le timer pour éviter trop de redimensionnements
+    // Use the timer to avoid too many resizes
     if (m_resizeTimer) {
         m_resizeTimer->stop();
         m_resizeTimer->start(150);
@@ -82,84 +80,84 @@ void ResultManager::resizeEvent(QResizeEvent* event)
 
 void ResultManager::onTabResized()
 {
-    qDebug() << "Traitement du redimensionnement des onglets";
+    qDebug() << "Handling tab resize";
     
     if (!m_tabWidget || !m_chartView) {
         return;
     }
     
-    // Obtenir la taille disponible
+    // Get the available size
     QSize availableSize = m_tabWidget->size();
     int tabWidth = availableSize.width();
     
     if (tabWidth > 100) {
-        // Calculer la nouvelle largeur pour le graphique
+        // Calculate the new width for the chart
         int newChartWidth = std::max(800, tabWidth - 40);
         
-        qDebug() << "Redimensionnement du graphique à:" << newChartWidth;
+        qDebug() << "Resizing chart to:" << newChartWidth;
         
-        // Redimensionner le graphique via la vue
+        // Resize the chart via the view
         // m_chartView->resizeChart(newChartWidth);
     }
 }
 
 void ResultManager::onTabChanged(int index)
 {
-    qDebug() << "Onglet changé vers l'index:" << index;
+    qDebug() << "Tab changed to index:" << index;
     
-    // Optionnel : effectuer des actions spécifiques lors du changement d'onglet
+    // Optional: perform specific actions when the tab changes
     if (index >= 0 && index < m_tabWidget->count()) {
-        // Par exemple, rafraîchir la vue active
+        // For example, refresh the active view
         QString currentViewName;
         if (index == 0) currentViewName = "stats";
         else if (index == 1) currentViewName = "histogram";
         else if (index == 2) currentViewName = "chart";
         
-        qDebug() << "Vue active:" << currentViewName;
+        qDebug() << "Active view:" << currentViewName;
     }
 }
 
 void ResultManager::setupUI()
 {
-    // Créer le layout principal pour ce widget
-    m_mainLayout = new QVBoxLayout(this);  // 'this' devient le widget parent
+    // Create the main layout for this widget
+    m_mainLayout = new QVBoxLayout(this);  // 'this' becomes the parent widget
     
-    // Créer le TabWidget
+    // Create the TabWidget
     m_tabWidget = new QTabWidget(this);
     
-    // Définir la couleur de fond du TabWidget pour qu'elle corresponde à la palette Window
+    // Set the background color of the TabWidget to match the Window palette
     QPalette tabPalette = m_tabWidget->palette();
     QColor windowColor = tabPalette.color(QPalette::Window);
     m_tabWidget->setStyleSheet(QString("QTabWidget::pane { background-color: %1; border: none; }").arg(windowColor.name()));
     
-    // Ajouter le TabWidget au layout
+    // Add the TabWidget to the layout
     m_mainLayout->addWidget(m_tabWidget);
     
-    // Configurer les marges si nécessaire
+    // Configure margins if necessary
     m_mainLayout->setContentsMargins(5, 5, 5, 5);
     
-    qDebug() << "Interface UI créée";
+    qDebug() << "UI interface created";
 }
 
 void ResultManager::setupViews()
 {
-    // Créer les vues (elles sont des widgets, donc directement utilisables)
+    // Create the views (they are widgets, so directly usable)
     m_statsView = new StatsView(this);
     m_tradesView = new TradesView(this);
     m_chartView = new ChartView(this);
     
-    // Vérifier que les vues ont été créées
+    // Check that the views were created
     if (!m_statsView || !m_tradesView || !m_chartView) {
-        qCritical() << "Erreur lors de la création des vues";
+        qCritical() << "Error while creating views";
         return;
     }
     
-    // Ajouter les vues comme onglets (les vues SONT des widgets)
-    m_tabWidget->addTab(m_statsView, "📊 Statistiques");
+    // Add the views as tabs (the views ARE widgets)
+    m_tabWidget->addTab(m_statsView, "📊 Statistics");
     m_tabWidget->addTab(m_tradesView, "📋 Trades");
-    m_tabWidget->addTab(m_chartView, "📈 Graphiques");
+    m_tabWidget->addTab(m_chartView, "📈 Charts");
     
-    // Ajouter au map pour faciliter l'accès
+    // Add to the map for easy access
     m_views["stats"] = m_statsView;
     m_views["trades"] = m_tradesView;
     m_views["chart"] = m_chartView;
@@ -167,44 +165,44 @@ void ResultManager::setupViews()
 
 void ResultManager::setupConnections()
 {
-    // Connecter le changement d'onglet
+    // Connect tab change
     connect(m_tabWidget, &QTabWidget::currentChanged,
             this, &ResultManager::onTabChanged);
     
-    // Connecter le signal de clic sur trade depuis TradesView
+    // Connect the trade click signal from TradesView
     if (m_tradesView) {
         connect(m_tradesView, &TradesView::tradeClicked,
                 this, &ResultManager::onTradeClicked);
     }
     
-    // Connecter le signal de clic sur période depuis StatsView (HistogramWidget)
+    // Connect the period click signal from StatsView (HistogramWidget)
     if (m_statsView) {
-        // Il faut trouver l'histogramWidget dans statsView et connecter son signal
+        // Find the histogramWidget in statsView and connect its signal
         HistogramWidget* histogramWidget = m_statsView->findChild<HistogramWidget*>();
         if (histogramWidget) {
             connect(histogramWidget, &HistogramWidget::periodClicked,
                     this, &ResultManager::onPeriodClicked);
-            qDebug() << "Signal periodClicked connecté depuis HistogramWidget";
+            qDebug() << "Signal periodClicked connected from HistogramWidget";
         }
     }
     
-    // Créer un timer pour surveiller les redimensionnements
+    // Create a timer to monitor resizes
     QTimer* resizeTimer = new QTimer(this);
     resizeTimer->setSingleShot(true);
     connect(resizeTimer, &QTimer::timeout, this, &ResultManager::onTabResized);
     
-    // Stocker le timer comme membre si nécessaire
+    // Store the timer as a member if necessary
     m_resizeTimer = resizeTimer;
     
-    qDebug() << "Connexions établies";
+    qDebug() << "Connections established";
 }
 
 void ResultManager::onTradeClicked(const be::TradeData& trade)
 {
-    qDebug() << "Trade cliqué dans ResultManager - Entrée:" << trade.entryDate.toString().c_str() 
-             << "Sortie:" << trade.exitDate.toString().c_str();
+    qDebug() << "Trade clicked in ResultManager - Entry:" << trade.entryDate.toString().c_str() 
+             << "Exit:" << trade.exitDate.toString().c_str();
     
-    // Changer vers l'onglet Chart (index 2: Stats=0, Trades=1, Chart=2)
+    // Switch to the Chart tab (index 2: Stats=0, Trades=1, Chart=2)
     int chartTabIndex = -1;
     for (int i = 0; i < m_tabWidget->count(); ++i) {
         if (m_tabWidget->widget(i) == m_chartView) {
@@ -216,7 +214,7 @@ void ResultManager::onTradeClicked(const be::TradeData& trade)
     if (chartTabIndex >= 0) {
         m_tabWidget->setCurrentIndex(chartTabIndex);
         
-        // Demander à ChartView de zoomer sur ce trade
+        // Ask ChartView to zoom in on this trade
         if (m_chartView) {
             m_chartView->zoomToTrade(trade);
         }
@@ -225,10 +223,10 @@ void ResultManager::onTradeClicked(const be::TradeData& trade)
 
 void ResultManager::onPeriodClicked(const QDateTime& startDate, const QDateTime& endDate)
 {
-    qDebug() << "Periode cliquee dans ResultManager - Du:" << startDate.toString("dd/MM/yyyy hh:mm:ss")
-             << "Au:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
+    qDebug() << "Period clicked in ResultManager - From:" << startDate.toString("dd/MM/yyyy hh:mm:ss")
+             << "To:" << endDate.toString("dd/MM/yyyy hh:mm:ss");
     
-    // Changer vers l'onglet Chart
+    // Switch to the Chart tab
     int chartTabIndex = -1;
     for (int i = 0; i < m_tabWidget->count(); ++i) {
         if (m_tabWidget->widget(i) == m_chartView) {
@@ -240,7 +238,7 @@ void ResultManager::onPeriodClicked(const QDateTime& startDate, const QDateTime&
     if (chartTabIndex >= 0) {
         m_tabWidget->setCurrentIndex(chartTabIndex);
         
-        // Demander a ChartView de zoomer sur cette periode
+        // Ask ChartView to zoom in on this period
         if (m_chartView) {
             m_chartView->zoomToPeriod(startDate, endDate);
         }

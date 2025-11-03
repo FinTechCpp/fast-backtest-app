@@ -17,18 +17,18 @@ EquityWidget::EquityWidget(const QString& title, QWidget *parent)
     setMinimumSize(160, 120);
     setMouseTracking(true); // necessary to receive mouseMoveEvent without pressing buttons
 
-    // QCheckBox pour switcher entre m_statText et m_statTextBis
-    m_checkBox = new QCheckBox("Pourcentage", this);
+    // QCheckBox to switch between m_statText and m_statTextBis
+    m_checkBox = new QCheckBox("Percentage", this);
     m_checkBox->setChecked(false);
 
-    // Connecter le signal toggled de la QCheckBox à un slot lambda
+    // Connect the toggled signal of the QCheckBox to a lambda slot
     connect(m_checkBox, &QCheckBox::toggled, this, [this](bool checked) {
-        invalidateCache();  // Invalider tout le cache (équités + points widget + labels)
-        updateBounds();     // Recalculer les limites avec le bon ensemble de points
-        update();           // Redessiner le widget
+        invalidateCache();  // Invalidate all caches (equities + widget points + labels)
+        updateBounds();     // Recompute bounds with the correct set of points
+        update();           // Redraw the widget
     });
 
-    // Ajouter la QCheckBox comme widget compagnon dans le titre
+    // Add the QCheckBox as a companion widget in the title
     setTitleCompanionWidget(m_checkBox);
 }
 
@@ -36,7 +36,7 @@ void EquityWidget::setPoints(const QVector<QPointF>& pts)
 {
     if (pts.isEmpty()) {
         m_points.clear();
-        m_pointsPercent.clear(); // Vider aussi les points en pourcentage
+        m_pointsPercent.clear(); // Also clear percentage points
         invalidateCache();
         updateBounds();
         update();
@@ -55,7 +55,7 @@ void EquityWidget::setPoints(const QVector<QPointF>& pts)
     m_points.reserve(tmp.size());
     for (const auto &p: tmp) m_points.push_back(p);
 
-    // Calculer les points en pourcentage
+    // Calculate percentage points
     calculatePercentPoints();
     
     invalidateCache();
@@ -74,18 +74,18 @@ void EquityWidget::setPoints(const std::vector<be::Date>& dates, const std::vect
     
     QVector<QPointF> newPoints;
 
-    // CA c'est pas opti mais bon... a corriger plus tard
-    m_dates = dates; // Stocker les dates pour un usage futur
+    // This is not optimal but OK for now... to be fixed later
+    m_dates = dates; // Store dates for future use
     
-    // Si le tableau contient uniquement des valeurs Y
+    // If the array contains only Y values
     if (!equityCurve.empty()) {
-        // Créer des points avec X = index et Y = valeur
+        // Create points with X = index and Y = value
         for (size_t i = 0; i < equityCurve.size(); ++i) {
             newPoints.append(QPointF(static_cast<double>(equityCurve[i].index), equityCurve[i].value));
         }
     }
 
-    // Dernier point
+    // Last point
     newPoints.append(QPointF(static_cast<double>(m_dates.size()), equityCurve.back().value));
     
     setPoints(newPoints);
@@ -101,14 +101,14 @@ void EquityWidget::invalidateCache()
 double EquityWidget::getInitialEquity() const
 {
     if (!m_cacheValid) {
-        // Calculer et mettre en cache toutes les valeurs d'un coup
+        // Compute and cache all values at once
         const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
         
         if (!activePoints.isEmpty()) {
             m_cachedInitialEquity = activePoints.first().y();
             m_cachedFinalEquity = activePoints.last().y();
             
-            // Calculer le peak en même temps
+            // Compute the peak at the same time
             QPointF peak = activePoints.first();
             for (const auto& pt : activePoints) {
                 if (pt.y() > peak.y()) {
@@ -131,7 +131,7 @@ double EquityWidget::getInitialEquity() const
 QPointF EquityWidget::getPeakPoint() const
 {
     if (!m_cacheValid) {
-        getInitialEquity();  // Va calculer et mettre en cache toutes les valeurs
+        getInitialEquity();  // Will compute and cache all values
     }
     return m_cachedPeakEquity;
 }
@@ -139,13 +139,13 @@ QPointF EquityWidget::getPeakPoint() const
 double EquityWidget::getFinalEquity() const
 {
     if (!m_cacheValid) {
-        getInitialEquity();  // Va calculer et mettre en cache toutes les valeurs
+        getInitialEquity();  // Will compute and cache all values
     }
     return m_cachedFinalEquity;
 }
 
 std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
-    // Utiliser le cache si valide
+    // Use cache if valid
     if (!m_cachedDateLabels.empty()) {
         return m_cachedDateLabels;
     }
@@ -156,11 +156,11 @@ std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
         return labels;
     }
 
-    // Tables de conversion mois -> texte
-    static const QStringList monthNames = {"", "Jan", "Fév", "Mar", "Avr", "Mai", "Juin", 
-                                          "Juil", "Aoû", "Sep", "Oct", "Nov", "Déc"};
+    // Month conversion table -> text
+    static const QStringList monthNames = {"", "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+                                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
     
-    // Déterminer la plage totale des dates
+    // Determine the total date range
     be::Date startDate;
     be::Date endDate;
     bool validDatesFound = false;
@@ -177,13 +177,13 @@ std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
         }
     }
     
-    // Si aucune date valide trouvée
+    // If no valid date found
     if (!validDatesFound) {
         return labels;
     }
     
-    // Calculer la durée entre la première et la dernière date
-    // Nouveau: seuil de 2 ans au lieu de 1 an
+    // Compute the duration between first and last date
+    // New: threshold is 2 years instead of 1 year
     bool isMoreThanTwoYears = false;
     if (endDate.year > startDate.year + 2 || 
         (endDate.year == startDate.year + 2 && endDate.month >= startDate.month)) {
@@ -193,14 +193,14 @@ std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
     int totalMonthsDiff = (endDate.year - startDate.year) * 12 + (endDate.month - startDate.month);
     bool isMoreThanTwoMonths = totalMonthsDiff > 2;
     
-    // Parcourir les dates pour créer les labels
+    // Iterate dates to create labels
     int lastYear = m_dates[0].year;
     int lastMonth = m_dates[0].month;
     int lastDay = m_dates[0].day;
 
     for (size_t i = 0; i < m_dates.size(); ++i) {
         const be::Date& date = m_dates[i];
-        if (date.year <= 0) continue;  // Date invalide
+        if (date.year <= 0) continue;  // Invalid date
         
         int year = static_cast<int>(date.year);
         int month = static_cast<int>(date.month);
@@ -210,62 +210,62 @@ std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
         QString labelText;
         int importance = 0;
         
-        // Si période > 2 ans : uniquement les années
+        // If period > 2 years: years only
         if (isMoreThanTwoYears) {
-            // Années uniquement
+            // Years only
             if (year != lastYear) {
                 labelText = QString::number(year);
-                importance = 3; // Année
+                importance = 3; // Year
                 addLabel = true;
                 lastYear = year;
                 lastMonth = -1;
             }
         }
-        // Si période > 2 mois et <= 2 ans : tous les mois ET les années
+        // If period > 2 months and <= 2 years: all months AND years
         else if (isMoreThanTwoMonths) {
-            // Année si elle change
+            // Year if it changes
             if (year != lastYear) {
                 labelText = QString::number(year);
-                importance = 3; // Année
+                importance = 3; // Year
                 addLabel = true;
                 lastYear = year;
-                lastMonth = -1; // Réinitialiser pour afficher le mois qui suit
+                lastMonth = -1; // Reset to show the month that follows
             }
             
-            // Tous les mois (si ce n'est pas le même que le dernier affiché)
+            // All months (if not the same as the last shown)
             else if (month != lastMonth) {
                 labelText = monthNames[month];
-                importance = 2; // Mois
+                importance = 2; // Month
                 addLabel = true;
             }
             
-            // Mémoriser le dernier mois affiché
+            // Remember the last displayed month
             if (addLabel) {
                 lastMonth = month;
             }
         }
-        // Si période <= 2 mois : tous les jours, mois et années
+        // If period <= 2 months: all days, months and years
         else {
-            // Année si elle change
+            // Year if it changes
             if (year != lastYear) {
                 labelText = QString::number(year);
-                importance = 3; // Année
+                importance = 3; // Year
                 addLabel = true;
                 lastYear = year;
-                lastMonth = -1; // Réinitialiser pour afficher le mois qui suit
+                lastMonth = -1; // Reset to show the month that follows
             }
-            // Mois si il change
+            // Month if it changes
             else if (month != lastMonth) {
                 labelText = monthNames[month];
-                importance = 2; // Mois
+                importance = 2; // Month
                 addLabel = true;
                 lastMonth = month;
                 lastDay = day;
             }
-            // Jour (toujours)
+            // Day (always)
             else if (day != lastDay) {
                 labelText = QString::number(static_cast<int>(date.day));
-                importance = 1; // Jour
+                importance = 1; // Day
                 addLabel = true;
                 lastDay = day;
             }
@@ -276,7 +276,7 @@ std::vector<EquityWidget::DateLabel> EquityWidget::generateDateLabels() const {
         }
     }
     
-    // Mettre en cache le résultat
+    // Cache the result
     m_cachedDateLabels = labels;
     
     return labels;
@@ -289,10 +289,10 @@ void EquityWidget::calculatePercentPoints()
         return;
     }
     
-    // Premier point (référence à 0%)
+    // First point (reference at 0%)
     double initialValue = m_points.first().y();
     if (std::abs(initialValue) < EPSILON_D) {
-        initialValue = 1.0; // Éviter la division par zéro
+        initialValue = 1.0; // Avoid division by zero
     }
     
     m_pointsPercent.resize(m_points.size());
@@ -326,10 +326,10 @@ void EquityWidget::updateBounds()
 
 void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
 {
-    // 1. Définir la zone de contenu (avec marges extérieures)
+    // 1. Define the content area (with outer margins)
     m_contentRect = contentRect.adjusted(m_margin, m_margin, -m_margin, -m_margin);
     
-    // 2. Définir la zone du graphique (sans les marges pour axes/labels)
+    // 2. Define the plot area (without margins for axes/labels)
     m_plotRect = QRect(
         m_contentRect.left() + m_leftMargin,
         m_contentRect.top() + m_topMargin,
@@ -337,96 +337,96 @@ void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
         m_contentRect.height() - m_topMargin - m_bottomMargin
     );
     
-    // 2b. Invalider le cache des points widget si la taille du plotRect a changé
+    // 2b. Invalidate widget points cache if plotRect size changed
     if (m_plotRect.size() != m_cachedPlotSize) {
         m_widgetPointsValid = false;
         m_cachedPlotSize = m_plotRect.size();
     }
     
-    // 3. Recalculer les limites selon le mode actuel
+    // 3. Recompute bounds according to current mode
     updateBounds();
     
     painter.setRenderHint(QPainter::Antialiasing, true);
 
-    // 4. Background du contenu
+    // 4. Content background
     painter.fillRect(m_contentRect, Qt::white);
 
-    // 5. Background de la zone de tracé (légèrement différent pour bien voir les limites)
+    // 5. Plot background (slightly different to see boundaries)
     painter.fillRect(m_plotRect, QColor(250, 250, 250));
 
-    // 6. Dessiner la grille (dans m_plotRect uniquement)
+    // 6. Draw the grid (inside m_plotRect only)
     drawGrid(painter);
 
-    // 7. Dessiner les axes (autour de m_plotRect)
+    // 7. Draw axes (around m_plotRect)
     drawAxes(painter);
 
-    // 8. Sélectionner le bon ensemble de points selon le mode
+    // 8. Select the correct set of points according to mode
     const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
 
-    // 8b. Dessiner les zones colorées sous la courbe (AVANT la courbe elle-même)
+    // 8b. Draw colored areas under the curve (BEFORE the curve itself)
     if (!activePoints.isEmpty()) {
         drawFilledAreas(painter);
     }
 
-    // 9. Dessiner la courbe (clippée dans m_plotRect)
+    // 9. Draw the curve (clipped in m_plotRect)
     if (!activePoints.isEmpty()) {
         painter.setClipRect(m_plotRect);
         
-        // Utiliser les points widget en cache (conversion une seule fois)
+        // Use cached widget points (conversion done once)
         const QVector<QPointF>& widgetPoints = getCachedWidgetPoints();
         
-        // Dessiner la polyligne (sans fermer le chemin)
+        // Draw the polyline (without closing the path)
         QPen linePen(Qt::blue);
         linePen.setWidth(2);
         linePen.setCapStyle(Qt::RoundCap);
         linePen.setJoinStyle(Qt::RoundJoin);
         painter.setPen(linePen);
-        painter.setBrush(Qt::NoBrush);  // Important: pas de remplissage
+        painter.setBrush(Qt::NoBrush);  // Important: no fill
         painter.drawPolyline(widgetPoints.data(), widgetPoints.size());
         
         painter.setClipping(false);
     }
 
-    // 10. Dessiner les markers d'equity (lignes initial/peak + highlight final)
+    // 10. Draw equity markers (initial/peak lines + final highlight)
     if (!activePoints.isEmpty()) {
         drawEquityMarkers(painter);
     }
 
-    // 11. Dessiner le crosshair
+    // 11. Draw the crosshair
     if (m_showCrosshair) {
         QPen crossPen(Qt::black);
         crossPen.setStyle(Qt::DashLine);
         crossPen.setWidth(1);
         painter.setPen(crossPen);
 
-        // La position de la souris est déjà en coordonnées widget
+        // Mouse position is already in widget coordinates
         QPoint clampedPos = m_mousePos;
         
-        // Clamper dans m_plotRect
+        // Clamp inside m_plotRect
         clampedPos.setX(qBound(m_plotRect.left(), clampedPos.x(), m_plotRect.right()));
         clampedPos.setY(qBound(m_plotRect.top(), clampedPos.y(), m_plotRect.bottom()));
 
-        // Dessiner les lignes du crosshair
+        // Draw crosshair lines
         painter.drawLine(clampedPos.x(), m_plotRect.top(),
                          clampedPos.x(), m_plotRect.bottom());
         painter.drawLine(m_plotRect.left(), clampedPos.y(),
                          m_plotRect.right(), clampedPos.y());
 
-        // Calculer les coordonnées monde
+        // Compute world coordinates
         QPointF world = mapToWorld(clampedPos);
         QString info;
         
-        // Formater différemment selon le mode
+        // Format differently depending on mode
         if (m_checkBox->isChecked()) {
             info = formatValue(world.y(), true, true, false);
         } else {
             info = formatValue(world.y(), true, false, false);
         }
         
-        // Positionner l'info box intelligemment
+        // Position the info box smartly
         QRect infoRect(clampedPos.x() + 10, clampedPos.y() - 25, 70, 20);
         
-        // Ajuster si ça sort du plotRect
+        // Adjust if it goes outside the plotRect
         if (infoRect.right() > m_plotRect.right()) {
             infoRect.moveLeft(clampedPos.x() - infoRect.width() - 10);
         }
@@ -445,7 +445,7 @@ void EquityWidget::paintContent(QPainter& painter, const QRect& contentRect)
 
 QPointF EquityWidget::mapToWidget(const QPointF &pt) const
 {
-    // Mapper un point monde vers la zone de tracé (m_plotRect)
+    // Map a world point to the plot area (m_plotRect)
     if (m_xmax - m_xmin < EPSILON_D || m_ymax - m_ymin < EPSILON_D) {
         return QPointF(m_plotRect.center());
     }
@@ -461,7 +461,7 @@ QPointF EquityWidget::mapToWidget(const QPointF &pt) const
 
 QPointF EquityWidget::mapToWorld(const QPointF &pixel) const
 {
-    // Mapper un pixel widget vers les coordonnées monde
+    // Map a widget pixel to world coordinates
     if (m_plotRect.width() <= 0 || m_plotRect.height() <= 0) {
         return QPointF(m_xmin, m_ymin);
     }
@@ -477,7 +477,7 @@ QPointF EquityWidget::mapToWorld(const QPointF &pixel) const
 
 const QVector<QPointF>& EquityWidget::getCachedWidgetPoints() const
 {
-    // Si le cache est invalide, recalculer les points widget
+    // If cache is invalid, recompute widget points
     if (!m_widgetPointsValid) {
         const QVector<QPointF>& activePoints = m_checkBox->isChecked() ? m_pointsPercent : m_points;
         
@@ -496,13 +496,13 @@ const QVector<QPointF>& EquityWidget::getCachedWidgetPoints() const
 
 void EquityWidget::drawGrid(QPainter &painter)
 {
-    // Dessiner la grille uniquement dans m_plotRect
+    // Draw the grid only inside m_plotRect
     const int desiredLines = 8;
     double xrange = m_xmax - m_xmin;
     double yrange = m_ymax - m_ymin;
     if (xrange <= EPSILON_D || yrange <= EPSILON_D) return;
 
-    // Calculer un pas "joli" pour les lignes de grille
+    // Compute a "nice" step for grid lines
     auto niceStep = [](double range, int target){
         if (range <= 0) return 1.0;
         double raw = range / target;
@@ -523,26 +523,26 @@ void EquityWidget::drawGrid(QPainter &painter)
     gridPen.setWidth(1);
     painter.setPen(gridPen);
 
-    // Lignes verticales (parallèles à Y)
+    // Vertical lines (parallel to Y)
     double xstart = std::ceil(m_xmin / xstep) * xstep;
     for (double x = xstart; x <= m_xmax; x += xstep) {
         QPointF top = mapToWidget(QPointF(x, m_ymax));
         QPointF bottom = mapToWidget(QPointF(x, m_ymin));
         
-        // S'assurer que les lignes restent dans m_plotRect
+        // Ensure lines stay inside m_plotRect
         top.setX(qBound((double)m_plotRect.left(), top.x(), (double)m_plotRect.right()));
         bottom.setX(qBound((double)m_plotRect.left(), bottom.x(), (double)m_plotRect.right()));
         
         painter.drawLine(top, bottom);
     }
 
-    // Lignes horizontales (parallèles à X)
+    // Horizontal lines (parallel to X)
     double ystart = std::ceil(m_ymin / ystep) * ystep;
     for (double y = ystart; y <= m_ymax; y += ystep) {
         QPointF left = mapToWidget(QPointF(m_xmin, y));
         QPointF right = mapToWidget(QPointF(m_xmax, y));
         
-        // S'assurer que les lignes restent dans m_plotRect
+        // Ensure lines stay inside m_plotRect
         left.setY(qBound((double)m_plotRect.top(), left.y(), (double)m_plotRect.bottom()));
         right.setY(qBound((double)m_plotRect.top(), right.y(), (double)m_plotRect.bottom()));
         
@@ -551,19 +551,19 @@ void EquityWidget::drawGrid(QPainter &painter)
 }
 
 QString EquityWidget::formatValue(double value, bool useThousandsSeparator, bool isPercent, bool roundValue) const {
-    // Gérer les valeurs proches de zéro
+    // Handle values close to zero
     if (std::abs(value) < 0.01) {
         return isPercent ? "0%" : "0";
     }
 
-    // Si on est en mode pourcentage
+    // If in percent mode
     if (isPercent) {
-        // Formater avec 2 décimales pour les pourcentages
+        // Format with 1 decimal for percentages
         return QString::number(value, 'f', 1) + "%";
     }
 
     if (!roundValue) {
-        // Ne pas arrondir, juste formater directement
+        // Do not round, just format directly
         if (useThousandsSeparator) {
             QLocale locale;
             return locale.toString(value, 'f', 1);
@@ -572,28 +572,28 @@ QString EquityWidget::formatValue(double value, bool useThousandsSeparator, bool
         }
     }
 
-    // Trouver l'ordre de grandeur pour l'arrondi (reste du code inchangé)
+    // Find magnitude for rounding (rest of code unchanged)
     double absValue = std::abs(value);
     int digits = std::floor(std::log10(absValue));
     double factor;
     
-    // Déterminer le facteur d'arrondi selon l'ordre de grandeur
+    // Determine rounding factor based on magnitude
     if (absValue >= 100000) {
-        factor = std::pow(10, digits - 1);  // Arrondi aux 10000
+        factor = std::pow(10, digits - 1);  // Round to 10000s
     } else if (absValue >= 10000) {
-        factor = 1000;  // Arrondi aux 1000
+        factor = 1000;  // Round to 1000s
     } else if (absValue >= 1000) {
-        factor = 100;   // Arrondi aux 100
+        factor = 100;   // Round to 100s
     } else if (absValue >= 100) {
-        factor = 10;    // Arrondi aux 10
+        factor = 10;    // Round to 10s
     } else {
-        factor = 1;     // Arrondi aux unités
+        factor = 1;     // Round to units
     }
     
-    // Arrondir à la précision déterminée
+    // Round to determined precision
     double rounded = std::round(value / factor) * factor;
     
-    // Formater avec QLocale pour les séparateurs de milliers
+    // Format with QLocale for thousands separators
     if (useThousandsSeparator) {
         QLocale locale;
         return locale.toString(rounded, 'f', rounded < 10 ? 1 : 0);
@@ -608,22 +608,22 @@ void EquityWidget::drawAxes(QPainter &painter)
     axisPen.setWidth(1);
     painter.setPen(axisPen);
 
-    // Dessiner l'axe X en bas de m_plotRect
+    // Draw X axis at bottom of m_plotRect
     painter.drawLine(m_plotRect.bottomLeft(), m_plotRect.bottomRight());
     
-    // Dessiner l'axe Y à droite de m_plotRect
+    // Draw Y axis at right of m_plotRect
     painter.drawLine(m_plotRect.topRight(), m_plotRect.bottomRight());
 
     QFontMetrics fm(font());
 
-    // Axe Y - Labels de valeurs (à droite)
+    // Y Axis - value labels (on the right)
     const int yTicks = 5;
     double yrange = m_ymax - m_ymin;
     if (yrange <= EPSILON_D) return;
     
     double ystep = yrange / yTicks;
     
-    // Récupérer la valeur finale pour le highlight
+    // Get final value for highlight
     double finalEquity = getFinalEquity();
     QPointF finalWidgetPos = mapToWidget(QPointF(m_xmax, finalEquity));
     
@@ -631,17 +631,17 @@ void EquityWidget::drawAxes(QPainter &painter)
         double yv = m_ymin + i * ystep;
         QPointF wp = mapToWidget(QPointF(m_xmax, yv));
         
-        // Tick à droite de l'axe Y
+        // Tick on the right of the Y axis
         painter.drawLine(QPointF(m_plotRect.right(), wp.y()), 
                          QPointF(m_plotRect.right() + 4, wp.y()));
         
-        // Label aligné à gauche après le tick
+        // Label aligned left after the tick
         QString txt = formatValue(yv, true, m_checkBox->isChecked());
         painter.drawText(QPointF(m_plotRect.right() + 8, wp.y() + fm.ascent() / 2 - 2), txt);
     }
     
-    // ==================== Highlight de la valeur INITIAL ====================
-    // Dessiner un label spécial pour la valeur initiale (comme le final)
+    // ==================== Highlight for INITIAL value (without label) ====================
+    // Draw a special label for the initial value (like the final)
     double initialEquity = getInitialEquity();
     QPointF initialWidgetPos = mapToWidget(QPointF(m_xmax, initialEquity));
     
@@ -655,11 +655,11 @@ void EquityWidget::drawAxes(QPainter &painter)
     int textWidth = fmBold.horizontalAdvance(initialText);
     int textHeight = fmBold.height();
     
-    // Rectangle pour le highlight (aligné avec les labels Y)
+    // Rectangle for the highlight (aligned with Y labels)
     QRect initialHighlightRect(m_plotRect.right() + 6, initialWidgetPos.y() - textHeight / 2 - 3,
                               textWidth + 10, textHeight + 6);
     
-    // Fond gris clair pour le highlight
+    // Light grey background for the highlight
     painter.setPen(QPen(Qt::transparent));
     painter.setBrush(QColor(230, 230, 230));
     painter.drawRoundedRect(initialHighlightRect, 1, 1);
@@ -667,12 +667,12 @@ void EquityWidget::drawAxes(QPainter &painter)
     painter.setPen(Qt::black);
     painter.drawText(initialHighlightRect, Qt::AlignCenter, initialText);
     
-    // Restaurer la police normale
+    // Restore normal font
     painter.setFont(font());
     painter.setPen(Qt::black);
     
-    // ==================== Highlight de la valeur FINAL ====================
-    // Dessiner un label spécial pour la valeur finale
+    // ==================== Highlight for FINAL value ====================
+    // Draw a special label for the final value
     QString finalText = formatValue(finalEquity, true, m_checkBox->isChecked(), false); // "Final: " + 
     
     boldFont = painter.font();
@@ -683,11 +683,11 @@ void EquityWidget::drawAxes(QPainter &painter)
     textWidth = fmBold.horizontalAdvance(finalText);
     textHeight = fmBold.height();
     
-    // Rectangle pour le highlight (aligné avec les labels Y)
+    // Rectangle for the highlight (aligned with Y labels)
     QRect highlightRect(m_plotRect.right() + 6, finalWidgetPos.y() - textHeight / 2 - 3,
                        textWidth + 10, textHeight + 6);
     
-    // Fond rouge/orange pour le highlight
+    // Orange/red background for the highlight
     painter.setPen(QPen(Qt::transparent));
     painter.setBrush(QColor(255, 220, 200));
     painter.drawRoundedRect(highlightRect, 1, 1);
@@ -695,11 +695,11 @@ void EquityWidget::drawAxes(QPainter &painter)
     painter.setPen(Qt::black);
     painter.drawText(highlightRect, Qt::AlignCenter, finalText);
     
-    // Restaurer la police normale
+    // Restore normal font
     painter.setFont(font());
     painter.setPen(Qt::black);
 
-    // Axe X - Labels de dates intelligents
+    // X Axis - smart date labels
     if (!m_dates.empty()) {
         auto dateLabels = generateDateLabels();
         
@@ -708,30 +708,30 @@ void EquityWidget::drawAxes(QPainter &painter)
             if (xPos >= 0 && xPos < m_dates.size()) {
                 QPointF wp = mapToWidget(QPointF(xPos, m_ymin));
                 
-                // Tick en bas de l'axe X
+                // Tick at the bottom of the X axis
                 painter.drawLine(QPointF(wp.x(), m_plotRect.bottom()), 
                                 QPointF(wp.x(), m_plotRect.bottom() + 4));
                 
-                // Adapter le style selon l'importance
+                // Adjust style based on importance
                 QFont labelFont = painter.font();
                 if (label.importance == 3) {
-                    // Année: gras
+                    // Year: bold
                     labelFont.setBold(true);
                 } else if (label.importance == 2) {
-                    // Mois: normal
+                    // Month: normal
                     labelFont.setBold(false);
                 } else {
-                    // Jour: plus petit
+                    // Day: smaller
                     labelFont.setBold(false);
                     labelFont.setPointSize(qMax(6, labelFont.pointSize() - 1));
                 }
                 painter.setFont(labelFont);
 
-                // Dessiner le texte centré sous le tick
+                // Draw text centered under the tick
                 int tw = fm.horizontalAdvance(label.text);
                 painter.drawText(QPointF(wp.x() - tw / 2, m_plotRect.bottom() + 18), label.text);
                 
-                // Restaurer la police
+                // Restore font
                 painter.setFont(font());
             }
         }
@@ -749,8 +749,8 @@ void EquityWidget::drawFilledAreas(QPainter &painter)
     painter.setClipRect(m_plotRect);
     painter.setPen(Qt::NoPen);
     
-    // On va créer des segments séparés pour chaque zone continue
-    // Cela évite les artefacts visuels entre segments discontinus
+    // We will create separate segments for each continuous zone
+    // This avoids visual artifacts between discontinuous segments
     
     QVector<QPointF> currentSegment;
     bool isGainSegment = false;
@@ -760,28 +760,28 @@ void EquityWidget::drawFilledAreas(QPainter &painter)
         
         QPainterPath path;
         
-        // Commencer à la baseline du premier point
+        // Start at the baseline of the first point
         QPointF firstBaseline = mapToWidget(QPointF(currentSegment.first().x(), initialEquity));
         path.moveTo(firstBaseline);
         
-        // Suivre la courbe
+        // Follow the curve
         for (const auto& pt : currentSegment) {
             QPointF widgetPt = mapToWidget(pt);
             path.lineTo(widgetPt);
         }
         
-        // Revenir à la baseline du dernier point
+        // Return to the baseline of the last point
         QPointF lastBaseline = mapToWidget(QPointF(currentSegment.last().x(), initialEquity));
         path.lineTo(lastBaseline);
         
-        // Fermer le chemin (retour au point de départ)
+        // Close the path (back to the start)
         path.closeSubpath();
         
-        // Dessiner avec la couleur appropriée
+        // Draw with appropriate color
         if (isGainSegment) {
-            painter.setBrush(QColor(16, 124, 16, 40));  // Vert léger
+            painter.setBrush(QColor(16, 124, 16, 40));  // Light green
         } else {
-            painter.setBrush(QColor(196, 43, 28, 40));  // Rouge léger
+            painter.setBrush(QColor(196, 43, 28, 40));  // Light red
         }
         painter.drawPath(path);
         
@@ -793,7 +793,7 @@ void EquityWidget::drawFilledAreas(QPainter &painter)
         bool isGain = (pt.y() >= initialEquity);
         
         if (i == 0) {
-            // Premier point
+            // First point
             currentSegment.append(pt);
             isGainSegment = isGain;
         } else {
@@ -801,20 +801,20 @@ void EquityWidget::drawFilledAreas(QPainter &painter)
             bool prevIsGain = (prevPt.y() >= initialEquity);
             
             if (isGain == prevIsGain) {
-                // On reste du même côté, continuer le segment
+                // Still on the same side, continue the segment
                 currentSegment.append(pt);
             } else {
-                // On change de côté (crossing)
-                // Calculer le point d'intersection
+                // Crossing happened
+                // Compute the intersection point
                 double t = (initialEquity - prevPt.y()) / (pt.y() - prevPt.y());
                 double intersectX = prevPt.x() + t * (pt.x() - prevPt.x());
                 QPointF intersectPt(intersectX, initialEquity);
                 
-                // Finir le segment précédent avec le point d'intersection
+                // Finish the previous segment with the intersection point
                 currentSegment.append(intersectPt);
                 finishSegment();
                 
-                // Commencer un nouveau segment avec le point d'intersection
+                // Start a new segment with the intersection point
                 currentSegment.append(intersectPt);
                 currentSegment.append(pt);
                 isGainSegment = isGain;
@@ -822,7 +822,7 @@ void EquityWidget::drawFilledAreas(QPainter &painter)
         }
     }
     
-    // Finir le dernier segment
+    // Finish the last segment
     finishSegment();
     
     painter.setClipping(false);
@@ -830,10 +830,10 @@ void EquityWidget::drawFilledAreas(QPainter &painter)
 
 void EquityWidget::mouseMoveEvent(QMouseEvent *event)
 {    
-    // Position de la souris dans les coordonnées du widget
+    // Mouse position in widget coordinates
     m_mousePos = event->pos();
     
-    // Vérifier si la souris est dans la zone de tracé
+    // Check if mouse is inside the plot area
     if (m_plotRect.contains(m_mousePos)) {
         m_showCrosshair = true;
     } else {
@@ -845,14 +845,14 @@ void EquityWidget::mouseMoveEvent(QMouseEvent *event)
 
 void EquityWidget::drawEquityMarkers(QPainter &painter)
 {
-    // Récupérer les valeurs automatiquement
+    // Retrieve values automatically
     double initialEquity = getInitialEquity();
     double peakEquity = getPeakPoint().y();
     double finalEquity = getFinalEquity();
     
     bool isPercentMode = m_checkBox->isChecked();
     
-    // Helper pour formater les valeurs
+    // Helper to format values
     auto formatValue = [isPercentMode](double value) -> QString {
         if (isPercentMode) {
             return QString("%1%").arg(value, 0, 'f', 2);
@@ -867,39 +867,39 @@ void EquityWidget::drawEquityMarkers(QPainter &painter)
     labelFont.setWeight(QFont::DemiBold);
     QFontMetrics fm(labelFont);
     
-    // ==================== 1. Ligne horizontale INITIAL (sans label) ====================
+    // ==================== 1. INITIAL horizontal line (without label) ====================
     {
         QPointF leftPt = mapToWidget(QPointF(m_xmin, initialEquity));
         QPointF rightPt = mapToWidget(QPointF(m_xmax, initialEquity));
         
-        // Ligne en pointillés
+        // Dashed line
         QPen initialPen(QColor(100, 100, 100), 1, Qt::DashLine);
         painter.setPen(initialPen);
         painter.drawLine(leftPt, rightPt);
         
-        // Note: Le label "Initial" sera affiché sur l'axe Y (voir drawAxes)
+        // Note: The "Initial" label will be shown on the Y axis (see drawAxes)
     }
     
-    // ==================== 2. Ligne horizontale PEAK ====================
+    // ==================== 2. PEAK horizontal line ====================
     {
         QPointF leftPt = mapToWidget(QPointF(m_xmin, peakEquity));
         QPointF rightPt = mapToWidget(QPointF(m_xmax, peakEquity));
         
-        // Ligne en pointillés (verte)
+        // Dashed line (green)
         QPen peakPen(QColor(16, 124, 16), 1, Qt::DashLine);
         painter.setPen(peakPen);
         painter.drawLine(leftPt, rightPt);
         
-        // Ligne verticale au niveau du peak (légère, sans légende)
+        // Vertical line at the peak (subtle, without legend)
         QPointF peakPoint = getPeakPoint();
         QPointF peakTopPt = mapToWidget(QPointF(peakPoint.x(), m_ymax));
         QPointF peakBottomPt = mapToWidget(QPointF(peakPoint.x(), m_ymin));
 
-        QPen verticalPeakPen(QColor(16, 124, 16), 1, Qt::DotLine);  // Plus léger et en pointillés
+        QPen verticalPeakPen(QColor(16, 124, 16), 1, Qt::DotLine);  // Lighter and dotted
         painter.setPen(verticalPeakPen);
         painter.drawLine(peakTopPt, peakBottomPt);
         
-        // Label sur la ligne (au milieu)
+        // Label on the line (centered)
         QString labelText = "Peak: " + formatValue(peakEquity);
         painter.setFont(labelFont);
         
@@ -910,30 +910,29 @@ void EquityWidget::drawEquityMarkers(QPainter &painter)
                       leftPt.y() - textHeight / 2 - 2, 
                       textWidth + 8, textHeight + 4);
         
-        // Fond semi-transparent
+        // Semi-transparent background
         painter.setPen(Qt::NoPen);
         painter.setBrush(QColor(255, 255, 255));
         painter.drawRoundedRect(textRect, 3, 3);
         
-        // Texte en vert
+        // Text in green
         painter.setPen(QColor(16, 124, 16));
         painter.drawText(textRect, Qt::AlignCenter, labelText);
     }
     
-    // ==================== 3. Highlight FINAL sur la légende ====================
-    // Note: Le highlight sera dessiné dans drawAxes() directement sur le dernier label Y
-    // On va juste stocker la valeur finale pour que drawAxes() puisse la highlighter
-    // Pour l'instant, on dessine un petit indicateur visuel sur le graphique
+    // ==================== 3. FINAL highlight on the legend ====================
+    // Note: The highlight will be drawn in drawAxes() directly on the last Y label
+    // For now, we draw a small visual indicator on the chart
     {
         // QPointF finalPt = mapToWidget(QPointF(m_xmax, finalEquity));
         
-        // Petit cercle sur le point final
+        // Small circle on the final point
         // QPen finalPen(QColor(196, 43, 28), 2);
         // // painter.setPen(finalPen);
         // painter.setBrush(QColor(196, 43, 28, 100));
         // painter.drawEllipse(finalPt, 3, 3);
         
-        // Flèche vers la légende à droite
+        // Arrow to the legend on the right
         // QPen arrowPen(QColor(196, 43, 28), 2);
         // arrowPen.setStyle(Qt::DotLine);
         // painter.setPen(arrowPen);
@@ -941,13 +940,13 @@ void EquityWidget::drawEquityMarkers(QPainter &painter)
         // QPointF arrowEnd(m_plotRect.right() + 3, finalPt.y());
         // painter.drawLine(finalPt, arrowEnd);
         
-        // // Petite tête de flèche
+        // // Small arrow head
         // painter.setPen(QPen(QColor(196, 43, 28), 2));
         // painter.drawLine(arrowEnd, arrowEnd + QPointF(-4, -3));
         // painter.drawLine(arrowEnd, arrowEnd + QPointF(-4, 3));
     }
     
-    // Restaurer la police
+    // Restore font
     painter.setFont(font());
 }
 

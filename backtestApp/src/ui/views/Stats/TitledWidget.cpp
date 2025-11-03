@@ -10,9 +10,9 @@ TitledWidget::TitledWidget(const QString& title, QWidget *parent)
     , m_titleVisible(!title.isEmpty())
     , m_backgroundColor(Qt::transparent) // Transparent
     , m_titleCompanionWidget(nullptr)
-    , m_backgroundIconSize(64, 64) // Taille par défaut de l'icône
-    , m_backgroundIconAlignment(Qt::AlignCenter) // Centré par défaut
-    , m_backgroundIconOpacity(0.15) // Opacité légère par défaut
+    , m_backgroundIconSize(64, 64) // Default background icon size
+    , m_backgroundIconAlignment(Qt::AlignCenter) // Centered by default
+    , m_backgroundIconOpacity(0.15) // Slight default opacity
     , m_fontWeight(QFont::DemiBold)
     , m_fontSize(0)
 {
@@ -73,13 +73,13 @@ void TitledWidget::setFontSize(int fontSize)
 {
     if (m_fontSize != fontSize) {
         m_fontSize = fontSize;
-        update();  // Déclencher un repaint
+        update();  // Trigger a repaint
     }
 }
 
 void TitledWidget::setTitleCompanionWidget(QWidget* widget)
 {
-    // Si un widget existe déjà, le supprimer
+    // If a widget already exists, remove it
     if (m_titleCompanionWidget) {
         m_titleCompanionWidget->setParent(nullptr);
         m_titleCompanionWidget->deleteLater();
@@ -131,9 +131,9 @@ QRect TitledWidget::contentRect() const
     QRect rect = this->rect();
     
     if (m_titleVisible && !m_title.isEmpty()) {
-        // Réserver l'espace pour le titre en haut
+        // Reserve space for the title at the top
         QFontMetrics fm(font());
-        int titleHeight = fm.height() + 4; // Hauteur du texte + marge
+        int titleHeight = fm.height() + 4; // Text height + margin
         rect.setTop(rect.top() + titleHeight);
     }
     
@@ -144,83 +144,83 @@ void TitledWidget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
 
-    // Dessiner le fond (sans antialiasing)
+    // Draw the background (without antialiasing)
     painter.fillRect(rect(), m_backgroundColor);
 
-    // Dessiner l'icône de fond si elle existe
+    // Draw the background icon if it exists
     if (!m_backgroundIcon.isNull()) {
         QRect contentArea = contentRect();
         
-        // Calculer la position de l'icône en fonction de l'alignement
+        // Calculate the icon position based on alignment
         QRect iconRect;
         
-        // Calcul horizontal
+        // Horizontal calculation
         if (m_backgroundIconAlignment & Qt::AlignLeft)
             iconRect.setLeft(contentArea.left() + 10);
         else if (m_backgroundIconAlignment & Qt::AlignRight)
             iconRect.setLeft(contentArea.right() - m_backgroundIconSize.width() - 10);
-        else // AlignHCenter ou par défaut
+        else // AlignHCenter or default
             iconRect.setLeft(contentArea.left() + (contentArea.width() - m_backgroundIconSize.width()) / 2);
         
-        // Calcul vertical
+        // Vertical calculation
         if (m_backgroundIconAlignment & Qt::AlignTop)
             iconRect.setTop(contentArea.top() + 10);
         else if (m_backgroundIconAlignment & Qt::AlignBottom)
             iconRect.setTop(contentArea.bottom() - m_backgroundIconSize.height() - 10);
-        else // AlignVCenter ou par défaut
+        else // AlignVCenter or default
             iconRect.setTop(contentArea.top() + (contentArea.height() - m_backgroundIconSize.height()) / 2);
         
         iconRect.setSize(m_backgroundIconSize);
         
-        // Dessiner l'icône avec l'opacité configurée
+        // Draw the icon with the configured opacity
         painter.setOpacity(m_backgroundIconOpacity);
         m_backgroundIcon.paint(&painter, iconRect);
         painter.setOpacity(1.0);
     }
 
-    // Dessiner le titre s'il est visible
+    // Draw the title if it is visible
     if (m_titleVisible && !m_title.isEmpty()) {
         QFont titleFont = font();
-        titleFont.setPointSize(11); // Petite taille pour le titre
+        titleFont.setPointSize(11); // Small size for the title
         painter.setFont(titleFont);
 
         QFontMetrics fm(titleFont);
-        int textWidth = fm.horizontalAdvance(m_title) + 10; // Largeur du texte + marge
-        int textHeight = fm.height() + 4; // Hauteur du texte + marge
+        int textWidth = fm.horizontalAdvance(m_title) + 10; // Text width + margin
+        int textHeight = fm.height() + 4; // Text height + margin
         
-        // Ajuster la largeur de la zone de titre si un widget compagnon est présent
+        // Adjust the width of the title area if a companion widget is present
         int titleBoxWidth = textWidth;
         if (m_titleCompanionWidget && m_titleCompanionWidget->isVisible()) {
-            titleBoxWidth += m_titleCompanionWidget->width() + 15;  // Largeur du widget + marge
+            titleBoxWidth += m_titleCompanionWidget->width() + 15;  // Widget width + margin
             m_titleCompanionWidget->setGeometry(
-                textWidth + 1,  // Position X: après le titre avec une marge
-                1,          // Position Y: centré verticalement dans la barre de titre
+                textWidth + 1,  // Position X: after the title with a margin
+                1,              // Position Y: vertically centered in the title bar
                 m_titleCompanionWidget->sizeHint().width(),
-                textHeight  // Hauteur légèrement réduite pour l'esthétique
+                textHeight      // Slightly reduced height for aesthetics
             );
         }
 
 
-        // Dessiner le fond du titre
+        // Draw the title background
         QRect titleRect(0, 0, textWidth, textHeight);
         painter.setRenderHint(QPainter::Antialiasing, false);
         painter.setBrush(Qt::NoBrush);
-        painter.setPen(QPen(QColor(160, 160, 160), 1)); // Utilise la couleur du titre pour le contour
+        painter.setPen(QPen(QColor(160, 160, 160), 1)); // Use the title color for the border
         painter.drawRect(titleRect);
 
-        // Réactiver l'antialiasing pour le texte
+        // Re-enable antialiasing for text
         painter.setRenderHint(QPainter::Antialiasing, true);
         painter.setPen(QPen(Qt::black, 1));
         painter.drawText(QRect(0, 0, textWidth, textHeight), Qt::AlignCenter, m_title);
     }
 
-    // Dessiner le contour du widget
+    // Draw the widget border
     painter.setRenderHint(QPainter::Antialiasing, false);
-    painter.setPen(QPen(QColor(160, 160, 160), 1)); // Couleur et épaisseur du contour
+    painter.setPen(QPen(QColor(160, 160, 160), 1)); // Border color and thickness
     painter.setBrush(Qt::NoBrush);
-    painter.drawRect(rect().adjusted(0, 0, -1, -1)); // Ajuster pour que le contour soit à l'intérieur
+    painter.drawRect(rect().adjusted(0, 0, -1, -1)); // Adjust so border is inside
 
-    // Appeler la méthode virtuelle pour le contenu spécifique
+    // Call the virtual method for specific content
     painter.setRenderHint(QPainter::Antialiasing, true);
     paintContent(painter, contentRect());
 }

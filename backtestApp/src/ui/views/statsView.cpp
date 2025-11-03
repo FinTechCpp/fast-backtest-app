@@ -257,7 +257,7 @@ void StatsView::setupUI() {
     m_skewnessKurtosisWidget->setMinimumHeight(m_skewnessKurtosisWidget->sizeHint().height());
     gridLayout->addWidget(m_skewnessKurtosisWidget, 8, 6, 1, 1);
 
-    // FINALISATION
+    // Final layout setup
     // --------------------------------------
     // Add the gridLayout directly to the main layout (no scroll area)
     m_mainLayout->addLayout(gridLayout);

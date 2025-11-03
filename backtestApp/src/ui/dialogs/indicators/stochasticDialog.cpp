@@ -11,42 +11,42 @@ StochasticDialog::~StochasticDialog()
 }
 
 void StochasticDialog::setupUI() {
-    // Période Fast K
+    // Period Fast K
     m_fastKPeriodSpinBox = new QSpinBox();
     m_fastKPeriodSpinBox->setRange(2, 1000);
     m_formLayout->addRow("Fast K Period:", m_fastKPeriodSpinBox);
-    
-    // Période Slow K
+
+    // Period Slow K
     m_slowKPeriodSpinBox = new QSpinBox();
     m_slowKPeriodSpinBox->setRange(1, 1000);
     m_formLayout->addRow("Slow K Period:", m_slowKPeriodSpinBox);
-    
-    // Période Slow D
+
+    // Period Slow D
     m_slowDPeriodSpinBox = new QSpinBox();
     m_slowDPeriodSpinBox->setRange(1, 1000);
     m_formLayout->addRow("Slow D Period:", m_slowDPeriodSpinBox);
     
-    // Hauteur
+    // Height
     m_heightSpinBox = new QSpinBox();
     m_heightSpinBox->setRange(50, 300);
     m_heightSpinBox->setSingleStep(10);
     m_formLayout->addRow("Height:", m_heightSpinBox);
     
-    // Niveau de surachat
+    //overbought Level
     m_overboughtLevelSpinBox = new QSpinBox();
     m_overboughtLevelSpinBox->setRange(0, 100);
     m_formLayout->addRow("Overbought Level:", m_overboughtLevelSpinBox);
     
-    // Niveau de survente
+    // Oversold Level
     m_oversoldLevelSpinBox = new QSpinBox();
     m_oversoldLevelSpinBox->setRange(0, 100);
     m_formLayout->addRow("Oversold Level:", m_oversoldLevelSpinBox);
     
-    // Couleur de la ligne K
+    // line k color
     m_kColorButton = new QPushButton();
     m_formLayout->addRow("%K Line Color:", m_kColorButton);
     
-    // Couleur de la ligne D
+    // line d color
     m_dColorButton = new QPushButton();
     m_formLayout->addRow("%D Line Color:", m_dColorButton);
 }
@@ -100,20 +100,18 @@ void StochasticDialog::onOverboughtLevelChanged(int level) {
     m_currentIndicator.overboughtLevel = level;
     applyChanges();
     
-    // Assurer que le niveau de surachat est toujours supérieur au niveau de survente
-    if (level <= m_oversoldLevelSpinBox->value()) {
+    // make sure overbought level is always higher than oversold level
+    if (level <= m_oversoldLevelSpinBox->value()) 
         m_oversoldLevelSpinBox->setValue(level - 1);
-    }
 }
 
 void StochasticDialog::onOversoldLevelChanged(int level) {
     m_currentIndicator.oversoldLevel = level;
     applyChanges();
     
-    // Assurer que le niveau de survente est toujours inférieur au niveau de surachat
-    if (level >= m_overboughtLevelSpinBox->value()) {
+    // make sure oversold level is always lower than overbought level
+    if (level >= m_overboughtLevelSpinBox->value()) 
         m_overboughtLevelSpinBox->setValue(level + 1);
-    }
 }
 
 void StochasticDialog::onKColorButtonClicked() {

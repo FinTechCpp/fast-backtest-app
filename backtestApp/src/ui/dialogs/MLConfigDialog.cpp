@@ -12,7 +12,7 @@ MLConfigDialog::MLConfigDialog(QWidget* parent)
       m_threshold(0.5f),
       m_normalize(true)
 {
-    setWindowTitle("Configuration Machine Learning");
+    setWindowTitle("Machine Learning Configuration");
     setMinimumSize(800, 600);
     setupUI();
 }
@@ -50,8 +50,8 @@ void MLConfigDialog::updateConfig(StrategyConfig& config) {
 void MLConfigDialog::setupUI() {
     QVBoxLayout* mainLayout = new QVBoxLayout(this);
     
-    // Checkbox pour activer/désactiver ML
-    m_useMlEntryCheck = new QCheckBox("Utiliser un modèle d'Intelligence Artificielle pour les signaux d'entrée", this);
+    // Checkbox to enable/disable ML
+    m_useMlEntryCheck = new QCheckBox("Use an AI model for entry signals", this);
     m_useMlEntryCheck->setStyleSheet(
         "QCheckBox {"
         "   font-size: 14px;"
@@ -62,19 +62,19 @@ void MLConfigDialog::setupUI() {
     connect(m_useMlEntryCheck, &QCheckBox::checkStateChanged, this, &MLConfigDialog::onUseMlEntryChanged);
     mainLayout->addWidget(m_useMlEntryCheck);
     
-    // Groupe de configuration ML
-    m_configGroup = new QGroupBox("Configuration du modèle ML", this);
+    // ML configuration group
+    m_configGroup = new QGroupBox("ML Model Configuration", this);
     QVBoxLayout* configLayout = new QVBoxLayout();
     
-    // Section: Chemin du modèle
-    QGroupBox* modelPathGroup = new QGroupBox("Modèle ONNX", this);
+    // Section: Model path
+    QGroupBox* modelPathGroup = new QGroupBox("ONNX Model", this);
     QHBoxLayout* modelPathLayout = new QHBoxLayout();
     
-    QLabel* modelPathLabel = new QLabel("Chemin du modèle :", this);
+    QLabel* modelPathLabel = new QLabel("Model path:", this);
     m_modelPathEdit = new QLineEdit(this);
     m_modelPathEdit->setPlaceholderText("./models/entry_signals.onnx");
     
-    m_browseButton = new QPushButton("Parcourir...", this);
+    m_browseButton = new QPushButton("Browse...", this);
     m_browseButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #2196F3;"
@@ -95,47 +95,47 @@ void MLConfigDialog::setupUI() {
     modelPathGroup->setLayout(modelPathLayout);
     configLayout->addWidget(modelPathGroup);
     
-    // Section: Paramètres du modèle
-    QGroupBox* paramsGroup = new QGroupBox("Paramètres", this);
+    // Section: Model parameters
+    QGroupBox* paramsGroup = new QGroupBox("Parameters", this);
     QGridLayout* paramsLayout = new QGridLayout();
     
     // Lookback periods
-    QLabel* lookbackLabel = new QLabel("Nombre de bougies historiques :", this);
+    QLabel* lookbackLabel = new QLabel("Number of historical candles:", this);
     m_lookbackPeriodsSpinBox = new QSpinBox(this);
     m_lookbackPeriodsSpinBox->setRange(1, 500);
     m_lookbackPeriodsSpinBox->setValue(50);
-    m_lookbackPeriodsSpinBox->setToolTip("Nombre de bougies passées utilisées comme features pour le modèle");
+    m_lookbackPeriodsSpinBox->setToolTip("Number of past candles used as features for the model");
     paramsLayout->addWidget(lookbackLabel, 0, 0);
     paramsLayout->addWidget(m_lookbackPeriodsSpinBox, 0, 1);
     
     // Threshold
-    QLabel* thresholdLabel = new QLabel("Seuil de prédiction (±) :", this);
+    QLabel* thresholdLabel = new QLabel("Prediction threshold (±):", this);
     m_thresholdSpinBox = new QDoubleSpinBox(this);
     m_thresholdSpinBox->setRange(0.0, 1.0);
     m_thresholdSpinBox->setSingleStep(0.05);
     m_thresholdSpinBox->setValue(0.5);
     m_thresholdSpinBox->setDecimals(2);
-    m_thresholdSpinBox->setToolTip("Seuil pour générer un signal (BUY si > seuil, SELL si < -seuil)");
+    m_thresholdSpinBox->setToolTip("Threshold to generate a signal (BUY if > threshold, SELL if < -threshold)");
     paramsLayout->addWidget(thresholdLabel, 1, 0);
     paramsLayout->addWidget(m_thresholdSpinBox, 1, 1);
     
     // Normalize
-    m_normalizeCheck = new QCheckBox("Normaliser les features (Z-score)", this);
+    m_normalizeCheck = new QCheckBox("Normalize features (Z-score)", this);
     m_normalizeCheck->setChecked(true);
-    m_normalizeCheck->setToolTip("Appliquer une normalisation Z-score aux features avant l'inférence");
+    m_normalizeCheck->setToolTip("Apply Z-score normalization to features before inference");
     paramsLayout->addWidget(m_normalizeCheck, 2, 0, 1, 2);
     
     paramsGroup->setLayout(paramsLayout);
     configLayout->addWidget(paramsGroup);
     
-    // Section: Configuration des features (indicateurs)
-    QGroupBox* featuresGroup = new QGroupBox("Features (Indicateurs) utilisées par le modèle", this);
+    // Section: Features configuration (indicators)
+    QGroupBox* featuresGroup = new QGroupBox("Features (Indicators) used by the model", this);
     QVBoxLayout* featuresLayout = new QVBoxLayout();
     
     QLabel* infoLabel = new QLabel(
-        "<b>Important :</b> L'ordre et le type des features doivent correspondre exactement "
-        "à celles utilisées lors de l'entraînement du modèle ONNX.<br>"
-        "Par défaut, les données OHLC des N dernières bougies sont utilisées.",
+        "<b>Important :</b> The order and type of features must exactly match "
+        "those used during the training of the ONNX model.<br>"
+        "By default, the OHLC data of the last N candles are used.",
         this
     );
     infoLabel->setWordWrap(true);
@@ -150,7 +150,7 @@ void MLConfigDialog::setupUI() {
     );
     featuresLayout->addWidget(infoLabel);
     
-    // Liste des features avec boutons de contrôle
+    // Feature list with control buttons
     QHBoxLayout* featureControlLayout = new QHBoxLayout();
     
     m_featureList = new QListWidget(this);
@@ -166,11 +166,11 @@ void MLConfigDialog::setupUI() {
     connect(m_featureList, &QListWidget::itemDoubleClicked, this, &MLConfigDialog::onEditFeature);
     featureControlLayout->addWidget(m_featureList, 1);
     
-    // Boutons de contrôle
+    // Control buttons
     QVBoxLayout* buttonLayout = new QVBoxLayout();
     
-    m_addFeatureButton = new QPushButton("➕ Ajouter", this);
-    m_addFeatureButton->setToolTip("Ajouter une nouvelle feature");
+    m_addFeatureButton = new QPushButton("➕ Add", this);
+    m_addFeatureButton->setToolTip("Add a new feature");
     m_addFeatureButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #4CAF50;"
@@ -184,8 +184,8 @@ void MLConfigDialog::setupUI() {
     connect(m_addFeatureButton, &QPushButton::clicked, this, &MLConfigDialog::onAddFeature);
     buttonLayout->addWidget(m_addFeatureButton);
     
-    m_editFeatureButton = new QPushButton("✏️ Éditer", this);
-    m_editFeatureButton->setToolTip("Éditer la feature sélectionnée");
+    m_editFeatureButton = new QPushButton("✏️ Edit", this);
+    m_editFeatureButton->setToolTip("Edit the selected feature");
     m_editFeatureButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #FF9800;"
@@ -205,8 +205,8 @@ void MLConfigDialog::setupUI() {
     });
     buttonLayout->addWidget(m_editFeatureButton);
     
-    m_removeFeatureButton = new QPushButton("🗑️ Supprimer", this);
-    m_removeFeatureButton->setToolTip("Supprimer la feature sélectionnée");
+    m_removeFeatureButton = new QPushButton("🗑️ Remove", this);
+    m_removeFeatureButton->setToolTip("Remove the selected feature");
     m_removeFeatureButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #f44336;"
@@ -223,8 +223,8 @@ void MLConfigDialog::setupUI() {
     
     buttonLayout->addSpacing(10);
     
-    m_moveUpButton = new QPushButton("⬆ Monter", this);
-    m_moveUpButton->setToolTip("Déplacer vers le haut");
+    m_moveUpButton = new QPushButton("⬆ Move Up", this);
+    m_moveUpButton->setToolTip("Move up");
     m_moveUpButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #2196F3;"
@@ -239,8 +239,8 @@ void MLConfigDialog::setupUI() {
     connect(m_moveUpButton, &QPushButton::clicked, this, &MLConfigDialog::onMoveFeatureUp);
     buttonLayout->addWidget(m_moveUpButton);
     
-    m_moveDownButton = new QPushButton("⬇ Descendre", this);
-    m_moveDownButton->setToolTip("Déplacer vers le bas");
+    m_moveDownButton = new QPushButton("⬇ Move Down", this);
+    m_moveDownButton->setToolTip("Move down");
     m_moveDownButton->setStyleSheet(
         "QPushButton {"
         "   background-color: #2196F3;"
@@ -260,8 +260,8 @@ void MLConfigDialog::setupUI() {
     featureControlLayout->addLayout(buttonLayout);
     featuresLayout->addLayout(featureControlLayout);
     
-    // Label informatif
-    QLabel* featureInfoLabel = new QLabel("<b>Astuce :</b> Double-cliquez sur une feature pour l'éditer", this);
+    // Informational label
+    QLabel* featureInfoLabel = new QLabel("<b>Tip:</b> Double-click a feature to edit it", this);
     featureInfoLabel->setWordWrap(true);
     featureInfoLabel->setStyleSheet(
         "QLabel {"
@@ -282,14 +282,14 @@ void MLConfigDialog::setupUI() {
     m_configGroup->setLayout(configLayout);
     mainLayout->addWidget(m_configGroup);
     
-    // Boutons OK/Cancel
+    // OK/Cancel buttons
     QDialogButtonBox* buttonBox = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
         this
     );
     
     connect(buttonBox, &QDialogButtonBox::accepted, this, [this]() {
-        // Sauvegarder les valeurs
+        // Save values
         m_useMlEntry = m_useMlEntryCheck->isChecked();
         m_modelPath = m_modelPathEdit->text().toStdString();
         m_lookbackPeriods = m_lookbackPeriodsSpinBox->value();
@@ -303,7 +303,7 @@ void MLConfigDialog::setupUI() {
     
     mainLayout->addWidget(buttonBox);
     
-    // État initial
+    // Initial state
     onUseMlEntryChanged(m_useMlEntryCheck->isChecked() ? Qt::Checked : Qt::Unchecked);
     updateButtonStates();
 }
@@ -316,9 +316,9 @@ void MLConfigDialog::onUseMlEntryChanged(int state) {
 void MLConfigDialog::onBrowseModelPath() {
     QString fileName = QFileDialog::getOpenFileName(
         this,
-        "Sélectionner un modèle ONNX",
+        "Select an ONNX model",
         QString::fromStdString(m_modelPath),
-        "Modèles ONNX (*.onnx);;Tous les fichiers (*.*)"
+        "ONNX Models (*.onnx);;All files (*.*)"
     );
     
     if (!fileName.isEmpty()) {
@@ -337,8 +337,8 @@ void MLConfigDialog::onAddFeature() {
         auto it = std::find(m_features.begin(), m_features.end(), newFeature);
         
         if (it != m_features.end()) {
-            QMessageBox::warning(this, "Feature existante", 
-                               "Cette feature avec ces paramètres est déjà dans la liste.");
+            QMessageBox::warning(this, "Existing feature", 
+                               "This feature with these parameters is already in the list.");
             return;
         }
         
@@ -365,8 +365,8 @@ void MLConfigDialog::onEditFeature(QListWidgetItem* item) {
         // Check if this configuration already exists (excluding current item) using proper C++ struct comparison
         for (size_t i = 0; i < m_features.size(); ++i) {
             if (i != static_cast<size_t>(row) && m_features[i] == updatedFeature) {
-                QMessageBox::warning(this, "Feature existante", 
-                                   "Cette feature avec ces paramètres est déjà dans la liste.");
+                QMessageBox::warning(this, "Existing feature", 
+                                   "This feature with these parameters is already in the list.");
                 return;
             }
         }
@@ -494,7 +494,7 @@ QString MLConfigDialog::getFeatureDisplayName(const StrategyConfig::MLFeatureCon
             name = "Time Cyclic (Cos)";
             break;
         default:
-            name = "Inconnu";
+            name = "Unknown";
     }
     
     // Add parameter details using proper C++ struct fields
@@ -542,7 +542,7 @@ QString MLConfigDialog::getFeatureDisplayName(const StrategyConfig::MLFeatureCon
             
         case filter::IndicatorType::TIME_SIN:
         case filter::IndicatorType::TIME_COS:
-            // Pas de paramètres pour TimeCyclic
+            // No parameters for TimeCyclic
             break;
             
         default:

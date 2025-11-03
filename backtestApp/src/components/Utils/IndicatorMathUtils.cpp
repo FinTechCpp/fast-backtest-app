@@ -8,17 +8,17 @@ std::vector<double> IndicatorMathUtils::calculateRSI(const std::vector<double>& 
     std::vector<double> rsiValues(dataSize, 0.0);
 
     if (dataSize <= period) {
-        std::fill(rsiValues.begin(), rsiValues.end(), 50.0);  // Valeur neutre par défaut
+        std::fill(rsiValues.begin(), rsiValues.end(), 50.0);  // Default neutral value
         return rsiValues;
     }
 
-    // Calculer les variations de prix (delta)
+    // Calculate price changes (delta)
     std::vector<double> deltas(dataSize - 1);
     for (size_t i = 1; i < dataSize; ++i) {
         deltas[i - 1] = closeData[i] - closeData[i - 1];
     }
 
-    // Séparer les variations positives et négatives
+    // Separate positive and negative changes
     std::vector<double> gains(dataSize - 1);
     std::vector<double> losses(dataSize - 1);
     for (size_t i = 0; i < deltas.size(); ++i) {
@@ -26,12 +26,12 @@ std::vector<double> IndicatorMathUtils::calculateRSI(const std::vector<double>& 
         losses[i] = (deltas[i] < 0) ? -deltas[i] : 0;
     }
 
-    // Valeurs par défaut pour les premières périodes où le RSI n'est pas défini
+    // Default values for the first periods where RSI is undefined
     for (int i = 0; i < period; ++i) {
-        rsiValues[i] = 50.0;  // Valeur neutre
+        rsiValues[i] = 50.0;  // Neutral value
     }
 
-    // Calculer la première moyenne
+    // Calculate the first average
     double avgGain = 0;
     double avgLoss = 0;
     for (int i = 0; i < period; ++i) {
@@ -41,17 +41,17 @@ std::vector<double> IndicatorMathUtils::calculateRSI(const std::vector<double>& 
     avgGain /= period;
     avgLoss /= period;
 
-    // Calculer le premier RSI
+    // Calculate the first RSI
     double rs = (avgLoss > 0) ? (avgGain / avgLoss) : 100.0;
     rsiValues[period] = 100.0 - (100.0 / (1.0 + rs));
 
-    // Calculer le RSI pour les points restants (méthode Wilder)
+    // Calculate RSI for the remaining points (Wilder's method)
     for (size_t i = period + 1; i < dataSize; ++i) {
-        // Calculer les moyennes lissées
+        // Calculate smoothed averages
         avgGain = ((period - 1) * avgGain + gains[i - 1]) / period;
         avgLoss = ((period - 1) * avgLoss + losses[i - 1]) / period;
         
-        // Éviter division par zéro
+        // Avoid division by zero
         if (avgLoss > 0) {
             rs = avgGain / avgLoss;
             rsiValues[i] = 100.0 - (100.0 / (1.0 + rs));
@@ -77,13 +77,13 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::v
     std::vector<double> ha_low(size);
     std::vector<double> ha_close(size);
 
-    // Première bougie
+    // First candle
     ha_open[0] = open[0];
     ha_close[0] = (open[0] + high[0] + low[0] + close[0]) / 4.0;
     ha_high[0] = high[0];
     ha_low[0] = low[0];
     
-    // Calcul des autres bougies
+    // Calculate other candles
     for (size_t i = 1; i < size; ++i) {
         ha_close[i] = (open[i] + high[i] + low[i] + close[i]) / 4.0;
         ha_open[i] = (ha_open[i-1] + ha_close[i-1]) / 2.0;
@@ -104,18 +104,18 @@ std::vector<double> IndicatorMathUtils::calculateEMA(const std::vector<double>& 
         return emaValues;
     }
     
-    // Calcul du facteur de lissage
+    // Calculate the smoothing factor
     double multiplier = 2.0 / (period + 1.0);
     
-    // Première valeur EMA = moyenne simple des 'period' premiers points
+    // First EMA value = simple average of the first 'period' points
     double sum = 0.0;
     for (int i = 0; i < period; ++i) {
         sum += closeData[i];
-        emaValues[i] = closeData[i];  // On utilise le prix lui-même pour les premiers points
+        emaValues[i] = closeData[i];  // Use the price itself for the first points
     }
     emaValues[period-1] = sum / period;
     
-    // Calcul de l'EMA pour les points restants
+    // Calculate EMA for the remaining points
     for (size_t i = period; i < dataSize; ++i) {
         emaValues[i] = (closeData[i] - emaValues[i-1]) * multiplier + emaValues[i-1];
     }
@@ -138,10 +138,10 @@ std::tuple<std::vector<double>, std::vector<int>> IndicatorMathUtils::calculateS
         return {supertrendValues, trendDirections};
     }
     
-    // Calculer l'ATR
+    // Calculate the ATR
     std::vector<double> atrValues = calculateATR(highData, lowData, closeData, period, false);
     
-    // Calculer les bandes de base (HL2 +/- multiplier * ATR)
+    // Calculate base bands (HL2 +/- multiplier * ATR)
     std::vector<double> basicUpperBand(dataSize);
     std::vector<double> basicLowerBand(dataSize);
     std::vector<double> finalUpperBand(dataSize);
@@ -161,61 +161,61 @@ std::tuple<std::vector<double>, std::vector<int>> IndicatorMathUtils::calculateS
         double hl2 = (highData[i] + lowData[i]) / 2.0;
         double atr = atrValues[i];
         
-        // Calculer les bandes de base
+        // Calculate base bands
         basicUpperBand[i] = hl2 + (multiplier * atr);
         basicLowerBand[i] = hl2 - (multiplier * atr);
         
-        // Calculer les bandes finales (avec logique de maintien)
+        // Calculate final bands (with hold logic)
         if (i == period) {
-            // Première valeur
+            // First value
             finalUpperBand[i] = basicUpperBand[i];
             finalLowerBand[i] = basicLowerBand[i];
         } else {
-            // Bande supérieure finale : ne descend que si le prix de clôture précédent était au-dessus
+            // Final upper band: only decreases if previous close was above
             finalUpperBand[i] = (basicUpperBand[i] < finalUpperBand[i-1] || closeData[i-1] > finalUpperBand[i-1]) 
                                ? basicUpperBand[i] 
                                : finalUpperBand[i-1];
             
-            // Bande inférieure finale : ne monte que si le prix de clôture précédent était en-dessous
+            // Final lower band: only increases if previous close was below
             finalLowerBand[i] = (basicLowerBand[i] > finalLowerBand[i-1] || closeData[i-1] < finalLowerBand[i-1]) 
                                ? basicLowerBand[i] 
                                : finalLowerBand[i-1];
         }
     }
     
-    // Calculer le Supertrend final et la direction
+    // Calculate final Supertrend and direction
     for (size_t i = period; i < dataSize; ++i) {
         if (i == period) {
-            // Première valeur - déterminer la tendance initiale
+            // First value - determine initial trend
             if (closeData[i] <= finalUpperBand[i]) {
                 supertrendValues[i] = finalUpperBand[i];
-                trendDirections[i] = -1; // Tendance baissière
+                trendDirections[i] = -1; // Bearish trend
             } else {
                 supertrendValues[i] = finalLowerBand[i];
-                trendDirections[i] = 1;  // Tendance haussière
+                trendDirections[i] = 1;  // Bullish trend
             }
         } else {
-            // Logique de changement de tendance
+            // Trend change logic
             int prevTrend = trendDirections[i-1];
             double prevSupertrend = supertrendValues[i-1];
             
-            if (prevTrend == 1) { // Tendance haussière précédente
+            if (prevTrend == 1) { // Previous uptrend
                 if (closeData[i] < finalLowerBand[i]) {
-                    // Changement vers tendance baissière
+                    // Change to downtrend
                     supertrendValues[i] = finalUpperBand[i];
                     trendDirections[i] = -1;
                 } else {
-                    // Maintien tendance haussière
+                    // Maintain uptrend
                     supertrendValues[i] = finalLowerBand[i];
                     trendDirections[i] = 1;
                 }
-            } else { // Tendance baissière précédente
+            } else { // Previous downtrend
                 if (closeData[i] > finalUpperBand[i]) {
-                    // Changement vers tendance haussière
+                    // Change to uptrend
                     supertrendValues[i] = finalLowerBand[i];
                     trendDirections[i] = 1;
                 } else {
-                    // Maintien tendance baissière
+                    // Maintain downtrend
                     supertrendValues[i] = finalUpperBand[i];
                     trendDirections[i] = -1;
                 }
@@ -234,30 +234,30 @@ std::tuple<std::vector<double>, std::vector<double>> IndicatorMathUtils::calcula
     int slowKPeriod,
     int slowDPeriod)
 {
-    // Vérification des données d'entrée
+    // Input data validation
     size_t dataSize = closeData.size();
     if (dataSize == 0 || highData.size() != dataSize || lowData.size() != dataSize)
         return {std::vector<double>(), std::vector<double>()};
     
-    // Redimensionner les vecteurs de sortie
+    // Resize output vectors
     std::vector<double> kValues(dataSize);
     std::vector<double> dValues(dataSize);
 
-    // Valeurs par défaut (50 est une valeur neutre pour l'oscillateur)
+    // Default values (50 is a neutral value for the oscillator)
     std::fill(kValues.begin(), kValues.end(), 50.0);
     std::fill(dValues.begin(), dValues.end(), 50.0);
     
     if (dataSize < static_cast<size_t>(fastKPeriod)) 
-        return {kValues, dValues};  // Pas assez de données pour calculer le Stochastic
+        return {kValues, dValues};  // Not enough data to compute Stochastic
     
-    // Étape 1: Calculer le %K brut (Fast %K) - La formule est:
+    // Step 1: Calculate raw %K (Fast %K) - The formula is:
     // %K = 100 * (C - L14) / (H14 - L14)
-    // où C est le prix de clôture actuel, L14 est le plus bas sur 14 périodes
-    // et H14 est le plus haut sur 14 périodes
+    // where C is the current close, L14 is the lowest low over 14 periods
+    // and H14 is the highest high over 14 periods
     std::vector<double> rawK(dataSize);
     
     for (size_t i = fastKPeriod - 1; i < dataSize; ++i) {
-        // Trouver le plus bas et le plus haut sur la période fastKPeriod
+        // Find lowest low and highest high over the fastKPeriod
         double lowestLow = std::numeric_limits<double>::max();
         double highestHigh = std::numeric_limits<double>::lowest();
         
@@ -266,19 +266,19 @@ std::tuple<std::vector<double>, std::vector<double>> IndicatorMathUtils::calcula
             highestHigh = std::max(highestHigh, highData[j]);
         }
         
-        // Calculer le %K brut
+        // Calculate raw %K
         double range = highestHigh - lowestLow;
         if (range > 0.0) {
             rawK[i] = ((closeData[i] - lowestLow) / range) * 100.0;
         } else {
-            rawK[i] = 50.0; // Valeur neutre si la plage est nulle
+            rawK[i] = 50.0; // Neutral value if range is zero
         }
     }
     
-    // Étape 2: Lisser le %K brut avec une moyenne mobile sur slowKPeriod pour obtenir le %K lent
+    // Step 2: Smooth raw %K with a moving average over slowKPeriod to get slow %K
     for (size_t i = 0; i < dataSize; ++i) {
         if (i < fastKPeriod - 1 + slowKPeriod - 1) {
-            kValues[i] = 50.0;  // Pas assez de données, valeur neutre
+            kValues[i] = 50.0;  // Not enough data, neutral value
             continue;
         }
         
@@ -289,10 +289,10 @@ std::tuple<std::vector<double>, std::vector<double>> IndicatorMathUtils::calcula
         kValues[i] = sum / slowKPeriod;
     }
     
-    // Étape 3: Calculer le %D comme une moyenne mobile des valeurs %K sur slowDPeriod
+    // Step 3: Calculate %D as a moving average of %K values over slowDPeriod
     for (size_t i = 0; i < dataSize; ++i) {
         if (i < fastKPeriod - 1 + slowKPeriod - 1 + slowDPeriod - 1) {
-            dValues[i] = 50.0;  // Pas assez de données, valeur neutre
+            dValues[i] = 50.0;  // Not enough data, neutral value
             continue;
         }
         
@@ -321,7 +321,7 @@ std::vector<double> IndicatorMathUtils::calculateATR(
         return atrValues;
     }
     
-    // Calculer les variations de prix
+    // Calculate price variations
     std::vector<double> tr(dataSize - 1);
     for (size_t i = 1; i < dataSize; ++i) {
         double highLow = highData[i] - lowData[i];
@@ -330,28 +330,27 @@ std::vector<double> IndicatorMathUtils::calculateATR(
         tr[i - 1] = std::max({highLow, highClose, lowClose});
     }
     
-    // Calculer la première moyenne
+    // Calculate the first average
     double sum = 0.0;
     for (int i = 0; i < period; ++i) {
         sum += tr[i];
         double atrValue = sum / period;
         
-        // Appliquer le logarithme immédiatement si nécessaire
+        // Apply logarithm immediately if needed
         atrValues[i] = useLogScale ? std::log(atrValue + 1) : atrValue;
     }
     
-    // Calculer l'ATR pour les points restants (méthode Wilder)
+    // Calculate ATR for remaining points (Wilder's method)
     for (size_t i = period; i < dataSize; ++i) {
         double atrValue = (atrValues[i - 1] * (period - 1) + tr[i - 1]) / period;
         
-        // Si on utilise l'échelle logarithmique, on doit d'abord convertir la valeur précédente
-        // de log(atr+1) vers atr avant de l'utiliser dans le calcul
+        // If using log scale, first convert previous log(atr+1) back to atr before using it
         if (useLogScale) {
-            double prevATR = std::exp(atrValues[i - 1]) - 1;  // Récupérer la vraie valeur ATR
+            double prevATR = std::exp(atrValues[i - 1]) - 1;  // Recover true ATR value
             atrValue = (prevATR * (period - 1) + tr[i - 1]) / period;
-            atrValues[i] = std::log(atrValue + 1);  // Stocker en logarithme
+            atrValues[i] = std::log(atrValue + 1);  // Store in logarithm
         } else {
-            atrValues[i] = atrValue;  // Stocker normalement
+            atrValues[i] = atrValue;  // Store normally
         }
     }
 
@@ -580,12 +579,12 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
 
     std::vector<indicators::PivotPointsInstance::PivotPeriod> pivotPeriods;
 
-    // Initialiser tous les vecteurs de niveaux avec des zéros
+    // Initialize all level vectors with zeros
     size_t dataSize = highData.size();
     std::vector<size_t> periodBoundaries;
     periodBoundaries.push_back(0);
     
-    // il faut utiliser les arrayMath pour determiner les indices des nouveau jours, mois etc
+    // need to use arrayMath to determine indices of new days, months etc
     be::Date currentDate = dates[0];
     
     for (size_t i = 1; i < dataSize; ++i) {
@@ -594,13 +593,13 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
         bool newPeriod = false;
         switch (periodType) {
             case indicators::PivotPeriodType::FourHour: {
-                // On considère une nouvelle période si l'heure courante est dans {13, 17, 21, 1}
-                // et différente de la précédente (pour éviter de splitter plusieurs fois sur la même heure)
+                // We consider a new period if current hour is in {13, 17, 21, 1}
+                // and different from the previous one (to avoid splitting multiple times at the same hour)
                 int hour = static_cast<int>(date.hour);
                 bool isBoundary = (hour == 13 || hour == 17 || hour == 21 || hour == 1);
                 int prevHour = static_cast<int>(currentDate.hour);
                 newPeriod = isBoundary && (hour != prevHour);
-                // On force aussi le split si le jour/mois/année change
+                // Also force split if day/month/year changes
                 newPeriod = newPeriod ||
                             (date.day != currentDate.day) ||
                             (date.month != currentDate.month) ||
@@ -608,14 +607,14 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
                 break;
             }
             case indicators::PivotPeriodType::Daily:
-                // Nouvelle journée si le jour a changé
+                // New day if the day changed
                 newPeriod = (date.day != currentDate.day ||
                              date.month != currentDate.month ||
                              date.year != currentDate.year);
                 break;
                 
             case indicators::PivotPeriodType::Weekly: {
-                // Nouvelle semaine si la différence de jours > 2 (week-end ou jours fériés)
+                // New week if day difference > 2 (weekend or holidays)
                 int dayDiff = static_cast<int>(date.day - dates[i-1].day);
                 bool isMonday = (dayDiff > 2);
                 newPeriod = isMonday;
@@ -623,7 +622,7 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
             }
                 
             case indicators::PivotPeriodType::Monthly:
-                // Nouveau mois
+                // New month
                 newPeriod = (date.month != currentDate.month ||
                              date.year != currentDate.year);
                 break;
@@ -634,25 +633,25 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
             currentDate = date;
         }
     }
-    periodBoundaries.push_back(dataSize);  // Ajouter la fin
+    periodBoundaries.push_back(dataSize);  // Add the end
     
-    // Pour chaque période, calculer les niveaux de pivot
+    // For each period, calculate pivot levels
     for (size_t i = 0; i < periodBoundaries.size() - 1; ++i) {
         size_t start = periodBoundaries[i];
         size_t end = periodBoundaries[i+1] - 1;
         
-        // Si première période incomplète (sauf pour quotidien)
+        // If first period incomplete (except for daily)
         if (i == 0 && periodType != indicators::PivotPeriodType::Daily) {
             continue;
         }
         
-        // Obtenir high, low, close pour la période précédente
+        // Get high, low, close for the previous period
         double open = 0.0;
         double high = -std::numeric_limits<double>::max();
         double low = std::numeric_limits<double>::max();
         double close = 0.0;
         
-        // Si c'est la première période, on utilise les données actuelles
+        // If it's the first period, use current data
         size_t calcStart = (i == 0) ? start : periodBoundaries[i-1];
         size_t calcEnd = (i == 0) ? end : start - 1;
         
@@ -660,10 +659,10 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
             high = std::max(high, highData[j]);
             low = std::min(low, lowData[j]);
         }
-        open = openData[calcStart];  // Première valeur de la période
-        close = closeData[calcEnd];  // Dernière valeur
+        open = openData[calcStart];  // First value of the period
+        close = closeData[calcEnd];  // Last value
         
-        // Le reste du calcul des points pivots reste inchangé
+        // The rest of pivot points calculation remains unchanged
         double pivot;
         switch (calcMethod) {
             case indicators::PivotCalculationMethod::OHLC:
@@ -693,11 +692,11 @@ std::vector<indicators::PivotPointsInstance::PivotPeriod> IndicatorMathUtils::ca
         double ms1s2 = (s1 + s2) / 2.0;
         double ms2s3 = (s2 + s3) / 2.0;
 
-        // Créer une nouvelle période de pivot
+        // Create a new pivot period
         indicators::PivotPointsInstance::PivotPeriod period;
         period.indices[static_cast<size_t>(chart::AggregationLevel::Raw)] = {static_cast<int>(start), static_cast<int>(end)};
         
-        // Stocker un segment unique pour chaque niveau durant cette période
+        // Store a single segment for each level during this period
         using LT = indicators::PivotPointsInstance::LevelType;
         period.levelValues[static_cast<int>(LT::Pivot)] = pivot;
         period.levelValues[static_cast<int>(LT::R1)] = r1;

@@ -51,7 +51,8 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
     // Check if first line is header
     if (in.readLineInto(&line)) {
         lineNumber++;
-        if (line.startsWith("date,") || line.contains(",open,high,low,close")) {
+        // Support both old format (date,open,high,low,close) and new format (timestamp,open,high,low,close,volume)
+        if (line.startsWith("date,") || line.startsWith("timestamp,") || line.contains(",open,high,low,close")) {
             info.hasHeader = true;
         } else {
             // Try to parse the first line
@@ -753,14 +754,14 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     QDateTime startDateTime = calculateStartDate(endDateTime, period);
     
     if (in.readLineInto(&line)) {
-        if (line.startsWith("date,")) {
+        // Check for header (both old and new formats)
+        if (line.startsWith("date,") || line.startsWith("timestamp,")) {
             // This is the header, ignore it
         } else {
             // This is real data, parse it
             auto bar = parseCSVLine(line);
-            if (bar && bar->timestamp >= startDateTime && bar->timestamp <= endDateTime) {
+            if (bar && bar->timestamp >= startDateTime && bar->timestamp <= endDateTime) 
                 data.push_back(*bar);
-            }
         }
     }
     
@@ -862,82 +863,63 @@ QDateTime DataLoader::alignToInterval(const QDateTime& timestamp, int intervalSe
 
 std::unique_ptr<OHLCBar> DataLoader::parseCSVLine(const QString& line)
 {
-    if (line.length() < 45) return nullptr;
+    // Minimum length for: "1234567890,1.0,2.0,3.0,4.0,0.0" = ~30 chars
+    if (line.length() < 20) return nullptr;
     
-    // Find the first comma to skip the index
-    int firstComma = line.indexOf(',');
-    if (firstComma == -1) return nullptr;
-    
-    // Ensure there are enough characters after the comma
-    if (line.length() < firstComma + 25) return nullptr;
-    
-    // Pointer to the start of the date (after the index and the comma)
-    const QChar* d = line.constData() + firstComma + 1;
-    
-    // Manually parse "2022-02-14 14:30:10+00:00" with direct calculation (avoids digitValue)
-    int year = ((d[0].unicode() - '0') * 1000) + ((d[1].unicode() - '0') * 100) + 
-               ((d[2].unicode() - '0') * 10) + (d[3].unicode() - '0');
-    int month = ((d[5].unicode() - '0') * 10) + (d[6].unicode() - '0');
-    int day = ((d[8].unicode() - '0') * 10) + (d[9].unicode() - '0');
-    int hour = ((d[11].unicode() - '0') * 10) + (d[12].unicode() - '0');
-    int minute = ((d[14].unicode() - '0') * 10) + (d[15].unicode() - '0');
-    int second = ((d[17].unicode() - '0') * 10) + (d[18].unicode() - '0');
-    
-    // Quickly check if the values are within valid ranges before creating QDateTime
-    if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31 ||
-        hour > 23 || minute > 59 || second > 59) {
-        return nullptr;
-    }
-    
-    // Step 1: Create UTC timestamp from parsed values
-    QDateTime utcTimestamp(QDate(year, month, day), QTime(hour, minute, second), QTimeZone::utc());
-
-    // Step 2: Convert UTC to New York time (handles EST/EDT automatically)
-    // Use static QTimeZone to avoid recreating it 500k+ times per file load
-    static QTimeZone nyTimeZone("America/New_York");
-    QDateTime nyTimestamp = utcTimestamp.toTimeZone(nyTimeZone);
-
-    // Step 3: Add display offset (+6h) to get constant 15:30-22:00 range
-    // NY market 09:30-16:00 + 6h = 15:30-22:00 display
-    QDateTime timestamp = nyTimestamp.addSecs(CONSTANT_OFFSET_HOURS * 3600);
-
-    // Optimization: find all commas in a single pass
     const QChar* ptr = line.constData();
     const QChar* end = ptr + line.length();
-    ptr += firstComma + 25;  // Skip the index and the date part
-
-    // Find commas for OHLC data
-    const QChar* commaPos[4] = {nullptr, nullptr, nullptr, nullptr};
+    
+    // Find commas in a single pass
+    const QChar* commaPos[5];
     int commaCount = 0;
     
-    while (ptr < end && commaCount < 4) {
-        if (ptr->unicode() == ',') {
+    while (ptr < end && commaCount < 5) {
+        if (ptr->unicode() == ',') 
             commaPos[commaCount++] = ptr;
-        }
         ++ptr;
     }
-
-    if (commaCount < 3) return nullptr; // Not enough commas for OHLC data
-
-    // Parse numeric values directly
-    double values[4];  // open, high, low, close
-
-    // Parse open
-    values[0] = parseDouble(commaPos[0] + 1, commaPos[1]);
-
-    // Parse high
-    values[1] = parseDouble(commaPos[1] + 1, commaPos[2]);
-
-    // Parse low and close
-    if (commaCount == 4) {
-        values[2] = parseDouble(commaPos[2] + 1, commaPos[3]);
-        values[3] = parseDouble(commaPos[3] + 1, end);
+    
+    // Need at least 4 commas: timestamp,open,high,low,close[,volume]
+    if (commaCount < 4) return nullptr;
+    
+    // Parse Unix timestamp (much faster than date parsing!)
+    qint64 unixTimestamp = parseUnixTimestamp(line.constData(), commaPos[0]);
+    if (unixTimestamp <= 0) return nullptr;
+    
+    // Create QDateTime directly from Unix timestamp (optimized!)
+    static QTimeZone utcZone = QTimeZone::utc();
+    QDateTime timestamp = QDateTime::fromSecsSinceEpoch(unixTimestamp, utcZone);
+    
+    // Parse OHLC values
+    double open = parseDouble(commaPos[0] + 1, commaPos[1]);
+    double high = parseDouble(commaPos[1] + 1, commaPos[2]);
+    double low = parseDouble(commaPos[2] + 1, commaPos[3]);
+    
+    // Handle close and optional volume
+    double close, volume;
+    if (commaCount >= 5) {
+        close = parseDouble(commaPos[3] + 1, commaPos[4]);
+        volume = parseDouble(commaPos[4] + 1, end);
     } else {
-        values[2] = parseDouble(commaPos[2] + 1, end);
-        values[3] = 0.0;
+        close = parseDouble(commaPos[3] + 1, end);
+        volume = 0.0;
     }
     
-    return std::make_unique<OHLCBar>(timestamp, values[0], values[1], values[2], values[3], 0.0);
+    return std::make_unique<OHLCBar>(timestamp, open, high, low, close, volume);
+}
+
+// Optimized parser for Unix timestamp
+inline qint64 DataLoader::parseUnixTimestamp(const QChar* begin, const QChar* end)
+{
+    qint64 result = 0;
+    
+    // Parse integer directly (Unix timestamps are always positive integers)
+    while (begin < end && begin->unicode() >= '0' && begin->unicode() <= '9') {
+        result = result * 10 + (begin->unicode() - '0');
+        ++begin;
+    }
+    
+    return result;
 }
 
 // Optimized version of parseDouble that avoids digitValue()

@@ -222,6 +222,9 @@ private:
     // Helper method for double conversion
     static inline double parseDouble(const QChar* begin, const QChar* end);
     
+    // Helper method for Unix timestamp conversion
+    static inline qint64 parseUnixTimestamp(const QChar* begin, const QChar* end);
+    
     // Helper methods for resampling
     static QString extractIntervalFromFilename(const QString& filePath);
     static bool isValidResamplingInterval(const QString& sourceInterval, const QString& targetInterval);

@@ -76,7 +76,7 @@ jobs:
         echo "Is beta: $IS_BETA"
 
   build-windows:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: windows-latest
     needs: calculate-version
     permissions:
       contents: write

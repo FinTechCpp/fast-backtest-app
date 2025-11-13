@@ -660,7 +660,10 @@ jobs:
 
         draft: false
         prerelease: false
-        files: releases-repo/downloads/*
+        files: |
+          releases-repo/downloads/fast-backtest-app-windows-v${{ env.VERSION }}.zip
+          releases-repo/downloads/fast-backtest-app-macos-v${{ env.VERSION }}.dmg
+          releases-repo/downloads/fast-backtest-app-linux-v${{ env.VERSION }}.tar.gz
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create latest versions on GitHub Pages

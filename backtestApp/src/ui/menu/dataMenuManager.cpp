@@ -10,11 +10,15 @@
 #include <QDialog>
 #include <QScrollArea>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QTextEdit>
 #include <QPushButton>
 #include <QFileInfo>
 #include <QNetworkRequest>
 #include <QDateTime>
+#include <QLabel>
+#include <QListWidget>
+#include <QListWidgetItem>
 #include "components/Utils/dataLoader.h"
 #include <QNetworkInterface>
 
@@ -29,6 +33,7 @@ DataMenuManager::DataMenuManager(QObject* parent)
     , m_cleanDataAction(nullptr)
     , m_dataInfoAction(nullptr)
     , m_setDirectoryAction(nullptr)
+    , m_manageLocalFilesAction(nullptr)
     , m_networkManager(new QNetworkAccessManager(this))
 {
 }
@@ -53,6 +58,8 @@ void DataMenuManager::createDataMenu(QMenuBar* menuBar)
     // Add actions to the menu
     m_dataMenu->addAction(m_importCSVAction);
     m_dataMenu->addAction(m_importAPIAction);
+    m_dataMenu->addSeparator();
+    m_dataMenu->addAction(m_manageLocalFilesAction);
     m_dataMenu->addSeparator();
     m_dataMenu->addAction(m_validateDataAction);
     m_dataMenu->addAction(m_cleanDataAction);
@@ -96,6 +103,11 @@ void DataMenuManager::createActions()
     m_setDirectoryAction = new QAction(tr("&Set data directory..."), this);
     m_setDirectoryAction->setStatusTip(tr("Choose a custom location for data"));
     connect(m_setDirectoryAction, &QAction::triggered, this, &DataMenuManager::onSetCustomDirectory);
+    
+    // Action Manage local files
+    m_manageLocalFilesAction = new QAction(tr("&Manage local files..."), this);
+    m_manageLocalFilesAction->setStatusTip(tr("View and delete local data files"));
+    connect(m_manageLocalFilesAction, &QAction::triggered, this, &DataMenuManager::onManageLocalFiles);
 }
 
 void DataMenuManager::onImportCSV()
@@ -199,7 +211,7 @@ void DataMenuManager::onImportFromAPI()
     qDebug() << "Import from API requested";
 
     // API URL to retrieve list of market data files
-    QString market_files_endpoint = "/market-data";
+    QString market_files_endpoint = "market-data";
     QUrl apiUrl(DataMenuManager::SERVER_URL + market_files_endpoint);
 
     QNetworkRequest request(apiUrl);
@@ -546,50 +558,82 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
     QDir localDir(marketDataDir);
     QStringList localFiles = localDir.entryList(QStringList() << "*.csv" << "*.parquet", QDir::Files);
     
-    QStringList filesToDownload;
-    QStringList updateMessages;
+    // Create dialog for file selection
+    QDialog* selectionDialog = new QDialog(qobject_cast<QWidget*>(parent()));
+    selectionDialog->setWindowTitle(tr("Select files to download"));
+    selectionDialog->resize(800, 500);
     
-    // Compare each remote file with local files
+    QVBoxLayout* mainLayout = new QVBoxLayout(selectionDialog);
+    
+    // Header label
+    QLabel* headerLabel = new QLabel(tr("Select the files you want to download from the server:"));
+    mainLayout->addWidget(headerLabel);
+    
+    // List widget for file selection
+    QListWidget* fileListWidget = new QListWidget(selectionDialog);
+    
+    // Map to store file information
+    QMap<QString, QJsonObject> fileInfoMap;
+    
+    int filesNeedingUpdate = 0;
+    
+    // Populate the list with files that need update only
     for (const QJsonValue& fileValue : remoteFiles) {
         QJsonObject fileObj = fileValue.toObject();
         QString filename = fileObj["filename"].toString();
         QString remoteModified = fileObj["modified"].toString();
         qint64 remoteSize = fileObj["size"].toVariant().toLongLong();
         
+        fileInfoMap[filename] = fileObj;
+        
         QString localFilePath = localDir.absoluteFilePath(filename);
-        bool shouldDownload = false;
-        QString reason;
+        QString displayText = filename;
+        QString statusText;
+        bool shouldShow = false;
         
         if (!QFile::exists(localFilePath)) {
             // File does not exist locally
-            shouldDownload = true;
-            reason = tr("new file");
+            statusText = tr(" [NEW]");
+            shouldShow = true;
         } else {
-            // Compare modification date
+            // Compare modification date and size
             QFileInfo localFileInfo(localFilePath);
             QDateTime localModified = localFileInfo.lastModified();
             QDateTime remoteDateTime = QDateTime::fromString(remoteModified, Qt::ISODate);
             
             if (remoteDateTime > localModified) {
-                shouldDownload = true;
-                reason = tr("newer file (%1 vs %2)")
-                    .arg(remoteDateTime.toString("yyyy-MM-dd hh:mm"))
-                    .arg(localModified.toString("yyyy-MM-dd hh:mm"));
+                statusText = tr(" [UPDATE AVAILABLE - newer version]");
+                shouldShow = true;
             } else if (localFileInfo.size() != remoteSize) {
-                shouldDownload = true;
-                reason = tr("different size (%1 vs %2 bytes)")
-                    .arg(remoteSize)
-                    .arg(localFileInfo.size());
+                statusText = tr(" [UPDATE AVAILABLE - different size]");
+                shouldShow = true;
             }
+            // Files that are up to date are NOT added to the list
         }
         
-        if (shouldDownload) {
-            filesToDownload.append(filename);
-            updateMessages.append(tr("• %1 (%2)").arg(filename).arg(reason));
+        // Only add files that need update
+        if (shouldShow) {
+            filesNeedingUpdate++;
+            
+            // Create list item
+            QListWidgetItem* item = new QListWidgetItem(displayText + statusText);
+            item->setData(Qt::UserRole, filename);
+            item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+            item->setCheckState(Qt::Checked); // Checked by default
+            
+            // Highlight items
+            QFont font = item->font();
+            font.setBold(true);
+            item->setFont(font);
+            item->setForeground(QColor(0, 100, 0)); // Dark green
+            
+            fileListWidget->addItem(item);
         }
     }
     
-    if (filesToDownload.isEmpty()) {
+    // If no files need update, inform the user and return
+    if (filesNeedingUpdate == 0) {
+        delete selectionDialog;
         QMessageBox::information(
             qobject_cast<QWidget*>(parent()),
             tr("Synchronization"),
@@ -598,19 +642,66 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         return;
     }
     
-    // Ask user confirmation
-    QString message = tr("The following files will be downloaded/updated:\n\n");
-    message += updateMessages.join("\n");
-    message += tr("\n\nDo you want to continue?");
+    mainLayout->addWidget(fileListWidget);
     
-    int ret = QMessageBox::question(
-        qobject_cast<QWidget*>(parent()),
-        tr("File synchronization"),
-        message,
-        QMessageBox::Yes | QMessageBox::No
-    );
+    // Buttons for select all / deselect all
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QPushButton* selectAllButton = new QPushButton(tr("Select All"));
+    QPushButton* deselectAllButton = new QPushButton(tr("Deselect All"));
+    buttonLayout->addWidget(selectAllButton);
+    buttonLayout->addWidget(deselectAllButton);
+    buttonLayout->addStretch();
     
-    if (ret != QMessageBox::Yes) {
+    connect(selectAllButton, &QPushButton::clicked, [fileListWidget]() {
+        for (int i = 0; i < fileListWidget->count(); ++i) {
+            fileListWidget->item(i)->setCheckState(Qt::Checked);
+        }
+    });
+    
+    connect(deselectAllButton, &QPushButton::clicked, [fileListWidget]() {
+        for (int i = 0; i < fileListWidget->count(); ++i) {
+            fileListWidget->item(i)->setCheckState(Qt::Unchecked);
+        }
+    });
+    
+    mainLayout->addLayout(buttonLayout);
+    
+    // OK and Cancel buttons
+    QHBoxLayout* dialogButtonLayout = new QHBoxLayout();
+    QPushButton* okButton = new QPushButton(tr("Download"));
+    QPushButton* cancelButton = new QPushButton(tr("Cancel"));
+    dialogButtonLayout->addStretch();
+    dialogButtonLayout->addWidget(okButton);
+    dialogButtonLayout->addWidget(cancelButton);
+    
+    connect(okButton, &QPushButton::clicked, selectionDialog, &QDialog::accept);
+    connect(cancelButton, &QPushButton::clicked, selectionDialog, &QDialog::reject);
+    
+    mainLayout->addLayout(dialogButtonLayout);
+    
+    // Show dialog
+    if (selectionDialog->exec() != QDialog::Accepted) {
+        delete selectionDialog;
+        return;
+    }
+    
+    // Collect selected files
+    QStringList filesToDownload;
+    for (int i = 0; i < fileListWidget->count(); ++i) {
+        QListWidgetItem* item = fileListWidget->item(i);
+        if (item->checkState() == Qt::Checked) {
+            filesToDownload.append(item->data(Qt::UserRole).toString());
+        }
+    }
+    
+    delete selectionDialog;
+    
+    if (filesToDownload.isEmpty()) {
+        QMessageBox::information(
+            qobject_cast<QWidget*>(parent()),
+            tr("No selection"),
+            tr("No files selected for download.")
+        );
         return;
     }
     
@@ -625,6 +716,9 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
     progress->setWindowModality(Qt::WindowModal);
     progress->show();
     
+    int successCount = 0;
+    int errorCount = 0;
+    
     // Download files one by one
     for (int i = 0; i < filesToDownload.size(); ++i) {
         if (progress->wasCanceled()) {
@@ -636,7 +730,7 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         progress->setLabelText(tr("Downloading %1...").arg(filename));
         
         // Build download URL
-        QString download_endpoint = "/download-market-data/" + filename;
+        QString download_endpoint = "download/" + filename;
         QUrl downloadUrl(DataMenuManager::SERVER_URL + download_endpoint);
 
         QNetworkRequest request(downloadUrl);
@@ -656,11 +750,14 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
                 localFile.write(downloadReply->readAll());
                 localFile.close();
                 qDebug() << "File downloaded:" << filename;
+                successCount++;
             } else {
                 qWarning() << "Unable to write file:" << filename;
+                errorCount++;
             }
         } else {
             qWarning() << "Download error" << filename << ":" << downloadReply->errorString();
+            errorCount++;
         }
         
         downloadReply->deleteLater();
@@ -671,11 +768,16 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
     progress->close();
     delete progress;
     
+    QString resultMessage = tr("Synchronization completed.\n");
+    resultMessage += tr("%1 file(s) downloaded successfully.").arg(successCount);
+    if (errorCount > 0) {
+        resultMessage += tr("\n%1 error(s) occurred.").arg(errorCount);
+    }
+    
     QMessageBox::information(
         qobject_cast<QWidget*>(parent()),
         tr("Synchronization completed"),
-        tr("Synchronization completed.\n%1 file(s) downloaded.")
-            .arg(filesToDownload.size())
+        resultMessage
     );
 }
 
@@ -697,4 +799,187 @@ QString DataMenuManager::getFileLastModified(const QString& filePath)
         return fileInfo.lastModified().toString(Qt::ISODate);
     }
     return QString();
+}
+
+void DataMenuManager::onManageLocalFiles()
+{
+    qDebug() << "Manage local files requested";
+    
+    QString marketDataDir = DataLoader::findMarketDataDirectory();
+    if (marketDataDir.isEmpty()) {
+        QMessageBox::warning(
+            qobject_cast<QWidget*>(parent()),
+            tr("No data"),
+            tr("No data directory found.")
+        );
+        return;
+    }
+    
+    QDir dir(marketDataDir);
+    QStringList csvFiles = dir.entryList(QStringList() << "*.csv" << "*.parquet", QDir::Files);
+    
+    if (csvFiles.isEmpty()) {
+        QMessageBox::information(
+            qobject_cast<QWidget*>(parent()),
+            tr("No data"),
+            tr("No data files found in %1").arg(marketDataDir)
+        );
+        return;
+    }
+    
+    // Create dialog for file management
+    QDialog* manageDialog = new QDialog(qobject_cast<QWidget*>(parent()));
+    manageDialog->setWindowTitle(tr("Manage Local Data Files"));
+    manageDialog->resize(800, 500);
+    
+    QVBoxLayout* mainLayout = new QVBoxLayout(manageDialog);
+    
+    // Header label
+    QLabel* headerLabel = new QLabel(tr("Local data files in: %1").arg(marketDataDir));
+    mainLayout->addWidget(headerLabel);
+    
+    // List widget for file management
+    QListWidget* fileListWidget = new QListWidget(manageDialog);
+    
+    // Populate the list with files
+    for (const QString& filename : csvFiles) {
+        QFileInfo fileInfo(dir.absoluteFilePath(filename));
+        
+        QString displayText = QString("%1 (%2 MB) - Modified: %3")
+            .arg(filename)
+            .arg(fileInfo.size() / (1024.0 * 1024.0), 0, 'f', 2)
+            .arg(fileInfo.lastModified().toString("yyyy-MM-dd hh:mm:ss"));
+        
+        QListWidgetItem* item = new QListWidgetItem(displayText);
+        item->setData(Qt::UserRole, filename);
+        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+        item->setCheckState(Qt::Unchecked);
+        
+        fileListWidget->addItem(item);
+    }
+    
+    mainLayout->addWidget(fileListWidget);
+    
+    // Info label
+    QLabel* infoLabel = new QLabel(tr("Total: %1 file(s)").arg(csvFiles.size()));
+    mainLayout->addWidget(infoLabel);
+    
+    // Buttons for select all / deselect all
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QPushButton* selectAllButton = new QPushButton(tr("Select All"));
+    QPushButton* deselectAllButton = new QPushButton(tr("Deselect All"));
+    QPushButton* deleteButton = new QPushButton(tr("Delete Selected"));
+    deleteButton->setStyleSheet("QPushButton { background-color: #d32f2f; color: white; }");
+    
+    buttonLayout->addWidget(selectAllButton);
+    buttonLayout->addWidget(deselectAllButton);
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(deleteButton);
+    
+    connect(selectAllButton, &QPushButton::clicked, [fileListWidget]() {
+        for (int i = 0; i < fileListWidget->count(); ++i) {
+            fileListWidget->item(i)->setCheckState(Qt::Checked);
+        }
+    });
+    
+    connect(deselectAllButton, &QPushButton::clicked, [fileListWidget]() {
+        for (int i = 0; i < fileListWidget->count(); ++i) {
+            fileListWidget->item(i)->setCheckState(Qt::Unchecked);
+        }
+    });
+    
+    connect(deleteButton, &QPushButton::clicked, [this, manageDialog, fileListWidget, dir, infoLabel]() {
+        // Collect selected files
+        QStringList filesToDelete;
+        for (int i = 0; i < fileListWidget->count(); ++i) {
+            QListWidgetItem* item = fileListWidget->item(i);
+            if (item->checkState() == Qt::Checked) {
+                filesToDelete.append(item->data(Qt::UserRole).toString());
+            }
+        }
+        
+        if (filesToDelete.isEmpty()) {
+            QMessageBox::information(
+                manageDialog,
+                tr("No selection"),
+                tr("No files selected for deletion.")
+            );
+            return;
+        }
+        
+        // Confirm deletion
+        QString message = tr("Are you sure you want to delete the following %1 file(s)?\n\n").arg(filesToDelete.size());
+        message += filesToDelete.join("\n");
+        message += tr("\n\nThis action cannot be undone!");
+        
+        int ret = QMessageBox::warning(
+            manageDialog,
+            tr("Confirm deletion"),
+            message,
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No
+        );
+        
+        if (ret != QMessageBox::Yes) {
+            return;
+        }
+        
+        // Delete files
+        int deletedCount = 0;
+        int errorCount = 0;
+        
+        for (const QString& filename : filesToDelete) {
+            QString filePath = dir.absoluteFilePath(filename);
+            if (QFile::remove(filePath)) {
+                qDebug() << "File deleted:" << filename;
+                deletedCount++;
+            } else {
+                qWarning() << "Failed to delete:" << filename;
+                errorCount++;
+            }
+        }
+        
+        // Remove deleted items from the list
+        for (int i = fileListWidget->count() - 1; i >= 0; --i) {
+            QListWidgetItem* item = fileListWidget->item(i);
+            if (filesToDelete.contains(item->data(Qt::UserRole).toString())) {
+                if (QFile::exists(dir.absoluteFilePath(item->data(Qt::UserRole).toString()))) {
+                    // File still exists (deletion failed)
+                    continue;
+                }
+                delete fileListWidget->takeItem(i);
+            }
+        }
+        
+        // Update info label
+        infoLabel->setText(tr("Total: %1 file(s)").arg(fileListWidget->count()));
+        
+        // Show result
+        QString resultMessage = tr("%1 file(s) deleted successfully.").arg(deletedCount);
+        if (errorCount > 0) {
+            resultMessage += tr("\n%1 error(s) occurred.").arg(errorCount);
+        }
+        
+        QMessageBox::information(
+            manageDialog,
+            tr("Deletion completed"),
+            resultMessage
+        );
+    });
+    
+    mainLayout->addLayout(buttonLayout);
+    
+    // Close button
+    QHBoxLayout* dialogButtonLayout = new QHBoxLayout();
+    QPushButton* closeButton = new QPushButton(tr("Close"));
+    dialogButtonLayout->addStretch();
+    dialogButtonLayout->addWidget(closeButton);
+    
+    connect(closeButton, &QPushButton::clicked, manageDialog, &QDialog::accept);
+    
+    mainLayout->addLayout(dialogButtonLayout);
+    
+    // Show dialog
+    manageDialog->exec();
+    delete manageDialog;
 }

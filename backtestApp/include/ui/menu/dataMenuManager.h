@@ -42,6 +42,7 @@ private slots:
     void onCleanData();
     void onShowDataInfo();
     void onSetCustomDirectory();
+    void onManageLocalFiles();
     
     // Slots for HTTP requests
     void onMarketDataListReceived();
@@ -58,6 +59,7 @@ private:
     QAction* m_cleanDataAction;
     QAction* m_dataInfoAction;
     QAction* m_setDirectoryAction;
+    QAction* m_manageLocalFilesAction;
     
     // Network
     QNetworkAccessManager* m_networkManager;

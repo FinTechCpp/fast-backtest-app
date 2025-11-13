@@ -250,8 +250,15 @@ QString DataLoader::findMarketDataDirectory()
         return customPath;
     }
 
-    // 2. Otherwise, continue with the standard search
+    // 2. Check for marketData directory next to the executable (for distributed builds)
     QString exeDir = QCoreApplication::applicationDirPath();
+    QString exeDirMarketData = QDir(exeDir).absoluteFilePath("marketData");
+    if (QFileInfo(exeDirMarketData).isDir()) {
+        qDebug() << "Using marketData directory next to executable:" << exeDirMarketData;
+        return exeDirMarketData;
+    }
+
+    // 3. Otherwise, continue with the standard search (for development builds)
     QDir currentDir(exeDir);
 
     // Go up the directory tree to find the fast-backtest-app folder
@@ -277,7 +284,12 @@ QString DataLoader::findMarketDataDirectory()
 
     } while (currentDir.cdUp());
 
-    return QString(); // Not found
+    // 4. If still not found, create marketData directory next to executable
+    qDebug() << "marketData directory not found, creating:" << exeDirMarketData;
+    if (QDir().mkpath(exeDirMarketData)) 
+        return exeDirMarketData;
+    
+    return QString(); // Not found and could not create
 }
 
 bool DataLoader::setCustomMarketDataDirectory(const QString& path)

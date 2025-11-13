@@ -154,6 +154,10 @@ jobs:
         # Copy the executable and all DLLs
         Copy-Item "$sourceDir/*" $distDir -Recurse -Force
 
+        # Create marketData directory for user data files
+        New-Item -ItemType Directory -Path "$distDir/marketData" -Force
+        echo "Created marketData directory for downloaded data files"
+
         # Copy the data folders if they exist
         if (Test-Path "data") {
           Copy-Item "data" "$distDir/data" -Recurse -Force
@@ -286,6 +290,10 @@ jobs:
         
         # Deploy Qt dependencies
         macdeployqt "$DIST_DIR/$APP_NAME" -always-overwrite
+        
+        # Create marketData directory for user data files
+        mkdir -p "$DIST_DIR/$APP_NAME/Contents/Resources/marketData"
+        echo "Created marketData directory for downloaded data files"
         
         # Copy data folder if exists
         if [ -d "data" ]; then
@@ -513,6 +521,10 @@ jobs:
           exit 1
         fi
         echo "✅ Libraries successfully copied ($LIBCOUNT files)"
+        
+        # Create marketData directory for user data files
+        mkdir -p "$DIST_DIR/marketData"
+        echo "✅ Created marketData directory for downloaded data files"
         
         # Create launch script
         cat > "$DIST_DIR/backtestapp.sh" << 'EOF'

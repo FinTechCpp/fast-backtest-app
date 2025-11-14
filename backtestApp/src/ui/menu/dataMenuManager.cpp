@@ -1,4 +1,5 @@
 #include "ui/menu/dataMenuManager.h"
+#include "ui/menu/downloadProgressDialog.h"
 #include <QDebug>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -686,11 +687,13 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
     }
     
     // Collect selected files
-    QStringList filesToDownload;
+    QList<QPair<QString, QString>> filesToDownload; // QPair<filename, download_url>
     for (int i = 0; i < fileListWidget->count(); ++i) {
         QListWidgetItem* item = fileListWidget->item(i);
         if (item->checkState() == Qt::Checked) {
-            filesToDownload.append(item->data(Qt::UserRole).toString());
+            QString filename = item->data(Qt::UserRole).toString();
+            QString downloadUrl = fileInfoMap[filename]["download_url"].toString();
+            filesToDownload.append(qMakePair(filename, downloadUrl));
         }
     }
     
@@ -705,15 +708,12 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         return;
     }
     
-    // Create a progress dialog
-    QProgressDialog* progress = new QProgressDialog(
-        tr("Downloading files..."), 
-        tr("Cancel"), 
-        0, 
+    // Create modern progress dialog
+    DownloadProgressDialog* progress = new DownloadProgressDialog(
         filesToDownload.size(), 
         qobject_cast<QWidget*>(parent())
     );
-    progress->setWindowModality(Qt::WindowModal);
+    progress->setModal(true);
     progress->show();
     
     int successCount = 0;
@@ -725,16 +725,34 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
             break;
         }
         
-        QString filename = filesToDownload.at(i);
-        progress->setValue(i);
-        progress->setLabelText(tr("Downloading %1...").arg(filename));
+        QString filename = filesToDownload.at(i).first;
+        QString downloadPath = filesToDownload.at(i).second;
         
-        // Build download URL
-        QString download_endpoint = "download/" + filename;
-        QUrl downloadUrl(DataMenuManager::SERVER_URL + download_endpoint);
+        // Update progress dialog with current file
+        progress->setCurrentFile(filename, i);
+        
+        // Fix API inconsistency: the API may return "/download-market-data/" but the actual endpoint is "/download/"
+        downloadPath.replace("/download-market-data/", "/download/");
+        
+        // Build complete download URL from the server base URL and the download path
+        QUrl downloadUrl(DataMenuManager::SERVER_URL.chopped(1) + downloadPath);
+        
+        qDebug() << "Downloading from URL:" << downloadUrl.toString();
 
         QNetworkRequest request(downloadUrl);
+        
+        // Set a longer timeout for large files (10 minutes for files up to 1.5GB)
+        request.setTransferTimeout(600000);
+        
+        // Add headers to help with large file downloads
+        request.setRawHeader("Accept-Encoding", "identity"); // Disable compression
+        request.setRawHeader("Connection", "keep-alive");
+        
         QNetworkReply* downloadReply = m_networkManager->get(request);
+        
+        // Connect progress updates to the modern dialog
+        connect(downloadReply, &QNetworkReply::downloadProgress, 
+                progress, &DownloadProgressDialog::updateProgress);
         
         // Wait for download to finish (synchronous for simplicity)
         QEventLoop loop;
@@ -747,27 +765,44 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
             QFile localFile(localFilePath);
             
             if (localFile.open(QIODevice::WriteOnly)) {
-                localFile.write(downloadReply->readAll());
+                QByteArray data = downloadReply->readAll();
+                qint64 written = localFile.write(data);
                 localFile.close();
-                qDebug() << "File downloaded:" << filename;
-                successCount++;
+                
+                if (written == data.size()) {
+                    qDebug() << "File downloaded:" << filename 
+                             << "Size:" << (written / (1024.0 * 1024.0)) << "MB";
+                    successCount++;
+                } else {
+                    qWarning() << "Incomplete write for file:" << filename;
+                    errorCount++;
+                }
             } else {
                 qWarning() << "Unable to write file:" << filename;
                 errorCount++;
             }
         } else {
             qWarning() << "Download error" << filename << ":" << downloadReply->errorString();
+            qWarning() << "HTTP status code:" << downloadReply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
             errorCount++;
         }
         
         downloadReply->deleteLater();
+        
+        // Update overall progress
+        progress->setOverallProgress(successCount + errorCount, filesToDownload.size());
+        
         QApplication::processEvents();
     }
     
-    progress->setValue(filesToDownload.size());
-    progress->close();
+    // Final update
+    progress->setOverallProgress(successCount + errorCount, filesToDownload.size());
+    
+    // Close the progress dialog
+    progress->accept();
     delete progress;
     
+    // Show result summary
     QString resultMessage = tr("Synchronization completed.\n");
     resultMessage += tr("%1 file(s) downloaded successfully.").arg(successCount);
     if (errorCount > 0) {

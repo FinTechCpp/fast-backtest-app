@@ -114,14 +114,47 @@ jobs:
         echo "Qt version: ${{ env.QT_VERSION }}"
         echo "Qt6_DIR: $env:Qt6_DIR"
         echo "QT_ROOT_DIR: $env:QT_ROOT_DIR"
+        
+        # Verify Qt installation directory exists
+        if (-not (Test-Path $env:QT_ROOT_DIR)) {
+          echo "❌ Qt root directory not found: $env:QT_ROOT_DIR"
+          exit 1
+        }
+        
+        # Add Qt bin to PATH persistently for subsequent steps
         $qtBinPath = "$env:QT_ROOT_DIR\bin"
         echo "Qt bin path: $qtBinPath"
+        
         if (Test-Path $qtBinPath) {
+          # Add to PATH for this step
           $env:PATH = "$qtBinPath;$env:PATH"
-          echo "Added Qt bin to PATH"
+          # Add to PATH for all subsequent steps using GitHub Actions syntax
+          echo "$qtBinPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "✅ Added Qt bin to PATH"
+          
+          # List some files to verify installation
+          echo "Qt bin directory contents (sample):"
+          Get-ChildItem $qtBinPath -Filter "*.exe" | Select-Object -First 10 Name
+          
+          # Verify qmake exists and works
+          if (Test-Path "$qtBinPath\qmake.exe") {
+            & "$qtBinPath\qmake.exe" --version
+            echo "✅ qmake verified"
+          } else {
+            echo "⚠️ qmake.exe not found (may not be needed for CMake build)"
+          }
+          
+          # Verify Qt libraries
+          if (Test-Path "$env:QT_ROOT_DIR\lib\Qt6Core.lib") {
+            echo "✅ Qt libraries verified"
+          } else {
+            echo "❌ Qt6Core.lib not found"
+            exit 1
+          }
+        } else {
+          echo "❌ Qt bin path not found: $qtBinPath"
+          exit 1
         }
-        qmake --version
-        where qmake
 
     - name: Create build directory
       run: mkdir build

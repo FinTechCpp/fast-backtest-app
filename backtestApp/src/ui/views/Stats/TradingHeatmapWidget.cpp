@@ -257,8 +257,8 @@ void TradingHeatmapWidget::paintContent(QPainter& painter, const QRect& contentR
     painter.setFont(dayFont);
 
 
-    for (size_t i = 0; i < m_activeDayIndices.size(); i++) {
-        int d = m_activeDayIndices[i];
+    for (int i = 0; i < static_cast<int>(m_activeDayIndices.size()); i++) {
+        int d = static_cast<int>(m_activeDayIndices[static_cast<size_t>(i)]);
         QString dayName = m_dayNames[d];
         QRect textRect(startX + i * (cellSize + cellSpacing), 
                       startY - 25, 
@@ -289,8 +289,8 @@ void TradingHeatmapWidget::paintContent(QPainter& painter, const QRect& contentR
     for (int h = m_minHour; h <= m_maxHour; h++) {
         int rowIndex = h - m_minHour;
         
-        for (size_t i = 0; i < m_activeDayIndices.size(); i++) {
-            int d = m_activeDayIndices[i];
+        for (int i = 0; i < static_cast<int>(m_activeDayIndices.size()); i++) {
+            int d = static_cast<int>(m_activeDayIndices[static_cast<size_t>(i)]);
 
             // Cell position
             int x = startX + i * (cellSize + cellSpacing);

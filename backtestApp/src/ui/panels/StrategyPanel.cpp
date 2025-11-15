@@ -191,7 +191,7 @@ void StrategyPanel::onAddStrategy() {
         refreshStrategyList();
         
         // Select the new strategy
-        m_strategyList->setCurrentRow(m_configs.size() - 1);
+        m_strategyList->setCurrentRow(static_cast<int>(m_configs.size()) - 1);
     }
 }
 
@@ -240,7 +240,7 @@ void StrategyPanel::onDuplicateStrategy() {
     refreshStrategyList();
     
     // Select the new duplicated strategy
-    m_strategyList->setCurrentRow(m_configs.size() - 1);
+    m_strategyList->setCurrentRow(static_cast<int>(m_configs.size()) - 1);
 }
 
 void StrategyPanel::onEditStrategy(QListWidgetItem* item) {

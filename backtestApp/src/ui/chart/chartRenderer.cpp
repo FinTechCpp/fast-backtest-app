@@ -28,20 +28,20 @@ void ChartRenderer::createOrUpdateChart(
         size_t startIdx = aggregationInfo.startIndex;
         size_t count = aggregationInfo.pointCount;
 
-        timestamps = DoubleArray(&data.timestamps[startIdx], count);
-        volumeData = DoubleArray(&data.volume[startIdx], count);
+        timestamps = DoubleArray(&data.timestamps[startIdx], static_cast<int>(count));
+        volumeData = DoubleArray(&data.volume[startIdx], static_cast<int>(count));
 
         if (aggregationInfo.level == chart::AggregationLevel::Raw && config.chartType == chart::ChartType::HeikinAshi) {
             const auto& heikinAshiCache = dataManager.getHeikinAshiCache();
-            openData = DoubleArray(&heikinAshiCache.open[startIdx], count);
-            highData = DoubleArray(&heikinAshiCache.high[startIdx], count);
-            lowData = DoubleArray(&heikinAshiCache.low[startIdx], count);
-            closeData = DoubleArray(&heikinAshiCache.close[startIdx], count);
+            openData = DoubleArray(&heikinAshiCache.open[startIdx], static_cast<int>(count));
+            highData = DoubleArray(&heikinAshiCache.high[startIdx], static_cast<int>(count));
+            lowData = DoubleArray(&heikinAshiCache.low[startIdx], static_cast<int>(count));
+            closeData = DoubleArray(&heikinAshiCache.close[startIdx], static_cast<int>(count));
         } else {
-            openData = DoubleArray(&data.open[startIdx], count);
-            highData = DoubleArray(&data.high[startIdx], count);
-            lowData = DoubleArray(&data.low[startIdx], count);
-            closeData = DoubleArray(&data.close[startIdx], count);
+            openData = DoubleArray(&data.open[startIdx], static_cast<int>(count));
+            highData = DoubleArray(&data.high[startIdx], static_cast<int>(count));
+            lowData = DoubleArray(&data.low[startIdx], static_cast<int>(count));
+            closeData = DoubleArray(&data.close[startIdx], static_cast<int>(count));
         }
     }
     
@@ -77,7 +77,7 @@ void ChartRenderer::createOrUpdateChart(
     m_financeChart->addTitle(title.c_str());
     
     // Determine the starting index for visible data
-    int startIndex = aggregationInfo.startIndex;
+    int startIndex = static_cast<int>(aggregationInfo.startIndex);
 
     int subChartsTotalHeight = 30;
     
@@ -455,7 +455,7 @@ void ChartRenderer::addTradeMarkers(XYChart *mainChart,
                                   const chart::AggregationInfo& aggregationInfo)
 {
     const std::vector<be::TradeData>& trades = dataManager.getTrades();
-    int startIndex = aggregationInfo.startIndex;
+    int startIndex = static_cast<int>(aggregationInfo.startIndex);
     chart::AggregationLevel level = aggregationInfo.level;
 
     if (trades.empty() 
@@ -733,11 +733,11 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
             continue;
             
         // Compute relative index and determine corresponding window
-        int relativeIndex = static_cast<int>(entryIndex) - static_cast<int>(startIndex);
-        int windowIndex = relativeIndex / windowSize;
+        int relativeIndex = static_cast<int>(entryIndex - startIndex);
+        int windowIndex = relativeIndex / static_cast<int>(windowSize);
 
         // Ensure index is valid (safety)
-        if (windowIndex >= 0 && windowIndex < numWindows) {
+        if (windowIndex >= 0 && windowIndex < static_cast<int>(numWindows)) {
             // Increment counter for this window
             if (isLong) {
                 longCountByWindow[windowIndex]++;
@@ -751,26 +751,26 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
     std::vector<std::pair<double, double>> longEntryMarkers;
     std::vector<int> longEntryCounts;
     
-    for (int i = 0; i < numWindows; i++) {
+    for (int i = 0; i < static_cast<int>(numWindows); i++) {
         if (longCountByWindow[i] > 0) {
             // Compute middle index of the window
-            int windowStartIndex = i * windowSize;
-            int windowEndIndex = std::min(windowStartIndex + windowSize - 1, pointCount - 1);
-            double midIndex = (windowStartIndex + windowEndIndex) / 2.0;
+            int windowStartIndex = i * static_cast<int>(windowSize);
+            int windowEndIndex = std::min(windowStartIndex + static_cast<int>(windowSize) - 1, static_cast<int>(pointCount) - 1);
+            int midIndex = (windowStartIndex + windowEndIndex) / 2;
             
             // Determine y position (bottom of candle)
             double y = 0;
             
             // In aggregated mode, use low price of the aggregated candle in middle of the window
             const auto& aggregatedData = dataManager.getAggregatedData(level);
-            int midRealIndex = startIndex + static_cast<int>(midIndex);
+            int midRealIndex = static_cast<int>(startIndex) + midIndex;
             if (midRealIndex < static_cast<int>(aggregatedData.low.size())) {
                 y = aggregatedData.low[midRealIndex];
             }
             
             if (y > 0) {
                 longEntryMarkers.push_back({midIndex, y});
-                longEntryCounts.push_back(longCountByWindow[i]);
+                longEntryCounts.push_back(static_cast<int>(longCountByWindow[static_cast<size_t>(i)]));
             }
         }
     }
@@ -809,26 +809,26 @@ void ChartRenderer::addAggregatedTradeMarkers(XYChart *mainChart,
     std::vector<std::pair<double, double>> shortEntryMarkers;
     std::vector<int> shortEntryCounts;
     
-    for (int i = 0; i < numWindows; i++) {
+    for (int i = 0; i < static_cast<int>(numWindows); i++) {
         if (shortCountByWindow[i] > 0) {
             // Compute middle index of the window
-            int windowStartIndex = i * windowSize;
-            int windowEndIndex = std::min(windowStartIndex + windowSize - 1, pointCount - 1);
-            double midIndex = (windowStartIndex + windowEndIndex) / 2.0;
+            int windowStartIndex = i * static_cast<int>(windowSize);
+            int windowEndIndex = std::min(windowStartIndex + static_cast<int>(windowSize) - 1, static_cast<int>(pointCount) - 1);
+            int midIndex = (windowStartIndex + windowEndIndex) / 2;
             
             // Determine y position (top of candle)
             double y = 0;
             
             // In aggregated mode, use high price of the aggregated candle in middle of the window
             const auto& aggregatedData = dataManager.getAggregatedData(level);
-            int midRealIndex = startIndex + static_cast<int>(midIndex);
+            int midRealIndex = static_cast<int>(startIndex) + midIndex;
             if (midRealIndex < static_cast<int>(aggregatedData.high.size())) {
                 y = aggregatedData.high[midRealIndex];
             }
             
             if (y > 0) {
                 shortEntryMarkers.push_back({midIndex, y});
-                shortEntryCounts.push_back(shortCountByWindow[i]);
+                shortEntryCounts.push_back(static_cast<int>(shortCountByWindow[static_cast<size_t>(i)]));
             }
         }
     }
@@ -889,7 +889,7 @@ void ChartRenderer::addRSIToChart(FinanceChart* chart,
     size_t actualPoints = endIndex - startIndex;
 
     // Extract visible RSI data from cache
-    DoubleArray rsiArray(&rsiData[startIndex], actualPoints);
+    DoubleArray rsiArray(&rsiData[startIndex], static_cast<int>(actualPoints));
 
     // Add the indicator chart
     XYChart* c = chart->addIndicator(rsi.height);
@@ -933,7 +933,7 @@ void ChartRenderer::addEMAToChart(FinanceChart* chart,
     size_t actualPoints = endIndex - startIndex;
 
     // Extract visible EMA data from cache
-    DoubleArray emaArray(&emaData[startIndex], actualPoints);
+    DoubleArray emaArray(&emaData[startIndex], static_cast<int>(actualPoints));
 
     // Configure and add the EMA directly on the main chart
     char buffer[1024];
@@ -1024,8 +1024,8 @@ void ChartRenderer::addStochasticToChart(FinanceChart* chart,
     size_t actualPoints = endIndex - startIndex;
 
     // Extract visible Stochastic data from cache
-    DoubleArray kArray(&stochData.first[startIndex], actualPoints);
-    DoubleArray dArray(&stochData.second[startIndex], actualPoints);
+    DoubleArray kArray(&stochData.first[startIndex], static_cast<int>(actualPoints));
+    DoubleArray dArray(&stochData.second[startIndex], static_cast<int>(actualPoints));
 
     // Add the indicator chart
     XYChart* c = chart->addIndicator(stochastic.height);
@@ -1080,7 +1080,7 @@ void ChartRenderer::addATRToChart(FinanceChart* chart,
     size_t actualPoints = endIndex - startIndex;
 
     // Extract visible ATR data from cache
-    DoubleArray atrArray(&atrData[startIndex], actualPoints);
+    DoubleArray atrArray(&atrData[startIndex], static_cast<int>(actualPoints));
 
     // Add the indicator chart
     XYChart* c = chart->addIndicator(atr.height);
@@ -1121,7 +1121,7 @@ void ChartRenderer::addCCIToChart(FinanceChart* chart,
     size_t actualPoints = endIndex - startIndex;
 
     // Extract visible CCI data from cache
-    DoubleArray cciArray(&cciData[startIndex], actualPoints);
+    DoubleArray cciArray(&cciData[startIndex], static_cast<int>(actualPoints));
 
     // Add the indicator chart
     XYChart* c = chart->addIndicator(cci.height);
@@ -1171,8 +1171,8 @@ void ChartRenderer::addMACDToChart(FinanceChart* finance, const indicators::MACD
     size_t actualPoints = endIndex - startIndex;
 
     // Extract visible portions
-    DoubleArray macdArr(&macdLine[startIndex], actualPoints);
-    DoubleArray signalArr(&signalLine[startIndex], actualPoints);
+    DoubleArray macdArr(&macdLine[startIndex], static_cast<int>(actualPoints));
+    DoubleArray signalArr(&signalLine[startIndex], static_cast<int>(actualPoints));
 
     // Build histograms separated for positive/negative
     std::vector<double> posHist(actualPoints, Chart::NoValue);
@@ -1251,9 +1251,9 @@ void ChartRenderer::addBBToChart(FinanceChart *chart, const indicators::BBInstan
     size_t actualPoints = endIndex - startIndex;
 
     // Extract visible BB data from cache
-    DoubleArray middleArray(&middleBand[startIndex], actualPoints);
-    DoubleArray upperArray(&upperBand[startIndex], actualPoints);
-    DoubleArray lowerArray(&lowerBand[startIndex], actualPoints);
+    DoubleArray middleArray(&middleBand[startIndex], static_cast<int>(actualPoints));
+    DoubleArray upperArray(&upperBand[startIndex], static_cast<int>(actualPoints));
+    DoubleArray lowerArray(&lowerBand[startIndex], static_cast<int>(actualPoints));
 
     // Add Bollinger bands directly on the main chart
     XYChart* mainChart = (XYChart*)chart->getChart(1);
@@ -1562,7 +1562,7 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
         xValueStart = timestamps[absIndexStart];
         xValueEnd = timestamps[absIndexEnd];
     } else {
-        // Invalid indices, use default values
+                             // Invalid indices, use default values
         xValueStart = xIndexStart;
         xValueEnd = xIndexEnd;
     }
@@ -1590,11 +1590,23 @@ void ChartRenderer::drawRuler(MultiChart* m, int startX, int startY, int endX, i
     int seconds = totalSeconds % 60;
     
     if (hours > 0) {
-        sprintf(bufferX, "%02dh%02dm%02ds", hours, minutes, seconds);
+#ifdef _WIN32
+        sprintf_s(bufferX, sizeof(bufferX), "%02dh%02dm%02ds", hours, minutes, seconds);
+#else
+        snprintf(bufferX, sizeof(bufferX), "%02dh%02dm%02ds", hours, minutes, seconds);
+#endif
     } else if (minutes > 0) {
-        sprintf(bufferX, "%02dm%02ds", minutes, seconds);
+#ifdef _WIN32
+        sprintf_s(bufferX, sizeof(bufferX), "%02dm%02ds", minutes, seconds);
+#else
+        snprintf(bufferX, sizeof(bufferX), "%02dm%02ds", minutes, seconds);
+#endif
     } else {
-        sprintf(bufferX, "%02ds", seconds);
+#ifdef _WIN32
+        sprintf_s(bufferX, sizeof(bufferX), "%02ds", seconds);
+#else
+        snprintf(bufferX, sizeof(bufferX), "%02ds", seconds);
+#endif
     }
         
     // Text for deltaY (to the right of the rectangle)

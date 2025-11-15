@@ -452,7 +452,7 @@ std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> 
     std::vector<double> timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
     std::vector<double> dataCopy = data;
 
-    ArrayMath timestampsMath(DoubleArray(timestamps.data(), timestamps.size()));
+    ArrayMath timestampsMath(DoubleArray(timestamps.data(), static_cast<int>(timestamps.size())));
 
     if (!configureAggregationSelector(timestampsMath, level))
         return std::vector<double>();
@@ -464,7 +464,7 @@ std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> 
     }
 
     DoubleArray result = timestampsMath.aggregate(
-        DoubleArray(dataCopy.data(), dataCopy.size()), 
+        DoubleArray(dataCopy.data(), static_cast<int>(dataCopy.size())), 
         aggregateMethod);
     return std::vector<double>(result.data, result.data + result.len);
 }
@@ -747,8 +747,8 @@ void ChartDataManager::precalculateTradeIndices(chart::AggregationLevel level) {
         // Find the entry index
         while (mappingIdx < mapping.size()) {
             bool found = false;
-            for (int rawIdx : mapping[mappingIdx]) {
-                if (rawIdx == rawEntryBar) {
+            for (size_t rawIdx : mapping[mappingIdx]) {
+                if (static_cast<int>(rawIdx) == rawEntryBar) {
                     aggEntryIndex = static_cast<int>(mappingIdx);
                     found = true;
                     break;
@@ -766,8 +766,8 @@ void ChartDataManager::precalculateTradeIndices(chart::AggregationLevel level) {
         size_t exitMappingIdx = mappingIdx;
         while (exitMappingIdx < mapping.size()) {
             bool found = false;
-            for (int rawIdx : mapping[exitMappingIdx]) {
-                if (rawIdx == rawExitBar) {
+            for (size_t rawIdx : mapping[exitMappingIdx]) {
+                if (static_cast<int>(rawIdx) == rawExitBar) {
                     aggExitIndex = static_cast<int>(exitMappingIdx);
                     found = true;
                     break;
@@ -853,7 +853,7 @@ chart::AggregationInfo ChartDataManager::getOptimalAggregationInfo(const DoubleA
         size_t aggEndIdx = findClosestIndex(aggregatedData.timestamps, endTime, true);
 
         // Compute how many aggregated points would be visible in this range
-        int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? (aggEndIdx - aggStartIdx + 1) : 0;
+        int visibleAggPoints = (aggEndIdx >= aggStartIdx) ? static_cast<int>(aggEndIdx - aggStartIdx + 1) : 0;
 
         // If aggregation is valid and reduces the data enough
         if (visibleAggPoints > 0 && visibleAggPoints <= m_maxDisplayPoints) {
@@ -935,7 +935,7 @@ int ChartDataManager::aggregatedToFirstRawIndex(chart::AggregationLevel level, i
     const auto& rawIndices = getAggregatedToRawIndices(level, aggregatedIndex);
     
     // Return the first if it exists
-    return rawIndices.empty() ? -1 : rawIndices.front();
+    return rawIndices.empty() ? -1 : static_cast<int>(rawIndices.front());
 }
 
 void ChartDataManager::calculateIndicator(const indicators::IndicatorBase &config)
@@ -1034,7 +1034,7 @@ size_t ChartDataManager::findClosestIndex(const std::vector<double>& values, dou
         return values.size() - 1;
     } else {
         // Search backward (last element <= target)
-        for (int i = values.size() - 1; i >= 0; i--)
+        for (int i = static_cast<int>(values.size()) - 1; i >= 0; i--)
             if (values[i] <= target)
                 return i;
         return 0;

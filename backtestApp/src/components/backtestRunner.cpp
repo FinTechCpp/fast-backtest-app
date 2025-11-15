@@ -93,10 +93,9 @@ void BacktestRunner::runBacktest() {
         return;
     }
     
-    // Clear the data cache before starting a new backtest
-    // This prevents issues with stale file handles on Windows
-    DataLoader::clearCache();
-    qInfo() << "Starting new backtest - cache cleared";
+    // Keep all caches (raw + filtered) for maximum performance between backtests
+    // The cache will automatically handle different configurations via cache keys
+    qInfo() << "Starting new backtest - using persistent cache for performance";
     
     m_runButton->setEnabled(false);
     m_runButton->setVisible(false);
@@ -150,15 +149,14 @@ void BacktestRunner::onBacktestFinished(BacktestResults* results) {
     if (!results || results->candles.empty()) {
         qCritical() << "No backtest results received";
         showError("No backtest results received");
-        // Clear cache even on error to free memory
-        DataLoader::clearCache();
+        // Keep cache even on error - it will help with debugging and next runs
         return;
     }
     
     qInfo() << "Backtest successfully completed, transmitting results";
     
-    // Clear cache after backtest to free memory
-    DataLoader::clearCache();
+    // Keep all caches (raw + filtered) for instant data loading in next backtest
+    // Memory is managed automatically by the cache system
     qDebug() << "Size of received data:" << results->candles.size() << "bars";
 
     // Display execution statistics

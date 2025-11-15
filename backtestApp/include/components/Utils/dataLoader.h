@@ -218,10 +218,17 @@ public:
      * @brief Clear the data cache (useful to free memory and avoid stale data)
      */
     static void clearCache();
+    
+    /**
+     * @brief Clear only the filtered data cache, keeping raw file cache intact
+     * This is useful between backtests to avoid reloading CSV files
+     */
+    static void clearFilteredCache();
 
 private:
     static QStringList getMarketDataPaths();
-    static std::map<QString, std::vector<OHLCBar>> s_dataCache; // Cache for loaded data
+    static std::map<QString, std::vector<OHLCBar>> s_dataCache; // Cache for filtered data
+    static std::map<QString, std::vector<OHLCBar>> s_rawFileCache; // Cache for raw file data (no filtering)
     static QString makeCacheKey(const QString& symbol, const QString& interval, const QString& period, const QDateTime& endDate);
 
     // Helper method for double conversion

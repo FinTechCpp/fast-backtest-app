@@ -19,8 +19,9 @@ You can adjust this offset if needed to match your local market hours.
 static const int CONSTANT_OFFSET_HOURS = 6;
 
 
-// Declaration of the static variable for the cache
+// Declaration of the static variables for the cache
 std::map<QString, std::vector<OHLCBar>> DataLoader::s_dataCache;
+std::map<QString, std::vector<OHLCBar>> DataLoader::s_rawFileCache;
 
 DataLoader::DataLoader() {}
 DataLoader::~DataLoader() {}
@@ -652,7 +653,8 @@ std::vector<OHLCBar> DataLoader::loadData(
     QString cacheKey = makeCacheKey(symbol, interval, period, endDate);
     auto it = s_dataCache.find(cacheKey);
     if (it != s_dataCache.end()) {
-        qDebug() << "Data loaded from cache for key:" << cacheKey;
+        qInfo() << "⚡ INSTANT CACHE HIT - Data loaded from filtered cache (" 
+                << it->second.size() << "bars) for" << symbol << interval << period;
         return it->second;
     }
 
@@ -689,15 +691,23 @@ std::vector<OHLCBar> DataLoader::loadData(
         }
     }
 
-    // Store in cache
+    // Store in cache for instant access on next identical request
     s_dataCache[cacheKey] = result;
+    qInfo() << "💾 Cached filtered data (" << result.size() << "bars) - next identical backtest will be instant";
     return result;
 }
 
 void DataLoader::clearCache()
 {
     s_dataCache.clear();
-    qInfo() << "Data cache cleared";
+    s_rawFileCache.clear();
+    qInfo() << "Data cache cleared (filtered + raw)";
+}
+
+void DataLoader::clearFilteredCache()
+{
+    s_dataCache.clear();
+    qInfo() << "Filtered data cache cleared (raw file cache kept for performance)";
 }
 
 QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString& period)
@@ -755,18 +765,61 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     // Clean the file path for cross-platform compatibility
     QString cleanFilePath = QDir::cleanPath(filePath);
     
-    QFile file(cleanFilePath);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qCritical() << "Unable to open file:" << cleanFilePath;
-        qCritical() << "File error:" << file.errorString();
-        return data;
+    // Check if raw file data is already in cache
+    auto rawCacheIt = s_rawFileCache.find(cleanFilePath);
+    std::vector<OHLCBar> rawData;
+    
+    if (rawCacheIt != s_rawFileCache.end()) {
+        qInfo() << "📦 Raw file data loaded from cache (" << rawCacheIt->second.size() 
+                << "bars) - avoiding CSV read:" << QFileInfo(cleanFilePath).fileName();
+        rawData = rawCacheIt->second;
+    } else {
+        // Load raw data from file
+        rawData.reserve(1000000); // Pre-allocate memory to avoid reallocations
+        
+        QFile file(cleanFilePath);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            qCritical() << "Unable to open file:" << cleanFilePath;
+            qCritical() << "File error:" << file.errorString();
+            return rawData;
+        }
+        
+        QTextStream in(&file);
+        QString line;
+        
+        qInfo() << "📖 Reading CSV file from disk:" << QFileInfo(cleanFilePath).fileName();
+        
+        // Skip header if present
+        if (in.readLineInto(&line)) {
+            if (line.startsWith("date,") || line.startsWith("timestamp,")) {
+                // This is the header, ignore it
+            } else {
+                // This is real data, parse it
+                auto bar = parseCSVLine(line);
+                if (bar) {
+                    rawData.push_back(*bar);
+                }
+            }
+        }
+        
+        int lineCount = 1;
+        while (in.readLineInto(&line)) {
+            lineCount++;
+            auto bar = parseCSVLine(line);
+            if (bar) {
+                rawData.push_back(*bar);
+            }
+        }
+        
+        file.close();
+        qInfo() << "✅ Loaded and parsed" << rawData.size() << "bars from CSV";
+        
+        // Store raw data in cache
+        s_rawFileCache[cleanFilePath] = rawData;
+        qInfo() << "💾 Raw file data cached for future backtests";
     }
     
-    QTextStream in(&file);
-    QString line;
-
-    qDebug() << "Loading data from:" << cleanFilePath;
-
+    // Now filter the raw data based on period and endDate
     QDateTime endDateTime;
     if (endDate.isEmpty()) {
         endDateTime = QDateTime::currentDateTime();
@@ -776,40 +829,22 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     }
     QDateTime startDateTime = calculateStartDate(endDateTime, period);
     
-    if (in.readLineInto(&line)) {
-        // Check for header (both old and new formats)
-        if (line.startsWith("date,") || line.startsWith("timestamp,")) {
-            // This is the header, ignore it
-        } else {
-            // This is real data, parse it
-            auto bar = parseCSVLine(line);
-            if (bar && bar->timestamp >= startDateTime && bar->timestamp <= endDateTime) 
-                data.push_back(*bar);
+    std::vector<OHLCBar> filteredData;
+    filteredData.reserve(rawData.size());
+    
+    for (const auto& bar : rawData) {
+        if (bar.timestamp >= startDateTime && bar.timestamp <= endDateTime) {
+            filteredData.push_back(bar);
+        } else if (bar.timestamp > endDateTime) {
+            break; // Data is sorted, no need to continue
         }
     }
     
-    int lineCount = 1;
-
-    while (in.readLineInto(&line)) {
-        lineCount++;
-
-        auto bar = parseCSVLine(line);
-        if (bar) {
-            // Filter data while loading
-            if (bar->timestamp >= startDateTime && bar->timestamp <= endDateTime) {
-                data.push_back(*bar);
-            }
-            else if (bar->timestamp > endDateTime) {
-                qDebug() << "End of period reached at line" << lineCount << ", stopping loading";
-                break;
-            }
-        }
-    }
-
-    file.close();
-    qDebug() << "Loaded data:" << data.size() << "price bars from" << cleanFilePath;
-
-    return data;
+    qDebug() << "🔍 Filtered to" << filteredData.size() << "bars for period" 
+             << startDateTime.toString("dd/MM/yyyy") << "to" 
+             << endDateTime.toString("dd/MM/yyyy");
+    
+    return filteredData;
 }
 
 QString DataLoader::makeCacheKey(const QString& symbol, const QString& interval, const QString& period, const QDateTime& endDate) {

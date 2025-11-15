@@ -114,6 +114,12 @@ jobs:
         echo "Qt version: ${{ env.QT_VERSION }}"
         echo "Qt6_DIR: $env:Qt6_DIR"
         echo "QT_ROOT_DIR: $env:QT_ROOT_DIR"
+        $qtBinPath = "$env:QT_ROOT_DIR\bin"
+        echo "Qt bin path: $qtBinPath"
+        if (Test-Path $qtBinPath) {
+          $env:PATH = "$qtBinPath;$env:PATH"
+          echo "Added Qt bin to PATH"
+        }
         qmake --version
         where qmake
 

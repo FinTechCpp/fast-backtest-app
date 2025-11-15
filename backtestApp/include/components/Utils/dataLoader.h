@@ -213,6 +213,11 @@ public:
      * @return Structure containing information about the file and its integrity
      */
     static DataFileInfo checkDataFile(const QString& filePath);
+    
+    /**
+     * @brief Clear the data cache (useful to free memory and avoid stale data)
+     */
+    static void clearCache();
 
 private:
     static QStringList getMarketDataPaths();

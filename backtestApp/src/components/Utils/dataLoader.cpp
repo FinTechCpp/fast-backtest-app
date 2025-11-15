@@ -242,78 +242,69 @@ DataFileInfo DataLoader::checkDataFile(const QString& filePath)
 
 QString DataLoader::findMarketDataDirectory()
 {
-    // 1. FIRST STEP: Check if a custom path is set in QSettings
+    // PRIORITY 1: Check if a custom path is set in QSettings
     QSettings settings("fast-backtest-app", "BacktestApp");
     QString customPath = settings.value("marketDataPath").toString();
-    if (!customPath.isEmpty() && QDir(customPath).exists()) {
-        qDebug() << "Using custom directory:" << customPath;
-        return customPath;
-    }
-
-    // 2. Check for marketData directory next to the executable (for distributed builds)
-    QString exeDir = QCoreApplication::applicationDirPath();
-    QString exeDirMarketData = QDir(exeDir).absoluteFilePath("marketData");
-    if (QFileInfo(exeDirMarketData).isDir()) {
-        qDebug() << "Using marketData directory next to executable:" << exeDirMarketData;
-        return exeDirMarketData;
-    }
-
-    // 3. Otherwise, continue with the standard search (for development builds)
-    QDir currentDir(exeDir);
-
-    // Go up the directory tree to find the fast-backtest-app folder
-    do {
-        QString currentPath = currentDir.absolutePath();
-
-        // Check if this is the fast-backtest-app folder
-        if (currentDir.dirName() == "fast-backtest-app") {
-            QString marketDataPath = currentDir.absoluteFilePath("marketData");
-            if (QFileInfo(marketDataPath).isDir()) {
-                return marketDataPath;
-            }
-        }
-
-        // Look for a subfolder fast-backtest-app
-        QString igTradingBotPath = currentDir.absoluteFilePath("fast-backtest-app");
-        if (QFileInfo(igTradingBotPath).isDir()) {
-            QString marketDataPath = QDir(igTradingBotPath).absoluteFilePath("marketData");
-            if (QFileInfo(marketDataPath).isDir()) {
-                return marketDataPath;
-            }
-        }
-
-    } while (currentDir.cdUp());
-
-    // 4. If still not found, create marketData directory next to executable
-    qDebug() << "marketData directory not found, creating:" << exeDirMarketData;
-    if (QDir().mkpath(exeDirMarketData)) 
-        return exeDirMarketData;
     
+    if (!customPath.isEmpty()) {
+        QDir customDir(customPath);
+        if (customDir.exists()) {
+            qDebug() << "Using custom directory from settings:" << customPath;
+            return QDir::cleanPath(customPath);
+        } else {
+            qWarning() << "Custom directory no longer exists, removing from settings:" << customPath;
+            settings.remove("marketDataPath");
+        }
+    }
+
+    // PRIORITY 2: Check for marketData directory next to the executable
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QString marketDataPath = QDir(exeDir).absoluteFilePath("marketData");
+    marketDataPath = QDir::cleanPath(marketDataPath);
+    
+    QDir marketDataDir(marketDataPath);
+    if (marketDataDir.exists()) {
+        qDebug() << "Using marketData directory next to executable:" << marketDataPath;
+        return marketDataPath;
+    }
+
+    // PRIORITY 3: Create marketData directory next to executable
+    qDebug() << "marketData directory not found, creating:" << marketDataPath;
+    if (QDir().mkpath(marketDataPath)) {
+        qDebug() << "Successfully created marketData directory:" << marketDataPath;
+        return marketDataPath;
+    }
+    
+    qCritical() << "Failed to create marketData directory:" << marketDataPath;
     return QString(); // Not found and could not create
 }
 
 bool DataLoader::setCustomMarketDataDirectory(const QString& path)
 {
+    // Clean and normalize the path for consistent handling across platforms
+    QString cleanPath = QDir::cleanPath(path);
+    
     // Check if the path exists or can be created
-    QDir dir(path);
+    QDir dir(cleanPath);
     if (!dir.exists()) {
-        if (!QDir().mkpath(path)) {
-            qWarning() << "Unable to create directory:" << path;
+        if (!QDir().mkpath(cleanPath)) {
+            qWarning() << "Unable to create directory:" << cleanPath;
             return false;
         }
     }
 
     // Check write permissions
-    QFileInfo dirInfo(path);
+    QFileInfo dirInfo(cleanPath);
     if (!dirInfo.isWritable()) {
-        qWarning() << "Directory is not writable:" << path;
+        qWarning() << "Directory is not writable:" << cleanPath;
         return false;
     }
 
-    // Save the path in settings
+    // Save the path in settings (use native separators for the platform)
     QSettings settings("fast-backtest-app", "BacktestApp");
-    settings.setValue("marketDataPath", path);
-    qInfo() << "Custom directory set:" << path;
+    settings.setValue("marketDataPath", QDir::toNativeSeparators(cleanPath));
+    settings.sync(); // Force immediate write to disk
+    qInfo() << "Custom directory set:" << cleanPath;
 
     return true;
 }
@@ -332,10 +323,14 @@ QString DataLoader::findDataFile(const QString& symbol, const QString& interval)
 {
     QString marketDataDir = findMarketDataDirectory();
     if (marketDataDir.isEmpty()) {
+        qWarning() << "Market data directory not found";
         return QString();
     }
 
     QDir dir(marketDataDir);
+    
+    // Refresh the directory listing to avoid cache issues on Windows
+    dir.refresh();
     
     // First, try to find exact match
     QStringList nameFilters;
@@ -343,7 +338,7 @@ QString DataLoader::findDataFile(const QString& symbol, const QString& interval)
     QStringList files = dir.entryList(nameFilters, QDir::Files, QDir::Time);
 
     if (!files.isEmpty()) {
-        QString exactMatch = dir.absoluteFilePath(files.first());
+        QString exactMatch = QDir::cleanPath(dir.absoluteFilePath(files.first()));
         qDebug() << "Exact file match found:" << exactMatch;
         return exactMatch;
     }
@@ -352,7 +347,7 @@ QString DataLoader::findDataFile(const QString& symbol, const QString& interval)
     QString baseFile = findBestBaseDataFile(symbol, interval);
     if (!baseFile.isEmpty()) {
         qDebug() << "Base file found for resampling:" << baseFile;
-        return baseFile;
+        return QDir::cleanPath(baseFile);
     }
 
     qWarning() << "No suitable data file found for symbol:" << symbol << "interval:" << interval;
@@ -363,10 +358,15 @@ QString DataLoader::findBestBaseDataFile(const QString& symbol, const QString& i
 {
     QString marketDataDir = findMarketDataDirectory();
     if (marketDataDir.isEmpty()) {
+        qWarning() << "Market data directory not found";
         return QString();
     }
 
     QDir dir(marketDataDir);
+    
+    // Refresh the directory listing to avoid cache issues on Windows
+    dir.refresh();
+    
     int targetSeconds = intervalToSeconds(interval);
     
     if (targetSeconds <= 0) {
@@ -388,7 +388,7 @@ QString DataLoader::findBestBaseDataFile(const QString& symbol, const QString& i
     QStringList files = dir.entryList(nameFilters, QDir::Files, QDir::Time);
 
     if (!files.isEmpty()) {
-        QString baseFile = dir.absoluteFilePath(files.first());
+        QString baseFile = QDir::cleanPath(dir.absoluteFilePath(files.first()));
         qDebug() << "Selected base file:" << baseFile << "for target interval:" << interval;
         return baseFile;
     }
@@ -399,11 +399,12 @@ QString DataLoader::findBestBaseDataFile(const QString& symbol, const QString& i
     files = dir.entryList(nameFilters, QDir::Files, QDir::Time);
     
     if (!files.isEmpty()) {
-        QString fallbackFile = dir.absoluteFilePath(files.first());
+        QString fallbackFile = QDir::cleanPath(dir.absoluteFilePath(files.first()));
         qWarning() << "Using fallback file:" << fallbackFile << "for interval:" << interval;
         return fallbackFile;
     }
 
+    qWarning() << "No suitable base data file found for symbol:" << symbol;
     return QString();
 }
 
@@ -693,6 +694,12 @@ std::vector<OHLCBar> DataLoader::loadData(
     return result;
 }
 
+void DataLoader::clearCache()
+{
+    s_dataCache.clear();
+    qInfo() << "Data cache cleared";
+}
+
 QDateTime DataLoader::calculateStartDate(const QDateTime& endDate, const QString& period)
 {
     QDateTime startDate = endDate;
@@ -745,16 +752,20 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     std::vector<OHLCBar> data;
     data.reserve(1000000); // Pre-allocate memory to avoid reallocations
 
-    QFile file(filePath);
+    // Clean the file path for cross-platform compatibility
+    QString cleanFilePath = QDir::cleanPath(filePath);
+    
+    QFile file(cleanFilePath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qCritical() << "Unable to open file:" << filePath;
+        qCritical() << "Unable to open file:" << cleanFilePath;
+        qCritical() << "File error:" << file.errorString();
         return data;
     }
     
     QTextStream in(&file);
     QString line;
 
-    qDebug() << "Loading data from:" << filePath;
+    qDebug() << "Loading data from:" << cleanFilePath;
 
     QDateTime endDateTime;
     if (endDate.isEmpty()) {
@@ -796,7 +807,7 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     }
 
     file.close();
-    qDebug() << "Loaded data:" << data.size() << "price bars from" << filePath;
+    qDebug() << "Loaded data:" << data.size() << "price bars from" << cleanFilePath;
 
     return data;
 }

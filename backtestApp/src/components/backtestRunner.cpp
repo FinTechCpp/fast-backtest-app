@@ -7,6 +7,7 @@
 #include "ui/app.h"
 #include "ui/panels/generalParamsPanel.h"
 #include "ui/panels/StrategyPanel.h"
+#include "components/Utils/dataLoader.h"
 
 #include "backtest.hpp"
 #include "broker.hpp"
@@ -92,6 +93,11 @@ void BacktestRunner::runBacktest() {
         return;
     }
     
+    // Clear the data cache before starting a new backtest
+    // This prevents issues with stale file handles on Windows
+    DataLoader::clearCache();
+    qInfo() << "Starting new backtest - cache cleared";
+    
     m_runButton->setEnabled(false);
     m_runButton->setVisible(false);
     m_loadingIndicator->setVisible(true);
@@ -144,10 +150,15 @@ void BacktestRunner::onBacktestFinished(BacktestResults* results) {
     if (!results || results->candles.empty()) {
         qCritical() << "No backtest results received";
         showError("No backtest results received");
+        // Clear cache even on error to free memory
+        DataLoader::clearCache();
         return;
     }
     
     qInfo() << "Backtest successfully completed, transmitting results";
+    
+    // Clear cache after backtest to free memory
+    DataLoader::clearCache();
     qDebug() << "Size of received data:" << results->candles.size() << "bars";
 
     // Display execution statistics

@@ -118,18 +118,17 @@ void DataMenuManager::onImportCSV()
     // Find the marketData directory
     QString marketDataDir = DataLoader::findMarketDataDirectory();
     if (marketDataDir.isEmpty()) {
-        // Create the directory if it doesn't exist
-        QString projectRoot = QCoreApplication::applicationDirPath();
-        QDir currentDir(projectRoot);
-        while (currentDir.cdUp() && currentDir.dirName() != "fast-backtest-app") {}
-        
-        if (currentDir.dirName() == "fast-backtest-app") {
-            marketDataDir = currentDir.absoluteFilePath("marketData");
-            QDir().mkpath(marketDataDir);
-        } else {
-            marketDataDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-        }
+        QMessageBox::critical(
+            qobject_cast<QWidget*>(parent()),
+            tr("Error"),
+            tr("Failed to find or create marketData directory.")
+        );
+        return;
     }
+    
+    // Clean the path for cross-platform compatibility
+    marketDataDir = QDir::cleanPath(marketDataDir);
+    qDebug() << "Using marketData directory:" << marketDataDir;
     
     // File selection dialog
     QStringList fileNames = QFileDialog::getOpenFileNames(
@@ -162,9 +161,10 @@ void DataMenuManager::onImportCSV()
         
         // Copy the file to marketData directory if not already there
         QFileInfo sourceInfo(fileName);
-        QString destPath = QDir(marketDataDir).absoluteFilePath(sourceInfo.fileName());
+        QString destPath = QDir::cleanPath(QDir(marketDataDir).absoluteFilePath(sourceInfo.fileName()));
+        QString sourcePath = QDir::cleanPath(fileName);
         
-        if (fileName != destPath) {
+        if (sourcePath != destPath) {
             if (QFile::exists(destPath)) {
                 int ret = QMessageBox::question(
                     qobject_cast<QWidget*>(parent()),
@@ -183,15 +183,15 @@ void DataMenuManager::onImportCSV()
                 QFile::remove(destPath);
             }
             
-            if (QFile::copy(fileName, destPath)) {
+            if (QFile::copy(sourcePath, destPath)) {
                 importedCount++;
                 qDebug() << "File copied:" << destPath;
             } else {
-                qWarning() << "Failed to copy:" << fileName << "to" << destPath;
+                qWarning() << "Failed to copy:" << sourcePath << "to" << destPath;
             }
         } else {
             importedCount++;
-            qDebug() << "File already in target directory:" << fileName;
+            qDebug() << "File already in target directory:" << sourcePath;
         }
         
         QApplication::processEvents();
@@ -458,6 +458,9 @@ void DataMenuManager::onShowDataInfo()
 void DataMenuManager::onSetCustomDirectory()
 {
     QString currentDir = DataLoader::findMarketDataDirectory();
+    if (currentDir.isEmpty()) {
+        currentDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+    }
     
     QString dir = QFileDialog::getExistingDirectory(
         qobject_cast<QWidget*>(parent()),
@@ -470,7 +473,13 @@ void DataMenuManager::onSetCustomDirectory()
         return;
     }
     
+    // Clean the path for cross-platform compatibility
+    dir = QDir::cleanPath(dir);
+    
     if (DataLoader::setCustomMarketDataDirectory(dir)) {
+        // Clear the data cache to ensure fresh data loading with new directory
+        DataLoader::clearCache();
+        
         QSettings settings("fast-backtest-app", "BacktestApp");
         QString savedPath = settings.value("marketDataPath").toString();
         qDebug() << "Path saved in QSettings:" << savedPath;
@@ -543,20 +552,20 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
 {
     QString marketDataDir = DataLoader::findMarketDataDirectory();
     if (marketDataDir.isEmpty()) {
-        // Create the directory if it doesn't exist
-        QString projectRoot = QCoreApplication::applicationDirPath();
-        QDir currentDir(projectRoot);
-        while (currentDir.cdUp() && currentDir.dirName() != "fast-backtest-app") {}
-        
-        if (currentDir.dirName() == "fast-backtest-app") {
-            marketDataDir = currentDir.absoluteFilePath("marketData");
-            QDir().mkpath(marketDataDir);
-        } else {
-            marketDataDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
-        }
+        QMessageBox::critical(
+            qobject_cast<QWidget*>(parent()),
+            tr("Error"),
+            tr("Failed to find or create marketData directory.")
+        );
+        return;
     }
     
+    // Clean the path for cross-platform compatibility
+    marketDataDir = QDir::cleanPath(marketDataDir);
+    qDebug() << "Using marketData directory for downloads:" << marketDataDir;
+    
     QDir localDir(marketDataDir);
+    localDir.refresh(); // Refresh to avoid cache issues on Windows
     QStringList localFiles = localDir.entryList(QStringList() << "*.csv" << "*.parquet", QDir::Files);
     
     // Create dialog for file selection
@@ -760,25 +769,32 @@ void DataMenuManager::compareAndDownloadFiles(const QJsonArray& remoteFiles)
         loop.exec();
         
         if (downloadReply->error() == QNetworkReply::NoError) {
-            // Save file
-            QString localFilePath = localDir.absoluteFilePath(filename);
+            // Save file with clean path
+            QString localFilePath = QDir::cleanPath(localDir.absoluteFilePath(filename));
             QFile localFile(localFilePath);
+            
+            // Ensure the file is closed if it already exists
+            if (localFile.exists()) {
+                localFile.remove();
+            }
             
             if (localFile.open(QIODevice::WriteOnly)) {
                 QByteArray data = downloadReply->readAll();
                 qint64 written = localFile.write(data);
+                localFile.flush();
                 localFile.close();
                 
                 if (written == data.size()) {
                     qDebug() << "File downloaded:" << filename 
-                             << "Size:" << (written / (1024.0 * 1024.0)) << "MB";
+                             << "Size:" << (written / (1024.0 * 1024.0)) << "MB"
+                             << "Path:" << localFilePath;
                     successCount++;
                 } else {
                     qWarning() << "Incomplete write for file:" << filename;
                     errorCount++;
                 }
             } else {
-                qWarning() << "Unable to write file:" << filename;
+                qWarning() << "Unable to write file:" << filename << "Error:" << localFile.errorString();
                 errorCount++;
             }
         } else {
@@ -850,7 +866,11 @@ void DataMenuManager::onManageLocalFiles()
         return;
     }
     
+    // Clean the path for cross-platform compatibility
+    marketDataDir = QDir::cleanPath(marketDataDir);
+    
     QDir dir(marketDataDir);
+    dir.refresh(); // Refresh to avoid cache issues on Windows
     QStringList csvFiles = dir.entryList(QStringList() << "*.csv" << "*.parquet", QDir::Files);
     
     if (csvFiles.isEmpty()) {
@@ -959,20 +979,29 @@ void DataMenuManager::onManageLocalFiles()
             return;
         }
         
+        // Clear cache before deleting files to avoid issues on Windows
+        DataLoader::clearCache();
+        
         // Delete files
         int deletedCount = 0;
         int errorCount = 0;
         
         for (const QString& filename : filesToDelete) {
-            QString filePath = dir.absoluteFilePath(filename);
-            if (QFile::remove(filePath)) {
+            QString filePath = QDir::cleanPath(dir.absoluteFilePath(filename));
+            QFile file(filePath);
+            
+            // Make sure the file is not locked
+            if (file.exists() && file.remove()) {
                 qDebug() << "File deleted:" << filename;
                 deletedCount++;
             } else {
-                qWarning() << "Failed to delete:" << filename;
+                qWarning() << "Failed to delete:" << filename << "Error:" << file.errorString();
                 errorCount++;
             }
         }
+        
+        // Refresh directory listing after deletions
+        dir.refresh();
         
         // Remove deleted items from the list
         for (int i = fileListWidget->count() - 1; i >= 0; --i) {

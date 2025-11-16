@@ -8,6 +8,11 @@ on:
   pull_request:
     branches: [ main, releases ]
 
+# Éviter les runs concurrents et annuler les précédents en attente
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   BUILD_TYPE: Release
   QT_VERSION: 6.8.3
@@ -231,24 +236,12 @@ jobs:
         echo "DOWNLOAD_SIZE=$size" >> $env:GITHUB_ENV
         echo "download_size=$size" >> $env:GITHUB_OUTPUT
 
-    - name: Upload to releases repository
-      run: |
-        # Clone releases repository
-        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
-        
-        # Create downloads directory
-        New-Item -Path "releases-repo\downloads" -ItemType Directory -Force
-        
-        # Copy archive
-        Copy-Item $env:ARCHIVE_NAME "releases-repo\downloads\"
-        
-        # Commit and push
-        cd releases-repo
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git config user.name "github-actions[bot]"
-        git add "downloads\$env:ARCHIVE_NAME"
-        git commit -m "Upload Windows build v${{ env.VERSION }}"
-        git push
+    - name: Upload Windows archive as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-archive
+        path: ${{ env.ARCHIVE_NAME }}
+        retention-days: 1
 
   build-macos:
     if: false  # Temporarily disabled
@@ -366,24 +359,12 @@ jobs:
         SIZE=$(stat -f%z "$ARCHIVE_NAME")
         echo "DOWNLOAD_SIZE=$SIZE" >> $GITHUB_ENV
 
-    - name: Upload to releases repository
-      run: |
-        # Clone releases repository
-        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
-        
-        # Create downloads directory
-        mkdir -p releases-repo/downloads
-        
-        # Copy archive
-        cp "$ARCHIVE_NAME" releases-repo/downloads/
-        
-        # Commit and push
-        cd releases-repo
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git config user.name "github-actions[bot]"
-        git add downloads/"$ARCHIVE_NAME"
-        git commit -m "Upload macOS build v${{ env.VERSION }}"
-        git push
+    - name: Upload macOS archive as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-archive
+        path: ${{ env.ARCHIVE_NAME }}
+        retention-days: 1
 
   build-linux:
     runs-on: [self-hosted, Linux, X64]
@@ -604,24 +585,12 @@ jobs:
         SIZE=$(stat -c%s "$ARCHIVE_NAME")
         echo "DOWNLOAD_SIZE=$SIZE" >> $GITHUB_ENV
 
-    - name: Upload to releases repository
-      run: |
-        # Clone releases repository
-        git clone https://x-access-token:${{ secrets.RELEASE_REPO_PAT }}@github.com/FinTechCpp/fast-backtest-app-releases.git releases-repo
-        
-        # Create downloads directory
-        mkdir -p releases-repo/downloads
-        
-        # Copy archive
-        cp "$ARCHIVE_NAME" releases-repo/downloads/
-        
-        # Commit and push
-        cd releases-repo
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git config user.name "github-actions[bot]"
-        git add downloads/"$ARCHIVE_NAME"
-        git commit -m "Upload Linux build v${{ env.VERSION }}"
-        git push
+    - name: Upload Linux archive as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-archive
+        path: ${{ env.ARCHIVE_NAME }}
+        retention-days: 1
 
   create-release:
     runs-on: [self-hosted, Linux, X64]
@@ -639,6 +608,25 @@ jobs:
         echo "VERSION=${{ needs.calculate-version.outputs.version }}" >> $GITHUB_ENV
         echo "IS_BETA=${{ needs.calculate-version.outputs.is_beta }}" >> $GITHUB_ENV
 
+    - name: Download Windows archive
+      uses: actions/download-artifact@v4
+      with:
+        name: windows-archive
+        path: ./artifacts
+
+    - name: Download Linux archive
+      uses: actions/download-artifact@v4
+      with:
+        name: linux-archive
+        path: ./artifacts
+
+    # Uncomment when macOS build is re-enabled
+    # - name: Download macOS archive
+    #   uses: actions/download-artifact@v4
+    #   with:
+    #     name: macos-archive
+    #     path: ./artifacts
+
     - name: Checkout releases repository
       uses: actions/checkout@v4
       with:
@@ -651,8 +639,17 @@ jobs:
         cd releases-repo
         git pull origin main
 
-    - name: Display downloaded files
+    - name: Copy all archives to releases repository
       run: |
+        # Create downloads directory
+        mkdir -p releases-repo/downloads
+        
+        # Copy all archives
+        cp ./artifacts/*.zip releases-repo/downloads/ 2>/dev/null || true
+        cp ./artifacts/*.tar.gz releases-repo/downloads/ 2>/dev/null || true
+        cp ./artifacts/*.dmg releases-repo/downloads/ 2>/dev/null || true
+        
+        echo "✅ All archives copied to releases repository"
         echo "Files in releases repository:"
         ls -lh releases-repo/downloads/
 

@@ -153,41 +153,73 @@ void RiskManagementDialog::createDependencyGroup(QCheckBox* checkbox, const std:
 }
 
 void RiskManagementDialog::setConfig(const StrategyConfig& config) {
-    m_cashAllocationPercentageSpin->setValue(config.cash_allocation_percentage);
-    m_customLeverageSpin->setValue(config.leverage_limit);
+    // Capital allocation - only set if value is valid (> 0)
+    if (config.cash_allocation_percentage > 0) 
+        m_cashAllocationPercentageSpin->setValue(config.cash_allocation_percentage);
+    
+    // Custom leverage
     if (config.leverage_limit > 0) {
         m_useCustomLeverageCheck->setChecked(true);
+        m_customLeverageSpin->setValue(config.leverage_limit);
     } else {
         m_useCustomLeverageCheck->setChecked(false);
     }
+    
+    // Risk-based sizing
     m_useRiskBasedSizingCheck->setChecked(config.use_risk_based_sizing);
-    m_riskPercentageSpin->setValue(config.risk_percentage);
+    if (config.risk_percentage > 0) 
+        m_riskPercentageSpin->setValue(config.risk_percentage);
+    
+    // Daily max loss
     m_useDailyMaxLossCheck->setChecked(config.use_daily_max_loss);
-    m_dailyMaxLossPercentageSpin->setValue(config.daily_max_loss_percentage);
+    if (config.daily_max_loss_percentage > 0) 
+        m_dailyMaxLossPercentageSpin->setValue(config.daily_max_loss_percentage);
+    
+    // Daily max profit
     m_useDailyMaxProfitCheck->setChecked(config.use_daily_max_profit);
-    m_dailyMaxProfitPercentageSpin->setValue(config.daily_max_profit_percentage);
+    if (config.daily_max_profit_percentage > 0) 
+        m_dailyMaxProfitPercentageSpin->setValue(config.daily_max_profit_percentage);
+    
+    // Daily max drawdown
     m_useDailyMaxDrawdownCheck->setChecked(config.use_daily_max_drawdown);
-    m_dailyMaxDrawdownPercentageSpin->setValue(config.daily_max_drawdown_percentage);
+    if (config.daily_max_drawdown_percentage > 0) 
+        m_dailyMaxDrawdownPercentageSpin->setValue(config.daily_max_drawdown_percentage);
+    
+    // Break even
     m_useBreakEvenCheck->setChecked(config.use_break_even);
-    m_breakEvenThresholdSpin->setValue(config.break_even_threshold);
+    if (config.break_even_threshold > 0) 
+        m_breakEvenThresholdSpin->setValue(config.break_even_threshold);
+    // break_even_offset_per_mille can be 0, so always set it
     m_breakEvenOffsetSpin->setValue(config.break_even_offset_per_mille);
 }
 
 void RiskManagementDialog::updateConfig(StrategyConfig& config) const {
+    // Capital allocation
     config.cash_allocation_percentage = m_cashAllocationPercentageSpin->value();
-    if (m_useCustomLeverageCheck->isChecked()) {
+    
+    // Custom leverage - only update if checkbox is checked
+    if (m_useCustomLeverageCheck->isChecked()) 
         config.leverage_limit = m_customLeverageSpin->value();
-    } else {
+    else 
         config.leverage_limit = 0; // Indicate that leverage is not set
-    }
+    
+    // Risk-based sizing
     config.use_risk_based_sizing = m_useRiskBasedSizingCheck->isChecked();
     config.risk_percentage = m_riskPercentageSpin->value();
+    
+    // Daily max loss
     config.use_daily_max_loss = m_useDailyMaxLossCheck->isChecked();
     config.daily_max_loss_percentage = m_dailyMaxLossPercentageSpin->value();
+    
+    // Daily max profit
     config.use_daily_max_profit = m_useDailyMaxProfitCheck->isChecked();
     config.daily_max_profit_percentage = m_dailyMaxProfitPercentageSpin->value();
+    
+    // Daily max drawdown
     config.use_daily_max_drawdown = m_useDailyMaxDrawdownCheck->isChecked();
     config.daily_max_drawdown_percentage = m_dailyMaxDrawdownPercentageSpin->value();
+    
+    // Break even
     config.use_break_even = m_useBreakEvenCheck->isChecked();
     config.break_even_threshold = m_breakEvenThresholdSpin->value();
     config.break_even_offset_per_mille = m_breakEvenOffsetSpin->value();

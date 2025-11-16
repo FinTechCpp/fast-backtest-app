@@ -8,12 +8,8 @@
 #include <QDebug>
 
 StrategyConfigDialog::StrategyConfigDialog(QWidget* parent)
-    : QDialog(parent)
+    : QDialog(parent), m_config{}  // Zero-initialize structure (booleans = false, numbers = 0)
 {
-    // Initialize trading days array (Mon-Fri enabled by default)
-    for (int i = 0; i < 7; ++i) 
-        m_config.trading_days_array[i] = (i < 5);
-    
     setWindowTitle("Strategy Configuration");
     setMinimumSize(1000, 700);
     

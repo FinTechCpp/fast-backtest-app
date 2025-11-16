@@ -8,11 +8,7 @@ StrategyPanel::StrategyPanel(QWidget* parent)
     : QGroupBox("Trading Strategies", parent)
 {
     // Add a default strategy
-    StrategyConfig defaultConfig;
-    // Initialize trading days array (Mon-Fri enabled by default)
-    for (int i = 0; i < 7; ++i) {
-        defaultConfig.trading_days_array[i] = (i < 5); // Days 0-4 (Mon-Fri) enabled
-    }
+    StrategyConfig defaultConfig{};  // Zero-initialize all fields
     m_configs.push_back(defaultConfig);
     
     setupUI();
@@ -177,11 +173,9 @@ void StrategyPanel::setupUI() {
 
 void StrategyPanel::onAddStrategy() {
     // Create a new default config
-    StrategyConfig newConfig;
-    for (int i = 0; i < 7; ++i) {
+    StrategyConfig newConfig{};  // Zero-initialize all fields
+    for (int i = 0; i < 7; ++i) 
         newConfig.trading_days_array[i] = (i < 5);
-    }
-    
     // Open dialog to configure
     StrategyConfigDialog dialog(this);
     dialog.setConfig(newConfig);

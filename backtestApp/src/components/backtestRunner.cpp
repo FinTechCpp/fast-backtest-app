@@ -95,7 +95,11 @@ void BacktestRunner::runBacktest() {
     
     // Keep all caches (raw + filtered) for maximum performance between backtests
     // The cache will automatically handle different configurations via cache keys
-    qInfo() << "Starting new backtest - using persistent cache for performance";
+    qInfo() << "=================================================";
+    qInfo() << "STARTING NEW BACKTEST - Backtest runner initialized";
+    qInfo() << "Thread ID:" << QThread::currentThreadId();
+    qInfo() << "Using persistent cache for maximum performance";
+    qInfo() << "=================================================";
     
     m_runButton->setEnabled(false);
     m_runButton->setVisible(false);
@@ -223,15 +227,23 @@ BacktestWorker::~BacktestWorker()
 
 void BacktestWorker::run()
 {
+    qInfo() << "[WORKER] BacktestWorker::run() STARTED";
+    qInfo() << "[WORKER] Worker thread ID:" << QThread::currentThreadId();
+    
     QElapsedTimer timer;
     timer.start();
 
+    qInfo() << "[WORKER] Getting general params config...";
     GeneralParamsConfig generalConfig = m_mainWindow->getGeneralParamsConfig();
+    qInfo() << "[WORKER] General params config retrieved successfully";
 
     // Load data with DataLoader and convert to be::Data
+    qInfo() << "[WORKER] Loading data with DataLoader...";
     std::vector<OHLCBar> rawData = DataLoader::loadData(generalConfig.symbol, generalConfig.interval, generalConfig.period, generalConfig.endDate);
+    qInfo() << "[WORKER] Data loaded, size:" << rawData.size();
 
     if (rawData.empty()) {
+        qCritical() << "[WORKER] ERROR: No data loaded!";
         emit error("No data loaded");
         return;
     }

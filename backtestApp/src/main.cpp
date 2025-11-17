@@ -17,6 +17,7 @@
 #include "ui/app.h"
 #include "components/backtestRunner.h"
 #include "components/Utils/dataLoader.h"
+#include "components/Utils/crashHandler.h"
 #include "components/updateChecker.h"
 #include "ui/menu/updateMenuManager.h"
 #include "backtest.hpp"   // For be::* types
@@ -139,6 +140,10 @@ void cleanupLogging()
 
 int main(int argc, char *argv[])
 {
+    // Setup crash handler FIRST to catch any early crashes
+    CrashHandler::setupCrashHandler();
+    CrashHandler::logCrashInfo("Application starting...");
+    
     // Qt configuration 
 #if QT_VERSION >= 0x050600 && QT_VERSION < 0x060000
     QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
@@ -148,6 +153,7 @@ int main(int argc, char *argv[])
 #endif
 
     QApplication app(argc, argv);
+    CrashHandler::logCrashInfo("QApplication created successfully");
 
     // Force Fusion style for all OS
     app.setStyle(QStyleFactory::create("Fusion"));

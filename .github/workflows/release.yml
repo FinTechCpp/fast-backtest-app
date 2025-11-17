@@ -81,7 +81,7 @@ jobs:
         echo "Is beta: $IS_BETA"
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: [self-hosted, Windows, X64]
     needs: calculate-version
     permissions:
       contents: write
@@ -169,7 +169,8 @@ jobs:
       run: |
         $qtPath = if ($env:Qt6_DIR) { $env:Qt6_DIR } else { $env:QT_ROOT_DIR }
         echo "Using Qt path: $qtPath"
-        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_PREFIX_PATH="$qtPath"
+        # Build with debug symbols even in Release mode for better crash diagnostics
+        cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_PREFIX_PATH="$qtPath" -DCMAKE_CXX_FLAGS_RELEASE="/MD /O2 /Ob2 /Zi /DNDEBUG" -DCMAKE_EXE_LINKER_FLAGS_RELEASE="/DEBUG /INCREMENTAL:NO"
 
     - name: Build project
       working-directory: build
@@ -197,6 +198,12 @@ jobs:
         
         # Copy the executable and all DLLs
         Copy-Item "$sourceDir/*" $distDir -Recurse -Force
+
+        # Copy PDB debug symbols for crash diagnostics (if they exist)
+        if (Test-Path "$sourceDir/*.pdb") {
+          Copy-Item "$sourceDir/*.pdb" $distDir -Force
+          echo "✅ Debug symbols (PDB files) copied for crash diagnostics"
+        }
 
         # Create marketData directory for user data files
         New-Item -ItemType Directory -Path "$distDir/marketData" -Force

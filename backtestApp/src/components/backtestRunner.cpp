@@ -244,6 +244,11 @@ void BacktestWorker::run()
 
     if (rawData.empty()) {
         qCritical() << "[WORKER] ERROR: No data loaded!";
+        
+        // Cleanup spdlog before returning
+        spdlog::drop("BE");
+        spdlog::shutdown();
+        
         emit error("No data loaded");
         return;
     }
@@ -358,6 +363,13 @@ void BacktestWorker::run()
     qDebug() << "Executing backtest...";
     m_results->stats = backtest.run();
     qDebug() << "Backtest successfully completed";
+    
+    // Cleanup spdlog to avoid crash on next backtest
+    // The async logger thread pool must be properly shutdown
+    qDebug() << "Cleaning up spdlog logger...";
+    spdlog::drop("BE");
+    spdlog::shutdown();
+    qDebug() << "Spdlog cleanup completed";
     
     // Emit the signal with the results
     emit finished(m_results.get());

@@ -172,9 +172,9 @@ void ChartView::setupUI()
 }
 
 void ChartView::updateData(BacktestResults* results) {
-    // Save the markers from the current backtest before changing
-    if (m_currentResults) 
-        m_currentResults->userMarkers = m_chartWidget->getMarkers();
+    // BUG FIX: Don't access m_currentResults - it may be a dangling pointer
+    // when a new backtest destroys the previous BacktestResults.
+    // Instead, get markers from the chart widget and save them in the NEW results.
     
     m_currentResults = results;
 

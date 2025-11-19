@@ -26,10 +26,17 @@ else()
     
     # Use appropriate flags based on the compiler
     if(MSVC)
-        add_compile_options(/O2)
+        # Maximum speed optimization: /O2 (maximize speed) + /fp:fast (fast floating-point)
+        # /Zi for debug symbols (crash diagnostics), /GL+/LTCG for whole program optimization
+        set(CMAKE_CXX_FLAGS_RELEASE "/O2 /fp:fast /GL /Zi /DNDEBUG" CACHE STRING "MSVC Release flags" FORCE)
+        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /DEBUG" CACHE STRING "MSVC Linker Release flags" FORCE)
+        message(STATUS "MSVC Release flags: ${CMAKE_CXX_FLAGS_RELEASE}")
+        message(STATUS "MSVC Linker Release flags: ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")
     else()
-        add_compile_options(-O3)
-        # add_compile_options(-march=native)
+        # Maximum speed optimization: -Ofast (aggressive optimizations) + LTO
+        add_compile_options(-Ofast -march=native -flto)
+        add_link_options(-flto)
+        message(STATUS "GCC/Clang Release flags: -Ofast -march=native -flto")
     endif()
 
     # In Release mode, logging is DISABLED (DISABLE_LOGGING defined)

@@ -27,8 +27,9 @@ else()
     # Use appropriate flags based on the compiler
     if(MSVC)
         # Maximum speed optimization: /O2 (maximize speed) + /fp:fast (fast floating-point)
+        # /arch:AVX2 enables SIMD auto-vectorization (requires CPU from 2013+: Intel Haswell, AMD Excavator)
         # /Zi for debug symbols (crash diagnostics), /GL+/LTCG for whole program optimization
-        set(CMAKE_CXX_FLAGS_RELEASE "/O2 /fp:fast /GL /Zi /DNDEBUG" CACHE STRING "MSVC Release flags" FORCE)
+        set(CMAKE_CXX_FLAGS_RELEASE "/O2 /fp:fast /arch:AVX2 /GL /Zi /DNDEBUG" CACHE STRING "MSVC Release flags" FORCE)
         set(CMAKE_EXE_LINKER_FLAGS_RELEASE "/LTCG /DEBUG" CACHE STRING "MSVC Linker Release flags" FORCE)
         message(STATUS "MSVC Release flags: ${CMAKE_CXX_FLAGS_RELEASE}")
         message(STATUS "MSVC Linker Release flags: ${CMAKE_EXE_LINKER_FLAGS_RELEASE}")

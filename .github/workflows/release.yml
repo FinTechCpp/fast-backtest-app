@@ -766,95 +766,71 @@ jobs:
         
         if [ "$IS_BETA" == "true" ]; then
           # Update beta version tag
-          sed -i "s|<span class=\"version-tag beta\">beta-latest</span>|<span class=\"version-tag beta\">$VERSION</span>|g" "$HTML_FILE"
+          sed -i "s|<span class=\"version-tag beta\">v[^<]*</span>|<span class=\"version-tag beta\">$VERSION</span>|g" "$HTML_FILE"
           
-          # Find beta archive names (robust: avoid xargs/basename failing when no files match)
-          shopt -s nullglob
-          files=(releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip)
-          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-            WIN_ARCHIVE=$(basename "${files[0]}")
-          else
-            WIN_ARCHIVE=""
-          fi
-
-          files=(releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg)
-          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-            MAC_ARCHIVE=$(basename "${files[0]}")
-          else
-            MAC_ARCHIVE=""
-          fi
-
-          files=(releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz)
-          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-            LINUX_ARCHIVE=$(basename "${files[0]}")
-          else
-            LINUX_ARCHIVE=""
-          fi
-          shopt -u nullglob
+          # Find beta archive names - use the current VERSION
+          WIN_ARCHIVE="fast-backtest-app-windows-v${VERSION}.zip"
+          MAC_ARCHIVE="fast-backtest-app-macos-v${VERSION}.dmg"
+          LINUX_ARCHIVE="fast-backtest-app-linux-v${VERSION}.tar.gz"
           
-          # Update beta download links
-          if [ -n "$WIN_ARCHIVE" ]; then
-            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta Windows</a>|<a href=\"${BASE_URL}/${WIN_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta Windows</a>|g" "$HTML_FILE"
-          fi
-          if [ -n "$MAC_ARCHIVE" ]; then
-            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta macOS</a>|<a href=\"${BASE_URL}/${MAC_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta macOS</a>|g" "$HTML_FILE"
-          fi
-          if [ -n "$LINUX_ARCHIVE" ]; then
-            sed -i "s|<a href=\"[^\"]*\" class=\"button button-beta\">Télécharger Beta Linux</a>|<a href=\"${BASE_URL}/${LINUX_ARCHIVE}\" class=\"button button-beta\">Télécharger Beta Linux</a>|g" "$HTML_FILE"
-          fi
+          echo "Beta archives to link:"
+          echo "  Windows: $WIN_ARCHIVE"
+          echo "  macOS: $MAC_ARCHIVE"
+          echo "  Linux: $LINUX_ARCHIVE"
+          
+          # Update beta download links with multi-line pattern matching
+          # Windows beta
+          sed -i ':a;N;$!ba;s|<a href="[^"]*fast-backtest-app-windows-v[^"]*beta[^"]*\.zip"[^>]*class="button button-beta button-download">|<a href="'"${BASE_URL}/${WIN_ARCHIVE}"'" \n                               class="button button-beta button-download">|g' "$HTML_FILE"
+          
+          # macOS beta
+          sed -i ':a;N;$!ba;s|<a href="[^"]*fast-backtest-app-macos-v[^"]*beta[^"]*\.dmg"[^>]*class="button button-beta button-download">|<a href="'"${BASE_URL}/${MAC_ARCHIVE}"'" \n                               class="button button-beta button-download">|g' "$HTML_FILE"
+          
+          # Linux beta
+          sed -i ':a;N;$!ba;s|<a href="[^"]*fast-backtest-app-linux-v[^"]*beta[^"]*\.tar\.gz"[^>]*class="button button-beta button-download">|<a href="'"${BASE_URL}/${LINUX_ARCHIVE}"'" \n                               class="button button-beta button-download">|g' "$HTML_FILE"
         else
-          # Update stable version tag
-          sed -i "s|<span class=\"version-tag\">v[0-9.]*</span>|<span class=\"version-tag\">v${VERSION}</span>|g" "$HTML_FILE"
+          # Update stable version tag (only the first occurrence in the stable section)
+          # Match pattern: <span class="version-tag">v1.0.0.XX</span>
+          sed -i "0,/<span class=\"version-tag\">v[0-9.]*<\/span>/s|<span class=\"version-tag\">v[0-9.]*</span>|<span class=\"version-tag\">v${VERSION}</span>|" "$HTML_FILE"
           
-          # Find stable archive names (robust globbing, exclude beta)
-          shopt -s nullglob
-          WIN_ARCHIVE=""
-          files=(releases-repo/downloads/fast-backtest-app-windows-v*.zip)
-          if [ ${#files[@]} -gt 0 ]; then
-            for f in "${files[@]}"; do
-              case "$f" in
-                *-beta.zip) continue ;;
-                *) WIN_ARCHIVE=$(basename "$f"); break ;;
-              esac
-            done
-          fi
-
-          MAC_ARCHIVE=""
-          files=(releases-repo/downloads/fast-backtest-app-macos-v*.dmg)
-          if [ ${#files[@]} -gt 0 ]; then
-            for f in "${files[@]}"; do
-              case "$f" in
-                *-beta.dmg) continue ;;
-                *) MAC_ARCHIVE=$(basename "$f"); break ;;
-              esac
-            done
-          fi
-
-          LINUX_ARCHIVE=""
-          files=(releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz)
-          if [ ${#files[@]} -gt 0 ]; then
-            for f in "${files[@]}"; do
-              case "$f" in
-                *-beta.tar.gz) continue ;;
-                *) LINUX_ARCHIVE=$(basename "$f"); break ;;
-              esac
-            done
-          fi
-          shopt -u nullglob
+          # Use the exact VERSION for stable archives
+          WIN_ARCHIVE="fast-backtest-app-windows-v${VERSION}.zip"
+          MAC_ARCHIVE="fast-backtest-app-macos-v${VERSION}.dmg"
+          LINUX_ARCHIVE="fast-backtest-app-linux-v${VERSION}.tar.gz"
+          
+          echo "Stable archives to link:"
+          echo "  Windows: $WIN_ARCHIVE"
+          echo "  macOS: $MAC_ARCHIVE"
+          echo "  Linux: $LINUX_ARCHIVE"
+          
+          # Verify files exist in releases-repo/downloads
+          for file in "$WIN_ARCHIVE" "$MAC_ARCHIVE" "$LINUX_ARCHIVE"; do
+            if [ -f "releases-repo/downloads/$file" ]; then
+              echo "✅ Found: $file"
+            else
+              echo "⚠️ Warning: $file not found in downloads folder"
+            fi
+          done
           
           # Update stable download links
-          if [ -n "$WIN_ARCHIVE" ]; then
-            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour Windows<\/a>/s||<a href=\"${BASE_URL}/${WIN_ARCHIVE}\" class=\"button\">Télécharger pour Windows</a>|" "$HTML_FILE"
-          fi
-          if [ -n "$MAC_ARCHIVE" ]; then
-            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour macOS<\/a>/s||<a href=\"${BASE_URL}/${MAC_ARCHIVE}\" class=\"button\">Télécharger pour macOS</a>|" "$HTML_FILE"
-          fi
-          if [ -n "$LINUX_ARCHIVE" ]; then
-            sed -i "0,/<a href=\"[^\"]*\" class=\"button\">Télécharger pour Linux<\/a>/s||<a href=\"${BASE_URL}/${LINUX_ARCHIVE}\" class=\"button\">Télécharger pour Linux</a>|" "$HTML_FILE"
-          fi
+          # Pattern: <a href="https://...fast-backtest-app-windows-v1.0.0.XX.zip" \n class="button button-primary button-download">
+          
+          # Windows stable (first occurrence only - in stable section)
+          sed -i "0,/fast-backtest-app-windows-v[0-9.]*\.zip/s|fast-backtest-app-windows-v[0-9.]*\.zip|${WIN_ARCHIVE}|" "$HTML_FILE"
+          
+          # macOS stable (first occurrence only - in stable section)  
+          sed -i "0,/fast-backtest-app-macos-v[0-9.]*\.dmg/s|fast-backtest-app-macos-v[0-9.]*\.dmg|${MAC_ARCHIVE}|" "$HTML_FILE"
+          
+          # Linux stable (first occurrence only - in stable section)
+          sed -i "0,/fast-backtest-app-linux-v[0-9.]*\.tar\.gz/s|fast-backtest-app-linux-v[0-9.]*\.tar\.gz|${LINUX_ARCHIVE}|" "$HTML_FILE"
+          
+          # Verify the updates
+          echo "Verifying updates in HTML:"
+          grep -n "fast-backtest-app-windows-v.*\.zip" "$HTML_FILE" | head -2
+          grep -n "fast-backtest-app-macos-v.*\.dmg" "$HTML_FILE" | head -2
+          grep -n "fast-backtest-app-linux-v.*\.tar\.gz" "$HTML_FILE" | head -2
         fi
         
-        echo "Updated download URLs for $([ \"$IS_BETA\" == \"true\" ] && echo \"beta\" || echo \"stable\") version"
+        echo "✅ Updated download URLs for $([ \"$IS_BETA\" == \"true\" ] && echo \"beta\" || echo \"stable\") version"
 
     - name: Commit and push changes to releases repository
       env:

@@ -31,10 +31,12 @@ void RiskManagementDialog::setupUI() {
     m_customLeverageSpin->setDecimals(1);
     m_customLeverageSpin->setRange(1.0, 500.0);
     m_customLeverageSpin->setValue(1.0);
-    m_customLeverageSpin->setEnabled(false);
-    capitalLayout->addRow(new QLabel("Leverage limit:", this), m_customLeverageSpin);
+    m_customLeverageSpin->setVisible(false);
+    m_customLeverageLabel = new QLabel("Leverage limit:", this);
+    m_customLeverageLabel->setVisible(false);
+    capitalLayout->addRow(m_customLeverageLabel, m_customLeverageSpin);
     
-    createDependencyGroup(m_useCustomLeverageCheck, {m_customLeverageSpin});
+    createDependencyGroup(m_useCustomLeverageCheck, {m_customLeverageLabel, m_customLeverageSpin});
     
     capitalGroup->setLayout(capitalLayout);
     mainLayout->addWidget(capitalGroup);
@@ -52,10 +54,12 @@ void RiskManagementDialog::setupUI() {
     m_riskPercentageSpin->setRange(0.1, 100.0);
     m_riskPercentageSpin->setValue(1.0);
     m_riskPercentageSpin->setSuffix("%");
-    m_riskPercentageSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Risk per trade:", this), m_riskPercentageSpin);
+    m_riskPercentageSpin->setVisible(false);
+    m_riskPercentageLabel = new QLabel("Risk per trade:", this);
+    m_riskPercentageLabel->setVisible(false);
+    riskLayout->addRow(m_riskPercentageLabel, m_riskPercentageSpin);
     
-    createDependencyGroup(m_useRiskBasedSizingCheck, {m_riskPercentageSpin});
+    createDependencyGroup(m_useRiskBasedSizingCheck, {m_riskPercentageLabel, m_riskPercentageSpin});
     
     // Daily max loss
     m_useDailyMaxLossCheck = new QCheckBox("Daily max loss", this);
@@ -66,10 +70,12 @@ void RiskManagementDialog::setupUI() {
     m_dailyMaxLossPercentageSpin->setRange(0.1, 100.0);
     m_dailyMaxLossPercentageSpin->setValue(2.0);
     m_dailyMaxLossPercentageSpin->setSuffix("%");
-    m_dailyMaxLossPercentageSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Daily max loss:", this), m_dailyMaxLossPercentageSpin);
+    m_dailyMaxLossPercentageSpin->setVisible(false);
+    m_dailyMaxLossLabel = new QLabel("Daily max loss:", this);
+    m_dailyMaxLossLabel->setVisible(false);
+    riskLayout->addRow(m_dailyMaxLossLabel, m_dailyMaxLossPercentageSpin);
     
-    createDependencyGroup(m_useDailyMaxLossCheck, {m_dailyMaxLossPercentageSpin});
+    createDependencyGroup(m_useDailyMaxLossCheck, {m_dailyMaxLossLabel, m_dailyMaxLossPercentageSpin});
     
     // Daily max profit
     m_useDailyMaxProfitCheck = new QCheckBox("Daily max profit", this);
@@ -80,10 +86,12 @@ void RiskManagementDialog::setupUI() {
     m_dailyMaxProfitPercentageSpin->setRange(0.1, 100.0);
     m_dailyMaxProfitPercentageSpin->setValue(5.0);
     m_dailyMaxProfitPercentageSpin->setSuffix("%");
-    m_dailyMaxProfitPercentageSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Daily max profit:", this), m_dailyMaxProfitPercentageSpin);
+    m_dailyMaxProfitPercentageSpin->setVisible(false);
+    m_dailyMaxProfitLabel = new QLabel("Daily max profit:", this);
+    m_dailyMaxProfitLabel->setVisible(false);
+    riskLayout->addRow(m_dailyMaxProfitLabel, m_dailyMaxProfitPercentageSpin);
     
-    createDependencyGroup(m_useDailyMaxProfitCheck, {m_dailyMaxProfitPercentageSpin});
+    createDependencyGroup(m_useDailyMaxProfitCheck, {m_dailyMaxProfitLabel, m_dailyMaxProfitPercentageSpin});
     
     // Daily max drawdown
     m_useDailyMaxDrawdownCheck = new QCheckBox("Daily max drawdown", this);
@@ -94,10 +102,12 @@ void RiskManagementDialog::setupUI() {
     m_dailyMaxDrawdownPercentageSpin->setRange(0.1, 100.0);
     m_dailyMaxDrawdownPercentageSpin->setValue(3.0);
     m_dailyMaxDrawdownPercentageSpin->setSuffix("%");
-    m_dailyMaxDrawdownPercentageSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Daily max drawdown:", this), m_dailyMaxDrawdownPercentageSpin);
+    m_dailyMaxDrawdownPercentageSpin->setVisible(false);
+    m_dailyMaxDrawdownLabel = new QLabel("Daily max drawdown:", this);
+    m_dailyMaxDrawdownLabel->setVisible(false);
+    riskLayout->addRow(m_dailyMaxDrawdownLabel, m_dailyMaxDrawdownPercentageSpin);
     
-    createDependencyGroup(m_useDailyMaxDrawdownCheck, {m_dailyMaxDrawdownPercentageSpin});
+    createDependencyGroup(m_useDailyMaxDrawdownCheck, {m_dailyMaxDrawdownLabel, m_dailyMaxDrawdownPercentageSpin});
     
     // Break even
     m_useBreakEvenCheck = new QCheckBox("Enable Break Even", this);
@@ -108,8 +118,10 @@ void RiskManagementDialog::setupUI() {
     m_breakEvenThresholdSpin->setRange(0.0, 10.0);
     m_breakEvenThresholdSpin->setSingleStep(0.05);
     m_breakEvenThresholdSpin->setValue(0.7);
-    m_breakEvenThresholdSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Break Even threshold:", this), m_breakEvenThresholdSpin);
+    m_breakEvenThresholdSpin->setVisible(false);
+    m_breakEvenThresholdLabel = new QLabel("Break Even threshold:", this);
+    m_breakEvenThresholdLabel->setVisible(false);
+    riskLayout->addRow(m_breakEvenThresholdLabel, m_breakEvenThresholdSpin);
     
     m_breakEvenOffsetSpin = new QDoubleSpinBox(this);
     m_breakEvenOffsetSpin->setDecimals(3);
@@ -117,10 +129,12 @@ void RiskManagementDialog::setupUI() {
     m_breakEvenOffsetSpin->setSingleStep(0.05);
     m_breakEvenOffsetSpin->setValue(0.0);
     m_breakEvenOffsetSpin->setSuffix("‰");
-    m_breakEvenOffsetSpin->setEnabled(false);
-    riskLayout->addRow(new QLabel("Break Even Offset (‰):", this), m_breakEvenOffsetSpin);
+    m_breakEvenOffsetSpin->setVisible(false);
+    m_breakEvenOffsetLabel = new QLabel("Break Even Offset (‰):", this);
+    m_breakEvenOffsetLabel->setVisible(false);
+    riskLayout->addRow(m_breakEvenOffsetLabel, m_breakEvenOffsetSpin);
     
-    createDependencyGroup(m_useBreakEvenCheck, {m_breakEvenThresholdSpin, m_breakEvenOffsetSpin});
+    createDependencyGroup(m_useBreakEvenCheck, {m_breakEvenThresholdLabel, m_breakEvenThresholdSpin, m_breakEvenOffsetLabel, m_breakEvenOffsetSpin});
     
     riskGroup->setLayout(riskLayout);
     mainLayout->addWidget(riskGroup);
@@ -137,14 +151,9 @@ void RiskManagementDialog::setupUI() {
 
 void RiskManagementDialog::createDependencyGroup(QCheckBox* checkbox, const std::vector<QWidget*>& widgets) {
     auto updateWidgets = [checkbox, widgets](Qt::CheckState state) {
-        bool enabled = (state == Qt::Checked);
+        bool visible = (state == Qt::Checked);
         for (QWidget* widget : widgets) {
-            widget->setEnabled(enabled);
-            if (enabled) {
-                widget->setStyleSheet("");
-            } else {
-                widget->setStyleSheet("QDoubleSpinBox, QSpinBox { background-color: #f0f0f0; color: #888888; }");
-            }
+            widget->setVisible(visible);
         }
     };
     

@@ -322,17 +322,27 @@ bool ProfileManager::importConfigFromFile(QWidget* parentWidget)
     }
     
     // Ask the name of the new profile or if to overwrite the current profile
-    QMessageBox::StandardButton choice = QMessageBox::question(parentWidget, 
-                                                               "Import Mode",
-                                                               QString("Do you want to:\n\n"
-                                                                      "• Create a new profile with this data?\n"
-                                                                      "• Or replace the current configuration of the profile '%1' ?").arg(m_currentProfile),
-                                                               QMessageBox::Save | QMessageBox::Apply | QMessageBox::Cancel,
-                                                               QMessageBox::Save);
+    QMessageBox msgBox(parentWidget);
+    msgBox.setWindowTitle("Import Mode");
+    msgBox.setText(QString("Do you want to:\n\n"
+                          "• Create a new profile with this data?\n"
+                          "• Or replace the current configuration of the profile '%1' ?").arg(m_currentProfile));
+    msgBox.setIcon(QMessageBox::Question);
     
-    if (choice == QMessageBox::Cancel) {
+    QPushButton* createNewBtn = msgBox.addButton("Create New Profile", QMessageBox::AcceptRole);
+    QPushButton* replaceBtn = msgBox.addButton("Replace Current Configuration Profile", QMessageBox::ApplyRole);
+    QPushButton* cancelBtn = msgBox.addButton(QMessageBox::Cancel);
+    
+    msgBox.setDefaultButton(createNewBtn);
+    msgBox.exec();
+    
+    QMessageBox::StandardButton choice;
+    if (msgBox.clickedButton() == createNewBtn) choice = QMessageBox::Save;
+    else if (msgBox.clickedButton() == replaceBtn) choice = QMessageBox::Apply;
+    else choice = QMessageBox::Cancel;
+    
+    if (choice == QMessageBox::Cancel) 
         return false;
-    }
     
     QString targetProfile = m_currentProfile;
     bool success = false;

@@ -4,6 +4,7 @@
 #include <QString>
 #include <QWidget>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QDir>

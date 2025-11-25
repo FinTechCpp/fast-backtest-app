@@ -77,8 +77,15 @@ if(WIN32 OR CMAKE_CROSSCOMPILING)
         # Check if windeployqt exists
         if(EXISTS ${QT6_WINDEPLOYQT_EXECUTABLE})
             # Command to deploy Qt after compilation
+            # Use $<CONFIG> to automatically select --release or --debug based on build type
             add_custom_command(TARGET backtestapp POST_BUILD
-                COMMAND ${QT6_WINDEPLOYQT_EXECUTABLE} --qmldir ${CMAKE_SOURCE_DIR} $<TARGET_FILE:backtestapp>
+                COMMAND ${QT6_WINDEPLOYQT_EXECUTABLE} 
+                    --qmldir ${CMAKE_SOURCE_DIR}
+                    $<$<CONFIG:Debug>:--debug>
+                    $<$<CONFIG:Release>:--release>
+                    $<$<CONFIG:RelWithDebInfo>:--release>
+                    $<$<CONFIG:MinSizeRel>:--release>
+                    $<TARGET_FILE:backtestapp>
                 COMMENT "Deploying Qt DLLs with windeployqt")
         else()
             message(WARNING "windeployqt not found. Qt DLLs will need to be copied manually.")

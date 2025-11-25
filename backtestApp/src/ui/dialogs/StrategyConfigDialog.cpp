@@ -25,7 +25,9 @@ void StrategyConfigDialog::setConfig(const StrategyConfig& config) {
     m_sellFiltersWidget->setFilters(m_config.sellFilters);
     m_resaleFiltersWidget->setFilters(m_config.resaleFilters);
     m_rebuyFiltersWidget->setFilters(m_config.rebuyFilters);
+#ifndef DISABLE_LOGGING
     m_enableLoggingCheck->setChecked(m_config.enable_logging);
+#endif
 }
 
 void StrategyConfigDialog::setupUI() {
@@ -212,6 +214,7 @@ void StrategyConfigDialog::openMLConfigDialog() {
 }
 
 void StrategyConfigDialog::setupAdvancedOptionsSection(QVBoxLayout* mainLayout) {
+#ifndef DISABLE_LOGGING
     QGroupBox* advancedGroup = new QGroupBox("Advanced Options", this);
     QVBoxLayout* advancedLayout = new QVBoxLayout();
     
@@ -221,6 +224,10 @@ void StrategyConfigDialog::setupAdvancedOptionsSection(QVBoxLayout* mainLayout) 
     
     advancedGroup->setLayout(advancedLayout);
     mainLayout->addWidget(advancedGroup);
+#else
+    // In Release mode (DISABLE_LOGGING), hide the advanced options section
+    (void)mainLayout; // Avoid unused parameter warning
+#endif
 }
 
 void StrategyConfigDialog::setupButtons(QVBoxLayout* mainLayout) {
@@ -236,7 +243,11 @@ void StrategyConfigDialog::setupButtons(QVBoxLayout* mainLayout) {
         m_config.sellFilters = m_sellFiltersWidget->getFilters();
         m_config.resaleFilters = m_resaleFiltersWidget->getFilters();
         m_config.rebuyFilters = m_rebuyFiltersWidget->getFilters();
+#ifndef DISABLE_LOGGING
         m_config.enable_logging = m_enableLoggingCheck->isChecked();
+#else
+        m_config.enable_logging = false; // Always false in Release mode
+#endif
         
         accept();
     });

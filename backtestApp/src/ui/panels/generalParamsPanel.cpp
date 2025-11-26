@@ -153,7 +153,12 @@ void GeneralParamsPanel::setupUI()
     
     // End date
     QDateEdit* dateEdit = new QDateEdit(this);
-    dateEdit->setDate(QDate(2025, 8, 30));
+    // Initialize with current date if endDate is invalid, otherwise use endDate
+    if (m_config.endDate.isValid())
+        dateEdit->setDate(m_config.endDate.date());
+    else 
+        dateEdit->setDate(QDate::currentDate());
+    
     dateEdit->setCalendarPopup(true);
     paramsLayout->addRow(new QLabel("End date:", this), dateEdit);
     

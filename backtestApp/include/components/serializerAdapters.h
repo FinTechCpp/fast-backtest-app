@@ -131,13 +131,34 @@ namespace cereal {
     }
 
     template<class Archive>
-    void serialize(Archive & ar, QDateTime & dt) {
-        ar(cereal::make_nvp("year", dt.date().year()),
-           cereal::make_nvp("month", dt.date().month()),
-           cereal::make_nvp("day", dt.date().day()),
-           cereal::make_nvp("hour", dt.time().hour()),
-           cereal::make_nvp("minute", dt.time().minute()),
-           cereal::make_nvp("second", dt.time().second()));
+    void save(Archive & ar, const QDateTime & dt) {
+        int year = dt.date().year();
+        int month = dt.date().month();
+        int day = dt.date().day();
+        int hour = dt.time().hour();
+        int minute = dt.time().minute();
+        int second = dt.time().second();
+        
+        ar(cereal::make_nvp("year", year),
+           cereal::make_nvp("month", month),
+           cereal::make_nvp("day", day),
+           cereal::make_nvp("hour", hour),
+           cereal::make_nvp("minute", minute),
+           cereal::make_nvp("second", second));
+    }
+
+    template<class Archive>
+    void load(Archive & ar, QDateTime & dt) {
+        int year, month, day, hour, minute, second;
+        
+        ar(cereal::make_nvp("year", year),
+           cereal::make_nvp("month", month),
+           cereal::make_nvp("day", day),
+           cereal::make_nvp("hour", hour),
+           cereal::make_nvp("minute", minute),
+           cereal::make_nvp("second", second));
+        
+        dt = QDateTime(QDate(year, month, day), QTime(hour, minute, second));
     }
 
     // For QString (generic adapter)
@@ -287,6 +308,7 @@ namespace cereal {
         ar(cereal::make_nvp("leftValue", filter.leftValue),
            cereal::make_nvp("rightValue", filter.rightValue),
            cereal::make_nvp("comparisonOperator", filter.op),
+           cereal::make_nvp("offset", filter.offset),
            cereal::make_nvp("temporalLogic", filter.temporalLogic),
            cereal::make_nvp("lookbackPeriods", filter.lookbackPeriods),
            cereal::make_nvp("enabled", filter.enabled), 

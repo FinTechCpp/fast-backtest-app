@@ -1071,3 +1071,15 @@ void ChartDataManager::removeMarker(size_t index) {
 void ChartDataManager::clearAllMarkers() {
     m_markers.clear();
 }
+
+bool ChartDataManager::toggleIndicatorVisibility(int id) {
+    auto it = std::find_if(m_indicators.begin(), m_indicators.end(), [id](const std::unique_ptr<indicators::IndicatorBase>& item) {  
+        return item->id == id; 
+    });
+
+    if (it == m_indicators.end()) 
+        return false;
+
+    (*it)->visible = !(*it)->visible;
+    return true;
+}

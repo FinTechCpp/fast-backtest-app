@@ -128,6 +128,7 @@ public:
 
         return true;
     }
+    bool toggleIndicatorVisibility(int id); // New method
 
     template<typename T, typename = std::enable_if_t<std::is_base_of_v<indicators::IndicatorBase, T>>>
     std::vector<const T*> getIndicatorsOfType() const {

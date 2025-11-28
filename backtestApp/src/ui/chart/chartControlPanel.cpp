@@ -268,10 +268,47 @@ void ChartControlPanel::setupUI()
     m_suggestionsLayout = new QVBoxLayout();
     suggestionsGroupLayout->addLayout(m_suggestionsLayout);
     
+    // Buttons layout (Clear and Add All)
+    QHBoxLayout* suggestionsButtonsLayout = new QHBoxLayout();
+    
+    // Button to add all suggestions
+    m_addAllSuggestionsButton = new QPushButton("Add All");
+    m_addAllSuggestionsButton->setIcon(QIcon::fromTheme("list-add"));
+    m_addAllSuggestionsButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #4CAF50;"
+        "    color: white;"
+        "    border: none;"
+        "    padding: 5px;"
+        "    border-radius: 3px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #45a049;"
+        "}"
+    );
+    connect(m_addAllSuggestionsButton, &QPushButton::clicked, this, &ChartControlPanel::onAddAllSuggestions);
+    suggestionsButtonsLayout->addWidget(m_addAllSuggestionsButton);
+    
     // Button to clear all suggestions
     m_clearSuggestionsButton = new QPushButton("Clear");
+    m_clearSuggestionsButton->setIcon(QIcon::fromTheme("edit-clear"));
+    m_clearSuggestionsButton->setStyleSheet(
+        "QPushButton {"
+        "    background-color: #f44336;"
+        "    color: white;"
+        "    border: none;"
+        "    padding: 5px;"
+        "    border-radius: 3px;"
+        "}"
+        "QPushButton:hover {"
+        "    background-color: #a72525ff;"
+        "}"
+    );
+
     connect(m_clearSuggestionsButton, &QPushButton::clicked, this, &ChartControlPanel::onClearAllSuggestions);
-    suggestionsGroupLayout->addWidget(m_clearSuggestionsButton);
+    suggestionsButtonsLayout->addWidget(m_clearSuggestionsButton);
+    
+    suggestionsGroupLayout->addLayout(suggestionsButtonsLayout);
     
     leftPanelLayout->addWidget(m_suggestionsGroup);
     m_suggestionsGroup->setVisible(false); // Initially hidden
@@ -460,6 +497,12 @@ void ChartControlPanel::onClearAllSuggestions() {
     m_suggestionsGroup->setVisible(false);
 }
 
+void ChartControlPanel::onAddAllSuggestions() {
+    // Iterate backwards to avoid index issues when removing elements
+    for (int i = static_cast<int>(m_suggestions.size()) - 1; i >= 0; --i) 
+        onAddSuggestedIndicator(i);
+}
+
 bool ChartControlPanel::hasSimilarIndicator(const indicators::IndicatorBase* indicator) const {
     if (!m_chartWidget) return false;
     
@@ -553,13 +596,22 @@ void ChartControlPanel::onAddIndicatorClicked() {
     }
 }
 
-void ChartControlPanel::createIndicatorWidgets(int id, const QString &name) {
+void ChartControlPanel::createIndicatorWidgets(int id, const QString &name, bool isVisible) {
     QWidget* indicatorWidget = new QWidget();
     QHBoxLayout* layout = new QHBoxLayout(indicatorWidget);
     layout->setContentsMargins(0, 2, 0, 2);
 
     QLabel* nameLabel = new QLabel(name);
     nameLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+
+    QPushButton* hideButton = new QPushButton(isVisible ? "Hide" : "Show");
+    hideButton->setFixedWidth(40);
+    hideButton->setCheckable(true);
+    hideButton->setChecked(!isVisible);
+    connect(hideButton, &QPushButton::toggled, [this, id, hideButton](bool checked) {
+        hideButton->setText(checked ? "Show" : "Hide");
+        this->onHideIndicator(id);
+    });
 
     QPushButton* editButton = new QPushButton("Edit");
     editButton->setFixedWidth(40);
@@ -574,10 +626,12 @@ void ChartControlPanel::createIndicatorWidgets(int id, const QString &name) {
     });
 
     layout->addWidget(nameLabel);
+    layout->addWidget(hideButton);
     layout->addWidget(editButton);
     layout->addWidget(removeButton);
 
     m_indicatorLabels[id] = nameLabel;
+    m_hideButtons[id] = hideButton;
     m_editButtons[id] = editButton;
     m_removeButtons[id] = removeButton;
 
@@ -620,9 +674,7 @@ void ChartControlPanel::refreshIndicatorsList() {
 
     const std::vector<std::unique_ptr<indicators::IndicatorBase>>& allIndicators = m_chartWidget->getIndicators();
     for (const auto& indicator : allIndicators) {
-        if (indicator->visible) {
-            createIndicatorWidgets(indicator->id, indicator->getDisplayName());
-        }
+        createIndicatorWidgets(indicator->id, indicator->getDisplayName(), indicator->visible);
     }
 }
 
@@ -659,7 +711,7 @@ void ChartControlPanel::onAggregationSliderChanged(int value) {
 }
 
 void ChartControlPanel::onIndicatorAdded(int id, const QString &name) {
-    createIndicatorWidgets(id, name);
+    createIndicatorWidgets(id, name, true);
 }
 
 void ChartControlPanel::onIndicatorChanged(int id, const QString &name) {
@@ -746,5 +798,11 @@ void ChartControlPanel::onErrorMarkerToggled(bool checked) {
 void ChartControlPanel::onClearMarkersClicked() {
     if (m_chartWidget) {
         m_chartWidget->clearAllMarkers();
+    }
+}
+
+void ChartControlPanel::onHideIndicator(int id) {
+    if (m_chartWidget) {
+        m_chartWidget->toggleIndicatorVisibility(id);
     }
 }

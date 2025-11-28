@@ -28,14 +28,14 @@ public:
     void suggestIndicatorsFromStrategy(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators);
     void setChartWidget(ChartWidget* chartWidget);
     
-    // New method to update the comparison state in the UI
+    // method to update the comparison state in the UI
     void setComparisonMode(bool enabled);
 
 signals:
     void chartTypeChanged(const QString& chartType);
     void rulerToolToggled(bool checked);
-    void transferDataForComparison(); // New signal to transfer data
-    void exitComparisonMode();        // New signal to exit comparison mode
+    void transferDataForComparison(); // signal to transfer data
+    void exitComparisonMode();        // signal to exit comparison mode
     void aggregationValueChanged(int value);
 
 private slots:
@@ -44,9 +44,10 @@ private slots:
     void onIndicatorTypeSelected(int index);
     void onEditIndicator(int id);
     void onRemoveIndicator(int id);
+    void onHideIndicator(int id); // New slot
     void onRulerToolToggled(bool checked);
-    void onTransferDataClicked();     // New slot for the transfer button
-    void onExitComparisonClicked();   // New slot for the exit button
+    void onTransferDataClicked();     // slot for the transfer button
+    void onExitComparisonClicked();   // slot for the exit button
     void onAggregationSliderChanged(int value);
 
     void onCheckMarkerToggled(bool checked);
@@ -57,15 +58,18 @@ private slots:
     void onIndicatorChanged(int id, const QString& name);
     void onIndicatorRemoved(int id);
 
-    // New slots for suggestions
+    // slots for suggestions
     void onAddSuggestedIndicator(int index);
     void onRejectSuggestion(int index);
     void onClearAllSuggestions();
+    void onAddAllSuggestions(); 
 
 private:
     void setupUI();
     void setupIndicatorControls();
-    void createIndicatorWidgets(int id, const QString& name);
+    void createIndicatorWidgets(int id, const QString& name, bool isVisible);
+    void createSuggestionWidget(std::unique_ptr<indicators::IndicatorBase> indicator); // Helper method
+    bool hasSimilarIndicator(const indicators::IndicatorBase* indicator) const; // Helper method
 
     QLabel* m_settingsTitle;
     QComboBox* m_chartTypeCombo;
@@ -88,6 +92,7 @@ private:
     QVBoxLayout* m_indicatorsLayout;
     QMap<int, QPushButton*> m_editButtons;
     QMap<int, QPushButton*> m_removeButtons;
+    QMap<int, QPushButton*> m_hideButtons; // New map
     QMap<int, QLabel*> m_indicatorLabels;
 
     QSlider* m_aggregationSlider;
@@ -108,24 +113,18 @@ private:
         return false;
     }
 
-    // New attributes for the suggestions section
+    // attributes for the suggestions section
     QGroupBox* m_suggestionsGroup;
     QVBoxLayout* m_suggestionsLayout;
     QPushButton* m_clearSuggestionsButton;
+    QPushButton* m_addAllSuggestionsButton; // New button
     
     struct SuggestionItem {
         QWidget* widget;
+        QLabel* label;
         QPushButton* addButton;
         QPushButton* rejectButton;
-        QLabel* label;
         std::unique_ptr<indicators::IndicatorBase> indicator;
     };
-    
     std::vector<SuggestionItem> m_suggestions;
-    
-    // New method to create a suggestion widget
-    void createSuggestionWidget(std::unique_ptr<indicators::IndicatorBase> indicator);
-    
-    // Method to check if a similar indicator already exists
-    bool hasSimilarIndicator(const indicators::IndicatorBase* indicator) const;
 };

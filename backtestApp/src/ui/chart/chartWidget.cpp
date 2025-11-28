@@ -413,7 +413,8 @@ void ChartWidget::clearAllMarkers() {
 }
 
 bool ChartWidget::removeIndicator(int id) {
-    if (!m_dataManager.removeIndicator(id)) return false;
+    if (!m_dataManager.removeIndicator(id)) 
+        return false;
 
     emit indicatorRemoved(id);
 
@@ -421,6 +422,13 @@ bool ChartWidget::removeIndicator(int id) {
         updateChartDisplay(ViewPortMode::USE_CURRENT);
 
     return true;
+}
+
+void ChartWidget::toggleIndicatorVisibility(int id) {
+    if (m_dataManager.toggleIndicatorVisibility(id)) {
+        if (m_dataManager.hasRawData())
+            updateChartDisplay(ViewPortMode::USE_CURRENT);
+    }
 }
 
 void ChartWidget::zoomToTrade(const be::TradeData& trade)

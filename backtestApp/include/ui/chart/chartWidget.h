@@ -99,6 +99,7 @@ public:
     }
 
     bool removeIndicator(int id);
+    void toggleIndicatorVisibility(int id); // New method
     
 signals:
     void chartCreated();

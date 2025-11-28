@@ -149,25 +149,6 @@ void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
     connect(m_stopLossTakeProfitButton, &QPushButton::clicked, this, &StrategyConfigDialog::openStopLossTakeProfitDialog);
     configLayout->addWidget(m_stopLossTakeProfitButton);
     
-    // Trading Hours button
-    m_tradingHoursButton = new QPushButton("🕒 Trading Hours", this);
-    m_tradingHoursButton->setMinimumHeight(50);
-    m_tradingHoursButton->setStyleSheet(
-        "QPushButton {"
-        "   background-color: #2196F3;"
-        "   color: white;"
-        "   font-size: 14px;"
-        "   font-weight: bold;"
-        "   border-radius: 5px;"
-        "   padding: 10px;"
-        "}"
-        "QPushButton:hover {"
-        "   background-color: #0b7dda;"
-        "}"
-    );
-    connect(m_tradingHoursButton, &QPushButton::clicked, this, &StrategyConfigDialog::openTradingHoursDialog);
-    configLayout->addWidget(m_tradingHoursButton);
-    
     // Risk Management button
     m_riskManagementButton = new QPushButton("🛡 Risk Management", this);
     m_riskManagementButton->setMinimumHeight(50);
@@ -186,6 +167,25 @@ void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
     );
     connect(m_riskManagementButton, &QPushButton::clicked, this, &StrategyConfigDialog::openRiskManagementDialog);
     configLayout->addWidget(m_riskManagementButton);
+
+    // Trading Hours button
+    m_tradingHoursButton = new QPushButton("🕒 Trading Hours", this);
+    m_tradingHoursButton->setMinimumHeight(50);
+    m_tradingHoursButton->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #2196F3;"
+        "   color: white;"
+        "   font-size: 14px;"
+        "   font-weight: bold;"
+        "   border-radius: 5px;"
+        "   padding: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #0b7dda;"
+        "}"
+    );
+    connect(m_tradingHoursButton, &QPushButton::clicked, this, &StrategyConfigDialog::openTradingHoursDialog);
+    configLayout->addWidget(m_tradingHoursButton);
     
     // ML Configuration button
     m_mlConfigButton = new QPushButton("Machine Learning (ML)", this);

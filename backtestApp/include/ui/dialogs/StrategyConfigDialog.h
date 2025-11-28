@@ -18,7 +18,7 @@ class StrategyConfigDialog : public QDialog {
 
 public:
     explicit StrategyConfigDialog(QWidget* parent = nullptr);
-    ~StrategyConfigDialog() override = default;
+    ~StrategyConfigDialog() override;
 
     // Get the configured strategy config
     const StrategyConfig& getConfig() const { return m_config; }

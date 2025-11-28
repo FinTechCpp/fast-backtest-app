@@ -108,6 +108,8 @@
             "command": "cmake",
             "args": [
                 "..",
+                "-A",
+                "x64",
                 "-DBUILD_WITH_DEBUG=ON"
             ],
             "options": {
@@ -125,7 +127,10 @@
             "type": "shell",
             "command": "cmake",
             "args": [
-                ".."
+                "..",
+                "-A",
+                "x64",
+                "-DBUILD_WITH_DEBUG=OFF"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/build"

@@ -6,6 +6,7 @@
 #include "ui/panels/FiltersWidget.h"
 #include <QScrollArea>
 #include <QDebug>
+#include <QSettings>
 
 StrategyConfigDialog::StrategyConfigDialog(QWidget* parent)
     : QDialog(parent), m_config{}  // Zero-initialize structure (booleans = false, numbers = 0)
@@ -13,7 +14,17 @@ StrategyConfigDialog::StrategyConfigDialog(QWidget* parent)
     setWindowTitle("Strategy Configuration");
     setMinimumSize(1000, 700);
     
+    QSettings settings("fast-backtest-app", "BacktestApp");
+    if (settings.contains("StrategyConfigDialog/geometry")) {
+        restoreGeometry(settings.value("StrategyConfigDialog/geometry").toByteArray());
+    }
+
     setupUI();
+}
+
+StrategyConfigDialog::~StrategyConfigDialog() {
+    QSettings settings("fast-backtest-app", "BacktestApp");
+    settings.setValue("StrategyConfigDialog/geometry", saveGeometry());
 }
 
 void StrategyConfigDialog::setConfig(const StrategyConfig& config) {

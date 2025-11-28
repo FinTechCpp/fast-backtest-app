@@ -4,6 +4,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QMessageBox>
+#include <QMenu> // Added for context menu
 
 FiltersWidget::FiltersWidget(QWidget* parent, const QString& groupTitle)
     : QWidget(parent)
@@ -48,6 +49,24 @@ void FiltersWidget::setupUI()
     groupLayout->addStretch();
     
     m_mainLayout->addWidget(m_groupBox);
+}
+
+void FiltersWidget::addFilter(const filter::GenericFilter& filter)
+{
+    m_filters.push_back(filter);
+    // Rebuild UI to ensure indices are correct
+    setFilters(m_filters);
+    emit filtersChanged();
+}
+
+void FiltersWidget::removeFilter(size_t index)
+{
+    if (index < m_filters.size()) {
+        m_filters.erase(m_filters.begin() + index);
+        // Rebuild UI to ensure indices are correct
+        setFilters(m_filters);
+        emit filtersChanged();
+    }
 }
 
 void FiltersWidget::setFilters(const std::vector<filter::GenericFilter>& filters)
@@ -102,19 +121,22 @@ QWidget* FiltersWidget::createFilterWidget(size_t index, const filter::GenericFi
         "}"
         "QPushButton:hover {"
         "  background-color: #e0e0e0;"
+        "  border-color: #bbb;"
         "}"
     );
-    if (!filter.enabled) {
-        editButton->setStyleSheet(editButton->styleSheet() + "QPushButton { color: #888; }");
-    }
+    
+    // Enable context menu
+    editButton->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(editButton, &QPushButton::customContextMenuRequested, this, &FiltersWidget::onCustomContextMenuRequested);
+    
     connect(editButton, &QPushButton::clicked, this, [this, index]() {
         onEditFilterClicked(index);
     });
-    filterLayout->addWidget(editButton, 1); // Stretch factor 1 to take available space
+    filterLayout->addWidget(editButton, 1); // Stretch factor 1
     
     // Delete button
-    QPushButton* deleteButton = new QPushButton("×", filterWidget);
-    deleteButton->setFixedSize(24, 24);
+    QPushButton* deleteButton = new QPushButton("X", filterWidget);
+    deleteButton->setFixedSize(18, 18);
     deleteButton->setStyleSheet(
         "QPushButton {"
         "  color: #fff;"
@@ -194,6 +216,53 @@ void FiltersWidget::updateFilterWidget(size_t index)
     // No need to update the delete button
 }
 
+void FiltersWidget::onCustomContextMenuRequested(const QPoint& pos)
+{
+    QPushButton* button = qobject_cast<QPushButton*>(sender());
+    if (!button) return;
+    
+    // Find index
+    int index = -1;
+    for (size_t i = 0; i < m_filterWidgets.size(); ++i) {
+        if (m_filterWidgets[i].editButton == button) {
+            index = static_cast<int>(i);
+            break;
+        }
+    }
+    if (index == -1) return;
+    
+    QMenu menu(this);
+    
+    // Duplicate action
+    menu.addAction(QStringLiteral("Duplicate"), [this, index]() {
+        if (index >= 0 && index < static_cast<int>(m_filters.size())) {
+            filter::GenericFilter copy = m_filters[index];
+            m_filters.insert(m_filters.begin() + index + 1, copy);
+            setFilters(m_filters);
+            emit filtersChanged();
+        }
+    });
+    
+    // Move to menu
+    QMenu* moveMenu = menu.addMenu(QStringLiteral("Move to..."));
+    const QStringList categories = {
+        QStringLiteral("Buy Filters"), 
+        QStringLiteral("Sell Filters"), 
+        QStringLiteral("Resale Filters"), 
+        QStringLiteral("Rebuy Filters")
+    };
+    
+    for (const auto& cat : categories) {
+        if (cat != m_groupTitle) {
+            moveMenu->addAction(cat, [this, index, cat]() {
+                emit filterMoveRequested(static_cast<size_t>(index), cat);
+            });
+        }
+    }
+    
+    menu.exec(button->mapToGlobal(pos));
+}
+
 void FiltersWidget::removeGaps()
 {
     // This function readjusts the indices of lambda connections after a removal
@@ -214,6 +283,10 @@ void FiltersWidget::removeGaps()
         connect(widgetGroup.editButton, &QPushButton::clicked, this, 
             [this, index]() { onEditFilterClicked(index); });
         
+        // Reconnect context menu signal
+        connect(widgetGroup.editButton, &QPushButton::customContextMenuRequested, this, 
+            &FiltersWidget::onCustomContextMenuRequested);
+        
         connect(widgetGroup.deleteButton, &QPushButton::clicked, this, 
             [this, index]() { onDeleteFilterClicked(index); });
     }
@@ -224,14 +297,7 @@ void FiltersWidget::onAddFilterClicked()
     FilterEditDialog dialog(this);
     if (dialog.exec() == QDialog::Accepted) {
         // Retrieve the new filter and add it
-        filter::GenericFilter newFilter = dialog.getFilter();
-        int newIndex = static_cast<int>(m_filters.size());
-        m_filters.push_back(newFilter);
-        
-        // Add only the new widget
-        addFilterWidget(newIndex, newFilter);
-        
-        emit filtersChanged();
+        addFilter(dialog.getFilter());
     }
 }
 
@@ -254,22 +320,7 @@ void FiltersWidget::onEditFilterClicked(size_t index)
 
 void FiltersWidget::onDeleteFilterClicked(size_t index)
 {
-    if (index >= m_filters.size() || index >= m_filterWidgets.size())
-        return;
-
-    // Remove the filter from data
-    m_filters.erase(m_filters.begin() + index);
-    
-    // Remove the corresponding widget
-    QWidget* widget = m_filterWidgets[index].container;
-    m_filtersLayout->removeWidget(widget);
-    delete widget;
-    m_filterWidgets.erase(m_filterWidgets.begin() + index);
-    
-    // Readjust connection indices
-    removeGaps();
-    
-    emit filtersChanged();
+    removeFilter(index);
 }
 
 void FiltersWidget::onFilterEnabledChanged(size_t index, bool enabled)

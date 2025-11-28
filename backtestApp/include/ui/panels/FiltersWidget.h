@@ -31,14 +31,21 @@ public:
     void setFilters(const std::vector<filter::GenericFilter>& filters);
     const std::vector<filter::GenericFilter>& getFilters() const;
     
+    // New methods for manipulation
+    void addFilter(const filter::GenericFilter& filter);
+    void removeFilter(size_t index);
+    QString getCategory() const { return m_groupTitle; }
+
 signals:
     void filtersChanged();
-    
+    void filterMoveRequested(size_t index, const QString& targetCategory);
+
 private slots:
     void onAddFilterClicked();
     void onEditFilterClicked(size_t index);
     void onDeleteFilterClicked(size_t index);
     void onFilterEnabledChanged(size_t index, bool enabled);
+    void onCustomContextMenuRequested(const QPoint& pos);
 
 private:
     void setupUI();

@@ -94,6 +94,28 @@ void StrategyConfigDialog::setupFiltersSection(QGridLayout* gridLayout) {
     m_resaleFiltersWidget = new FiltersWidget(this, "Resale Filters");
     m_rebuyFiltersWidget = new FiltersWidget(this, "Rebuy Filters");
     
+    // Handler for moving filters between widgets
+    auto moveHandler = [this](FiltersWidget* source, size_t index, const QString& targetCategory) {
+        FiltersWidget* target = nullptr;
+        if (targetCategory == "Buy Filters") target = m_buyFiltersWidget;
+        else if (targetCategory == "Sell Filters") target = m_sellFiltersWidget;
+        else if (targetCategory == "Resale Filters") target = m_resaleFiltersWidget;
+        else if (targetCategory == "Rebuy Filters") target = m_rebuyFiltersWidget;
+        
+        if (target && source && target != source) {
+            auto filters = source->getFilters();
+            if (index < filters.size()) {
+                target->addFilter(filters[index]);
+                source->removeFilter(index);
+            }
+        }
+    };
+
+    connect(m_buyFiltersWidget, &FiltersWidget::filterMoveRequested, this, [=](size_t idx, const QString& cat){ moveHandler(m_buyFiltersWidget, idx, cat); });
+    connect(m_sellFiltersWidget, &FiltersWidget::filterMoveRequested, this, [=](size_t idx, const QString& cat){ moveHandler(m_sellFiltersWidget, idx, cat); });
+    connect(m_resaleFiltersWidget, &FiltersWidget::filterMoveRequested, this, [=](size_t idx, const QString& cat){ moveHandler(m_resaleFiltersWidget, idx, cat); });
+    connect(m_rebuyFiltersWidget, &FiltersWidget::filterMoveRequested, this, [=](size_t idx, const QString& cat){ moveHandler(m_rebuyFiltersWidget, idx, cat); });
+
     gridLayout->addWidget(m_buyFiltersWidget, 0, 0);
     gridLayout->addWidget(m_resaleFiltersWidget, 0, 1);
     gridLayout->addWidget(m_sellFiltersWidget, 1, 0);

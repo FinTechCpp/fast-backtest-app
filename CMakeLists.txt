@@ -140,6 +140,21 @@ else()
     endif()
 endif()
 
+# On modern macOS, the AGL framework is deprecated and removed.
+# We need to prevent Qt's FindWrapOpenGL from trying to link AGL.
+# By setting WrapOpenGL_AGL to NOTFOUND before Qt6 is found, and creating
+# the WrapOpenGL::WrapOpenGL target ourselves, we avoid the issue.
+if(APPLE)
+    # Find OpenGL without AGL
+    find_package(OpenGL)
+    if(OpenGL_FOUND AND NOT TARGET WrapOpenGL::WrapOpenGL)
+        add_library(WrapOpenGL::WrapOpenGL INTERFACE IMPORTED)
+        # Only link OpenGL framework, not the deprecated AGL
+        target_link_libraries(WrapOpenGL::WrapOpenGL INTERFACE "-framework OpenGL")
+        set(WrapOpenGL_FOUND ON CACHE BOOL "WrapOpenGL found" FORCE)
+    endif()
+endif()
+
 # Check if Qt6 is found (Mandatory)
 find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 

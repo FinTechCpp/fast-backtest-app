@@ -46,8 +46,14 @@ This approach ensures both fast execution for backtests and flexibility for stra
 *Qt graphical interface of the backtesting application with ChartDirector visualizations*
 
 ---
+## User Guide
+### Quick Start
+You can download the latest release from this website: https://fintechcpp.github.io/fast-backtest-app-releases/
+1. Download the appropriate archive for your operating system (Linux, Windows, or macOS).
+2. Extract the archive and run the executable.
 
-## Installation
+
+# Installation for developers
 
 ### 1. Clone the repository
 
@@ -64,13 +70,11 @@ git lfs pull
 git submodule foreach --recursive 'git lfs pull || true'
 ```
 
-## Usage
-
-# Build and Run Guide for fast-backtest-app
+## 2. Build and Run Guide for fast-backtest-app
 
 This guide explains how to build, run, and debug the fast-backtest-app project step by step, from manual methods to more advanced configurations.
 
-## Prerequisites
+### Prerequisites
 
 - CMake 3.14 or higher
 - GCC/G++ with C++20 support
@@ -78,9 +82,9 @@ This guide explains how to build, run, and debug the fast-backtest-app project s
 - VS Code (for debugging)
 - VS Code Extensions: C/C++, CMake Tools
 
-## 🔧 Prerequisite Installation
+### 🔧 Prerequisite Installation
 
-### Step 1: Install build tools (Linux only)
+#### Step 1: Install build tools (Linux only)
 
 Install essential development tools:
 
@@ -96,7 +100,7 @@ sudo apt install -y libgl1-mesa-dev libglu1-mesa-dev
 sudo apt install -y libxcb-cursor0 libxcb-cursor-dev
 ```
 
-### Step 2: Install CMake 4.0.3
+#### Step 2: Install CMake 4.0.3
 
 Download and install CMake manually to get a recent version:
 
@@ -138,7 +142,7 @@ Alternative manual installation for Windows:
 4. Complete the installation
 5. Open a new PowerShell/CMD window and verify: `cmake --version`
 
-### Step 3: Install Qt 6.8.3
+#### Step 3: Install Qt 6.8.3
 
 Download and install Qt from the official website:
 
@@ -184,7 +188,7 @@ Alternative manual download for Windows:
    - Linux: `~/Qt/`
    - Windows: `C:\Qt\`
 
-### Step 5: Permanent PATH configuration
+#### Step 5: Permanent PATH configuration
 
 Add CMake and Qt to your PATH permanently:
 
@@ -221,7 +225,7 @@ Alternative manual method for Windows:
 5. Click **OK** to save
 6. Restart your terminal
 
-### Step 6: Verify installation
+#### Step 6: Verify installation
 
 Check that all tools are correctly installed:
 
@@ -262,7 +266,7 @@ cl
 - Qt version 6.8.3
 - MSVC version 19.x or higher (Visual Studio 2019+)
 
-### Step 7: Test build
+#### Step 7: Test build
 
 Test building the project:
 
@@ -377,16 +381,6 @@ The script automates the build and run process:
 Use the files `./vscode/launch.json` and `./vscode/tasks.json`
 
 Choose your OS and mode (Debug/Release) in the VSCode run/debug tab
-
-#### How to use the debugger
-
-1. Set breakpoints by clicking in the margin to the left of the line numbers
-2. Press F5 to start the debugger
-3. Use the debug controls:
-   - F10: Step over
-   - F11: Step into
-   - Shift+F11: Step out
-   - F5: Continue execution
 
 ### Project entry points
 

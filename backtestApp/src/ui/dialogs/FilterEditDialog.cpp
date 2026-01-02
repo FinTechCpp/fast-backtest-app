@@ -677,8 +677,6 @@ void FilterEditDialog::setupOperatorUI(QWidget* parent)
     m_operatorCombo->addItem("!=", static_cast<int>(filter::ComparisonOperator::NOT_EQUAL));
     m_operatorCombo->addItem("Crosses above", static_cast<int>(filter::ComparisonOperator::CROSSES_ABOVE));
     m_operatorCombo->addItem("Crosses below", static_cast<int>(filter::ComparisonOperator::CROSSES_BELOW));
-    m_operatorCombo->addItem("Distance < threshold", static_cast<int>(filter::ComparisonOperator::DISTANCE_LESS));
-    m_operatorCombo->addItem("Distance > threshold", static_cast<int>(filter::ComparisonOperator::DISTANCE_GREATER));
     m_operatorCombo->addItem("Is True", static_cast<int>(filter::ComparisonOperator::TRUE));
     m_operatorCombo->addItem("Is False", static_cast<int>(filter::ComparisonOperator::FALSE));
 
@@ -990,9 +988,7 @@ void FilterEditDialog::updateDistanceVisibility()
     bool showDistance = (op == filter::ComparisonOperator::GREATER_THAN ||
                         op == filter::ComparisonOperator::LESS_THAN ||
                         op == filter::ComparisonOperator::GREATER_OR_EQUAL ||
-                        op == filter::ComparisonOperator::LESS_OR_EQUAL ||
-                        op == filter::ComparisonOperator::DISTANCE_LESS ||
-                        op == filter::ComparisonOperator::DISTANCE_GREATER);
+                        op == filter::ComparisonOperator::LESS_OR_EQUAL);
 
     m_distanceSpin->setVisible(showDistance);
     m_distanceLabel->setVisible(showDistance);

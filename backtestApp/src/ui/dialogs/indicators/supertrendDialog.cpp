@@ -24,6 +24,10 @@ void SupertrendDialog::setupUI()
     m_multiplierSpinBox->setSingleStep(1);
     m_multiplierSpinBox->setDecimals(1);
     m_formLayout->addRow("Multiplier:", m_multiplierSpinBox);
+
+    // Checkbox for resetting on new day
+    m_resetOnNewDayCheckBox = new QCheckBox();
+    m_formLayout->addRow("Reset on New Day:", m_resetOnNewDayCheckBox);
     
     // Up Trend Color
     m_upColorButton = new QPushButton();
@@ -38,6 +42,7 @@ void SupertrendDialog::connectSignals()
 {
     connect(m_periodSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &SupertrendDialog::onPeriodChanged);
     connect(m_multiplierSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &SupertrendDialog::onMultiplierChanged);
+    connect(m_resetOnNewDayCheckBox, &QCheckBox::checkStateChanged, this, &SupertrendDialog::onResetOnNewDayChanged);
     connect(m_upColorButton, &QPushButton::clicked, this, &SupertrendDialog::onUpColorButtonClicked);
     connect(m_downColorButton, &QPushButton::clicked, this, &SupertrendDialog::onDownColorButtonClicked);
 }
@@ -46,6 +51,7 @@ void SupertrendDialog::updateUIFromInstance()
 {
     m_periodSpinBox->setValue(m_currentIndicator.period);
     m_multiplierSpinBox->setValue(m_currentIndicator.multiplier);
+    m_resetOnNewDayCheckBox->setCheckState(m_currentIndicator.resetOnNewDay ? Qt::Checked : Qt::Unchecked);
     updateColorButtonStyle(m_upColorButton, m_currentIndicator.upColor);
     updateColorButtonStyle(m_downColorButton, m_currentIndicator.downColor);
 }
@@ -58,6 +64,11 @@ void SupertrendDialog::onPeriodChanged(int period)
 
 void SupertrendDialog::onMultiplierChanged(double multiplier) {
     m_currentIndicator.multiplier = multiplier;
+    applyChanges();
+}
+
+void SupertrendDialog::onResetOnNewDayChanged(int state) {
+    m_currentIndicator.resetOnNewDay = (state == Qt::Checked);
     applyChanges();
 }
 

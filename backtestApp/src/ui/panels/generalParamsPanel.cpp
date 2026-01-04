@@ -286,6 +286,7 @@ void GeneralParamsPanel::openAdvancedConfigDialog()
     dialog.setCash(m_config.cash);
     dialog.setSpreadEntryRatio(m_config.spreadEntryRatio);
     dialog.setMinPositionStep(m_config.minPositionStep);
+    dialog.setResetIndicatorsOnNewDay(m_config.resetIndicatorsOnNewDay);
     
     // Execute the dialog
     if (dialog.exec() == QDialog::Accepted) {
@@ -301,5 +302,6 @@ void GeneralParamsPanel::openAdvancedConfigDialog()
         m_config.cash = dialog.cash();
         m_config.spreadEntryRatio = dialog.spreadEntryRatio();
         m_config.minPositionStep = dialog.minPositionStep();
+        m_config.resetIndicatorsOnNewDay = dialog.resetIndicatorsOnNewDay();
     }
 }

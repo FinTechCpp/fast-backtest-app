@@ -38,6 +38,7 @@ struct GeneralParamsConfig {
     double spreadEntryRatio = 0.5; // Ratio of the spread used for the entry price (0.0 to 1.0)
     double minPositionStep = 0.5; // Minimum position size (quantification)
     bool finalizeTrades = true;
+    bool resetIndicatorsOnNewDay = false; // Reset indicators at start of each trading day
 };
 
 // Overload of the << operator for GeneralParamsConfig
@@ -58,6 +59,7 @@ inline std::ostream& operator<<(std::ostream& os, const GeneralParamsConfig& con
        << "  executeStopOnOpen: " << config.executeStopOnOpen << "\n"
        << "  spreadEntryRatio: " << config.spreadEntryRatio << "\n"
        << "  minPositionStep: " << config.minPositionStep << "\n"
+       << "  resetIndicatorsOnNewDay: " << config.resetIndicatorsOnNewDay << "\n"
        << "}\n";
     return os;
 }

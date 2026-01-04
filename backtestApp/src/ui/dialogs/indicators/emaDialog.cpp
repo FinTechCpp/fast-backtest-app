@@ -16,6 +16,10 @@ void EMADialog::setupUI()
     m_periodSpinBox = new QSpinBox();
     m_periodSpinBox->setRange(2, 3000);
     m_formLayout->addRow("Period:", m_periodSpinBox);
+
+    // Checkbox for resetting on new day
+    m_resetOnNewDayCheckBox = new QCheckBox();
+    m_formLayout->addRow("Reset on New Day:", m_resetOnNewDayCheckBox);
     
     // Line color
     m_colorButton = new QPushButton();
@@ -25,18 +29,26 @@ void EMADialog::setupUI()
 void EMADialog::connectSignals()
 {
     connect(m_periodSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &EMADialog::onPeriodChanged);
+    connect(m_resetOnNewDayCheckBox, &QCheckBox::checkStateChanged, this, &EMADialog::onResetOnNewDayChanged);
     connect(m_colorButton, &QPushButton::clicked, this, &EMADialog::onColorButtonClicked);
 }
 
 void EMADialog::updateUIFromInstance()
 {
     m_periodSpinBox->setValue(m_currentIndicator.period);
+    m_resetOnNewDayCheckBox->setCheckState(m_currentIndicator.resetOnNewDay ? Qt::Checked : Qt::Unchecked);
     updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
 }
 
 void EMADialog::onPeriodChanged(int period)
 {
     m_currentIndicator.period = period;
+    applyChanges(); // Apply changes immediately
+}
+
+void EMADialog::onResetOnNewDayChanged(int state)
+{
+    m_currentIndicator.resetOnNewDay = (state == Qt::Checked);
     applyChanges(); // Apply changes immediately
 }
 

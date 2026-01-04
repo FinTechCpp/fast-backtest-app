@@ -31,6 +31,10 @@ void RSIDialog::setupUI() {
     m_oversoldLevelSpinBox = new QSpinBox();
     m_oversoldLevelSpinBox->setRange(0, 50);
     m_formLayout->addRow("Oversold Level:", m_oversoldLevelSpinBox);
+
+    // Checkbox for resetting on new day
+    m_resetOnNewDayCheckBox = new QCheckBox();
+    m_formLayout->addRow("Reset on New Day:", m_resetOnNewDayCheckBox);
     
     // Line Color
     m_colorButton = new QPushButton();
@@ -50,6 +54,7 @@ void RSIDialog::connectSignals() {
     connect(m_heightSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &RSIDialog::onHeightChanged);
     connect(m_overboughtLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &RSIDialog::onOverboughtLevelChanged);
     connect(m_oversoldLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &RSIDialog::onOversoldLevelChanged);
+    connect(m_resetOnNewDayCheckBox, &QCheckBox::checkStateChanged, this, &RSIDialog::onResetOnNewDayChanged);
     connect(m_colorButton, &QPushButton::clicked, this, &RSIDialog::onColorButtonClicked);
     connect(m_upperColorButton, &QPushButton::clicked, this, &RSIDialog::onUpperColorButtonClicked);
     connect(m_lowerColorButton, &QPushButton::clicked, this, &RSIDialog::onLowerColorButtonClicked);
@@ -61,6 +66,7 @@ void RSIDialog::updateUIFromInstance()
     m_heightSpinBox->setValue(m_currentIndicator.height);
     m_overboughtLevelSpinBox->setValue(m_currentIndicator.overboughtLevel);
     m_oversoldLevelSpinBox->setValue(m_currentIndicator.oversoldLevel);
+    m_resetOnNewDayCheckBox->setCheckState(m_currentIndicator.resetOnNewDay ? Qt::Checked : Qt::Unchecked);
     updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
     updateColorButtonStyle(m_upperColorButton, m_currentIndicator.upperColor);
     updateColorButtonStyle(m_lowerColorButton, m_currentIndicator.lowerColor);
@@ -83,6 +89,11 @@ void RSIDialog::onOverboughtLevelChanged(int level) {
 
 void RSIDialog::onOversoldLevelChanged(int level) {
     m_currentIndicator.oversoldLevel = level;
+    applyChanges();
+}
+
+void RSIDialog::onResetOnNewDayChanged(int state) {
+    m_currentIndicator.resetOnNewDay = (state == Qt::Checked);
     applyChanges();
 }
 

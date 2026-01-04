@@ -152,14 +152,14 @@ private:
     void calculateIndicator(const indicators::IndicatorBase& config);
     // We should not pass ids but return the calculated values to put them into the cache afterwards; it should not be done inside this function
     // so there's no need for the id
-    void calculateRSI(int id, int period);
-    void calculateEMA(int id, int period);
-    void calculateSupertrend(int id, int period, double multiplier);
-    void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod);
-    void calculateATR(int id, int period, bool useLogScale = false);
-    void calculateCCI(int id, int period);
-    void calculateMACD(int id,int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType osc_ma_type, filter::MAType signal_ma_type, int signal_smoothing);
-    void calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType osc_ma_type);
+    void calculateRSI(int id, int period, bool resetOnNewDay);
+    void calculateEMA(int id, int period, bool resetOnNewDay);
+    void calculateSupertrend(int id, int period, double multiplier, bool resetOnNewDay);
+    void calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod, bool resetOnNewDay);
+    void calculateATR(int id, int period, bool useLogScale, bool resetOnNewDay);
+    void calculateCCI(int id, int period, bool resetOnNewDay);
+    void calculateMACD(int id,int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType osc_ma_type, filter::MAType signal_ma_type, int signal_smoothing, bool resetOnNewDay);
+    void calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType osc_ma_type, bool resetOnNewDay);
     // We may not need to pass the complete instance but why not; if we do that, we do it for all indicators
     void calculatePivotPoints(const indicators::PivotPointsInstance& config);
 

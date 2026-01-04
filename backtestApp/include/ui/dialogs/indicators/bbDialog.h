@@ -22,6 +22,7 @@ private slots:
     void onStdDevMultiplierChanged(double multiplier);
     void onSourceChanged(int index);
     void onMATypeChanged(int index);
+    void onResetOnNewDayChanged(int state);
     void onMiddleBandColorClicked();
     void onUpperBandColorClicked();
     void onLowerBandColorClicked();
@@ -40,6 +41,7 @@ private:
     QPushButton* m_middleBandColorButton;
     QPushButton* m_upperBandColorButton;
     QPushButton* m_lowerBandColorButton;
+    QCheckBox* m_resetOnNewDayCheckBox;
 
     // Helper used by color button handlers
     void onColorButtonClicked(QPushButton* button, int& colorField);

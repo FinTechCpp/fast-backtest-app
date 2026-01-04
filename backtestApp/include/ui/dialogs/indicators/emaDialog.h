@@ -16,6 +16,7 @@ public:
     
 private slots:
     void onPeriodChanged(int period);
+    void onResetOnNewDayChanged(int state);
     void onColorButtonClicked();
     
 protected:
@@ -26,4 +27,5 @@ protected:
 private:
     QSpinBox* m_periodSpinBox;
     QPushButton* m_colorButton;
+    QCheckBox* m_resetOnNewDayCheckBox;
 };

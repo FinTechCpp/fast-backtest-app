@@ -476,60 +476,67 @@ std::vector<int> ChartDataManager::aggregateVector(const std::vector<int>& data,
 }
 
 
-void ChartDataManager::calculateRSI(int id, int period) {
+void ChartDataManager::calculateRSI(int id, int period, bool resetOnNewDay) {
     // Verify necessary data is available
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || period < 2) return;
 
-    // Get closing prices
+    // Get closing prices and timestamps
     const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
 
-    std::vector<double> rsiValues = IndicatorMathUtils::calculateRSI(closePrices, period);
+    qDebug() << "calculateRSI: period=" << period << "resetOnNewDay=" << resetOnNewDay << "timestamps.size=" << timestamps.size();
+
+    std::vector<double> rsiValues = IndicatorMathUtils::calculateRSI(closePrices, period, timestamps, resetOnNewDay);
 
     // Update active indicators cache
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].rsiValues[id] = std::move(rsiValues);
 }
 
-void ChartDataManager::calculateEMA(int id, int period) {
+void ChartDataManager::calculateEMA(int id, int period, bool resetOnNewDay) {
     // Verify necessary data is available
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || period < 2) return;
 
-    // Get closing prices
+    // Get closing prices and timestamps
     const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
+    qDebug() << "calculateEMA: period=" << period << "resetOnNewDay=" << resetOnNewDay << "timestamps.size=" << timestamps.size();
 
-    std::vector<double> emaValues = IndicatorMathUtils::calculateEMA(closePrices, period);
+    std::vector<double> emaValues = IndicatorMathUtils::calculateEMA(closePrices, period, timestamps, resetOnNewDay);
 
     // Update active indicators cache
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].emaValues[id] = std::move(emaValues);
 }
 
-void ChartDataManager::calculateSupertrend(int id, int period, double multiplier) {
+void ChartDataManager::calculateSupertrend(int id, int period, double multiplier, bool resetOnNewDay) {
     // Verify necessary data is available
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || period < 2) return;
 
-    // Get prices
+    // Get prices and timestamps
     const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
     const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
     const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
 
     std::vector<double> supertrendValues;
     std::vector<int> trendDirections;
-    std::tie(supertrendValues, trendDirections) = IndicatorMathUtils::calculateSupertrend(highPrices, lowPrices, closePrices, period, multiplier);
+    std::tie(supertrendValues, trendDirections) = IndicatorMathUtils::calculateSupertrend(highPrices, lowPrices, closePrices, period, multiplier, timestamps, resetOnNewDay);
 
     // Update active indicators cache
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].supertrendValues[id] = std::make_pair(std::move(supertrendValues), std::move(trendDirections));
 }
 
-void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod) {
+void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPeriod, int slowDPeriod, bool resetOnNewDay) {
     // Verify necessary data is available
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || fastKPeriod < 2 || slowKPeriod < 2 || slowDPeriod < 2) return;
 
-    // Get prices
+    // Get prices and timestamps
     const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
     const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
     const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
 
     auto [stochasticKValues, stochasticDValues] = IndicatorMathUtils::calculateStochastic(
-        highPrices, lowPrices, closePrices, fastKPeriod, slowKPeriod, slowDPeriod
+        highPrices, lowPrices, closePrices, fastKPeriod, slowKPeriod, slowDPeriod, timestamps, resetOnNewDay
     );
 
     // Update active indicators cache
@@ -538,45 +545,48 @@ void ChartDataManager::calculateStochastic(int id, int fastKPeriod, int slowKPer
     };
 }
 
-void ChartDataManager::calculateATR(int id, int period, bool useLogScale) {
+void ChartDataManager::calculateATR(int id, int period, bool useLogScale, bool resetOnNewDay) {
     // Verify necessary data is available
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || period < 2) return;
 
-    // Get prices
+    // Get prices and timestamps
     const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
     const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
     const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
 
-    std::vector<double> atrValues = IndicatorMathUtils::calculateATR(highPrices, lowPrices, closePrices, period, useLogScale);
+    std::vector<double> atrValues = IndicatorMathUtils::calculateATR(highPrices, lowPrices, closePrices, period, useLogScale, timestamps, resetOnNewDay);
 
     // Update active indicators cache
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].atrValues[id] = std::move(atrValues);
 }
 
-void ChartDataManager::calculateCCI(int id, int period) {
+void ChartDataManager::calculateCCI(int id, int period, bool resetOnNewDay) {
     // Verify necessary data is available
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || period < 2) return;
 
-    // Get prices
+    // Get prices and timestamps
     const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
     const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
     const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
 
-    std::vector<double> cciValues = IndicatorMathUtils::calculateCCI(highPrices, lowPrices, closePrices, period);
+    std::vector<double> cciValues = IndicatorMathUtils::calculateCCI(highPrices, lowPrices, closePrices, period, timestamps, resetOnNewDay);
 
     // Update active indicators cache
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].cciValues[id] = std::move(cciValues);
 }
 
-void ChartDataManager::calculateMACD(int id, int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType oscMA, filter::MAType signalMA, int signal_smoothing) {
+void ChartDataManager::calculateMACD(int id, int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType oscMA, filter::MAType signalMA, int signal_smoothing, bool resetOnNewDay) {
     // Verify necessary data is available
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || fastPeriod < 2 || slowPeriod < 2 || signalPeriod < 2) return;
 
-    // Get prices according to source
+    // Get prices and timestamps
     const std::vector<double>& openPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].open;
     const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
     const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
     const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
 
     std::vector<double> macdLine;
     std::vector<double> signalLine;
@@ -584,29 +594,30 @@ void ChartDataManager::calculateMACD(int id, int fastPeriod, int slowPeriod, int
     std::tie(macdLine, signalLine, histogram) = IndicatorMathUtils::calculateMACD(
         openPrices, highPrices, lowPrices, closePrices,
         fastPeriod, slowPeriod, signalPeriod,
-        source, oscMA, signalMA, signal_smoothing
+        source, oscMA, signalMA, signal_smoothing, timestamps, resetOnNewDay
     );
 
     // Update active indicators cache
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].macdValues[id] = std::make_tuple(std::move(macdLine), std::move(signalLine), std::move(histogram));
 }
 
-void ChartDataManager::calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType maType) {
+void ChartDataManager::calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType maType, bool resetOnNewDay) {
     // Verify necessary data is available
     if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || period < 2) return;
 
-    // Get prices according to source
+    // Get prices and timestamps
     const std::vector<double>& openPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].open;
     const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
     const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
     const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
 
     std::vector<double> middleBand;
     std::vector<double> upperBand;
     std::vector<double> lowerBand;
     std::tie(middleBand, upperBand, lowerBand) = IndicatorMathUtils::calculateBollingerBands(
         openPrices, highPrices, lowPrices, closePrices,
-        period, stdDevMultiplier, source, maType
+        period, stdDevMultiplier, source, maType, timestamps, resetOnNewDay
     );
 
     // Update active indicators cache
@@ -941,37 +952,37 @@ int ChartDataManager::aggregatedToFirstRawIndex(chart::AggregationLevel level, i
 void ChartDataManager::calculateIndicator(const indicators::IndicatorBase &config)
 {
     if (const indicators::RSIInstance* rsiConfig = dynamic_cast<const indicators::RSIInstance*>(&config)) {
-        calculateRSI(rsiConfig->id, rsiConfig->period);
+        calculateRSI(rsiConfig->id, rsiConfig->period, rsiConfig->resetOnNewDay);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validRsiIds.erase(rsiConfig->id);
         return;
     }
     if (const indicators::EMAInstance* emaConfig = dynamic_cast<const indicators::EMAInstance*>(&config)) {
-        calculateEMA(emaConfig->id, emaConfig->period);
+        calculateEMA(emaConfig->id, emaConfig->period, emaConfig->resetOnNewDay);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validEmaIds.erase(emaConfig->id);
         return;
     }
     if (const indicators::SuperTrendInstance* supertrendConfig = dynamic_cast<const indicators::SuperTrendInstance*>(&config)) {
-        calculateSupertrend(supertrendConfig->id, supertrendConfig->period, supertrendConfig->multiplier);
+        calculateSupertrend(supertrendConfig->id, supertrendConfig->period, supertrendConfig->multiplier, supertrendConfig->resetOnNewDay);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validSupertrendIds.erase(supertrendConfig->id);
         return;
     }
     if (const indicators::StochasticInstance* stochasticConfig = dynamic_cast<const indicators::StochasticInstance*>(&config)) {
-        calculateStochastic(stochasticConfig->id, stochasticConfig->fastKPeriod, stochasticConfig->slowKPeriod, stochasticConfig->slowDPeriod);
+        calculateStochastic(stochasticConfig->id, stochasticConfig->fastKPeriod, stochasticConfig->slowKPeriod, stochasticConfig->slowDPeriod, stochasticConfig->resetOnNewDay);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validStochasticIds.erase(stochasticConfig->id);
         return;
     }
     if (const indicators::ATRInstance* atrConfig = dynamic_cast<const indicators::ATRInstance*>(&config)) {
-        calculateATR(atrConfig->id, atrConfig->period, atrConfig->useLogScale);
+        calculateATR(atrConfig->id, atrConfig->period, atrConfig->useLogScale, atrConfig->resetOnNewDay);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validAtrIds.erase(atrConfig->id);
         return;
     }
     if (const indicators::CCIInstance* cciConfig = dynamic_cast<const indicators::CCIInstance*>(&config)) {
-        calculateCCI(cciConfig->id, cciConfig->period);
+        calculateCCI(cciConfig->id, cciConfig->period, cciConfig->resetOnNewDay);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validCciIds.erase(cciConfig->id);
         return;
@@ -979,14 +990,14 @@ void ChartDataManager::calculateIndicator(const indicators::IndicatorBase &confi
     if (const indicators::MACDInstance* macdConfig = dynamic_cast<const indicators::MACDInstance*>(&config)) {
         calculateMACD(macdConfig->id, macdConfig->fastPeriod, macdConfig->slowPeriod, macdConfig->signalPeriod,
                       macdConfig->source, macdConfig->osc_ma_type,
-                      macdConfig->signal_ma_type, macdConfig->signal_smoothing);
+                      macdConfig->signal_ma_type, macdConfig->signal_smoothing, macdConfig->resetOnNewDay);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validMacdIds.erase(macdConfig->id);
         return;
     }
     if (const indicators::BBInstance* bbConfig = dynamic_cast<const indicators::BBInstance*>(&config)) {
         calculateBB(bbConfig->id, bbConfig->period, bbConfig->stddev_multiplier,
-                    bbConfig->source, bbConfig->ma_type);
+                    bbConfig->source, bbConfig->ma_type, bbConfig->resetOnNewDay);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validBbIds.erase(bbConfig->id);
         return;

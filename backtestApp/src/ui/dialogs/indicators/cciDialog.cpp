@@ -31,6 +31,10 @@ void CCIDialog::setupUI() {
     m_lowerLevelSpinBox = new QSpinBox();
     m_lowerLevelSpinBox->setRange(-300, -50);
     m_formLayout->addRow("Lower Level:", m_lowerLevelSpinBox);
+
+    // Checkbox for resetting on new day
+    m_resetOnNewDayCheckBox = new QCheckBox();
+    m_formLayout->addRow("Reset on New Day:", m_resetOnNewDayCheckBox);
     
     // Main color
     m_colorButton = new QPushButton();
@@ -50,6 +54,7 @@ void CCIDialog::connectSignals() {
     connect(m_heightSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &CCIDialog::onHeightChanged);
     connect(m_upperLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &CCIDialog::onUpperLevelChanged);
     connect(m_lowerLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &CCIDialog::onLowerLevelChanged);
+    connect(m_resetOnNewDayCheckBox, &QCheckBox::checkStateChanged, this, &CCIDialog::onResetOnNewDayChanged);
     connect(m_colorButton, &QPushButton::clicked, this, &CCIDialog::onColorButtonClicked);
     connect(m_upperColorButton, &QPushButton::clicked, this, &CCIDialog::onUpperColorButtonClicked);
     connect(m_lowerColorButton, &QPushButton::clicked, this, &CCIDialog::onLowerColorButtonClicked);
@@ -61,6 +66,7 @@ void CCIDialog::updateUIFromInstance()
     m_heightSpinBox->setValue(m_currentIndicator.height);
     m_upperLevelSpinBox->setValue(m_currentIndicator.upperLevel);
     m_lowerLevelSpinBox->setValue(m_currentIndicator.lowerLevel);
+    m_resetOnNewDayCheckBox->setCheckState(m_currentIndicator.resetOnNewDay ? Qt::Checked : Qt::Unchecked);
     updateColorButtonStyle(m_colorButton, m_currentIndicator.color);
     updateColorButtonStyle(m_upperColorButton, m_currentIndicator.upperColor);
     updateColorButtonStyle(m_lowerColorButton, m_currentIndicator.lowerColor);
@@ -83,6 +89,11 @@ void CCIDialog::onUpperLevelChanged(int level) {
 
 void CCIDialog::onLowerLevelChanged(int level) {
     m_currentIndicator.lowerLevel = level;
+    applyChanges();
+}
+
+void CCIDialog::onResetOnNewDayChanged(int state) {
+    m_currentIndicator.resetOnNewDay = (state == Qt::Checked);
     applyChanges();
 }
 

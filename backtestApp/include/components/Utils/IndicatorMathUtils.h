@@ -29,13 +29,28 @@ namespace filter {
 class IndicatorMathUtils {
 public:
     /**
+     * @brief Detects day boundaries in timestamp data
+     * 
+     * @param timestamps The timestamps in ChartDirector format (seconds since epoch)
+     * @return std::vector<size_t> Indices where a new day starts
+     */
+    static std::vector<size_t> detectDayBoundaries(const std::vector<double>& timestamps);
+
+    /**
      * @brief Calculates the RSI (Relative Strength Index) indicator
      * 
      * @param closeData The closing prices
      * @param period The period for RSI calculation
-     * @param rsiValues Output vector that will contain the calculated RSI values
+     * @param timestamps Optional timestamps for day boundary detection
+     * @param resetOnNewDay If true, reset indicator calculation at each new day
+     * @return std::vector<double> The calculated RSI values
      */
-    static std::vector<double> calculateRSI(const std::vector<double>& closeData, int period);
+    static std::vector<double> calculateRSI(
+        const std::vector<double>& closeData, 
+        int period,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
+    );
 
     /**
      * @brief Calculates Heikin-Ashi candles
@@ -61,9 +76,16 @@ public:
      * 
      * @param closeData The closing prices
      * @param period The period for EMA calculation
-     * @param emaValues Output vector that will contain the calculated EMA values
+     * @param timestamps Optional timestamps for day boundary detection
+     * @param resetOnNewDay If true, reset indicator calculation at each new day
+     * @return std::vector<double> The calculated EMA values
      */
-    static std::vector<double> calculateEMA(const std::vector<double>& closeData, int period);
+    static std::vector<double> calculateEMA(
+        const std::vector<double>& closeData, 
+        int period,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
+    );
 
     /**
      * @brief Calculates the SuperTrend indicator
@@ -73,15 +95,18 @@ public:
      * @param closeData The closing prices
      * @param period The period for SuperTrend calculation
      * @param multiplier The multiplier for SuperTrend
-     * @param supertrendValues Output vector that will contain the calculated SuperTrend values
-     * @param trendDirections Output vector that will contain the trend directions (1 for bullish trend, -1 for bearish trend)
+     * @param timestamps Optional timestamps for day boundary detection
+     * @param resetOnNewDay If true, reset indicator calculation at each new day
+     * @return tuple of supertrendValues and trendDirections
      */
     static std::tuple<std::vector<double>, std::vector<int>> calculateSupertrend(
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         int period,
-        double multiplier
+        double multiplier,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
     );
 
     /**
@@ -93,8 +118,9 @@ public:
      * @param fastKPeriod The period for calculating raw %K
      * @param slowKPeriod The smoothing period for %K
      * @param slowDPeriod The period for calculating %D
-     * @param kValues Output vector that will contain the smoothed %K values
-     * @param dValues Output vector that will contain the %D values
+     * @param timestamps Optional timestamps for day boundary detection
+     * @param resetOnNewDay If true, reset indicator calculation at each new day
+     * @return tuple of kValues and dValues
      */
     static std::tuple<std::vector<double>, std::vector<double>> calculateStochastic(
         const std::vector<double>& highData,
@@ -102,7 +128,9 @@ public:
         const std::vector<double>& closeData,
         int fastKPeriod,
         int slowKPeriod,
-        int slowDPeriod
+        int slowDPeriod,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
     );
 
     /**
@@ -112,16 +140,19 @@ public:
      * @param lowData The low prices
      * @param closeData The closing prices
      * @param period The period for ATR calculation
-     * @param atrValues Output vector that will contain the calculated ATR values
      * @param useLogScale Indicates whether to use logarithmic scale for ATR
+     * @param timestamps Optional timestamps for day boundary detection
+     * @param resetOnNewDay If true, reset indicator calculation at each new day
+     * @return std::vector<double> The calculated ATR values
      */
-
     static std::vector<double> calculateATR(
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
         int period,
-        bool useLogScale = false
+        bool useLogScale = false,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
     );
 
     /**
@@ -131,13 +162,17 @@ public:
      * @param lowData The low prices
      * @param closeData The closing prices
      * @param period The period for CCI calculation
+     * @param timestamps Optional timestamps for day boundary detection
+     * @param resetOnNewDay If true, reset indicator calculation at each new day
      * @return std::vector<double> The calculated CCI values
      */
     static std::vector<double> calculateCCI(
         const std::vector<double>& highData,
         const std::vector<double>& lowData,
         const std::vector<double>& closeData,
-        int period
+        int period,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
     );
 
     /**
@@ -145,14 +180,8 @@ public:
      *
      * Returns a tuple of three vectors: (macd_line, signal_line, histogram)
      *
-     * Parameters mirror the MACD implementation in ThirdParty/Strategies/include/Indicators/macd.hpp:
-     *  - fastPeriod: fast EMA/SMA length
-     *  - slowPeriod: slow EMA/SMA length
-     *  - signalPeriod: signal line period
-     *  - source: "open"/"high"/"low"/"close" (default "close")
-     *  - oscMAType: "EMA" or "SMA" for oscillator moving averages (default "EMA")
-     *  - signalMAType: "EMA" or "SMA" for signal line moving average (default "EMA")
-     *  - signalSmoothing: optional smoothing length for signal (if 0 -> use signalPeriod)
+     * @param timestamps Optional timestamps for day boundary detection
+     * @param resetOnNewDay If true, reset indicator calculation at each new day
      */
     static std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> calculateMACD(
         const std::vector<double>& open,
@@ -165,17 +194,16 @@ public:
         filter::PriceType source,
         filter::MAType oscMAType,
         filter::MAType signalMAType,
-        int signalSmoothing
+        int signalSmoothing,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
     );
 
     /**
      * @brief Calculates Bollinger Bands (BB) indicator
      * Returns a tuple of three vectors: (middle_band, upper_band, lower_band)
-     * Parameters:
-     *  - period: period for the moving average 
-     *  - stdDevMultiplier: standard deviation multiplier for the bands 
-     *  - source: "open"/"high"/"low"/"close" 
-     *  - oscMAType: "EMA" or "SMA" for the middle band moving average 
+     * @param timestamps Optional timestamps for day boundary detection
+     * @param resetOnNewDay If true, reset indicator calculation at each new day
      */
     static std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> calculateBollingerBands(
         const std::vector<double>& open,
@@ -185,7 +213,9 @@ public:
         int period,
         double stdDevMultiplier,
         filter::PriceType source,
-        filter::MAType oscMAType
+        filter::MAType oscMAType,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
     );
 
     /**

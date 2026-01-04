@@ -46,6 +46,10 @@ void MACDDialog::setupUI()
     m_signalMATypeComboBox->addItems({ "EMA", "SMA" });
     m_formLayout->addRow("Signal MA Type:", m_signalMATypeComboBox);
 
+    // Checkbox for resetting on new day
+    m_resetOnNewDayCheckBox = new QCheckBox();
+    m_formLayout->addRow("Reset on New Day:", m_resetOnNewDayCheckBox);
+
     // Color buttons
     m_macdColorButton = new QPushButton();
     m_formLayout->addRow("MACD Line Color:", m_macdColorButton);
@@ -68,6 +72,8 @@ void MACDDialog::connectSignals()
     connect(m_oscMATypeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MACDDialog::onOscMATypeChanged);
     connect(m_signalMATypeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MACDDialog::onSignalMATypeChanged);
 
+    connect(m_resetOnNewDayCheckBox, &QCheckBox::checkStateChanged, this, &MACDDialog::onResetOnNewDayChanged);
+
     connect(m_macdColorButton, &QPushButton::clicked, this, &MACDDialog::onMacdColorButtonClicked);
     connect(m_signalColorButton, &QPushButton::clicked, this, &MACDDialog::onSignalColorButtonClicked);
     connect(m_histColorButton, &QPushButton::clicked, this, &MACDDialog::onHistColorButtonClicked);
@@ -79,6 +85,7 @@ void MACDDialog::updateUIFromInstance()
     m_slowPeriodSpinBox->setValue(m_currentIndicator.slowPeriod);
     m_signalPeriodSpinBox->setValue(m_currentIndicator.signalPeriod);
     m_signalSmoothingSpinBox->setValue(m_currentIndicator.signal_smoothing);
+    m_resetOnNewDayCheckBox->setCheckState(m_currentIndicator.resetOnNewDay ? Qt::Checked : Qt::Unchecked);
 
     switch (m_currentIndicator.source) {
         case filter::PriceType::OPEN: m_sourceComboBox->setCurrentIndex(0); break;
@@ -141,6 +148,12 @@ void MACDDialog::onOscMATypeChanged(int index)
 void MACDDialog::onSignalMATypeChanged(int index)
 {
     m_currentIndicator.signal_ma_type = (index == 0) ? filter::MAType::EMA : filter::MAType::SMA;
+    applyChanges();
+}
+
+void MACDDialog::onResetOnNewDayChanged(int state)
+{
+    m_currentIndicator.resetOnNewDay = (state == Qt::Checked);
     applyChanges();
 }
 

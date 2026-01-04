@@ -40,6 +40,10 @@ void bbDialog::setupUI()
     m_maTypeCombo->addItem("SMA", static_cast<int>(filter::MAType::SMA));
     m_maTypeCombo->addItem("EMA", static_cast<int>(filter::MAType::EMA));
     m_formLayout->addRow("MA Type:", m_maTypeCombo);
+
+    // Checkbox for resetting on new day
+    m_resetOnNewDayCheckBox = new QCheckBox();
+    m_formLayout->addRow("Reset on New Day:", m_resetOnNewDayCheckBox);
     
     // Middle band color
     m_middleBandColorButton = new QPushButton();
@@ -60,6 +64,7 @@ void bbDialog::connectSignals()
     connect(m_stdDevMultiplierSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &bbDialog::onStdDevMultiplierChanged);
     connect(m_sourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &bbDialog::onSourceChanged);
     connect(m_maTypeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &bbDialog::onMATypeChanged);
+    connect(m_resetOnNewDayCheckBox, &QCheckBox::checkStateChanged, this, &bbDialog::onResetOnNewDayChanged);
     connect(m_middleBandColorButton, &QPushButton::clicked, this, &bbDialog::onMiddleBandColorClicked);
     connect(m_upperBandColorButton, &QPushButton::clicked, this, &bbDialog::onUpperBandColorClicked);
     connect(m_lowerBandColorButton, &QPushButton::clicked, this, &bbDialog::onLowerBandColorClicked);
@@ -71,6 +76,7 @@ void bbDialog::updateUIFromInstance()
     m_stdDevMultiplierSpinBox->setValue(m_currentIndicator.stddev_multiplier);
     m_sourceCombo->setCurrentIndex(m_sourceCombo->findData(static_cast<int>(m_currentIndicator.source)));
     m_maTypeCombo->setCurrentIndex(m_maTypeCombo->findData(static_cast<int>(m_currentIndicator.ma_type)));
+    m_resetOnNewDayCheckBox->setCheckState(m_currentIndicator.resetOnNewDay ? Qt::Checked : Qt::Unchecked);
     updateColorButtonStyle(m_middleBandColorButton, m_currentIndicator.middleBandColor);
     updateColorButtonStyle(m_upperBandColorButton, m_currentIndicator.upperBandColor);
     updateColorButtonStyle(m_lowerBandColorButton, m_currentIndicator.lowerBandColor);
@@ -111,6 +117,12 @@ void bbDialog::onMATypeChanged(int index)
     int data = m_maTypeCombo->itemData(index).toInt();
     m_currentIndicator.ma_type = static_cast<filter::MAType>(data);
     applyChanges();
+}
+
+void bbDialog::onResetOnNewDayChanged(int state)
+{
+    m_currentIndicator.resetOnNewDay = (state == Qt::Checked);
+    applyChanges(); // Apply changes immediately
 }
 
 void bbDialog::onMiddleBandColorClicked()

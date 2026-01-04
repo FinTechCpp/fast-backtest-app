@@ -25,6 +25,7 @@ private slots:
     void onHeightChanged(int height);
     void onOverboughtLevelChanged(int level);
     void onOversoldLevelChanged(int level);
+    void onResetOnNewDayChanged(int state);
     void onColorButtonClicked();
     void onUpperColorButtonClicked();
     void onLowerColorButtonClicked();
@@ -42,5 +43,6 @@ private:
     QPushButton* m_colorButton;
     QPushButton* m_upperColorButton;
     QPushButton* m_lowerColorButton;
+    QCheckBox* m_resetOnNewDayCheckBox;
 };
 

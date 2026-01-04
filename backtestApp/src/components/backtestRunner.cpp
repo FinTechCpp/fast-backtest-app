@@ -320,9 +320,11 @@ void BacktestWorker::run()
             config.cash = allocatedCash;
             
             // If leverage is not defined, use the general configuration leverage
-            if (config.leverage_limit <= 0) {
+            if (config.leverage_limit <= 0) 
                 config.leverage_limit = generalParams.leverage_limit;
-            }
+
+            // Apply the reset indicators on new day setting from general params
+            config.reset_indicators_on_new_day = generalParams.resetIndicatorsOnNewDay;
 
             qDebug() << "Creating strategy" << (i + 1) 
                      << "- Allocated cash:" << allocatedCash 

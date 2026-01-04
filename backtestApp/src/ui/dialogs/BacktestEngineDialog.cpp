@@ -238,6 +238,12 @@ BacktestEngineDialog::BacktestEngineDialog(QWidget* parent)
     m_finalizeTradesCheck = new QCheckBox("Finalize trades at end of backtest", this);
     m_finalizeTradesCheck->setChecked(true);
     additionalParamsLayout->addRow(m_finalizeTradesCheck);
+
+    // Reset indicators on new day
+    m_resetIndicatorsOnNewDayCheck = new QCheckBox("Reset indicators on new day", this);
+    m_resetIndicatorsOnNewDayCheck->setToolTip("Reinitialize all indicators at the start of each trading day to handle overnight/weekend gaps");
+    m_resetIndicatorsOnNewDayCheck->setChecked(false);
+    additionalParamsLayout->addRow(m_resetIndicatorsOnNewDayCheck);
     
     topGridLayout->addWidget(additionalParamsGroupBox, 0, 0);
     
@@ -501,4 +507,14 @@ double BacktestEngineDialog::minPositionStep() const
 void BacktestEngineDialog::setMinPositionStep(double value)
 {
     m_minPositionStepSpin->setValue(value);
+}
+
+bool BacktestEngineDialog::resetIndicatorsOnNewDay() const
+{
+    return m_resetIndicatorsOnNewDayCheck->isChecked();
+}
+
+void BacktestEngineDialog::setResetIndicatorsOnNewDay(bool value)
+{
+    m_resetIndicatorsOnNewDayCheck->setChecked(value);
 }

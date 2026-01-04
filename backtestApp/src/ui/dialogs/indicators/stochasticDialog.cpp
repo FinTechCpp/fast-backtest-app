@@ -41,6 +41,10 @@ void StochasticDialog::setupUI() {
     m_oversoldLevelSpinBox = new QSpinBox();
     m_oversoldLevelSpinBox->setRange(0, 100);
     m_formLayout->addRow("Oversold Level:", m_oversoldLevelSpinBox);
+
+    // Checkbox for resetting on new day
+    m_resetOnNewDayCheckBox = new QCheckBox();
+    m_formLayout->addRow("Reset on New Day:", m_resetOnNewDayCheckBox);
     
     // line k color
     m_kColorButton = new QPushButton();
@@ -59,6 +63,7 @@ void StochasticDialog::connectSignals()
     connect(m_heightSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &StochasticDialog::onHeightChanged);
     connect(m_overboughtLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &StochasticDialog::onOverboughtLevelChanged);
     connect(m_oversoldLevelSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &StochasticDialog::onOversoldLevelChanged);
+    connect(m_resetOnNewDayCheckBox, &QCheckBox::checkStateChanged, this, &StochasticDialog::onResetOnNewDayChanged);
     connect(m_kColorButton, &QPushButton::clicked, this, &StochasticDialog::onKColorButtonClicked);
     connect(m_dColorButton, &QPushButton::clicked, this, &StochasticDialog::onDColorButtonClicked);
 }
@@ -71,6 +76,7 @@ void StochasticDialog::updateUIFromInstance()
     m_heightSpinBox->setValue(m_currentIndicator.height);
     m_overboughtLevelSpinBox->setValue(m_currentIndicator.overboughtLevel);
     m_oversoldLevelSpinBox->setValue(m_currentIndicator.oversoldLevel);
+    m_resetOnNewDayCheckBox->setCheckState(m_currentIndicator.resetOnNewDay ? Qt::Checked : Qt::Unchecked);
     updateColorButtonStyle(m_kColorButton, m_currentIndicator.kColor);
     updateColorButtonStyle(m_dColorButton, m_currentIndicator.dColor);
 }
@@ -113,6 +119,11 @@ void StochasticDialog::onOversoldLevelChanged(int level) {
     if (level >= m_overboughtLevelSpinBox->value()) 
         m_overboughtLevelSpinBox->setValue(level + 1);
 }
+
+void StochasticDialog::onResetOnNewDayChanged(int state) {
+    m_currentIndicator.resetOnNewDay = (state == Qt::Checked);
+    applyChanges();
+}   
 
 void StochasticDialog::onKColorButtonClicked() {
     QColor color = openColorDialog(m_currentIndicator.kColor, "Select %K Line Color");

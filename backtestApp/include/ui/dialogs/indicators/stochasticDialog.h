@@ -19,6 +19,7 @@ private slots:
     void onSlowKPeriodChanged(int period);
     void onSlowDPeriodChanged(int period);
     void onHeightChanged(int height);
+    void onResetOnNewDayChanged(int state);
     void onKColorButtonClicked();
     void onDColorButtonClicked();
     void onOverboughtLevelChanged(int level); 
@@ -38,4 +39,5 @@ private:
     QSpinBox* m_oversoldLevelSpinBox;   
     QPushButton* m_kColorButton;
     QPushButton* m_dColorButton;
+    QCheckBox* m_resetOnNewDayCheckBox;
 };

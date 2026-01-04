@@ -281,6 +281,7 @@ namespace indicators {
         int id = -1; // Unique identifier of the indicator
         // Type type_; // Indicator type
         bool visible = true; // Whether the indicator is visible
+        bool resetOnNewDay = true; // Reset indicator calculations at each new trading day
 
         virtual bool isCalculationParamsEqual(const IndicatorBase& other) const = 0;
         
@@ -324,7 +325,8 @@ namespace indicators {
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const RSIInstance* otherRSI = dynamic_cast<const RSIInstance*>(&other);
             if (!otherRSI) return false;
-            return period == otherRSI->period;
+            return period == otherRSI->period &&
+                   resetOnNewDay == otherRSI->resetOnNewDay;
         }
 
         std::unique_ptr<IndicatorBase> clone() const override {
@@ -356,7 +358,8 @@ namespace indicators {
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const EMAInstance* otherEMA = dynamic_cast<const EMAInstance*>(&other);
             if (!otherEMA) return false;
-            return period == otherEMA->period;
+            return period == otherEMA->period &&
+                   resetOnNewDay == otherEMA->resetOnNewDay;
         }
 
         std::unique_ptr<IndicatorBase> clone() const override {
@@ -385,7 +388,9 @@ namespace indicators {
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const SuperTrendInstance* otherST = dynamic_cast<const SuperTrendInstance*>(&other);
             if (!otherST) return false;
-            return period == otherST->period && multiplier == otherST->multiplier;
+            return period == otherST->period && 
+                   multiplier == otherST->multiplier &&
+                   resetOnNewDay == otherST->resetOnNewDay;
         }
 
         std::unique_ptr<IndicatorBase> clone() const override {
@@ -422,7 +427,8 @@ namespace indicators {
             if (!otherStochastic) return false;
             return fastKPeriod == otherStochastic->fastKPeriod &&
                 slowKPeriod == otherStochastic->slowKPeriod &&
-                slowDPeriod == otherStochastic->slowDPeriod;
+                slowDPeriod == otherStochastic->slowDPeriod &&
+                resetOnNewDay == otherStochastic->resetOnNewDay;
         }
 
         std::unique_ptr<IndicatorBase> clone() const override {
@@ -457,7 +463,9 @@ namespace indicators {
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const ATRInstance* otherATR = dynamic_cast<const ATRInstance*>(&other);
             if (!otherATR) return false;
-            return period == otherATR->period && useLogScale == otherATR->useLogScale;
+            return period == otherATR->period && 
+                   useLogScale == otherATR->useLogScale &&
+                   resetOnNewDay == otherATR->resetOnNewDay;
         }
 
         std::unique_ptr<IndicatorBase> clone() const override {
@@ -660,7 +668,8 @@ namespace indicators {
         bool isCalculationParamsEqual(const IndicatorBase& other) const override {
             const CCIInstance* otherCCI = dynamic_cast<const CCIInstance*>(&other);
             if (!otherCCI) return false;
-            return period == otherCCI->period;
+            return period == otherCCI->period &&
+                   resetOnNewDay == otherCCI->resetOnNewDay;
         }
 
         std::unique_ptr<IndicatorBase> clone() const override {
@@ -715,6 +724,8 @@ namespace indicators {
                    source == otherMACD->source &&
                    osc_ma_type == otherMACD->osc_ma_type &&
                    signal_ma_type == otherMACD->signal_ma_type &&
+                   signal_smoothing == otherMACD->signal_smoothing &&
+                   resetOnNewDay == otherMACD->resetOnNewDay &&
                    signal_smoothing == otherMACD->signal_smoothing;
         }
 
@@ -769,7 +780,8 @@ namespace indicators {
             return period == otherBB->period &&
                    stddev_multiplier == otherBB->stddev_multiplier &&
                    source == otherBB->source &&
-                   ma_type == otherBB->ma_type;
+                   ma_type == otherBB->ma_type &&
+                   resetOnNewDay == otherBB->resetOnNewDay;
         }
 
         std::unique_ptr<IndicatorBase> clone() const override {

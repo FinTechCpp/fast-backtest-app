@@ -1,15 +1,75 @@
 #include "components/Utils/IndicatorMathUtils.h"
 #include "common.h"
 #include <algorithm>
+#include <set>
+#include <QDebug>
+#include <chartdir.h>
 
-std::vector<double> IndicatorMathUtils::calculateRSI(const std::vector<double>& closeData, int period)
+// Helper function to detect day boundaries in timestamp data
+std::vector<size_t> IndicatorMathUtils::detectDayBoundaries(const std::vector<double>& timestamps) {
+    std::vector<size_t> boundaries;
+    if (timestamps.empty()) {
+        qDebug() << "detectDayBoundaries: Empty timestamps vector";
+        return boundaries;
+    }
+    
+    boundaries.push_back(0);  // First index is always a boundary
+    
+    int prevYMD = -1;
+    
+    for (size_t i = 0; i < timestamps.size(); ++i) {
+        // Use ChartDirector's getChartYMD to decode timestamp
+        // Returns YYYYMMDD as an integer (e.g., 20251123 for Nov 23, 2025)
+        int currentYMD = Chart::getChartYMD(timestamps[i]);
+        
+        // Debug: log first few timestamps to see conversion
+        if (i < 3 || i == timestamps.size() - 1) {
+            qDebug() << "  [" << i << "] timestamp:" << timestamps[i] << "-> YMD:" << currentYMD;
+        }
+        
+        // Check if we've moved to a new calendar day
+        if (prevYMD != -1 && currentYMD != prevYMD) {
+            boundaries.push_back(i);
+            
+            // Debug: log first few boundaries
+            if (boundaries.size() <= 5) {
+                qDebug() << "detectDayBoundaries: Boundary" << boundaries.size() - 1 
+                         << "at index" << i << "YMD:" << currentYMD;
+            }
+        }
+        
+        prevYMD = currentYMD;
+    }
+    
+    qDebug() << "detectDayBoundaries: Found" << boundaries.size() << "boundaries in" << timestamps.size() << "timestamps";
+    
+    return boundaries;
+}
+
+// Helper function to check if index is at a day boundary
+static bool isAtDayBoundary(size_t index, const std::set<size_t>& boundaries) {
+    return boundaries.find(index) != boundaries.end();
+}
+
+std::vector<double> IndicatorMathUtils::calculateRSI(
+    const std::vector<double>& closeData, 
+    int period,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay)
 {
     size_t dataSize = closeData.size();
     std::vector<double> rsiValues(dataSize, 0.0);
 
-    if (dataSize <= period) {
+    if (dataSize <= static_cast<size_t>(period)) {
         std::fill(rsiValues.begin(), rsiValues.end(), 50.0);  // Default neutral value
         return rsiValues;
+    }
+
+    // Detect day boundaries if reset is enabled
+    std::set<size_t> dayBoundaries;
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        dayBoundaries.insert(boundaries.begin(), boundaries.end());
     }
 
     // Calculate price changes (delta)
@@ -26,37 +86,50 @@ std::vector<double> IndicatorMathUtils::calculateRSI(const std::vector<double>& 
         losses[i] = (deltas[i] < 0) ? -deltas[i] : 0;
     }
 
-    // Default values for the first periods where RSI is undefined
-    for (int i = 0; i < period; ++i) {
-        rsiValues[i] = 50.0;  // Neutral value
-    }
-
-    // Calculate the first average
     double avgGain = 0;
     double avgLoss = 0;
-    for (int i = 0; i < period; ++i) {
-        avgGain += gains[i];
-        avgLoss += losses[i];
-    }
-    avgGain /= period;
-    avgLoss /= period;
+    int warmupCount = 0;  // Track how many periods we've accumulated since last reset
 
-    // Calculate the first RSI
-    double rs = (avgLoss > 0) ? (avgGain / avgLoss) : 100.0;
-    rsiValues[period] = 100.0 - (100.0 / (1.0 + rs));
+    for (size_t i = 0; i < dataSize; ++i) {
+        // Check for day boundary reset
+        if (resetOnNewDay && isAtDayBoundary(i, dayBoundaries)) {
+            avgGain = 0;
+            avgLoss = 0;
+            warmupCount = 0;
+        }
 
-    // Calculate RSI for the remaining points (Wilder's method)
-    for (size_t i = period + 1; i < dataSize; ++i) {
-        // Calculate smoothed averages
-        avgGain = ((period - 1) * avgGain + gains[i - 1]) / period;
-        avgLoss = ((period - 1) * avgLoss + losses[i - 1]) / period;
-        
-        // Avoid division by zero
-        if (avgLoss > 0) {
-            rs = avgGain / avgLoss;
-            rsiValues[i] = 100.0 - (100.0 / (1.0 + rs));
+        if (i == 0) {
+            rsiValues[i] = 0.0;  // No value for first candle
+            continue;
+        }
+
+        warmupCount++;
+
+        if (warmupCount <= period) {
+            // Still in warmup period - accumulate values
+            avgGain += gains[i - 1];
+            avgLoss += losses[i - 1];
+            
+            if (warmupCount == period) {
+                // End of warmup - calculate first average
+                avgGain /= period;
+                avgLoss /= period;
+                double rs = (avgLoss > 0) ? (avgGain / avgLoss) : 100.0;
+                rsiValues[i] = 100.0 - (100.0 / (1.0 + rs));
+            } else {
+                rsiValues[i] = 0.0;  // No value during warmup
+            }
         } else {
-            rsiValues[i] = 100.0;
+            // Normal Wilder's smoothing
+            avgGain = ((period - 1) * avgGain + gains[i - 1]) / period;
+            avgLoss = ((period - 1) * avgLoss + losses[i - 1]) / period;
+            
+            if (avgLoss > 0) {
+                double rs = avgGain / avgLoss;
+                rsiValues[i] = 100.0 - (100.0 / (1.0 + rs));
+            } else {
+                rsiValues[i] = 100.0;
+            }
         }
     }
 
@@ -94,30 +167,55 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>, std::v
     return {ha_open, ha_high, ha_low, ha_close};
 }
 
-std::vector<double> IndicatorMathUtils::calculateEMA(const std::vector<double>& closeData, int period)
+std::vector<double> IndicatorMathUtils::calculateEMA(
+    const std::vector<double>& closeData, 
+    int period,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay)
 {
     size_t dataSize = closeData.size();
     std::vector<double> emaValues(dataSize, 0.0);
 
-    if (dataSize <= period) {
+    if (dataSize <= static_cast<size_t>(period)) {
         std::copy(closeData.begin(), closeData.end(), emaValues.begin());
         return emaValues;
+    }
+    
+    // Detect day boundaries if reset is enabled
+    std::set<size_t> dayBoundaries;
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        dayBoundaries.insert(boundaries.begin(), boundaries.end());
     }
     
     // Calculate the smoothing factor
     double multiplier = 2.0 / (period + 1.0);
     
-    // First EMA value = simple average of the first 'period' points
     double sum = 0.0;
-    for (int i = 0; i < period; ++i) {
-        sum += closeData[i];
-        emaValues[i] = closeData[i];  // Use the price itself for the first points
-    }
-    emaValues[period-1] = sum / period;
+    int warmupCount = 0;
+    double currentEma = 0.0;
     
-    // Calculate EMA for the remaining points
-    for (size_t i = period; i < dataSize; ++i) {
-        emaValues[i] = (closeData[i] - emaValues[i-1]) * multiplier + emaValues[i-1];
+    for (size_t i = 0; i < dataSize; ++i) {
+        // Check for day boundary reset
+        if (resetOnNewDay && isAtDayBoundary(i, dayBoundaries)) {
+            sum = 0.0;
+            warmupCount = 0;
+            currentEma = 0.0;
+        }
+        
+        warmupCount++;
+        
+        if (warmupCount < period) {
+            sum += closeData[i];
+            emaValues[i] = Chart::NoValue;  // No value during warmup
+        } else if (warmupCount == period) {
+            sum += closeData[i];
+            currentEma = sum / period;
+            emaValues[i] = currentEma;
+        } else {
+            currentEma = (closeData[i] - currentEma) * multiplier + currentEma;
+            emaValues[i] = currentEma;
+        }
     }
     return emaValues;
 }
@@ -127,19 +225,28 @@ std::tuple<std::vector<double>, std::vector<int>> IndicatorMathUtils::calculateS
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     int period,
-    double multiplier)
+    double multiplier,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay)
 {
     size_t dataSize = closeData.size();
     std::vector<double> supertrendValues(dataSize);
     std::vector<int> trendDirections(dataSize, 0);
 
-    if (dataSize <= period) {
-        std::fill(supertrendValues.begin(), supertrendValues.end(), 0.0);
+    if (dataSize <= static_cast<size_t>(period)) {
+        std::fill(supertrendValues.begin(), supertrendValues.end(), Chart::NoValue);
         return {supertrendValues, trendDirections};
     }
     
-    // Calculate the ATR
-    std::vector<double> atrValues = calculateATR(highData, lowData, closeData, period, false);
+    // Calculate the ATR (with reset support)
+    std::vector<double> atrValues = calculateATR(highData, lowData, closeData, period, false, timestamps, resetOnNewDay);
+    
+    // Detect day boundaries if reset is enabled
+    std::set<size_t> dayBoundaries;
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        dayBoundaries.insert(boundaries.begin(), boundaries.end());
+    }
     
     // Calculate base bands (HL2 +/- multiplier * ATR)
     std::vector<double> basicUpperBand(dataSize);
@@ -149,11 +256,11 @@ std::tuple<std::vector<double>, std::vector<int>> IndicatorMathUtils::calculateS
     
     for (size_t i = 0; i < dataSize; ++i) {
         if (i < period) {
-            basicUpperBand[i] = 0.0;
-            basicLowerBand[i] = 0.0;
-            finalUpperBand[i] = 0.0;
-            finalLowerBand[i] = 0.0;
-            supertrendValues[i] = 0.0;
+            basicUpperBand[i] = Chart::NoValue;
+            basicLowerBand[i] = Chart::NoValue;
+            finalUpperBand[i] = Chart::NoValue;
+            finalLowerBand[i] = Chart::NoValue;
+            supertrendValues[i] = Chart::NoValue;
             trendDirections[i] = 0;
             continue;
         }
@@ -232,75 +339,135 @@ std::tuple<std::vector<double>, std::vector<double>> IndicatorMathUtils::calcula
     const std::vector<double>& closeData,
     int fastKPeriod,
     int slowKPeriod,
-    int slowDPeriod)
+    int slowDPeriod,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay)
 {
     // Input data validation
     size_t dataSize = closeData.size();
     if (dataSize == 0 || highData.size() != dataSize || lowData.size() != dataSize)
         return {std::vector<double>(), std::vector<double>()};
     
+    // Detect day boundaries if reset is enabled
+    std::set<size_t> dayBoundaries;
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        dayBoundaries.insert(boundaries.begin(), boundaries.end());
+    }
+    
     // Resize output vectors
     std::vector<double> kValues(dataSize);
     std::vector<double> dValues(dataSize);
 
-    // Default values (50 is a neutral value for the oscillator)
-    std::fill(kValues.begin(), kValues.end(), 50.0);
-    std::fill(dValues.begin(), dValues.end(), 50.0);
+    // Default values (0.0 = no value)
+    std::fill(kValues.begin(), kValues.end(), 0.0);
+    std::fill(dValues.begin(), dValues.end(), 0.0);
     
     if (dataSize < static_cast<size_t>(fastKPeriod)) 
         return {kValues, dValues};  // Not enough data to compute Stochastic
     
-    // Step 1: Calculate raw %K (Fast %K) - The formula is:
-    // %K = 100 * (C - L14) / (H14 - L14)
-    // where C is the current close, L14 is the lowest low over 14 periods
-    // and H14 is the highest high over 14 periods
-    std::vector<double> rawK(dataSize);
+    // For reset on new day, we need to track segment boundaries
+    std::vector<size_t> segmentStarts;
+    if (resetOnNewDay) {
+        segmentStarts.assign(dayBoundaries.begin(), dayBoundaries.end());
+        std::sort(segmentStarts.begin(), segmentStarts.end());
+    }
     
-    for (size_t i = fastKPeriod - 1; i < dataSize; ++i) {
-        // Find lowest low and highest high over the fastKPeriod
+    // Step 1: Calculate raw %K (Fast %K)
+    std::vector<double> rawK(dataSize, 0.0);
+    
+    for (size_t i = 0; i < dataSize; ++i) {
+        // Find segment start for this index
+        size_t segmentStart = 0;
+        if (resetOnNewDay) {
+            for (auto it = segmentStarts.rbegin(); it != segmentStarts.rend(); ++it) {
+                if (*it <= i) {
+                    segmentStart = *it;
+                    break;
+                }
+            }
+        }
+        
+        size_t localIndex = i - segmentStart;
+        if (localIndex < static_cast<size_t>(fastKPeriod - 1)) {
+            rawK[i] = 50.0;
+            continue;
+        }
+        
+        // Find lowest low and highest high over the fastKPeriod (within segment)
         double lowestLow = std::numeric_limits<double>::max();
         double highestHigh = std::numeric_limits<double>::lowest();
         
-        for (size_t j = i - fastKPeriod + 1; j <= i; ++j) {
+        size_t lookbackStart = std::max(segmentStart, i - fastKPeriod + 1);
+        for (size_t j = lookbackStart; j <= i; ++j) {
             lowestLow = std::min(lowestLow, lowData[j]);
             highestHigh = std::max(highestHigh, highData[j]);
         }
         
-        // Calculate raw %K
         double range = highestHigh - lowestLow;
         if (range > 0.0) {
             rawK[i] = ((closeData[i] - lowestLow) / range) * 100.0;
         } else {
-            rawK[i] = 50.0; // Neutral value if range is zero
+            rawK[i] = 50.0;
         }
     }
     
-    // Step 2: Smooth raw %K with a moving average over slowKPeriod to get slow %K
+    // Step 2: Smooth raw %K to get slow %K
     for (size_t i = 0; i < dataSize; ++i) {
-        if (i < fastKPeriod - 1 + slowKPeriod - 1) {
-            kValues[i] = 50.0;  // Not enough data, neutral value
+        size_t segmentStart = 0;
+        if (resetOnNewDay) {
+            for (auto it = segmentStarts.rbegin(); it != segmentStarts.rend(); ++it) {
+                if (*it <= i) {
+                    segmentStart = *it;
+                    break;
+                }
+            }
+        }
+        
+        size_t localIndex = i - segmentStart;
+        if (localIndex < static_cast<size_t>(fastKPeriod + slowKPeriod - 2)) {
+            kValues[i] = 50.0;
             continue;
         }
         
         double sum = 0.0;
-        for (size_t j = 0; j < slowKPeriod; ++j) {
-            sum += rawK[i - j];
+        size_t count = 0;
+        for (size_t j = 0; j < static_cast<size_t>(slowKPeriod) && i >= j; ++j) {
+            if (i - j >= segmentStart) {
+                sum += rawK[i - j];
+                count++;
+            }
         }
-        kValues[i] = sum / slowKPeriod;
+        kValues[i] = (count > 0) ? sum / count : 50.0;
     }
     
-    // Step 3: Calculate %D as a moving average of %K values over slowDPeriod
+    // Step 3: Calculate %D as moving average of %K
     for (size_t i = 0; i < dataSize; ++i) {
-        if (i < fastKPeriod - 1 + slowKPeriod - 1 + slowDPeriod - 1) {
-            dValues[i] = 50.0;  // Not enough data, neutral value
+        size_t segmentStart = 0;
+        if (resetOnNewDay) {
+            for (auto it = segmentStarts.rbegin(); it != segmentStarts.rend(); ++it) {
+                if (*it <= i) {
+                    segmentStart = *it;
+                    break;
+                }
+            }
+        }
+        
+        size_t localIndex = i - segmentStart;
+        if (localIndex < static_cast<size_t>(fastKPeriod + slowKPeriod + slowDPeriod - 3)) {
+            dValues[i] = 50.0;
             continue;
         }
         
         double sum = 0.0;
-        for (size_t j = 0; j < slowDPeriod; ++j) {
-            sum += kValues[i - j];
+        size_t count = 0;
+        for (size_t j = 0; j < static_cast<size_t>(slowDPeriod) && i >= j; ++j) {
+            if (i - j >= segmentStart) {
+                sum += kValues[i - j];
+                count++;
+            }
         }
-        dValues[i] = sum / slowDPeriod;
+        dValues[i] = (count > 0) ? sum / count : 50.0;
     }
 
     return {kValues, dValues};
@@ -311,7 +478,9 @@ std::vector<double> IndicatorMathUtils::calculateATR(
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
     int period,
-    bool useLogScale)
+    bool useLogScale,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay)
 {
     size_t dataSize = closeData.size();
     std::vector<double> atrValues(dataSize, 0.0);
@@ -321,36 +490,55 @@ std::vector<double> IndicatorMathUtils::calculateATR(
         return atrValues;
     }
     
-    // Calculate price variations
-    std::vector<double> tr(dataSize - 1);
+    // Detect day boundaries if reset is enabled
+    std::set<size_t> dayBoundaries;
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        dayBoundaries.insert(boundaries.begin(), boundaries.end());
+    }
+    
+    // Calculate True Range values
+    std::vector<double> tr(dataSize);
+    tr[0] = highData[0] - lowData[0];  // First TR is just high-low
     for (size_t i = 1; i < dataSize; ++i) {
         double highLow = highData[i] - lowData[i];
         double highClose = std::abs(highData[i] - closeData[i - 1]);
         double lowClose = std::abs(lowData[i] - closeData[i - 1]);
-        tr[i - 1] = std::max({highLow, highClose, lowClose});
+        tr[i] = std::max({highLow, highClose, lowClose});
     }
     
-    // Calculate the first average
     double sum = 0.0;
-    for (int i = 0; i < period; ++i) {
-        sum += tr[i];
-        double atrValue = sum / period;
-        
-        // Apply logarithm immediately if needed
-        atrValues[i] = useLogScale ? std::log(atrValue + 1) : atrValue;
-    }
+    int warmupCount = 0;
+    double currentATR = 0.0;
     
-    // Calculate ATR for remaining points (Wilder's method)
-    for (size_t i = period; i < dataSize; ++i) {
-        double atrValue = (atrValues[i - 1] * (period - 1) + tr[i - 1]) / period;
+    for (size_t i = 0; i < dataSize; ++i) {
+        // Check for day boundary reset
+        if (resetOnNewDay && isAtDayBoundary(i, dayBoundaries)) {
+            sum = 0.0;
+            warmupCount = 0;
+            currentATR = 0.0;
+        }
         
-        // If using log scale, first convert previous log(atr+1) back to atr before using it
-        if (useLogScale) {
-            double prevATR = std::exp(atrValues[i - 1]) - 1;  // Recover true ATR value
-            atrValue = (prevATR * (period - 1) + tr[i - 1]) / period;
-            atrValues[i] = std::log(atrValue + 1);  // Store in logarithm
+        warmupCount++;
+        
+        if (warmupCount <= period) {
+            sum += tr[i];
+            if (warmupCount == period) {
+                currentATR = sum / period;
+                atrValues[i] = useLogScale ? std::log(currentATR + 1) : currentATR;
+            } else {
+                atrValues[i] = 0.0;
+            }
         } else {
-            atrValues[i] = atrValue;  // Store normally
+            // Wilder's smoothing
+            if (useLogScale) {
+                double prevATR = std::exp(atrValues[i - 1]) - 1;
+                currentATR = (prevATR * (period - 1) + tr[i]) / period;
+                atrValues[i] = std::log(currentATR + 1);
+            } else {
+                currentATR = (currentATR * (period - 1) + tr[i]) / period;
+                atrValues[i] = currentATR;
+            }
         }
     }
 
@@ -361,13 +549,25 @@ std::vector<double> IndicatorMathUtils::calculateCCI(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,
     const std::vector<double>& closeData,
-    int period)
+    int period,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay)
 {
     size_t dataSize = closeData.size();
     std::vector<double> cciValues(dataSize, 0.0);
 
     if (dataSize < static_cast<size_t>(period)) {
         return cciValues;
+    }
+
+    // Detect day boundaries if reset is enabled
+    std::set<size_t> dayBoundaries;
+    std::vector<size_t> segmentStarts;
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        dayBoundaries.insert(boundaries.begin(), boundaries.end());
+        segmentStarts.assign(boundaries.begin(), boundaries.end());
+        std::sort(segmentStarts.begin(), segmentStarts.end());
     }
 
     // Calculate Typical Price (TP) = (High + Low + Close) / 3
@@ -377,23 +577,47 @@ std::vector<double> IndicatorMathUtils::calculateCCI(
     }
 
     // Calculate CCI for each point
-    for (size_t i = period - 1; i < dataSize; ++i) {
-        // Calculate Simple Moving Average of Typical Price
-        double smaTP = 0.0;
-        for (int j = 0; j < period; ++j) {
-            smaTP += typicalPrice[i - j];
+    for (size_t i = 0; i < dataSize; ++i) {
+        // Find segment start for this index
+        size_t segmentStart = 0;
+        if (resetOnNewDay) {
+            for (auto it = segmentStarts.rbegin(); it != segmentStarts.rend(); ++it) {
+                if (*it <= i) {
+                    segmentStart = *it;
+                    break;
+                }
+            }
         }
-        smaTP /= period;
+        
+        size_t localIndex = i - segmentStart;
+        if (localIndex < static_cast<size_t>(period - 1)) {
+            cciValues[i] = 0.0;
+            continue;
+        }
+
+        // Calculate Simple Moving Average of Typical Price (within segment)
+        double smaTP = 0.0;
+        int count = 0;
+        for (int j = 0; j < period && i >= static_cast<size_t>(j); ++j) {
+            if (i - j >= segmentStart) {
+                smaTP += typicalPrice[i - j];
+                count++;
+            }
+        }
+        if (count > 0) smaTP /= count;
 
         // Calculate Mean Deviation
         double meanDeviation = 0.0;
-        for (int j = 0; j < period; ++j) {
-            meanDeviation += std::abs(typicalPrice[i - j] - smaTP);
+        count = 0;
+        for (int j = 0; j < period && i >= static_cast<size_t>(j); ++j) {
+            if (i - j >= segmentStart) {
+                meanDeviation += std::abs(typicalPrice[i - j] - smaTP);
+                count++;
+            }
         }
-        meanDeviation /= period;
+        if (count > 0) meanDeviation /= count;
 
         // Calculate CCI
-        // CCI = (Typical Price - SMA(TP)) / (0.015 * Mean Deviation)
         if (meanDeviation != 0.0) {
             cciValues[i] = (typicalPrice[i] - smaTP) / (0.015 * meanDeviation);
         } else {
@@ -415,7 +639,9 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> Indica
     filter::PriceType source,
     filter::MAType oscMAType,
     filter::MAType signalMAType,
-    int signalSmoothing)
+    int signalSmoothing,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay)
 {
     // Select the source data based on the source parameter
     const std::vector<double>* sourceData = &close;
@@ -439,67 +665,96 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> Indica
     if (n == 0 || fastPeriod <= 0 || slowPeriod <= 0 || signalPeriod <= 0)
         return {macdLine, signalLine, histogram};
 
-    // ensure fast < slow by convention (if caller swapped, still works)
-    // we compute EMA for both periods independently
-    double multFast = 2.0 / (fastPeriod + 1.0);
-    double multSlow = 2.0 / (slowPeriod + 1.0);
+    // Use EMA with reset support
+    std::vector<double> fastEma = calculateEMA(*sourceData, fastPeriod, timestamps, resetOnNewDay);
+    std::vector<double> slowEma = calculateEMA(*sourceData, slowPeriod, timestamps, resetOnNewDay);
+
+    // Detect day boundaries if reset is enabled
+    std::set<size_t> dayBoundaries;
+    std::vector<size_t> segmentStarts;
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        dayBoundaries.insert(boundaries.begin(), boundaries.end());
+        segmentStarts.assign(boundaries.begin(), boundaries.end());
+        std::sort(segmentStarts.begin(), segmentStarts.end());
+    }
+
     double multSignal = 2.0 / (signalPeriod + 1.0);
 
-    std::vector<double> fastEma(n, 0.0);
-    std::vector<double> slowEma(n, 0.0);
-
-    // seed fast EMA with SMA when enough points
-    if (n >= static_cast<size_t>(fastPeriod)) {
-        double sum = 0.0;
-        for (int i = 0; i < fastPeriod; ++i) sum += (*sourceData)[i];
-        fastEma[fastPeriod - 1] = sum / fastPeriod;
-        for (size_t i = fastPeriod; i < n; ++i) fastEma[i] = ((*sourceData)[i] - fastEma[i - 1]) * multFast + fastEma[i - 1];
-    }
-
-    // seed slow EMA with SMA when enough points
-    if (n >= static_cast<size_t>(slowPeriod)) {
-        double sum = 0.0;
-        for (int i = 0; i < slowPeriod; ++i) sum += (*sourceData)[i];
-        slowEma[slowPeriod - 1] = sum / slowPeriod;
-        for (size_t i = slowPeriod; i < n; ++i) slowEma[i] = ((*sourceData)[i] - slowEma[i - 1]) * multSlow + slowEma[i - 1];
-    }
-
     // Build macd line where both EMAs are available
-    std::vector<double> macdHistory; macdHistory.reserve(n);
-    std::vector<size_t> macdIndexes; macdIndexes.reserve(n);
     for (size_t i = 0; i < n; ++i) {
-        bool fastReady = (i >= static_cast<size_t>(fastPeriod - 1));
-        bool slowReady = (i >= static_cast<size_t>(slowPeriod - 1));
+        size_t segmentStart = 0;
+        if (resetOnNewDay) {
+            for (auto it = segmentStarts.rbegin(); it != segmentStarts.rend(); ++it) {
+                if (*it <= i) {
+                    segmentStart = *it;
+                    break;
+                }
+            }
+        }
+        
+        size_t localIndex = i - segmentStart;
+        bool fastReady = (localIndex >= static_cast<size_t>(fastPeriod - 1));
+        bool slowReady = (localIndex >= static_cast<size_t>(slowPeriod - 1));
+        
         if (fastReady && slowReady) {
             macdLine[i] = fastEma[i] - slowEma[i];
-            macdHistory.push_back(macdLine[i]);
-            macdIndexes.push_back(i);
         } else {
             macdLine[i] = 0.0;
         }
     }
 
-    // Compute signal line as EMA over MACD history
-    if (!macdHistory.empty() && macdHistory.size() >= static_cast<size_t>(signalPeriod)) {
-        // initial SMA over first signalPeriod MACD values
-        double sum = 0.0;
-        for (int k = 0; k < signalPeriod; ++k) sum += macdHistory[k];
-        double sig = sum / signalPeriod;
-        // assign signal value to corresponding global index
-        size_t idx = macdIndexes[signalPeriod - 1];
-        signalLine[idx] = sig;
-        histogram[idx] = macdLine[idx] - sig;
-
-        // continue EMA on remaining macdHistory entries
-        for (size_t h = signalPeriod; h < macdHistory.size(); ++h) {
-            sig = (macdHistory[h] - sig) * multSignal + sig;
-            size_t globalIdx = macdIndexes[h];
-            signalLine[globalIdx] = sig;
-            histogram[globalIdx] = macdLine[globalIdx] - sig;
+    // Compute signal line as EMA over MACD
+    double sig = 0.0;
+    int signalWarmup = 0;
+    double signalSum = 0.0;
+    
+    for (size_t i = 0; i < n; ++i) {
+        // Check for day boundary reset
+        if (resetOnNewDay && isAtDayBoundary(i, dayBoundaries)) {
+            sig = 0.0;
+            signalWarmup = 0;
+            signalSum = 0.0;
+        }
+        
+        size_t segmentStart = 0;
+        if (resetOnNewDay) {
+            for (auto it = segmentStarts.rbegin(); it != segmentStarts.rend(); ++it) {
+                if (*it <= i) {
+                    segmentStart = *it;
+                    break;
+                }
+            }
+        }
+        
+        size_t localIndex = i - segmentStart;
+        bool macdReady = (localIndex >= static_cast<size_t>(slowPeriod - 1));
+        
+        if (!macdReady) {
+            signalLine[i] = 0.0;
+            histogram[i] = 0.0;
+            continue;
+        }
+        
+        signalWarmup++;
+        
+        if (signalWarmup <= signalPeriod) {
+            signalSum += macdLine[i];
+            if (signalWarmup == signalPeriod) {
+                sig = signalSum / signalPeriod;
+                signalLine[i] = sig;
+                histogram[i] = macdLine[i] - sig;
+            } else {
+                signalLine[i] = 0.0;
+                histogram[i] = 0.0;
+            }
+        } else {
+            sig = (macdLine[i] - sig) * multSignal + sig;
+            signalLine[i] = sig;
+            histogram[i] = macdLine[i] - sig;
         }
     }
 
-    // For indices before signal initialized, signalLine & histogram remain 0.0 (consistent with other helpers)
     return {macdLine, signalLine, histogram};
 }
 
@@ -511,7 +766,9 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> Indica
     int period,
     double stdDevMultiplier,
     filter::PriceType source,
-    filter::MAType oscMAType
+    filter::MAType oscMAType,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay
 ) {
     // Select source series
     const std::vector<double>* src = &close;
@@ -528,35 +785,85 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<double>> Indica
     if (n == 0 || period <= 0) return {middle, upper, lower};
     if (n < static_cast<size_t>(period)) return {middle, upper, lower};
 
-    // Compute middle band (SMA or EMA)
+    // Detect day boundaries if reset is enabled
+    std::set<size_t> dayBoundaries;
+    std::vector<size_t> segmentStarts;
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        dayBoundaries.insert(boundaries.begin(), boundaries.end());
+        segmentStarts.assign(boundaries.begin(), boundaries.end());
+        std::sort(segmentStarts.begin(), segmentStarts.end());
+    }
+
+    // Compute middle band (SMA or EMA with reset support)
     if (oscMAType == filter::MAType::EMA) {
-        middle = calculateEMA(*src, period);
+        middle = calculateEMA(*src, period, timestamps, resetOnNewDay);
     } else {
-        // Simple moving average (SMA)
-        double sum = 0.0;
-        for (int i = 0; i < period; ++i) sum += (*src)[i];
-        middle[period - 1] = sum / period;
-        for (size_t i = period; i < n; ++i) {
-            sum += (*src)[i];
-            sum -= (*src)[i - period];
-            middle[i] = sum / period;
+        // Simple moving average (SMA) with reset support
+        for (size_t i = 0; i < n; ++i) {
+            size_t segmentStart = 0;
+            if (resetOnNewDay) {
+                for (auto it = segmentStarts.rbegin(); it != segmentStarts.rend(); ++it) {
+                    if (*it <= i) {
+                        segmentStart = *it;
+                        break;
+                    }
+                }
+            }
+            
+            size_t localIndex = i - segmentStart;
+            if (localIndex < static_cast<size_t>(period - 1)) {
+                middle[i] = Chart::NoValue;
+                continue;
+            }
+            
+            double sum = 0.0;
+            size_t count = 0;
+            for (int j = 0; j < period && i >= static_cast<size_t>(j); ++j) {
+                if (i - j >= segmentStart) {
+                    sum += (*src)[i - j];
+                    count++;
+                }
+            }
+            middle[i] = (count > 0) ? sum / count : 0.0;
         }
-        // lower indices remain 0.0
     }
 
     // Compute rolling standard deviation (population stddev over window)
-    for (size_t i = static_cast<size_t>(period - 1); i < n; ++i) {
+    for (size_t i = 0; i < n; ++i) {
+        size_t segmentStart = 0;
+        if (resetOnNewDay) {
+            for (auto it = segmentStarts.rbegin(); it != segmentStarts.rend(); ++it) {
+                if (*it <= i) {
+                    segmentStart = *it;
+                    break;
+                }
+            }
+        }
+        
+        size_t localIndex = i - segmentStart;
+        if (localIndex < static_cast<size_t>(period - 1)) {
+            upper[i] = Chart::NoValue;
+            lower[i] = Chart::NoValue;
+            continue;
+        }
+
         // compute mean over the window for stddev calculation
         double mean = 0.0;
-        for (size_t j = i - period + 1; j <= i; ++j) mean += (*src)[j];
-        mean /= period;
+        size_t count = 0;
+        size_t windowStart = std::max(segmentStart, i - period + 1);
+        for (size_t j = windowStart; j <= i; ++j) {
+            mean += (*src)[j];
+            count++;
+        }
+        if (count > 0) mean /= count;
 
         double sumsq = 0.0;
-        for (size_t j = i - period + 1; j <= i; ++j) {
+        for (size_t j = windowStart; j <= i; ++j) {
             double d = (*src)[j] - mean;
             sumsq += d * d;
         }
-        double sd = std::sqrt(sumsq / period);
+        double sd = (count > 0) ? std::sqrt(sumsq / count) : 0.0;
 
         upper[i] = middle[i] + stdDevMultiplier * sd;
         lower[i] = middle[i] - stdDevMultiplier * sd;

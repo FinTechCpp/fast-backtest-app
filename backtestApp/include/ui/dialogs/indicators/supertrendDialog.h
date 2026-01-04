@@ -18,6 +18,7 @@ public:
 private slots:
     void onPeriodChanged(int period);
     void onMultiplierChanged(double multiplier);
+    void onResetOnNewDayChanged(int state);
     void onUpColorButtonClicked();
     void onDownColorButtonClicked();
     
@@ -33,4 +34,5 @@ private:
     QDoubleSpinBox* m_multiplierSpinBox;
     QPushButton* m_upColorButton;
     QPushButton* m_downColorButton;
+    QCheckBox* m_resetOnNewDayCheckBox;
 };

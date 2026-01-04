@@ -35,6 +35,7 @@ private slots:
     void onSourceChanged(int index);
     void onOscMATypeChanged(int index);
     void onSignalMATypeChanged(int index);
+    void onResetOnNewDayChanged(int state);
     void onMacdColorButtonClicked();
     void onSignalColorButtonClicked();
     void onHistColorButtonClicked();
@@ -57,4 +58,5 @@ private:
     QPushButton* m_macdColorButton;
     QPushButton* m_signalColorButton;
     QPushButton* m_histColorButton;
+    QCheckBox* m_resetOnNewDayCheckBox;
 };

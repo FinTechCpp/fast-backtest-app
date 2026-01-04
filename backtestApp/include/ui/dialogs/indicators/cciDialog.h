@@ -23,6 +23,7 @@ public:
 private slots:
     void onPeriodChanged(int period);
     void onHeightChanged(int height);
+    void onResetOnNewDayChanged(int state);
     void onUpperLevelChanged(int level);
     void onLowerLevelChanged(int level);
     void onColorButtonClicked();
@@ -42,4 +43,5 @@ private:
     QPushButton* m_colorButton;
     QPushButton* m_upperColorButton;
     QPushButton* m_lowerColorButton;
+    QCheckBox* m_resetOnNewDayCheckBox;
 };

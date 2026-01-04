@@ -300,7 +300,8 @@ namespace cereal {
            cereal::make_nvp("executeStopOnOpen", config.executeStopOnOpen),
            cereal::make_nvp("spreadEntryRatio", config.spreadEntryRatio),
            cereal::make_nvp("minPositionStep", config.minPositionStep),
-           cereal::make_nvp("finalizeTrades", config.finalizeTrades));
+           cereal::make_nvp("finalizeTrades", config.finalizeTrades),
+           cereal::make_nvp("resetIndicatorsOnNewDay", config.resetIndicatorsOnNewDay));
     }
 
     template<class Archive>

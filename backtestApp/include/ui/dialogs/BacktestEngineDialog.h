@@ -73,6 +73,9 @@ public:
 
     double minPositionStep() const;
     void setMinPositionStep(double value);
+
+    bool resetIndicatorsOnNewDay() const;
+    void setResetIndicatorsOnNewDay(bool value);
     
 private:
     QRadioButton* m_stopOnOpenRadio;
@@ -98,6 +101,7 @@ private:
     QComboBox* m_positionModeCombo;
     QDoubleSpinBox* m_minPositionStepSpin;
     QCheckBox* m_finalizeTradesCheck;
+    QCheckBox* m_resetIndicatorsOnNewDayCheck;
     
 private slots:
     void onStopExecutionChanged();

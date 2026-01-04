@@ -61,7 +61,7 @@
             "command": "cmake",
             "args": [
                 "--build",
-                "${workspaceFolder}/build",
+                "${workspaceFolder}/build-debug",
                 "--config",
                 "Debug",
                 "--parallel"
@@ -86,7 +86,7 @@
             "command": "cmake",
             "args": [
                 "--build",
-                "${workspaceFolder}/build",
+                "${workspaceFolder}/build-release",
                 "--config",
                 "Release",
                 "--parallel"
@@ -107,13 +107,17 @@
             "type": "shell",
             "command": "cmake",
             "args": [
-                "..",
+                "-S",
+                "${workspaceFolder}",
+                "-B",
+                "${workspaceFolder}/build-debug",
                 "-A",
                 "x64",
+                "-DCMAKE_BUILD_TYPE=Debug",
                 "-DBUILD_WITH_DEBUG=ON"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "group": "build",
             "presentation": {
@@ -127,13 +131,17 @@
             "type": "shell",
             "command": "cmake",
             "args": [
-                "..",
+                "-S",
+                "${workspaceFolder}",
+                "-B",
+                "${workspaceFolder}/build-release",
                 "-A",
                 "x64",
+                "-DCMAKE_BUILD_TYPE=Release",
                 "-DBUILD_WITH_DEBUG=OFF"
             ],
             "options": {
-                "cwd": "${workspaceFolder}/build"
+                "cwd": "${workspaceFolder}"
             },
             "group": "build",
             "presentation": {

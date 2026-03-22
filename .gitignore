@@ -12,6 +12,7 @@ docs/
 *.log
 perf.data
 perf.data.old
+*.pyc
 
 # OHLC files
 *.csv

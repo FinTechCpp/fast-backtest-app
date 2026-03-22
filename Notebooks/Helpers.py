@@ -161,8 +161,34 @@ def merge_ohlc_dataframes(existing_df, new_df, frequency='10s'):
     
     # 1. Ensure date columns are datetime with timezone
     for df in [existing_df, new_df]:
-        if not pd.api.types.is_datetime64_ns_dtype(df['date']):
-            df['date'] = pd.to_datetime(df['date'])
+        if 'date' not in df.columns:
+            if df.index.name == 'date':
+                df.reset_index(inplace=True)
+            elif df.index.name == 'timestamp':
+                df.reset_index(inplace=True)
+                df.rename(columns={'timestamp': 'date'}, inplace=True)
+            else:
+                df.reset_index(inplace=True)
+                df.rename(columns={df.columns[0]: 'date', 'index': 'date'}, inplace=True)
+                
+        # Handle cases where multiple 'date' columns might have been created by accident
+        if isinstance(df.columns.get_loc('date'), slice) or isinstance(df.columns.get_loc('date'), np.ndarray):
+             # Just keep the first one if there are multiple date columns
+             df.columns = ['date' if c == 'date' and i == 0 else f'date_{i}' if c == 'date' else c for i, c in enumerate(df.columns)]
+        
+        if pd.api.types.is_numeric_dtype(df['date']):
+            # Convert Unix timestamps in seconds to datetime
+            df['date'] = pd.to_datetime(df['date'], unit='s', utc=True)
+        elif not pd.api.types.is_datetime64_any_dtype(df['date']):
+            df['date'] = pd.to_datetime(df['date'], utc=True)
+            
+        if df['date'].dt.tz is None:
+            df['date'] = df['date'].dt.tz_localize('UTC')
+        else:
+            try:
+                df['date'] = df['date'].dt.tz_convert('UTC')
+            except Exception:
+                pass
     
     # 2. Combine the dataframes
     combined_df = pd.concat([existing_df, new_df])

@@ -37,6 +37,8 @@ private:
     void openTradingHoursDialog();
     void openRiskManagementDialog();
     void openMLConfigDialog();
+    void openLuaScriptDialog();
+    void refreshLuaScriptButtonLabel();
 
 private:
     StrategyConfig m_config;
@@ -55,6 +57,7 @@ private:
     QPushButton* m_tradingHoursButton;
     QPushButton* m_riskManagementButton;
     QPushButton* m_mlConfigButton;
+    QPushButton* m_luaScriptButton = nullptr;
     
     // Advanced options
     QCheckBox* m_enableLoggingCheck;

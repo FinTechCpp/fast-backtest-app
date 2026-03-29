@@ -7,6 +7,8 @@
 #include <cereal/types/array.hpp>
 #include <cereal/types/map.hpp>
 
+#include <exception>
+
 #include "ui/panels/generalParamsPanel.h"
 #include "common.h"
 
@@ -240,8 +242,54 @@ namespace cereal {
     }
     
     // Serialization for StrategyConfig
+    // We separate save and load to handle potential retrocompatibility issues with former config file versions
     template<class Archive>
-    void serialize(Archive & ar, StrategyConfig & config) {
+    void save(Archive & ar, const StrategyConfig & config) {
+        ar(cereal::make_nvp("name", config.name),
+           cereal::make_nvp("enable_logging", config.enable_logging),
+           cereal::make_nvp("logLevel", config.logLevel),
+           cereal::make_nvp("buyFilters", config.buyFilters),
+           cereal::make_nvp("sellFilters", config.sellFilters),
+           cereal::make_nvp("resaleFilters", config.resaleFilters),
+           cereal::make_nvp("rebuyFilters", config.rebuyFilters),
+           cereal::make_nvp("sl_method", config.sl_method),
+           cereal::make_nvp("tp_method", config.tp_method),
+           cereal::make_nvp("trading_from", config.trading_from),
+           cereal::make_nvp("trading_to", config.trading_to),
+           cereal::make_nvp("trading_days_array", config.trading_days_array),
+           cereal::make_nvp("stop_loss_distance", config.stop_loss_distance),
+           cereal::make_nvp("take_profit_distance", config.take_profit_distance),
+           cereal::make_nvp("atr_period", config.atr_period),
+           cereal::make_nvp("stop_loss_atr_multiplier", config.stop_loss_atr_multiplier),
+           cereal::make_nvp("take_profit_atr_multiplier", config.take_profit_atr_multiplier),
+           cereal::make_nvp("min_stop_loss_distance", config.min_stop_loss_distance),
+           cereal::make_nvp("min_take_profit_distance", config.min_take_profit_distance),
+           cereal::make_nvp("sl_minmax_periods", config.sl_minmax_periods),
+           cereal::make_nvp("sl_minmax_delta_coef_atr", config.sl_minmax_delta_coef_atr),
+           cereal::make_nvp("tp_sl_ratio", config.tp_sl_ratio),
+           cereal::make_nvp("rl_model_path", config.rl_model_path),
+           cereal::make_nvp("rl_lookback_periods", config.rl_lookback_periods),
+           cereal::make_nvp("rl_tp_max_multiplier", config.rl_tp_max_multiplier),
+           cereal::make_nvp("rl_tp_min_multiplier", config.rl_tp_min_multiplier),
+           cereal::make_nvp("use_risk_based_sizing", config.use_risk_based_sizing),
+           cereal::make_nvp("risk_percentage", config.risk_percentage),
+           cereal::make_nvp("leverage_limit", config.leverage_limit),
+           cereal::make_nvp("cash_allocation_percentage", config.cash_allocation_percentage),
+           cereal::make_nvp("use_break_even", config.use_break_even),
+           cereal::make_nvp("break_even_threshold", config.break_even_threshold),
+           cereal::make_nvp("break_even_offset_per_mille", config.break_even_offset_per_mille),
+           cereal::make_nvp("use_daily_max_loss", config.use_daily_max_loss),
+           cereal::make_nvp("daily_max_loss_percentage", config.daily_max_loss_percentage),
+           cereal::make_nvp("use_daily_max_profit", config.use_daily_max_profit),
+           cereal::make_nvp("daily_max_profit_percentage", config.daily_max_profit_percentage),
+           cereal::make_nvp("use_daily_max_drawdown", config.use_daily_max_drawdown),
+           cereal::make_nvp("daily_max_drawdown_percentage", config.daily_max_drawdown_percentage),
+           cereal::make_nvp("use_lua_script", config.use_lua_script),
+           cereal::make_nvp("lua_script", config.lua_script));
+    }
+
+    template<class Archive>
+    void load(Archive & ar, StrategyConfig & config) {
         ar(cereal::make_nvp("name", config.name),
            cereal::make_nvp("enable_logging", config.enable_logging),
            cereal::make_nvp("logLevel", config.logLevel),
@@ -281,6 +329,21 @@ namespace cereal {
            cereal::make_nvp("daily_max_profit_percentage", config.daily_max_profit_percentage),
            cereal::make_nvp("use_daily_max_drawdown", config.use_daily_max_drawdown),
            cereal::make_nvp("daily_max_drawdown_percentage", config.daily_max_drawdown_percentage));
+
+        config.use_lua_script = false;
+        config.lua_script.clear();
+
+        try {
+            ar(cereal::make_nvp("use_lua_script", config.use_lua_script));
+        } catch (const std::exception&) {
+            config.use_lua_script = false;
+        }
+
+        try {
+            ar(cereal::make_nvp("lua_script", config.lua_script));
+        } catch (const std::exception&) {
+            config.lua_script.clear();
+        }
     }
     
     // Serialization for GeneralParamsConfig

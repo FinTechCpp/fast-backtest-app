@@ -3,6 +3,7 @@
 #include "ui/dialogs/TradingHoursDialog.h"
 #include "ui/dialogs/RiskManagementDialog.h"
 #include "ui/dialogs/MLConfigDialog.h"
+#include "ui/dialogs/LuaScriptDialog.h"
 #include "ui/panels/FiltersWidget.h"
 #include <QScrollArea>
 #include <QDebug>
@@ -39,6 +40,8 @@ void StrategyConfigDialog::setConfig(const StrategyConfig& config) {
 #ifndef DISABLE_LOGGING
     m_enableLoggingCheck->setChecked(m_config.enable_logging);
 #endif
+
+    refreshLuaScriptButtonLabel();
 }
 
 void StrategyConfigDialog::setupUI() {
@@ -205,6 +208,27 @@ void StrategyConfigDialog::setupConfigButtonsSection(QVBoxLayout* mainLayout) {
     );
     connect(m_mlConfigButton, &QPushButton::clicked, this, &StrategyConfigDialog::openMLConfigDialog);
     configLayout->addWidget(m_mlConfigButton);
+
+    // Optional Lua script editor button
+    m_luaScriptButton = new QPushButton(this);
+    m_luaScriptButton->setMinimumHeight(50);
+    m_luaScriptButton->setStyleSheet(
+        "QPushButton {"
+        "   background-color: #546E7A;"
+        "   color: white;"
+        "   font-size: 14px;"
+        "   font-weight: bold;"
+        "   border-radius: 5px;"
+        "   padding: 10px;"
+        "}"
+        "QPushButton:hover {"
+        "   background-color: #455A64;"
+        "}"
+    );
+    connect(m_luaScriptButton, &QPushButton::clicked, this, &StrategyConfigDialog::openLuaScriptDialog);
+    configLayout->addWidget(m_luaScriptButton);
+
+    refreshLuaScriptButtonLabel();
     
     configGroup->setLayout(configLayout);
     mainLayout->addWidget(configGroup);
@@ -243,6 +267,31 @@ void StrategyConfigDialog::openMLConfigDialog() {
     
     if (dialog.exec() == QDialog::Accepted) {
         dialog.updateConfig(m_config);
+    }
+}
+
+void StrategyConfigDialog::openLuaScriptDialog() {
+    LuaScriptDialog dialog(this);
+    dialog.setScriptEnabled(m_config.use_lua_script);
+    dialog.setScriptCode(m_config.lua_script);
+
+    if (dialog.exec() == QDialog::Accepted) {
+        m_config.use_lua_script = dialog.isScriptEnabled();
+        m_config.lua_script = dialog.scriptCode();
+        refreshLuaScriptButtonLabel();
+    }
+}
+
+void StrategyConfigDialog::refreshLuaScriptButtonLabel() {
+    if (!m_luaScriptButton) {
+        return;
+    }
+
+    const bool enabled = m_config.use_lua_script && !m_config.lua_script.empty();
+    if (enabled) {
+        m_luaScriptButton->setText("Lua Script (Enabled)");
+    } else {
+        m_luaScriptButton->setText("Lua Script (Optional)");
     }
 }
 

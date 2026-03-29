@@ -158,6 +158,68 @@ endif()
 # Check if Qt6 is found (Mandatory)
 find_package(Qt6 COMPONENTS Core Widgets Charts Network REQUIRED)
 
+# Embedded Lua runtime (no external installation required on end-user machines)
+include(FetchContent)
+
+FetchContent_Declare(
+    lua_source
+    GIT_REPOSITORY https://github.com/lua/lua.git
+    GIT_TAG v5.4.7
+)
+
+FetchContent_GetProperties(lua_source)
+if(NOT lua_source_POPULATED)
+    FetchContent_Populate(lua_source)
+endif()
+
+if(NOT TARGET lua_vendor)
+    add_library(lua_vendor STATIC
+        ${lua_source_SOURCE_DIR}/lapi.c
+        ${lua_source_SOURCE_DIR}/lauxlib.c
+        ${lua_source_SOURCE_DIR}/lbaselib.c
+        ${lua_source_SOURCE_DIR}/lcode.c
+        ${lua_source_SOURCE_DIR}/lcorolib.c
+        ${lua_source_SOURCE_DIR}/lctype.c
+        ${lua_source_SOURCE_DIR}/ldblib.c
+        ${lua_source_SOURCE_DIR}/ldebug.c
+        ${lua_source_SOURCE_DIR}/ldo.c
+        ${lua_source_SOURCE_DIR}/ldump.c
+        ${lua_source_SOURCE_DIR}/lfunc.c
+        ${lua_source_SOURCE_DIR}/lgc.c
+        ${lua_source_SOURCE_DIR}/linit.c
+        ${lua_source_SOURCE_DIR}/liolib.c
+        ${lua_source_SOURCE_DIR}/llex.c
+        ${lua_source_SOURCE_DIR}/lmathlib.c
+        ${lua_source_SOURCE_DIR}/lmem.c
+        ${lua_source_SOURCE_DIR}/loadlib.c
+        ${lua_source_SOURCE_DIR}/lobject.c
+        ${lua_source_SOURCE_DIR}/lopcodes.c
+        ${lua_source_SOURCE_DIR}/loslib.c
+        ${lua_source_SOURCE_DIR}/lparser.c
+        ${lua_source_SOURCE_DIR}/lstate.c
+        ${lua_source_SOURCE_DIR}/lstring.c
+        ${lua_source_SOURCE_DIR}/lstrlib.c
+        ${lua_source_SOURCE_DIR}/ltable.c
+        ${lua_source_SOURCE_DIR}/ltablib.c
+        ${lua_source_SOURCE_DIR}/ltm.c
+        ${lua_source_SOURCE_DIR}/lundump.c
+        ${lua_source_SOURCE_DIR}/lutf8lib.c
+        ${lua_source_SOURCE_DIR}/lvm.c
+        ${lua_source_SOURCE_DIR}/lzio.c
+    )
+
+    target_include_directories(lua_vendor PUBLIC ${lua_source_SOURCE_DIR})
+
+    if(WIN32)
+        target_compile_definitions(lua_vendor PRIVATE LUA_USE_WINDOWS _CRT_SECURE_NO_WARNINGS)
+    elseif(APPLE)
+        target_compile_definitions(lua_vendor PRIVATE LUA_USE_MACOSX)
+    elseif(UNIX)
+        target_compile_definitions(lua_vendor PRIVATE LUA_USE_LINUX)
+        target_link_libraries(lua_vendor PUBLIC ${CMAKE_DL_LIBS} m)
+    endif()
+endif()
+
 # git submodules 
 add_subdirectory(ThirdParty/spdlog)
 # include_directories(SYSTEM ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include)

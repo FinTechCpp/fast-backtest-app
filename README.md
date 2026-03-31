@@ -52,6 +52,12 @@ You can download the latest release from this website: https://fintechcpp.github
 1. Download the appropriate archive for your operating system (Linux, Windows, or macOS).
 2. Extract the archive and run the executable.
 
+### Lua scripting mini guide
+
+If you enable optional Lua scripting for a strategy, see the mini user documentation:
+
+- [Lua script mini documentation](LUA_SCRIPT_DOC.md)
+
 
 # Installation for developers
 

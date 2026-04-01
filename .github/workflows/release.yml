@@ -109,8 +109,7 @@ jobs:
         $configPath = Join-Path $env:RUNNER_TEMP "aqt-settings.ini"
 
         $configContent = @"
-        [DEFAULTS]
-
+        [DEFAULT]
         [aqt]
         concurrency : 2
         baseurl : https://mirrors.dotsrc.org/qtproject
@@ -138,7 +137,10 @@ jobs:
             https://ftp.fau.de/qtproject/
         "@
 
-        $configContent | Out-File -FilePath $configPath -Encoding utf8
+        # Windows PowerShell writes UTF-8 with BOM with Out-File -Encoding utf8.
+        # aqt/configparser fails on BOM, so write UTF-8 without BOM via .NET.
+        $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+        [System.IO.File]::WriteAllText($configPath, $configContent, $utf8NoBom)
 
         echo "AQT_CONFIG=$configPath" >> $env:GITHUB_ENV
         echo "✅ aqtinstall config written to: $configPath"

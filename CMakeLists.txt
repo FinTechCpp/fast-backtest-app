@@ -1,4 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
+
+# Enable MSVC runtime library selection via CMAKE_MSVC_RUNTIME_LIBRARY
+# when supported by the running CMake version.
+if(POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW)
+endif()
+
 project(fast-backtest-app VERSION 1.0)
 
 # Global configuration
@@ -8,6 +15,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Build options
 option(BUILD_WITH_DEBUG "Compiling with debug symbols" OFF)
+
+# Qt binaries on Windows are built against the dynamic MSVC runtime.
+# Force a consistent runtime (/MD in Release, /MDd in Debug) to avoid
+# linker conflicts between third-party static libs and the app.
+if(MSVC)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    message(STATUS "MSVC runtime library: ${CMAKE_MSVC_RUNTIME_LIBRARY}")
+endif()
 
 if(BUILD_WITH_DEBUG)
     set(CMAKE_BUILD_TYPE Debug)
@@ -211,7 +226,7 @@ if(NOT TARGET lua_vendor)
     target_include_directories(lua_vendor PUBLIC ${lua_source_SOURCE_DIR})
 
     if(WIN32)
-        target_compile_definitions(lua_vendor PRIVATE LUA_USE_WINDOWS _CRT_SECURE_NO_WARNINGS)
+        target_compile_definitions(lua_vendor PRIVATE _CRT_SECURE_NO_WARNINGS)
     elseif(APPLE)
         target_compile_definitions(lua_vendor PRIVATE LUA_USE_MACOSX)
     elseif(UNIX)

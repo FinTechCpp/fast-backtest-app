@@ -104,6 +104,45 @@ jobs:
     - name: Set up MSVC
       uses: microsoft/setup-msbuild@v2
 
+    - name: Configure aqtinstall network settings
+      run: |
+        $configPath = Join-Path $env:RUNNER_TEMP "aqt-settings.ini"
+
+        $configContent = @"
+        [DEFAULTS]
+
+        [aqt]
+        concurrency : 2
+        baseurl : https://mirrors.dotsrc.org/qtproject
+        print_stacktrace_on_error : False
+
+        [requests]
+        connection_timeout : 30
+        response_timeout : 600
+        max_retries_on_connection_error : 20
+        retry_backoff : 0.5
+        max_retries_on_checksum_error : 10
+        max_retries_to_retrieve_hash : 10
+        hash_algorithm : sha256
+        INSECURE_NOT_FOR_PRODUCTION_ignore_hash : False
+
+        [mirrors]
+        trusted_mirrors :
+            https://download.qt.io
+        blacklist :
+            http://mirrors.20i.com
+            https://mirrors.20i.com
+        fallbacks :
+            https://download.qt.io
+            https://mirrors.dotsrc.org/qtproject
+            https://ftp.fau.de/qtproject/
+        "@
+
+        $configContent | Out-File -FilePath $configPath -Encoding utf8
+
+        echo "AQT_CONFIG=$configPath" >> $env:GITHUB_ENV
+        echo "✅ aqtinstall config written to: $configPath"
+
     - name: Install Qt
       uses: jurplel/install-qt-action@v4
       with:

@@ -133,8 +133,8 @@ public:
                 be::OrderType::MARKET, 
                 std::nullopt, 
                 std::nullopt, 
-                be::SLValue::points(signal.stop_loss), 
-                be::TPValue::points(signal.take_profit), 
+                signal.stop_loss > 0.0 ? be::SLValue::points(signal.stop_loss) : be::SLValue::none(), 
+                signal.take_profit > 0.0 ? be::TPValue::points(signal.take_profit) : be::TPValue::none(), 
                 nullptr,
                 strategy->getName()
             );
@@ -146,8 +146,8 @@ public:
                 be::OrderType::MARKET, 
                 std::nullopt, 
                 std::nullopt, 
-                be::SLValue::points(signal.stop_loss), 
-                be::TPValue::points(signal.take_profit), 
+                signal.stop_loss > 0.0 ? be::SLValue::points(signal.stop_loss) : be::SLValue::none(), 
+                signal.take_profit > 0.0 ? be::TPValue::points(signal.take_profit) : be::TPValue::none(), 
                 nullptr,
                 strategy->getName()
             );

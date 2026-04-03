@@ -28,8 +28,8 @@ void StopLossTakeProfitDialog::setupUI() {
     
     // Calculation method for Stop Loss
     m_slMethodCombo = new QComboBox(this);
-    m_slMethodCombo->addItems({"Fixed", "ATR", "Min/Max"});
-    m_slMethodCombo->setCurrentIndex(0);
+    m_slMethodCombo->addItems({"None", "Fixed", "ATR", "Min/Max"});
+    m_slMethodCombo->setCurrentIndex(1);
     slLayout->addRow(new QLabel("Method:", this), m_slMethodCombo);
     
     // Stop Loss Distance (fixed)
@@ -86,8 +86,8 @@ void StopLossTakeProfitDialog::setupUI() {
     
     // Calculation method for Take Profit
     m_tpMethodCombo = new QComboBox(this);
-    m_tpMethodCombo->addItems({"Fixed", "ATR", "SL Ratio", "SuperTrend", "RL", "Nth Heikin-Ashi"});
-    m_tpMethodCombo->setCurrentIndex(0);
+    m_tpMethodCombo->addItems({"None", "Fixed", "ATR", "SL Ratio", "SuperTrend", "RL", "Nth Heikin-Ashi"});
+    m_tpMethodCombo->setCurrentIndex(1);
     tpLayout->addRow(new QLabel("Method:", this), m_tpMethodCombo);
     
     // Take Profit Distance (fixed)
@@ -150,9 +150,9 @@ void StopLossTakeProfitDialog::setupUI() {
     
     // Connect signals for dynamic visibility
     auto updateSlMethodVisibility = [this](int index) {
-        bool isFixed = (index == 0);
-        bool isAtr = (index == 1);
-        bool isMinMax = (index == 2);
+        bool isFixed = (index == 1);
+        bool isAtr = (index == 2);
+        bool isMinMax = (index == 3);
 
         m_slDistanceLabel->setVisible(isFixed);
         m_stopLossDistanceSpin->setVisible(isFixed);
@@ -163,7 +163,7 @@ void StopLossTakeProfitDialog::setupUI() {
         m_slMinmaxCoefLabel->setVisible(isMinMax);
         m_slMinmaxCoefAtr->setVisible(isMinMax);
 
-        bool atrNeeded = isAtr || isMinMax || (m_tpMethodCombo->currentIndex() == 1);
+        bool atrNeeded = isAtr || isMinMax || (m_tpMethodCombo->currentIndex() == 2);
         m_atrLabel->setVisible(atrNeeded);
         m_atrPeriodSpin->setVisible(atrNeeded);
     };
@@ -172,10 +172,10 @@ void StopLossTakeProfitDialog::setupUI() {
     updateSlMethodVisibility(m_slMethodCombo->currentIndex());
     
     auto updateTpMethodVisibility = [this](int index) {
-        bool isFixed = (index == 0);
-        bool isAtr = (index == 1);
-        bool isRatio = (index == 2);
-        bool isRL = (index == 4);
+        bool isFixed = (index == 1);
+        bool isAtr = (index == 2);
+        bool isRatio = (index == 3);
+        bool isRL = (index == 5);
         
         m_tpDistanceLabel->setVisible(isFixed);
         m_takeProfitDistanceSpin->setVisible(isFixed);
@@ -186,7 +186,7 @@ void StopLossTakeProfitDialog::setupUI() {
         m_rlLookbackLabel->setVisible(isRL);
         m_rlLookbackPeriodsSpin->setVisible(isRL);
 
-        bool atrNeeded = isAtr || (m_slMethodCombo->currentIndex() == 1) || (m_slMethodCombo->currentIndex() == 2);
+        bool atrNeeded = isAtr || (m_slMethodCombo->currentIndex() == 2) || (m_slMethodCombo->currentIndex() == 3);
         m_atrLabel->setVisible(atrNeeded);
         m_atrPeriodSpin->setVisible(atrNeeded);
     };
@@ -197,7 +197,7 @@ void StopLossTakeProfitDialog::setupUI() {
 
 void StopLossTakeProfitDialog::setConfig(const StrategyConfig& config) {
     // Stop Loss
-    m_slMethodCombo->setCurrentIndex(static_cast<int>(config.sl_method));
+    m_slMethodCombo->setCurrentIndex(static_cast<int>(config.sl_method) + 1);
     m_stopLossDistanceSpin->setValue(config.stop_loss_distance);
     m_slAtrMultiplierSpin->setValue(config.stop_loss_atr_multiplier);
     m_slMinmaxPeriodsSpin->setValue(config.sl_minmax_periods);
@@ -205,7 +205,7 @@ void StopLossTakeProfitDialog::setConfig(const StrategyConfig& config) {
     m_minStopLossDistanceSpin->setValue(config.min_stop_loss_distance);
     
     // Take Profit
-    m_tpMethodCombo->setCurrentIndex(static_cast<int>(config.tp_method));
+    m_tpMethodCombo->setCurrentIndex(static_cast<int>(config.tp_method) + 1);
     m_takeProfitDistanceSpin->setValue(config.take_profit_distance);
     m_tpAtrMultiplierSpin->setValue(config.take_profit_atr_multiplier);
     m_tpSlRatioSpin->setValue(config.tp_sl_ratio);
@@ -218,7 +218,7 @@ void StopLossTakeProfitDialog::setConfig(const StrategyConfig& config) {
 
 void StopLossTakeProfitDialog::updateConfig(StrategyConfig& config) const {
     // Stop Loss
-    config.sl_method = static_cast<StopLossMethod>(m_slMethodCombo->currentIndex());
+    config.sl_method = static_cast<StopLossMethod>(m_slMethodCombo->currentIndex() - 1);
     config.stop_loss_distance = m_stopLossDistanceSpin->value();
     config.stop_loss_atr_multiplier = m_slAtrMultiplierSpin->value();
     config.sl_minmax_periods = m_slMinmaxPeriodsSpin->value();
@@ -226,7 +226,7 @@ void StopLossTakeProfitDialog::updateConfig(StrategyConfig& config) const {
     config.min_stop_loss_distance = m_minStopLossDistanceSpin->value();
     
     // Take Profit
-    config.tp_method = static_cast<TakeProfitMethod>(m_tpMethodCombo->currentIndex());
+    config.tp_method = static_cast<TakeProfitMethod>(m_tpMethodCombo->currentIndex() - 1);
     config.take_profit_distance = m_takeProfitDistanceSpin->value();
     config.take_profit_atr_multiplier = m_tpAtrMultiplierSpin->value();
     config.tp_sl_ratio = m_tpSlRatioSpin->value();

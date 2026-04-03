@@ -182,10 +182,7 @@ FetchContent_Declare(
     GIT_TAG v5.4.7
 )
 
-FetchContent_GetProperties(lua_source)
-if(NOT lua_source_POPULATED)
-    FetchContent_Populate(lua_source)
-endif()
+FetchContent_MakeAvailable(lua_source)
 
 if(NOT TARGET lua_vendor)
     add_library(lua_vendor STATIC

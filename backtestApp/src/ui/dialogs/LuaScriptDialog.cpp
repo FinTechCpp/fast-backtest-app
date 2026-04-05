@@ -1,5 +1,7 @@
 #include "ui/dialogs/LuaScriptDialog.h"
 
+#include "Managers/LuaScriptEngine.hpp"
+
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -102,6 +104,11 @@ void LuaScriptDialog::setupUI()
     QPushButton* templateButton = new QPushButton("Insert template", this);
     templateButton->setMinimumHeight(34);
     helpersLayout->addWidget(templateButton);
+
+    QPushButton* checkScriptButton = new QPushButton("Check script", this);
+    checkScriptButton->setMinimumHeight(34);
+    helpersLayout->addWidget(checkScriptButton);
+
     helpersLayout->addStretch();
     mainLayout->addLayout(helpersLayout);
 
@@ -118,22 +125,36 @@ void LuaScriptDialog::setupUI()
         applyTemplateIfEmpty();
     });
 
-    connect(buttonBox, &QDialogButtonBox::accepted, this, [this]() {
-        if (m_enableScriptCheck->isChecked() && m_editor->toPlainText().trimmed().isEmpty()) {
-            const int answer = QMessageBox::question(
-                this,
-                "Empty script",
-                "The Lua script is enabled but empty. Disable it and continue?",
-                QMessageBox::Yes | QMessageBox::No,
-                QMessageBox::Yes);
+    connect(checkScriptButton, &QPushButton::clicked, this, [this]() {
+        if (!m_enableScriptCheck->isChecked() || m_editor->toPlainText().trimmed().isEmpty()) {
+            QMessageBox::information(this, "Check script", "Nothing to check (script empty or disabled).");
+            return;
+        }
+        std::string err_msg;
+        if (LuaScriptEngine::validate_script(m_editor->toPlainText().toStdString(), err_msg)) {
+            QMessageBox::information(this, "Check script", "No syntax errors found. Excellent!");
+        } else {
+            QMessageBox::critical(this, "Script error", QString("Error found in script:\n\n%1").arg(QString::fromStdString(err_msg)));
+        }
+    });
 
-            if (answer == QMessageBox::Yes) {
-                m_enableScriptCheck->setChecked(false);
-            } else {
-                return;
+    connect(buttonBox, &QDialogButtonBox::accepted, this, [this]() {
+        if (m_enableScriptCheck->isChecked()) {
+            if (m_editor->toPlainText().trimmed().isEmpty()) {
+                const int answer = QMessageBox::question(
+                    this,
+                    "Empty script",
+                    "The Lua script is enabled but empty. Disable it and continue?",
+                    QMessageBox::Yes | QMessageBox::No,
+                    QMessageBox::Yes);
+
+                if (answer == QMessageBox::Yes) {
+                    m_enableScriptCheck->setChecked(false);
+                } else {
+                    return;
+                }
             }
         }
-
         accept();
     });
 

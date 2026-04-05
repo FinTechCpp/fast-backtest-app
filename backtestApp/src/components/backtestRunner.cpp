@@ -12,6 +12,7 @@
 #include "backtest.hpp"
 #include "broker.hpp"
 #include "components/SyntheticStrategy.hpp"
+#include "Managers/LuaScriptEngine.hpp"
 
 BacktestRunner::BacktestRunner(QObject* parent)
     : QObject(parent)
@@ -257,6 +258,26 @@ void BacktestWorker::run()
         
     // Retrieve all strategy configurations
     std::vector<StrategyConfig> strategyConfigs = m_mainWindow->getStrategyConfigs();
+    
+    // Validate Lua scripts before running backtest
+    for (size_t i = 0; i < strategyConfigs.size(); ++i) {
+        if (strategyConfigs[i].use_lua_script && !strategyConfigs[i].lua_script.empty()) {
+            std::string err_msg;
+            if (!LuaScriptEngine::validate_script(strategyConfigs[i].lua_script, err_msg)) {
+                QString errorStr = QString("Error in Lua script for strategy %1:\n\n%2")
+                                   .arg(i + 1)
+                                   .arg(QString::fromStdString(err_msg));
+                qCritical() << "[WORKER] ERROR:" << errorStr;
+                
+                // Cleanup spdlog before returning
+                spdlog::drop("BE");
+                spdlog::shutdown();
+                
+                emit error(errorStr);
+                return;
+            }
+        }
+    }
     
     // Create a BacktestResults object to store the results
     m_results = std::make_unique<BacktestResults>();

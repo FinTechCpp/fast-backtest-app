@@ -160,6 +160,7 @@ void LuaScriptDialog::applyTemplateIfEmpty()
         "-- { type = SignalType.LIQUIDATE, quantity = 1.0 }  -- quantity in ]0,1[ for partial close\n"
         "-- { type = SignalType.MOVE_SL, new_sl = 1.2345, price = 1.2360 }\n"
         "\n"
+        "set_required_history(200)  -- Request 200 candles of history for indicator calculations\n"
         "function on_candle(candle, position)\n"
         "    local prev = get_candle(1)\n"
         "\n"

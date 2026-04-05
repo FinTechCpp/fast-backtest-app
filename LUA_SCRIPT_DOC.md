@@ -52,6 +52,8 @@ Available Fields:
   - returns a table equivalent to `position`
 - `log(message)`
   - writes a debug log with prefix `[Lua]`
+- `set_required_history(count)`
+  - sets the number of past candles kept in memory for the script (default: 200). Call this outside of `on_candle()`.
 
 ## 4) Signal Types
 

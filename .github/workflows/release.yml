@@ -152,8 +152,17 @@ jobs:
         host: windows
         target: desktop
         arch: win64_msvc2022_64
-        modules: qtcharts 
-        cache: true
+        modules: qtcharts
+        dir: 'C:\Qt'    # Installation in persistent directory to enable caching
+        cache: false    # Disable github cache
+        install-deps: true
+
+    - name: Set Qt paths (if already cached)
+      if: steps.check-qt.outputs.exists == 'true'
+      shell: pwsh
+      run: |
+        echo "C:\Qt\6.8.3\msvc2022_64\bin" >> $env:GITHUB_PATH
+        echo "Qt6_DIR=C:\Qt\6.8.3\msvc2022_64" >> $env:GITHUB_ENV
 
     - name: Verify Qt installation
       run: |

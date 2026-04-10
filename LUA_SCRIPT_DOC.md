@@ -91,6 +91,7 @@ You can retrn from `on_candle`:
 - For `BUY`/`SELL`, the engine calculates a base (quantity/price/SL/TP) then replaces each field only if your value is `> 0`.
 - For `LIQUIDATE`, if `quantity <= 0`, it is forced to `1.0` (complete closure).
 - `quantity` in `]0,1[` on `LIQUIDATE` allows for partial closure.
+- TP / SL must be sent as distance in price relative to entry price, not as absolute price. For example, if entry is 10$ and you want a TP at 12$, send `take_profit = 2` and not `take_profit = 12`.
 
 ## 6) Basic example
 

@@ -101,7 +101,7 @@ void App::onAbout()
     QMessageBox::about(this, tr("About"),
                        tr("Backtest Application\n"
                           "Version %1\n"
-                          "DDeveloped by Hugo Miquel and Maxime Deville\n").arg(current.toString()));
+                          "Developed by Hugo Miquel and Maxime Deville\n").arg(current.toString()));
 }
 
 App::~App()

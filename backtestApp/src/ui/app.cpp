@@ -20,7 +20,6 @@
 #include "components/backtestRunner.h"
 #include "components/Utils/SerializationUtils.hpp"
 
-
 App::App() : QMainWindow() {
     // Set window properties
     setWindowTitle("Backtest Dashboard C++");
@@ -51,8 +50,8 @@ App::App() : QMainWindow() {
 void App::createActions()
 {
     // Help actions
-    m_aboutAction = new QAction(tr("À &propos"), this);
-    m_aboutAction->setStatusTip(tr("À propos de cette application"));
+    m_aboutAction = new QAction(tr("About"), this);
+    m_aboutAction->setStatusTip(tr("About this application"));
     connect(m_aboutAction, &QAction::triggered, this, &App::onAbout);
 }
 
@@ -137,7 +136,7 @@ void App::createControlPanel() {
 
     // Small reset button to reload the current profile (inside the grey box)
     m_profileResetButton = new QPushButton(tr("Reset"), this);
-    m_profileResetButton->setToolTip(tr("Recharger le profil actif"));
+    m_profileResetButton->setToolTip(tr("Reload the active profile"));
     m_profileResetButton->setFixedSize(70, 28);
     m_profileResetButton->setStyleSheet("QPushButton { font-size: 11px; padding: 2px 6px; }");
 
@@ -201,6 +200,8 @@ void App::setupConnections()
                 this, &App::onBacktestCompleted);
         connect(m_backtestRunner, &BacktestRunner::backtestError,
                 this, &App::onBacktestError);
+        connect(m_backtestRunner, &BacktestRunner::backtestCanceled,
+            this, &App::onBacktestCanceled);
     }
 }
 
@@ -261,7 +262,6 @@ void App::setBacktestResults(std::unique_ptr<BacktestResults> results) {
 
 void App::onRunBacktest()
 {
-    // TODO: Implement backtest execution
     qInfo() << "Running backtest...";
 }
 
@@ -273,7 +273,12 @@ void App::onBacktestCompleted()
 void App::onBacktestError(const QString& error)
 {
     qCritical() << "Backtest error:" << error;
-    QMessageBox::critical(this, "Erreur de backtest", error);
+    QMessageBox::critical(this, "Backtest Error", error);
+}
+
+void App::onBacktestCanceled()
+{
+    qInfo() << "Backtest canceled by user";
 }
 
 void App::resizeEvent(QResizeEvent* event)

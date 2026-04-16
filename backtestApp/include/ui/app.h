@@ -62,6 +62,7 @@ private slots:
     void onRunBacktest();
     void onBacktestCompleted();
     void onBacktestError(const QString& error);
+    void onBacktestCanceled();
     void onAbout();
 
 private:

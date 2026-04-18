@@ -22,6 +22,21 @@ ChartView::~ChartView()
 {
 }
 
+const std::vector<std::unique_ptr<indicators::IndicatorBase>>& ChartView::getIndicators() const {
+    // If m_chartWidget doesn't exist yet, return static empty
+    if (!m_chartWidget) {
+        static std::vector<std::unique_ptr<indicators::IndicatorBase>> empty;
+        return empty;
+    }
+    return m_chartWidget->getIndicators();
+}
+
+void ChartView::setIndicators(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators) {
+    if (m_leftPanel) {
+        m_leftPanel->configureIndicatorInstances(indicators);
+    }
+}
+
 void ChartView::setupUI()
 {
     m_mainLayout->setContentsMargins(0, 0, 0, 0);

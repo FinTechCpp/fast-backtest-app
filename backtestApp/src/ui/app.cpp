@@ -252,6 +252,20 @@ void App::setStrategyConfigs(const std::vector<StrategyConfig>& configs) {
     }
 }
 
+const std::vector<std::unique_ptr<indicators::IndicatorBase>>& App::getChartIndicators() const {
+    if (m_resultManager && m_resultManager->getChartView()) {
+        return m_resultManager->getChartView()->getIndicators();
+    }
+    static std::vector<std::unique_ptr<indicators::IndicatorBase>> empty;
+    return empty;
+}
+
+void App::setChartIndicators(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators) {
+    if (m_resultManager && m_resultManager->getChartView()) {
+        m_resultManager->getChartView()->setIndicators(indicators);
+    }
+}
+
 void App::setBacktestResults(std::unique_ptr<BacktestResults> results) {
     m_backtestResults = std::move(results);
 
@@ -279,6 +293,15 @@ void App::onBacktestError(const QString& error)
 void App::onBacktestCanceled()
 {
     qInfo() << "Backtest canceled by user";
+}
+
+void App::closeEvent(QCloseEvent* event)
+{
+    if (m_configManager) {
+        // Automatically save the current profile when closing
+        m_configManager->saveCurrentProfile(nullptr);
+    }
+    QMainWindow::closeEvent(event);
 }
 
 void App::resizeEvent(QResizeEvent* event)

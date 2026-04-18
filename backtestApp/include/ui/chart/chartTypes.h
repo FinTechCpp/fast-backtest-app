@@ -9,6 +9,10 @@
 #include <QString>
 #include "common.h"
 #include <utility>  // for std::pair
+#include <cereal/types/polymorphic.hpp>
+
+// Force dynamic initialization
+CEREAL_FORCE_DYNAMIC_INIT(chart_types)
 
 namespace chart {
     enum class ChartType {

@@ -1,4 +1,5 @@
 #include "ui/chart/chartTypes.h"
+#include "components/serializerAdapters.h"
 
 
 #include <cereal/archives/binary.hpp>
@@ -28,6 +29,8 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::BBIn
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::MACDInstance)
 
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::PivotPointsInstance)
+
+CEREAL_REGISTER_DYNAMIC_INIT(chart_types)
 
 namespace chart {
 

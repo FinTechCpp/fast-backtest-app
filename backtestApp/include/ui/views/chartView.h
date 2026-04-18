@@ -54,6 +54,10 @@ public:
     explicit ChartView(QWidget* parent = nullptr);
     ~ChartView();
     
+    // Implementations to save/load indicators in profile
+    const std::vector<std::unique_ptr<indicators::IndicatorBase>>& getIndicators() const;
+    void setIndicators(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators);
+
     // Implementation of BaseView virtual methods
     void updateData(BacktestResults* results) override;
     void clear() override;

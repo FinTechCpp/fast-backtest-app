@@ -21,14 +21,30 @@ struct ProfileConfig {
     std::string createdAt;
     GeneralParamsConfig generalParams;
     std::vector<StrategyConfig> strategyConfigs;
+    std::vector<std::unique_ptr<indicators::IndicatorBase>> chartIndicators;
 
     template<class Archive>
-    void serialize(Archive & ar) {
+    void save(Archive & ar) const {
+        ar(CEREAL_NVP(name),
+           CEREAL_NVP(version),
+           CEREAL_NVP(createdAt),
+           CEREAL_NVP(generalParams),
+           CEREAL_NVP(strategyConfigs),
+           CEREAL_NVP(chartIndicators));
+    }
+
+    template<class Archive>
+    void load(Archive & ar) {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
            CEREAL_NVP(generalParams),
            CEREAL_NVP(strategyConfigs));
+        try {
+            ar(CEREAL_NVP(chartIndicators));
+        } catch (const cereal::Exception&) {
+            chartIndicators.clear();
+        }
     }
 };
 
@@ -516,4 +532,122 @@ namespace cereal {
            cereal::make_nvp("source", params.source),
            cereal::make_nvp("osc_ma_type", params.ma_type));
    }
+
+    // Indicator Base and Subclasses Serialization
+    template<class Archive>
+    void serialize(Archive & ar, indicators::IndicatorBase & ind) {
+        ar(cereal::make_nvp("id", ind.id),
+           cereal::make_nvp("visible", ind.visible),
+           cereal::make_nvp("resetOnNewDay", ind.resetOnNewDay));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::RSIInstance & rsi) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&rsi)),
+           cereal::make_nvp("period", rsi.period),
+           cereal::make_nvp("height", rsi.height),
+           cereal::make_nvp("color", rsi.color),
+           cereal::make_nvp("overboughtLevel", rsi.overboughtLevel),
+           cereal::make_nvp("oversoldLevel", rsi.oversoldLevel),
+           cereal::make_nvp("upperColor", rsi.upperColor),
+           cereal::make_nvp("lowerColor", rsi.lowerColor));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::EMAInstance & ema) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&ema)),
+           cereal::make_nvp("period", ema.period),
+           cereal::make_nvp("color", ema.color));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::SuperTrendInstance & st) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&st)),
+           cereal::make_nvp("period", st.period),
+           cereal::make_nvp("multiplier", st.multiplier),
+           cereal::make_nvp("upColor", st.upColor),
+           cereal::make_nvp("downColor", st.downColor));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::StochasticInstance & stoch) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&stoch)),
+           cereal::make_nvp("fastKPeriod", stoch.fastKPeriod),
+           cereal::make_nvp("slowKPeriod", stoch.slowKPeriod),
+           cereal::make_nvp("slowDPeriod", stoch.slowDPeriod),
+           cereal::make_nvp("height", stoch.height),
+           cereal::make_nvp("kColor", stoch.kColor),
+           cereal::make_nvp("dColor", stoch.dColor),
+           cereal::make_nvp("overboughtLevel", stoch.overboughtLevel),
+           cereal::make_nvp("oversoldLevel", stoch.oversoldLevel));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::ATRInstance & atr) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&atr)),
+           cereal::make_nvp("period", atr.period),
+           cereal::make_nvp("height", atr.height),
+           cereal::make_nvp("color", atr.color),
+           cereal::make_nvp("useLogScale", atr.useLogScale));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::PivotPointsInstance::LevelStyle & style) {
+        ar(cereal::make_nvp("color", style.color),
+           cereal::make_nvp("thickness", style.thickness),
+           cereal::make_nvp("lineStyle", style.lineStyle),
+           cereal::make_nvp("visible", style.visible),
+           cereal::make_nvp("labelFormat", style.labelFormat));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::PivotPointsInstance & pp) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&pp)),
+           cereal::make_nvp("periodType", pp.periodType),
+           cereal::make_nvp("calculationMethod", pp.calculationMethod),
+           cereal::make_nvp("levelStyles", pp.levelStyles),
+           cereal::make_nvp("showLabels", pp.showLabels));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::CCIInstance & cci) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&cci)),
+           cereal::make_nvp("period", cci.period),
+           cereal::make_nvp("height", cci.height),
+           cereal::make_nvp("color", cci.color),
+           cereal::make_nvp("upperLevel", cci.upperLevel),
+           cereal::make_nvp("lowerLevel", cci.lowerLevel),
+           cereal::make_nvp("upperColor", cci.upperColor),
+           cereal::make_nvp("lowerColor", cci.lowerColor));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::MACDInstance & macd) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&macd)),
+           cereal::make_nvp("fastPeriod", macd.fastPeriod),
+           cereal::make_nvp("slowPeriod", macd.slowPeriod),
+           cereal::make_nvp("signalPeriod", macd.signalPeriod),
+           cereal::make_nvp("source", macd.source),
+           cereal::make_nvp("osc_ma_type", macd.osc_ma_type),
+           cereal::make_nvp("signal_ma_type", macd.signal_ma_type),
+           cereal::make_nvp("signal_smoothing", macd.signal_smoothing),
+           cereal::make_nvp("height", macd.height),
+           cereal::make_nvp("macdColor", macd.macdColor),
+           cereal::make_nvp("signalColor", macd.signalColor),
+           cereal::make_nvp("histogramColor", macd.histogramColor));
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::BBInstance & bb) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&bb)),
+           cereal::make_nvp("period", bb.period),
+           cereal::make_nvp("stddev_multiplier", bb.stddev_multiplier),
+           cereal::make_nvp("source", bb.source),
+           cereal::make_nvp("ma_type", bb.ma_type),
+           cereal::make_nvp("height", bb.height),
+           cereal::make_nvp("middleBandColor", bb.middleBandColor),
+           cereal::make_nvp("upperBandColor", bb.upperBandColor),
+           cereal::make_nvp("lowerBandColor", bb.lowerBandColor),
+           cereal::make_nvp("fillColor", bb.fillColor));
+    }
 }

@@ -1,5 +1,6 @@
 #include "components/Managers/ProfileManager.h"
 #include "ui/app.h"
+#include "ui/chart/chartTypes.h"
 #include <QCoreApplication>
 #include <QFileInfo>
 #include <QFile>
@@ -160,6 +161,7 @@ bool ProfileManager::applyProfileToUI(const QString& profileName)
         // Apply configurations to UI
         m_mainWindow->setGeneralParamsConfig(profileConfig.generalParams);
         m_mainWindow->setStrategyConfigs(profileConfig.strategyConfigs);
+        m_mainWindow->setChartIndicators(profileConfig.chartIndicators);
 
         
         m_currentProfile = profileName;
@@ -188,6 +190,14 @@ bool ProfileManager::saveCurrentProfile(QWidget* parentWidget)
     // Get configurations from UI
     profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
     profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
+    
+    auto& indicators = m_mainWindow->getChartIndicators();
+    profileConfig.chartIndicators.clear();
+    for (const auto& ind : indicators) {
+        if (ind) {
+            profileConfig.chartIndicators.push_back(ind->clone());
+        }
+    }
 
     bool success = saveProfile(m_currentProfile, profileConfig);
     
@@ -227,6 +237,14 @@ bool ProfileManager::promptCreateNewProfile(QWidget* parentWidget)
         // Get configurations from UI
         profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
         profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
+        
+        auto& indicators = m_mainWindow->getChartIndicators();
+        profileConfig.chartIndicators.clear();
+        for (const auto& ind : indicators) {
+            if (ind) {
+                profileConfig.chartIndicators.push_back(ind->clone());
+            }
+        }
         
         bool success = saveProfile(profileName, profileConfig);
         
@@ -409,6 +427,14 @@ bool ProfileManager::exportConfigToFile(QWidget* parentWidget, const QString& pr
         
         profileConfig.generalParams = m_mainWindow->getGeneralParamsConfig();
         profileConfig.strategyConfigs = m_mainWindow->getStrategyConfigs();
+
+        auto& indicators = m_mainWindow->getChartIndicators();
+        profileConfig.chartIndicators.clear();
+        for (const auto& ind : indicators) {
+            if (ind) {
+                profileConfig.chartIndicators.push_back(ind->clone());
+            }
+        }
 
     } else {
         // Otherwise, load from saved profile

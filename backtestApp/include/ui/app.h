@@ -50,9 +50,11 @@ public:
     
     GeneralParamsConfig getGeneralParamsConfig() const;
     std::vector<StrategyConfig> getStrategyConfigs() const;
+    const std::vector<std::unique_ptr<indicators::IndicatorBase>>& getChartIndicators() const;
 
     void setGeneralParamsConfig(const GeneralParamsConfig& config);
     void setStrategyConfigs(const std::vector<StrategyConfig>& configs);
+    void setChartIndicators(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators);
 
     // Add accessors for backtest results
     const BacktestResults& getBacktestResults() const { return *m_backtestResults.get(); }
@@ -115,9 +117,9 @@ private:
     std::unique_ptr<BacktestResults> m_backtestResults;
     
     // Views
-    StatsView* m_statsView;
-    ChartView* m_chartView;
-    HistogramView* m_histogramView;
+    StatsView* m_statsView = nullptr;
+    ChartView* m_chartView = nullptr;
+    HistogramView* m_histogramView = nullptr;
     
     // Control buttons and status
     QPushButton* m_runButton;
@@ -138,6 +140,7 @@ private:
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
 

@@ -669,6 +669,7 @@ void ChartControlPanel::refreshIndicatorsList() {
     }
 
     m_indicatorLabels.clear();
+    m_hideButtons.clear();
     m_editButtons.clear();
     m_removeButtons.clear();
 
@@ -727,28 +728,37 @@ void ChartControlPanel::onIndicatorRemoved(int id) {
 void ChartControlPanel::configureIndicatorInstances(const std::vector<std::unique_ptr<indicators::IndicatorBase>>& indicators) {
     if (!m_chartWidget) return;
 
-    m_chartWidget->removeAllIndicators();
+    try {
+        m_chartWidget->removeAllIndicators();
+        
+        // Ensure UI stays synchronized when clearing
+        refreshIndicatorsList();
 
-    for (const auto& indicator : indicators) {
-        if (const indicators::RSIInstance* rsi = dynamic_cast<const indicators::RSIInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*rsi);
-        } else if (const indicators::EMAInstance* ema = dynamic_cast<const indicators::EMAInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*ema);
-        } else if (const indicators::StochasticInstance* stoch = dynamic_cast<const indicators::StochasticInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*stoch);
-        } else if (const indicators::ATRInstance* atr = dynamic_cast<const indicators::ATRInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*atr);
-        } else if (const indicators::SuperTrendInstance* supertrend = dynamic_cast<const indicators::SuperTrendInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*supertrend);
-        } else if (const indicators::PivotPointsInstance* pivotPoints = dynamic_cast<const indicators::PivotPointsInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*pivotPoints);
-        } else if (const indicators::CCIInstance* cci = dynamic_cast<const indicators::CCIInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*cci);
-        } else if (const indicators::MACDInstance* macd = dynamic_cast<const indicators::MACDInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*macd);
-        } else if (const indicators::BBInstance* bb = dynamic_cast<const indicators::BBInstance*>(indicator.get())) {
-            m_chartWidget->addIndicator(*bb);
+        for (const auto& indicator : indicators) {
+            if (!indicator) continue; // Defense against invalid descriptors
+
+            if (const indicators::RSIInstance* rsi = dynamic_cast<const indicators::RSIInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*rsi);
+            } else if (const indicators::EMAInstance* ema = dynamic_cast<const indicators::EMAInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*ema);
+            } else if (const indicators::StochasticInstance* stoch = dynamic_cast<const indicators::StochasticInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*stoch);
+            } else if (const indicators::ATRInstance* atr = dynamic_cast<const indicators::ATRInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*atr);
+            } else if (const indicators::SuperTrendInstance* supertrend = dynamic_cast<const indicators::SuperTrendInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*supertrend);
+            } else if (const indicators::PivotPointsInstance* pivotPoints = dynamic_cast<const indicators::PivotPointsInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*pivotPoints);
+            } else if (const indicators::CCIInstance* cci = dynamic_cast<const indicators::CCIInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*cci);
+            } else if (const indicators::MACDInstance* macd = dynamic_cast<const indicators::MACDInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*macd);
+            } else if (const indicators::BBInstance* bb = dynamic_cast<const indicators::BBInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*bb);
+            }
         }
+    } catch (...) {
+        qWarning() << "Error: Exception caught while configuring indicators instances!";
     }
 }
 

@@ -693,7 +693,7 @@ std::vector<OHLCBar> DataLoader::loadData(
 
     // Store in cache for instant access on next identical request
     s_dataCache[cacheKey] = result;
-    qInfo() << "💾 Cached filtered data (" << result.size() << "bars) - next identical backtest will be instant";
+    qInfo() << "Cached filtered data (" << result.size() << "bars) - next identical backtest will be instant";
     return result;
 }
 

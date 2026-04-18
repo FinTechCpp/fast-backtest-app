@@ -126,7 +126,7 @@ void GeneralParamsPanel::setupUI()
     
     // Data period
     QComboBox* periodCombo = new QComboBox(this);
-    periodCombo->addItems({"1m", "3m", "6m", "1y", "3y", "5y", "10y", "20y"});
+    periodCombo->addItems({"1d","1w","1m", "3m", "6m", "1y", "3y", "5y", "10y"});
     periodCombo->setCurrentIndex(5);
     paramsLayout->addRow(new QLabel("Data period:", this), periodCombo);
     

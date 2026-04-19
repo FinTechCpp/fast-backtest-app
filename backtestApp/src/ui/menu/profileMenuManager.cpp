@@ -7,6 +7,13 @@
 #include <QPushButton>
 #include <QWidgetAction>
 #include <QTimer>
+#include <QDialog>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QListWidget>
+#include <QListWidgetItem>
+#include <QAbstractItemView>
 
 ProfileMenuManager::ProfileMenuManager(App* parent)
     : QObject(parent)
@@ -16,7 +23,7 @@ ProfileMenuManager::ProfileMenuManager(App* parent)
     , m_loadProfileSubmenu(nullptr)
     , m_saveProfileAction(nullptr)
     , m_newProfileAction(nullptr)
-    , m_deleteProfileAction(nullptr)
+    , m_manageProfilesAction(nullptr)
     , m_importAction(nullptr)
     , m_exportAction(nullptr)
     , m_openDirectoryAction(nullptr)
@@ -39,11 +46,14 @@ void ProfileMenuManager::createProfileMenu(QMenuBar* menuBar)
     // Add actions to the menu
     m_profileMenu->addAction(m_saveProfileAction);
     m_profileMenu->addAction(m_newProfileAction);
-    m_profileMenu->addAction(m_deleteProfileAction);
     m_profileMenu->addSeparator();
     
     // Create the submenu for loading profiles
     m_loadProfileSubmenu = m_profileMenu->addMenu(tr("&Load profile"));
+    connect(m_loadProfileSubmenu, &QMenu::aboutToShow, this, &ProfileMenuManager::updateProfileList);
+
+    // Centralized profile management dialog
+    m_profileMenu->addAction(m_manageProfilesAction);
     
     m_profileMenu->addSeparator();
     m_profileMenu->addAction(m_importAction);
@@ -82,12 +92,11 @@ void ProfileMenuManager::createActions()
     m_newProfileAction->setShortcut(QKeySequence::New);
     m_newProfileAction->setStatusTip(tr("Create a new profile"));
     connect(m_newProfileAction, &QAction::triggered, this, &ProfileMenuManager::onCreateNewProfile);
-    
-    // Delete profile action
-    m_deleteProfileAction = new QAction(tr("&Delete current profile"), this);
-    m_deleteProfileAction->setShortcut(QKeySequence::Delete);
-    m_deleteProfileAction->setStatusTip(tr("Delete the current profile"));
-    connect(m_deleteProfileAction, &QAction::triggered, this, &ProfileMenuManager::onDeleteCurrentProfile);
+
+    // Manage profiles action
+    m_manageProfilesAction = new QAction(tr("&Manage profiles..."), this);
+    m_manageProfilesAction->setStatusTip(tr("Load, import, export or delete a profile"));
+    connect(m_manageProfilesAction, &QAction::triggered, this, &ProfileMenuManager::onManageProfiles);
     
     // Import action
     m_importAction = new QAction(tr("&Import..."), this);
@@ -238,11 +247,6 @@ void ProfileMenuManager::onProfileChanged(const QString& profileName)
         action->setEnabled(true);
     }
     
-    // Disable deletion for the DEFAULT profile
-    if (m_deleteProfileAction) {
-        m_deleteProfileAction->setEnabled(profileName != "DEFAULT");
-    }
-    
     qDebug() << "Current profile updated to:" << profileName;
 }
 
@@ -257,15 +261,6 @@ void ProfileMenuManager::onCreateNewProfile()
 {
     if (m_configManager) {
         if (m_configManager->promptCreateNewProfile(m_mainWindow)) {
-            updateProfileList();
-        }
-    }
-}
-
-void ProfileMenuManager::onDeleteCurrentProfile()
-{
-    if (m_configManager) {
-        if (m_configManager->deleteCurrentProfile(m_mainWindow)) {
             updateProfileList();
         }
     }
@@ -295,4 +290,153 @@ void ProfileMenuManager::onLoadProfile()
         if (!profileName.isEmpty()) 
             m_configManager->onProfileChanged(profileName);
     }
+}
+
+void ProfileMenuManager::onManageProfiles()
+{
+    if (!m_configManager || !m_mainWindow) {
+        return;
+    }
+
+    QDialog dlg(m_mainWindow);
+    dlg.setWindowTitle(tr("Manage Profiles"));
+    dlg.resize(700, 420);
+
+    QVBoxLayout* layout = new QVBoxLayout(&dlg);
+
+    QLabel* label = new QLabel(&dlg);
+    layout->addWidget(label);
+
+    QListWidget* list = new QListWidget(&dlg);
+    list->setSelectionMode(QAbstractItemView::SingleSelection);
+    layout->addWidget(list);
+
+    QHBoxLayout* buttonLayout = new QHBoxLayout();
+    QPushButton* loadBtn = new QPushButton(tr("Load"), &dlg);
+    QPushButton* exportBtn = new QPushButton(tr("Export"), &dlg);
+    QPushButton* deleteBtn = new QPushButton(tr("Delete"), &dlg);
+    QPushButton* importBtn = new QPushButton(tr("Import"), &dlg);
+    QPushButton* openDirBtn = new QPushButton(tr("Open Directory"), &dlg);
+    QPushButton* closeBtn = new QPushButton(tr("Close"), &dlg);
+
+    buttonLayout->addWidget(loadBtn);
+    buttonLayout->addWidget(exportBtn);
+    buttonLayout->addWidget(deleteBtn);
+    buttonLayout->addWidget(importBtn);
+    buttonLayout->addWidget(openDirBtn);
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(closeBtn);
+    layout->addLayout(buttonLayout);
+
+    auto updateButtonStates = [&]() {
+        QListWidgetItem* selected = list->currentItem();
+        const bool hasSelection = selected != nullptr;
+        loadBtn->setEnabled(hasSelection);
+        exportBtn->setEnabled(hasSelection);
+        const QString selectedProfile = hasSelection
+            ? selected->data(Qt::UserRole).toString()
+            : QString();
+        deleteBtn->setEnabled(hasSelection && selectedProfile != "DEFAULT");
+    };
+
+    auto refreshProfiles = [&]() {
+        list->clear();
+
+        const QStringList profiles = m_configManager->listProfiles();
+        const QString currentProfile = m_configManager->getCurrentProfile();
+
+        label->setText(tr("Select a profile (current: %1):").arg(currentProfile));
+
+        int selectedRow = -1;
+        for (const QString& profile : profiles) {
+            const QString display = (profile == currentProfile)
+                ? tr("%1 (current)").arg(profile)
+                : profile;
+
+            QListWidgetItem* item = new QListWidgetItem(display, list);
+            item->setData(Qt::UserRole, profile);
+
+            if (profile == currentProfile) {
+                selectedRow = list->count() - 1;
+            }
+        }
+
+        if (selectedRow >= 0) {
+            list->setCurrentRow(selectedRow);
+        } else if (list->count() > 0) {
+            list->setCurrentRow(0);
+        }
+
+        updateButtonStates();
+    };
+
+    refreshProfiles();
+
+    connect(list, &QListWidget::itemSelectionChanged, &dlg, updateButtonStates);
+
+    connect(loadBtn, &QPushButton::clicked, &dlg, [&]() {
+        QListWidgetItem* selected = list->currentItem();
+        if (!selected) {
+            return;
+        }
+
+        const QString profileName = selected->data(Qt::UserRole).toString();
+        if (!profileName.isEmpty()) {
+            m_configManager->onProfileChanged(profileName);
+            refreshProfiles();
+        }
+    });
+
+    connect(exportBtn, &QPushButton::clicked, &dlg, [&]() {
+        QListWidgetItem* selected = list->currentItem();
+        if (!selected) {
+            return;
+        }
+
+        const QString profileName = selected->data(Qt::UserRole).toString();
+        if (!profileName.isEmpty()) {
+            m_configManager->exportConfigToFile(&dlg, profileName);
+        }
+    });
+
+    connect(deleteBtn, &QPushButton::clicked, &dlg, [&]() {
+        QListWidgetItem* selected = list->currentItem();
+        if (!selected) {
+            return;
+        }
+
+        const QString profileName = selected->data(Qt::UserRole).toString();
+        if (profileName == "DEFAULT") {
+            QMessageBox::information(&dlg, tr("Information"), tr("The DEFAULT profile cannot be deleted."));
+            return;
+        }
+
+        if (m_configManager->getCurrentProfile() != profileName) {
+            m_configManager->onProfileChanged(profileName);
+        }
+
+        if (m_configManager->deleteCurrentProfile(&dlg)) {
+            updateProfileList();
+            refreshProfiles();
+        }
+    });
+
+    connect(importBtn, &QPushButton::clicked, &dlg, [&]() {
+        if (m_configManager->importConfigFromFile(&dlg)) {
+            updateProfileList();
+            refreshProfiles();
+        }
+    });
+
+    connect(openDirBtn, &QPushButton::clicked, &dlg, [&]() {
+        onOpenProfilesDirectory();
+    });
+
+    connect(closeBtn, &QPushButton::clicked, &dlg, &QDialog::accept);
+
+    connect(list, &QListWidget::itemDoubleClicked, &dlg, [&]() {
+        loadBtn->click();
+    });
+
+    dlg.exec();
 }

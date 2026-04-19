@@ -67,8 +67,6 @@ public:
 
     template<typename T>
     int addIndicator(const T& config) {
-        if (!m_dataManager.hasRawData()) return -1; 
-
         QString displayName = config.getDisplayName();
         int id = m_dataManager.addIndicator(config);
 

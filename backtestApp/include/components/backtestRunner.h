@@ -13,6 +13,7 @@
 #include <QMap>
 #include <QString>
 #include <QVariant>
+#include <atomic>
 
 #include "components/Utils/dataLoader.h"
 #include "components/backtestResults.h"
@@ -40,13 +41,16 @@ signals:
     void backtestStarted();
     void backtestCompleted(const BacktestResults& results);
     void backtestError(const QString& error);
+    void backtestCanceled();
 
 public slots:
     void runBacktest();
+    void stopBacktest();
 
 private slots:
     void onBacktestFinished(BacktestResults* results);
     void onBacktestError(const QString& errorMessage);
+    void onBacktestCanceled();
     void onProgressUpdated(int current, int total, const QString& chrono);
 
 private:
@@ -54,6 +58,7 @@ private:
     App* m_mainWindow;
     QHBoxLayout* m_buttonLayout;
     QPushButton* m_runButton;
+    QPushButton* m_stopButton;
     QProgressBar* m_loadingIndicator;
     QLabel* m_statsLabel;
     class BacktestWorker* m_worker;
@@ -66,6 +71,7 @@ private:
     void createUIComponents();
     void resetUI();
     void showError(const QString& error);
+    void cleanupWorker();
 };
 
 class BacktestWorker : public QThread
@@ -82,12 +88,21 @@ protected:
 signals:
     void finished(BacktestResults* results);
     void error(const QString& message);
+    void canceled();
     void progressUpdated(int current, int total, const QString& chrono);
 
 public:
     // Method to transfer ownership of the results
     std::unique_ptr<BacktestResults> takeResults() {
         return std::move(m_results);
+    }
+
+    void requestCancel() {
+        m_cancelRequested.store(true, std::memory_order_relaxed);
+    }
+
+    bool isCancelRequested() const {
+        return m_cancelRequested.load(std::memory_order_relaxed);
     }
 
 private:
@@ -99,5 +114,6 @@ private:
 
     // Keep the results alive during execution
     std::unique_ptr<BacktestResults> m_results;
+    std::atomic<bool> m_cancelRequested{false};
 };
 

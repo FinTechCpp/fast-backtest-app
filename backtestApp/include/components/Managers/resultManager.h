@@ -30,6 +30,7 @@ public:
     void clearAllViews();
     void setCurrentTab(int index);
     QTabWidget* getTabWidget() const { return m_tabWidget; }
+    ChartView* getChartView() const { return m_chartView; }
 
 public slots:
     void onTradeClicked(const be::TradeData& trade);

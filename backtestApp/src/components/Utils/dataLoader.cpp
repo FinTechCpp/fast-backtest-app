@@ -693,7 +693,7 @@ std::vector<OHLCBar> DataLoader::loadData(
 
     // Store in cache for instant access on next identical request
     s_dataCache[cacheKey] = result;
-    qInfo() << "💾 Cached filtered data (" << result.size() << "bars) - next identical backtest will be instant";
+    qInfo() << "Cached filtered data (" << result.size() << "bars) - next identical backtest will be instant";
     return result;
 }
 
@@ -770,7 +770,7 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
     std::vector<OHLCBar> rawData;
     
     if (rawCacheIt != s_rawFileCache.end()) {
-        qInfo() << "📦 Raw file data loaded from cache (" << rawCacheIt->second.size() 
+        qInfo() << "Raw file data loaded from cache (" << rawCacheIt->second.size() 
                 << "bars) - avoiding CSV read:" << QFileInfo(cleanFilePath).fileName();
         rawData = rawCacheIt->second;
     } else {
@@ -787,7 +787,7 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
         QTextStream in(&file);
         QString line;
         
-        qInfo() << "📖 Reading CSV file from disk:" << QFileInfo(cleanFilePath).fileName();
+        qInfo() << "Reading CSV file from disk:" << QFileInfo(cleanFilePath).fileName();
         
         // Skip header if present
         if (in.readLineInto(&line)) {
@@ -812,11 +812,11 @@ std::vector<OHLCBar> DataLoader::loadFromCSV(
         }
         
         file.close();
-        qInfo() << "✅ Loaded and parsed" << rawData.size() << "bars from CSV";
+        qInfo() << "Loaded and parsed" << rawData.size() << "bars from CSV";
         
         // Store raw data in cache
         s_rawFileCache[cleanFilePath] = rawData;
-        qInfo() << "💾 Raw file data cached for future backtests";
+        qInfo() << "Raw file data cached for future backtests";
     }
     
     // Now filter the raw data based on period and endDate

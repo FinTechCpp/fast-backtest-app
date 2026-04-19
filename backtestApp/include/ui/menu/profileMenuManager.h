@@ -55,7 +55,7 @@ public slots:
 private slots:
     void onSaveCurrentProfile();
     void onCreateNewProfile();
-    void onDeleteCurrentProfile();
+    void onManageProfiles();
     void onImportProfile();
     void onExportProfile();
     void onLoadProfile();
@@ -72,7 +72,7 @@ private:
     // Main actions
     QAction* m_saveProfileAction;
     QAction* m_newProfileAction;
-    QAction* m_deleteProfileAction;
+    QAction* m_manageProfilesAction;
     QAction* m_importAction;
     QAction* m_exportAction;
     QAction* m_openDirectoryAction;

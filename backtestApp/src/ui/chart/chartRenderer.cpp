@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <map>
 
 #include "beTypes.h"
 
@@ -1394,9 +1395,12 @@ void ChartRenderer::addUserMarkers(XYChart* mainChart,
     size_t startIndex = aggregationInfo.startIndex;
     size_t length = aggregationInfo.pointCount;
     
-    // Separate markers by type, converting absolute indices -> relative
-    std::vector<std::pair<double, double>> checkMarkers;
-    std::vector<std::pair<double, double>> errorMarkers;
+    // Group markers by (shape type + color) to keep one layer per style.
+    std::map<int, std::vector<std::pair<double, double>>> checkMarkersByColor;
+    std::map<int, std::vector<std::pair<double, double>>> errorMarkersByColor;
+
+    const int defaultCheckColor = 0x00BB00;
+    const int defaultErrorColor = 0xBB0000;
     
     // For each marker, check if visible and convert to relative index
     for (const auto& marker : markers) {
@@ -1410,22 +1414,24 @@ void ChartRenderer::addUserMarkers(XYChart* mainChart,
         double relativeIndex = static_cast<double>(marker.barIndex - startIndex);
         
         if (marker.type == chart::MarkerType::Check) {
-            checkMarkers.push_back({relativeIndex, marker.price});
+            const int markerColor = (marker.color >= 0 && marker.color <= 0xFFFFFF) ? marker.color : defaultCheckColor;
+            checkMarkersByColor[markerColor].push_back({relativeIndex, marker.price});
         } else if (marker.type == chart::MarkerType::Error) {
-            errorMarkers.push_back({relativeIndex, marker.price});
+            const int markerColor = (marker.color >= 0 && marker.color <= 0xFFFFFF) ? marker.color : defaultErrorColor;
+            errorMarkersByColor[markerColor].push_back({relativeIndex, marker.price});
         }
     }
     
-    // Add Check markers (green)
-    if (!checkMarkers.empty()) {
-        addMarkers(mainChart, checkMarkers, "Check Markers", 
-                  Chart::CircleShape, 16, 0x00BB00);
+    // Add Check markers (default green or custom color)
+    for (const auto& [color, points] : checkMarkersByColor) {
+        addMarkers(mainChart, points, "Check Markers", 
+                  Chart::CircleShape, 16, color);
     }
     
-    // Add Error markers (red)
-    if (!errorMarkers.empty()) {
-        addMarkers(mainChart, errorMarkers, "Error Markers", 
-                  Chart::Cross2Shape(), 16, 0xBB0000);
+    // Add Error markers (default red or custom color)
+    for (const auto& [color, points] : errorMarkersByColor) {
+        addMarkers(mainChart, points, "Error Markers", 
+                  Chart::Cross2Shape(), 16, color);
     }
 
 }

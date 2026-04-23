@@ -60,10 +60,22 @@ struct BacktestResultConfig {
     be::Stats stats;
     // This is really heavy; it would be better to reference data instead, and then verify that the loaded data matches the saved record
     std::vector<be::Candle> candles;
-
+    std::vector<chart::ChartMarker> userMarkers;
 
     template<class Archive>
-    void serialize(Archive & ar) {
+    void save(Archive & ar) const {
+        ar(CEREAL_NVP(name),
+           CEREAL_NVP(version),
+           CEREAL_NVP(createdAt),
+           CEREAL_NVP(generalParams),
+           CEREAL_NVP(strategyConfigs),
+           CEREAL_NVP(stats),
+           CEREAL_NVP(candles),
+           CEREAL_NVP(userMarkers));
+    }
+
+    template<class Archive>
+    void load(Archive & ar) {
         ar(CEREAL_NVP(name),
            CEREAL_NVP(version),
            CEREAL_NVP(createdAt),
@@ -71,6 +83,12 @@ struct BacktestResultConfig {
            CEREAL_NVP(strategyConfigs),
            CEREAL_NVP(stats),
            CEREAL_NVP(candles));
+
+        try {
+            ar(CEREAL_NVP(userMarkers));
+        } catch (const cereal::Exception&) {
+            userMarkers.clear();
+        }
     }
 };
 
@@ -94,6 +112,35 @@ struct ExternalResultConfig {
 };
 
 namespace cereal {
+    template<class Archive>
+    void save(Archive & ar, const chart::ChartMarker & marker) {
+        const int markerTypeValue = static_cast<int>(marker.type);
+        ar(cereal::make_nvp("barIndex", marker.barIndex),
+           cereal::make_nvp("price", marker.price),
+            cereal::make_nvp("type", markerTypeValue),
+            cereal::make_nvp("color", marker.color));
+    }
+
+    template<class Archive>
+    void load(Archive & ar, chart::ChartMarker & marker) {
+        int markerTypeValue = static_cast<int>(chart::MarkerType::Check);
+        ar(cereal::make_nvp("barIndex", marker.barIndex),
+           cereal::make_nvp("price", marker.price),
+           cereal::make_nvp("type", markerTypeValue));
+
+        try {
+            ar(cereal::make_nvp("color", marker.color));
+        } catch (const cereal::Exception&) {
+            marker.color = -1;
+        }
+
+        if (markerTypeValue == static_cast<int>(chart::MarkerType::Error)) {
+            marker.type = chart::MarkerType::Error;
+        } else {
+            marker.type = chart::MarkerType::Check;
+        }
+    }
+
     template<class Archive>
     void serialize(Archive & ar, be::Duration & duration) {
         ar(cereal::make_nvp("seconds", duration.seconds));

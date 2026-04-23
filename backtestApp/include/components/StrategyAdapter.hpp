@@ -28,6 +28,7 @@ private:
 
     // To track closed trades
     size_t last_closed_trade_count = 0;
+    std::vector<chart::ChartMarker> m_luaMarkers;
     
     std::string name;
 public:
@@ -106,6 +107,20 @@ public:
         // Update the strategy signal with the new latest candle by executing strategy logic
         Signal signal = strategy->update_candle(candle);
 
+        // Collect Lua draw points for the current bar before signal processing.
+        const size_t currentBarIndex = getData()->position();
+        const std::vector<LuaDrawPoint> drawPoints = strategy->consume_lua_draw_points();
+        for (const auto& point : drawPoints) {
+            chart::ChartMarker marker;
+            marker.barIndex = currentBarIndex;
+            marker.price = point.price;
+            marker.type = (point.type == LuaDrawPointType::Error)
+                              ? chart::MarkerType::Error
+                              : chart::MarkerType::Check;
+            marker.color = point.color;
+            m_luaMarkers.push_back(marker);
+        }
+
         // DateTime dtBreakPoint{2022, 8, 8, Time{21, 59, 0}};
 
         // if (candle.ohlc.date >= dtBreakPoint) {
@@ -152,5 +167,9 @@ public:
                 strategy->getName()
             );
         }
+    }
+
+    const std::vector<chart::ChartMarker>& getLuaMarkers() const {
+        return m_luaMarkers;
     }
 };

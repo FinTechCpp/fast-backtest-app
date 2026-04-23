@@ -54,6 +54,11 @@ Available Fields:
   - writes a debug log with prefix `[Lua]`
 - `set_required_history(count)`
   - sets the number of past candles kept in memory for the script (default: 200). Call this outside of `on_candle()`.
+- `drawpoint(price, marker_type)`
+  - draws a marker on the current candle in the final backtest chart
+  - `price` is optional (default: current candle close)
+  - `marker_type` is optional: `"check"` (default) or `"error"`
+  - examples: `drawpoint()`, `drawpoint(candle.high)`, `drawpoint(candle.low, "error")`
 
 ## 4) Signal Types
 

@@ -19,7 +19,7 @@ env:
 
 jobs:
   cleanup-artifacts:
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: linux-latest
     permissions:
       actions: write
     steps:
@@ -30,7 +30,7 @@ jobs:
         skip-recent: 3
 
   calculate-version:
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: linux-latest
     needs: cleanup-artifacts
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -651,7 +651,7 @@ jobs:
         retention-days: 1
 
   create-release:
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: linux-latest
     needs: [calculate-version, build-windows, build-linux]  # Removed build-macos TODO : Implement macOS build
     permissions:
       contents: write

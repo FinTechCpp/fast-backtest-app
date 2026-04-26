@@ -174,7 +174,7 @@ void LuaScriptDialog::applyTemplateIfEmpty()
         "-- Called for each new candle\n"
         "-- candle fields: open, high, low, close, year, month, day, hour, minute, second\n"
         "-- position fields: is_open, entry_price, take_profit_price, closed_trade_pnl\n"
-        "-- helpers: get_candle(offset), candles_count(), log(message)\n"
+        "-- helpers: get_candle(offset), candles_count(), get_position(), log(message), set_required_history(count), drawpoint(price, marker_type), drawvline(marker_type_or_color, color)\n"
         "-- Return nil or a signal table:\n"
         "-- { type = SignalType.BUY, quantity = 1.0, stop_loss = 20.0, take_profit = 40.0 }\n"
         "-- { type = SignalType.SELL, quantity = 1.0, stop_loss = 20.0, take_profit = 40.0 }\n"

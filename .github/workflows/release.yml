@@ -81,7 +81,7 @@ jobs:
         echo "Is beta: $IS_BETA"
 
   build-windows:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: windows-latest
     needs: calculate-version
     permissions:
       contents: write
@@ -424,6 +424,7 @@ jobs:
         retention-days: 1
 
   build-linux:
+    if: false  # Temporarily disabled
     runs-on: [self-hosted, Linux, X64]
     needs: calculate-version
     permissions:

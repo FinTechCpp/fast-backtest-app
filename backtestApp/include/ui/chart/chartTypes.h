@@ -136,7 +136,8 @@ namespace chart {
     // Marker types for drawing tools
     enum class MarkerType {
         Check,   // Green check mark
-        Error    // Red error mark
+        Error,   // Red error mark
+        VerticalLine // Full-height vertical line at a candle index
     };
 
     // Structure to store a marker placed on the chart
@@ -144,11 +145,13 @@ namespace chart {
         size_t barIndex;   // Absolute bar index in raw data
         double price;      // Y coordinate (price)
         MarkerType type;   // Type of marker
+        int color = -1;    // RGB 0xRRGGBB, -1 to use default color by marker type
         
         bool operator==(const ChartMarker& other) const {
             return barIndex == other.barIndex && 
                    price == other.price && 
-                   type == other.type;
+                   type == other.type &&
+                   color == other.color;
         }
     };
 }

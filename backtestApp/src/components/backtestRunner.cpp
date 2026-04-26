@@ -4,6 +4,7 @@
 #include <filesystem>
 
 #include "components/backtestRunner.h"
+#include "components/StrategyAdapter.hpp"
 #include "ui/app.h"
 #include "ui/panels/generalParamsPanel.h"
 #include "ui/panels/StrategyPanel.h"
@@ -451,6 +452,16 @@ void BacktestWorker::run()
 
         qDebug() << "Executing backtest...";
         m_results->stats = backtest.run();
+
+        m_results->userMarkers.clear();
+        for (const auto& strategy : backtest.strategies()) {
+            auto adapter = std::dynamic_pointer_cast<StrategyAdapter>(strategy);
+            if (!adapter)
+                continue;
+
+            const auto& markers = adapter->getLuaMarkers();
+            m_results->userMarkers.insert(m_results->userMarkers.end(), markers.begin(), markers.end());
+        }
 
         if (m_cancelRequested.load(std::memory_order_relaxed)) {
             cleanupLogging();

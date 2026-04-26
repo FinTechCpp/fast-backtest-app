@@ -172,6 +172,7 @@ void BacktestResultMenuManager::onSaveCurrentResult()
         config.strategyConfigs = currentResults.strategyConfigs;
         config.candles = currentResults.candles;
         config.stats = currentResults.stats;
+        config.userMarkers = currentResults.userMarkers;
 
         // Save the result
         m_resultManager->saveBacktestResult(config, m_mainWindow, SerializationUtils::FileFormat::JSON);
@@ -256,6 +257,7 @@ void BacktestResultMenuManager::onManageResults()
             backtestResults->strategyConfigs = config.strategyConfigs;
             backtestResults->candles = config.candles;
             backtestResults->stats = config.stats;
+            backtestResults->userMarkers = config.userMarkers;
 
             m_mainWindow->setGeneralParamsConfig(config.generalParams);
             m_mainWindow->setStrategyConfigs(config.strategyConfigs);

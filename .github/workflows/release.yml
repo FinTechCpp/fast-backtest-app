@@ -672,11 +672,11 @@ jobs:
         name: windows-archive
         path: ./artifacts
 
-    - name: Download Linux archive
-      uses: actions/download-artifact@v4
-      with:
-        name: linux-archive
-        path: ./artifacts
+    # - name: Download Linux archive
+    #   uses: actions/download-artifact@v4
+    #   with:
+    #     name: linux-archive
+    #     path: ./artifacts
 
     # Uncomment when macOS build is re-enabled
     # - name: Download macOS archive

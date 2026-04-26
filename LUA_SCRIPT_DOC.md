@@ -59,6 +59,12 @@ Available Fields:
   - `price` is optional (default: current candle close)
   - `marker_type` is optional: `"check"` (default) or `"error"`
   - examples: `drawpoint()`, `drawpoint(candle.high)`, `drawpoint(candle.low, "error")`
+- `drawvline(marker_or_color, color)`
+  - draws a full-height vertical line on the current candle (from bottom to top of the chart)
+  - useful to delimit horizontal zones (for example: zone start and zone end)
+  - `marker_or_color` is optional: `"check"`, `"error"`, or a color (`"#RRGGBB"` or `0xRRGGBB`)
+  - `color` is optional and overrides the first argument color when provided
+  - examples: `drawvline()`, `drawvline("error")`, `drawvline("#00AA88")`, `drawvline("check", 0x0066FF)`
 
 ## 4) Signal Types
 
@@ -143,6 +149,8 @@ Objective:
 - Build a custom SMA indicator in Lua.
 - Open a position on a bullish SMA crossover.
 - Close the position on a bearish SMA crossover.
+- Draw visual markers on the chart with `drawpoint` when signals are emitted.
+- Delimit the active trade zone with full-height vertical lines using `drawvline`.
 
 ```lua
 -- Simple Moving Average indicator on candle.close.
@@ -180,6 +188,10 @@ end
 local FAST_PERIOD = 5
 local SLOW_PERIOD = 20
 
+-- Keep enough bars in memory for current and previous slow SMA values.
+-- Without this, the default history buffer can be too small for SMA crossover logic.
+set_required_history(SLOW_PERIOD + 1)
+
 function on_candle(candle, position)
   -- Warm-up guard:
   -- We need previous and current slow SMA, hence (SLOW_PERIOD + 1).
@@ -211,6 +223,10 @@ function on_candle(candle, position)
   if (not position.is_open) and bullish_cross then
     -- Helpful trace in logs for debugging strategy decisions.
     log("Bullish SMA cross -> BUY")
+    -- Mark the start of a horizontal zone with a full-height vertical line.
+    drawvline("check")
+    -- Place a positive marker near the candle low for visual confirmation.
+    drawpoint(candle.low, "check")
     return {
       -- Mandatory field.
       type = SignalType.BUY,
@@ -223,6 +239,10 @@ function on_candle(candle, position)
   if position.is_open and bearish_cross then
     -- Helpful trace in logs for debugging strategy decisions.
     log("Bearish SMA cross -> LIQUIDATE")
+    -- Mark the end of a horizontal zone with a full-height vertical line.
+    drawvline("error")
+    -- Place a warning marker near the candle high for visual confirmation.
+    drawpoint(candle.high, "error")
     return {
       -- Full exit signal.
       type = SignalType.LIQUIDATE,

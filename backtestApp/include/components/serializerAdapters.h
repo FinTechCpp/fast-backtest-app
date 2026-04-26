@@ -136,6 +136,8 @@ namespace cereal {
 
         if (markerTypeValue == static_cast<int>(chart::MarkerType::Error)) {
             marker.type = chart::MarkerType::Error;
+        } else if (markerTypeValue == static_cast<int>(chart::MarkerType::VerticalLine)) {
+            marker.type = chart::MarkerType::VerticalLine;
         } else {
             marker.type = chart::MarkerType::Check;
         }

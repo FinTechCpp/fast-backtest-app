@@ -114,9 +114,13 @@ public:
             chart::ChartMarker marker;
             marker.barIndex = currentBarIndex;
             marker.price = point.price;
-            marker.type = (point.type == LuaDrawPointType::Error)
-                              ? chart::MarkerType::Error
-                              : chart::MarkerType::Check;
+            if (point.type == LuaDrawPointType::Error) {
+                marker.type = chart::MarkerType::Error;
+            } else if (point.type == LuaDrawPointType::VerticalLine) {
+                marker.type = chart::MarkerType::VerticalLine;
+            } else {
+                marker.type = chart::MarkerType::Check;
+            }
             marker.color = point.color;
             m_luaMarkers.push_back(marker);
         }

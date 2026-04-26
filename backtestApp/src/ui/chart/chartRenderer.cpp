@@ -1398,9 +1398,11 @@ void ChartRenderer::addUserMarkers(XYChart* mainChart,
     // Group markers by (shape type + color) to keep one layer per style.
     std::map<int, std::vector<std::pair<double, double>>> checkMarkersByColor;
     std::map<int, std::vector<std::pair<double, double>>> errorMarkersByColor;
+    std::map<int, std::vector<double>> verticalLinesByColor;
 
     const int defaultCheckColor = 0x00BB00;
     const int defaultErrorColor = 0xBB0000;
+    const int defaultVerticalLineColor = 0x008B8B;
     
     // For each marker, check if visible and convert to relative index
     for (const auto& marker : markers) {
@@ -1419,6 +1421,9 @@ void ChartRenderer::addUserMarkers(XYChart* mainChart,
         } else if (marker.type == chart::MarkerType::Error) {
             const int markerColor = (marker.color >= 0 && marker.color <= 0xFFFFFF) ? marker.color : defaultErrorColor;
             errorMarkersByColor[markerColor].push_back({relativeIndex, marker.price});
+        } else if (marker.type == chart::MarkerType::VerticalLine) {
+            const int markerColor = (marker.color >= 0 && marker.color <= 0xFFFFFF) ? marker.color : defaultVerticalLineColor;
+            verticalLinesByColor[markerColor].push_back(relativeIndex);
         }
     }
     
@@ -1432,6 +1437,16 @@ void ChartRenderer::addUserMarkers(XYChart* mainChart,
     for (const auto& [color, points] : errorMarkersByColor) {
         addMarkers(mainChart, points, "Error Markers", 
                   Chart::Cross2Shape(), 16, color);
+    }
+
+    // Add full-height vertical lines (for Lua-defined horizontal zone boundaries).
+    for (const auto& [color, indices] : verticalLinesByColor) {
+        for (double xIndex : indices) {
+            Mark* mark = mainChart->xAxis()->addMark(xIndex, color, "");
+            if (mark) {
+                mark->setLineWidth(1);
+            }
+        }
     }
 
 }

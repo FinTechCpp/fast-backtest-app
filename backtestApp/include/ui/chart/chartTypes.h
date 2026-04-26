@@ -136,7 +136,8 @@ namespace chart {
     // Marker types for drawing tools
     enum class MarkerType {
         Check,   // Green check mark
-        Error    // Red error mark
+        Error,   // Red error mark
+        VerticalLine // Full-height vertical line at a candle index
     };
 
     // Structure to store a marker placed on the chart

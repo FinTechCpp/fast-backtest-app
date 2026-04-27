@@ -4,6 +4,11 @@
 #include <QMessageBox>
 #include <QTime>
 #include <QCoreApplication>
+#include <QStandardPaths>
+#include <QFile>
+#include <QFileInfo>
+#include <QDir>
+#include <QDateTime>
 
 #include "components/Managers/ProfileManager.h"
 #include "components/Managers/BacktestResultManager.h"
@@ -53,6 +58,10 @@ void App::createActions()
     m_aboutAction = new QAction(tr("About"), this);
     m_aboutAction->setStatusTip(tr("About this application"));
     connect(m_aboutAction, &QAction::triggered, this, &App::onAbout);
+
+    m_exportCurrentSessionLogsAction = new QAction(tr("Download current session logs"), this);
+    m_exportCurrentSessionLogsAction->setStatusTip(tr("Save the current session logs into Downloads"));
+    connect(m_exportCurrentSessionLogsAction, &QAction::triggered, this, &App::onExportCurrentSessionLogs);
 }
 
 void App::createMenus()
@@ -89,8 +98,12 @@ void App::createMenus()
     m_backtestResultMenuManager->createResultMenu(m_menuBar);
 
     // Create Help menu (after the Profile menu)
-    m_helpMenu = m_menuBar->addMenu(tr("&Aide"));
+    m_helpMenu = m_menuBar->addMenu(tr("&Help"));
     m_helpMenu->addAction(m_aboutAction);
+
+    m_helpMenu->addSeparator();
+    m_exportLogsMenu = m_helpMenu->addMenu(tr("Export logs"));
+    m_exportLogsMenu->addAction(m_exportCurrentSessionLogsAction);
 }
 
 void App::onAbout()
@@ -309,4 +322,63 @@ void App::resizeEvent(QResizeEvent* event)
     QMainWindow::resizeEvent(event);
     
     qDebug() << "Window size:" << size().width() << "x" << size().height();
+}
+
+void App::onExportCurrentSessionLogs()
+{
+    QString logFilePath = QCoreApplication::instance()->property("currentLogFilePath").toString();
+    if (logFilePath.isEmpty() || !QFileInfo::exists(logFilePath)) {
+        QMessageBox::warning(this, tr("Export logs"),
+                             tr("No current session log file was found."));
+        return;
+    }
+
+    QString downloadsDir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    if (downloadsDir.isEmpty()) {
+        downloadsDir = QDir::homePath();
+    }
+
+    if (!QDir().mkpath(downloadsDir)) {
+        QMessageBox::warning(this, tr("Export logs"),
+                             tr("Unable to access the Downloads folder."));
+        return;
+    }
+
+    QFileInfo logInfo(logFilePath);
+    QString baseName = logInfo.fileName();
+    if (baseName.isEmpty()) {
+        baseName = "backtestSession.log";
+    }
+
+    QString destPath = QDir(downloadsDir).absoluteFilePath(baseName);
+    if (QFileInfo::exists(destPath)) {
+        QString stamp = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
+        QString suffix = logInfo.suffix();
+        QString name = logInfo.completeBaseName();
+        if (name.isEmpty()) {
+            name = "backtestSession";
+        }
+        QString stampedName = suffix.isEmpty()
+            ? QString("%1_%2").arg(name, stamp)
+            : QString("%1_%2.%3").arg(name, stamp, suffix);
+        destPath = QDir(downloadsDir).absoluteFilePath(stampedName);
+    }
+
+    bool copied = QFile::copy(logFilePath, destPath);
+    if (!copied) {
+        QFile src(logFilePath);
+        QFile dst(destPath);
+        if (src.open(QIODevice::ReadOnly) && dst.open(QIODevice::WriteOnly)) {
+            dst.write(src.readAll());
+            copied = true;
+        }
+    }
+
+    if (copied) {
+        QMessageBox::information(this, tr("Export logs"),
+                                 tr("Logs exported to:\n%1").arg(destPath));
+    } else {
+        QMessageBox::critical(this, tr("Export logs"),
+                              tr("Failed to export logs to the Downloads folder."));
+    }
 }

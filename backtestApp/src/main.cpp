@@ -13,6 +13,7 @@
 #include <QDebug>
 #include <QMessageBox>
 #include <QMetaType>
+#include <QCoreApplication>
 #include <iostream>
 #include "ui/app.h"
 #include "components/backtestRunner.h"
@@ -114,6 +115,10 @@ void setupLogging(QtMsgType logLevel, bool consoleOutput)
         std::cerr << "Unable to open log file: " << logFile.toStdString() << std::endl;
         g_logFile = nullptr;
         g_logStream = nullptr;
+    }
+
+    if (QCoreApplication::instance()) {
+        QCoreApplication::instance()->setProperty("currentLogFilePath", logFile);
     }
 
     // Install message handler

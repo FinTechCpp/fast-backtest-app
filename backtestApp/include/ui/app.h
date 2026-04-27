@@ -66,12 +66,15 @@ private slots:
     void onBacktestError(const QString& error);
     void onBacktestCanceled();
     void onAbout();
+    void onExportCurrentSessionLogs();
 
 private:
     // Menus
     QMenuBar* m_menuBar;
     QMenu* m_helpMenu;
+    QMenu* m_exportLogsMenu;
     QAction* m_aboutAction;
+    QAction* m_exportCurrentSessionLogsAction;
     
     // Profile menu manager
     ProfileMenuManager* m_profileMenuManager; 

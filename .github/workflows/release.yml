@@ -81,7 +81,7 @@ jobs:
         echo "Is beta: $IS_BETA"
 
   build-windows:
-    runs-on: windows-latest
+    runs-on: windows-2022
     needs: calculate-version
     permissions:
       contents: write

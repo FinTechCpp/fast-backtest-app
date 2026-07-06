@@ -333,6 +333,122 @@ std::tuple<std::vector<double>, std::vector<int>> IndicatorMathUtils::calculateS
     return {supertrendValues, trendDirections};
 }
 
+std::tuple<std::vector<double>, std::vector<double>, std::vector<int>> IndicatorMathUtils::calculateSwingStructure(
+    const std::vector<double>& highData,
+    const std::vector<double>& lowData,
+    const std::vector<double>& closeData,
+    double highMove,
+    double lowMove,
+    int minPeriods,
+    int maxPeriods,
+    const std::vector<double>& timestamps,
+    bool resetOnNewDay)
+{
+    size_t dataSize = closeData.size();
+    std::vector<double> swingHighValues(dataSize, Chart::NoValue);
+    std::vector<double> swingLowValues(dataSize, Chart::NoValue);
+    std::vector<int> trendValues(dataSize, 0);
+
+    if (minPeriods < 1 || maxPeriods < minPeriods)
+        return {swingHighValues, swingLowValues, trendValues};
+
+    size_t windowSize = static_cast<size_t>(2 * maxPeriods + 1);
+    if (dataSize < windowSize)
+        return {swingHighValues, swingLowValues, trendValues};
+
+    // Split into per-day segments if reset is enabled, otherwise treat the whole series as one segment
+    std::set<size_t> segmentBoundaries;
+    segmentBoundaries.insert(0);
+    if (resetOnNewDay && !timestamps.empty()) {
+        auto boundaries = detectDayBoundaries(timestamps);
+        segmentBoundaries.insert(boundaries.begin(), boundaries.end());
+    }
+    segmentBoundaries.insert(dataSize);
+
+    std::vector<size_t> segments(segmentBoundaries.begin(), segmentBoundaries.end());
+
+    for (size_t s = 0; s + 1 < segments.size(); ++s) {
+        size_t segStart = segments[s];
+        size_t segEnd = segments[s + 1]; // exclusive
+        if (segEnd - segStart < windowSize) continue;
+
+        std::vector<double> shList, slList; // keep at most the last 2 confirmed swings
+        double lastHigh = Chart::NoValue;
+        double lastLow = Chart::NoValue;
+        int trend = 0;
+
+        for (size_t i = segStart; i < segEnd; ++i) {
+            if (i >= segStart + static_cast<size_t>(2 * maxPeriods)) {
+                // Candidate is the middle of a 2*maxPeriods+1 window: maxPeriods bars are
+                // available both before and after it, giving the widest validation window.
+                size_t candidateIdx = i - static_cast<size_t>(maxPeriods);
+
+                // Swing high check
+                double peak = highData[candidateIdx];
+                bool rose = false;
+                for (int k = minPeriods; k <= maxPeriods; ++k) {
+                    if (peak - closeData[candidateIdx - k] >= highMove) { rose = true; break; }
+                }
+                if (rose) {
+                    bool fell = false;
+                    for (int j = minPeriods; j <= maxPeriods; ++j) {
+                        if (peak - closeData[candidateIdx + j] >= highMove) { fell = true; break; }
+                    }
+                    if (fell) {
+                        bool isLocalMax = true;
+                        for (size_t k2 = candidateIdx - maxPeriods; k2 <= candidateIdx + static_cast<size_t>(maxPeriods); ++k2) {
+                            if (k2 != candidateIdx && highData[k2] > peak) { isLocalMax = false; break; }
+                        }
+                        if (isLocalMax) {
+                            shList.push_back(peak);
+                            if (shList.size() > 2) shList.erase(shList.begin());
+                            lastHigh = peak;
+                        }
+                    }
+                }
+
+                // Swing low check
+                double trough = lowData[candidateIdx];
+                bool fellBefore = false;
+                for (int k = minPeriods; k <= maxPeriods; ++k) {
+                    if (closeData[candidateIdx - k] - trough >= lowMove) { fellBefore = true; break; }
+                }
+                if (fellBefore) {
+                    bool roseAfter = false;
+                    for (int j = minPeriods; j <= maxPeriods; ++j) {
+                        if (closeData[candidateIdx + j] - trough >= lowMove) { roseAfter = true; break; }
+                    }
+                    if (roseAfter) {
+                        bool isLocalMin = true;
+                        for (size_t k2 = candidateIdx - maxPeriods; k2 <= candidateIdx + static_cast<size_t>(maxPeriods); ++k2) {
+                            if (k2 != candidateIdx && lowData[k2] < trough) { isLocalMin = false; break; }
+                        }
+                        if (isLocalMin) {
+                            slList.push_back(trough);
+                            if (slList.size() > 2) slList.erase(slList.begin());
+                            lastLow = trough;
+                        }
+                    }
+                }
+
+                if (shList.size() >= 2 && slList.size() >= 2) {
+                    double hh = shList[1], ph = shList[0];
+                    double hl = slList[1], pl = slList[0];
+                    if (hh > ph && hl > pl) trend = 1;
+                    else if (hh < ph && hl < pl) trend = -1;
+                    else trend = 0;
+                }
+            }
+
+            swingHighValues[i] = lastHigh;
+            swingLowValues[i] = lastLow;
+            trendValues[i] = trend;
+        }
+    }
+
+    return {swingHighValues, swingLowValues, trendValues};
+}
+
 std::tuple<std::vector<double>, std::vector<double>> IndicatorMathUtils::calculateStochastic(
     const std::vector<double>& highData,
     const std::vector<double>& lowData,

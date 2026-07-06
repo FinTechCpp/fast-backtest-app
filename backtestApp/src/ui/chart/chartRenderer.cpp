@@ -208,6 +208,13 @@ void ChartRenderer::createOrUpdateChart(
         }
     }
 
+    // Swing Structure
+    for (const indicators::SwingStructureInstance* swingStructure : dataManager.getIndicatorsOfType<indicators::SwingStructureInstance>()) {
+        if (swingStructure->visible) {
+            addSwingStructureToChart(m_financeChart.get(), *swingStructure, dataManager, aggregationInfo);
+        }
+    }
+
     // Super important, will allow me to do vertical zoom
     // mainChart->yAxis()->setLinearScale(200, 20000);
 
@@ -1272,6 +1279,72 @@ void ChartRenderer::addBBToChart(FinanceChart *chart, const indicators::BBInstan
     snprintf(buffer, sizeof(buffer), "BB Lower (%d)", bb.period);
     LineLayer* lowerLayer = chart->addLineIndicator2(mainChart, lowerArray, bb.lowerBandColor, buffer);
     if (lowerLayer) lowerLayer->setFastLineMode(true);
+}
+
+void ChartRenderer::addSwingStructureToChart(FinanceChart* chart,
+                                              const indicators::SwingStructureInstance& swingStructure,
+                                              const ChartDataManager& dataManager,
+                                              const chart::AggregationInfo& aggregationInfo)
+{
+    size_t startIndex = aggregationInfo.startIndex;
+    size_t pointsToShow = aggregationInfo.pointCount;
+
+    const auto& swingMap = dataManager.getAggregatedIndicators(aggregationInfo.level).swingStructureValues;
+    auto it = swingMap.find(swingStructure.id);
+    if (it == swingMap.end()) return;
+
+    const std::vector<double>& swingHigh = std::get<0>(it->second);
+    const std::vector<double>& swingLow = std::get<1>(it->second);
+    const std::vector<int>& trend = std::get<2>(it->second);
+
+    if (swingHigh.empty() || startIndex >= swingHigh.size()) return;
+
+    size_t endIndex = std::min(startIndex + pointsToShow, swingHigh.size());
+    if (endIndex <= startIndex) return;
+    size_t actualPoints = endIndex - startIndex;
+
+    DoubleArray swingHighArray(&swingHigh[startIndex], static_cast<int>(actualPoints));
+    DoubleArray swingLowArray(&swingLow[startIndex], static_cast<int>(actualPoints));
+
+    XYChart* mainChart = (XYChart*)chart->getChart(1);
+
+    char buffer[1024];
+    snprintf(buffer, sizeof(buffer), "Swing High (%.5f,%d,%d)", swingStructure.highMove, swingStructure.minPeriods, swingStructure.maxPeriods);
+    LineLayer* highLayer = chart->addLineIndicator2(mainChart, swingHighArray, mainChart->dashLineColor(swingStructure.swingHighColor, Chart::DashLine), buffer);
+    if (highLayer) highLayer->setLineWidth(1);
+
+    snprintf(buffer, sizeof(buffer), "Swing Low (%.5f,%d,%d)", swingStructure.lowMove, swingStructure.minPeriods, swingStructure.maxPeriods);
+    LineLayer* lowLayer = chart->addLineIndicator2(mainChart, swingLowArray, mainChart->dashLineColor(swingStructure.swingLowColor, Chart::DashLine), buffer);
+    if (lowLayer) lowLayer->setLineWidth(1);
+
+    // Detect new confirmed swings (step changes in the carried-forward arrays) and trend
+    // changes within the visible window, and mark them with scatter points / vertical lines.
+    std::vector<std::pair<double, double>> swingHighMarkers;
+    std::vector<std::pair<double, double>> swingLowMarkers;
+
+    for (size_t i = 0; i < actualPoints; ++i) {
+        size_t absIndex = startIndex + i;
+        if (absIndex == 0) continue;
+
+        if (swingHigh[absIndex] != Chart::NoValue && swingHigh[absIndex] != swingHigh[absIndex - 1]) {
+            swingHighMarkers.push_back({static_cast<double>(i), swingHigh[absIndex]});
+        }
+        if (swingLow[absIndex] != Chart::NoValue && swingLow[absIndex] != swingLow[absIndex - 1]) {
+            swingLowMarkers.push_back({static_cast<double>(i), swingLow[absIndex]});
+        }
+        if (trend[absIndex] != trend[absIndex - 1]) {
+            int color = trend[absIndex] == 1 ? swingStructure.upColor
+                      : trend[absIndex] == -1 ? swingStructure.downColor
+                      : swingStructure.uncertainColor;
+            Mark* mark = mainChart->xAxis()->addMark(static_cast<double>(i), color, "");
+            if (mark) mark->setLineWidth(1);
+        }
+    }
+
+    if (!swingHighMarkers.empty())
+        addMarkers(mainChart, swingHighMarkers, "Swing High", Chart::CircleShape, 9, swingStructure.swingHighColor);
+    if (!swingLowMarkers.empty())
+        addMarkers(mainChart, swingLowMarkers, "Swing Low", Chart::CircleShape, 9, swingStructure.swingLowColor);
 }
 
 void ChartRenderer::addPivotPointsToChart(XYChart *mainChart, const indicators::PivotPointsInstance &pivotPoints, const ChartDataManager &dataManager, const chart::AggregationInfo &aggregationInfo)

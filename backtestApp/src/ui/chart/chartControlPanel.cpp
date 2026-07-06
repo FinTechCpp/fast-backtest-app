@@ -11,6 +11,7 @@
 #include "ui/dialogs/indicators/cciDialog.h"
 #include "ui/dialogs/indicators/macdDialog.h"
 #include "ui/dialogs/indicators/bbDialog.h"
+#include "ui/dialogs/indicators/swingStructureDialog.h"
 
 ChartControlPanel::ChartControlPanel(QWidget* parent)
     : QWidget(parent)
@@ -423,8 +424,10 @@ void ChartControlPanel::onAddSuggestedIndicator(int index) {
         m_chartWidget->addIndicator(*macd);
     } else if (const indicators::BBInstance* bb = dynamic_cast<const indicators::BBInstance*>(indicator)) {
         m_chartWidget->addIndicator(*bb);
+    } else if (const indicators::SwingStructureInstance* swingStructure = dynamic_cast<const indicators::SwingStructureInstance*>(indicator)) {
+        m_chartWidget->addIndicator(*swingStructure);
     }
-    
+
     // Reject the suggestion after adding it
     onRejectSuggestion(index);
 }
@@ -541,6 +544,7 @@ void ChartControlPanel::setupIndicatorControls() {
     m_indicatorTypeCombo->addItem("CCI", static_cast<int>(indicators::Type::CCI));
     m_indicatorTypeCombo->addItem("MACD", static_cast<int>(indicators::Type::MACD));
     m_indicatorTypeCombo->addItem("Bollinger Bands", static_cast<int>(indicators::Type::BB));
+    m_indicatorTypeCombo->addItem("Swing Structure Trend", static_cast<int>(indicators::Type::SWINGSTRUCTURE));
 
     addIndicatorLayout->addWidget(m_indicatorTypeCombo);
     addIndicatorLayout->addWidget(m_addIndicatorButton);
@@ -593,6 +597,9 @@ void ChartControlPanel::onAddIndicatorClicked() {
     } else if (indicatorType == static_cast<int>(indicators::Type::BB)) {
         indicators::BBInstance bb;
         m_chartWidget->addIndicator(std::move(bb));
+    } else if (indicatorType == static_cast<int>(indicators::Type::SWINGSTRUCTURE)) {
+        indicators::SwingStructureInstance swingStructure;
+        m_chartWidget->addIndicator(std::move(swingStructure));
     }
 }
 
@@ -650,6 +657,7 @@ void ChartControlPanel::onEditIndicator(int id) {
     if (tryOpenDialog<indicators::CCIInstance, CCIDialog>(id)) return;
     if (tryOpenDialog<indicators::MACDInstance, MACDDialog>(id)) return;
     if (tryOpenDialog<indicators::BBInstance, bbDialog>(id)) return;
+    if (tryOpenDialog<indicators::SwingStructureInstance, SwingStructureDialog>(id)) return;
 }
 
 void ChartControlPanel::onRemoveIndicator(int id) {
@@ -755,6 +763,8 @@ void ChartControlPanel::configureIndicatorInstances(const std::vector<std::uniqu
                 m_chartWidget->addIndicator(*macd);
             } else if (const indicators::BBInstance* bb = dynamic_cast<const indicators::BBInstance*>(indicator.get())) {
                 m_chartWidget->addIndicator(*bb);
+            } else if (const indicators::SwingStructureInstance* swingStructure = dynamic_cast<const indicators::SwingStructureInstance*>(indicator.get())) {
+                m_chartWidget->addIndicator(*swingStructure);
             }
         }
     } catch (...) {

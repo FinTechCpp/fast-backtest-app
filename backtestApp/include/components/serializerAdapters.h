@@ -699,4 +699,18 @@ namespace cereal {
            cereal::make_nvp("lowerBandColor", bb.lowerBandColor),
            cereal::make_nvp("fillColor", bb.fillColor));
     }
+
+    template<class Archive>
+    void serialize(Archive & ar, indicators::SwingStructureInstance & swingStructure) {
+        ar(cereal::make_nvp("base", cereal::base_class<indicators::IndicatorBase>(&swingStructure)),
+           cereal::make_nvp("highMove", swingStructure.highMove),
+           cereal::make_nvp("lowMove", swingStructure.lowMove),
+           cereal::make_nvp("minPeriods", swingStructure.minPeriods),
+           cereal::make_nvp("maxPeriods", swingStructure.maxPeriods),
+           cereal::make_nvp("swingHighColor", swingStructure.swingHighColor),
+           cereal::make_nvp("swingLowColor", swingStructure.swingLowColor),
+           cereal::make_nvp("upColor", swingStructure.upColor),
+           cereal::make_nvp("downColor", swingStructure.downColor),
+           cereal::make_nvp("uncertainColor", swingStructure.uncertainColor));
+    }
 }

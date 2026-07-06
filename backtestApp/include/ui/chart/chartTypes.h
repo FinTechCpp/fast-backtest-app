@@ -104,6 +104,7 @@ namespace chart {
         std::set<int> validCciIds;
         std::set<int> validMacdIds;
         std::set<int> validBbIds;
+        std::set<int> validSwingStructureIds;
 
         // Indicator data
         std::map<int, std::vector<double>> rsiValues;
@@ -114,6 +115,7 @@ namespace chart {
         std::map<int, std::vector<double>> cciValues;
         std::map<int, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>> macdValues; // macd_line, signal_line, histogram
         std::map<int, std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>> bbValues; // middle_band, upper_band, lower_band
+        std::map<int, std::tuple<std::vector<double>, std::vector<double>, std::vector<int>>> swingStructureValues; // swing_high, swing_low, trend (carried forward)
         AggregationLevel level;
 
         // Utility methods to check if a specific indicator is valid
@@ -126,6 +128,7 @@ namespace chart {
         bool isCciValid(int id) const { return validCciIds.find(id) != validCciIds.end(); }
         bool isMacdValid(int id) const { return validMacdIds.find(id) != validMacdIds.end(); }
         bool isBbValid(int id) const { return validBbIds.find(id) != validBbIds.end(); }
+        bool isSwingStructureValid(int id) const { return validSwingStructureIds.find(id) != validSwingStructureIds.end(); }
     };
 
     struct EquityData {
@@ -168,7 +171,8 @@ namespace indicators {
         PIVOTPOINTS,
         CCI,
         MACD,
-        BB
+        BB,
+        SWINGSTRUCTURE
     };
 
     enum class PivotPeriodType {
@@ -260,6 +264,16 @@ namespace indicators {
             bool operator==(const BB& other) const = default;
             bool operator!=(const BB& other) const = default;
         };
+
+        struct SwingStructure {
+            double highMove = 0.00070;  // Minimum price move for each swing-high leg
+            double lowMove = 0.00050;   // Minimum price move for each swing-low leg
+            int minPeriods = 3;         // Minimum duration (bars) of each leg
+            int maxPeriods = 20;        // Maximum duration (bars) of each leg
+
+            bool operator==(const SwingStructure& other) const = default;
+            bool operator!=(const SwingStructure& other) const = default;
+        };
     }
 
     struct IndicatorSignal {        
@@ -276,7 +290,8 @@ namespace indicators {
             params::CCI cci;
             params::MACD macd;
             params::BB bb;
-            
+            params::SwingStructure swingStructure;
+
             ParamsUnion() {} // Union requires a default constructor
             ~ParamsUnion() {} // And a destructor
         } params;
@@ -809,6 +824,60 @@ namespace indicators {
             upperBandColor = 0xFF0000;  // Red
             lowerBandColor = 0x00FF00;  // Green
             fillColor = 0xADD8E6;       // Light blue
+        }
+    };
+
+    struct SwingStructureInstance : public IndicatorBase {
+        SwingStructureInstance() : IndicatorBase() {
+            setDefaults();
+        }
+
+        SwingStructureInstance(params::SwingStructure p) : IndicatorBase() {
+            setDefaults();
+            highMove = p.highMove;
+            lowMove = p.lowMove;
+            minPeriods = p.minPeriods;
+            maxPeriods = p.maxPeriods;
+        }
+
+        double highMove;       // Minimum price move for each swing-high leg
+        double lowMove;        // Minimum price move for each swing-low leg
+        int minPeriods;        // Minimum duration (bars) of each leg
+        int maxPeriods;        // Maximum duration (bars) of each leg
+        int swingHighColor;    // Marker color for confirmed swing highs
+        int swingLowColor;     // Marker color for confirmed swing lows
+        int upColor;           // Vertical line color when trend turns up
+        int downColor;         // Vertical line color when trend turns down
+        int uncertainColor;    // Vertical line color when trend turns uncertain
+
+        bool isCalculationParamsEqual(const IndicatorBase& other) const override {
+            const SwingStructureInstance* otherSS = dynamic_cast<const SwingStructureInstance*>(&other);
+            if (!otherSS) return false;
+            return highMove == otherSS->highMove &&
+                   lowMove == otherSS->lowMove &&
+                   minPeriods == otherSS->minPeriods &&
+                   maxPeriods == otherSS->maxPeriods &&
+                   resetOnNewDay == otherSS->resetOnNewDay;
+        }
+
+        std::unique_ptr<IndicatorBase> clone() const override {
+            return std::make_unique<SwingStructureInstance>(*this);
+        }
+
+        QString getDisplayName() const override {
+            return QString("Swing Structure (%1,%2,%3,%4)").arg(highMove, 0, 'f', 5).arg(lowMove, 0, 'f', 5).arg(minPeriods).arg(maxPeriods);
+        }
+
+        void setDefaults() override {
+            highMove = 0.00070;
+            lowMove = 0.00050;
+            minPeriods = 3;
+            maxPeriods = 20;
+            swingHighColor = 0xFF4444;   // Red
+            swingLowColor = 0x44FF44;    // Green
+            upColor = 0x44FF44;          // Green
+            downColor = 0xFF4444;        // Red
+            uncertainColor = 0xFFAA00;   // Orange
         }
     };
 }

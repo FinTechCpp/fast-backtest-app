@@ -17,6 +17,7 @@ CEREAL_REGISTER_TYPE(indicators::CCIInstance)
 CEREAL_REGISTER_TYPE(indicators::MACDInstance)
 CEREAL_REGISTER_TYPE(indicators::BBInstance)
 CEREAL_REGISTER_TYPE(indicators::PivotPointsInstance)
+CEREAL_REGISTER_TYPE(indicators::SwingStructureInstance)
 
 // Declare hierarchical relationships
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::RSIInstance)
@@ -29,6 +30,7 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::BBIn
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::MACDInstance)
 
 CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::PivotPointsInstance)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(indicators::IndicatorBase, indicators::SwingStructureInstance)
 
 CEREAL_REGISTER_DYNAMIC_INIT(chart_types)
 

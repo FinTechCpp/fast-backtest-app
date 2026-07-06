@@ -160,6 +160,7 @@ private:
     void calculateCCI(int id, int period, bool resetOnNewDay);
     void calculateMACD(int id,int fastPeriod, int slowPeriod, int signalPeriod, filter::PriceType source, filter::MAType osc_ma_type, filter::MAType signal_ma_type, int signal_smoothing, bool resetOnNewDay);
     void calculateBB(int id, int period, double stdDevMultiplier, filter::PriceType source, filter::MAType osc_ma_type, bool resetOnNewDay);
+    void calculateSwingStructure(int id, double highMove, double lowMove, int minPeriods, int maxPeriods, bool resetOnNewDay);
     // We may not need to pass the complete instance but why not; if we do that, we do it for all indicators
     void calculatePivotPoints(const indicators::PivotPointsInstance& config);
 

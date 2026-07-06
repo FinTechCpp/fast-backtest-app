@@ -145,6 +145,11 @@ private:
         const ChartDataManager& dataManager,
         const chart::AggregationInfo& aggregationInfo);
 
+    void addSwingStructureToChart(FinanceChart* chart,
+        const indicators::SwingStructureInstance& swingStructure,
+        const ChartDataManager& dataManager,
+        const chart::AggregationInfo& aggregationInfo);
+
     // Method to add user-drawn markers
     void addUserMarkers(XYChart* mainChart,
                        const std::vector<chart::ChartMarker>& markers,

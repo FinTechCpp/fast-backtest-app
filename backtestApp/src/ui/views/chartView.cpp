@@ -339,6 +339,17 @@ std::vector<std::unique_ptr<indicators::IndicatorBase>> ChartView::extractIndica
                 addIfNotPresent(std::move(bb));
                 break;
             }
+            case filter::IndicatorType::SWING_STRUCTURE_HIGH:
+            case filter::IndicatorType::SWING_STRUCTURE_LOW:
+            case filter::IndicatorType::SWING_STRUCTURE_TREND: {
+                auto swingStructure = std::make_unique<indicators::SwingStructureInstance>();
+                swingStructure->highMove = source.swingParams.highMove;
+                swingStructure->lowMove = source.swingParams.lowMove;
+                swingStructure->minPeriods = source.swingParams.minPeriods;
+                swingStructure->maxPeriods = source.swingParams.maxPeriods;
+                addIfNotPresent(std::move(swingStructure));
+                break;
+            }
             default:
                 break;
         }

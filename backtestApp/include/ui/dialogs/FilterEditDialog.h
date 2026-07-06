@@ -86,6 +86,11 @@ private:
     QDoubleSpinBox* m_leftBBStdDevMultiplierSpin;
     QComboBox* m_leftBBSourceCombo;              // "open"/"high"/"low"/"close"
     QComboBox* m_leftBBMATypeCombo;              // "EMA"/"SMA" for MA type
+    QWidget* m_leftSwingStructureWidget;
+    QDoubleSpinBox* m_leftSwingHighMoveSpin;
+    QDoubleSpinBox* m_leftSwingLowMoveSpin;
+    QSpinBox* m_leftSwingMinPeriodsSpin;
+    QSpinBox* m_leftSwingMaxPeriodsSpin;
     // Transform widgets for left indicator
     QComboBox* m_leftTransformCombo;
     // Transform widgets for right indicator
@@ -137,6 +142,11 @@ private:
     QDoubleSpinBox* m_rightBBStdDevMultiplierSpin;
     QComboBox* m_rightBBSourceCombo;              // "open"/"high"/"low"/"close"
     QComboBox* m_rightBBMATypeCombo;              // "EMA"/"SMA" for MA type
+    QWidget* m_rightSwingStructureWidget;
+    QDoubleSpinBox* m_rightSwingHighMoveSpin;
+    QDoubleSpinBox* m_rightSwingLowMoveSpin;
+    QSpinBox* m_rightSwingMinPeriodsSpin;
+    QSpinBox* m_rightSwingMaxPeriodsSpin;
 
     // Widgets for operator
     QComboBox* m_operatorCombo;

@@ -139,7 +139,15 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_leftBBSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
-    connect(m_leftBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+    connect(m_leftBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftSwingHighMoveSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftSwingLowMoveSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftSwingMinPeriodsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
+    connect(m_leftSwingMaxPeriodsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &FilterEditDialog::updatePreview);
     // Left transform widgets
     if (m_leftTransformCombo)
@@ -189,7 +197,15 @@ void FilterEditDialog::setupUI()
             this, &FilterEditDialog::updatePreview);
     connect(m_rightBBSourceCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), 
             this, &FilterEditDialog::updatePreview);
-    connect(m_rightBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), 
+    connect(m_rightBBStdDevMultiplierSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightSwingHighMoveSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightSwingLowMoveSpin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightSwingMinPeriodsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+            this, &FilterEditDialog::updatePreview);
+    connect(m_rightSwingMaxPeriodsSpin, QOverload<int>::of(&QSpinBox::valueChanged),
             this, &FilterEditDialog::updatePreview);
 
     // Distance spin connection
@@ -264,6 +280,9 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     m_leftIndicatorTypeCombo->addItem("Bollinger Bands - Upper Band", static_cast<int>(filter::IndicatorType::BB_UPPER));
     m_leftIndicatorTypeCombo->addItem("Bollinger Bands - Lower Band", static_cast<int>(filter::IndicatorType::BB_LOWER));
     m_leftIndicatorTypeCombo->addItem("Bollinger Bands - Percent B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
+    m_leftIndicatorTypeCombo->addItem("Swing Structure - High", static_cast<int>(filter::IndicatorType::SWING_STRUCTURE_HIGH));
+    m_leftIndicatorTypeCombo->addItem("Swing Structure - Low", static_cast<int>(filter::IndicatorType::SWING_STRUCTURE_LOW));
+    m_leftIndicatorTypeCombo->addItem("Swing Structure - Trend", static_cast<int>(filter::IndicatorType::SWING_STRUCTURE_TREND));
     indicatorTypeLayout->addRow("Indicator type:", m_leftIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
 
@@ -412,7 +431,33 @@ void FilterEditDialog::setupLeftValueUI(QWidget* parent)
     bbLayout->addRow("Source:", m_leftBBSourceCombo);
     bbLayout->addRow("Stddev multiplier:", m_leftBBStdDevMultiplierSpin);
     m_leftBBWidget->setVisible(false);
-    indicatorLayout->addWidget(m_leftBBWidget); 
+    indicatorLayout->addWidget(m_leftBBWidget);
+
+    // Swing Structure
+    m_leftSwingStructureWidget = new QWidget(m_leftIndicatorWidget);
+    QFormLayout* swingLeftLayout = new QFormLayout(m_leftSwingStructureWidget);
+    m_leftSwingHighMoveSpin = new QDoubleSpinBox(m_leftSwingStructureWidget);
+    m_leftSwingHighMoveSpin->setRange(0.00001, 100000.0);
+    m_leftSwingHighMoveSpin->setDecimals(5);
+    m_leftSwingHighMoveSpin->setSingleStep(0.0001);
+    m_leftSwingHighMoveSpin->setValue(0.00070);
+    m_leftSwingLowMoveSpin = new QDoubleSpinBox(m_leftSwingStructureWidget);
+    m_leftSwingLowMoveSpin->setRange(0.00001, 100000.0);
+    m_leftSwingLowMoveSpin->setDecimals(5);
+    m_leftSwingLowMoveSpin->setSingleStep(0.0001);
+    m_leftSwingLowMoveSpin->setValue(0.00050);
+    m_leftSwingMinPeriodsSpin = new QSpinBox(m_leftSwingStructureWidget);
+    m_leftSwingMinPeriodsSpin->setRange(1, 1000);
+    m_leftSwingMinPeriodsSpin->setValue(3);
+    m_leftSwingMaxPeriodsSpin = new QSpinBox(m_leftSwingStructureWidget);
+    m_leftSwingMaxPeriodsSpin->setRange(1, 1000);
+    m_leftSwingMaxPeriodsSpin->setValue(20);
+    swingLeftLayout->addRow("High move (price):", m_leftSwingHighMoveSpin);
+    swingLeftLayout->addRow("Low move (price):", m_leftSwingLowMoveSpin);
+    swingLeftLayout->addRow("Min periods:", m_leftSwingMinPeriodsSpin);
+    swingLeftLayout->addRow("Max periods:", m_leftSwingMaxPeriodsSpin);
+    m_leftSwingStructureWidget->setVisible(false);
+    indicatorLayout->addWidget(m_leftSwingStructureWidget);
 
     // 3. Candle property
     m_leftCandlePropertyWidget = new QWidget(parent);
@@ -489,6 +534,9 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     m_rightIndicatorTypeCombo->addItem("Bollinger Bands - Upper Band", static_cast<int>(filter::IndicatorType::BB_UPPER));
     m_rightIndicatorTypeCombo->addItem("Bollinger Bands - Lower Band", static_cast<int>(filter::IndicatorType::BB_LOWER));
     m_rightIndicatorTypeCombo->addItem("Bollinger Bands - Percent B", static_cast<int>(filter::IndicatorType::BB_PERCENT_B));
+    m_rightIndicatorTypeCombo->addItem("Swing Structure - High", static_cast<int>(filter::IndicatorType::SWING_STRUCTURE_HIGH));
+    m_rightIndicatorTypeCombo->addItem("Swing Structure - Low", static_cast<int>(filter::IndicatorType::SWING_STRUCTURE_LOW));
+    m_rightIndicatorTypeCombo->addItem("Swing Structure - Trend", static_cast<int>(filter::IndicatorType::SWING_STRUCTURE_TREND));
     indicatorTypeLayout->addRow("Indicator type:", m_rightIndicatorTypeCombo);
     indicatorLayout->addLayout(indicatorTypeLayout);
 
@@ -634,7 +682,33 @@ void FilterEditDialog::setupRightValueUI(QWidget* parent)
     bbLayout->addRow("Source:", m_rightBBSourceCombo);
     bbLayout->addRow("Stddev multiplier:", m_rightBBStdDevMultiplierSpin);
     m_rightBBWidget->setVisible(false);
-    indicatorLayout->addWidget(m_rightBBWidget);    
+    indicatorLayout->addWidget(m_rightBBWidget);
+
+    // Swing Structure
+    m_rightSwingStructureWidget = new QWidget(m_rightIndicatorWidget);
+    QFormLayout* swingRightLayout = new QFormLayout(m_rightSwingStructureWidget);
+    m_rightSwingHighMoveSpin = new QDoubleSpinBox(m_rightSwingStructureWidget);
+    m_rightSwingHighMoveSpin->setRange(0.00001, 100000.0);
+    m_rightSwingHighMoveSpin->setDecimals(5);
+    m_rightSwingHighMoveSpin->setSingleStep(0.0001);
+    m_rightSwingHighMoveSpin->setValue(0.00070);
+    m_rightSwingLowMoveSpin = new QDoubleSpinBox(m_rightSwingStructureWidget);
+    m_rightSwingLowMoveSpin->setRange(0.00001, 100000.0);
+    m_rightSwingLowMoveSpin->setDecimals(5);
+    m_rightSwingLowMoveSpin->setSingleStep(0.0001);
+    m_rightSwingLowMoveSpin->setValue(0.00050);
+    m_rightSwingMinPeriodsSpin = new QSpinBox(m_rightSwingStructureWidget);
+    m_rightSwingMinPeriodsSpin->setRange(1, 1000);
+    m_rightSwingMinPeriodsSpin->setValue(3);
+    m_rightSwingMaxPeriodsSpin = new QSpinBox(m_rightSwingStructureWidget);
+    m_rightSwingMaxPeriodsSpin->setRange(1, 1000);
+    m_rightSwingMaxPeriodsSpin->setValue(20);
+    swingRightLayout->addRow("High move (price):", m_rightSwingHighMoveSpin);
+    swingRightLayout->addRow("Low move (price):", m_rightSwingLowMoveSpin);
+    swingRightLayout->addRow("Min periods:", m_rightSwingMinPeriodsSpin);
+    swingRightLayout->addRow("Max periods:", m_rightSwingMaxPeriodsSpin);
+    m_rightSwingStructureWidget->setVisible(false);
+    indicatorLayout->addWidget(m_rightSwingStructureWidget);
 
     // 3. Constant
     m_rightConstantWidget = new QWidget(parent);
@@ -737,6 +811,7 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_leftCCIWidget->setVisible(type == filter::IndicatorType::CCI);
         m_leftMACDWidget->setVisible(type == filter::IndicatorType::MACD_HISTOGRAM || type == filter::IndicatorType::MACD_LINE || type == filter::IndicatorType::MACD_SIGNAL);
         m_leftBBWidget->setVisible(type == filter::IndicatorType::BB_UPPER || type == filter::IndicatorType::BB_LOWER || type == filter::IndicatorType::BB_PERCENT_B);
+        m_leftSwingStructureWidget->setVisible(type == filter::IndicatorType::SWING_STRUCTURE_HIGH || type == filter::IndicatorType::SWING_STRUCTURE_LOW || type == filter::IndicatorType::SWING_STRUCTURE_TREND);
     } else if (container == m_rightIndicatorWidget) {
         m_rightEMAWidget->setVisible(type == filter::IndicatorType::EMA);
         m_rightRSIWidget->setVisible(type == filter::IndicatorType::RSI);
@@ -746,6 +821,7 @@ void FilterEditDialog::updateIndicatorParamsVisibility(QWidget* container, filte
         m_rightCCIWidget->setVisible(type == filter::IndicatorType::CCI);
         m_rightMACDWidget->setVisible(type == filter::IndicatorType::MACD_HISTOGRAM || type == filter::IndicatorType::MACD_LINE || type == filter::IndicatorType::MACD_SIGNAL);
         m_rightBBWidget->setVisible(type == filter::IndicatorType::BB_UPPER || type == filter::IndicatorType::BB_LOWER || type == filter::IndicatorType::BB_PERCENT_B);
+        m_rightSwingStructureWidget->setVisible(type == filter::IndicatorType::SWING_STRUCTURE_HIGH || type == filter::IndicatorType::SWING_STRUCTURE_LOW || type == filter::IndicatorType::SWING_STRUCTURE_TREND);
     }
 }
 
@@ -814,6 +890,16 @@ filter::ValueSource FilterEditDialog::getLeftValueSource() const
                     // Set optional fields (source and ma_type) which are integers in the struct
                     source.bbParams.ma_type = static_cast<int>(m_leftBBMATypeCombo->currentData().toInt());
                     source.bbParams.source = static_cast<int>(m_leftBBSourceCombo->currentData().toInt());
+                    break;
+                case filter::IndicatorType::SWING_STRUCTURE_HIGH:
+                case filter::IndicatorType::SWING_STRUCTURE_LOW:
+                case filter::IndicatorType::SWING_STRUCTURE_TREND:
+                    source.swingParams = filter::SwingStructureParams(
+                        m_leftSwingHighMoveSpin->value(),
+                        m_leftSwingLowMoveSpin->value(),
+                        m_leftSwingMinPeriodsSpin->value(),
+                        m_leftSwingMaxPeriodsSpin->value()
+                    );
                     break;
                 default:
                     break;
@@ -897,6 +983,16 @@ filter::ValueSource FilterEditDialog::getRightValueSource() const
                     // Set optional fields (source and ma_type)
                     source.bbParams.ma_type = static_cast<int>(m_rightBBMATypeCombo->currentData().toInt());
                     source.bbParams.source = static_cast<int>(m_rightBBSourceCombo->currentData().toInt());
+                    break;
+                case filter::IndicatorType::SWING_STRUCTURE_HIGH:
+                case filter::IndicatorType::SWING_STRUCTURE_LOW:
+                case filter::IndicatorType::SWING_STRUCTURE_TREND:
+                    source.swingParams = filter::SwingStructureParams(
+                        m_rightSwingHighMoveSpin->value(),
+                        m_rightSwingLowMoveSpin->value(),
+                        m_rightSwingMinPeriodsSpin->value(),
+                        m_rightSwingMaxPeriodsSpin->value()
+                    );
                     break;
                 default:
                     break;
@@ -1072,6 +1168,14 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                     m_leftBBSourceCombo->setCurrentIndex(m_leftBBSourceCombo->findData(static_cast<int>(filter.leftValue.bbParams.source)));
                     m_leftBBStdDevMultiplierSpin->setValue(filter.leftValue.bbParams.stddev_multiplier);
                     break;
+                case filter::IndicatorType::SWING_STRUCTURE_HIGH:
+                case filter::IndicatorType::SWING_STRUCTURE_LOW:
+                case filter::IndicatorType::SWING_STRUCTURE_TREND:
+                    m_leftSwingHighMoveSpin->setValue(filter.leftValue.swingParams.highMove);
+                    m_leftSwingLowMoveSpin->setValue(filter.leftValue.swingParams.lowMove);
+                    m_leftSwingMinPeriodsSpin->setValue(filter.leftValue.swingParams.minPeriods);
+                    m_leftSwingMaxPeriodsSpin->setValue(filter.leftValue.swingParams.maxPeriods);
+                    break;
                 default:
                     break;
             }
@@ -1143,6 +1247,14 @@ void FilterEditDialog::setFilter(const filter::GenericFilter& filter)
                     m_rightBBMATypeCombo->setCurrentIndex(m_rightBBMATypeCombo->findData(static_cast<int>(filter.rightValue.bbParams.ma_type)));
                     m_rightBBSourceCombo->setCurrentIndex(m_rightBBSourceCombo->findData(static_cast<int>(filter.rightValue.bbParams.source)));
                     m_rightBBStdDevMultiplierSpin->setValue(filter.rightValue.bbParams.stddev_multiplier);
+                    break;
+                case filter::IndicatorType::SWING_STRUCTURE_HIGH:
+                case filter::IndicatorType::SWING_STRUCTURE_LOW:
+                case filter::IndicatorType::SWING_STRUCTURE_TREND:
+                    m_rightSwingHighMoveSpin->setValue(filter.rightValue.swingParams.highMove);
+                    m_rightSwingLowMoveSpin->setValue(filter.rightValue.swingParams.lowMove);
+                    m_rightSwingMinPeriodsSpin->setValue(filter.rightValue.swingParams.minPeriods);
+                    m_rightSwingMaxPeriodsSpin->setValue(filter.rightValue.swingParams.maxPeriods);
                     break;
                 default:
                     break;

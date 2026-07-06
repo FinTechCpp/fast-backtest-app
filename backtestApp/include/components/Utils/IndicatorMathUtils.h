@@ -219,6 +219,31 @@ public:
     );
 
     /**
+     * @brief Calculates the Swing Structure Trend indicator
+     *
+     * A swing high is confirmed when the price rose by at least `highMove` over a leg of
+     * `minPeriods`-`maxPeriods` bars before the peak, then fell by at least `highMove` over
+     * a leg of the same duration range after it, and the peak is the highest high within
+     * +/- maxPeriods bars. A swing low mirrors this using `lowMove` on candle lows/closes.
+     * The trend is up when the latest swing high/low both exceed the previous ones, down
+     * when both are lower, and uncertain (0) otherwise.
+     *
+     * @return tuple of (swingHighValues, swingLowValues, trendValues), each full-length and
+     * carried forward from the last confirmed swing/trend (Chart::NoValue / 0 before the first)
+     */
+    static std::tuple<std::vector<double>, std::vector<double>, std::vector<int>> calculateSwingStructure(
+        const std::vector<double>& highData,
+        const std::vector<double>& lowData,
+        const std::vector<double>& closeData,
+        double highMove,
+        double lowMove,
+        int minPeriods,
+        int maxPeriods,
+        const std::vector<double>& timestamps = {},
+        bool resetOnNewDay = false
+    );
+
+    /**
      * @brief Calculates Pivot Points
      */
     static std::vector<indicators::PivotPointsInstance::PivotPeriod> calculatePivotPoints(

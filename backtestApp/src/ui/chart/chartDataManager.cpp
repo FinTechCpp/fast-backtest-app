@@ -443,6 +443,25 @@ void ChartDataManager::aggregateIndicators(chart::AggregationLevel level) {
             }
         }
     }
+
+    // Swing Structure
+    for (const auto& [id, values] : m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].swingStructureValues) {
+        if (!aggregated.isSwingStructureValid(id)) {
+            const auto& [swingHigh, swingLow, trend] = values;
+            std::vector<double> swingHighData = aggregateVector(swingHigh, level, Chart::AggregateLast);
+            std::vector<double> swingLowData = aggregateVector(swingLow, level, Chart::AggregateLast);
+            std::vector<int> trendData = aggregateVector(trend, level, Chart::AggregateLast);
+            if (!swingHighData.empty() && !swingLowData.empty() && !trendData.empty() &&
+                swingHighData.size() == swingLowData.size() && swingHighData.size() == trendData.size()) {
+                aggregated.swingStructureValues[id] = std::make_tuple(
+                    std::move(swingHighData),
+                    std::move(swingLowData),
+                    std::move(trendData)
+                );
+                aggregated.validSwingStructureIds.insert(id);
+            }
+        }
+    }
 }
 
 std::vector<double> ChartDataManager::aggregateVector(const std::vector<double> &data, chart::AggregationLevel level, int aggregateMethod) const {
@@ -622,6 +641,28 @@ void ChartDataManager::calculateBB(int id, int period, double stdDevMultiplier, 
 
     // Update active indicators cache
     m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].bbValues[id] = std::make_tuple(std::move(middleBand), std::move(upperBand), std::move(lowerBand));
+}
+
+void ChartDataManager::calculateSwingStructure(int id, double highMove, double lowMove, int minPeriods, int maxPeriods, bool resetOnNewDay) {
+    // Verify necessary data is available
+    if (!m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].isValid || minPeriods < 1 || maxPeriods < minPeriods) return;
+
+    // Get prices and timestamps
+    const std::vector<double>& highPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].high;
+    const std::vector<double>& lowPrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].low;
+    const std::vector<double>& closePrices = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].close;
+    const std::vector<double>& timestamps = m_aggregatedOHLCVCache[static_cast<size_t>(chart::AggregationLevel::Raw)].timestamps;
+
+    std::vector<double> swingHighValues;
+    std::vector<double> swingLowValues;
+    std::vector<int> trendValues;
+    std::tie(swingHighValues, swingLowValues, trendValues) = IndicatorMathUtils::calculateSwingStructure(
+        highPrices, lowPrices, closePrices, highMove, lowMove, minPeriods, maxPeriods, timestamps, resetOnNewDay
+    );
+
+    // Update active indicators cache
+    m_aggregatedIndicatorsCache[static_cast<size_t>(chart::AggregationLevel::Raw)].swingStructureValues[id] =
+        std::make_tuple(std::move(swingHighValues), std::move(swingLowValues), std::move(trendValues));
 }
 
 void ChartDataManager::calculatePivotPoints(const indicators::PivotPointsInstance& config) {
@@ -1006,6 +1047,13 @@ void ChartDataManager::calculateIndicator(const indicators::IndicatorBase &confi
         calculatePivotPoints(*pivotConfig);
         for (auto& aggregated : m_aggregatedIndicatorsCache)
             aggregated.validPivotPointsIds.erase(pivotConfig->id);
+        return;
+    }
+    if (const indicators::SwingStructureInstance* swingConfig = dynamic_cast<const indicators::SwingStructureInstance*>(&config)) {
+        calculateSwingStructure(swingConfig->id, swingConfig->highMove, swingConfig->lowMove,
+                                swingConfig->minPeriods, swingConfig->maxPeriods, swingConfig->resetOnNewDay);
+        for (auto& aggregated : m_aggregatedIndicatorsCache)
+            aggregated.validSwingStructureIds.erase(swingConfig->id);
         return;
     }
 }

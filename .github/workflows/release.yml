@@ -893,13 +893,17 @@ jobs:
         git config --local user.email "github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
         git add .
-        
-        if [ "$IS_BETA" == "true" ]; then
-          git commit -m "Update beta download URLs and upload executables for version $VERSION"
+
+        if git diff --staged --quiet; then
+          echo "No changes to commit, skipping commit and push."
         else
-          git commit -m "Update download URLs and upload executables for version v$VERSION"
+          if [ "$IS_BETA" == "true" ]; then
+            git commit -m "Update beta download URLs and upload executables for version $VERSION"
+          else
+            git commit -m "Update download URLs and upload executables for version v$VERSION"
+          fi
+          git push
         fi
-        git push
 
     - name: Send Discord Release Notification
       if: github.ref == 'refs/heads/main'

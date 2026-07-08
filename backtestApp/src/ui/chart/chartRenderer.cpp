@@ -1336,8 +1336,8 @@ void ChartRenderer::addSwingStructureToChart(FinanceChart* chart,
             int color = trend[absIndex] == 1 ? swingStructure.upColor
                       : trend[absIndex] == -1 ? swingStructure.downColor
                       : swingStructure.uncertainColor;
-            Mark* mark = mainChart->xAxis()->addMark(static_cast<double>(i), color, "");
-            if (mark) mark->setLineWidth(1);
+           // Mark* mark = mainChart->xAxis()->addMark(static_cast<double>(i), color, "");
+            //if (mark) mark->setLineWidth(1);
         }
     }
 

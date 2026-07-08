@@ -781,28 +781,23 @@ jobs:
         # Create "latest" or "beta-latest" versions depending on branch
         cd releases-repo/downloads
         
+        # Use the exact version just built (from calculate-version) instead of a glob match,
+        # since the downloads folder accumulates every past release and a glob's alphabetical
+        # order does not match numeric version order (e.g. "v1.0.0.9" sorts after "v1.0.0.42").
+        WIN_ARCHIVE="fast-backtest-app-windows-v${VERSION}.zip"
+        MAC_ARCHIVE="fast-backtest-app-macos-v${VERSION}.dmg"
+        LINUX_ARCHIVE="fast-backtest-app-linux-v${VERSION}.tar.gz"
+
         if [ "$IS_BETA" == "true" ]; then
           # Beta builds - create beta-latest versions
-          for file in fast-backtest-app-windows-v*-beta.zip; do
-            [ -f "$file" ] && cp "$file" fast-backtest-app-windows-beta-latest.zip
-          done
-          for file in fast-backtest-app-macos-v*-beta.dmg; do
-            [ -f "$file" ] && cp "$file" fast-backtest-app-macos-beta-latest.dmg
-          done
-          for file in fast-backtest-app-linux-v*-beta.tar.gz; do
-            [ -f "$file" ] && cp "$file" fast-backtest-app-linux-beta-latest.tar.gz
-          done
+          [ -f "$WIN_ARCHIVE" ] && cp "$WIN_ARCHIVE" fast-backtest-app-windows-beta-latest.zip
+          [ -f "$MAC_ARCHIVE" ] && cp "$MAC_ARCHIVE" fast-backtest-app-macos-beta-latest.dmg
+          [ -f "$LINUX_ARCHIVE" ] && cp "$LINUX_ARCHIVE" fast-backtest-app-linux-beta-latest.tar.gz
         else
           # Stable builds - create latest versions
-          for file in fast-backtest-app-windows-v*.zip; do
-            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-windows-latest.zip
-          done
-          for file in fast-backtest-app-macos-v*.dmg; do
-            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-macos-latest.dmg
-          done
-          for file in fast-backtest-app-linux-v*.tar.gz; do
-            [[ "$file" != *"-beta"* ]] && [ -f "$file" ] && cp "$file" fast-backtest-app-linux-latest.tar.gz
-          done
+          [ -f "$WIN_ARCHIVE" ] && cp "$WIN_ARCHIVE" fast-backtest-app-windows-latest.zip
+          [ -f "$MAC_ARCHIVE" ] && cp "$MAC_ARCHIVE" fast-backtest-app-macos-latest.dmg
+          [ -f "$LINUX_ARCHIVE" ] && cp "$LINUX_ARCHIVE" fast-backtest-app-linux-latest.tar.gz
         fi
         
         echo "Uploaded all platform executables to GitHub Pages"
@@ -916,48 +911,17 @@ jobs:
         TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
-        
-        # Find archive names and sizes from releases repository
-        # Robust stable archive lookup
-        shopt -s nullglob
-        WIN_ARCHIVE=""
-        files=(releases-repo/downloads/fast-backtest-app-windows-v*.zip)
-        if [ ${#files[@]} -gt 0 ]; then
-          for f in "${files[@]}"; do
-            case "$f" in
-              *-beta.zip) continue ;;
-              *) WIN_ARCHIVE=$(basename "$f"); break ;;
-            esac
-          done
-        fi
 
-        MAC_ARCHIVE=""
-        files=(releases-repo/downloads/fast-backtest-app-macos-v*.dmg)
-        if [ ${#files[@]} -gt 0 ]; then
-          for f in "${files[@]}"; do
-            case "$f" in
-              *-beta.dmg) continue ;;
-              *) MAC_ARCHIVE=$(basename "$f"); break ;;
-            esac
-          done
-        fi
+        # Use the exact version just built instead of a glob match over the downloads folder,
+        # which accumulates every past release and would sort alphabetically, not numerically.
+        WIN_ARCHIVE="fast-backtest-app-windows-v${{ env.VERSION }}.zip"
+        MAC_ARCHIVE="fast-backtest-app-macos-v${{ env.VERSION }}.dmg"
+        LINUX_ARCHIVE="fast-backtest-app-linux-v${{ env.VERSION }}.tar.gz"
 
-        LINUX_ARCHIVE=""
-        files=(releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz)
-        if [ ${#files[@]} -gt 0 ]; then
-          for f in "${files[@]}"; do
-            case "$f" in
-              *-beta.tar.gz) continue ;;
-              *) LINUX_ARCHIVE=$(basename "$f"); break ;;
-            esac
-          done
-        fi
-        shopt -u nullglob
-        
         WIN_SIZE=$([ -f "releases-repo/downloads/$WIN_ARCHIVE" ] && du -h "releases-repo/downloads/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
         MAC_SIZE=$([ -f "releases-repo/downloads/$MAC_ARCHIVE" ] && du -h "releases-repo/downloads/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
         LINUX_SIZE=$([ -f "releases-repo/downloads/$LINUX_ARCHIVE" ] && du -h "releases-repo/downloads/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
-        
+
         # Create Discord embed message for release
         cat <<EOF > discord_payload.json
         {
@@ -1048,36 +1012,17 @@ jobs:
         TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
         
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
-        
-        # Find archive names and sizes from releases repository
-        # Robust beta archive lookup
-        shopt -s nullglob
-        files=(releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip)
-        if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-          WIN_ARCHIVE=$(basename "${files[0]}")
-        else
-          WIN_ARCHIVE=""
-        fi
 
-        files=(releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg)
-        if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-          MAC_ARCHIVE=$(basename "${files[0]}")
-        else
-          MAC_ARCHIVE=""
-        fi
+        # Use the exact version just built instead of a glob match over the downloads folder,
+        # which accumulates every past beta and would sort alphabetically, not numerically.
+        WIN_ARCHIVE="fast-backtest-app-windows-v${VERSION}.zip"
+        MAC_ARCHIVE="fast-backtest-app-macos-v${VERSION}.dmg"
+        LINUX_ARCHIVE="fast-backtest-app-linux-v${VERSION}.tar.gz"
 
-        files=(releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz)
-        if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-          LINUX_ARCHIVE=$(basename "${files[0]}")
-        else
-          LINUX_ARCHIVE=""
-        fi
-        shopt -u nullglob
-        
         WIN_SIZE=$([ -f "releases-repo/downloads/$WIN_ARCHIVE" ] && du -h "releases-repo/downloads/$WIN_ARCHIVE" | cut -f1 || echo "N/A")
         MAC_SIZE=$([ -f "releases-repo/downloads/$MAC_ARCHIVE" ] && du -h "releases-repo/downloads/$MAC_ARCHIVE" | cut -f1 || echo "N/A")
         LINUX_SIZE=$([ -f "releases-repo/downloads/$LINUX_ARCHIVE" ] && du -h "releases-repo/downloads/$LINUX_ARCHIVE" | cut -f1 || echo "N/A")
-        
+
         # Create Discord embed message for beta release
         cat <<EOF > discord_payload.json
         {
@@ -1162,69 +1107,13 @@ jobs:
         VERSION: ${{ needs.calculate-version.outputs.version }}
         IS_BETA: ${{ needs.calculate-version.outputs.is_beta }}
       run: |
-        # Determine archive names based on beta status
-        if [ "$IS_BETA" == "true" ]; then
-          # Robust beta archive lookup
-          shopt -s nullglob
-          files=(releases-repo/downloads/fast-backtest-app-windows-v*-beta.zip)
-          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-            WIN_ARCHIVE=$(basename "${files[0]}")
-          else
-            WIN_ARCHIVE=""
-          fi
+        # Use the exact version just built instead of a glob match over the downloads folder,
+        # which accumulates every past release/beta and would sort alphabetically, not numerically.
+        # VERSION already carries the "-beta" suffix when IS_BETA is true, so this works for both.
+        WIN_ARCHIVE="fast-backtest-app-windows-v${VERSION}.zip"
+        MAC_ARCHIVE="fast-backtest-app-macos-v${VERSION}.dmg"
+        LINUX_ARCHIVE="fast-backtest-app-linux-v${VERSION}.tar.gz"
 
-          files=(releases-repo/downloads/fast-backtest-app-macos-v*-beta.dmg)
-          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-            MAC_ARCHIVE=$(basename "${files[0]}")
-          else
-            MAC_ARCHIVE=""
-          fi
-
-          files=(releases-repo/downloads/fast-backtest-app-linux-v*-beta.tar.gz)
-          if [ ${#files[@]} -gt 0 ] && [ -e "${files[0]}" ]; then
-            LINUX_ARCHIVE=$(basename "${files[0]}")
-          else
-            LINUX_ARCHIVE=""
-          fi
-          shopt -u nullglob
-        else
-          # Robust stable archive lookup
-          shopt -s nullglob
-          WIN_ARCHIVE=""
-          files=(releases-repo/downloads/fast-backtest-app-windows-v*.zip)
-          if [ ${#files[@]} -gt 0 ]; then
-            for f in "${files[@]}"; do
-              case "$f" in
-                *-beta.zip) continue ;;
-                *) WIN_ARCHIVE=$(basename "$f"); break ;;
-              esac
-            done
-          fi
-
-          MAC_ARCHIVE=""
-          files=(releases-repo/downloads/fast-backtest-app-macos-v*.dmg)
-          if [ ${#files[@]} -gt 0 ]; then
-            for f in "${files[@]}"; do
-              case "$f" in
-                *-beta.dmg) continue ;;
-                *) MAC_ARCHIVE=$(basename "$f"); break ;;
-              esac
-            done
-          fi
-
-          LINUX_ARCHIVE=""
-          files=(releases-repo/downloads/fast-backtest-app-linux-v*.tar.gz)
-          if [ ${#files[@]} -gt 0 ]; then
-            for f in "${files[@]}"; do
-              case "$f" in
-                *-beta.tar.gz) continue ;;
-                *) LINUX_ARCHIVE=$(basename "$f"); break ;;
-              esac
-            done
-          fi
-          shopt -u nullglob
-        fi
-        
         BASE_URL="https://fintechcpp.github.io/fast-backtest-app-releases/downloads"
         
         if [ "$IS_BETA" == "true" ]; then

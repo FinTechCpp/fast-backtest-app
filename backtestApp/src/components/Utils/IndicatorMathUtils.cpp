@@ -367,6 +367,21 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<int>> Indicator
 
     std::vector<size_t> segments(segmentBoundaries.begin(), segmentBoundaries.end());
 
+    // Does a bar exist within [minPeriods, maxPeriods] bars before `idx` (bounded to segStart)
+    // whose wick is at least `move` away from `extreme`? Wick-to-wick, not wick-to-close.
+    auto hasPriorLeg = [&](size_t segStart, size_t idx, bool forHigh, double extreme, double move) -> bool {
+        for (int k = minPeriods; k <= maxPeriods; ++k) {
+            if (static_cast<size_t>(k) > idx - segStart) break; // not enough history yet
+            size_t refIdx = idx - static_cast<size_t>(k);
+            if (forHigh) {
+                if (extreme - lowData[refIdx] >= move) return true;
+            } else {
+                if (highData[refIdx] - extreme >= move) return true;
+            }
+        }
+        return false;
+    };
+
     for (size_t s = 0; s + 1 < segments.size(); ++s) {
         size_t segStart = segments[s];
         size_t segEnd = segments[s + 1]; // exclusive
@@ -377,67 +392,59 @@ std::tuple<std::vector<double>, std::vector<double>, std::vector<int>> Indicator
         double lastLow = Chart::NoValue;
         int trend = 0;
 
+        // Running-extreme candidates, tracked independently for highs and lows: each is the
+        // most extreme bar seen since the last confirmed swing (or segment start), confirmed
+        // as soon as a reversal of sufficient amplitude occurs - no fixed-window wait.
+        size_t highIdx = segStart; double highExtreme = highData[segStart]; bool highLegOk = false;
+        size_t lowIdx  = segStart; double lowExtreme  = lowData[segStart];  bool lowLegOk  = false;
+
         for (size_t i = segStart; i < segEnd; ++i) {
-            if (i >= segStart + static_cast<size_t>(2 * maxPeriods)) {
-                // Candidate is the middle of a 2*maxPeriods+1 window: maxPeriods bars are
-                // available both before and after it, giving the widest validation window.
-                size_t candidateIdx = i - static_cast<size_t>(maxPeriods);
+            // Swing high tracking
+            if (highData[i] > highExtreme) {
+                highIdx = i; highExtreme = highData[i]; highLegOk = false;
+            }
+            size_t highBarsSince = i - highIdx;
+            if (highBarsSince >= static_cast<size_t>(minPeriods) && highBarsSince <= static_cast<size_t>(maxPeriods)) {
+                if (!highLegOk) highLegOk = hasPriorLeg(segStart, highIdx, true, highExtreme, highMove);
+                if (highLegOk && highExtreme - lowData[i] >= highMove) {
+                    shList.push_back(highExtreme);
+                    if (shList.size() > 2) shList.erase(shList.begin());
+                    lastHigh = highExtreme;
+                    highIdx = i; highExtreme = highData[i]; highLegOk = false;
+                }
+            } else if (highBarsSince > static_cast<size_t>(maxPeriods)) {
+                // No reversal within maxPeriods bars: this candidate has gone stale.
+                // Restart the search from the current bar instead of staying anchored
+                // to it indefinitely (which would otherwise happen forever if this bar
+                // is a historical extreme price never revisits, e.g. after a large gap).
+                highIdx = i; highExtreme = highData[i]; highLegOk = false;
+            }
 
-                // Swing high check
-                double peak = highData[candidateIdx];
-                bool rose = false;
-                for (int k = minPeriods; k <= maxPeriods; ++k) {
-                    if (peak - closeData[candidateIdx - k] >= highMove) { rose = true; break; }
+            // Swing low tracking
+            if (lowData[i] < lowExtreme) {
+                lowIdx = i; lowExtreme = lowData[i]; lowLegOk = false;
+            }
+            size_t lowBarsSince = i - lowIdx;
+            if (lowBarsSince >= static_cast<size_t>(minPeriods) && lowBarsSince <= static_cast<size_t>(maxPeriods)) {
+                if (!lowLegOk) lowLegOk = hasPriorLeg(segStart, lowIdx, false, lowExtreme, lowMove);
+                if (lowLegOk && highData[i] - lowExtreme >= lowMove) {
+                    slList.push_back(lowExtreme);
+                    if (slList.size() > 2) slList.erase(slList.begin());
+                    lastLow = lowExtreme;
+                    lowIdx = i; lowExtreme = lowData[i]; lowLegOk = false;
                 }
-                if (rose) {
-                    bool fell = false;
-                    for (int j = minPeriods; j <= maxPeriods; ++j) {
-                        if (peak - closeData[candidateIdx + j] >= highMove) { fell = true; break; }
-                    }
-                    if (fell) {
-                        bool isLocalMax = true;
-                        for (size_t k2 = candidateIdx - maxPeriods; k2 <= candidateIdx + static_cast<size_t>(maxPeriods); ++k2) {
-                            if (k2 != candidateIdx && highData[k2] > peak) { isLocalMax = false; break; }
-                        }
-                        if (isLocalMax) {
-                            shList.push_back(peak);
-                            if (shList.size() > 2) shList.erase(shList.begin());
-                            lastHigh = peak;
-                        }
-                    }
-                }
+            } else if (lowBarsSince > static_cast<size_t>(maxPeriods)) {
+                // Stale candidate: restart the search from the current bar (see the
+                // matching comment in the swing-high branch above).
+                lowIdx = i; lowExtreme = lowData[i]; lowLegOk = false;
+            }
 
-                // Swing low check
-                double trough = lowData[candidateIdx];
-                bool fellBefore = false;
-                for (int k = minPeriods; k <= maxPeriods; ++k) {
-                    if (closeData[candidateIdx - k] - trough >= lowMove) { fellBefore = true; break; }
-                }
-                if (fellBefore) {
-                    bool roseAfter = false;
-                    for (int j = minPeriods; j <= maxPeriods; ++j) {
-                        if (closeData[candidateIdx + j] - trough >= lowMove) { roseAfter = true; break; }
-                    }
-                    if (roseAfter) {
-                        bool isLocalMin = true;
-                        for (size_t k2 = candidateIdx - maxPeriods; k2 <= candidateIdx + static_cast<size_t>(maxPeriods); ++k2) {
-                            if (k2 != candidateIdx && lowData[k2] < trough) { isLocalMin = false; break; }
-                        }
-                        if (isLocalMin) {
-                            slList.push_back(trough);
-                            if (slList.size() > 2) slList.erase(slList.begin());
-                            lastLow = trough;
-                        }
-                    }
-                }
-
-                if (shList.size() >= 2 && slList.size() >= 2) {
-                    double hh = shList[1], ph = shList[0];
-                    double hl = slList[1], pl = slList[0];
-                    if (hh > ph && hl > pl) trend = 1;
-                    else if (hh < ph && hl < pl) trend = -1;
-                    else trend = 0;
-                }
+            if (shList.size() >= 2 && slList.size() >= 2) {
+                double hh = shList[1], ph = shList[0];
+                double hl = slList[1], pl = slList[0];
+                if (hh > ph && hl > pl) trend = 1;
+                else if (hh < ph && hl < pl) trend = -1;
+                else trend = 0;
             }
 
             swingHighValues[i] = lastHigh;

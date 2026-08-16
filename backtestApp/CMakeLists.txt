@@ -25,6 +25,7 @@ target_include_directories(backtestapp
         ${CMAKE_SOURCE_DIR}/ThirdParty/fast-backtest-engine/include
         ${CMAKE_SOURCE_DIR}/ThirdParty/Strategies/include 
         ${CMAKE_SOURCE_DIR}/ThirdParty/cereal/include 
+        ${CMAKE_SOURCE_DIR}/local_data_server/shared
         ${CMAKE_SOURCE_DIR}/ChartDirector/include
         ${CMAKE_SOURCE_DIR}/ChartDirector/src
         ${CMAKE_CURRENT_BINARY_DIR}

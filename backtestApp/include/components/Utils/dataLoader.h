@@ -114,6 +114,38 @@ public:
     ) {
         return loadData(QString::fromStdString(symbol), QString::fromStdString(interval), QString::fromStdString(period), endDate);
     }
+
+    /**
+     * @brief Load OHLC data from the local (PoC) REST API instead of a local CSV file.
+     *
+     * Pipeline: GET /files -> pick matching .bin -> GET /files/<name> -> Cereal
+     * deserialize -> std::vector<OHLCBar>, then filter/resample exactly like loadData().
+     *
+     * @param symbol Market symbol (e.g., "NDX")
+     * @param interval Data interval (e.g., "20secs")
+     * @param period Data period to load (e.g., "10d", "1m", "6m", "1y")
+     * @param endDate End date in QDateTime format
+     * @param errorMessage Filled with a human-readable message on failure
+     * @return Vector of filtered OHLC bars, empty on failure (see errorMessage)
+     */
+    static std::vector<OHLCBar> loadDataFromApi(
+        const QString& symbol,
+        const QString& interval,
+        const QString& period,
+        const QDateTime& endDate,
+        QString& errorMessage
+    );
+
+    static std::vector<OHLCBar> loadDataFromApi(
+        const std::string& symbol,
+        const std::string& interval,
+        const std::string& period,
+        const QDateTime& endDate,
+        QString& errorMessage
+    ) {
+        return loadDataFromApi(QString::fromStdString(symbol), QString::fromStdString(interval),
+                                QString::fromStdString(period), endDate, errorMessage);
+    }
     
     /**
      * @brief Find the CSV file corresponding to the symbol and interval

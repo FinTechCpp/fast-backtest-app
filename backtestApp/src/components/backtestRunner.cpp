@@ -296,9 +296,11 @@ void BacktestWorker::run()
         GeneralParamsConfig generalConfig = m_mainWindow->getGeneralParamsConfig();
         qInfo() << "[WORKER] General params config retrieved successfully";
 
-        // Load data with DataLoader and convert to be::Data
-        qInfo() << "[WORKER] Loading data with DataLoader...";
-        std::vector<OHLCBar> rawData = DataLoader::loadData(generalConfig.symbol, generalConfig.interval, generalConfig.period, generalConfig.endDate);
+        // Load data from the market-data REST API (Docker server on the VPN)
+        // and deserialize it via Cereal. The CSV parser now lives server-side only.
+        qInfo() << "[WORKER] Loading data from data API...";
+        QString dataLoadError;
+        std::vector<OHLCBar> rawData = DataLoader::loadDataFromApi(generalConfig.symbol, generalConfig.interval, generalConfig.period, generalConfig.endDate, dataLoadError);
         qInfo() << "[WORKER] Data loaded, size:" << rawData.size();
 
         if (m_cancelRequested.load(std::memory_order_relaxed)) {
@@ -308,9 +310,10 @@ void BacktestWorker::run()
         }
 
         if (rawData.empty()) {
-            qCritical() << "[WORKER] ERROR: No data loaded!";
+            QString errorStr = dataLoadError.isEmpty() ? "No data loaded" : dataLoadError;
+            qCritical() << "[WORKER] ERROR:" << errorStr;
             cleanupLogging();
-            emit error("No data loaded");
+            emit error(errorStr);
             return;
         }
 

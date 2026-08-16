@@ -1,0 +1,19 @@
+services:
+  data-server:
+    build:
+      context: ..
+      dockerfile: local_data_server/Dockerfile
+    image: fast-backtest-data-server:latest
+    container_name: fast-backtest-data-server
+    ports:
+      - "9015:9015"
+    volumes:
+      - ./data/csv:/app/data/csv
+      - ./data/bin:/app/data/bin
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9015/health', timeout=3)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

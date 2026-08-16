@@ -242,6 +242,10 @@ add_subdirectory(ThirdParty/ChartDirector)
 add_subdirectory(ThirdParty/fast-backtest-engine)
 add_subdirectory(backtestApp)
 
+# Local data server PoC: standalone CSV -> Cereal binary converter
+# (no Qt dependency, does not affect the application build)
+add_subdirectory(local_data_server/converter)
+
 # Show a summary of the configuration
 message(STATUS "=========================================")
 message(STATUS "Configuration for ${PROJECT_NAME} v${PROJECT_VERSION}")

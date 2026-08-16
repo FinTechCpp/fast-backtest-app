@@ -1,4 +1,6 @@
 #include "components/Utils/dataLoader.h"
+#include "components/Utils/apiClient.h"
+#include "components/Utils/binarySerializer.h"
 #include <QApplication>
 #include <QStandardPaths>
 #include <QRegularExpression>
@@ -694,6 +696,101 @@ std::vector<OHLCBar> DataLoader::loadData(
     // Store in cache for instant access on next identical request
     s_dataCache[cacheKey] = result;
     qInfo() << "Cached filtered data (" << result.size() << "bars) - next identical backtest will be instant";
+    return result;
+}
+
+std::vector<OHLCBar> DataLoader::loadDataFromApi(
+    const QString& symbol,
+    const QString& interval,
+    const QString& period,
+    const QDateTime& endDate,
+    QString& errorMessage)
+{
+    errorMessage.clear();
+
+    bool ok = false;
+    QString apiError;
+    QStringList files = ApiClient::listFiles(ok, apiError);
+    if (!ok) {
+        errorMessage = QString("Local data API unavailable: %1").arg(apiError);
+        qCritical() << errorMessage;
+        return {};
+    }
+
+    // Pick the best matching .bin file, mirroring findDataFile()'s CSV logic:
+    // 1) exact "<symbol>_<interval>_*.bin" match
+    // 2) best base file ("10secs" for sub-minute targets, "1min" otherwise)
+    // 3) any file for the symbol
+    QString chosenFile;
+    QRegularExpression exactPattern(QString("^%1_%2_.*\\.bin$").arg(QRegularExpression::escape(symbol), QRegularExpression::escape(interval)));
+    for (const QString& file : files) {
+        if (exactPattern.match(file).hasMatch()) {
+            chosenFile = file;
+            break;
+        }
+    }
+
+    if (chosenFile.isEmpty()) {
+        int targetSeconds = intervalToSeconds(interval);
+        QString baseInterval = (targetSeconds > 0 && targetSeconds < 60) ? "10secs" : "1min";
+        QRegularExpression basePattern(QString("^%1_%2_.*\\.bin$").arg(QRegularExpression::escape(symbol), QRegularExpression::escape(baseInterval)));
+        for (const QString& file : files) {
+            if (basePattern.match(file).hasMatch()) {
+                chosenFile = file;
+                break;
+            }
+        }
+    }
+
+    if (chosenFile.isEmpty()) {
+        QRegularExpression anyPattern(QString("^%1_.*\\.bin$").arg(QRegularExpression::escape(symbol)));
+        for (const QString& file : files) {
+            if (anyPattern.match(file).hasMatch()) {
+                chosenFile = file;
+                break;
+            }
+        }
+    }
+
+    if (chosenFile.isEmpty()) {
+        errorMessage = QString("No binary file available on the local data API for symbol '%1'").arg(symbol);
+        qWarning() << errorMessage;
+        return {};
+    }
+
+    QString downloadError;
+    QByteArray data = ApiClient::downloadFile(chosenFile, ok, downloadError);
+    if (!ok) {
+        errorMessage = QString("Failed to download '%1': %2").arg(chosenFile, downloadError);
+        qCritical() << errorMessage;
+        return {};
+    }
+
+    QString deserializeError;
+    std::vector<OHLCBar> rawData = BinarySerializer::deserialize(data, deserializeError);
+    if (!deserializeError.isEmpty()) {
+        errorMessage = QString("Failed to deserialize '%1': %2").arg(chosenFile, deserializeError);
+        qCritical() << errorMessage;
+        return {};
+    }
+
+    qInfo() << "Loaded" << rawData.size() << "bars from local data API file:" << chosenFile;
+
+    // Filter by period/endDate exactly like the CSV path
+    QDateTime actualEndDate = endDate.isValid() ? endDate : QDateTime::currentDateTime();
+    QDateTime startDateTime = calculateStartDate(actualEndDate, period);
+    std::vector<OHLCBar> result = filterByPeriod(rawData, startDateTime, actualEndDate);
+
+    // Resample if the source file's interval differs from the requested one
+    QString fileInterval = extractIntervalFromFilename(chosenFile);
+    if (!fileInterval.isEmpty() && fileInterval != interval) {
+        if (isValidResamplingInterval(fileInterval, interval)) {
+            result = resampleData(result, interval);
+        } else {
+            qWarning() << "Invalid resampling: cannot resample from" << fileInterval << "to" << interval;
+        }
+    }
+
     return result;
 }
 
